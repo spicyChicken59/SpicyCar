@@ -1,0 +1,55 @@
+{
+  "@id": "https://api.auto.dev/listings/WBY43FK01RCP74017",
+  "vin": "WBY43FK01RCP74017",
+  "createdAt": "2026-08-09 02:54:08",
+  "location": [
+    -85.54008,
+    38.21223
+  ],
+  "vehicle": {
+    "baseInvoice": 78715,
+    "baseMsrp": 84100,
+    "bodyStyle": "Car",
+    "confidence": 0.995,
+    "doors": 4,
+    "drivetrain": "AWD",
+    "engine": "Electric",
+    "exteriorColor": "Dark Graphite Metallic",
+    "fuel": "Electric",
+    "interiorColor": "Black/Atlas Grey Extended Merino premium leather",
+    "make": "BMW",
+    "model": "i5",
+    "seats": 5,
+    "series": "M60 4dr Sedan AWD (electric DD)",
+    "squishVin": "WBY43FK0RC",
+    "style": "Sedan",
+    "transmission": "Direct Drive",
+    "trim": "M60",
+    "type": "Electric",
+    "vin": "WBY43FK01RCP74017",
+    "year": 2024
+  },
+  "wholesaleListing": null,
+  "retailListing": {
+    "carfaxUrl": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK01RCP74017&partner=FRD_2",
+    "city": "Louisville",
+    "cpo": false,
+    "dealer": "BMW of Louisville",
+    "miles": 15922,
+    "photoCount": 46,
+    "price": 60999,
+    "primaryImage": "https://retail.photos.vin/WBY43FK01RCP74017-1.jpg",
+    "state": "KY",
+    "used": true,
+    "vdp": "https://louisvillebmw.com/used/BMW/2024-BMW-i5-bd45b607ac1843b4d08f34f9e523ee19.htm",
+    "zip": "40299",
+    "dealerId": "d_3e9fa60734f0a866"
+  },
+  "history": {
+    "accidentCount": 0,
+    "accidents": false,
+    "oneOwner": false,
+    "ownerCount": 2,
+    "usageType": "Lease"
+  }
+}
