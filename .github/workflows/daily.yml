@@ -25,7 +25,7 @@ jobs:
           AUTODEV_API_KEY: ${{ secrets.AUTODEV_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        run: python tracker.py
+        run: python Tracker.py
 
       - name: Commit snapshot
         run: |
