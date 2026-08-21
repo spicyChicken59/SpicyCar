@@ -1,9 +1,14 @@
-# BMW i5 eDrive40 — 2026-08-20
+# BMW i5 eDrive40 — 2026-08-21
 
 ## 🔻 Price changes since yesterday
 
-- ↓ $39,985 → **$38,900** (San Diego, CA) `WBY33FK08RCS83536`
-- ↓ $45,551 → **$44,514** (Clearwater, FL) `WBY33FK03SCT63915`
+- ↓ $41,784 → **$40,794** (Silver Spring, MD) `WBY33FK04RCR68522`
+- ↓ $42,888 → **$42,084** (West Covina, CA) `WBY33FK01RCS76878`
+- ↓ $41,977 → **$41,477** (Wilmington, NC) `WBY33FK09RCP87626`
+- ↓ $43,487 → **$42,987** (Alpharetta, GA) `WBY33FK03RCR30750`
+- ↓ $44,495 → **$43,995** (The Woodlands, TX) `WBY33FK09RCS35723`
+- ↓ $44,084 → **$44,079** (Santa Clara, CA) `WBY33FK0XRCP37866`
+- ↑ $41,803 → **$42,901** (Decatur, GA) `WBY33FK0XRCP36412`
 
 ## Chicago (within 100 mi) — 1 listings
 
@@ -15,10 +20,9 @@
 - **$47,359** · 15,722 mi · adj $46,503 · 2024 · Indianapolis, IN
   `WBY33FK09RCR14004`
 
-## National — 57 listings
+## National — 56 listings
 
 - **$34,551** · 37,722 mi · adj $38,095 · 2024 · San Francisco, CA
-  _NEW_
   `WBY33FK02RCP44486`
 - **$37,989** · 35,129 mi · adj $41,014 · 2024 · Seffner, FL
   `WBY33FK02RCS81412`
@@ -32,7 +36,6 @@
 ## Best value (mileage-adjusted, all markets)
 
 - **$34,551** · 37,722 mi · adj $38,095 · 2024 · San Francisco, CA
-  _NEW_
   `WBY33FK02RCP44486`
 - **$38,900** · 17,263 mi · adj $38,352 · 2024 · San Diego, CA
   _↓1 cut ($-1,085)_
@@ -46,4 +49,4 @@
 
 ---
 _Adjusted price normalizes to 20,000 mi at $0.20/mi. Rough heuristic — sanity-check it._
-_61 unique VINs tracked across 2 days._
+_62 unique VINs tracked across 3 days._
