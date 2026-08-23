@@ -1,4 +1,4 @@
-# SpicyChicken59 Design System — v1.0
+# SpicyChicken59 Design System — v1.2
 
 **The visual standard for everything Mohammed Tahir Madni ships under SpicyChicken59.**
 
@@ -17,15 +17,16 @@ Files in this folder:
 | `DESIGN_SYSTEM.md` | This document. |
 | `AUDIT-AND-ROADMAP.md` | Where this came from, what was changed and why, what's next. |
 | `CHECKLIST.md` | The pre-ship check. |
+| `assets/` | The brand mark: four SVG forms, avatar tile, lockup PNGs, favicon set. |
 
 ---
 
 ## 1. Brand hierarchy
 
-- **The project leads.** Its name and mark sit masthead-left, in the title, in the browser tab.
-- **SpicyChicken59 endorses.** The brand mark + wordmark appear as the *watermark* — footer-right on
-  every page, the same size and opacity everywhere, linking to the profile. Never merged with the
-  project mark into one lockup; co-brand by separation.
+- **One mark: the chick.** Every project wears it — masthead, favicon, avatar — with the project's
+  name set beside it in the display face. The name is the project's identity; the mark is the maker's.
+- **The watermark repeats it.** Mono form + wordmark, footer-right on every page, same size and
+  opacity everywhere, linking to the profile.
 - **The person authors.** "Mohammed Tahir Madni" appears in READMEs, document covers, and `rel="author"`
   — never in UI chrome.
 
@@ -57,6 +58,7 @@ cool so nothing on the page leans green anymore.
 | **Night** | 950 `#09111B` · 900 `#121C2A` · 850 `#162232` · 800 `#1B2737` · 700 `#2A394D` · 600 `#3C4E66` | Dark-mode surfaces and hairlines. Cool, never pure black. |
 | **Gray** | 50 `#F2F4F8` · 100 `#EDF2FA` · 200 `#E6E8EB` · 300 `#CFD6DE` · 400 `#A6AFBB` · 500 `#737B86` · 600 `#5D6671` · 800 `#2F3741` | Light-mode surfaces, borders, text. |
 | **Status** | good `#4EA954` / `#1B7E2A` · warn `#D59800` / `#906400` · danger `#E94E5A` / `#BE2132` · info = cobalt | dark / light. Reserved: never a chart series. Always paired with a word or icon. |
+| **Wine** | 900 `#580819` · **700 `#82182B`** · **500 `#A12E3E`** · 300 `#E2AFB0` | The brand mark's family (Zenith-style maroon). 700 on light, 500 on dark. Reserved for the mark and brand moments — never a UI state, never a chart series. |
 
 ### Semantic roles — what a color *does*
 
@@ -86,21 +88,21 @@ cool so nothing on the page leans green anymore.
 Three families, loaded from Google Fonts by `sc59.css`. Do not substitute.
 
 ```
-https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap
+https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap
 ```
 
-- **Space Grotesk 700** — display and headlines (h1–h3). Tight negative tracking (−.3px to −1px).
-- **Archivo 400–800** — body and UI at 15px; 13px captions; 18px deks. **Numbers in tiles and hero
-  figures are Archivo too** — never the display face, never tabular figures at display sizes.
-- **JetBrains Mono 500/700** — eyebrows, labels, chips, table headers, code, VINs, dates.
+- **Bricolage Grotesque 700** — display and headlines (h1–h3). Modest negative tracking
+  (−.2px to −1px); its ink-trap personality carries the identity, not the tracking.
+- **Instrument Sans 400–700** — body and UI at 15px; 13px captions; 18px deks. **Numbers in tiles
+  and hero figures are Instrument too** — never the display face, never tabular figures at display sizes.
+- **IBM Plex Mono 400–600** — eyebrows, labels, chips, table headers, code, VINs, dates.
 
-**The signature tell:** a mono, UPPERCASE, 2px-tracked **eyebrow** above a headline. Use it on every
-title block, every card that opens a section, every callout label.
+**The signature tell:** a **lowercase** mono eyebrow opened by a dimmed `//`, modest tracking
+(≤.5px). Use it on every title block, section opener, and callout label. Never ALL-CAPS with wide
+tracking — that is the previous system's signature, deliberately retired.
 
 Scale: eyebrow 12 · caption 13 · body 15 · lead 18 · h3 20 · h2 28 · h1 40 · display 56.
 Line height 1.1 tight / 1.2 heading / 1.6 body. `tabular-nums` only in columns that must align.
-
----
 
 ## 4. Spacing, shape, motion
 
@@ -139,18 +141,18 @@ don't invent siblings.
 |---|---|---|
 | Masthead | `.sc-masthead` · `.sc-brand` (`__mark` `__name` `__sub`) · `.sc-masthead__right` · `.sc-nav` | Project left, endorsement/toggle right. Dark in both modes. Nav underline is spice. |
 | Theme toggle | `.sc-theme-toggle` | Three buttons, `aria-pressed` on the active one. Lives in the masthead. |
-| Eyebrow | `.sc-eyebrow` (`--accent`, `--muted`) | Always above a heading. Brand cobalt by default. |
+| Eyebrow | `.sc-eyebrow` (`--accent`, `--muted`) | Always above a heading. Lowercase mono, `//` prefix added by CSS, brand cobalt by default. |
 | Dek / meta | `.sc-dek` · `.sc-meta` | One sentence; mono meta row with `·` separators. |
 | Card | `.sc-card` (`--raised`) · `.sc-card__head` · `.sc-hint` | One discrete idea per card. Heading + hint, optional action right. |
 | Stat tile | `.sc-tile` · `__label` `__value` (`--sm`) `__sub` · `.sc-delta` (`--good` `--bad` `--flat`) | Label · value · context · signed delta vs a named period. Sparkline optional. |
 | Hero figure | `.sc-hero` | The one number a page leads with. Exactly one per view. |
-| Callout | `.sc-callout` (`--core` `--ink` `--spice` `--warning`) · `__label` | Core = the single takeaway, max one per section. Ink = must-remember. Spice = the one next action. Warning = 2px danger border. |
-| Chip | `.sc-chip` (`--brand` `--neutral` `--spice` `--good` `--warn` `--danger` `--solid`) | Mono pill. Meaning carried by the word, tone reinforces. Danger is the outline form. |
+| Callout | `.sc-callout` (`--core` `--ink` `--spice` `--warning`) · `__label` | Tinted fill + the file-fold corner (`--sc-fold`). Core = the single takeaway, max one per section. Ink = must-remember. Spice = the one next action. Warning adds the 2px danger border. |
+| Chip | `.sc-chip` (`--brand` `--neutral` `--spice` `--good` `--warn` `--danger` `--solid`) | Squared lowercase mono chip (6px radius). Meaning carried by the word, tone reinforces. Danger is the outline form. |
 | Button | `.sc-btn` (`--primary` `--secondary` `--ghost` `--sm`) | Primary = spice, one per view. Secondary = outline. |
 | Inputs | `.sc-input` · `.sc-select` · `.sc-check` · `.sc-field` · `.sc-filters` | Filters: one row, above everything they scope. |
-| Table | `.sc-table` (`--compact`) · `.sc-table-scroll` · `th.is-sortable` `.is-sorted` · `.sc-num` | Brand header, hairline rows, row hover. Numbers right-aligned, tabular. |
+| Table | `.sc-table` (`--compact`) · `.sc-table-scroll` · `th.is-sortable` `.is-sorted` · `.sc-num` | Open header: lowercase mono over a 2px cobalt rule, no filled bar. Hairline rows, row hover. Numbers right-aligned, tabular. |
 | Tooltip / legend | `.sc-tooltip` (`__date` `__row` `__meta`) · `.sc-legend` | Ink surface. Values lead, labels follow; line keys not boxes. |
-| Tabs | `.sc-tabs` · `.sc-tab[aria-selected]` | Pill row for switching the subject, not for navigation. |
+| Tabs | `.sc-tabs` · `.sc-tab[aria-selected]` (`--case`) | Pill row for switching the subject, not for navigation. `--case` keeps proper-noun casing (BMW i5). |
 | Notice | `.sc-notice` | The stop-and-read block: what failed, what to do. |
 | Footer + watermark | `.sc-foot` · `.sc-watermark` (`__name`) | Source line left, brand watermark right. Every page. |
 | Document | `.sc-doc` | On-screen prose surface, 800px, section rules in brand-line. |
@@ -191,21 +193,31 @@ Validated with the `dataviz` method; re-run the checks if a slot ever changes.
 
 ---
 
-## 9. Marks & watermark — reserved
+## 9. Marks & watermark
 
-The SpicyChicken59 mark and the per-project marks are designed separately, each in depth. Until
-then `.sc-brand__mark` renders a spice square with initials as a placeholder. Every future mark must
-satisfy these constraints so the family stays uniform:
+**The SpicyChicken59 mark — the chick — locked 2026-08-23.** Wine head with a file-fold corner,
+teardrop flame comb in spice, cream eyes and diamond beak, on a 24-unit grid. The head is 9 units
+tall; the date it carries is private.
 
-- Built on a **24-unit grid**, 2-unit stroke, 3-unit corner radius; reads at **16px** (favicon) and
-  at 96px (cover) without redrawing.
-- Ships in four forms: color-on-dark, color-on-light, mono white, mono ink. No gradients, no effects.
-- **Watermark spec:** mark 20px tall + wordmark in Space Grotesk 700 12px, footer-right, 70% opacity,
-  100% on hover, links to the profile. Clear space ≥ mark height on all sides. Same on every page.
-- **Masthead spec:** project mark 26px, 7px radius, left of the project name.
-- The SC59 mark and a project mark are never combined into one shape.
+Files in `assets/`:
 
----
+| File | Use |
+|---|---|
+| `sc59-mark-color-light.svg` | wine-700 body — white and cream surfaces |
+| `sc59-mark-color-dark.svg` | wine-500 body — ink and dark surfaces (mastheads) |
+| `sc59-mark-mono-cream.svg` / `sc59-mark-mono-ink.svg` | watermarks and one-color uses |
+| `sc59-avatar-tile.svg` · `favicon.ico` · `apple-touch-icon.png` · `favicon-512.png` | avatar and favicon set (mark on the cream tile) |
+| `sc59-lockup-cream.png` / `sc59-lockup-ink.png` | horizontal lockups for external surfaces |
+
+Rules: never recolor, outline, rotate, stretch, or add effects; clear space ≥ the flame's height on
+all sides; the mark never merges with a project mark or sits inside another shape (the tile is the
+one exception). **Watermark:** mono form, 20px + wordmark in Space Grotesk 700 12px, footer-right,
+70% opacity, links to the profile — identical on every page.
+
+**There are no separate project marks.** The chick is the mark for every project — masthead,
+favicon, avatar — with the project named in type beside it. (An experimental car mark for the
+tracker was built and retired the same day; its generator survives in that repo's `docs/brand/` as
+an archive.)
 
 ## 10. Accessibility
 

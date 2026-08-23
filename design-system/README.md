@@ -15,6 +15,7 @@ dashboards, documents, READMEs, decks. Cobalt structure, one spice accent, dark 
 | `DESIGN_SYSTEM.md` | The standard. Attach it to Claude or any AI tool before generating material. |
 | `AUDIT-AND-ROADMAP.md` | Where it came from, what changed and why, what's next, changelog. |
 | `CHECKLIST.md` | Ten lines to tick before any page ships. |
+| `assets/` | The SpicyChicken59 mark: SVG forms, avatar tile, lockups, favicons. |
 
 This folder is built to become its own repository (`spicyChicken59/design-system`) with GitHub
 Pages enabled, so projects can link `sc59.css` instead of copying it. Until then, copy the file and

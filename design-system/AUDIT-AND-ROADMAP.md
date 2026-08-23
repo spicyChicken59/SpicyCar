@@ -48,17 +48,15 @@ hue, validate.
 
 ## 4. Roadmap — in order
 
-1. **Marks.** The SpicyChicken59 mark (watermark + favicon + profile avatar), then the Auto Market
-   Tracker mark, each designed in depth on the 24-unit grid in §9 of the spec. Until then the spice
-   placeholder square stands in, so nothing ships without the slot.
+1. **Marks.** ✅ Done. The chick (v1.1.0) and the first project mark, the Auto Market Tracker car
+   (v1.1.1), both on the 24-unit grid. Future projects repeat the recipe: cobalt body, file-fold,
+   cream details, one spice element.
 2. **Own repository.** Move this folder to `spicyChicken59/design-system`, enable Pages, and link
    `https://spicychicken59.github.io/design-system/sc59.css` from projects instead of copying. Tag
    releases (`v1.0.0`); projects pin a tag. Keep a `CHANGELOG` section below.
-3. **Type decision.** Space Grotesk / Archivo / JetBrains Mono are inherited from the template and
-   are good — but type is the biggest identity lever after color, and Space Grotesk is common in
-   developer portfolios. Decide deliberately: keep, or trial one alternative pairing (e.g. a
-   geometric-humanist display with a quieter body face) across the style guide and the dashboard,
-   then commit. Change it once, in one place.
+3. **Type decision.** ✅ Done in v1.2: Bricolage Grotesque (display) / Instrument Sans (body) /
+   IBM Plex Mono (labels), chosen to break the visual tie to the workplace template along with the
+   lowercase `//` eyebrow, folded callouts, squared chips, and open table headers.
 4. **Figma — when the marks start.** Figma (free tier) is the right tool for drawing the marks and
    for exploring layouts; it is not needed to *hold* the system. Import `tokens.json` with a variables
    plugin (Tokens Studio or "Variables Import/Export") so Figma colors match the CSS exactly, and
@@ -76,6 +74,20 @@ hue, validate.
    add a line whenever a real mistake slips through.
 
 ## 5. Changelog
+
+- **1.2.0 (2026-08-23)** — De-templated from the RPS BI source and simplified to one mark. New type
+  stack: Bricolage Grotesque / Instrument Sans / IBM Plex Mono (retiring the template's trio). The
+  signature changes from ALL-CAPS tracked eyebrows to lowercase mono with a `//` prefix; callouts
+  trade the left border for the mark's file-fold corner; chips and tabs square off; table headers
+  open up (lowercase mono over a cobalt rule, no filled bar). The chick becomes the mark for every
+  project — the car mark is retired, its generator archived in the tracker's `docs/brand/`.
+- **1.1.1 (2026-08-23)** — First project mark: the Auto Market Tracker car, generated on the family
+  grid (cobalt body, ping comb, file-fold), four forms + tile in the tracker's `docs/brand/`; swapped
+  into that dashboard's masthead and favicon; family figure added to the style guide.
+- **1.1.0 (2026-08-23)** — The SpicyChicken59 mark locked and shipped: `assets/` with four SVG forms
+  (traced from the finalized Claude Design renders), avatar tile, lockup PNGs, favicon set; wine
+  primitives (`--sc-wine-300/500/700/900`); `img.sc-mark` classes; the mark wired into the style
+  guide masthead and every watermark; spec §9 rewritten from "reserved" to shipped.
 
 - **1.0.0 (2026-08-23)** — First SpicyChicken59 release. Cobalt remap of the RPS BI greens at identical
   lightness; spice accent; dark default + light mode; cool neutrals; status set; validated chart
