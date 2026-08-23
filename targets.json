@@ -1,25 +1,55 @@
 {
+  "budget_per_day": 33,
+
+  "region": { "label": "Midwest", "zip": "46204", "lat": 39.7684, "lon": -86.1581, "distance": 400 },
+
   "markets": {
-    "Cincinnati":   { "zip": "45202", "distance": 200 },
-    "Chicago":      { "zip": "60601", "distance": 200 },
-    "Indianapolis": { "zip": "46204", "distance": 200 },
-    "National":     null
+    "Cincinnati":   { "zip": "45202", "lat": 39.1031, "lon": -84.5120, "distance": 200 },
+    "Chicago":      { "zip": "60601", "lat": 41.8855, "lon": -87.6221, "distance": 200 },
+    "Indianapolis": { "zip": "46204", "lat": 39.7684, "lon": -86.1581, "distance": 200 }
   },
-  "targets": {
-    "i5-edrive40": {
-      "active": true,
-      "label": "BMW i5 eDrive40",
+
+  "defaults": {
+    "cents_per_mile": 0.30,
+    "mileage_baseline": 20000,
+    "ship_cost": 1100,
+    "min_price": 15000,
+    "depth": "light",
+    "sorts": ["price.asc", "miles.asc"],
+    "pages": 2
+  },
+
+  "legacy_ids": { "i5-edrive40": "bmw-i5-edrive40" },
+
+  "brands": {
+    "bmw": {
+      "label": "BMW",
       "make": "BMW",
-      "model": "i5",
-      "trim_match": "edrive40",
-      "trim_query": "eDrive40",
-      "years": ["2024", "2025"],
-      "markets": ["Cincinnati", "Chicago", "Indianapolis", "National"],
-      "cents_per_mile": 0.30,
-      "mileage_baseline": 20000,
-      "ship_cost": 1100,
-      "min_price": 20000,
-      "note": "First real buyer, near Chicago. Decide by mid-Sept."
+      "models": {
+        "i5": {
+          "label": "BMW i5",
+          "model": "i5",
+          "years": ["2024", "2025"],
+          "min_price": 20000,
+          "trims": {
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full",
+                          "note": "First real buyer, near Chicago. Decide by mid-Sept." },
+            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40" },
+            "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000 }
+          }
+        },
+        "i4": {
+          "label": "BMW i4",
+          "model": "i4",
+          "years": ["2022", "2023", "2024", "2025"],
+          "trims": {
+            "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"] },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40" },
+            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"] },
+            "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
+          }
+        }
+      }
     }
   }
 }
