@@ -7,11 +7,11 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<!-- SpicyChicken59 Design System — vendored copy of sc59.css v1.2.0 -->
-<link rel="stylesheet" href="sc59.css">
+<!-- SpicyChicken Design System — vendored copy of sc.css v2.0.0 -->
+<link rel="stylesheet" href="sc.css">
 <script>
 (function () {
-  var KEY = 'sc59-theme', root = document.documentElement, saved = null;
+  var KEY = 'sc-theme', root = document.documentElement, saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) {}
   if (saved === 'light' || saved === 'dark') root.setAttribute('data-theme', saved);
   function sync() {
@@ -98,7 +98,7 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="sc59-mark-color-dark.svg" alt="">
+    <img class="sc-mark" src="sc-mark-color-dark.svg" alt="">
     <span><span class="sc-brand__name">Auto Market Tracker</span><span class="sc-brand__sub">Daily used-car snapshot</span></span>
   </a>
   <div class="sc-masthead__right">
@@ -197,8 +197,8 @@
 <footer class="sc-foot">
   <span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span>
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
-    <img class="sc-mark" src="sc59-mark-mono-cream.svg" alt="" style="height:20px">
-    <span class="sc-watermark__name">SpicyChicken59</span>
+    <img class="sc-mark" src="sc-mark-mono-cream.svg" alt="" style="height:20px">
+    <span class="sc-watermark__name">SpicyChicken</span>
   </a>
 </footer>
 

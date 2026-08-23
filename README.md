@@ -14,7 +14,7 @@ to GitHub Pages. Currently tracking the BMW i4 and i5, every trim.
   lowest and median landed price over time, one row per vehicle with photo, history flags (CPO,
   owners, accidents, ex-lease), distance from your nearest market, days on market, per-vehicle price
   sparkline, and a "gone from the market" list.
-- `docs/sc59.css` — a vendored copy of the [SpicyChicken59 design system](https://github.com/spicyChicken59)
+- `docs/sc.css` — a vendored copy of the [SpicyChicken design system](https://github.com/spicyChicken59)
   the dashboard is built on. The system lives in its own repo; update the copy from there.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates. The file is rewritten on
   each run, so re-running on the same day replaces that day's rows instead of duplicating them.
