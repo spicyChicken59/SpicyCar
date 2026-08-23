@@ -83,6 +83,8 @@ def fetch(market_name, year, sort, t):
             "limit": PER_PAGE,
             "page": page,
         }
+        if t.get("trim_query"):
+            params["vehicle.trim"] = t["trim_query"]
         if m:
             params["zip"] = m["zip"]
             params["distance"] = m["distance"]
@@ -123,7 +125,8 @@ def normalize(rec, tid, t, market_name):
         "trim": first(rec, ["vehicle.trim", "vehicle.style", "vehicle.series"]),
         "miles": miles if miles is not None else "",
         "price": price,
-        "dealer": first(rec, ["retailListing.dealerName", "dealer.name",
+        "dealer": first(rec, ["retailListing.dealer",
+                              "retailListing.dealerName", "dealer.name",
                               "retailListing.dealer.name", "dealerName",
                               "retailListing.sellerName", "seller.name"]),
         "city": first(rec, ["retailListing.city", "dealer.city",
@@ -132,8 +135,9 @@ def normalize(rec, tid, t, market_name):
                              "location.state"]),
         "listed_since": str(first(rec, ["createdAt",
                                         "retailListing.createdAt"]))[:10],
-        "url": first(rec, ["retailListing.vdpUrl", "retailListing.url", "url",
-                           "retailListing.link", "vdpUrl", "detailUrl"]),
+        "url": first(rec, ["retailListing.vdp", "retailListing.vdpUrl",
+                           "retailListing.url", "url", "retailListing.link",
+                           "vdpUrl", "detailUrl"]),
     }
 
 

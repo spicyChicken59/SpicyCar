@@ -12,6 +12,7 @@
       "make": "BMW",
       "model": "i5",
       "trim_match": "edrive40",
+      "trim_query": "eDrive40",
       "years": ["2024", "2025"],
       "markets": ["Cincinnati", "Chicago", "Indianapolis", "National"],
       "cents_per_mile": 0.30,
