@@ -1,0 +1,23 @@
+{
+  "markets": {
+    "Cincinnati":   { "zip": "45202", "distance": 200 },
+    "Chicago":      { "zip": "60601", "distance": 200 },
+    "Indianapolis": { "zip": "46204", "distance": 200 },
+    "National":     null
+  },
+  "targets": {
+    "i5-edrive40": {
+      "active": true,
+      "label": "BMW i5 eDrive40",
+      "make": "BMW",
+      "model": "i5",
+      "trim_match": "edrive40",
+      "years": ["2024", "2025"],
+      "markets": ["Cincinnati", "Chicago", "Indianapolis", "National"],
+      "cents_per_mile": 0.30,
+      "mileage_baseline": 20000,
+      "ship_cost": 1100,
+      "note": "First real buyer, near Chicago. Decide by mid-Sept."
+    }
+  }
+}

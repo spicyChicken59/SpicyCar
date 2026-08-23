@@ -1,4 +1,4 @@
-name: i5 tracker
+name: tracker
 
 on:
   schedule:
@@ -13,24 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - run: pip install requests
-
       - name: Run tracker
         env:
           AUTODEV_API_KEY: ${{ secrets.AUTODEV_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: python Tracking.py
-
-      - name: Commit snapshot
+      - name: Commit outputs
         run: |
-          git config user.name  "i5-tracker"
+          git config user.name  "tracker"
           git config user.email "actions@github.com"
-          git add data REPORT.md
+          git add data docs REPORT.md
           git diff --staged --quiet || git commit -m "snapshot $(date -u +%F)"
           git push
