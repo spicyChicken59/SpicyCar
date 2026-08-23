@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project name — SpicyChicken59</title>
+<!-- 1. The system. Copy sc59.css next to this file, or link the published copy. -->
+<link rel="stylesheet" href="sc59.css">
+<!-- 2. Theme: dark by default, follows the OS, remembers the toggle. Inline so there is no flash. -->
+<script>
+(function () {
+  var KEY = 'sc59-theme', root = document.documentElement, saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (saved === 'light' || saved === 'dark') root.setAttribute('data-theme', saved);
+  function sync() {
+    var cur = root.getAttribute('data-theme') || 'auto';
+    document.querySelectorAll('.sc-theme-toggle button').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-theme') === cur ? 'true' : 'false');
+    });
+  }
+  function set(v) {
+    if (v === 'auto') { root.removeAttribute('data-theme'); try { localStorage.removeItem(KEY); } catch (e) {} }
+    else { root.setAttribute('data-theme', v); try { localStorage.setItem(KEY, v); } catch (e) {} }
+    sync();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.sc-theme-toggle button');
+    if (b) set(b.getAttribute('data-theme'));
+  });
+  document.addEventListener('DOMContentLoaded', sync);
+})();
+</script>
+</head>
+<body>
+
+<!-- Masthead: the project leads on the left; the brand endorses on the right. -->
+<header class="sc-masthead">
+  <a class="sc-brand" href="./">
+    <span class="sc-brand__mark" aria-hidden="true">P</span>   <!-- project mark slot: swap for the SVG when designed -->
+    <span><span class="sc-brand__name">Project name</span><span class="sc-brand__sub">What it is, in four words</span></span>
+  </a>
+  <div class="sc-masthead__right">
+    <nav class="sc-nav" aria-label="Primary"><a href="#" aria-current="page">Overview</a><a href="#">Data</a><a href="#">About</a></nav>
+    <span class="sc-sep" aria-hidden="true"></span>
+    <div class="sc-theme-toggle" role="group" aria-label="Theme">
+      <button type="button" data-theme="dark">Dark</button>
+      <button type="button" data-theme="light">Light</button>
+      <button type="button" data-theme="auto">Auto</button>
+    </div>
+  </div>
+</header>
+
+<main class="sc-wrap">
+  <div style="padding: 40px 0 8px">
+    <div class="sc-eyebrow">Eyebrow · context</div>
+    <h1>One plain sentence that says what this page does.</h1>
+    <p class="sc-dek">One-sentence dek in the muted text color. State the outcome and the reason, not the hype.</p>
+    <div class="sc-meta"><span>Updated today</span><span class="sc-sep">·</span><span>Source: where the data comes from</span></div>
+  </div>
+
+  <div class="sc-callout sc-callout--core">
+    <div class="sc-callout__label">Core takeaway</div>
+    <p>The single thing a reader should leave with. One per section, max.</p>
+  </div>
+
+  <section class="sc-grid sc-grid--3" style="margin-top: 24px">
+    <div class="sc-tile"><div class="sc-tile__label">Stat tile</div><div class="sc-tile__value">1,284</div><div class="sc-tile__sub">what it counts</div><div class="sc-delta sc-delta--good">▼ 3% vs last week</div></div>
+    <div class="sc-tile"><div class="sc-tile__label">Another</div><div class="sc-tile__value">$4.2M</div><div class="sc-tile__sub">proportional figures, body sans</div></div>
+    <div class="sc-tile"><div class="sc-tile__label">A third</div><div class="sc-tile__value sc-tile__value--sm">12 open</div><div class="sc-tile__sub">smaller value variant</div></div>
+  </section>
+
+  <section class="sc-card" style="margin-top: 16px">
+    <div class="sc-card__head"><div><h2>Section title</h2><p class="sc-hint">Hint text under the heading.</p></div><a class="sc-btn sc-btn--primary sc-btn--sm" href="#">One next action →</a></div>
+    <p>Body copy. <a href="#">Links are spice</a>; structure is cobalt; <code>code</code> sits on a raised surface. <span class="sc-chip sc-chip--brand">chip</span></p>
+  </section>
+</main>
+
+<!-- Footer: the watermark lives bottom-right on every page, always the same size. -->
+<footer class="sc-foot">
+  <span>Source · method · last updated</span>
+  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
+    <span class="sc-brand__mark" aria-hidden="true">SC</span>   <!-- brand mark slot -->
+    <span class="sc-watermark__name">SpicyChicken59</span>
+  </a>
+</footer>
+
+</body>
+</html>
