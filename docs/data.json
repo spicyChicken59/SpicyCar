@@ -1023,6 +1023,43 @@
      ]
     },
     {
+     "vin": "WBY33FK0XRCR35394",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 15602,
+     "price": 45209,
+     "adj": 44989,
+     "msrp": 66800,
+     "dealer": "BMW of Austin",
+     "city": "Austin",
+     "state": "TX",
+     "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK0XRCR35394",
+     "image": "https://retail.photos.vin/WBY33FK0XRCR35394-1.jpg",
+     "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK0XRCR35394&partner=FRD_2",
+     "color": "Black",
+     "cpo": false,
+     "owners": null,
+     "accidents": null,
+     "usage": "",
+     "flags": [],
+     "listed_since": "2026-06-27",
+     "days_listed": 57,
+     "first_seen": "2026-08-23",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       45209
+      ]
+     ]
+    },
+    {
      "vin": "WBY33FK00SCT64147",
      "year": 2025,
      "trim": "eDrive40",
@@ -1507,46 +1544,6 @@
      ]
     },
     {
-     "vin": "WBY33FK02RCS84701",
-     "year": 2024,
-     "trim": "eDrive40",
-     "market": "National",
-     "markets": [
-      "National"
-     ],
-     "miles": 23043,
-     "price": 44131,
-     "adj": 46143,
-     "msrp": 66800,
-     "dealer": "BMW Northwest Arkansas",
-     "city": "Bentonville",
-     "state": "AR",
-     "url": "https://www.carfax.com/vehicle/WBY33FK02RCS84701",
-     "image": "https://retail.photos.vin/WBY33FK02RCS84701-1.jpg",
-     "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK02RCS84701&partner=FRD_2",
-     "color": "Black",
-     "cpo": false,
-     "owners": 1,
-     "accidents": 0,
-     "usage": "Rental Use",
-     "flags": [
-      "1-owner",
-      "no accidents"
-     ],
-     "listed_since": "2026-08-09",
-     "days_listed": 14,
-     "first_seen": "2026-08-23",
-     "cuts": 0,
-     "delta": 0,
-     "days_tracked": 1,
-     "series": [
-      [
-       "2026-08-23",
-       44131
-      ]
-     ]
-    },
-    {
      "vin": "WBY33FK06RCR84771",
      "year": 2024,
      "trim": "eDrive40",
@@ -2020,46 +2017,6 @@
       [
        "2026-08-23",
        42987
-      ]
-     ]
-    },
-    {
-     "vin": "WBY33FK0XRCS96353",
-     "year": 2024,
-     "trim": "eDrive40",
-     "market": "National",
-     "markets": [
-      "National"
-     ],
-     "miles": 26830,
-     "price": 43995,
-     "adj": 47144,
-     "msrp": null,
-     "dealer": "bmw of the woodlands",
-     "city": "Conroe",
-     "state": "TX",
-     "url": "https://bmwofthewoodlands.com/used/BMW/2024-BMW-i5-1b8a5060ac181bbdf7ea8270040d077d.htm",
-     "image": "https://retail.photos.vin/WBY33FK0XRCS96353-1.jpg",
-     "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK0XRCS96353&partner=FRD_2",
-     "color": "Carbon Black",
-     "cpo": false,
-     "owners": 1,
-     "accidents": 0,
-     "usage": "Personal Use",
-     "flags": [
-      "1-owner",
-      "no accidents"
-     ],
-     "listed_since": "2026-08-20",
-     "days_listed": 3,
-     "first_seen": "2026-08-23",
-     "cuts": 0,
-     "delta": 0,
-     "days_tracked": 1,
-     "series": [
-      [
-       "2026-08-23",
-       43995
       ]
      ]
     },
@@ -3348,11 +3305,11 @@
    "daily": [
     {
      "date": "2026-08-23",
-     "n": 83,
+     "n": 82,
      "n_local": 2,
      "min_adj": 38146,
-     "median_adj": 46497,
-     "median_price": 44131
+     "median_adj": 46474,
+     "median_price": 44551
     }
    ],
    "gone": []

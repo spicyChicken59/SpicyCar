@@ -27,7 +27,7 @@
   Dreyer & Reinbold BMW MINI — [listing](https://www.carfax.com/vehicle/WBY33FK09RCR14004)
   `WBY33FK09RCR14004`
 
-### National — 82 listings
+### National — 81 listings
 
 - **$34,551** · 37,722 mi · landed $40,967 · 2024 · San Francisco, CA
   _NEW · on market 105d_
@@ -74,4 +74,4 @@
   `WBY33FK08RCR89549`
 
 ---
-_83 vehicle histories across 1 day._
+_82 vehicle histories across 1 day._
