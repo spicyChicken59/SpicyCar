@@ -1,0 +1,1939 @@
+{
+ "generated": "2026-08-23",
+ "targets": {
+  "i5-edrive40": {
+   "label": "BMW i5 eDrive40",
+   "note": "First real buyer, near Chicago. Decide by mid-Sept.",
+   "listings": [
+    {
+     "vin": "WBY33FK08RCR89549",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 16217,
+     "price": 225,
+     "adj": 190,
+     "dealer": "",
+     "city": "Plano",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-20",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       225
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK07SCT62315",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 16431,
+     "price": 549,
+     "adj": 578,
+     "dealer": "",
+     "city": "Peoria",
+     "state": "AZ",
+     "url": "",
+     "listed_since": "2026-08-22",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       549
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK08RCS83536",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 17263,
+     "price": 37868,
+     "adj": 38146,
+     "dealer": "",
+     "city": "San Diego",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-07-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       37868
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK02RCS83564",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 20224,
+     "price": 38698,
+     "adj": 39865,
+     "dealer": "",
+     "city": "Torrance",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       38698
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK07RCR83662",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 6702,
+     "price": 43694,
+     "adj": 40804,
+     "dealer": "",
+     "city": "Reno",
+     "state": "NV",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43694
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK02RCP44486",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 37722,
+     "price": 34551,
+     "adj": 40967,
+     "dealer": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-05-10",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       34551
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05RCS37890",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 18143,
+     "price": 41987,
+     "adj": 42529,
+     "dealer": "",
+     "city": "Sherman Oaks",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       41987
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK02RCS81412",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 35129,
+     "price": 36989,
+     "adj": 42627,
+     "dealer": "",
+     "city": "Seffner",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       36989
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK03RCP55559",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 5171,
+     "price": 45999,
+     "adj": 42650,
+     "dealer": "",
+     "city": "Ontario",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       45999
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK02RCS61015",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 17289,
+     "price": 42500,
+     "adj": 42786,
+     "dealer": "",
+     "city": "Union City",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42500
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK01RCS76878",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 19147,
+     "price": 41999,
+     "adj": 42843,
+     "dealer": "",
+     "city": "West Covina",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       41999
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK00RCS84678",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 14383,
+     "price": 43990,
+     "adj": 43404,
+     "dealer": "",
+     "city": "Atlanta",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-18",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43990
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK08RCR89213",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 18092,
+     "price": 42999,
+     "adj": 43526,
+     "dealer": "",
+     "city": "Ontario",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-17",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42999
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05RCS39462",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 16158,
+     "price": 43815,
+     "adj": 43762,
+     "dealer": "",
+     "city": "Austin",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-06-25",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43815
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCR93843",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 21736,
+     "price": 42226,
+     "adj": 43846,
+     "dealer": "",
+     "city": "Buena Park",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42226
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCN91322",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 19174,
+     "price": 42997,
+     "adj": 43849,
+     "dealer": "",
+     "city": "Denver",
+     "state": "CO",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42997
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09RCP87626",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 24472,
+     "price": 41477,
+     "adj": 43918,
+     "dealer": "",
+     "city": "Wilmington",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       41477
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05RCS41308",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 18056,
+     "price": 43590,
+     "adj": 44106,
+     "dealer": "",
+     "city": "",
+     "state": "",
+     "url": "",
+     "listed_since": "2026-08-18",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43590
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK03SCT63915",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 15282,
+     "price": 44514,
+     "adj": 44198,
+     "dealer": "",
+     "city": "Clearwater",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       44514
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK00RCP40114",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 18067,
+     "price": 43771,
+     "adj": 44291,
+     "dealer": "",
+     "city": "San Francisco",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-07-18",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43771
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09SCT64650",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 10449,
+     "price": 46590,
+     "adj": 44824,
+     "dealer": "",
+     "city": "Indianapolis",
+     "state": "IN",
+     "url": "",
+     "listed_since": "2026-08-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       46590
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCR58557",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 37394,
+     "price": 38521,
+     "adj": 44839,
+     "dealer": "",
+     "city": "San Jose",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-04-29",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       38521
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05RCS80027",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 29317,
+     "price": 40990,
+     "adj": 44885,
+     "dealer": "",
+     "city": "Sacramento",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       40990
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK08SCU88019",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 2637,
+     "price": 49000,
+     "adj": 44891,
+     "dealer": "",
+     "city": "Marietta",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-07-29",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       49000
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09RCP96469",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "Chicago",
+     "markets": [
+      "Chicago",
+      "National"
+     ],
+     "miles": 15707,
+     "price": 46216,
+     "adj": 44928,
+     "dealer": "",
+     "city": "Madison",
+     "state": "WI",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       46216
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK03RCS37886",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 22912,
+     "price": 42990,
+     "adj": 44963,
+     "dealer": "",
+     "city": "Atlanta",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-19",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42990
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK00SCT64147",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 18073,
+     "price": 44588,
+     "adj": 45109,
+     "dealer": "",
+     "city": "Davie",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-15",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       44588
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK02SCU74990",
+     "year": 2025,
+     "trim": "eDrive40 | PREM | DRIVING ASST PROF |  SKY LOUNGE PANO | $7K OPTS",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 13392,
+     "price": 46250,
+     "adj": 45367,
+     "dealer": "",
+     "city": "Plano",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       46250
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCR47204",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 31382,
+     "price": 40897,
+     "adj": 45411,
+     "dealer": "",
+     "city": "Marietta",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       40897
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCR64195",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 15911,
+     "price": 45572,
+     "adj": 45445,
+     "dealer": "",
+     "city": "Honolulu",
+     "state": "HI",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       45572
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK03RCS03415",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 13982,
+     "price": 46395,
+     "adj": 45689,
+     "dealer": "",
+     "city": "Kenvil",
+     "state": "NJ",
+     "url": "",
+     "listed_since": "2026-08-20",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       46395
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05SCT65228",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 18555,
+     "price": 45100,
+     "adj": 45766,
+     "dealer": "",
+     "city": "Raleigh",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       45100
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09RCP82409",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 30529,
+     "price": 41590,
+     "adj": 45848,
+     "dealer": "",
+     "city": "Dallas",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       41590
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK04RCR29347",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 13291,
+     "price": 46882,
+     "adj": 45969,
+     "dealer": "",
+     "city": "Norwood",
+     "state": "MA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       46882
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK0XSCU70010",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 5770,
+     "price": 49164,
+     "adj": 45995,
+     "dealer": "",
+     "city": "Chandler",
+     "state": "AZ",
+     "url": "",
+     "listed_since": "2026-06-24",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       49164
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09RCR14004",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "Cincinnati",
+     "markets": [
+      "Chicago",
+      "Cincinnati",
+      "Indianapolis",
+      "National"
+     ],
+     "miles": 15722,
+     "price": 47359,
+     "adj": 46075,
+     "dealer": "",
+     "city": "Indianapolis",
+     "state": "IN",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       47359
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCR84771",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 7782,
+     "price": 48749,
+     "adj": 46183,
+     "dealer": "",
+     "city": "Greensboro",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       48749
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05SCT64421",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 17706,
+     "price": 46040,
+     "adj": 46451,
+     "dealer": "",
+     "city": "Conyers",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       46040
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06SCU63880",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 6819,
+     "price": 49500,
+     "adj": 46645,
+     "dealer": "",
+     "city": "Decatur",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       49500
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK04SCT75975",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 6403,
+     "price": 49640,
+     "adj": 46660,
+     "dealer": "",
+     "city": "Plano",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       49640
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09RCR29277",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 26983,
+     "price": 43590,
+     "adj": 46784,
+     "dealer": "",
+     "city": "Indianapolis",
+     "state": "IN",
+     "url": "",
+     "listed_since": "2026-08-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43590
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK04RCS86613",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 32616,
+     "price": 41990,
+     "adj": 46874,
+     "dealer": "",
+     "city": "Tampa",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-20",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       41990
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05RCR93025",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 9360,
+     "price": 48992,
+     "adj": 46900,
+     "dealer": "",
+     "city": "Henrico",
+     "state": "VA",
+     "url": "",
+     "listed_since": "2026-08-19",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       48992
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK03RCR06660",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 13106,
+     "price": 47998,
+     "adj": 47029,
+     "dealer": "",
+     "city": "Laurel",
+     "state": "MD",
+     "url": "",
+     "listed_since": "2026-08-03",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       47998
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09SCT13763",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 10456,
+     "price": 48884,
+     "adj": 47120,
+     "dealer": "",
+     "city": "Ocala",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       48884
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK03RCR30750",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 30167,
+     "price": 42987,
+     "adj": 47137,
+     "dealer": "",
+     "city": "Alpharetta",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-14",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42987
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK00RCP55213",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 37462,
+     "price": 41223,
+     "adj": 47561,
+     "dealer": "",
+     "city": "Houston",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       41223
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK01RCS37885",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 32592,
+     "price": 42998,
+     "adj": 47875,
+     "dealer": "",
+     "city": "Katy",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-07-30",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42998
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK07SCT64520",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 20482,
+     "price": 46801,
+     "adj": 48045,
+     "dealer": "",
+     "city": "Wilmington",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       46801
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK01RCR76593",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 51313,
+     "price": 37598,
+     "adj": 48091,
+     "dealer": "",
+     "city": "Ontario",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       37598
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK04RCR68522",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 40675,
+     "price": 40794,
+     "adj": 48096,
+     "dealer": "",
+     "city": "Silver Spring",
+     "state": "MD",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       40794
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK08RCR39315",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 11278,
+     "price": 49746,
+     "adj": 48229,
+     "dealer": "",
+     "city": "Fort Lauderdale",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-22",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       49746
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK07RCR64187",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 14217,
+     "price": 49050,
+     "adj": 48415,
+     "dealer": "",
+     "city": "Plano",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-04",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       49050
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09RCS35723",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 31492,
+     "price": 43995,
+     "adj": 48542,
+     "dealer": "",
+     "city": "The Woodlands",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43995
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09RCP95158",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 35049,
+     "price": 42977,
+     "adj": 48591,
+     "dealer": "",
+     "city": "Wilmington",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42977
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK07RCS39463",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 31746,
+     "price": 43990,
+     "adj": 48613,
+     "dealer": "",
+     "city": "Atlanta",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       43990
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK0XRCP36412",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 36578,
+     "price": 42901,
+     "adj": 48974,
+     "dealer": "",
+     "city": "Decatur",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42901
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCR50278",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 40525,
+     "price": 41990,
+     "adj": 49247,
+     "dealer": "",
+     "city": "Sacramento",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-16",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       41990
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK00RCR12965",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 47618,
+     "price": 39995,
+     "adj": 49380,
+     "dealer": "",
+     "city": "Salt Lake City",
+     "state": "UT",
+     "url": "",
+     "listed_since": "2026-08-15",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       39995
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK08RCR50315",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 14318,
+     "price": 49999,
+     "adj": 49394,
+     "dealer": "",
+     "city": "Ontario",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-20",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       49999
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK09SCT65958",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 9184,
+     "price": 51588,
+     "adj": 49443,
+     "dealer": "",
+     "city": "Las Vegas",
+     "state": "NV",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       51588
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK0XRCP53727",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 39477,
+     "price": 42616,
+     "adj": 49559,
+     "dealer": "",
+     "city": "Greensboro",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       42616
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK08RCP70798",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 47982,
+     "price": 40083,
+     "adj": 49577,
+     "dealer": "",
+     "city": "Riverside",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-17",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       40083
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05SCU88074",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 15143,
+     "price": 50108,
+     "adj": 49750,
+     "dealer": "",
+     "city": "Austin",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-07-29",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       50108
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK00RCR93000",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 1899,
+     "price": 54459,
+     "adj": 50128,
+     "dealer": "",
+     "city": "Spokane",
+     "state": "WA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       54459
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06SCU73471",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 6660,
+     "price": 53476,
+     "adj": 50574,
+     "dealer": "",
+     "city": "Jacksonville",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-12",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       53476
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK00RCR89528",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 14811,
+     "price": 51698,
+     "adj": 51241,
+     "dealer": "",
+     "city": "West Palm Beach",
+     "state": "FL",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       51698
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK04SCT29868",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 25684,
+     "price": 48899,
+     "adj": 51704,
+     "dealer": "",
+     "city": "Costa Mesa",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-07-30",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       48899
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK08SCT70942",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 24169,
+     "price": 50213,
+     "adj": 52563,
+     "dealer": "",
+     "city": "Greensboro",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-15",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       50213
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK0XSCU88233",
+     "year": 2025,
+     "trim": "eDrive40 Sedan M Sports Professional Package HID",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 7663,
+     "price": 55987,
+     "adj": 53385,
+     "dealer": "",
+     "city": "Alpharetta",
+     "state": "GA",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       55987
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK05RCS22435",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 14520,
+     "price": 54215,
+     "adj": 53671,
+     "dealer": "",
+     "city": "Plano",
+     "state": "TX",
+     "url": "",
+     "listed_since": "2026-08-16",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       54215
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK03SCT79516",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 23142,
+     "price": 51988,
+     "adj": 54030,
+     "dealer": "",
+     "city": "Wilmington",
+     "state": "NC",
+     "url": "",
+     "listed_since": "2026-08-14",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       51988
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK02SCU51967",
+     "year": 2025,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 25689,
+     "price": 51900,
+     "adj": 54706,
+     "dealer": "",
+     "city": "Concord",
+     "state": "CA",
+     "url": "",
+     "listed_since": "2026-08-11",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       51900
+      ]
+     ]
+    },
+    {
+     "vin": "WBY33FK06RCR39314",
+     "year": 2024,
+     "trim": "eDrive40",
+     "market": "National",
+     "markets": [
+      "National"
+     ],
+     "miles": 12705,
+     "price": 74709,
+     "adj": 73620,
+     "dealer": "",
+     "city": "Mission",
+     "state": "KS",
+     "url": "",
+     "listed_since": "2026-08-09",
+     "cuts": 0,
+     "delta": 0,
+     "days_tracked": 1,
+     "series": [
+      [
+       "2026-08-23",
+       74709
+      ]
+     ]
+    }
+   ]
+  }
+ }
+}
