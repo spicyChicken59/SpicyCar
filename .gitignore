@@ -1,0 +1,9 @@
+# local Claude Code permissions
+.claude/
+
+# python
+__pycache__/
+*.pyc
+
+# tracker scratch
+data/snapshots.tmp

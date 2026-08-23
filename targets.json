@@ -18,6 +18,7 @@
       "cents_per_mile": 0.30,
       "mileage_baseline": 20000,
       "ship_cost": 1100,
+      "min_price": 20000,
       "note": "First real buyer, near Chicago. Decide by mid-Sept."
     }
   }
