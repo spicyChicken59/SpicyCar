@@ -811,6 +811,9 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
 def compact_line(m_entry, label):
     """One line per comparison model: counts, the floor, the in-state floor."""
     xs = m_entry["listings"]
+    if not xs and not m_entry["as_of"]:
+        return (f"- **{label}** — not fetched yet · first run "
+                f"{m_entry['next_due']} _(every {m_entry['cadence']} days)_")
     if not xs:
         line = f"- **{label}** — nothing found"
     else:
@@ -880,6 +883,7 @@ def build_outputs(today_rows, all_rows, hist):
                 "cadence": min(t["cadence"] for t in trims),
                 "as_of": as_of,
                 "fetched_today": any(due_on(t, TODAY_ORD) for t in trims),
+                "next_due": min(next_due(t) for t in trims),
                 "params": {"min_price": m0.get("min_price")},
                 "trims": {t["id"]: {"label": t["label"], "note": t["note"],
                                     "depth": t["depth"], "cadence": t["cadence"],

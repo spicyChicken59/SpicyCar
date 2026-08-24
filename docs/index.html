@@ -404,8 +404,9 @@
     const nTrims = Object.keys(t.trims || {}).length;
     const minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
     const stale = t.as_of && site.generated && t.as_of !== site.generated;
+    const unfetched = !t.as_of && t.next_due;
     const bits = [
-      stale ? `As of ${fmtDateLong(t.as_of)}` : `Updated ${fmtDateLong(site.generated)}`,
+      unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}` : (stale ? `As of ${fmtDateLong(t.as_of)}` : `Updated ${fmtDateLong(site.generated)}`),
       t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
       `${nDays} snapshot day${nDays === 1 ? '' : 's'}`,
       nTrims > 1 && !trim ? `${nTrims} trims` : null,

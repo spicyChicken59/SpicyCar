@@ -16,7 +16,7 @@
   },
 
   "defaults": {
-    "min_price": 15000,
+    "min_price": 8000,
     "depth": "light",
     "cadence": 1,
     "sorts": ["price.asc", "miles.asc"],
