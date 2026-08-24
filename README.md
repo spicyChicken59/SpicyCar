@@ -1,10 +1,10 @@
 <p align="center">
-  <a href="https://spicychicken59.github.io/Auto-market-tracker/"><img src="docs/screenshot.png" alt="SpicyCar dashboard — BMW i5, lowest and median landed price, listings with photos and history flags" width="920"></a>
+  <a href="https://spicychicken59.github.io/SpicyCar/"><img src="docs/screenshot.png" alt="SpicyCar dashboard — BMW i5, lowest and median landed price, listings with photos and history flags" width="920"></a>
 </p>
 
 # SpicyCar
 
-[![SpicyCar daily](https://github.com/spicyChicken59/Auto-market-tracker/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/Auto-market-tracker/actions/workflows/daily.yml)
+[![SpicyCar daily](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml)
 
 **A used-car purchase analyzer.** Every day it snapshots every BMW i4 and i5 on the market, prices
 each one as what it would actually cost to land in a specific buyer's driveway, and publishes the
@@ -13,8 +13,8 @@ result as a report, an email, and a dashboard.
 It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
 CSV in the repository is the ledger.
 
-**[Dashboard](https://spicychicken59.github.io/Auto-market-tracker/) ·
-[How it works](https://spicychicken59.github.io/Auto-market-tracker/how.html) ·
+**[Dashboard](https://spicychicken59.github.io/SpicyCar/) ·
+[How it works](https://spicychicken59.github.io/SpicyCar/how.html) ·
 [Today's report](REPORT.md)**
 
 ## The idea
