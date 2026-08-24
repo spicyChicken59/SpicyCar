@@ -44,6 +44,7 @@ DOCS = Path("docs")
 DOCS.mkdir(exist_ok=True)
 SNAPSHOTS = DATA / "snapshots.csv"
 SAMPLE = DATA / "sample_record.json"
+ZIPCODES = DATA / "zipcodes.json"
 
 FIELDS = ["snapshot_date", "target", "market", "vin", "year", "trim", "miles",
           "price", "dealer", "city", "state", "listed_since", "url",
@@ -164,10 +165,63 @@ def haversine(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
+def coords_ok(lat, lon):
+    """True for a usable point. (0, 0) is null island — the API's stand-in for
+    a listing it could not geocode, and it is 5,900 miles from the Midwest, so
+    it silently fails every radius check unless it is caught here."""
+    return (lat is not None and lon is not None
+            and not (abs(lat) < 0.01 and abs(lon) < 0.01))
+
+
+def load_zip_cache():
+    if ZIPCODES.exists():
+        try:
+            return json.loads(ZIPCODES.read_text())
+        except ValueError:
+            print("  ! zipcodes.json unreadable — starting a fresh cache")
+    return {}
+
+
+ZIP_CACHE = load_zip_cache()
+ZIP_LOOKUPS = 0     # zip API calls made this run (cache misses only)
+GEOCODED = 0        # listings rescued from a bad location by their zip
+UNPLACED = 0        # listings with neither usable coordinates nor a usable zip
+
+
+def zip_coords(z):
+    """lat/lon for a 5-digit US zip, cached in data/zipcodes.json so a zip is
+    only ever looked up once. Misses are cached too; network errors are not."""
+    global ZIP_LOOKUPS
+    z = str(z or "").strip()[:5]
+    if not (len(z) == 5 and z.isdigit()):
+        return None, None
+    if z in ZIP_CACHE:
+        hit = ZIP_CACHE[z]
+        return (hit[0], hit[1]) if hit else (None, None)
+    try:
+        r = requests.get(f"https://api.zippopotam.us/us/{z}", timeout=15)
+        ZIP_LOOKUPS += 1
+        if r.status_code == 200:
+            place = ((r.json() or {}).get("places") or [{}])[0]
+            lat = to_float(place.get("latitude"))
+            lon = to_float(place.get("longitude"))
+            if coords_ok(lat, lon):
+                ZIP_CACHE[z] = [round(lat, 5), round(lon, 5)]
+                return lat, lon
+        ZIP_CACHE[z] = None
+    except requests.RequestException as e:
+        print(f"  ! zip {z}: {e}")
+    return None, None
+
+
+def save_zip_cache():
+    ZIPCODES.write_text(json.dumps(ZIP_CACHE, indent=0, sort_keys=True))
+
+
 def market_hits(lat, lon):
     """[(miles, market)] for every local market whose radius contains the point,
     nearest first; plus the nearest market overall as the last element."""
-    if lat is None or lon is None:
+    if not coords_ok(lat, lon):
         return [], None
     dists = sorted((haversine(lat, lon, m["lat"], m["lon"]), name)
                    for name, m in MARKETS.items())
@@ -178,7 +232,7 @@ def market_hits(lat, lon):
 def markets_for(r):
     """Local markets a row belongs to (computed from coordinates when present)."""
     lat, lon = to_float(r.get("lat")), to_float(r.get("lon"))
-    if lat is not None and lon is not None:
+    if coords_ok(lat, lon):
         hits, _ = market_hits(lat, lon)
         return [n for _, n in hits]
     return [r["market"]] if r.get("market") and r["market"] != "National" else []
@@ -187,7 +241,7 @@ def markets_for(r):
 def in_region(r):
     """Would this row come back from the regional query?"""
     lat, lon = to_float(r.get("lat")), to_float(r.get("lon"))
-    if REGION and lat is not None and lon is not None and "lat" in REGION:
+    if REGION and coords_ok(lat, lon) and "lat" in REGION:
         return haversine(lat, lon, REGION["lat"], REGION["lon"]) <= REGION["distance"]
     return r.get("market", "National") != "National"
 
@@ -280,6 +334,15 @@ def normalize(rec, t, dropped):
     lat = lon = None
     if isinstance(loc, list) and len(loc) == 2:
         lon, lat = to_float(loc[0]), to_float(loc[1])
+    if not coords_ok(lat, lon):
+        global GEOCODED, UNPLACED
+        lat, lon = zip_coords(first(rec, ["retailListing.zip", "zip",
+                                          "dealer.zip"]))
+        if coords_ok(lat, lon):
+            GEOCODED += 1
+        else:
+            UNPLACED += 1
+            lat = lon = None
     hits, nearest = market_hits(lat, lon)
     market = hits[0][1] if hits else "National"
     distance = int(round(nearest[0])) if nearest else ""
@@ -744,6 +807,9 @@ def main():
     if dropped:
         print("Dropped: " + ", ".join(f"{k} x{v}" for k, v in dropped.items()))
     print(f"API calls made: {CALLS}")
+    print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "
+          f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
+    save_zip_cache()
 
     today_rows = list(rows.values())
     if not today_rows:
