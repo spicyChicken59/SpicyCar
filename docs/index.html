@@ -25,12 +25,14 @@
 <style>
   /* Page-specific only. Everything else is sc.css; semantic tokens only. */
   .col-vehicle { min-width: 230px; }
+  .col-model { min-width: 200px; }
   .loc { max-width: 190px; }
   .dealer { max-width: 150px; }
   .flags { font: 500 11.5px/1.6 var(--sc-font-mono); color: var(--sc-text-2); min-width: 150px; max-width: 220px; }
   .flags span { white-space: nowrap; }
   .sc-media__foot .flags { min-width: 0; max-width: none; }
   .sc-chart .hit { cursor: crosshair; }
+  .takeaway-col > :last-child { margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -101,6 +103,16 @@
     </label>
     <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
   </div>
+
+  <section class="sc-card" id="overview-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2>Every model</h2>
+        <p class="sc-hint" id="overview-hint"></p>
+      </div>
+    </div>
+    <div class="sc-table-scroll"><table class="sc-table" id="overview-table"></table></div>
+  </section>
 
   <section class="sc-card" id="chart-card" hidden>
     <div class="sc-card__head">
@@ -367,6 +379,14 @@
   }
   const SORT_DESC = { days_listed: true, newest: true };
 
+  function brandLabel(id) { return id === 'all' ? 'All' : (S.site.brands[id].label || id); }
+  function pickBrand(id) {
+    S.brand = id;
+    if (id !== 'all') S.model = Object.keys(S.site.brands[id].models)[0];
+    S.trim = 'all'; S.scope = 'all'; S.year = 'all';
+    buildFilters(); render();
+  }
+
   function segment(host, ids, current, labelOf, caseClass, onPick) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
@@ -414,8 +434,7 @@
       minPrice ? `Listings under ${money(minPrice)} ignored` : null,
     ].filter(Boolean);
     bits.forEach((b, i) => { if (i) meta.appendChild(el('span', { class: 'sc-sep' }, '·')); meta.appendChild(el('span', null, b)); });
-    segment($('tabs-brand'), brandIds, S.brand, (id) => site.brands[id].label || id, false,
-      (id) => { S.brand = id; S.model = Object.keys(site.brands[id].models)[0]; S.trim = 'all'; S.scope = 'all'; S.year = 'all'; buildFilters(); render(); });
+    segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand);
     segment($('tabs'), modelIds, S.model, (id) => brand.models[id].label || id, true,
       (id) => { S.model = id; S.trim = 'all'; S.scope = 'all'; S.year = 'all'; buildFilters(); render(); });
   }
@@ -466,20 +485,31 @@
     host.appendChild(tile4);
   }
 
-  function renderTakeaway(rows) {
-    const host = $('takeaway'); host.textContent = '';
-    const priced = rows.filter((x) => x.adj !== null && x.adj !== undefined);
-    if (!priced.length) { host.hidden = true; return; }
-    const b = priced.reduce((a, x) => (a.adj <= x.adj ? a : x));
+  function cheapest(arr) { return arr.length ? arr.reduce((a, b) => (a.adj <= b.adj ? a : b)) : null; }
+  function statesTxt() { return (((S.site || {}).buyer || {}).states || []).join('/') || 'your states'; }
+
+  function takeawayCol(label, b, emptyText) {
+    const col = el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-callout__label' }, label));
+    if (!b) { col.appendChild(el('p', { class: 'sc-muted' }, emptyText)); return col; }
     const where = isLocal(b)
       ? `${b.city}, ${b.state} — in-state, no shipping${b.distance != null ? `, ${num(b.distance)} mi from home` : ''}`
       : `${b.city}, ${b.state}${b.distance != null ? ` — ${num(b.distance)} mi from home` : ''}${b.ship ? `, ships for about ${money(b.ship)}` : ', ships in'}`;
     const facts = [b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const p = el('p', null, `For ${money(b.price)} asking. ${facts}. ${where}${b.dealer ? ` · ${b.dealer}` : ''}. `);
     if (b.url) p.appendChild(el('a', { href: b.url, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
-    host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
-      el('div', { class: 'sc-callout__label' }, 'Best value right now'),
-      el('div', { class: 'sc-callout__figure' }, `${money(b.adj)} landed`), p));
+    col.appendChild(el('div', { class: 'sc-callout__figure' }, `${money(b.adj)} landed`));
+    col.appendChild(p);
+    return col;
+  }
+
+  // Two best values, both under the current filters: the cheapest anywhere, and the cheapest in the buyer's states.
+  function renderTakeaway(rows) {
+    const host = $('takeaway'); host.textContent = '';
+    const priced = rows.filter((x) => x.adj !== null && x.adj !== undefined);
+    if (!priced.length) { host.hidden = true; return; }
+    host.appendChild(el('div', { class: 'sc-callout sc-callout--core' }, el('div', { class: 'sc-grid sc-grid--2' },
+      takeawayCol('Best value nationwide', cheapest(priced)),
+      takeawayCol(`Best value in ${statesTxt()}`, cheapest(priced.filter(isLocal)), `Nothing in ${statesTxt()} under these filters.`))));
     host.hidden = false;
   }
 
@@ -652,7 +682,87 @@
     if (gone.length > 40) $('gone-hint').textContent = `Showing the 40 most recent of ${gone.length} departed vehicles.`;
   }
 
+  // ---------- overview: every model on the watchlist, priced the same way ----------
+  function allModels() {
+    const out = [];
+    for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) out.push({ bk, mk, b, m });
+    return out;
+  }
+  function applyShared(rows) {   // the filters that make sense across models
+    if (S.year !== 'all') rows = rows.filter((x) => String(x.year) === S.year);
+    if (S.miles) rows = rows.filter((x) => x.miles !== null && x.miles !== undefined && x.miles < S.miles);
+    if (S.clean) rows = rows.filter((x) => !(x.accidents > 0));
+    return rows;
+  }
+  function overviewRows() {
+    return allModels().map(({ bk, mk, b, m }) => {
+      const rows = applyShared(m.listings || []);
+      const priced = rows.filter((x) => x.adj !== null && x.adj !== undefined);
+      return { bk, mk, brand: b.label || bk, label: m.label || mk, shopping: !!m.shopping, cadence: m.cadence || 1, as_of: m.as_of, next_due: m.next_due,
+        n: rows.length, n_local: rows.filter(isLocal).length, best: cheapest(priced), bestLocal: cheapest(priced.filter(isLocal)), median: median(priced.map((x) => x.adj)) };
+    }).sort((a, b) => (b.shopping - a.shopping) || ((a.best ? a.best.adj : 1e12) - (b.best ? b.best.adj : 1e12)));
+  }
+  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.scope = 'all'; buildFilters(); render(); window.scrollTo(0, 0); }
+  function bestCell(b, emptyText) {
+    if (!b) return el('td', { class: 'sc-num' }, el('span', { class: 'sc-note' }, emptyText));
+    const td = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(b.adj)),
+      el('span', { class: 'sc-note' }, `${money(b.price)} asking · ${b.miles != null ? num(b.miles) + ' mi · ' : ''}${b.city || '—'}, ${b.state || ''}`));
+    if (b.url) td.appendChild(el('span', { class: 'sc-note' }, el('a', { class: 'sc-link--quiet', href: b.url, target: '_blank', rel: 'noopener' }, 'Listing ↗')));
+    return td;
+  }
+  function renderOverview() {
+    const site = S.site, states = (site.buyer || {}).states || [], st = statesTxt();
+    const rows = overviewRows();
+    $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
+    $('eyebrow').textContent = ['watchlist', states.join(' · ')].filter(Boolean).join(' · ');
+    $('h1').textContent = 'Every model';
+    document.title = `Every model — ${site.app || 'SpicyCar'}`;
+    $('dek').textContent = `${rows.length} models, all priced the same way. Best value is the lowest landed price under the filters below — nationwide, and in ${st} where there is no shipping.`;
+    const meta = $('meta'); meta.textContent = '';
+    const nShop = rows.filter((r) => r.shopping).length;
+    [`Updated ${fmtDateLong(site.generated)}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]
+      .forEach((b, i) => { if (i) meta.appendChild(el('span', { class: 'sc-sep' }, '·')); meta.appendChild(el('span', null, b)); });
+    segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand);
+    $('tabs').hidden = true;
+    for (const id of ['takeaway', 'chart-card', 'list-card', 'gone-card']) $(id).hidden = true;
+
+    const total = rows.reduce((a, r) => a + r.n, 0), localTotal = rows.reduce((a, r) => a + r.n_local, 0);
+    const bestRow = rows.filter((r) => r.best).reduce((a, r) => (!a || r.best.adj < a.best.adj ? r : a), null);
+    const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.adj < a.bestLocal.adj ? r : a), null);
+    const shop = rows.find((r) => r.shopping);
+    const host = $('kpis'); host.textContent = '';
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
+      el('div', { class: 'sc-tile__sub' }, `${localTotal} in ${st} · ${total - localTotal} out of state · ${rows.length} models`)));
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Best value nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.adj) : '—'),
+      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${bestRow.best.city}, ${bestRow.best.state}` : 'No priced listings')));
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, `Best value in ${st}`), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.adj) : '—'),
+      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${bestLocalRow.bestLocal.city}, ${bestLocalRow.bestLocal.state}` : `Nothing in ${st} under these filters`)));
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'), el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shop.label : `${rows.length} models`),
+      el('div', { class: 'sc-tile__sub' }, shop ? (shop.best ? `best ${money(shop.best.adj)} · ${shop.n} on the market · ${shop.n_local} in-state` : `${shop.n} on the market`) : 'no target marked as shopping')));
+
+    $('overview-card').hidden = false;
+    $('overview-hint').textContent = 'One row per model under the current filters — shopping first, then by best value. Open a model for its listings, chart and history.';
+    const table = $('overview-table'); table.textContent = '';
+    table.appendChild(el('thead', null, el('tr', null, el('th', null, 'Model'), el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'In-state'),
+      el('th', { class: 'sc-num' }, 'Best nationwide'), el('th', { class: 'sc-num' }, `Best in ${st}`), el('th', { class: 'sc-num' }, 'Median landed'), el('th', null, 'Data'))));
+    const body = el('tbody');
+    for (const r of rows) {
+      const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media__title' }, r.label),
+        el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
+          el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')));
+      const data = el('td', null, el('span', { class: 'sc-note' }, r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—')));
+      body.appendChild(el('tr', null, modelCell, el('td', { class: 'sc-num' }, num(r.n)), el('td', { class: 'sc-num' }, num(r.n_local)),
+        bestCell(r.best, r.as_of ? 'none under these filters' : 'not fetched yet'), bestCell(r.bestLocal, r.as_of ? `none in ${st}` : 'not fetched yet'),
+        el('td', { class: 'sc-num' }, r.median != null ? money(r.median) : '—'), data));
+    }
+    table.appendChild(body);
+    const n = Object.values(site.brands).reduce((a, b) => a + Object.values(b.models).reduce((c, m) => c + Object.keys(m.trims || {}).length, 0), 0);
+    $('foot-left').textContent = `Source: auto.dev listings API · ${n} trim${n === 1 ? '' : 's'} tracked · snapshot ${site.generated || '—'} · runs daily 11:00 UTC`;
+  }
+
   function render() {
+    if (S.brand === 'all') { renderOverview(); return; }
+    $('overview-card').hidden = true;
     const rows = filtered();
     renderHeader();
     renderKpis(rows);
@@ -665,12 +775,16 @@
   }
 
   function buildFilters() {
-    const t = model();
+    const overview = S.brand === 'all';
+    const t = overview ? null : model();
     const ft = $('f-trim'); ft.textContent = '';
-    const trimIds = Object.keys(t.trims || {});
-    ft.appendChild(el('option', { value: 'all' }, trimIds.length > 1 ? 'All trims' : ((t.trims[trimIds[0]] || {}).label || 'All')));
-    if (trimIds.length > 1) for (const id of trimIds) ft.appendChild(el('option', { value: id }, t.trims[id].label || id));
-    ft.value = S.trim; ft.parentElement.hidden = trimIds.length <= 1;
+    const trimIds = t ? Object.keys(t.trims || {}) : [];
+    if (t) {
+      ft.appendChild(el('option', { value: 'all' }, trimIds.length > 1 ? 'All trims' : ((t.trims[trimIds[0]] || {}).label || 'All')));
+      if (trimIds.length > 1) for (const id of trimIds) ft.appendChild(el('option', { value: id }, t.trims[id].label || id));
+      ft.value = S.trim;
+    }
+    ft.parentElement.hidden = trimIds.length <= 1;
     const fm = $('f-scope'); fm.textContent = '';
     const buyer = S.site.buyer || {}, states = buyer.states || [], names = buyer.state_names || {};
     fm.appendChild(el('option', { value: 'all' }, 'Everywhere'));
@@ -678,9 +792,12 @@
     for (const s of states) fm.appendChild(el('option', { value: s }, names[s] || s));
     fm.appendChild(el('option', { value: 'national' }, 'Out of state'));
     fm.value = S.scope;
+    fm.parentElement.hidden = overview;            // the overview shows nationwide and in-state side by side
+    $('f-sort').parentElement.hidden = overview;   // and has its own order: shopping first, then best value
     const fy = $('f-year'); fy.textContent = '';
     fy.appendChild(el('option', { value: 'all' }, 'All years'));
-    const years = [...new Set([...(t.years || []), ...(t.listings || []).map((x) => String(x.year))])].filter(Boolean).sort();
+    const pool = overview ? allModels().map(({ m }) => m) : [t];
+    const years = [...new Set(pool.flatMap((m) => [...(m.years || []), ...(m.listings || []).map((x) => String(x.year))]))].filter(Boolean).sort();
     for (const y of years) fy.appendChild(el('option', { value: y }, y));
     fy.value = S.year;
     $('f-miles').value = String(S.miles);
@@ -700,7 +817,7 @@
     window.addEventListener('resize', () => {
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        if (!S.site) return;
+        if (!S.site || S.brand === 'all') return;
         renderChart();
         if (narrow() !== wasNarrow) { wasNarrow = narrow(); renderList(filtered()); }
       });
@@ -734,6 +851,7 @@
       for (const [bk, b] of Object.entries(site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if (!pick && want && (m.trims || {})[want]) pick = [bk, mk];
       S.brand = pick ? pick[0] : Object.keys(site.brands)[0];
       S.model = pick ? pick[1] : Object.keys(site.brands[S.brand].models)[0];
+      if (new URLSearchParams(location.search).get('view') === 'all') S.brand = 'all';   // ?view=all links straight to the overview
       buildFilters();
       render();
     })

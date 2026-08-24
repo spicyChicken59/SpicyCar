@@ -93,7 +93,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
   every in-state listing grouped by state, and the five best-value cars out of state.
-- The dashboard — brand and model tabs; trim, state, year and mileage filters; lowest and median
+- The dashboard — an "All" overview with one row per model (best value nationwide and in-state,
+  median, freshness) and brand and model tabs; on every model, best value nationwide and in-state
+  under the current filters; trim, state, year and mileage filters; lowest and median
   landed price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
   ex-lease), distance from home, shipping estimate, days on market and a price sparkline; and the
   "gone" list.
