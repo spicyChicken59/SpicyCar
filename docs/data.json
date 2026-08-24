@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-23",
+ "generated": "2026-08-24",
  "region": {
   "label": "Midwest",
   "zip": "46204",
@@ -109,14 +109,18 @@
         "1 accident"
        ],
        "listed_since": "2026-07-11",
-       "days_listed": 43,
+       "days_listed": 44,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         37868
+        ],
+        [
+         "2026-08-24",
          37868
         ]
        ]
@@ -150,14 +154,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38698
+        ],
+        [
+         "2026-08-24",
          38698
         ]
        ]
@@ -190,14 +198,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43694
+        ],
+        [
+         "2026-08-24",
          43694
         ]
        ]
@@ -228,14 +240,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-05-10",
-       "days_listed": 105,
+       "days_listed": 106,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         34551
+        ],
+        [
+         "2026-08-24",
          34551
         ]
        ]
@@ -269,14 +285,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-20",
-       "days_listed": 3,
+       "days_listed": 4,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42250
+        ],
+        [
+         "2026-08-24",
          42250
         ]
        ]
@@ -291,8 +311,8 @@
        "markets": [],
        "distance": 1750,
        "miles": 18143,
-       "price": 42073,
-       "adj": 42615,
+       "price": 42072,
+       "adj": 42614,
        "msrp": 66800,
        "dealer": "Audi Van Nuys",
        "city": "Sherman Oaks",
@@ -310,15 +330,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
+       "cuts": 1,
+       "delta": -1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          42073
+        ],
+        [
+         "2026-08-24",
+         42072
         ]
        ]
       },
@@ -351,14 +375,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         36989
+        ],
+        [
+         "2026-08-24",
          36989
         ]
        ]
@@ -393,14 +421,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         45999
+        ],
+        [
+         "2026-08-24",
          45999
         ]
        ]
@@ -434,14 +466,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42500
+        ],
+        [
+         "2026-08-24",
          42500
         ]
        ]
@@ -475,14 +511,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42084
+        ],
+        [
+         "2026-08-24",
          42084
         ]
        ]
@@ -513,14 +553,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-18",
-       "days_listed": 5,
+       "days_listed": 6,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43990
+        ],
+        [
+         "2026-08-24",
          43990
         ]
        ]
@@ -554,14 +598,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-17",
-       "days_listed": 6,
+       "days_listed": 7,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42999
+        ],
+        [
+         "2026-08-24",
          42999
         ]
        ]
@@ -595,14 +643,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         46538
+        ],
+        [
+         "2026-08-24",
          46538
         ]
        ]
@@ -636,14 +688,18 @@
         "no accidents"
        ],
        "listed_since": "2026-06-25",
-       "days_listed": 59,
+       "days_listed": 60,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43815
+        ],
+        [
+         "2026-08-24",
          43815
         ]
        ]
@@ -660,8 +716,8 @@
        "miles": 21736,
        "price": 42226,
        "adj": 43846,
-       "msrp": null,
-       "dealer": "bmw of buena park",
+       "msrp": 66800,
+       "dealer": "BMW of Buena Park",
        "city": "Buena Park",
        "state": "CA",
        "url": "https://bmwbuenapark.com/used/BMW/2024-BMW-i5-674d649fac1851c1ca6e0f38917fdd8a.htm",
@@ -677,14 +733,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42226
+        ],
+        [
+         "2026-08-24",
          42226
         ]
        ]
@@ -718,14 +778,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42997
+        ],
+        [
+         "2026-08-24",
          42997
         ]
        ]
@@ -758,14 +822,18 @@
         "CPO"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         41477
+        ],
+        [
+         "2026-08-24",
          41477
         ]
        ]
@@ -796,14 +864,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-18",
-       "days_listed": 5,
+       "days_listed": 6,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43590
+        ],
+        [
+         "2026-08-24",
          43590
         ]
        ]
@@ -837,57 +909,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          44514
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33FK00RCP40114",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 1855,
-       "miles": 18067,
-       "price": 43771,
-       "adj": 44291,
-       "msrp": 66800,
-       "dealer": "Driveway",
-       "city": "San Francisco",
-       "state": "CA",
-       "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK00RCP40114",
-       "image": "https://retail.photos.vin/WBY33FK00RCP40114-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK00RCP40114&partner=FRD_2",
-       "color": "Dark Graphite Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
-       "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-07-18",
-       "days_listed": 36,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         43771
+         "2026-08-24",
+         44514
         ]
        ]
       },
@@ -923,14 +957,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         45717
+        ],
+        [
+         "2026-08-24",
          45717
         ]
        ]
@@ -964,14 +1002,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49495
+        ],
+        [
+         "2026-08-24",
          49495
         ]
        ]
@@ -1005,14 +1047,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         46590
+        ],
+        [
+         "2026-08-24",
          46590
         ]
        ]
@@ -1043,14 +1089,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-04-29",
-       "days_listed": 116,
+       "days_listed": 117,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38521
+        ],
+        [
+         "2026-08-24",
          38521
         ]
        ]
@@ -1084,14 +1134,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40990
+        ],
+        [
+         "2026-08-24",
          40990
         ]
        ]
@@ -1125,14 +1179,18 @@
         "no accidents"
        ],
        "listed_since": "2026-07-29",
-       "days_listed": 25,
+       "days_listed": 26,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49000
+        ],
+        [
+         "2026-08-24",
          49000
         ]
        ]
@@ -1163,14 +1221,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-19",
-       "days_listed": 4,
+       "days_listed": 5,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42990
+        ],
+        [
+         "2026-08-24",
          42990
         ]
        ]
@@ -1201,14 +1263,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-06-27",
-       "days_listed": 57,
+       "days_listed": 58,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         45209
+        ],
+        [
+         "2026-08-24",
          45209
         ]
        ]
@@ -1242,14 +1308,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         44588
+        ],
+        [
+         "2026-08-24",
          44588
         ]
        ]
@@ -1283,14 +1353,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40897
+        ],
+        [
+         "2026-08-24",
          40897
         ]
        ]
@@ -1324,14 +1398,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         45572
+        ],
+        [
+         "2026-08-24",
          45572
         ]
        ]
@@ -1365,14 +1443,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         44079
+        ],
+        [
+         "2026-08-24",
          44079
         ]
        ]
@@ -1406,56 +1488,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-20",
-       "days_listed": 3,
+       "days_listed": 4,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          46395
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33FK09RCP82409",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 5924,
-       "miles": 30529,
-       "price": 41590,
-       "adj": 45848,
-       "msrp": 66800,
-       "dealer": "Carvana",
-       "city": "Dallas",
-       "state": "TX",
-       "url": "https://www.carvana.com/vehicle/4537581",
-       "image": "https://retail.photos.vin/WBY33FK09RCP82409-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?partner=CVN_0&vin=WBY33FK09RCP82409",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-11",
-       "days_listed": 12,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         41590
+         "2026-08-24",
+         46395
         ]
        ]
       },
@@ -1488,14 +1533,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         46882
+        ],
+        [
+         "2026-08-24",
          46882
         ]
        ]
@@ -1530,14 +1579,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-06-24",
-       "days_listed": 60,
+       "days_listed": 61,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49164
+        ],
+        [
+         "2026-08-24",
          49164
         ]
        ]
@@ -1572,14 +1625,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         45998
+        ],
+        [
+         "2026-08-24",
          45998
         ]
        ]
@@ -1616,15 +1673,101 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         47359
+        ],
+        [
+         "2026-08-24",
+         47359
+        ]
+       ]
+      },
+      {
+       "vin": "WBY33FK01RCP92870",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 1705,
+       "miles": 22977,
+       "price": 44083,
+       "adj": 46076,
+       "msrp": 66800,
+       "dealer": "BMW of Riverside",
+       "city": "Riverside",
+       "state": "CA",
+       "url": "https://www.carfax.com/vehicle/WBY33FK01RCP92870",
+       "image": "https://retail.photos.vin/WBY33FK01RCP92870-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK01RCP92870&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 15,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         47359
+         "2026-08-24",
+         44083
+        ]
+       ]
+      },
+      {
+       "vin": "WBY33FK02RCS84701",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 496,
+       "miles": 23043,
+       "price": 44131,
+       "adj": 46143,
+       "msrp": 66800,
+       "dealer": "BMW Northwest Arkansas",
+       "city": "Bentonville",
+       "state": "AR",
+       "url": "https://www.carfax.com/vehicle/WBY33FK02RCS84701",
+       "image": "https://retail.photos.vin/WBY33FK02RCS84701-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK02RCS84701&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Rental Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 15,
+       "first_seen": "2026-08-24",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-24",
+         44131
         ]
        ]
       },
@@ -1657,14 +1800,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         48749
+        ],
+        [
+         "2026-08-24",
          48749
         ]
        ]
@@ -1698,14 +1845,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         46040
+        ],
+        [
+         "2026-08-24",
          46040
         ]
        ]
@@ -1739,14 +1890,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49500
+        ],
+        [
+         "2026-08-24",
          49500
         ]
        ]
@@ -1780,14 +1935,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49640
+        ],
+        [
+         "2026-08-24",
          49640
         ]
        ]
@@ -1822,15 +1981,64 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          43590
+        ],
+        [
+         "2026-08-24",
+         43590
+        ]
+       ]
+      },
+      {
+       "vin": "WBY33FK05RCR93025",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 391,
+       "miles": 9360,
+       "price": 48952,
+       "adj": 46860,
+       "msrp": 66800,
+       "dealer": "Richmond BMW",
+       "city": "Henrico",
+       "state": "VA",
+       "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK05RCR93025",
+       "image": "https://retail.photos.vin/WBY33FK05RCR93025-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK05RCR93025&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-19",
+       "days_listed": 5,
+       "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": -40,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         48992
+        ],
+        [
+         "2026-08-24",
+         48952
         ]
        ]
       },
@@ -1860,56 +2068,19 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-20",
-       "days_listed": 3,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-23",
-         41990
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33FK05RCR93025",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 391,
-       "miles": 9360,
-       "price": 48992,
-       "adj": 46900,
-       "msrp": 66800,
-       "dealer": "Richmond BMW",
-       "city": "Henrico",
-       "state": "VA",
-       "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK05RCR93025",
-       "image": "https://retail.photos.vin/WBY33FK05RCR93025-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK05RCR93025&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-19",
        "days_listed": 4,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
-         48992
+         41990
+        ],
+        [
+         "2026-08-24",
+         41990
         ]
        ]
       },
@@ -1932,23 +2103,25 @@
        "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK03RCR06660",
        "image": "https://retail.photos.vin/WBY33FK03RCR06660-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK03RCR06660&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "color": "Black",
        "cpo": false,
-       "owners": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "no accidents"
-       ],
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
        "listed_since": "2026-08-03",
-       "days_listed": 20,
+       "days_listed": 21,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         47998
+        ],
+        [
+         "2026-08-24",
          47998
         ]
        ]
@@ -1982,14 +2155,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         48884
+        ],
+        [
+         "2026-08-24",
          48884
         ]
        ]
@@ -2023,14 +2200,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 9,
+       "days_listed": 10,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42987
+        ],
+        [
+         "2026-08-24",
          42987
         ]
        ]
@@ -2064,14 +2245,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40998
+        ],
+        [
+         "2026-08-24",
          40998
         ]
        ]
@@ -2102,14 +2287,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-30",
-       "days_listed": 24,
+       "days_listed": 25,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42998
+        ],
+        [
+         "2026-08-24",
          42998
         ]
        ]
@@ -2143,57 +2332,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          37598
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33FK04RCR68522",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 406,
-       "miles": 40675,
-       "price": 40794,
-       "adj": 48096,
-       "msrp": 66800,
-       "dealer": "BMW of Silver Spring",
-       "city": "Silver Spring",
-       "state": "MD",
-       "url": "https://www.carfax.com/vehicle/WBY33FK04RCR68522",
-       "image": "https://retail.photos.vin/WBY33FK04RCR68522-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK04RCR68522&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease Use",
-       "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         40794
+         "2026-08-24",
+         37598
         ]
        ]
       },
@@ -2226,14 +2377,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-20",
-       "days_listed": 3,
+       "days_listed": 4,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         48995
+        ],
+        [
+         "2026-08-24",
          48995
         ]
        ]
@@ -2267,14 +2422,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-22",
-       "days_listed": 1,
+       "days_listed": 2,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49746
+        ],
+        [
+         "2026-08-24",
          49746
         ]
        ]
@@ -2308,14 +2467,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 10,
+       "days_listed": 11,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43997
+        ],
+        [
+         "2026-08-24",
          43997
         ]
        ]
@@ -2349,14 +2512,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-04",
-       "days_listed": 19,
+       "days_listed": 20,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49050
+        ],
+        [
+         "2026-08-24",
          49050
         ]
        ]
@@ -2373,9 +2540,9 @@
        "miles": 31492,
        "price": 43995,
        "adj": 48542,
-       "msrp": null,
-       "dealer": "bmw of the woodlands",
-       "city": "Conroe",
+       "msrp": 66800,
+       "dealer": "BMW of The Woodlands",
+       "city": "The Woodlands",
        "state": "TX",
        "url": "https://bmwofthewoodlands.com/used/BMW/2024-BMW-i5-bed898c8ac1843b4d08f34f950be5f76.htm",
        "image": "https://retail.photos.vin/WBY33FK09RCS35723-1.jpg",
@@ -2390,14 +2557,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43995
+        ],
+        [
+         "2026-08-24",
          43995
         ]
        ]
@@ -2430,14 +2601,18 @@
         "CPO"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42977
+        ],
+        [
+         "2026-08-24",
          42977
         ]
        ]
@@ -2471,57 +2646,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          43990
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33FK0XRCP36412",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 367,
-       "miles": 36578,
-       "price": 42901,
-       "adj": 48974,
-       "msrp": 66800,
-       "dealer": "Nalley BMW of Decatur",
-       "city": "Decatur",
-       "state": "GA",
-       "url": "https://nalleybmw.com/used/BMW/2024-BMW-i5-in-Atlanta-b209ba38ac1833deba8e7e1b804ff547.htm",
-       "image": "https://retail.photos.vin/WBY33FK0XRCP36412-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK0XRCP36412&partner=FRD_2",
-       "color": "Tanzanite Blue II Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Lease",
-       "flags": [
-        "1-owner",
-        "1 accident",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         42901
+         "2026-08-24",
+         43990
         ]
        ]
       },
@@ -2555,15 +2692,61 @@
         "no accidents"
        ],
        "listed_since": "2026-08-16",
-       "days_listed": 7,
+       "days_listed": 8,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          41990
+        ],
+        [
+         "2026-08-24",
+         41990
+        ]
+       ]
+      },
+      {
+       "vin": "WBY13HG02SCS75188",
+       "year": 2025,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i5-xdrive40",
+       "trim_label": "xDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 557,
+       "miles": 17493,
+       "price": 48988,
+       "adj": 49335,
+       "msrp": 70100,
+       "dealer": "Bob Johnson Chrysler Dodge Jeep Ram - Watertown",
+       "city": "Watertown",
+       "state": "NY",
+       "url": "https://www.autolist.com/bmw-i5#vin=WBY13HG02SCS75188",
+       "image": "https://retail.photos.vin/WBY13HG02SCS75188-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG02SCS75188&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-03-10",
+       "days_listed": 167,
+       "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": -175,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         49163
+        ],
+        [
+         "2026-08-24",
+         48988
         ]
        ]
       },
@@ -2596,14 +2779,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         39995
+        ],
+        [
+         "2026-08-24",
          39995
         ]
        ]
@@ -2621,10 +2808,10 @@
        "price": 49999,
        "adj": 49394,
        "msrp": null,
-       "dealer": "crown lexus",
-       "city": "Ontario",
+       "dealer": "bmw mini of monrovia",
+       "city": "Monrovia",
        "state": "CA",
-       "url": "https://crownlexus.com/certified/BMW/2024-BMW-i5-1a726a0aac1846fa1e33251141ec8733.htm",
+       "url": "https://bmwofmonrovia.net/certified/BMW/2024-BMW-i5-near-Los-Angeles-1a726a0aac1846fa1e33251141ec8733.htm",
        "image": "https://retail.photos.vin/WBY33FK08RCR50315-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK08RCR50315&partner=FRD_2",
        "color": "Tanzanite Blue II Metallic",
@@ -2638,14 +2825,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-20",
-       "days_listed": 3,
+       "days_listed": 4,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49999
+        ],
+        [
+         "2026-08-24",
          49999
         ]
        ]
@@ -2662,8 +2853,8 @@
        "miles": 9184,
        "price": 51588,
        "adj": 49443,
-       "msrp": null,
-       "dealer": "bmw of las vegas",
+       "msrp": 67100,
+       "dealer": "BMW of Las Vegas",
        "city": "Las Vegas",
        "state": "NV",
        "url": "https://bmwvegas.com/certified/BMW/2025-BMW-i5-b9b2a649ac18131151cd1f59eab9849b.htm",
@@ -2680,14 +2871,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         51588
+        ],
+        [
+         "2026-08-24",
          51588
         ]
        ]
@@ -2720,56 +2915,19 @@
         "CPO"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          42531
-        ]
-       ]
-      },
-      {
-       "vin": "WBY13HG02SCS75188",
-       "year": 2025,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i5-xdrive40",
-       "trim_label": "xDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 557,
-       "miles": 17493,
-       "price": 49163,
-       "adj": 49510,
-       "msrp": 70100,
-       "dealer": "Bob Johnson Chrysler Dodge Jeep Ram",
-       "city": "Watertown",
-       "state": "NY",
-       "url": "https://www.autolist.com/bmw-i5#vin=WBY13HG02SCS75188",
-       "image": "https://retail.photos.vin/WBY13HG02SCS75188-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG02SCS75188&partner=FRD_2",
-       "color": "Mineral White Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-03-10",
-       "days_listed": 166,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         49163
+         "2026-08-24",
+         42531
         ]
        ]
       },
@@ -2802,14 +2960,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-17",
-       "days_listed": 6,
+       "days_listed": 7,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40083
+        ],
+        [
+         "2026-08-24",
          40083
         ]
        ]
@@ -2845,14 +3007,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-07-29",
-       "days_listed": 25,
+       "days_listed": 26,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         50108
+        ],
+        [
+         "2026-08-24",
          50108
         ]
        ]
@@ -2887,14 +3053,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         53986
+        ],
+        [
+         "2026-08-24",
          53986
         ]
        ]
@@ -2927,14 +3097,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54459
+        ],
+        [
+         "2026-08-24",
          54459
         ]
        ]
@@ -2968,14 +3142,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 11,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         53476
+        ],
+        [
+         "2026-08-24",
          53476
         ]
        ]
@@ -3009,14 +3187,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         51698
+        ],
+        [
+         "2026-08-24",
          51698
         ]
        ]
@@ -3050,57 +3232,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          55760
-        ]
-       ]
-      },
-      {
-       "vin": "WBY13HG04SCS84975",
-       "year": 2025,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i5-xdrive40",
-       "trim_label": "xDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 5924,
-       "miles": 10566,
-       "price": 53590,
-       "adj": 51859,
-       "msrp": 70100,
-       "dealer": "Carvana - Portland",
-       "city": "Portland",
-       "state": "OR",
-       "url": "https://www.carvana.com/vehicle/4590042",
-       "image": "https://retail.photos.vin/WBY13HG04SCS84975-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG04SCS84975&partner=FRD_2",
-       "color": "Dark Graphite Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
-       "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-11",
-       "days_listed": 12,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         53590
+         "2026-08-24",
+         55760
         ]
        ]
       },
@@ -3133,58 +3277,57 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         52750
+        ],
+        [
+         "2026-08-24",
          52750
         ]
        ]
       },
       {
-       "vin": "WBY13HG0XSCS54122",
-       "year": 2025,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i5-xdrive40",
-       "trim_label": "xDrive40",
-       "market": "Chicago",
-       "markets": [
-        "Chicago"
-       ],
-       "distance": 87,
-       "miles": 22678,
-       "price": 52484,
-       "adj": 53287,
-       "msrp": 70100,
-       "dealer": "BMW of Milwaukee North",
-       "city": "Milwaukee",
-       "state": "WI",
-       "url": "https://www.carfax.com/vehicle/WBY13HG0XSCS54122",
-       "image": "https://retail.photos.vin/WBY13HG0XSCS54122-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG0XSCS54122&partner=FRD_2",
-       "color": "White",
+       "vin": "WBY33FK09RCP36448",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 5924,
+       "miles": 9963,
+       "price": 55396,
+       "adj": 53484,
+       "msrp": null,
+       "dealer": "bmw of roxbury",
+       "city": "Kenvil",
+       "state": "NJ",
+       "url": "https://bmwrox.com/inventory/Used-2024-BMW-i5-eDrive40-WBY33FK09RCP36448",
+       "image": "https://retail.photos.vin/WBY33FK09RCP36448-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK09RCP36448&partner=FRD_2",
+       "color": "Black Sapphire Metallic",
        "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-24",
+       "days_listed": 0,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         52484
+         "2026-08-24",
+         55396
         ]
        ]
       },
@@ -3217,14 +3360,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         56309
+        ],
+        [
+         "2026-08-24",
          56309
         ]
        ]
@@ -3258,14 +3405,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54994
+        ],
+        [
+         "2026-08-24",
          54994
         ]
        ]
@@ -3302,14 +3453,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54644
+        ],
+        [
+         "2026-08-24",
          54644
         ]
        ]
@@ -3342,14 +3497,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-16",
-       "days_listed": 7,
+       "days_listed": 8,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54215
+        ],
+        [
+         "2026-08-24",
          54215
         ]
        ]
@@ -3366,14 +3525,14 @@
        "miles": 11728,
        "price": 55393,
        "adj": 54011,
-       "msrp": 70100,
-       "dealer": "BMW of Newton",
+       "msrp": null,
+       "dealer": "bmw of newton",
        "city": "Newton",
        "state": "NJ",
-       "url": "https://www.carfax.com/vehicle/WBY13HG06SCS47605",
+       "url": "https://bmwnewton.com/inventory/Used-2025-BMW-i5-xDrive40-WBY13HG06SCS47605",
        "image": "https://retail.photos.vin/WBY13HG06SCS47605-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG06SCS47605&partner=FRD_2",
-       "color": "Blue",
+       "color": "Phytonic Blue Metallic",
        "cpo": false,
        "owners": 1,
        "accidents": 1,
@@ -3383,14 +3542,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         55393
+        ],
+        [
+         "2026-08-24",
          55393
         ]
        ]
@@ -3425,14 +3588,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         55990
+        ],
+        [
+         "2026-08-24",
          55990
         ]
        ]
@@ -3466,14 +3633,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         56931
+        ],
+        [
+         "2026-08-24",
          56931
         ]
        ]
@@ -3508,14 +3679,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54999
+        ],
+        [
+         "2026-08-24",
          54999
         ]
        ]
@@ -3549,14 +3724,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         57490
+        ],
+        [
+         "2026-08-24",
          57490
         ]
        ]
@@ -3593,14 +3772,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         53052
+        ],
+        [
+         "2026-08-24",
          53052
         ]
        ]
@@ -3634,14 +3817,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         51188
+        ],
+        [
+         "2026-08-24",
          51188
         ]
        ]
@@ -3675,15 +3862,57 @@
         "no accidents"
        ],
        "listed_since": "2026-08-22",
-       "days_listed": 1,
+       "days_listed": 2,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         55989
+        ],
+        [
+         "2026-08-24",
+         55989
+        ]
+       ]
+      },
+      {
+       "vin": "WBY13HG04SCS35730",
+       "year": 2025,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i5-xdrive40",
+       "trim_label": "xDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 396,
+       "miles": 33845,
+       "price": 50794,
+       "adj": 56047,
+       "msrp": 70100,
+       "dealer": "BMW of Rockville",
+       "city": "Rockville",
+       "state": "MD",
+       "url": "https://bmwrockville.com/used/BMW/2025-BMW-i5-3025d47fac18090df99629c93f1b130d.htm",
+       "image": "https://retail.photos.vin/WBY13HG04SCS35730-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG04SCS35730&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-24",
+       "days_listed": 0,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         55989
+         "2026-08-24",
+         50794
         ]
        ]
       },
@@ -3716,14 +3945,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 10,
+       "days_listed": 11,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         56985
+        ],
+        [
+         "2026-08-24",
          56985
         ]
        ]
@@ -3757,15 +3990,60 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         56563
+        ],
+        [
+         "2026-08-24",
+         56563
+        ]
+       ]
+      },
+      {
+       "vin": "WBY13HG01SCT06284",
+       "year": 2025,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i5-xdrive40",
+       "trim_label": "xDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 1742,
+       "miles": 13032,
+       "price": 57990,
+       "adj": 56999,
+       "msrp": 70100,
+       "dealer": "Diplomat Motors Inc",
+       "city": "Troutdale",
+       "state": "OR",
+       "url": "https://www.carfax.com/vehicle/WBY13HG01SCT06284",
+       "image": "https://retail.photos.vin/WBY13HG01SCT06284-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG01SCT06284&partner=FRD_2",
+       "color": "Red",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-21",
+       "days_listed": 3,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         56563
+         "2026-08-24",
+         57990
         ]
        ]
       },
@@ -3798,14 +4076,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         53325
+        ],
+        [
+         "2026-08-24",
          53325
         ]
        ]
@@ -3839,14 +4121,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         61490
+        ],
+        [
+         "2026-08-24",
          61490
         ]
        ]
@@ -3880,14 +4166,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         55381
+        ],
+        [
+         "2026-08-24",
          55381
         ]
        ]
@@ -3922,14 +4212,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-07-23",
-       "days_listed": 31,
+       "days_listed": 32,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         55087
+        ],
+        [
+         "2026-08-24",
          55087
         ]
        ]
@@ -3963,14 +4257,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-06",
-       "days_listed": 17,
+       "days_listed": 18,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49985
+        ],
+        [
+         "2026-08-24",
          49985
         ]
        ]
@@ -4007,14 +4305,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         59999
+        ],
+        [
+         "2026-08-24",
          59999
         ]
        ]
@@ -4048,15 +4350,68 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          56668
+        ],
+        [
+         "2026-08-24",
+         56668
+        ]
+       ]
+      },
+      {
+       "vin": "WBY43FK07RCP82428",
+       "year": 2024,
+       "trim": "M60",
+       "trim_id": "bmw-i5-m60",
+       "trim_label": "M60",
+       "market": "Chicago",
+       "markets": [
+        "Chicago",
+        "Indianapolis"
+       ],
+       "distance": 17,
+       "miles": 11324,
+       "price": 61990,
+       "adj": 59387,
+       "msrp": null,
+       "dealer": "fields bmw northfield",
+       "city": "Northfield",
+       "state": "IL",
+       "url": "https://fieldsbmwnorthfield.com/certified/BMW/2024-BMW-i5-Chicago-d6c48553ac185dc15e988db2332dff74.htm",
+       "image": "https://retail.photos.vin/WBY43FK07RCP82428-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK07RCP82428&partner=FRD_2",
+       "color": "Carbon Black Metallic",
+       "cpo": true,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "CPO",
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 15,
+       "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": -377,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         62367
+        ],
+        [
+         "2026-08-24",
+         61990
         ]
        ]
       },
@@ -4092,14 +4447,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-19",
-       "days_listed": 4,
+       "days_listed": 5,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         50370
+        ],
+        [
+         "2026-08-24",
          50370
         ]
        ]
@@ -4133,59 +4492,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 11,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          55482
-        ]
-       ]
-      },
-      {
-       "vin": "WBY43FK07RCP82428",
-       "year": 2024,
-       "trim": "M60",
-       "trim_id": "bmw-i5-m60",
-       "trim_label": "M60",
-       "market": "Chicago",
-       "markets": [
-        "Chicago",
-        "Indianapolis"
-       ],
-       "distance": 17,
-       "miles": 11324,
-       "price": 62367,
-       "adj": 59764,
-       "msrp": 84100,
-       "dealer": "Fields BMW Northfield",
-       "city": "Northfield",
-       "state": "IL",
-       "url": "https://www.carfax.com/vehicle/WBY43FK07RCP82428",
-       "image": "https://retail.photos.vin/WBY43FK07RCP82428-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK07RCP82428&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         62367
+         "2026-08-24",
+         55482
         ]
        ]
       },
@@ -4218,14 +4537,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-16",
-       "days_listed": 7,
+       "days_listed": 8,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         58499
+        ],
+        [
+         "2026-08-24",
          58499
         ]
        ]
@@ -4259,14 +4582,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         57500
+        ],
+        [
+         "2026-08-24",
          57500
         ]
        ]
@@ -4301,14 +4628,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-06-10",
-       "days_listed": 74,
+       "days_listed": 75,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         58299
+        ],
+        [
+         "2026-08-24",
          58299
         ]
        ]
@@ -4325,9 +4656,9 @@
        "miles": 33576,
        "price": 55784,
        "adj": 60956,
-       "msrp": null,
-       "dealer": "bmw of rockville",
-       "city": "Rockville",
+       "msrp": 84100,
+       "dealer": "BMW of Towson",
+       "city": "Towson",
        "state": "MD",
        "url": "https://bmwrockville.com/used/BMW/2024-BMW-i5-01cb9442ac1807716d188b7f82bd9867.htm",
        "image": "https://retail.photos.vin/WBY43FK01RCR02403-1.jpg",
@@ -4342,14 +4673,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         55784
+        ],
+        [
+         "2026-08-24",
          55784
         ]
        ]
@@ -4383,14 +4718,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         56004
+        ],
+        [
+         "2026-08-24",
          56004
         ]
        ]
@@ -4424,14 +4763,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         57885
+        ],
+        [
+         "2026-08-24",
          57885
         ]
        ]
@@ -4465,14 +4808,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54338
+        ],
+        [
+         "2026-08-24",
          54338
         ]
        ]
@@ -4505,14 +4852,18 @@
         "CPO"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         55991
+        ],
+        [
+         "2026-08-24",
          55991
         ]
        ]
@@ -4549,14 +4900,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         66189
+        ],
+        [
+         "2026-08-24",
          66189
         ]
        ]
@@ -4569,7 +4924,7 @@
        "trim_label": "M60",
        "market": "National",
        "markets": [],
-       "distance": 933,
+       "distance": 935,
        "miles": 28941,
        "price": 58293,
        "adj": 62075,
@@ -4582,19 +4937,26 @@
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK05RCP78684&partner=FRD_2",
        "color": "Gray",
        "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
+       "owners": 2,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ],
        "listed_since": "2026-05-29",
-       "days_listed": 86,
+       "days_listed": 87,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         58293
+        ],
+        [
+         "2026-08-24",
          58293
         ]
        ]
@@ -4628,15 +4990,64 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-15",
-       "days_listed": 39,
+       "days_listed": 40,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         62357
+        ],
+        [
+         "2026-08-24",
+         62357
+        ]
+       ]
+      },
+      {
+       "vin": "WBY43FK09RCP36406",
+       "year": 2024,
+       "trim": "M60",
+       "trim_id": "bmw-i5-m60",
+       "trim_label": "M60",
+       "market": "Chicago",
+       "markets": [
+        "Chicago",
+        "Indianapolis"
+       ],
+       "distance": 30,
+       "miles": 24216,
+       "price": 60995,
+       "adj": 62259,
+       "msrp": null,
+       "dealer": "knauz bmw",
+       "city": "Lake Bluff",
+       "state": "IL",
+       "url": "https://knauzbmw.com/certified/BMW/2024-BMW-i5-chicago-lake-bluff-27fe37ceac180d2b8c4af9b423d8f3c3.htm",
+       "image": "https://retail.photos.vin/WBY43FK09RCP36406-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK09RCP36406&partner=FRD_2",
+       "color": "White",
+       "cpo": true,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "CPO",
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-23",
+       "days_listed": 1,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         62357
+         "2026-08-24",
+         60995
         ]
        ]
       },
@@ -4669,14 +5080,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-19",
-       "days_listed": 4,
+       "days_listed": 5,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         56788
+        ],
+        [
+         "2026-08-24",
          56788
         ]
        ]
@@ -4713,14 +5128,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         63352
+        ],
+        [
+         "2026-08-24",
          63352
         ]
        ]
@@ -4757,14 +5176,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         61954
+        ],
+        [
+         "2026-08-24",
          61954
         ]
        ]
@@ -4798,14 +5221,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 10,
+       "days_listed": 11,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         62490
+        ],
+        [
+         "2026-08-24",
          62490
         ]
        ]
@@ -4836,14 +5263,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-18",
-       "days_listed": 5,
+       "days_listed": 6,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         60997
+        ],
+        [
+         "2026-08-24",
          60997
         ]
        ]
@@ -4880,14 +5311,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-06",
-       "days_listed": 17,
+       "days_listed": 18,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         61884
+        ],
+        [
+         "2026-08-24",
          61884
         ]
        ]
@@ -4924,14 +5359,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         60954
+        ],
+        [
+         "2026-08-24",
          60954
         ]
        ]
@@ -4964,14 +5403,18 @@
         "CPO"
        ],
        "listed_since": "2026-08-01",
-       "days_listed": 22,
+       "days_listed": 23,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         56811
+        ],
+        [
+         "2026-08-24",
          56811
         ]
        ]
@@ -5006,14 +5449,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 9,
+       "days_listed": 10,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54921
+        ],
+        [
+         "2026-08-24",
          54921
         ]
        ]
@@ -5048,14 +5495,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         60866
+        ],
+        [
+         "2026-08-24",
          60866
         ]
        ]
@@ -5089,14 +5540,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-03",
-       "days_listed": 20,
+       "days_listed": 21,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         55990
+        ],
+        [
+         "2026-08-24",
          55990
         ]
        ]
@@ -5132,14 +5587,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         67398
+        ],
+        [
+         "2026-08-24",
          67398
         ]
        ]
@@ -5175,14 +5634,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         65398
+        ],
+        [
+         "2026-08-24",
          65398
         ]
        ]
@@ -5218,14 +5681,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         67148
+        ],
+        [
+         "2026-08-24",
          67148
         ]
        ]
@@ -5260,14 +5727,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2025-03-28",
-       "days_listed": 513,
+       "days_listed": 514,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         76365
+        ],
+        [
+         "2026-08-24",
          76365
         ]
        ]
@@ -5300,14 +5771,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         74709
+        ],
+        [
+         "2026-08-24",
          74709
         ]
        ]
@@ -5321,6 +5796,14 @@
        "min_adj": 38146,
        "median_adj": 49443,
        "median_price": 49640
+      },
+      {
+       "date": "2026-08-24",
+       "n": 127,
+       "n_local": 18,
+       "min_adj": 38146,
+       "median_adj": 49474,
+       "median_price": 49985
       }
      ],
      "daily_by_trim": {
@@ -5332,6 +5815,14 @@
         "min_adj": 38146,
         "median_adj": 46060,
         "median_price": 43990
+       },
+       {
+        "date": "2026-08-24",
+        "n": 69,
+        "n_local": 2,
+        "min_adj": 38146,
+        "median_adj": 46076,
+        "median_price": 44079
        }
       ],
       "bmw-i5-xdrive40": [
@@ -5342,6 +5833,14 @@
         "min_adj": 43706,
         "median_adj": 54011,
         "median_price": 55381
+       },
+       {
+        "date": "2026-08-24",
+        "n": 23,
+        "n_local": 3,
+        "min_adj": 43706,
+        "median_adj": 54962,
+        "median_price": 55393
        }
       ],
       "bmw-i5-m60": [
@@ -5352,10 +5851,181 @@
         "min_adj": 48114,
         "median_adj": 61684,
         "median_price": 57692
+       },
+       {
+        "date": "2026-08-24",
+        "n": 35,
+        "n_local": 13,
+        "min_adj": 48114,
+        "median_adj": 61755,
+        "median_price": 57885
        }
       ]
      },
-     "gone": []
+     "gone": [
+      {
+       "likely": "delisted",
+       "vin": "WBY33FK04RCR68522",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "miles": 40675,
+       "last_price": 40794,
+       "adj": 48096,
+       "city": "Silver Spring",
+       "state": "MD",
+       "dealer": "BMW of Silver Spring",
+       "url": "https://www.carfax.com/vehicle/WBY33FK04RCR68522",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "no accidents",
+        "ex-lease"
+       ]
+      },
+      {
+       "likely": "delisted",
+       "vin": "WBY33FK09RCP82409",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "miles": 30529,
+       "last_price": 41590,
+       "adj": 45848,
+       "city": "Dallas",
+       "state": "TX",
+       "dealer": "Carvana",
+       "url": "https://www.carvana.com/vehicle/4537581",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "delisted",
+       "vin": "WBY33FK0XRCP36412",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "miles": 36578,
+       "last_price": 42901,
+       "adj": 48974,
+       "city": "Decatur",
+       "state": "GA",
+       "dealer": "Nalley BMW of Decatur",
+       "url": "https://nalleybmw.com/used/BMW/2024-BMW-i5-in-Atlanta-b209ba38ac1833deba8e7e1b804ff547.htm",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "1 accident",
+        "ex-lease"
+       ]
+      },
+      {
+       "likely": "delisted",
+       "vin": "WBY33FK00RCP40114",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "miles": 18067,
+       "last_price": 43771,
+       "adj": 44291,
+       "city": "San Francisco",
+       "state": "CA",
+       "dealer": "Driveway",
+       "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK00RCP40114",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "no accidents",
+        "ex-lease"
+       ]
+      },
+      {
+       "likely": "delisted",
+       "vin": "WBY13HG0XSCS54122",
+       "year": 2025,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i5-xdrive40",
+       "trim_label": "xDrive40",
+       "market": "Chicago",
+       "markets": [
+        "Chicago"
+       ],
+       "miles": 22678,
+       "last_price": 52484,
+       "adj": 53287,
+       "city": "Milwaukee",
+       "state": "WI",
+       "dealer": "BMW of Milwaukee North",
+       "url": "https://www.carfax.com/vehicle/WBY13HG0XSCS54122",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ]
+      },
+      {
+       "likely": "delisted",
+       "vin": "WBY13HG04SCS84975",
+       "year": 2025,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i5-xdrive40",
+       "trim_label": "xDrive40",
+       "market": "National",
+       "markets": [],
+       "miles": 10566,
+       "last_price": 53590,
+       "adj": 51859,
+       "city": "Portland",
+       "state": "OR",
+       "dealer": "Carvana - Portland",
+       "url": "https://www.carvana.com/vehicle/4590042",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "no accidents",
+        "ex-lease"
+       ]
+      }
+     ]
     },
     "i4": {
      "label": "BMW i4",
@@ -5456,14 +6126,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 10,
+       "days_listed": 11,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         21188
+        ],
+        [
+         "2026-08-24",
          21188
         ]
        ]
@@ -5487,25 +6161,28 @@
        "url": "https://www.carfax.com/vehicle/WBY43AW01PFP64774",
        "image": "https://retail.photos.vin/WBY43AW01PFP64774-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43AW01PFP64774&partner=FRD_2",
-       "color": "Mineral White Metallic",
+       "color": "White",
        "cpo": false,
        "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
+       "accidents": 1,
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         22588
+        ],
+        [
+         "2026-08-24",
          22588
         ]
        ]
@@ -5539,14 +6216,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-04-16",
-       "days_listed": 129,
+       "days_listed": 130,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28630
+        ],
+        [
+         "2026-08-24",
          28630
         ]
        ]
@@ -5581,14 +6262,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 9,
+       "days_listed": 10,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         25000
+        ],
+        [
+         "2026-08-24",
          25000
         ]
        ]
@@ -5623,14 +6308,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         22588
+        ],
+        [
+         "2026-08-24",
          22588
         ]
        ]
@@ -5663,14 +6352,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         22871
+        ],
+        [
+         "2026-08-24",
          22871
         ]
        ]
@@ -5704,14 +6397,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28090
+        ],
+        [
+         "2026-08-24",
          28090
         ]
        ]
@@ -5748,14 +6445,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         33064
+        ],
+        [
+         "2026-08-24",
          33064
         ]
        ]
@@ -5790,14 +6491,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26001
+        ],
+        [
+         "2026-08-24",
          26001
         ]
        ]
@@ -5832,14 +6537,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 11,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26188
+        ],
+        [
+         "2026-08-24",
          26188
         ]
        ]
@@ -5873,14 +6582,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         29998
+        ],
+        [
+         "2026-08-24",
          29998
         ]
        ]
@@ -5914,14 +6627,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32490
+        ],
+        [
+         "2026-08-24",
          32490
         ]
        ]
@@ -5958,14 +6675,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         30995
+        ],
+        [
+         "2026-08-24",
          30995
         ]
        ]
@@ -5999,15 +6720,63 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         34794
+        ],
+        [
+         "2026-08-24",
+         34794
+        ]
+       ]
+      },
+      {
+       "vin": "WBY73AW00RFT38526",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "market": "Chicago",
+       "markets": [
+        "Chicago",
+        "Indianapolis"
+       ],
+       "distance": 32,
+       "miles": 13025,
+       "price": 35367,
+       "adj": 33274,
+       "msrp": 57300,
+       "dealer": "Happy Hyundai Of Libertyville",
+       "city": "Libertyville",
+       "state": "IL",
+       "url": "https://www.carfax.com/vehicle/WBY73AW00RFT38526",
+       "image": "https://retail.photos.vin/WBY73AW00RFT38526-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW00RFT38526&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-23",
+       "days_listed": 1,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         34794
+         "2026-08-24",
+         35367
         ]
        ]
       },
@@ -6043,14 +6812,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28866
+        ],
+        [
+         "2026-08-24",
          28866
         ]
        ]
@@ -6087,14 +6860,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28167
+        ],
+        [
+         "2026-08-24",
          28167
         ]
        ]
@@ -6129,14 +6906,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 9,
+       "days_listed": 10,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26485
+        ],
+        [
+         "2026-08-24",
          26485
         ]
        ]
@@ -6167,14 +6948,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-04-04",
-       "days_listed": 141,
+       "days_listed": 142,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         31000
+        ],
+        [
+         "2026-08-24",
          31000
         ]
        ]
@@ -6208,14 +6993,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         33552
+        ],
+        [
+         "2026-08-24",
          33552
         ]
        ]
@@ -6253,14 +7042,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         33064
+        ],
+        [
+         "2026-08-24",
          33064
         ]
        ]
@@ -6294,14 +7087,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26666
+        ],
+        [
+         "2026-08-24",
          26666
         ]
        ]
@@ -6328,24 +7125,30 @@
        "url": "https://www.carfax.com/vehicle/WBY43AW00PFP51112",
        "image": "https://retail.photos.vin/WBY43AW00PFP51112-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43AW00PFP51112&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
+       "color": "Alpine White",
+       "cpo": true,
        "owners": 1,
        "accidents": 1,
-       "usage": "Personal Use",
+       "usage": "Lease",
        "flags": [
+        "CPO",
         "1-owner",
-        "1 accident"
+        "1 accident",
+        "ex-lease"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32412
+        ],
+        [
+         "2026-08-24",
          32412
         ]
        ]
@@ -6379,14 +7182,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         23995
+        ],
+        [
+         "2026-08-24",
          23995
         ]
        ]
@@ -6423,14 +7230,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32676
+        ],
+        [
+         "2026-08-24",
          32676
         ]
        ]
@@ -6465,14 +7276,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-19",
-       "days_listed": 4,
+       "days_listed": 5,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26500
+        ],
+        [
+         "2026-08-24",
          26500
         ]
        ]
@@ -6506,14 +7321,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35097
+        ],
+        [
+         "2026-08-24",
          35097
         ]
        ]
@@ -6549,14 +7368,18 @@
         "CPO"
        ],
        "listed_since": "2026-07-29",
-       "days_listed": 25,
+       "days_listed": 26,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32900
+        ],
+        [
+         "2026-08-24",
          32900
         ]
        ]
@@ -6594,58 +7417,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          29000
-        ]
-       ]
-      },
-      {
-       "vin": "WBY43AW02PFR35368",
-       "year": 2023,
-       "trim": "eDrive35",
-       "trim_id": "bmw-i4-edrive35",
-       "trim_label": "eDrive35",
-       "market": "Chicago",
-       "markets": [
-        "Chicago"
-       ],
-       "distance": 87,
-       "miles": 27538,
-       "price": 33187,
-       "adj": 35448,
-       "msrp": 51400,
-       "dealer": "BMW of Milwaukee North",
-       "city": "Milwaukee",
-       "state": "WI",
-       "url": "https://www.carfax.com/vehicle/WBY43AW02PFR35368",
-       "image": "https://retail.photos.vin/WBY43AW02PFR35368-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43AW02PFR35368&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-22",
-       "days_listed": 1,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         33187
+         "2026-08-24",
+         29000
         ]
        ]
       },
@@ -6661,8 +7445,8 @@
        "miles": 44884,
        "price": 26985,
        "adj": 35550,
-       "msrp": 51400,
-       "dealer": "California Motors Direct Montclair",
+       "msrp": null,
+       "dealer": "california motors direct montclair",
        "city": "Montclair",
        "state": "CA",
        "url": "https://www.iemotorsdirect.com/pre-owned-cars/detail/x/1566162",
@@ -6671,22 +7455,25 @@
        "color": "Black Sapphire Metallic",
        "cpo": false,
        "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
+       "accidents": 1,
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "1 accident"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 9,
+       "days_listed": 10,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26985
+        ],
+        [
+         "2026-08-24",
          26985
         ]
        ]
@@ -6720,14 +7507,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26528
+        ],
+        [
+         "2026-08-24",
          26528
         ]
        ]
@@ -6765,14 +7556,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35664
+        ],
+        [
+         "2026-08-24",
          35664
         ]
        ]
@@ -6810,14 +7605,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35900
+        ],
+        [
+         "2026-08-24",
          35900
         ]
        ]
@@ -6855,14 +7654,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-08",
-       "days_listed": 15,
+       "days_listed": 16,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32899
+        ],
+        [
+         "2026-08-24",
          32899
         ]
        ]
@@ -6896,14 +7699,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         36990
+        ],
+        [
+         "2026-08-24",
          36990
         ]
        ]
@@ -6934,14 +7741,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-16",
-       "days_listed": 7,
+       "days_listed": 8,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40898
+        ],
+        [
+         "2026-08-24",
          40898
         ]
        ]
@@ -6976,14 +7787,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-06-21",
-       "days_listed": 63,
+       "days_listed": 64,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         25000
+        ],
+        [
+         "2026-08-24",
          25000
         ]
        ]
@@ -7021,14 +7836,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         29064
+        ],
+        [
+         "2026-08-24",
          29064
         ]
        ]
@@ -7067,14 +7886,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-07-30",
-       "days_listed": 24,
+       "days_listed": 25,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32480
+        ],
+        [
+         "2026-08-24",
          32480
         ]
        ]
@@ -7108,14 +7931,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         34875
+        ],
+        [
+         "2026-08-24",
          34875
         ]
        ]
@@ -7149,14 +7976,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32798
+        ],
+        [
+         "2026-08-24",
          32798
         ]
        ]
@@ -7190,14 +8021,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-19",
-       "days_listed": 4,
+       "days_listed": 5,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         33617
+        ],
+        [
+         "2026-08-24",
          33617
         ]
        ]
@@ -7234,14 +8069,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 11,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         37693
+        ],
+        [
+         "2026-08-24",
          37693
         ]
        ]
@@ -7275,14 +8114,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         36797
+        ],
+        [
+         "2026-08-24",
          36797
         ]
        ]
@@ -7317,58 +8160,19 @@
         "CPO"
        ],
        "listed_since": "2026-08-01",
-       "days_listed": 22,
+       "days_listed": 23,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          28371
-        ]
-       ]
-      },
-      {
-       "vin": "WBY73AW05RFT29644",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "market": "Chicago",
-       "markets": [
-        "Chicago"
-       ],
-       "distance": 90,
-       "miles": 14749,
-       "price": 38998,
-       "adj": 37422,
-       "msrp": 57300,
-       "dealer": "CarMax Milwaukee",
-       "city": "Milwaukee",
-       "state": "WI",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW05RFT29644",
-       "image": "https://retail.photos.vin/WBY73AW05RFT29644-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW05RFT29644&partner=FRD_2",
-       "color": "Alpine White",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-17",
-       "days_listed": 6,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         38998
+         "2026-08-24",
+         28371
         ]
        ]
       },
@@ -7404,14 +8208,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38583
+        ],
+        [
+         "2026-08-24",
          38583
         ]
        ]
@@ -7442,14 +8250,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-20",
-       "days_listed": 3,
+       "days_listed": 4,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38441
+        ],
+        [
+         "2026-08-24",
          38441
         ]
        ]
@@ -7483,14 +8295,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         25675
+        ],
+        [
+         "2026-08-24",
          25675
         ]
        ]
@@ -7524,14 +8340,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35500
+        ],
+        [
+         "2026-08-24",
          35500
         ]
        ]
@@ -7548,14 +8368,61 @@
        "miles": 43508,
        "price": 30214,
        "adj": 38366,
-       "msrp": null,
-       "dealer": "mercedes benz of columbia",
+       "msrp": 51400,
+       "dealer": "BMW of Columbia",
        "city": "Columbia",
        "state": "MO",
        "url": "https://columbiamercedesbenz.com/certified/BMW/2023-BMW-i4-1f4b08e3ac180771c28b0c0ef75aa888.htm",
        "image": "https://retail.photos.vin/WBY43AW03PFR41213-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43AW03PFR41213&partner=FRD_2",
-       "color": "Skyscraper Gray Metallic",
+       "color": "Skyscraper Grey Metallic",
+       "cpo": true,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Lease",
+       "flags": [
+        "CPO",
+        "1-owner",
+        "no accidents",
+        "ex-lease"
+       ],
+       "listed_since": "2026-08-21",
+       "days_listed": 3,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         30214
+        ],
+        [
+         "2026-08-24",
+         30214
+        ]
+       ]
+      },
+      {
+       "vin": "WBY43AW02PFP86573",
+       "year": 2023,
+       "trim": "eDrive35",
+       "trim_id": "bmw-i4-edrive35",
+       "trim_label": "eDrive35",
+       "market": "National",
+       "markets": [],
+       "distance": 272,
+       "miles": 35775,
+       "price": 32787,
+       "adj": 38619,
+       "msrp": null,
+       "dealer": "bmw of asheville",
+       "city": "Arden",
+       "state": "NC",
+       "url": "https://bmwofasheville.com/certified/BMW/2023-BMW-i4-8655f85aac18083a2914417fd5811ab6.htm",
+       "image": "https://retail.photos.vin/WBY43AW02PFP86573-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43AW02PFP86573&partner=FRD_2",
+       "color": "Mineral White Metallic",
        "cpo": true,
        "owners": 1,
        "accidents": 0,
@@ -7565,60 +8432,16 @@
         "1-owner",
         "no accidents"
        ],
-       "listed_since": "2026-08-21",
-       "days_listed": 2,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-23",
-         30214
-        ]
-       ]
-      },
-      {
-       "vin": "WBY23HD03SFU00254",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "market": "Cincinnati",
-       "markets": [
-        "Cincinnati",
-        "Indianapolis"
-       ],
-       "distance": 106,
-       "miles": 17314,
-       "price": 39417,
-       "adj": 38611,
-       "msrp": 57900,
-       "dealer": "Auto Connection",
-       "city": "Junction City",
-       "state": "KY",
-       "url": "https://www.carfax.com/vehicle/WBY23HD03SFU00254",
-       "image": "https://retail.photos.vin/WBY23HD03SFU00254-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD03SFU00254&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
+       "days_listed": 15,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         39417
+         "2026-08-24",
+         32787
         ]
        ]
       },
@@ -7652,14 +8475,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 11,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         31497
+        ],
+        [
+         "2026-08-24",
          31497
         ]
        ]
@@ -7693,14 +8520,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         37817
+        ],
+        [
+         "2026-08-24",
          37817
         ]
        ]
@@ -7735,14 +8566,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-07-07",
-       "days_listed": 47,
+       "days_listed": 48,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         27573
+        ],
+        [
+         "2026-08-24",
          27573
         ]
        ]
@@ -7780,14 +8615,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         37987
+        ],
+        [
+         "2026-08-24",
          37987
         ]
        ]
@@ -7821,15 +8660,57 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-04-24",
-       "days_listed": 121,
+       "days_listed": 122,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         35995
+        ],
+        [
+         "2026-08-24",
+         35995
+        ]
+       ]
+      },
+      {
+       "vin": "WBY73AW07PFN62776",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 373,
+       "miles": 27120,
+       "price": 35998,
+       "adj": 39234,
+       "msrp": 55900,
+       "dealer": "CarMax Memphis",
+       "city": "Memphis",
+       "state": "TN",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW07PFN62776",
+       "image": "https://retail.photos.vin/WBY73AW07PFN62776-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW07PFN62776&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-14",
+       "days_listed": 10,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         35995
+         "2026-08-24",
+         35998
         ]
        ]
       },
@@ -7855,22 +8736,25 @@
        "color": "Sunset Orange Metallic",
        "cpo": false,
        "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
+       "accidents": 1,
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26890
+        ],
+        [
+         "2026-08-24",
          26890
         ]
        ]
@@ -7904,14 +8788,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         25973
+        ],
+        [
+         "2026-08-24",
          25973
         ]
        ]
@@ -7945,59 +8833,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          40000
-        ]
-       ]
-      },
-      {
-       "vin": "WBY73AW04PFP60277",
-       "year": 2023,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "market": "Chicago",
-       "markets": [
-        "Chicago",
-        "Indianapolis"
-       ],
-       "distance": 105,
-       "miles": 20828,
-       "price": 39593,
-       "adj": 39841,
-       "msrp": null,
-       "dealer": "zeigler chrysler dodge jeep ram of downers grove",
-       "city": "Downers Grove",
-       "state": "IL",
-       "url": "https://zeiglerchryslerdodge.com/used/BMW/2023-BMW-i4-c8913555ac1814de2655b06917472d4d.htm",
-       "image": "https://retail.photos.vin/WBY73AW04PFP60277-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW04PFP60277&partner=FRD_2",
-       "color": "Jet Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         39593
+         "2026-08-24",
+         40000
         ]
        ]
       },
@@ -8032,14 +8880,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         33676
+        ],
+        [
+         "2026-08-24",
          33676
         ]
        ]
@@ -8074,14 +8926,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         24900
+        ],
+        [
+         "2026-08-24",
          24900
         ]
        ]
@@ -8115,14 +8971,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28978
+        ],
+        [
+         "2026-08-24",
          28978
         ]
        ]
@@ -8156,14 +9016,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         36300
+        ],
+        [
+         "2026-08-24",
          36300
         ]
        ]
@@ -8192,19 +9056,26 @@
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW08NFN17003&partner=FRD_2",
        "color": "Gray",
        "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
        "listed_since": "2026-08-22",
-       "days_listed": 1,
+       "days_listed": 2,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40409
+        ],
+        [
+         "2026-08-24",
          40409
         ]
        ]
@@ -8240,15 +9111,63 @@
         "1 accident"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         35605
+        ],
+        [
+         "2026-08-24",
+         35605
+        ]
+       ]
+      },
+      {
+       "vin": "WBY73AW02PFP79961",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "market": "Cincinnati",
+       "markets": [
+        "Cincinnati",
+        "Indianapolis"
+       ],
+       "distance": 83,
+       "miles": 44434,
+       "price": 33750,
+       "adj": 41080,
+       "msrp": null,
+       "dealer": "bmw of louisville",
+       "city": "Louisville",
+       "state": "KY",
+       "url": "https://louisvillebmw.com/used/BMW/2023-BMW-i4-fb1267fdac18301032f4f995dcdbc483.htm",
+       "image": "https://retail.photos.vin/WBY73AW02PFP79961-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW02PFP79961&partner=FRD_2",
+       "color": "Mineral White Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-14",
+       "days_listed": 10,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         35605
+         "2026-08-24",
+         33750
         ]
        ]
       },
@@ -8284,14 +9203,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         39706
+        ],
+        [
+         "2026-08-24",
          39706
         ]
        ]
@@ -8324,14 +9247,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-03",
-       "days_listed": 51,
+       "days_listed": 52,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         44739
+        ],
+        [
+         "2026-08-24",
          44739
         ]
        ]
@@ -8349,31 +9276,34 @@
        "price": 26195,
        "adj": 41440,
        "msrp": 51400,
-       "dealer": "Florida Fine Cars",
+       "dealer": "Florida Fine Car - Miami",
        "city": "Miami",
        "state": "FL",
        "url": "https://www.carfax.com/vehicle/WBY43AW06PFP97284",
        "image": "https://retail.photos.vin/WBY43AW06PFP97284-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43AW06PFP97284&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "color": "Black",
        "cpo": false,
-       "owners": 1,
+       "owners": 2,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Multiple Use",
        "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
+        "2 owners",
+        "no accidents"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 10,
+       "days_listed": 11,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26195
+        ],
+        [
+         "2026-08-24",
          26195
         ]
        ]
@@ -8407,14 +9337,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32500
+        ],
+        [
+         "2026-08-24",
          32500
         ]
        ]
@@ -8448,14 +9382,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35590
+        ],
+        [
+         "2026-08-24",
          35590
         ]
        ]
@@ -8473,31 +9411,34 @@
        "price": 24499,
        "adj": 41657,
        "msrp": 51400,
-       "dealer": "Florida Fine Cars Orlando",
+       "dealer": "Florida Fine Cars - Orlando",
        "city": "Orlando",
        "state": "FL",
        "url": "https://www.carfax.com/vehicle/WBY43AW04PFP83786",
        "image": "https://retail.photos.vin/WBY43AW04PFP83786-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43AW04PFP83786&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "color": "Black",
        "cpo": false,
-       "owners": 1,
+       "owners": 2,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Multiple Use",
        "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
+        "2 owners",
+        "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         24499
+        ],
+        [
+         "2026-08-24",
          24499
         ]
        ]
@@ -8532,14 +9473,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-06-27",
-       "days_listed": 57,
+       "days_listed": 58,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38998
+        ],
+        [
+         "2026-08-24",
          38998
         ]
        ]
@@ -8573,14 +9518,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28999
+        ],
+        [
+         "2026-08-24",
          28999
         ]
        ]
@@ -8611,14 +9560,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-06-30",
-       "days_listed": 54,
+       "days_listed": 55,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         37025
+        ],
+        [
+         "2026-08-24",
          37025
         ]
        ]
@@ -8654,14 +9607,18 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-18",
-       "days_listed": 5,
+       "days_listed": 6,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28999
+        ],
+        [
+         "2026-08-24",
          28999
         ]
        ]
@@ -8697,14 +9654,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         41076
+        ],
+        [
+         "2026-08-24",
          41076
         ]
        ]
@@ -8741,15 +9702,65 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          44995
+        ],
+        [
+         "2026-08-24",
+         44995
+        ]
+       ]
+      },
+      {
+       "vin": "WBY83FB07RFS95987",
+       "year": 2024,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i4-xdrive40",
+       "trim_label": "xDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 226,
+       "miles": 29884,
+       "price": 38354,
+       "adj": 42419,
+       "msrp": null,
+       "dealer": "bmw cleveland",
+       "city": "Solon",
+       "state": "OH",
+       "url": "https://bmwcleveland.com/certified/BMW/2024-BMW-i4-8b41cf7dac18221a7f70d51e64edfd32.htm",
+       "image": "https://retail.photos.vin/WBY83FB07RFS95987-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY83FB07RFS95987&partner=FRD_2",
+       "color": "Skyscraper Gray Metallic",
+       "cpo": true,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "CPO",
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 15,
+       "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": -387,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         38741
+        ],
+        [
+         "2026-08-24",
+         38354
         ]
        ]
       },
@@ -8782,59 +9793,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          36439
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33AW07PFP47909",
-       "year": 2023,
-       "trim": "M50",
-       "trim_id": "bmw-i4-m50",
-       "trim_label": "M50",
-       "market": "Chicago",
-       "markets": [
-        "Chicago",
-        "Indianapolis"
-       ],
-       "distance": 12,
-       "miles": 12081,
-       "price": 45123,
-       "adj": 42747,
-       "msrp": 67300,
-       "dealer": "Huntley Ford",
-       "city": "Huntley",
-       "state": "IL",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW07PFP47909",
-       "image": "https://retail.photos.vin/WBY33AW07PFP47909-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW07PFP47909&partner=FRD_2",
-       "color": "Aventurin Red Metallic",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Corporate Fleet",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-06-05",
-       "days_listed": 79,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         45123
+         "2026-08-24",
+         36439
         ]
        ]
       },
@@ -8868,56 +9839,19 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          26628
-        ]
-       ]
-      },
-      {
-       "vin": "WBY83FB07RFS95987",
-       "year": 2024,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i4-xdrive40",
-       "trim_label": "xDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 226,
-       "miles": 29884,
-       "price": 38741,
-       "adj": 42806,
-       "msrp": 61600,
-       "dealer": "BMW Cleveland",
-       "city": "Solon",
-       "state": "OH",
-       "url": "https://www.carfax.com/vehicle/WBY83FB07RFS95987",
-       "image": "https://retail.photos.vin/WBY83FB07RFS95987-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY83FB07RFS95987&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         38741
+         "2026-08-24",
+         26628
         ]
        ]
       },
@@ -8947,14 +9881,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-16",
-       "days_listed": 38,
+       "days_listed": 39,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38474
+        ],
+        [
+         "2026-08-24",
          38474
         ]
        ]
@@ -8988,14 +9926,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28788
+        ],
+        [
+         "2026-08-24",
          28788
         ]
        ]
@@ -9023,21 +9965,24 @@
        "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26378
+        ],
+        [
+         "2026-08-24",
          26378
         ]
        ]
@@ -9055,13 +10000,13 @@
        ],
        "distance": 31,
        "miles": 10465,
-       "price": 46412,
-       "adj": 43551,
-       "msrp": 67300,
-       "dealer": "Motor Werks Cadillac",
+       "price": 46000,
+       "adj": 43139,
+       "msrp": null,
+       "dealer": "motor werks cadillac",
        "city": "Barrington",
        "state": "IL",
-       "url": "https://www.carfax.com/vehicle/WBY33AW08PFP86489",
+       "url": "https://motorwerkscadillac.com/used/BMW/2023-BMW-i4-f0f3b9b6ac185184d8a067b1f9bf668f.htm",
        "image": "https://retail.photos.vin/WBY33AW08PFP86489-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW08PFP86489&partner=FRD_2",
        "color": "Gray",
@@ -9074,15 +10019,109 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": -412,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         46412
+        ],
+        [
+         "2026-08-24",
+         46000
+        ]
+       ]
+      },
+      {
+       "vin": "WBY33AW07PFP47909",
+       "year": 2023,
+       "trim": "M50",
+       "trim_id": "bmw-i4-m50",
+       "trim_label": "M50",
+       "market": "Chicago",
+       "markets": [
+        "Chicago",
+        "Indianapolis"
+       ],
+       "distance": 12,
+       "miles": 12081,
+       "price": 45852,
+       "adj": 43476,
+       "msrp": 67300,
+       "dealer": "Old Orchard Nissan",
+       "city": "Skokie",
+       "state": "IL",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW07PFP47909",
+       "image": "https://retail.photos.vin/WBY33AW07PFP47909-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW07PFP47909&partner=FRD_2",
+       "color": "Red",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-06-05",
+       "days_listed": 80,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 729,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         45123
+        ],
+        [
+         "2026-08-24",
+         45852
+        ]
+       ]
+      },
+      {
+       "vin": "WBY83FB07RFS41542",
+       "year": 2024,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i4-xdrive40",
+       "trim_label": "xDrive40",
+       "market": "Indianapolis",
+       "markets": [
+        "Chicago",
+        "Cincinnati",
+        "Indianapolis"
+       ],
+       "distance": 103,
+       "miles": 13753,
+       "price": 45520,
+       "adj": 43645,
+       "msrp": null,
+       "dealer": "kelley chevrolet",
+       "city": "Fort Wayne",
+       "state": "IN",
+       "url": "https://drivekelleychevrolet.com/used/BMW/2024-BMW-i4-2bb9d857ac1827bd9540ac67b66983eb.htm",
+       "image": "https://retail.photos.vin/WBY83FB07RFS41542-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY83FB07RFS41542&partner=FRD_2",
+       "color": "Portimao Blue Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-23",
+       "days_listed": 1,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         46412
+         "2026-08-24",
+         45520
         ]
        ]
       },
@@ -9115,14 +10154,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         36995
+        ],
+        [
+         "2026-08-24",
          36995
         ]
        ]
@@ -9156,14 +10199,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38617
+        ],
+        [
+         "2026-08-24",
          38617
         ]
        ]
@@ -9197,14 +10244,18 @@
         "1 accident"
        ],
        "listed_since": "2026-07-17",
-       "days_listed": 37,
+       "days_listed": 38,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         30881
+        ],
+        [
+         "2026-08-24",
          30881
         ]
        ]
@@ -9238,14 +10289,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32198
+        ],
+        [
+         "2026-08-24",
          32198
         ]
        ]
@@ -9279,14 +10334,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26597
+        ],
+        [
+         "2026-08-24",
          26597
         ]
        ]
@@ -9322,14 +10381,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-06",
-       "days_listed": 17,
+       "days_listed": 18,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35176
+        ],
+        [
+         "2026-08-24",
          35176
         ]
        ]
@@ -9366,14 +10429,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         44743
+        ],
+        [
+         "2026-08-24",
          44743
         ]
        ]
@@ -9407,14 +10474,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-05-23",
-       "days_listed": 92,
+       "days_listed": 93,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         42741
+        ],
+        [
+         "2026-08-24",
          42741
         ]
        ]
@@ -9448,14 +10519,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         45897
+        ],
+        [
+         "2026-08-24",
          45897
         ]
        ]
@@ -9491,14 +10566,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         48542
+        ],
+        [
+         "2026-08-24",
          48542
         ]
        ]
@@ -9536,14 +10615,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         47400
+        ],
+        [
+         "2026-08-24",
          47400
         ]
        ]
@@ -9580,14 +10663,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43366
+        ],
+        [
+         "2026-08-24",
          43366
         ]
        ]
@@ -9624,14 +10711,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-03",
-       "days_listed": 20,
+       "days_listed": 21,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         44980
+        ],
+        [
+         "2026-08-24",
          44980
         ]
        ]
@@ -9662,15 +10753,62 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-04",
-       "days_listed": 19,
+       "days_listed": 20,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         37047
+        ],
+        [
+         "2026-08-24",
+         37047
+        ]
+       ]
+      },
+      {
+       "vin": "WBY33AW00PFP00303",
+       "year": 2023,
+       "trim": "M50",
+       "trim_id": "bmw-i4-m50",
+       "trim_label": "M50",
+       "market": "National",
+       "markets": [],
+       "distance": 894,
+       "miles": 29539,
+       "price": 40698,
+       "adj": 44659,
+       "msrp": 67300,
+       "dealer": "Braman BMW West Palm Beach",
+       "city": "West Palm Beach",
+       "state": "FL",
+       "url": "https://www.carfax.com/vehicle/WBY33AW00PFP00303",
+       "image": "https://retail.photos.vin/WBY33AW00PFP00303-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW00PFP00303&partner=FRD_2",
+       "color": "Alpine White",
+       "cpo": true,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Lease",
+       "flags": [
+        "CPO",
+        "1-owner",
+        "no accidents",
+        "ex-lease"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 15,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         37047
+         "2026-08-24",
+         40698
         ]
        ]
       },
@@ -9703,14 +10841,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 11,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35125
+        ],
+        [
+         "2026-08-24",
          35125
         ]
        ]
@@ -9744,14 +10886,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38951
+        ],
+        [
+         "2026-08-24",
          38951
         ]
        ]
@@ -9785,14 +10931,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         26775
+        ],
+        [
+         "2026-08-24",
          26775
         ]
        ]
@@ -9826,14 +10976,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 11,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28645
+        ],
+        [
+         "2026-08-24",
          28645
         ]
        ]
@@ -9867,40 +11021,45 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28973
+        ],
+        [
+         "2026-08-24",
          28973
         ]
        ]
       },
       {
-       "vin": "WBY33AW00PFP26674",
+       "vin": "WBY33AW02PFP38812",
        "year": 2023,
        "trim": "M50",
        "trim_id": "bmw-i4-m50",
        "trim_label": "M50",
        "market": "Chicago",
        "markets": [
-        "Chicago"
+        "Chicago",
+        "Indianapolis"
        ],
-       "distance": 45,
-       "miles": 23222,
-       "price": 44111,
-       "adj": 45077,
+       "distance": 30,
+       "miles": 10198,
+       "price": 47998,
+       "adj": 45057,
        "msrp": 67300,
-       "dealer": "Huntley Ford",
-       "city": "Huntley",
+       "dealer": "Maserati of Naperville",
+       "city": "Naperville",
        "state": "IL",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW00PFP26674",
-       "image": "https://retail.photos.vin/WBY33AW00PFP26674-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW00PFP26674&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "url": "https://www.carfax.com/vehicle/WBY33AW02PFP38812",
+       "image": "https://retail.photos.vin/WBY33AW02PFP38812-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW02PFP38812&partner=FRD_2",
+       "color": "Gray",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
@@ -9909,16 +11068,20 @@
         "1-owner",
         "no accidents"
        ],
-       "listed_since": "2026-06-10",
-       "days_listed": 74,
+       "listed_since": "2026-08-09",
+       "days_listed": 15,
        "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
+       "cuts": 1,
+       "delta": -500,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
-         44111
+         48498
+        ],
+        [
+         "2026-08-24",
+         47998
         ]
        ]
       },
@@ -9954,14 +11117,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         48625
+        ],
+        [
+         "2026-08-24",
          48625
         ]
        ]
@@ -9983,10 +11150,10 @@
        "price": 38624,
        "adj": 45321,
        "msrp": null,
-       "dealer": "tom kelley buick gmc",
+       "dealer": "kelley chevrolet",
        "city": "Fort Wayne",
        "state": "IN",
-       "url": "https://drivekelleybuickgmc.com/electric-used/BMW/2024-BMW-i4-2694412bac185c30491eeacb519d6b45.htm",
+       "url": "https://drivekelleychevrolet.com/used/BMW/2024-BMW-i4-2694412bac185c30491eeacb519d6b45.htm",
        "image": "https://retail.photos.vin/WBY83FB04RFS77592-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY83FB04RFS77592&partner=FRD_2",
        "color": "Skyscraper Gray Metallic",
@@ -9999,14 +11166,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-22",
-       "days_listed": 1,
+       "days_listed": 2,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38624
+        ],
+        [
+         "2026-08-24",
          38624
         ]
        ]
@@ -10042,15 +11213,65 @@
         "no accidents"
        ],
        "listed_since": "2026-08-17",
-       "days_listed": 6,
+       "days_listed": 7,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          42398
+        ],
+        [
+         "2026-08-24",
+         42398
+        ]
+       ]
+      },
+      {
+       "vin": "WBY33AW00PFP26674",
+       "year": 2023,
+       "trim": "M50",
+       "trim_id": "bmw-i4-m50",
+       "trim_label": "M50",
+       "market": "Chicago",
+       "markets": [
+        "Chicago"
+       ],
+       "distance": 45,
+       "miles": 23222,
+       "price": 44519,
+       "adj": 45485,
+       "msrp": 67300,
+       "dealer": "Huntley Ford",
+       "city": "Huntley",
+       "state": "IL",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW00PFP26674",
+       "image": "https://retail.photos.vin/WBY33AW00PFP26674-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW00PFP26674&partner=FRD_2",
+       "color": "Black",
+       "cpo": true,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [
+        "CPO"
+       ],
+       "listed_since": "2026-06-10",
+       "days_listed": 75,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 408,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         44111
+        ],
+        [
+         "2026-08-24",
+         44519
         ]
        ]
       },
@@ -10085,14 +11306,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         47298
+        ],
+        [
+         "2026-08-24",
          47298
         ]
        ]
@@ -10129,59 +11354,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          46298
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33AW02PFP38812",
-       "year": 2023,
-       "trim": "M50",
-       "trim_id": "bmw-i4-m50",
-       "trim_label": "M50",
-       "market": "Chicago",
-       "markets": [
-        "Chicago",
-        "Indianapolis"
-       ],
-       "distance": 30,
-       "miles": 10198,
-       "price": 48498,
-       "adj": 45557,
-       "msrp": 67300,
-       "dealer": "Maserati of Naperville",
-       "city": "Naperville",
-       "state": "IL",
-       "url": "https://www.carfax.com/vehicle/WBY33AW02PFP38812",
-       "image": "https://retail.photos.vin/WBY33AW02PFP38812-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW02PFP38812&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         48498
+         "2026-08-24",
+         46298
         ]
        ]
       },
@@ -10211,14 +11396,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-06-24",
-       "days_listed": 60,
+       "days_listed": 61,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         37625
+        ],
+        [
+         "2026-08-24",
          37625
         ]
        ]
@@ -10252,14 +11441,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         39590
+        ],
+        [
+         "2026-08-24",
          39590
         ]
        ]
@@ -10293,14 +11486,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 10,
+       "days_listed": 11,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         33195
+        ],
+        [
+         "2026-08-24",
          33195
         ]
        ]
@@ -10335,14 +11532,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         37995
+        ],
+        [
+         "2026-08-24",
          37995
         ]
        ]
@@ -10376,14 +11577,18 @@
         "no accidents"
        ],
        "listed_since": "2026-07-28",
-       "days_listed": 26,
+       "days_listed": 27,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28512
+        ],
+        [
+         "2026-08-24",
          28512
         ]
        ]
@@ -10417,14 +11622,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-23",
-       "days_listed": 31,
+       "days_listed": 32,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         45741
+        ],
+        [
+         "2026-08-24",
          45741
         ]
        ]
@@ -10461,14 +11670,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40866
+        ],
+        [
+         "2026-08-24",
          40866
         ]
        ]
@@ -10499,15 +11712,57 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-04",
-       "days_listed": 19,
+       "days_listed": 20,
        "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         40341
+        ],
+        [
+         "2026-08-24",
+         40341
+        ]
+       ]
+      },
+      {
+       "vin": "WBY33AW05PFN81549",
+       "year": 2023,
+       "trim": "M50",
+       "trim_id": "bmw-i4-m50",
+       "trim_label": "M50",
+       "market": "National",
+       "markets": [],
+       "distance": 481,
+       "miles": 40219,
+       "price": 40500,
+       "adj": 47665,
+       "msrp": 67300,
+       "dealer": "Hudson Nissan of Summerville",
+       "city": "Summerville",
+       "state": "SC",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW05PFN81549",
+       "image": "https://retail.photos.vin/WBY33AW05PFN81549-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW05PFN81549&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-07-07",
+       "days_listed": 48,
+       "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
        "days_tracked": 1,
        "series": [
         [
-         "2026-08-23",
-         40341
+         "2026-08-24",
+         40500
         ]
        ]
       },
@@ -10540,14 +11795,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-21",
-       "days_listed": 2,
+       "days_listed": 3,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38745
+        ],
+        [
+         "2026-08-24",
          38745
         ]
        ]
@@ -10578,56 +11837,19 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-29",
-       "days_listed": 25,
+       "days_listed": 26,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          23899
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33AW09PFP07167",
-       "year": 2023,
-       "trim": "M50",
-       "trim_id": "bmw-i4-m50",
-       "trim_label": "M50",
-       "market": "National",
-       "markets": [],
-       "distance": 336,
-       "miles": 40356,
-       "price": 40999,
-       "adj": 48205,
-       "msrp": 67300,
-       "dealer": "Capital Ford of Charlotte",
-       "city": "Charlotte",
-       "state": "NC",
-       "url": "https://www.carfax.com/vehicle/WBY33AW09PFP07167",
-       "image": "https://retail.photos.vin/WBY33AW09PFP07167-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW09PFP07167&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 14,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         40999
+         "2026-08-24",
+         23899
         ]
        ]
       },
@@ -10642,9 +11864,9 @@
         "Chicago"
        ],
        "distance": 197,
-       "miles": 14734,
+       "miles": 14744,
        "price": 50228,
-       "adj": 48648,
+       "adj": 48651,
        "msrp": 67300,
        "dealer": "BMW of Ann Arbor",
        "city": "Ann Arbor",
@@ -10662,14 +11884,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         50228
+        ],
+        [
+         "2026-08-24",
          50228
         ]
        ]
@@ -10705,14 +11931,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 12,
+       "days_listed": 13,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         52598
+        ],
+        [
+         "2026-08-24",
          52598
         ]
        ]
@@ -10746,14 +11976,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-17",
-       "days_listed": 6,
+       "days_listed": 7,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40990
+        ],
+        [
+         "2026-08-24",
          40990
         ]
        ]
@@ -10787,14 +12021,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-21",
-       "days_listed": 2,
+       "days_listed": 3,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         46799
+        ],
+        [
+         "2026-08-24",
          46799
         ]
        ]
@@ -10825,14 +12063,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-02",
-       "days_listed": 52,
+       "days_listed": 53,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         40698
+        ],
+        [
+         "2026-08-24",
          40698
         ]
        ]
@@ -10866,14 +12108,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         38490
+        ],
+        [
+         "2026-08-24",
          38490
         ]
        ]
@@ -10907,15 +12153,61 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          19885
+        ],
+        [
+         "2026-08-24",
+         19885
+        ]
+       ]
+      },
+      {
+       "vin": "WBY73AW07PFR30485",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "market": "National",
+       "markets": [],
+       "distance": 496,
+       "miles": 88874,
+       "price": 28542,
+       "adj": 50304,
+       "msrp": 55900,
+       "dealer": "Crain Kia of Bentonville",
+       "city": "Bentonville",
+       "state": "AR",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW07PFR30485",
+       "image": "https://retail.photos.vin/WBY73AW07PFR30485-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW07PFR30485&partner=FRD_2",
+       "color": "Green",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-11",
+       "days_listed": 13,
+       "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": -457,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-23",
+         28999
+        ],
+        [
+         "2026-08-24",
+         28542
         ]
        ]
       },
@@ -10950,14 +12242,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54803
+        ],
+        [
+         "2026-08-24",
          54803
         ]
        ]
@@ -10995,57 +12291,19 @@
         "no accidents"
        ],
        "listed_since": "2026-06-03",
-       "days_listed": 81,
+       "days_listed": 82,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          53600
-        ]
-       ]
-      },
-      {
-       "vin": "WBY73AW07PFR30485",
-       "year": 2023,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "market": "National",
-       "markets": [],
-       "distance": 496,
-       "miles": 88874,
-       "price": 28999,
-       "adj": 50761,
-       "msrp": 55900,
-       "dealer": "Crain Kia of Bentonville",
-       "city": "Bentonville",
-       "state": "AR",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW07PFR30485",
-       "image": "https://retail.photos.vin/WBY73AW07PFR30485-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW07PFR30485&partner=FRD_2",
-       "color": "San Remo Green Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
-       "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-11",
-       "days_listed": 12,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         28999
+         "2026-08-24",
+         53600
         ]
        ]
       },
@@ -11079,14 +12337,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         54987
+        ],
+        [
+         "2026-08-24",
          54987
         ]
        ]
@@ -11120,14 +12382,18 @@
         "no accidents"
        ],
        "listed_since": "2026-07-01",
-       "days_listed": 53,
+       "days_listed": 54,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         28251
+        ],
+        [
+         "2026-08-24",
          28251
         ]
        ]
@@ -11163,14 +12429,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-22",
-       "days_listed": 1,
+       "days_listed": 2,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         50529
+        ],
+        [
+         "2026-08-24",
          50529
         ]
        ]
@@ -11207,14 +12477,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         43298
+        ],
+        [
+         "2026-08-24",
          43298
         ]
        ]
@@ -11250,14 +12524,18 @@
         "CPO"
        ],
        "listed_since": "2026-08-02",
-       "days_listed": 21,
+       "days_listed": 22,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         49900
+        ],
+        [
+         "2026-08-24",
          49900
         ]
        ]
@@ -11291,53 +12569,19 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
          35500
-        ]
-       ]
-      },
-      {
-       "vin": "WBY33AW0XPFR41477",
-       "year": 2023,
-       "trim": "M50",
-       "trim_id": "bmw-i4-m50",
-       "trim_label": "M50",
-       "market": "National",
-       "markets": [],
-       "distance": 358,
-       "miles": 56912,
-       "price": 41167,
-       "adj": 53340,
-       "msrp": 67300,
-       "dealer": "Alfa Romeo of Marietta",
-       "city": "Marietta",
-       "state": "GA",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW0XPFR41477",
-       "image": "https://retail.photos.vin/WBY33AW0XPFR41477-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW0XPFR41477&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-07-18",
-       "days_listed": 36,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
+        ],
         [
-         "2026-08-23",
-         41167
+         "2026-08-24",
+         35500
         ]
        ]
       },
@@ -11370,14 +12614,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         35690
+        ],
+        [
+         "2026-08-24",
          35690
         ]
        ]
@@ -11411,14 +12659,18 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-15",
-       "days_listed": 8,
+       "days_listed": 9,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         53362
+        ],
+        [
+         "2026-08-24",
          53362
         ]
        ]
@@ -11452,14 +12704,18 @@
         "no accidents"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         31776
+        ],
+        [
+         "2026-08-24",
          31776
         ]
        ]
@@ -11493,14 +12749,18 @@
         "1 accident"
        ],
        "listed_since": "2026-08-09",
-       "days_listed": 14,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
-       "days_tracked": 1,
+       "days_tracked": 2,
        "series": [
         [
          "2026-08-23",
+         32985
+        ],
+        [
+         "2026-08-24",
          32985
         ]
        ]
@@ -11514,6 +12774,14 @@
        "min_adj": 25060,
        "median_adj": 41657,
        "median_price": 35500
+      },
+      {
+       "date": "2026-08-24",
+       "n": 146,
+       "n_local": 56,
+       "min_adj": 25060,
+       "median_adj": 41717,
+       "median_price": 35271
       }
      ],
      "daily_by_trim": {
@@ -11522,6 +12790,14 @@
         "date": "2026-08-23",
         "n": 40,
         "n_local": 13,
+        "min_adj": 25060,
+        "median_adj": 35193,
+        "median_price": 27576
+       },
+       {
+        "date": "2026-08-24",
+        "n": 40,
+        "n_local": 12,
         "min_adj": 25060,
         "median_adj": 35193,
         "median_price": 27576
@@ -11535,6 +12811,14 @@
         "min_adj": 28045,
         "median_adj": 38665,
         "median_price": 30598
+       },
+       {
+        "date": "2026-08-24",
+        "n": 36,
+        "n_local": 10,
+        "min_adj": 28045,
+        "median_adj": 38884,
+        "median_price": 30598
        }
       ],
       "bmw-i4-xdrive40": [
@@ -11545,6 +12829,14 @@
         "min_adj": 37114,
         "median_adj": 43870,
         "median_price": 38682
+       },
+       {
+        "date": "2026-08-24",
+        "n": 33,
+        "n_local": 16,
+        "min_adj": 37114,
+        "median_adj": 43800,
+        "median_price": 38624
        }
       ],
       "bmw-i4-m50": [
@@ -11555,10 +12847,182 @@
         "min_adj": 32893,
         "median_adj": 46924,
         "median_price": 40999
+       },
+       {
+        "date": "2026-08-24",
+        "n": 37,
+        "n_local": 18,
+        "min_adj": 32893,
+        "median_adj": 46529,
+        "median_price": 40898
        }
       ]
      },
-     "gone": []
+     "gone": [
+      {
+       "likely": "out of window",
+       "vin": "WBY43AW02PFR35368",
+       "year": 2023,
+       "trim": "eDrive35",
+       "trim_id": "bmw-i4-edrive35",
+       "trim_label": "eDrive35",
+       "market": "Chicago",
+       "markets": [
+        "Chicago"
+       ],
+       "miles": 27538,
+       "last_price": 33187,
+       "adj": 35448,
+       "city": "Milwaukee",
+       "state": "WI",
+       "dealer": "BMW of Milwaukee North",
+       "url": "https://www.carfax.com/vehicle/WBY43AW02PFR35368",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "delisted",
+       "vin": "WBY73AW05RFT29644",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "market": "Chicago",
+       "markets": [
+        "Chicago"
+       ],
+       "miles": 14749,
+       "last_price": 38998,
+       "adj": 37422,
+       "city": "Milwaukee",
+       "state": "WI",
+       "dealer": "CarMax Milwaukee",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW05RFT29644",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "vin": "WBY23HD03SFU00254",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "market": "Cincinnati",
+       "markets": [
+        "Cincinnati",
+        "Indianapolis"
+       ],
+       "miles": 17314,
+       "last_price": 39417,
+       "adj": 38611,
+       "city": "Junction City",
+       "state": "KY",
+       "dealer": "Auto Connection",
+       "url": "https://www.carfax.com/vehicle/WBY23HD03SFU00254",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "vin": "WBY73AW04PFP60277",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "market": "Chicago",
+       "markets": [
+        "Chicago",
+        "Indianapolis"
+       ],
+       "miles": 20828,
+       "last_price": 39593,
+       "adj": 39841,
+       "city": "Downers Grove",
+       "state": "IL",
+       "dealer": "zeigler chrysler dodge jeep ram of downers grove",
+       "url": "https://zeiglerchryslerdodge.com/used/BMW/2023-BMW-i4-c8913555ac1814de2655b06917472d4d.htm",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "vin": "WBY33AW09PFP07167",
+       "year": 2023,
+       "trim": "M50",
+       "trim_id": "bmw-i4-m50",
+       "trim_label": "M50",
+       "market": "National",
+       "markets": [],
+       "miles": 40356,
+       "last_price": 40999,
+       "adj": 48205,
+       "city": "Charlotte",
+       "state": "NC",
+       "dealer": "Capital Ford of Charlotte",
+       "url": "https://www.carfax.com/vehicle/WBY33AW09PFP07167",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "vin": "WBY33AW0XPFR41477",
+       "year": 2023,
+       "trim": "M50",
+       "trim_id": "bmw-i4-m50",
+       "trim_label": "M50",
+       "market": "National",
+       "markets": [],
+       "miles": 56912,
+       "last_price": 41167,
+       "adj": 53340,
+       "city": "Marietta",
+       "state": "GA",
+       "dealer": "Alfa Romeo of Marietta",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW0XPFR41477",
+       "last_seen": "2026-08-23",
+       "first_seen": "2026-08-23",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "flags": []
+      }
+     ]
     }
    }
   }
