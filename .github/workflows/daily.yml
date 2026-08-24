@@ -1,4 +1,4 @@
-name: tracker
+name: SpicyCar daily
 
 on:
   schedule:

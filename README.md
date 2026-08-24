@@ -1,73 +1,110 @@
+<p align="center">
+  <a href="https://spicychicken59.github.io/Auto-market-tracker/"><img src="docs/screenshot.png" alt="SpicyCar dashboard — BMW i5, lowest and median landed price, listings with photos and history flags" width="920"></a>
+</p>
+
 # SpicyCar
 
-Used-car purchase analyzer. Once a day a GitHub Action pulls listings from the
-[auto.dev](https://auto.dev) API for every brand → model → trim on the watchlist, prices each one
-as **landed** — what it would cost a specific buyer to put it in their driveway — appends a snapshot
-to `data/snapshots.csv`, writes a Markdown report, emails it, and publishes a dashboard to GitHub
-Pages.
+[![SpicyCar daily](https://github.com/spicyChicken59/Auto-market-tracker/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/Auto-market-tracker/actions/workflows/daily.yml)
 
-Two things are configured, separately, in `targets.json`:
+**A used-car purchase analyzer.** Every day it snapshots every BMW i4 and i5 on the market, prices
+each one as what it would actually cost to land in a specific buyer's driveway, and publishes the
+result as a report, an email, and a dashboard.
 
-- **buyer** — who is purchasing: home zip, the states they will drive to for a car, and how they
-  value miles and shipping. One buyer today (the first real use: a buyer near Chicago); the
-  shape is built for more.
-- **watchlist** — what to track: brands, models, trims. Currently BMW i4 and i5, every trim.
+It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
+CSV in the repository is the ledger.
 
-## Landed price
+**[Dashboard](https://spicychicken59.github.io/Auto-market-tracker/) ·
+[How it works](https://spicychicken59.github.io/Auto-market-tracker/how.html) ·
+[Today's report](REPORT.md)**
+
+## The idea
+
+Asking price is the least useful number on a listing. A $38,000 car in San Diego and a $45,000 car
+in Indianapolis are not $7,000 apart if one has to ride a truck for 1,800 miles and the other has
+20,000 more miles on it. SpicyCar makes that comparison honest, every day:
 
 ```
 landed = asking
-       + shipping                       0 in-state · else max(ship_min, miles_from_home × ship_per_mile)
-       + (miles − mileage_baseline) × cents_per_mile
+       + shipping                  0 in-state · else max($350, miles_from_home × $0.65)
+       + (miles − 20,000) × $0.30
 ```
 
-"In-state" means the listing's own state field is one of the buyer's `states` — no coordinates
-involved, so listings the API could not geocode still land in the right bucket. Distance from home
-comes from the listing's coordinates, or from its zip (geocoded once and cached in
-`data/zipcodes.json`). If neither is usable, the flat `ship_cost` applies. Everything sorts by
-landed.
+Everything sorts by landed. Which cars are sitting, which are being cut, which just disappeared —
+all relative to what they would really cost *this* buyer.
+
+Two things are configured, separately:
+
+- **buyer** — who is purchasing: home zip, the states they will drive to for a car, and how they
+  value miles and shipping. One buyer today; the first real use is a buyer near Chicago
+  shopping for an i5 eDrive40. The shape is built for more.
+- **watchlist** — what to track: brands → models → trims. Every trim of the i4 and i5, so the one
+  they want can be judged against its siblings.
+
+## Design decisions
+
+**It runs on 20 API calls a day.** The free plan allows 1,000 calls a month at 20 listings each.
+So each trim is fetched twice — once filtered to the buyer's states (the API takes a comma list, so
+three states cost one call) and once nationally — and each trim has a *depth*: the one being shopped
+gets every sort and page, the rest get the cheapest 20. A hard `budget_per_day` makes the script
+refuse to run over budget, and it prints its plan before it starts.
+
+**It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
+can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
+labelled "priced above today's cut-off" on the dashboard and left out of the report's "gone" list.
+
+**Scope by state, not by radius.** The first version placed listings into city radii by their
+coordinates and returned one or two local cars a day while the same cars appeared nationally with
+Midwest addresses. The cause: for listings it cannot geocode, the API returns exactly `(0, 0)` —
+null island, 5,900 miles from Indianapolis — which passes every null check and fails every radius.
+Now a listing is in-state when its own `state` field says so; coordinates only price shipping, with
+a cached zip-code fallback. *Use the field that means the thing.*
+
+**Buyer and watchlist are separate.** Cost model and geography belong to a person; brands and trims
+belong to the market. Keeping them apart is what makes the second buyer an addition, not a rewrite.
+
+**Nothing to operate.** A scheduled Action, a CSV rewritten in place each run (so a same-day re-run
+replaces rather than duplicates), a static dashboard that reads one JSON file, and a design system
+loaded live from its own repo's Pages so the app restyles itself when the system updates.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  cron[GitHub Actions<br>daily 11:00 UTC] --> py[Tracking.py]
+  cfg[(targets.json<br>buyer + watchlist)] --> py
+  py -->|2 calls per trim| api[auto.dev listings API]
+  py -->|zip fallback, cached| geo[zippopotam.us]
+  py --> csv[(data/snapshots.csv)]
+  py --> rep[REPORT.md]
+  py --> json[docs/data.json]
+  rep --> mail[Email via Resend]
+  json --> dash[Dashboard<br>GitHub Pages]
+  ds[SpicyChicken design system<br>its own Pages] -. styles + marks .-> dash
+```
+
+**Stack:** Python 3.12 + `requests` · GitHub Actions · GitHub Pages · vanilla JavaScript, no build
+step · [SpicyChicken design system](https://github.com/spicyChicken59/design-system).
 
 ## What you get each day
 
-- `REPORT.md` — the emailed report, grouped by model then trim: price changes, vehicles gone since
-  the last snapshot, every in-state listing grouped by state, and the five best-value cars out of
-  state.
-- `docs/index.html` + `docs/data.json` — the dashboard. Brand and model tabs, trim and state
-  filters, lowest and median landed price over time, one row per vehicle with photo, history flags
-  (CPO, owners, accidents, ex-lease), distance from home, shipping estimate, days on market,
-  per-vehicle price sparkline, and a "gone from the market" list.
-- The dashboard's styles and marks load straight from the
-  [SpicyChicken design system](https://github.com/spicyChicken59/design-system) via its GitHub
-  Pages — no vendored copy.
+- `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
+  every in-state listing grouped by state, and the five best-value cars out of state.
+- The dashboard — brand and model tabs; trim, state, year and mileage filters; lowest and median
+  landed price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
+  ex-lease), distance from home, shipping estimate, days on market and a price sparkline; and the
+  "gone" list.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home.
-  Rewritten on each run, so a same-day re-run replaces that day's rows instead of duplicating them.
 
-## How it stays inside the free API plan
+## Run it yourself
 
-The auto.dev free plan allows **1,000 calls a month** and returns at most **20 listings per call**.
+1. Fork. Add repository secrets: `AUTODEV_API_KEY` (required), and `RESEND_API_KEY` + `EMAIL_TO`
+   if you want the email.
+2. Settings → Pages → *Deploy from a branch* → `main` → `/docs`.
+3. Edit `targets.json`: your `buyer`, your `watchlist`. The Action runs at 11:00 UTC and can be
+   started by hand from the Actions tab.
 
-- Each trim is fetched **twice**: once filtered to the buyer's states (the API takes a comma list,
-  so three states cost one call) and once **nationally**. Adding a state costs nothing.
-- A trim's `depth` decides how many calls it spends per source: `light` = the cheapest 20
-  (1 call), `full` = every sort × every page (with the defaults, 4 calls). Give `full` to the one or
-  two trims you are actually shopping; leave the rest `light`.
-- `budget_per_day` is a hard guard: the script refuses to run if the planned call count exceeds it,
-  and prints the plan at the start of every run.
-- Because each query only returns the cheapest N, a car can disappear from the data by being priced
-  above the day's cut-off rather than by selling. Those are marked "out of window" in the dashboard
-  and left out of the report's "gone" list.
-
-## Setup
-
-1. Repository secrets (Settings → Secrets and variables → Actions):
-   `AUTODEV_API_KEY` (required), `RESEND_API_KEY` and `EMAIL_TO` (optional — no email without them).
-2. GitHub Pages: Settings → Pages → *Deploy from a branch* → `main` → `/docs`.
-3. The workflow in `.github/workflows/daily.yml` runs at 11:00 UTC (7am Eastern) and can be
-   started by hand from the Actions tab (*Run workflow*).
-
-Run locally with `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, serve the
-folder (`python -m http.server` inside `docs/`) — it fetches `data.json`, which browsers block on
-`file://`.
+Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, serve the folder
+(`python -m http.server` inside `docs/`) — it fetches `data.json`, which browsers block on `file://`.
 
 ## Configuration
 
@@ -107,5 +144,10 @@ A target's id is `brand-model-trim` (e.g. `bmw-i5-edrive40`). Add a brand as ano
 ## Roadmap
 
 - Drill below state: county or metro.
+- Distance-based "drivable" instead of state lines.
 - A second buyer profile — the config is already shaped for it.
-- More brands and models on the watchlist.
+- More brands on the watchlist.
+
+## Author
+
+Mohammed Tahir Madni — [github.com/spicyChicken59](https://github.com/spicyChicken59)
