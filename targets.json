@@ -1,11 +1,13 @@
 {
-  "budget_per_day": 33,
+  "budget_per_day": 40,
+  "budget_per_month": 1000,
 
   "buyer": {
     "id": "chicago",
     "label": "Chicago",
     "home_zip": null,
     "states": ["IL", "OH", "IN"],
+    "shopping": ["bmw-i5-edrive40"],
     "ship_per_mile": 0.65,
     "ship_min": 350,
     "ship_cost": 1100,
@@ -16,6 +18,7 @@
   "defaults": {
     "min_price": 15000,
     "depth": "light",
+    "cadence": 1,
     "sorts": ["price.asc", "miles.asc"],
     "pages": 2
   },
@@ -49,6 +52,74 @@
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"] },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }
+        }
+      }
+    },
+
+    "hyundai": {
+      "label": "Hyundai",
+      "make": "Hyundai",
+      "cadence": 2,
+      "models": {
+        "ioniq5": { "label": "Hyundai Ioniq 5", "model": "Ioniq 5,IONIQ 5", "years": ["2022", "2023", "2024", "2025", "2026"] },
+        "ioniq9": { "label": "Hyundai Ioniq 9", "model": "Ioniq 9,IONIQ 9", "years": ["2026"] }
+      }
+    },
+
+    "kia": {
+      "label": "Kia",
+      "make": "Kia",
+      "cadence": 2,
+      "models": {
+        "ev6": { "label": "Kia EV6", "model": "EV6", "years": ["2022", "2023", "2024", "2025", "2026"] },
+        "ev9": { "label": "Kia EV9", "model": "EV9", "years": ["2024", "2025", "2026"] }
+      }
+    },
+
+    "audi": {
+      "label": "Audi",
+      "make": "Audi",
+      "cadence": 2,
+      "models": {
+        "q4-etron": { "label": "Audi Q4 e-tron", "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4", "years": ["2022", "2023", "2024", "2025", "2026"] },
+        "q6-etron": { "label": "Audi Q6 e-tron", "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6", "years": ["2025", "2026"] }
+      }
+    },
+
+    "lucid": {
+      "label": "Lucid",
+      "make": "Lucid",
+      "cadence": 2,
+      "models": {
+        "air": {
+          "label": "Lucid Air",
+          "model": "Air",
+          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "min_price": 30000,
+          "trims": {
+            "touring":       { "label": "Touring",       "trim_query": "Touring",       "trim_match": "touring", "trim_exclude": "grand" },
+            "grand-touring": { "label": "Grand Touring", "trim_query": "Grand Touring", "trim_match": "grand touring" }
+          }
+        }
+      }
+    },
+
+    "chevrolet": {
+      "label": "Chevrolet",
+      "make": "Chevrolet",
+      "cadence": 2,
+      "models": {
+        "equinox-ev": {
+          "label": "Chevrolet Equinox EV",
+          "model": "Equinox EV",
+          "years": ["2024", "2025", "2026"],
+          "trims": { "rs": { "label": "RS", "trim_query": "RS,2RS,3RS", "trim_match": "rs" } }
+        },
+        "blazer-ev": {
+          "label": "Chevrolet Blazer EV",
+          "model": "Blazer EV",
+          "years": ["2024", "2025", "2026"],
+          "trims": { "rs": { "label": "RS", "trim_query": "RS,2RS,3RS", "trim_match": "rs" } }
         }
       }
     }

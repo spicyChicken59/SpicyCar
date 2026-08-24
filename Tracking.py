@@ -8,8 +8,12 @@ Two things are configured, separately:
   watchlist  what to track: brand -> model -> trim. Each trim is a target
              (id "brand-model-trim").
 
-Every target is fetched twice a day: once filtered to the buyer's states
-(one call, the API takes a comma list) and once nationally. A listing is
+Every target is fetched twice on its day: once filtered to the buyer's
+states (one call, the API takes a comma list) and once nationally. A
+target's cadence (1 = daily, 2 = every other day, ...) spreads the
+comparison brands across days so the whole watchlist fits the API plan;
+buyer.shopping names the targets that lead the report in full, while the
+rest get one line each. A listing is
 "in-state" when its own state field is one of the buyer's states — no
 coordinates involved, so listings the API could not geocode still land in
 the right bucket. Coordinates are only used for the distance from home,
@@ -40,12 +44,15 @@ APP = "SpicyCar"
 CFG = json.loads(Path("targets.json").read_text())
 BUYER = CFG.get("buyer", {})
 STATES = [str(s).strip().upper() for s in BUYER.get("states", [])]
+SHOPPING = [str(s) for s in BUYER.get("shopping", [])]   # target ids being shopped
+TODAY_ORD = date.fromisoformat(TODAY).toordinal()
 WATCHLIST = CFG["watchlist"]
 DEFAULTS = CFG.get("defaults", {})
 LEGACY_IDS = CFG.get("legacy_ids", {})
-BUDGET = CFG.get("budget_per_day", 33)
+BUDGET = CFG.get("budget_per_day", 40)          # cap on any single day
+MONTHLY = CFG.get("budget_per_month", 1000)     # the API plan; checked on the average
 PER_PAGE = 20                       # the free plan clamps limit to 20
-PARAM_KEYS = ["min_price", "depth", "sorts", "pages", "years"]
+PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years"]
 
 DATA = Path("data")
 DATA.mkdir(exist_ok=True)
@@ -66,13 +73,17 @@ FIELDS = ["snapshot_date", "target", "vin", "year", "trim", "miles",
 # --------------------------------------------------------------------------
 def build_targets():
     targets = {}
+    seen = Counter()      # per cadence, to spread targets evenly across the cycle
     for bkey, b in WATCHLIST.items():
         if not b.get("active", True):
             continue
         for mkey, m in b["models"].items():
             if not m.get("active", True):
                 continue
-            for tkey, tr in m["trims"].items():
+            # A model with no trims is one target that covers every trim.
+            trims = m.get("trims") or {None: {}}
+            m_offset = None       # a model's trims all run on the same days
+            for tkey, tr in trims.items():
                 if not tr.get("active", True):
                     continue
                 t = {}
@@ -81,21 +92,32 @@ def build_targets():
                         if k in layer:
                             t[k] = layer[k]
                 t.update({
-                    "id": f"{bkey}-{mkey}-{tkey}",
+                    "id": f"{bkey}-{mkey}" + (f"-{tkey}" if tkey else ""),
                     "brand": bkey, "brand_label": b.get("label", bkey),
                     "make": b["make"],
                     "model_key": mkey, "model_label": m.get("label", mkey),
                     "model": m.get("model", mkey),
                     "model_note": m.get("note", ""),
-                    "trim_key": tkey, "label": tr.get("label", tkey),
+                    "trim_key": tkey or "all",
+                    "label": tr.get("label", tkey or "all trims"),
                     "note": tr.get("note", ""),
                     "trim_query": tr.get("trim_query", ""),
                     "trim_match": tr.get("trim_match", ""),
+                    "trim_exclude": tr.get("trim_exclude", ""),
                 })
                 t.setdefault("years", [])
                 t.setdefault("sorts", ["price.asc"])
                 t.setdefault("pages", 1)
                 t.setdefault("depth", "light")
+                try:
+                    t["cadence"] = max(1, int(t.get("cadence") or 1))
+                except (TypeError, ValueError):
+                    t["cadence"] = 1
+                if m_offset is None:
+                    m_offset = seen[t["cadence"]] % t["cadence"]
+                    seen[t["cadence"]] += 1
+                t["offset"] = m_offset
+                t["shopping"] = t["id"] in SHOPPING
                 targets[t["id"]] = t
     return targets
 
@@ -114,12 +136,31 @@ def sorts_pages(t):
     return [t["sorts"][0]], 1
 
 
+def calls_for(t):
+    sorts, pages = sorts_pages(t)
+    return len(SOURCES) * len(sorts) * pages
+
+
+def due_on(t, ordinal):
+    """Cadence 1 runs every day. Cadence N runs every Nth day; models with
+    the same cadence take successive offsets in watchlist order, so the load
+    is spread evenly and each model keeps the same days of the cycle."""
+    c = t["cadence"]
+    return c <= 1 or (ordinal + t["offset"]) % c == 0
+
+
+def next_due(t):
+    for k in range(t["cadence"]):
+        if due_on(t, TODAY_ORD + k):
+            return date.fromordinal(TODAY_ORD + k).isoformat()
+    return TODAY
+
+
 def planned_calls():
-    total = 0
-    for t in TARGETS.values():
-        sorts, pages = sorts_pages(t)
-        total += len(SOURCES) * len(sorts) * pages
-    return total
+    """(calls today, worst day in the next two weeks, daily average)."""
+    days = [sum(calls_for(t) for t in TARGETS.values()
+                if due_on(t, TODAY_ORD + k)) for k in range(14)]
+    return days[0], max(days), sum(days) / len(days)
 
 
 # --------------------------------------------------------------------------
@@ -354,9 +395,18 @@ def fetch(source_name, source, sort, page, t):
 
 def normalize(rec, t, dropped):
     global GEOCODED, UNPLACED
+    # Match trims against the trim-bearing fields only, never the whole
+    # record, so a short match like "rs" cannot hit unrelated text.
+    hay = " ".join(str(first(rec, [p])) for p in
+                   ("vehicle.trim", "vehicle.style", "vehicle.series",
+                    "vehicle.model")).lower()
     tm = t.get("trim_match", "").lower()
-    if tm and tm not in json.dumps(rec).lower():
+    if tm and tm not in hay:
         dropped["trim mismatch"] += 1
+        return None
+    tx = t.get("trim_exclude", "").lower()
+    if tx and tx in hay:
+        dropped["trim excluded"] += 1
         return None
     year = str(first(rec, ["vehicle.year", "year"]))
     if t["years"] and year not in [str(y) for y in t["years"]]:
@@ -659,8 +709,132 @@ def listing_entry(r, s):
 # --------------------------------------------------------------------------
 # Outputs
 # --------------------------------------------------------------------------
+def current_rows(all_rows, tids):
+    """The latest snapshot for each target: today's rows, or the last day a
+    slower-cadence target was fetched."""
+    by_target = defaultdict(list)
+    for r in all_rows:
+        if r["target"] in tids:
+            by_target[r["target"]].append(r)
+    out = []
+    for rs in by_target.values():
+        last = max(r["snapshot_date"] for r in rs)
+        out += [r for r in rs if r["snapshot_date"] == last]
+    return out
+
+
+def brief_lines(m_entry, listings, prev_day):
+    """Three lines that say what changed — for the models being shopped."""
+    daily = m_entry["daily"]
+    today = daily[-1] if daily else None
+    prev = daily[-2] if len(daily) >= 2 else None
+    out = []
+    if today and today["min_adj"] is not None:
+        line = f"- Lowest landed **{money(today['min_adj'])}**"
+        best = next((x for x in listings if x["adj"] == today["min_adj"]), None)
+        if best:
+            line += f" ({best['city']}, {best['state']})"
+        if prev and prev["min_adj"] is not None:
+            d = today["min_adj"] - prev["min_adj"]
+            line += (" · = vs " if d == 0 else
+                     f" · {'▼' if d < 0 else '▲'} {money(abs(d))} vs ") + prev["date"]
+        out.append(line)
+    local = [x for x in listings if x["local"] and x["adj"] is not None]
+    if local:
+        b = local[0]
+        out.append(f"- Lowest in {'/'.join(STATES)} **{money(b['adj'])}** "
+                   f"({b['city']}, {b['state']})")
+    elif STATES:
+        out.append(f"- Nothing in {'/'.join(STATES)}")
+    movers = sum(1 for x in listings if len(x["series"]) >= 2
+                 and x["series"][-1][1] != x["series"][-2][1])
+    new = sum(1 for x in listings if x["days_tracked"] == 1) if prev else 0
+    gone = sum(1 for g in m_entry["gone"]
+               if g["last_seen"] == prev_day and g["likely"] == "delisted")
+    line = (f"- {len(listings)} on the market · "
+            f"{sum(1 for x in listings if x['local'])} in-state")
+    if prev_day:
+        line += (f" · {movers} price change{'s' if movers != 1 else ''} · "
+                 f"{new} new · {gone} gone")
+    out.append(line)
+    return out
+
+
+def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
+    """Movers, departures, in-state cars by state, best value out of state."""
+    best = next((x for x in tl if x["adj"] is not None), None)
+    head = f"### {t['label']} — {len(tl)} vehicles"
+    if best:
+        head += (f" · lowest landed {money(best['adj'])} "
+                 f"({best['city']}, {best['state']})")
+    sec += [head, ""]
+    if t["note"]:
+        sec += [f"_{t['note']}_", ""]
+    movers = [x for x in tl if len(x["series"]) >= 2
+              and x["series"][-1][1] != x["series"][-2][1]]
+    if movers:
+        sec.append("**Price changes**")
+        for x in movers:
+            old, new = x["series"][-2][1], x["series"][-1][1]
+            sec.append(f"- {money(old)} -> **{money(new)}** "
+                       f"({x['city']}, {x['state']}) `{x['vin']}`")
+        sec.append("")
+    just_gone = [g for g in gone if g["trim_id"] == t["id"]
+                 and g["last_seen"] == prev_day and g["likely"] == "delisted"]
+    if just_gone:
+        sec.append(f"**Gone since {prev_day}**")
+        for g in just_gone:
+            sec.append(f"- {money(g['last_price'])} · {g['year']} · "
+                       f"{g['city']}, {g['state']} · tracked "
+                       f"{g['days_tracked']}d `{g['vin']}`")
+        sec.append("")
+    if STATES and not any(x["local"] for x in tl):
+        sec += [f"_Nothing in {'/'.join(STATES)}._", ""]
+    for st in STATES:
+        in_st = [x for x in tl if x["local"] and x["state"] == st]
+        if not in_st:
+            continue
+        sec.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**")
+        for x in in_st:
+            sec.append(fmt_row(rows_by_vin[x["vin"]],
+                               summarize((t["id"], x["vin"]), hist)))
+        sec.append("")
+    best5 = [x for x in tl if x["adj"] is not None and not x["local"]][:5]
+    if best5:
+        sec.append("**Best value out of state (landed)**")
+        for x in best5:
+            sec.append(fmt_row(rows_by_vin[x["vin"]],
+                               summarize((t["id"], x["vin"]), hist)))
+        sec.append("")
+
+
+def compact_line(m_entry, label):
+    """One line per comparison model: counts, the floor, the in-state floor."""
+    xs = m_entry["listings"]
+    if not xs:
+        line = f"- **{label}** — nothing found"
+    else:
+        priced = [x for x in xs if x["adj"] is not None]      # sorted by landed
+        local = [x for x in priced if x["local"]]
+        bits = [f"{len(xs)} cars", f"{sum(1 for x in xs if x['local'])} in-state"]
+        if priced:
+            b = priced[0]
+            bits.append(f"lowest landed {money(b['adj'])} ({b['city']}, {b['state']})")
+        if local:
+            bits.append(f"in-state from {money(local[0]['adj'])} "
+                        f"({local[0]['city']}, {local[0]['state']})")
+        if priced:
+            bits.append(f"median {money(int(median([x['adj'] for x in priced])))}")
+        line = f"- **{label}** — " + " · ".join(bits)
+    tail = []
+    if m_entry["cadence"] > 1:
+        tail.append(f"every {m_entry['cadence']} days")
+    if m_entry["as_of"] and m_entry["as_of"] != TODAY:
+        tail.append(f"as of {m_entry['as_of']}")
+    return line + (f" _({' · '.join(tail)})_" if tail else "")
+
+
 def build_outputs(today_rows, all_rows, hist):
-    report = [f"# {APP} — {TODAY}", ""]
     site = {
         "app": APP,
         "generated": TODAY,
@@ -668,6 +842,7 @@ def build_outputs(today_rows, all_rows, hist):
             "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
             "states": STATES,
             "state_names": {s: STATE_NAMES.get(s, s) for s in STATES},
+            "shopping": SHOPPING,
             "ship_per_mile": BUYER.get("ship_per_mile"),
             "ship_min": BUYER.get("ship_min"),
             "ship_cost": BUYER.get("ship_cost"),
@@ -677,28 +852,38 @@ def build_outputs(today_rows, all_rows, hist):
         "brands": {},
     }
     days = sorted({r["snapshot_date"] for r in all_rows})
-    prev_day = days[-2] if len(days) >= 2 else None
 
     # group targets brand -> model
     tree = defaultdict(lambda: defaultdict(list))
     for t in TARGETS.values():
         tree[t["brand"]][t["model_key"]].append(t)
 
+    full, compact = [], []      # report sections, assembled at the end
     for bkey, models in tree.items():
         b_entry = {"label": WATCHLIST[bkey].get("label", bkey),
                    "models": {}}
         site["brands"][bkey] = b_entry
         for mkey, trims in models.items():
             m0 = trims[0]
+            label = m0["model_label"]
             tids = {t["id"] for t in trims}
+            shopping = any(t["shopping"] for t in trims) or not SHOPPING
             m_rows_all = [r for r in all_rows if r["target"] in tids]
-            m_today = [r for r in today_rows if r["target"] in tids]
+            m_days = sorted({r["snapshot_date"] for r in m_rows_all})
+            m_rows = current_rows(all_rows, tids)
+            as_of = max((r["snapshot_date"] for r in m_rows), default=None)
+            prev_day = m_days[-2] if len(m_days) >= 2 else None
             m_entry = {
-                "label": m0["model_label"], "note": m0["model_note"],
+                "label": label, "note": m0["model_note"],
                 "years": sorted({str(y) for t in trims for y in t["years"]}),
+                "shopping": shopping,
+                "cadence": min(t["cadence"] for t in trims),
+                "as_of": as_of,
+                "fetched_today": any(due_on(t, TODAY_ORD) for t in trims),
                 "params": {"min_price": m0.get("min_price")},
                 "trims": {t["id"]: {"label": t["label"], "note": t["note"],
-                                    "depth": t["depth"],
+                                    "depth": t["depth"], "cadence": t["cadence"],
+                                    "shopping": t["shopping"],
                                     "years": [str(y) for y in t["years"]],
                                     "min_price": t.get("min_price")}
                           for t in trims},
@@ -707,87 +892,52 @@ def build_outputs(today_rows, all_rows, hist):
                 "daily_by_trim": {t["id"]: daily_stats(
                     [r for r in m_rows_all if r["target"] == t["id"]])
                     for t in trims},
-                "gone": delisted(tids, all_rows, today_rows, hist),
+                "gone": delisted(tids, all_rows, m_rows, hist),
             }
             b_entry["models"][mkey] = m_entry
 
-            report += [f"## {m0['model_label']}", ""]
-            if not m_today:
-                report += ["No listings found today.", ""]
+            if not m_rows:
+                if shopping:
+                    full += [f"## Shopping: {label}", "", "No listings found yet.", ""]
+                else:
+                    compact.append(compact_line(m_entry, label))
                 continue
 
-            display = pick_display_rows(m_today)
-            listings = [listing_entry(r, summarize((r["target"], r["vin"]),
-                                                   hist)) for r in display]
-            m_entry["listings"] = sorted(listings,
-                                         key=lambda x: x["adj"] or 10**9)
+            display = pick_display_rows(m_rows)
+            listings = [listing_entry(r, summarize((r["target"], r["vin"]), hist))
+                        for r in display]
+            m_entry["listings"] = sorted(listings, key=lambda x: x["adj"] or 10**9)
 
+            if not shopping:
+                compact.append(compact_line(m_entry, label))
+                continue
+
+            sec = [f"## Shopping: {label}", ""]
+            if as_of != TODAY:
+                sec += [f"_Not fetched today — showing {as_of}._", ""]
+            sec += brief_lines(m_entry, m_entry["listings"], prev_day) + [""]
             counts = Counter(x["state"] for x in listings if x["local"])
             n_out = sum(1 for x in listings if not x["local"])
             summary = " · ".join([f"{st} {counts.get(st, 0)}" for st in STATES]
                                  + [f"out of state {n_out}"])
-            report += [f"_{len(listings)} vehicles across "
-                       f"{len(trims)} trim{'s' if len(trims) != 1 else ''} · "
-                       f"{summary}_", ""]
-
+            sec += [f"_{len(listings)} vehicles across {len(trims)} "
+                    f"trim{'s' if len(trims) != 1 else ''} · {summary}_", ""]
+            rows_by_vin = {r["vin"]: r for r in display}
             for t in trims:
                 tl = [x for x in m_entry["listings"] if x["trim_id"] == t["id"]]
                 if not tl:
-                    report += [f"### {t['label']} — none found", ""]
+                    sec += [f"### {t['label']} — none found", ""]
                     continue
-                best = next((x for x in tl if x["adj"] is not None), None)
-                head = f"### {t['label']} — {len(tl)} vehicles"
-                if best:
-                    head += (f" · lowest landed {money(best['adj'])} "
-                             f"({best['city']}, {best['state']})")
-                report += [head, ""]
-                if t["note"]:
-                    report += [f"_{t['note']}_", ""]
+                trim_detail(sec, t, tl, rows_by_vin, hist, m_entry["gone"], prev_day)
+            full += sec
 
-                movers = [x for x in tl if len(x["series"]) >= 2
-                          and x["series"][-1][1] != x["series"][-2][1]]
-                if movers:
-                    report.append("**Price changes**")
-                    for x in movers:
-                        old, new = x["series"][-2][1], x["series"][-1][1]
-                        report.append(f"- {money(old)} -> **{money(new)}** "
-                                      f"({x['city']}, {x['state']}) `{x['vin']}`")
-                    report.append("")
-
-                just_gone = [g for g in m_entry["gone"]
-                             if g["trim_id"] == t["id"]
-                             and g["last_seen"] == prev_day
-                             and g["likely"] == "delisted"]
-                if just_gone:
-                    report.append(f"**Gone since {prev_day}**")
-                    for g in just_gone:
-                        report.append(
-                            f"- {money(g['last_price'])} · {g['year']} · "
-                            f"{g['city']}, {g['state']} · tracked "
-                            f"{g['days_tracked']}d `{g['vin']}`")
-                    report.append("")
-
-                rows_by_vin = {r["vin"]: r for r in display}
-                if STATES and not any(x["local"] for x in tl):
-                    report += [f"_Nothing in {'/'.join(STATES)} today._", ""]
-                for st in STATES:
-                    in_st = [x for x in tl if x["local"] and x["state"] == st]
-                    if not in_st:
-                        continue
-                    report.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**")
-                    for x in in_st:
-                        report.append(fmt_row(rows_by_vin[x["vin"]],
-                                              summarize((t["id"], x["vin"]), hist)))
-                    report.append("")
-                best5 = [x for x in tl if x["adj"] is not None
-                         and not x["local"]][:5]
-                if best5:
-                    report.append("**Best value out of state (landed)**")
-                    for x in best5:
-                        report.append(fmt_row(rows_by_vin[x["vin"]],
-                                              summarize((t["id"], x["vin"]), hist)))
-                    report.append("")
-
+    report = [f"# {APP} — {TODAY}", ""] + full
+    if compact:
+        report += ["## Comparison", "",
+                   "_The same landed maths on a slower cadence: the cheapest 20 in "
+                   f"{'/'.join(STATES) or 'your states'} and the cheapest 20 "
+                   "nationwide per model. Every car is on the dashboard._", ""]
+        report += compact + [""]
     report += ["---",
                f"_{len(hist)} vehicle histories across {len(days)} "
                f"day{'s' if len(days) != 1 else ''} · {CALLS} API calls today._"]
@@ -816,17 +966,23 @@ def send_email(report):
 # Main
 # --------------------------------------------------------------------------
 def main():
-    planned = planned_calls()
-    print(f"{len(TARGETS)} targets · planned API calls: {planned}/day "
-          f"(≈{planned * 30:,}/month) · budget {BUDGET}/day")
-    if planned > BUDGET:
-        sys.exit(f"Planned {planned} API calls exceed budget_per_day={BUDGET}. "
-                 f"Set more trims to depth 'light', reduce pages/sorts, "
-                 f"or raise the budget.")
+    today_calls, worst, avg = planned_calls()
+    monthly = avg * 30.5
+    print(f"{len(TARGETS)} targets · API calls today {today_calls} · worst day "
+          f"{worst} (cap {BUDGET}) · average {avg:.1f}/day ≈ {monthly:,.0f}/month "
+          f"(plan {MONTHLY:,})")
+    if worst > BUDGET or monthly > MONTHLY:
+        sys.exit(f"Plan too big: worst day {worst} vs budget_per_day={BUDGET}, "
+                 f"≈{monthly:,.0f}/month vs budget_per_month={MONTHLY:,}. Give "
+                 f"more targets a cadence of 2 or more, set trims to depth "
+                 f"'light', or raise the budgets.")
 
     rows = {}
     dropped = Counter()
     for tid, t in TARGETS.items():
+        if not due_on(t, TODAY_ORD):
+            print(f"{tid}: not today (every {t['cadence']} days, next {next_due(t)})")
+            continue
         raw_n = 0
         sorts, pages = sorts_pages(t)
         for source_name, source in SOURCES:

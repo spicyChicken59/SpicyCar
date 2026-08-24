@@ -382,7 +382,9 @@
     const years = trim && trim.years && trim.years.length ? trim.years : (t.years || []);
     const yearSpan = years.length > 1 ? `${years[0]}–${years[years.length - 1]}` : (years[0] || '');
     const buyer = site.buyer || {}, states = buyer.states || [];
-    $('eyebrow').textContent = [brand.label, yearSpan, states.join(' · ')].filter(Boolean).join(' · ') || 'Analyzer';
+    const anyShopping = ((buyer.shopping || []).length > 0);
+    const role = anyShopping ? (t.shopping ? 'shopping' : 'comparison') : null;
+    $('eyebrow').textContent = [brand.label, yearSpan, states.join(' · '), role].filter(Boolean).join(' · ') || 'Analyzer';
     $('h1').textContent = trim ? `${t.label} ${trim.label}` : (t.label || S.model);
     document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
     const p = t.params || {};
@@ -401,8 +403,10 @@
     const nDays = daily.length || 1;
     const nTrims = Object.keys(t.trims || {}).length;
     const minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
+    const stale = t.as_of && site.generated && t.as_of !== site.generated;
     const bits = [
-      `Updated ${fmtDateLong(site.generated)}`,
+      stale ? `As of ${fmtDateLong(t.as_of)}` : `Updated ${fmtDateLong(site.generated)}`,
+      t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
       `${nDays} snapshot day${nDays === 1 ? '' : 's'}`,
       nTrims > 1 && !trim ? `${nTrims} trims` : null,
       trim && trim.depth ? (trim.depth === 'full' ? 'Deep fetch' : 'Light fetch — cheapest 20 per query') : null,
@@ -723,8 +727,12 @@
       const site = adapt(raw || {});
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }
       S.site = site;
-      S.brand = Object.keys(site.brands)[0];
-      S.model = Object.keys(site.brands[S.brand].models)[0];
+      // Open on the model being shopped; fall back to the first in the watchlist.
+      const want = ((site.buyer && site.buyer.shopping) || [])[0];
+      let pick = null;
+      for (const [bk, b] of Object.entries(site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if (!pick && want && (m.trims || {})[want]) pick = [bk, mk];
+      S.brand = pick ? pick[0] : Object.keys(site.brands)[0];
+      S.model = pick ? pick[1] : Object.keys(site.brands[S.brand].models)[0];
       buildFilters();
       render();
     })

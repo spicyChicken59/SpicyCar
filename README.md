@@ -37,16 +37,20 @@ Two things are configured, separately:
 - **buyer** — who is purchasing: home zip, the states they will drive to for a car, and how they
   value miles and shipping. One buyer today; the first real use is a buyer near Chicago shopping
   for an i5 eDrive40. The shape is built for more.
-- **watchlist** — what to track: brands → models → trims. Every trim of the i4 and i5, so the one
-  they want can be judged against its siblings.
+- **watchlist** — what to track: brands → models → trims. Every trim of the BMW i4 and i5, plus
+  comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet on a slower cadence, so the one
+  they want can be judged against its siblings and its rivals. `buyer.shopping` names the targets
+  that lead the report in full; everything else gets one line.
 
 ## Design decisions
 
-**It runs on 20 API calls a day.** The free plan allows 1,000 calls a month at 20 listings each.
-So each trim is fetched twice — once filtered to the buyer's states (the API takes a comma list, so
-three states cost one call) and once nationally — and each trim has a *depth*: the one being shopped
-gets every sort and page, the rest get the cheapest 20. A hard `budget_per_day` makes the script
-refuse to run over budget, and it prints its plan before it starts.
+**It runs on about 30 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
+each. So each target is fetched twice — once filtered to the buyer's states (the API takes a comma
+list, so three states cost one call) and once nationally — and each target has a *depth* (the one
+being shopped gets every sort and page, the rest get the cheapest 20) and a *cadence*: comparison
+brands run every other day, spread evenly across the cycle in watchlist order, so six brands fit the
+plan. A hard `budget_per_day` makes the script refuse to run if any day in the next two weeks would
+exceed it, and it prints the plan before it starts.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
@@ -118,29 +122,32 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 | `ship_per_mile`, `ship_min` | Shipping estimate for everything else: `max(ship_min, distance × ship_per_mile)`. Set `ship_per_mile` to `null` for a flat rate. |
 | `ship_cost` | Flat shipping, used when distance is unknown or `ship_per_mile` is off. |
 | `cents_per_mile`, `mileage_baseline` | Mileage adjustment: each mile above the baseline costs this much; each mile below credits it. |
+| `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full and the dashboard opens on the first; every other model is a one-line comparison. |
 
 ### watchlist
 
 | Key | Meaning |
 |---|---|
-| `budget_per_day` | Maximum API calls per run; the script refuses to exceed it. |
-| `defaults` | Fallbacks for the per-trim parameters below. |
+| `budget_per_month`, `budget_per_day` | The API plan (checked on the average over the next two weeks) and a cap on any single day; the script refuses to run if either would be exceeded. |
+| `defaults` | Fallbacks for the per-target parameters below. |
 | `legacy_ids` | Old target ids → new ids, so history carries over when the config is restructured. |
-| `watchlist.<brand>` | `label`, `make` (as the API spells it), `active`, and `models`. |
-| `…models.<model>` | `label`, `model` (API spelling), `years`, `note`, `active`, parameter overrides, and `trims`. |
-| `…trims.<trim>` | `label`, `trim_query` (sent to the API as `vehicle.trim`), `trim_match` (client-side safety net), `note`, `depth`, `years`, `min_price`, `active`. |
+| `watchlist.<brand>` | `label`, `make` (as the API spells it), `active`, parameter overrides, and `models`. |
+| `…models.<model>` | `label`, `model` (API spelling — a comma list is OR, handy for case variants), `years`, `note`, `active`, parameter overrides, and optional `trims`. A model without `trims` is one target across all its trims. |
+| `…trims.<trim>` | `label`, `trim_query` (sent as `vehicle.trim`, comma list is OR), `trim_match` (client-side check against the trim fields), `trim_exclude` (drop if this appears — "grand" keeps Grand Touring out of Touring), `note`, `active`, parameter overrides. |
 
-Per-trim parameters resolve trim ← model ← brand ← defaults:
+Parameters resolve trim ← model ← brand ← defaults:
 
 | Parameter | Meaning |
 |---|---|
 | `min_price` | listings below this are ignored — monthly payments or typos, not cars |
 | `depth` | `light` (1 call per source) or `full` (`sorts` × `pages` calls per source) |
+| `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked "as of" |
 | `sorts`, `pages` | what `full` depth fetches (defaults: `price.asc` + `miles.asc`, 2 pages) |
 | `years` | model years; sent as a range and also filtered client-side |
 
-A target's id is `brand-model-trim` (e.g. `bmw-i5-edrive40`). Add a brand as another key under
-`watchlist`; the dashboard grows a brand tab row. Check the printed call plan after any change.
+A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as
+another key under `watchlist`; the dashboard grows a brand tab. Check the printed call plan after
+any change — it shows today, the worst day in the next two weeks, and the monthly average.
 
 ## Roadmap
 

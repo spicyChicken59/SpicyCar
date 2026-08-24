@@ -63,7 +63,7 @@
     <h2 id="question">The question</h2>
     <p>Asking price is the least useful number on a listing. A $38,000 car in San Diego and a $45,000 car in Indianapolis are not $7,000 apart if one of them has to ride a truck for 1,800 miles and the other has 20,000 more miles on it. SpicyCar exists to make that comparison honest — and to make it every day, so you can see which cars are sitting, which are being cut, and which just disappeared.</p>
     <p>It is built around a <strong>buyer</strong> — a home zip code, the states they are willing to drive to, and how they value miles and shipping — and a <strong>watchlist</strong> of brands, models and trims. The two are configured separately, so a second buyer is an addition rather than a rewrite.</p>
-    <p>The first buyer is real: someone near Chicago, shopping for a BMW i5 eDrive40. The watchlist is every trim of the i4 and i5, so the one they want can be judged against its siblings.</p>
+    <p>The first buyer is real: someone near Chicago, shopping for a BMW i5 eDrive40. The watchlist is every trim of the i4 and i5, so the one they want can be judged against its siblings — and comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet, so it can be judged against its rivals. The report leads with what is being shopped, in full, and gives every comparison model one line.</p>
 
     <h2 id="landed">Landed price</h2>
     <p>Everything sorts by one number: what the car would cost sitting in the buyer's driveway.</p>
@@ -93,8 +93,9 @@
     <p>The free plan allows <strong>1,000 calls a month</strong> and returns at most <strong>20 listings per call</strong>. That shapes the whole design.</p>
     <ul>
       <li><strong>Two queries per trim.</strong> One filtered to the buyer's states — the API takes a comma-separated list, so three states cost one call — and one national. Adding a state costs nothing.</li>
-      <li><strong>Depth.</strong> The one or two trims a buyer is actually shopping get <code>full</code> depth: two sort orders, two pages each. Everything else gets <code>light</code>: the cheapest 20 and nothing more. The i5 eDrive40 is full; the other six trims are light. That is 20 calls a day, about 600 a month.</li>
-      <li><strong>A hard budget.</strong> The script prints its planned call count before it starts and refuses to run if the plan would exceed <code>budget_per_day</code>.</li>
+      <li><strong>Depth.</strong> The one or two trims a buyer is actually shopping get <code>full</code> depth: two sort orders, two pages each. Everything else gets <code>light</code>: the cheapest 20 and nothing more. The i5 eDrive40 is full; every other target is light.</li>
+      <li><strong>Cadence.</strong> Comparison brands are fetched every other day, spread evenly across the cycle in watchlist order, so six brands fit in about 30 calls a day — roughly 900 a month. On a model's off day the dashboard and report show its last fetch, marked "as of".</li>
+      <li><strong>A hard budget.</strong> The script prints its plan before it starts — today, the worst day in the next two weeks, the monthly average — and refuses to run if any day would exceed <code>budget_per_day</code>.</li>
     </ul>
     <p>Because each query returns only the cheapest N, the data is a sample of the bottom of the market, not the whole market. That has one consequence worth being explicit about.</p>
     <div class="sc-callout sc-callout--core">
