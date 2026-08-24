@@ -1,18 +1,19 @@
 {
   "budget_per_day": 33,
 
-  "region": { "label": "Midwest", "zip": "46204", "lat": 39.7684, "lon": -86.1581, "distance": 400 },
-
-  "markets": {
-    "Cincinnati":   { "zip": "45202", "lat": 39.1031, "lon": -84.5120, "distance": 200 },
-    "Chicago":      { "zip": "60601", "lat": 41.8855, "lon": -87.6221, "distance": 200 },
-    "Indianapolis": { "zip": "46204", "lat": 39.7684, "lon": -86.1581, "distance": 200 }
+  "buyer": {
+    "id": "chicago",
+    "label": "Chicago",
+    "home_zip": null,
+    "states": ["IL", "OH", "IN"],
+    "ship_per_mile": 0.65,
+    "ship_min": 350,
+    "ship_cost": 1100,
+    "cents_per_mile": 0.30,
+    "mileage_baseline": 20000
   },
 
   "defaults": {
-    "cents_per_mile": 0.30,
-    "mileage_baseline": 20000,
-    "ship_cost": 1100,
     "min_price": 15000,
     "depth": "light",
     "sorts": ["price.asc", "miles.asc"],
@@ -21,7 +22,7 @@
 
   "legacy_ids": { "i5-edrive40": "bmw-i5-edrive40" },
 
-  "brands": {
+  "watchlist": {
     "bmw": {
       "label": "BMW",
       "make": "BMW",

@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""Multi-brand vehicle market tracker. All config lives in targets.json.
+"""SpicyCar — used-car purchase analyzer. All config lives in targets.json.
 
-targets.json is organised brand -> model -> trim. Each trim is a tracked
-target (id "brand-model-trim"). Every target is fetched twice a day: once
-for the configured region (one wide radius that covers all local markets)
-and once nationally. Listings are then placed into the local markets by
-distance from each market's centre, so adding a market costs no API calls.
+Two things are configured, separately:
+
+  buyer      who is purchasing: home zip, the states they will drive to for
+             a car (no shipping), and how they value miles and shipping.
+  watchlist  what to track: brand -> model -> trim. Each trim is a target
+             (id "brand-model-trim").
+
+Every target is fetched twice a day: once filtered to the buyer's states
+(one call, the API takes a comma list) and once nationally. A listing is
+"in-state" when its own state field is one of the buyer's states — no
+coordinates involved, so listings the API could not geocode still land in
+the right bucket. Coordinates are only used for the distance from home,
+which prices shipping for out-of-state cars.
 """
 
 import csv
@@ -28,15 +36,16 @@ BASE = "https://api.auto.dev/listings"
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 TODAY = datetime.now(timezone.utc).date().isoformat()
 
+APP = "SpicyCar"
 CFG = json.loads(Path("targets.json").read_text())
-MARKETS = CFG["markets"]
-REGION = CFG.get("region")
+BUYER = CFG.get("buyer", {})
+STATES = [str(s).strip().upper() for s in BUYER.get("states", [])]
+WATCHLIST = CFG["watchlist"]
 DEFAULTS = CFG.get("defaults", {})
 LEGACY_IDS = CFG.get("legacy_ids", {})
 BUDGET = CFG.get("budget_per_day", 33)
 PER_PAGE = 20                       # the free plan clamps limit to 20
-PARAM_KEYS = ["cents_per_mile", "mileage_baseline", "ship_cost", "min_price",
-              "depth", "sorts", "pages", "years"]
+PARAM_KEYS = ["min_price", "depth", "sorts", "pages", "years"]
 
 DATA = Path("data")
 DATA.mkdir(exist_ok=True)
@@ -46,7 +55,7 @@ SNAPSHOTS = DATA / "snapshots.csv"
 SAMPLE = DATA / "sample_record.json"
 ZIPCODES = DATA / "zipcodes.json"
 
-FIELDS = ["snapshot_date", "target", "market", "vin", "year", "trim", "miles",
+FIELDS = ["snapshot_date", "target", "vin", "year", "trim", "miles",
           "price", "dealer", "city", "state", "listed_since", "url",
           "msrp", "color", "cpo", "owners", "accidents", "usage", "image",
           "carfax", "lat", "lon", "distance"]
@@ -57,7 +66,7 @@ FIELDS = ["snapshot_date", "target", "market", "vin", "year", "trim", "miles",
 # --------------------------------------------------------------------------
 def build_targets():
     targets = {}
-    for bkey, b in CFG["brands"].items():
+    for bkey, b in WATCHLIST.items():
         if not b.get("active", True):
             continue
         for mkey, m in b["models"].items():
@@ -92,7 +101,10 @@ def build_targets():
 
 
 TARGETS = build_targets()
-SOURCES = [("Region", REGION), ("National", None)] if REGION else [("National", None)]
+# Each source is a dict of extra query params. The States source asks the
+# API for the buyer's states directly (comma = OR), one call per sort/page.
+SOURCES = ([("States", {"retailListing.state": ",".join(STATES)})] if STATES
+           else []) + [("National", None)]
 
 
 def sorts_pages(t):
@@ -218,50 +230,73 @@ def save_zip_cache():
     ZIPCODES.write_text(json.dumps(ZIP_CACHE, indent=0, sort_keys=True))
 
 
-def market_hits(lat, lon):
-    """[(miles, market)] for every local market whose radius contains the point,
-    nearest first; plus the nearest market overall as the last element."""
-    if not coords_ok(lat, lon):
-        return [], None
-    dists = sorted((haversine(lat, lon, m["lat"], m["lon"]), name)
-                   for name, m in MARKETS.items())
-    hits = [(d, n) for d, n in dists if d <= MARKETS[n]["distance"]]
-    return hits, dists[0]
+# --------------------------------------------------------------------------
+# Buyer geography: scope by state, shipping by distance from home
+# --------------------------------------------------------------------------
+STATE_NAMES = dict(zip(
+    ("AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN "
+     "MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA "
+     "WV WI WY").split(),
+    ("Alabama Alaska Arizona Arkansas California Colorado Connecticut Delaware "
+     "District_of_Columbia Florida Georgia Hawaii Idaho Illinois Indiana Iowa "
+     "Kansas Kentucky Louisiana Maine Maryland Massachusetts Michigan Minnesota "
+     "Mississippi Missouri Montana Nebraska Nevada New_Hampshire New_Jersey "
+     "New_Mexico New_York North_Carolina North_Dakota Ohio Oklahoma Oregon "
+     "Pennsylvania Rhode_Island South_Carolina South_Dakota Tennessee Texas "
+     "Utah Vermont Virginia Washington West_Virginia Wisconsin Wyoming").split()))
+STATE_NAMES = {k: v.replace("_", " ") for k, v in STATE_NAMES.items()}
+
+HOME = zip_coords(BUYER.get("home_zip"))       # (lat, lon) or (None, None)
+if not coords_ok(*HOME):
+    print(f"  ! home zip {BUYER.get('home_zip')!r} could not be located — "
+          f"distances unavailable, flat ship_cost applies")
 
 
-def markets_for(r):
-    """Local markets a row belongs to (computed from coordinates when present)."""
-    lat, lon = to_float(r.get("lat")), to_float(r.get("lon"))
-    if coords_ok(lat, lon):
-        hits, _ = market_hits(lat, lon)
-        return [n for _, n in hits]
-    return [r["market"]] if r.get("market") and r["market"] != "National" else []
+def dist_home(lat, lon):
+    """Whole miles from the buyer's home, or None."""
+    if coords_ok(lat, lon) and coords_ok(*HOME):
+        return int(round(haversine(lat, lon, HOME[0], HOME[1])))
+    return None
 
 
-def in_region(r):
-    """Would this row come back from the regional query?"""
-    lat, lon = to_float(r.get("lat")), to_float(r.get("lon"))
-    if REGION and coords_ok(lat, lon) and "lat" in REGION:
-        return haversine(lat, lon, REGION["lat"], REGION["lon"]) <= REGION["distance"]
-    return r.get("market", "National") != "National"
+def row_distance(r):
+    d = to_int(r.get("distance"))
+    if d is not None:
+        return d
+    return dist_home(to_float(r.get("lat")), to_float(r.get("lon")))
 
 
-def params_for(r):
-    return TARGETS.get(r.get("target"), DEFAULTS)
+def in_scope(r):
+    """In one of the buyer's states: drivable, no shipping."""
+    return str(r.get("state", "")).strip().upper() in STATES
 
 
-def adjusted(price, miles, t, ship=0):
+def ship_for(r):
+    """Shipping for a listing: nothing in-state; otherwise by distance from
+    home when it is known, else the flat ship_cost."""
+    if in_scope(r):
+        return 0
+    d = row_distance(r)
+    rate = to_float(BUYER.get("ship_per_mile"))
+    if d is not None and rate:
+        floor = to_float(BUYER.get("ship_min")) or 0
+        return int(round(max(floor, d * rate)))
+    return to_int(BUYER.get("ship_cost")) or 0
+
+
+def adjusted(price, miles, ship=0):
     if price is None or miles is None:
         return None
-    base = t.get("mileage_baseline", 20000)
-    cpm = t.get("cents_per_mile", 0.25)
+    base = to_int(BUYER.get("mileage_baseline")) or 20000
+    cpm = to_float(BUYER.get("cents_per_mile"))
+    if cpm is None:
+        cpm = 0.25
     return int(price + ship + (miles - base) * cpm)
 
 
-def landed(r, t=None):
-    t = t or params_for(r)
-    ship = t.get("ship_cost", 0) if r["market"] == "National" else 0
-    return adjusted(to_int(r["price"]), to_int(r["miles"]), t, ship), ship
+def landed(r):
+    ship = ship_for(r)
+    return adjusted(to_int(r["price"]), to_int(r["miles"]), ship), ship
 
 
 # --------------------------------------------------------------------------
@@ -293,8 +328,7 @@ def fetch(source_name, source, sort, page, t):
     if t.get("trim_query"):
         params["vehicle.trim"] = t["trim_query"]
     if source:
-        params["zip"] = source["zip"]
-        params["distance"] = source["distance"]
+        params.update(source)
     CALLS += 1
     try:
         r = requests.get(BASE, headers=HEADERS, params=params, timeout=45)
@@ -312,6 +346,7 @@ def fetch(source_name, source, sort, page, t):
 
 
 def normalize(rec, t, dropped):
+    global GEOCODED, UNPLACED
     tm = t.get("trim_match", "").lower()
     if tm and tm not in json.dumps(rec).lower():
         dropped["trim mismatch"] += 1
@@ -335,7 +370,6 @@ def normalize(rec, t, dropped):
     if isinstance(loc, list) and len(loc) == 2:
         lon, lat = to_float(loc[0]), to_float(loc[1])
     if not coords_ok(lat, lon):
-        global GEOCODED, UNPLACED
         lat, lon = zip_coords(first(rec, ["retailListing.zip", "zip",
                                           "dealer.zip"]))
         if coords_ok(lat, lon):
@@ -343,13 +377,10 @@ def normalize(rec, t, dropped):
         else:
             UNPLACED += 1
             lat = lon = None
-    hits, nearest = market_hits(lat, lon)
-    market = hits[0][1] if hits else "National"
-    distance = int(round(nearest[0])) if nearest else ""
+    distance = dist_home(lat, lon)
     return {
         "snapshot_date": TODAY,
         "target": t["id"],
-        "market": market,
         "vin": vin,
         "year": year,
         "trim": first(rec, ["vehicle.trim", "vehicle.style", "vehicle.series"]),
@@ -361,8 +392,8 @@ def normalize(rec, t, dropped):
                               "retailListing.sellerName", "seller.name"]),
         "city": first(rec, ["retailListing.city", "dealer.city",
                             "location.city"]),
-        "state": first(rec, ["retailListing.state", "dealer.state",
-                             "location.state"]),
+        "state": str(first(rec, ["retailListing.state", "dealer.state",
+                                 "location.state"])).strip().upper(),
         "listed_since": str(first(rec, ["createdAt",
                                         "retailListing.createdAt"]))[:10],
         "url": first(rec, ["retailListing.vdp", "retailListing.vdpUrl",
@@ -379,7 +410,7 @@ def normalize(rec, t, dropped):
         "carfax": first(rec, ["retailListing.carfaxUrl"]),
         "lat": "" if lat is None else round(lat, 5),
         "lon": "" if lon is None else round(lon, 5),
-        "distance": distance,
+        "distance": distance if distance is not None else "",
     }
 
 
@@ -394,6 +425,11 @@ def load_history():
         for r in csv.DictReader(f):
             row = {k: r.get(k, "") or "" for k in FIELDS}
             row["target"] = LEGACY_IDS.get(row["target"], row["target"])
+            row["state"] = row["state"].strip().upper()
+            # distance means miles from the buyer's home; recompute it from
+            # the stored coordinates so every row carries the same meaning
+            d = dist_home(to_float(row["lat"]), to_float(row["lon"]))
+            row["distance"] = d if d is not None else ""
             rows.append(row)
     return rows
 
@@ -471,35 +507,27 @@ def days_listed(r):
 
 
 def pick_display_rows(rows):
-    """One row per VIN. Older snapshots stored one row per market; newer ones
-    store one row with coordinates. Either way: prefer local, then cheapest."""
+    """One row per VIN — the cheapest copy if a VIN was seen more than once."""
     by_vin = defaultdict(list)
     for r in rows:
         by_vin[r["vin"]].append(r)
-    out = []
-    for vin, rs in by_vin.items():
-        local = [r for r in rs if r["market"] != "National"]
-        pick = dict(min(local or rs, key=lambda r: to_int(r["price"]) or 10**9))
-        mk = set(markets_for(pick))
-        for r in rs:
-            mk.update(markets_for(r))
-        pick["markets"] = sorted(mk)
-        out.append(pick)
-    return out
+    return [dict(min(rs, key=lambda r: to_int(r["price"]) or 10**9))
+            for rs in by_vin.values()]
 
 
 def fmt_row(r, s):
-    t = params_for(r)
     miles = to_int(r["miles"])
-    adj, ship = landed(r, t)
+    adj, ship = landed(r)
     bits = [f"**{money(to_int(r['price']))}**"]
     if miles is not None:
         bits.append(f"{miles:,} mi")
     if adj is not None:
-        bits.append(f"{'landed' if ship else 'adj'} {money(adj)}")
+        bits.append(f"landed {money(adj)}"
+                    + (f" (ship {money(ship)})" if ship else ""))
     where = f"{r['year']} · {r['city']}, {r['state']}"
-    if r.get("distance") not in ("", None):
-        where += f" · {to_int(r['distance']):,} mi away"
+    d = row_distance(r)
+    if d is not None:
+        where += f" · {d:,} mi from home"
     bits.append(where)
     out = "- " + " · ".join(str(b) for b in bits)
     tags = []
@@ -538,7 +566,7 @@ def daily_stats(rows):
         out.append({
             "date": d,
             "n": len(display),
-            "n_local": sum(1 for r in display if r["market"] != "National"),
+            "n_local": sum(1 for r in display if in_scope(r)),
             "min_adj": min(adjs) if adjs else None,
             "median_adj": int(median(adjs)) if adjs else None,
             "median_price": int(median(prices)) if prices else None,
@@ -562,10 +590,15 @@ def delisted(tids, all_rows, today_rows, hist):
         r = pick_display_rows([x for x in rows
                                if x["snapshot_date"] == last_day])[0]
         s = summarize((tid, vin), hist)
-        adj, _ = landed(r)
+        adj, ship = landed(r)
         t = TARGETS[tid]
         last_price = to_int(r["price"])
-        cutoff = window_max.get((tid, "Region" if in_region(r) else "National"))
+        # an in-state car comes back through either query, so it is only
+        # out of window when it is above both cut-offs
+        keys = ["States", "National"] if in_scope(r) else ["National"]
+        cutoffs = [c for c in (window_max.get((tid, k)) for k in keys)
+                   if c is not None]
+        cutoff = max(cutoffs) if cutoffs else None
         if cutoff is None:
             likely = "unknown"          # nothing fetched for this trim today
         elif last_price is not None and last_price > cutoff:
@@ -576,10 +609,11 @@ def delisted(tids, all_rows, today_rows, hist):
             "likely": likely,
             "vin": vin, "year": to_int(r["year"]), "trim": r["trim"],
             "trim_id": tid, "trim_label": t["label"],
-            "market": r["market"], "markets": r["markets"],
+            "state": r["state"], "local": in_scope(r),
+            "distance": row_distance(r), "ship": ship,
             "miles": to_int(r["miles"]),
-            "last_price": to_int(r["price"]), "adj": adj,
-            "city": r["city"], "state": r["state"], "dealer": r["dealer"],
+            "last_price": last_price, "adj": adj,
+            "city": r["city"], "dealer": r["dealer"],
             "url": r["url"], "last_seen": last_day,
             "first_seen": s.get("first_seen"),
             "days_tracked": s.get("days_tracked", 0),
@@ -593,15 +627,15 @@ def delisted(tids, all_rows, today_rows, hist):
 
 def listing_entry(r, s):
     t = TARGETS[r["target"]]
-    adj, _ = landed(r, t)
+    adj, ship = landed(r)
     return {
         "vin": r["vin"], "year": to_int(r["year"]), "trim": r["trim"],
         "trim_id": t["id"], "trim_label": t["label"],
-        "market": r["market"], "markets": r["markets"],
-        "distance": to_int(r.get("distance")),
+        "state": r["state"], "local": in_scope(r),
+        "distance": row_distance(r), "ship": ship,
         "miles": to_int(r["miles"]), "price": to_int(r["price"]),
         "adj": adj, "msrp": to_int(r.get("msrp")),
-        "dealer": r["dealer"], "city": r["city"], "state": r["state"],
+        "dealer": r["dealer"], "city": r["city"],
         "url": r["url"], "image": r.get("image", ""),
         "carfax": r.get("carfax", ""), "color": r.get("color", ""),
         "cpo": is_cpo(r), "owners": to_int(r.get("owners")),
@@ -619,12 +653,23 @@ def listing_entry(r, s):
 # Outputs
 # --------------------------------------------------------------------------
 def build_outputs(today_rows, all_rows, hist):
-    report = [f"# Auto Market Tracker — {TODAY}", ""]
+    report = [f"# {APP} — {TODAY}", ""]
     site = {
+        "app": APP,
         "generated": TODAY,
-        "region": REGION,
-        "markets": {n: {"distance": m["distance"], "lat": m["lat"],
-                        "lon": m["lon"]} for n, m in MARKETS.items()},
+        "buyer": {
+            "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
+            "home_zip": BUYER.get("home_zip", ""),
+            "home": ({"lat": HOME[0], "lon": HOME[1]}
+                     if coords_ok(*HOME) else None),
+            "states": STATES,
+            "state_names": {s: STATE_NAMES.get(s, s) for s in STATES},
+            "ship_per_mile": BUYER.get("ship_per_mile"),
+            "ship_min": BUYER.get("ship_min"),
+            "ship_cost": BUYER.get("ship_cost"),
+            "cents_per_mile": BUYER.get("cents_per_mile"),
+            "mileage_baseline": BUYER.get("mileage_baseline"),
+        },
         "brands": {},
     }
     days = sorted({r["snapshot_date"] for r in all_rows})
@@ -636,7 +681,7 @@ def build_outputs(today_rows, all_rows, hist):
         tree[t["brand"]][t["model_key"]].append(t)
 
     for bkey, models in tree.items():
-        b_entry = {"label": CFG["brands"][bkey].get("label", bkey),
+        b_entry = {"label": WATCHLIST[bkey].get("label", bkey),
                    "models": {}}
         site["brands"][bkey] = b_entry
         for mkey, trims in models.items():
@@ -647,10 +692,7 @@ def build_outputs(today_rows, all_rows, hist):
             m_entry = {
                 "label": m0["model_label"], "note": m0["model_note"],
                 "years": sorted({str(y) for t in trims for y in t["years"]}),
-                "market_names": list(MARKETS) + ["National"],
-                "params": {k: m0.get(k) for k in
-                           ("cents_per_mile", "mileage_baseline",
-                            "ship_cost", "min_price")},
+                "params": {"min_price": m0.get("min_price")},
                 "trims": {t["id"]: {"label": t["label"], "note": t["note"],
                                     "depth": t["depth"],
                                     "years": [str(y) for y in t["years"]],
@@ -676,14 +718,10 @@ def build_outputs(today_rows, all_rows, hist):
             m_entry["listings"] = sorted(listings,
                                          key=lambda x: x["adj"] or 10**9)
 
-            counts = Counter()
-            for x in listings:
-                for mk in x["markets"]:
-                    counts[mk] += 1
-            counts["National"] = sum(1 for x in listings
-                                     if x["market"] == "National")
-            summary = " · ".join(f"{mk} {counts[mk]}"
-                                 for mk in list(MARKETS) + ["National"])
+            counts = Counter(x["state"] for x in listings if x["local"])
+            n_out = sum(1 for x in listings if not x["local"])
+            summary = " · ".join([f"{st} {counts.get(st, 0)}" for st in STATES]
+                                 + [f"out of state {n_out}"])
             report += [f"_{len(listings)} vehicles across "
                        f"{len(trims)} trim{'s' if len(trims) != 1 else ''} · "
                        f"{summary}_", ""]
@@ -726,17 +764,21 @@ def build_outputs(today_rows, all_rows, hist):
                     report.append("")
 
                 rows_by_vin = {r["vin"]: r for r in display}
-                local = [x for x in tl if x["market"] != "National"]
-                if local:
-                    report.append(f"**Local ({len(local)})**")
-                    for x in local:
+                if STATES and not any(x["local"] for x in tl):
+                    report += [f"_Nothing in {'/'.join(STATES)} today._", ""]
+                for st in STATES:
+                    in_st = [x for x in tl if x["local"] and x["state"] == st]
+                    if not in_st:
+                        continue
+                    report.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**")
+                    for x in in_st:
                         report.append(fmt_row(rows_by_vin[x["vin"]],
                                               summarize((t["id"], x["vin"]), hist)))
                     report.append("")
                 best5 = [x for x in tl if x["adj"] is not None
-                         and x["market"] == "National"][:5]
+                         and not x["local"]][:5]
                 if best5:
-                    report.append("**Best value nationwide (landed)**")
+                    report.append("**Best value out of state (landed)**")
                     for x in best5:
                         report.append(fmt_row(rows_by_vin[x["vin"]],
                                               summarize((t["id"], x["vin"]), hist)))
@@ -758,8 +800,8 @@ def send_email(report):
         r = requests.post(
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {key}"},
-            json={"from": "tracker <onboarding@resend.dev>", "to": [to],
-                  "subject": f"Auto Market Tracker — {TODAY}", "text": report},
+            json={"from": f"{APP} <onboarding@resend.dev>", "to": [to],
+                  "subject": f"{APP} — {TODAY}", "text": report},
             timeout=30)
         print(f"Email: HTTP {r.status_code}")
     except requests.RequestException as e:
