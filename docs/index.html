@@ -393,7 +393,7 @@
     const shipTxt = buyer.ship_per_mile
       ? `$${Number(buyer.ship_per_mile).toFixed(2)}/mi shipping${buyer.ship_min ? ` (min ${money(buyer.ship_min)})` : ''} for cars ${outside}`
       : (buyer.ship_cost ? `${money(buyer.ship_cost)} shipping for cars ${outside}` : '');
-    const home = buyer.label ? ` Home base: ${buyer.label}${buyer.home_zip ? ` ${buyer.home_zip}` : ''}.` : '';
+    const home = buyer.label ? ` Home base: ${buyer.label}.` : '';
     dekBits.push(`Landed price = asking price${shipTxt ? ` + ${shipTxt}` : ''}, adjusted ${buyer.cents_per_mile != null ? `$${Number(buyer.cents_per_mile).toFixed(2)}/mi` : ''} against a ${num(buyer.mileage_baseline || 20000)}-mile baseline.${home}`);
     $('dek').textContent = dekBits.join(' ');
     const daily = dailyFor(t);

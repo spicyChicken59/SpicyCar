@@ -22,6 +22,7 @@ jobs:
           AUTODEV_API_KEY: ${{ secrets.AUTODEV_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          BUYER_HOME_ZIP: ${{ secrets.BUYER_HOME_ZIP }}
         run: python Tracking.py
       - name: Commit outputs
         run: |

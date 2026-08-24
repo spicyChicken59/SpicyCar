@@ -200,14 +200,15 @@ GEOCODED = 0        # listings rescued from a bad location by their zip
 UNPLACED = 0        # listings with neither usable coordinates nor a usable zip
 
 
-def zip_coords(z):
+def zip_coords(z, cache=True):
     """lat/lon for a 5-digit US zip, cached in data/zipcodes.json so a zip is
-    only ever looked up once. Misses are cached too; network errors are not."""
+    only ever looked up once. Misses are cached too; network errors are not.
+    cache=False neither reads nor writes the cache (used for the home zip)."""
     global ZIP_LOOKUPS
     z = str(z or "").strip()[:5]
     if not (len(z) == 5 and z.isdigit()):
         return None, None
-    if z in ZIP_CACHE:
+    if cache and z in ZIP_CACHE:
         hit = ZIP_CACHE[z]
         return (hit[0], hit[1]) if hit else (None, None)
     try:
@@ -218,11 +219,13 @@ def zip_coords(z):
             lat = to_float(place.get("latitude"))
             lon = to_float(place.get("longitude"))
             if coords_ok(lat, lon):
-                ZIP_CACHE[z] = [round(lat, 5), round(lon, 5)]
+                if cache:
+                    ZIP_CACHE[z] = [round(lat, 5), round(lon, 5)]
                 return lat, lon
-        ZIP_CACHE[z] = None
+        if cache:
+            ZIP_CACHE[z] = None
     except requests.RequestException as e:
-        print(f"  ! zip {z}: {e}")
+        print(f"  ! zip {z}: {e}" if cache else f"  ! home zip lookup failed: {e}")
     return None, None
 
 
@@ -246,10 +249,14 @@ STATE_NAMES = dict(zip(
      "Utah Vermont Virginia Washington West_Virginia Wisconsin Wyoming").split()))
 STATE_NAMES = {k: v.replace("_", " ") for k, v in STATE_NAMES.items()}
 
-HOME = zip_coords(BUYER.get("home_zip"))       # (lat, lon) or (None, None)
+# The home zip is private. It comes from the BUYER_HOME_ZIP secret (targets.json
+# only as a fallback for anyone who chooses to put it there), is looked up
+# without touching the committed cache, and never appears in any output.
+HOME_ZIP = os.environ.get("BUYER_HOME_ZIP") or BUYER.get("home_zip")
+HOME = zip_coords(HOME_ZIP, cache=False) if HOME_ZIP else (None, None)
 if not coords_ok(*HOME):
-    print(f"  ! home zip {BUYER.get('home_zip')!r} could not be located — "
-          f"distances unavailable, flat ship_cost applies")
+    print("  ! home zip missing or could not be located — distances unavailable, "
+          "flat ship_cost applies (set the BUYER_HOME_ZIP secret)")
 
 
 def dist_home(lat, lon):
@@ -659,9 +666,6 @@ def build_outputs(today_rows, all_rows, hist):
         "generated": TODAY,
         "buyer": {
             "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
-            "home_zip": BUYER.get("home_zip", ""),
-            "home": ({"lat": HOME[0], "lon": HOME[1]}
-                     if coords_ok(*HOME) else None),
             "states": STATES,
             "state_names": {s: STATE_NAMES.get(s, s) for s in STATES},
             "ship_per_mile": BUYER.get("ship_per_mile"),

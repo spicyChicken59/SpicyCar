@@ -35,8 +35,8 @@ all relative to what they would really cost *this* buyer.
 Two things are configured, separately:
 
 - **buyer** — who is purchasing: home zip, the states they will drive to for a car, and how they
-  value miles and shipping. One buyer today; the first real use is a buyer near Chicago
-  shopping for an i5 eDrive40. The shape is built for more.
+  value miles and shipping. One buyer today; the first real use is a buyer near Chicago shopping
+  for an i5 eDrive40. The shape is built for more.
 - **watchlist** — what to track: brands → models → trims. Every trim of the i4 and i5, so the one
   they want can be judged against its siblings.
 
@@ -97,8 +97,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 
 ## Run it yourself
 
-1. Fork. Add repository secrets: `AUTODEV_API_KEY` (required), and `RESEND_API_KEY` + `EMAIL_TO`
-   if you want the email.
+1. Fork. Add repository secrets: `AUTODEV_API_KEY` (required), `BUYER_HOME_ZIP` (the buyer's zip —
+   it stays out of the repo and out of every output), and `RESEND_API_KEY` + `EMAIL_TO` if you want
+   the email.
 2. Settings → Pages → *Deploy from a branch* → `main` → `/docs`.
 3. Edit `targets.json`: your `buyer`, your `watchlist`. The Action runs at 11:00 UTC and can be
    started by hand from the Actions tab.
@@ -112,7 +113,7 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 
 | Key | Meaning |
 |---|---|
-| `home_zip` | Where the car ends up. Distances are measured from here. |
+| `home_zip` | Where the car ends up; distances are measured from here. Leave it `null` and set the `BUYER_HOME_ZIP` repository secret instead — the tracker reads it from the environment, never caches it, and never writes it to any output. |
 | `states` | Two-letter codes. Listings in these states are drivable: no shipping. |
 | `ship_per_mile`, `ship_min` | Shipping estimate for everything else: `max(ship_min, distance × ship_per_mile)`. Set `ship_per_mile` to `null` for a flat rate. |
 | `ship_cost` | Flat shipping, used when distance is unknown or `ship_per_mile` is off. |
