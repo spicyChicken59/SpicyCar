@@ -82,6 +82,7 @@
       </table>
     </div>
     <p>Car C is still the cheapest by more than $3,000 after the truck — which is the point of stating it. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible.</p>
+    <p><strong>Our picks</strong> are the one place miles are priced in — but only to rank, never to change a number you see. A car is eligible under 50,000 miles with no reported accidents and no rental or fleet history. Each eligible car gets a value: asking, plus shipping, plus 30 cents for every mile above 20,000 (or minus, below). It is then compared with the typical value for its own model, so a cheap model does not win just for being cheap; the picks are the cars furthest under typical, and the label says by how much. The price on the card is still the asking price.</p>
 
     <h2 id="data">Where the data comes from</h2>
     <p>Listings come from the <a href="https://auto.dev" rel="noopener">auto.dev</a> API. Every day at 11:00 UTC a GitHub Action runs the tracker, which fetches each target due that day, states shipping on every listing, and writes three things back into the repository: a CSV with one row per vehicle per day, a Markdown report (also sent by email), and the JSON behind the dashboard.</p>
@@ -114,8 +115,9 @@
     <ul>
       <li><strong>Every model</strong> — the front page: one row per model with a photo, cars on the market, in-state count, lowest asking nationwide, lowest asking in-state, the median and a trend line, all under the same filters. Shopping first, then by price.</li>
       <li><strong>Every model over time</strong> — one line per model, lowest asking price by day. The model being shopped is in colour; the rest are context, each named at its line's end.</li>
-      <li><strong>Lowest asking, twice</strong> — on the front page and on every model: the cheapest anywhere and the cheapest in-state, with the photo, the shipping line, and the listing link, recomputed as you filter.</li>
-      <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags, distance from home, days on market, and a price sparkline. Filter by trim, state, year and miles; sort by asking, asking plus shipping, miles, biggest drop, longest on market, or newest.</li>
+      <li><strong>Our picks</strong> — four cars, on the front page across every model and on each model within it: photo, asking price, the shipping line, and how far under typical the car sits. Recomputed as you filter.</li>
+      <li><strong>Know the model</strong> — on every model page: the good, the bad, and what to check before you go and look. Written by hand and kept in the config, so it can be corrected as we learn.</li>
+      <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags (rental and fleet cars are marked), distance from home, days on market, and a price sparkline. Filter by trim, state, year and miles, hide accidents, hide rentals and fleet; sort by asking, asking plus shipping, miles, biggest drop, longest on market, or newest.</li>
       <li><strong>Gone from the market</strong> — with the out-of-window flag described above.</li>
     </ul>
     <p>The signals worth acting on: <strong>days on market</strong> past 30 usually means a dealer who will negotiate. <strong>Price cuts</strong> show how many times and how far. <strong>new</strong> marks cars first seen today. <strong>1-owner</strong>, <strong>no accidents</strong> and <strong>cpo</strong> are the history flags worth filtering on; <strong>ex-lease</strong> usually means one careful owner and a full service record.</p>

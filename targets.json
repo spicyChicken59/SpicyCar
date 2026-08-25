@@ -12,7 +12,16 @@
     "ship_min": 350,
     "ship_cost": 1100,
     "cents_per_mile": 0,
-    "mileage_baseline": 20000
+    "mileage_baseline": 20000,
+    "picks": {
+      "count": 4,
+      "per_model": 2,
+      "max_miles": 50000,
+      "cents_per_mile": 0.30,
+      "mileage_baseline": 20000,
+      "exclude_accidents": true,
+      "exclude_rental": true
+    }
   },
 
   "defaults": {
@@ -35,6 +44,11 @@
           "model": "i5",
           "years": ["2024", "2025"],
           "min_price": 20000,
+          "notes": {
+            "good": ["Quiet, refined and built like a 5-Series; the eDrive40 is EPA-rated around 295 miles", "Heavy lease-return supply keeps used prices well under new", "iDrive 8.5 is quick, and most cars carry Driving Assistance packages"],
+            "bad": ["Fast charging peaks near 205 kW and tapers early, so road trips are slower than the range suggests", "Over 5,000 lb — expect tire wear and a firm ride on big wheels", "Equipment varies a lot by package; two cars at the same price can be very different"],
+            "watch": ["Confirm the software is current — early 2024 cars had bugs fixed over the air", "Check which packages the specific VIN has (Driving Assistance Pro, Premium, heated seats)", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
+          },
           "trims": {
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full",
                           "note": "First real buyer, near Chicago. Decide by mid-Sept." },
@@ -46,6 +60,11 @@
           "label": "BMW i4",
           "model": "i4",
           "years": ["2022", "2023", "2024", "2025"],
+          "notes": {
+            "good": ["Drives like a 4-Series; the eDrive40 does about 300 miles", "One of the better reliability records among EVs, and cheap used", "Hatchback practicality with a proper trunk opening"],
+            "bad": ["2022 and early 2023 cars had infotainment and charging glitches, mostly cured by updates", "Low roof: rear headroom is tight", "eDrive35 has the smaller battery — roughly 260 miles, and slower charging"],
+            "watch": ["Ask for proof that open recalls and software campaigns are done", "Check the 12V battery — a weak one causes odd faults", "Verify heated seats and steering wheel; not every car has them"]
+          },
           "trims": {
             "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"] },
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40" },
@@ -61,8 +80,26 @@
       "make": "Hyundai",
       "cadence": 2,
       "models": {
-        "ioniq5": { "label": "Hyundai Ioniq 5", "model": "Ioniq 5,IONIQ 5", "years": ["2022", "2023", "2024", "2025", "2026"] },
-        "ioniq9": { "label": "Hyundai Ioniq 9", "model": "Ioniq 9,IONIQ 9", "years": ["2026"] }
+        "ioniq5": {
+          "label": "Hyundai Ioniq 5",
+          "model": "Ioniq 5,IONIQ 5",
+          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "notes": {
+            "good": ["800-volt platform: 10 to 80% in about 18 minutes on a fast charger", "Flat floor and a huge cabin for the footprint", "Strong value used; the N is a genuine performance car"],
+            "bad": ["The ICCU (charging control unit) has failed widely across 2022–2024 cars and can leave the car dead", "No rear wiper until the 2025 refresh; soft ride and road noise", "Dealer EV service quality varies a lot"],
+            "watch": ["Make sure the ICCU recall and 12V battery campaign are completed on the VIN", "The 2025 refresh added a bigger battery, a rear wiper and the NACS port — worth the premium if you road-trip", "Hyundai's 10-year battery warranty shrinks for the second owner; read the terms"]
+          }
+        },
+        "ioniq9": {
+          "label": "Hyundai Ioniq 9",
+          "model": "Ioniq 9,IONIQ 9",
+          "years": ["2026"],
+          "notes": {
+            "good": ["Three rows, a 110 kWh battery and around 335 miles rear-drive", "800-volt charging and a NACS port from day one", "Almost every used one is a near-new car"],
+            "bad": ["Brand new: thin used supply and prices close to new", "First model year — expect software updates", "Very large and heavy for city parking"],
+            "watch": ["Compare against a new one with incentives before paying near-new money", "Confirm the trim (S, SE, SEL, Limited) — equipment differs a lot"]
+          }
+        }
       }
     },
 
@@ -71,8 +108,26 @@
       "make": "Kia",
       "cadence": 2,
       "models": {
-        "ev6": { "label": "Kia EV6", "model": "EV6", "years": ["2022", "2023", "2024", "2025", "2026"] },
-        "ev9": { "label": "Kia EV9", "model": "EV9", "years": ["2024", "2025", "2026"] }
+        "ev6": {
+          "label": "Kia EV6",
+          "model": "EV6",
+          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "notes": {
+            "good": ["Same 800-volt platform as the Ioniq 5 — 18-minute fast charging", "Sportier setup and sharper looks; GT-Line is the sweet spot", "Deep depreciation makes clean examples a bargain"],
+            "bad": ["Shares the Ioniq 5's ICCU problem", "Firmer ride and poor rear visibility", "Cargo space is modest for the size"],
+            "watch": ["ICCU recall and 12V campaign completed on the VIN", "The 2025 refresh (bigger battery, NACS) is worth seeking if you can", "Check that the charge-port door and DC charging work — do a fast-charge test if possible"]
+          }
+        },
+        "ev9": {
+          "label": "Kia EV9",
+          "model": "EV9",
+          "years": ["2024", "2025", "2026"],
+          "notes": {
+            "good": ["A proper three-row EV at a sane price, with 800-volt charging", "Around 280–300 miles; Land and GT-Line interiors are plush", "Heavy rebates on new ones have pushed used prices down"],
+            "bad": ["Heavy, so tires go fast and efficiency is middling", "Early builds had trim and rattle complaints", "Same platform ICCU risk as the EV6 and Ioniq 5"],
+            "watch": ["Recalls completed; check the 12V", "Second row: captain's chairs or bench — decide before you shop", "Listen for wind noise from the door seals on a test drive"]
+          }
+        }
       }
     },
 
@@ -81,8 +136,26 @@
       "make": "Audi",
       "cadence": 2,
       "models": {
-        "q4-etron": { "label": "Audi Q4 e-tron", "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4", "years": ["2022", "2023", "2024", "2025", "2026"] },
-        "q6-etron": { "label": "Audi Q6 e-tron", "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6", "years": ["2025", "2026"] }
+        "q4-etron": {
+          "label": "Audi Q4 e-tron",
+          "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4",
+          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "notes": {
+            "good": ["Quiet, comfortable and upscale inside for the money", "Steep depreciation — often the cheapest premium-badge EV", "Solid VW-group hardware underneath"],
+            "bad": ["Slow DC charging (roughly 125–170 kW) and a 400-volt system", "Infotainment can be sluggish and buggy on early cars", "2022–2023 range is only around 240 miles"],
+            "watch": ["2024 and later got a bigger battery and faster charging — target those", "Ask for the software update history; several campaigns fixed 12V and charging faults", "Verify heated seats and wheel; option packages vary"]
+          }
+        },
+        "q6-etron": {
+          "label": "Audi Q6 e-tron",
+          "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6",
+          "years": ["2025", "2026"],
+          "notes": {
+            "good": ["New 800-volt platform shared with the Porsche Macan EV: fast charging and 300+ miles", "Excellent interior and driving refinement"],
+            "bad": ["New model: used supply is thin and prices sit close to new", "First-year software complaints are common"],
+            "watch": ["Compare with a new one after incentives", "Confirm all over-the-air updates have been applied", "Check panel and door alignment on early builds"]
+          }
+        }
       }
     },
 
@@ -96,6 +169,11 @@
           "model": "Air",
           "years": ["2022", "2023", "2024", "2025", "2026"],
           "min_price": 30000,
+          "notes": {
+            "good": ["Class-leading efficiency and range — a Grand Touring can exceed 500 miles", "Among the fastest-charging cars sold", "Used prices collapsed: six-figure cars now sell for $40k"],
+            "bad": ["A young company: service centers are sparse and parts can take time", "2022 cars had software and build-quality issues", "Resale is unpredictable"],
+            "watch": ["Check the distance to the nearest Lucid service center before anything else", "Confirm every software campaign and recall on the VIN", "Verify the warranty transfers, and test the door handles, glass roof and charge port"]
+          },
           "trims": {
             "touring":       { "label": "Touring",       "trim_query": "Touring",       "trim_match": "touring", "trim_exclude": "grand" },
             "grand-touring": { "label": "Grand Touring", "trim_query": "Grand Touring", "trim_match": "grand touring" }
@@ -113,12 +191,22 @@
           "label": "Chevrolet Equinox EV",
           "model": "Equinox EV",
           "years": ["2024", "2025", "2026"],
+          "notes": {
+            "good": ["Around 319 miles front-drive, roomy, and cheap used", "Super Cruise is available on the RS", "Simple, honest EV on GM's Ultium platform"],
+            "bad": ["No Apple CarPlay or Android Auto — Google built-in only", "DC charging around 150 kW", "Early software glitches and plain interior plastics"],
+            "watch": ["Check GM's software recall campaigns are done", "Super Cruise may need a subscription after the trial", "Confirm front-drive vs all-wheel-drive on the specific car"]
+          },
           "trims": { "rs": { "label": "RS", "trim_query": "RS,2RS,3RS", "trim_match": "rs" } }
         },
         "blazer-ev": {
           "label": "Chevrolet Blazer EV",
           "model": "Blazer EV",
           "years": ["2024", "2025", "2026"],
+          "notes": {
+            "good": ["Sharp looks and a comfortable, quiet cabin", "RS trims run roughly 280–320 miles depending on drivetrain", "Heavy discounts made used ones cheap"],
+            "bad": ["The 2024 launch was stopped for software faults; fixed by updates, but ask", "No Apple CarPlay or Android Auto", "Middling efficiency"],
+            "watch": ["Confirm the software recall was completed and the car has been updated", "RS came front-, rear- and all-wheel-drive — check which", "Look at the service history for charging faults"]
+          },
           "trims": { "rs": { "label": "RS", "trim_query": "RS,2RS,3RS", "trim_match": "rs" } }
         }
       }

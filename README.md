@@ -94,9 +94,11 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
   every in-state listing grouped by state, and the five best-value cars out of state.
 - The dashboard — opens on every model at once: a photo per model, lowest asking nationwide and
-  in-state, median, a trend line, and one chart with every model's lowest asking price over time.
-  Then brand and model tabs; on every model, the two lowest-asking cars with photos under the
-  current filters; trim, state, year and mileage filters; lowest and median asking price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
+  in-state, median, a trend line, one chart with every model's lowest asking price over time, and
+  **our picks** — four cars ranked by value (miles allowed for, shipping stated) but shown at asking
+  price. Then brand and model tabs; on every model, its own picks, a hand-written *know the model*
+  card (the good, the bad, what to check); trim, state, year and mileage filters plus hide-accidents
+  and hide-rentals; lowest and median asking price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
   ex-lease), distance from home, shipping estimate, days on market and a price sparkline; and the
   "gone" list.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home.
@@ -124,7 +126,8 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 | `ship_per_mile`, `ship_min` | Shipping estimate for everything else: `max(ship_min, distance × ship_per_mile)`. Set `ship_per_mile` to `null` for a flat rate. |
 | `ship_cost` | Flat shipping, used when distance is unknown or `ship_per_mile` is off. |
 | `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
-| `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full and the dashboard opens on the first; every other model is a one-line comparison. |
+| `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full; every other model is a one-line comparison. |
+| `picks` | How "our picks" are chosen: `count`, `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own model and shown at asking price. |
 
 ### watchlist
 
@@ -134,7 +137,7 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 | `defaults` | Fallbacks for the per-target parameters below. |
 | `legacy_ids` | Old target ids → new ids, so history carries over when the config is restructured. |
 | `watchlist.<brand>` | `label`, `make` (as the API spells it), `active`, parameter overrides, and `models`. |
-| `…models.<model>` | `label`, `model` (API spelling — a comma list is OR, handy for case variants), `years`, `note`, `active`, parameter overrides, and optional `trims`. A model without `trims` is one target across all its trims. |
+| `…models.<model>` | `label`, `model` (API spelling — a comma list is OR, handy for case variants), `years`, `note`, `notes` (hand-written `good` / `bad` / `watch` lists shown on the model page), `active`, parameter overrides, and optional `trims`. A model without `trims` is one target across all its trims. |
 | `…trims.<trim>` | `label`, `trim_query` (sent as `vehicle.trim`, comma list is OR), `trim_match` (client-side check against the trim fields), `trim_exclude` (drop if this appears — "grand" keeps Grand Touring out of Touring), `note`, `active`, parameter overrides. |
 
 Parameters resolve trim ← model ← brand ← defaults:

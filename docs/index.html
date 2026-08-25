@@ -35,6 +35,9 @@
   .takeaway-col > :last-child { margin-bottom: 0; }
   .takeaway-col .sc-media { align-items: flex-start; }
   .takeaway-col .sc-media__body > :last-child { margin-bottom: 0; }
+  .picks-grid { grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); }   /* two picks per row on a desktop, one on a phone */
+  #notes-grid ul { margin: 0; padding-left: 18px; }
+  #notes-grid li { margin-top: 6px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -74,6 +77,16 @@
 
   <div id="takeaway" hidden></div>
 
+  <section class="sc-card" id="notes-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2 id="notes-title">Know the model</h2>
+        <p class="sc-hint">The good, the bad, and what to check before you go and look. Written by hand, not by the tracker.</p>
+      </div>
+    </div>
+    <div class="sc-grid sc-grid--3" id="notes-grid"></div>
+  </section>
+
   <div class="sc-filters" id="filters" hidden>
     <label class="sc-field">Trim
       <select class="sc-select" id="f-trim"></select>
@@ -104,6 +117,7 @@
       </select>
     </label>
     <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
+    <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
   </div>
 
   <section class="sc-card" id="chart-card" hidden>
@@ -170,7 +184,7 @@
 
   // ---------- state ----------
   // The front page is the overview of every model (brand 'all'); a model view is a brand + model.
-  const S = { site: null, brand: 'all', model: null, trim: 'all', scope: 'all', year: 'all', miles: 0, sort: 'price', clean: false };
+  const S = { site: null, brand: 'all', model: null, trim: 'all', scope: 'all', year: 'all', miles: 0, sort: 'price', clean: false, rental: false };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   const tok = (name) => getComputedStyle(root).getPropertyValue('--sc-' + name).trim();
@@ -223,6 +237,38 @@
   const shipNote = (x) => (x.local ? 'in-state · no shipping' : (x.ship ? `+ ${money(x.ship)} shipping = ${money(landed(x))}` : 'shipping estimate n/a'));
   function lowestBy(arr, key) { let best = null; for (const x of arr) { const v = x[key]; if (v === null || v === undefined) continue; if (!best || v < best[key]) best = x; } return best; }
   function statesTxt() { return (((S.site || {}).buyer || {}).states || []).join('/') || 'your states'; }
+
+  // ---------- our picks: best value, not lowest price ----------
+  // Eligible cars are ranked by how far under the typical (median) value of their own model they sit,
+  // where value is asking + shipping + a mileage allowance. The reader only ever sees asking price.
+  const NON_PERSONAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+  const isRental = (x) => NON_PERSONAL.test(x.usage || '');
+  function pickParams() {
+    const p = ((S.site || {}).buyer || {}).picks || {};
+    return { count: p.count || 4, per_model: p.per_model || 2, max_miles: p.max_miles || 50000, cpm: p.cents_per_mile != null ? p.cents_per_mile : 0.30,
+      base: p.mileage_baseline || 20000, no_acc: p.exclude_accidents !== false, no_rental: p.exclude_rental !== false };
+  }
+  function pickValue(x, P) { return (!hasPrice(x) || x.miles == null) ? null : x.price + (x.local ? 0 : (x.ship || 0)) + (x.miles - P.base) * P.cpm; }
+  function pickEligible(x, P) { return hasPrice(x) && x.miles != null && x.miles <= P.max_miles && !(P.no_acc && x.accidents > 0) && !(P.no_rental && isRental(x)); }
+  function scorePicks(listings, modelLabel) {
+    const P = pickParams(), pool = listings.filter((x) => pickEligible(x, P));
+    if (pool.length < 3) return [];
+    const med = median(pool.map((x) => pickValue(x, P)));
+    return pool.map((x) => { const v = pickValue(x, P); return { x, modelLabel, under: Math.round(med - v), pct: med ? (med - v) / med : 0 }; }).sort((a, b) => b.pct - a.pct);
+  }
+  function choosePicks(scored, n, perModel) {
+    const out = [], per = {};
+    for (const p of scored.slice().sort((a, b) => b.pct - a.pct)) {
+      if (perModel && (per[p.modelLabel] || 0) >= perModel) continue;
+      out.push(p); per[p.modelLabel] = (per[p.modelLabel] || 0) + 1;
+      if (out.length >= n) break;
+    }
+    return out;
+  }
+  function picksRule() {
+    const P = pickParams();
+    return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model a car sits, allowing $${P.cpm.toFixed(2)} a mile. Asking prices shown.`;
+  }
 
   // ---------- sparkline: svg.sc-spark — the sheet colours the path and end dot ----------
   function spark(values, w, h, emphasis) {
@@ -405,6 +451,7 @@
     if (S.year !== 'all') rows = rows.filter((x) => String(x.year) === S.year);
     if (S.miles) rows = rows.filter((x) => x.miles !== null && x.miles !== undefined && x.miles < S.miles);
     if (S.clean) rows = rows.filter((x) => !(x.accidents > 0));
+    if (S.rental) rows = rows.filter((x) => !isRental(x));
     return rows;
   }
   const SORT_DESC = { days_listed: true, newest: true };
@@ -452,6 +499,7 @@
     const f = el('div', { class: 'flags' });
     const parts = [];
     if (x.cpo) parts.push(el('span', { class: 'sc-chip sc-chip--good' }, 'cpo'));
+    if (isRental(x)) parts.push(el('span', { class: 'sc-chip sc-chip--warn' }, /rental/i.test(x.usage) ? 'rental' : (/multiple/i.test(x.usage) ? 'multi-use' : 'fleet')));
     if (x.owners === 1) parts.push(el('span', null, '1-owner'));
     else if (x.owners > 1) parts.push(el('span', null, `${x.owners} owners`));
     if (x.accidents > 0) parts.push(el('span', { class: 'sc-chip sc-chip--danger' }, `${x.accidents} accident${x.accidents > 1 ? 's' : ''}`));
@@ -477,27 +525,38 @@
   const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'In one of your states — no shipping' : 'Out of state — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
 
-  // One column of the takeaway: a photo, the asking price, the shipping line, and the facts.
-  function takeawayCol(label, b, emptyText, modelLabel) {
-    const col = el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-callout__label' }, label));
-    if (!b) { col.appendChild(el('p', { class: 'sc-muted' }, emptyText)); return col; }
-    const facts = [modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
+  // One pick: photo, asking price, the shipping line, why it is a pick, and the facts.
+  function pickCard(p) {
+    const b = p.x;
+    const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${b.city || '—'}, ${b.state || ''}${b.distance != null ? ` — ${num(b.distance)} mi from home` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
-    const p = el('p', null, `${facts}. ${where}. `);
-    if (b.url) p.appendChild(el('a', { href: b.url, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
-    col.appendChild(el('div', { class: 'sc-media' }, thumbFor(b, true), el('div', { class: 'sc-media__body' },
+    const para = el('p', null, `${facts}. ${where}. `);
+    if (b.url) para.appendChild(el('a', { href: b.url, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+    return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, thumbFor(b, true), el('div', { class: 'sc-media__body' },
       el('div', { class: 'sc-callout__figure' }, `${money(b.price)} asking`),
-      el('div', { class: 'sc-media__sub' }, shipNote(b)), p)));
-    return col;
+      el('div', { class: 'sc-media__sub' }, shipNote(b)),
+      el('div', null, el('span', { class: 'sc-chip sc-chip--good' }, `${Math.round(p.pct * 100)}% under typical`)),
+      el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${p.modelLabel}, miles allowed for`),
+      para)));
   }
-  // Two takeaways, both under the current filters: the cheapest asking anywhere, and the cheapest in the buyer's states.
-  function renderTakeaway(best, bestLocal, labelOf) {
+  // Our picks, under the current filters — on the front page across every model, on a model view within it.
+  function renderPicks(picks) {
     const host = $('takeaway'); host.textContent = '';
-    if (!best) { host.hidden = true; return; }
-    host.appendChild(el('div', { class: 'sc-callout sc-callout--core' }, el('div', { class: 'sc-grid sc-grid--2' },
-      takeawayCol('Lowest asking nationwide', best, '', labelOf(best)),
-      takeawayCol(`Lowest asking in ${statesTxt()}`, bestLocal, `Nothing in ${statesTxt()} under these filters.`, bestLocal && labelOf(bestLocal)))));
+    if (!picks.length) { host.hidden = true; return; }
+    host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
+      el('div', { class: 'sc-callout__label' }, 'our picks'),
+      el('div', { class: 'sc-grid picks-grid' }, ...picks.map(pickCard)),
+      el('p', { class: 'sc-hint' }, picksRule())));
     host.hidden = false;
+  }
+  function renderNotes(t) {
+    const card = $('notes-card'), n = t.notes || {};
+    const cols = [['good', 'The good'], ['bad', 'The bad'], ['watch', 'Watch out for']].filter(([k]) => Array.isArray(n[k]) && n[k].length);
+    if (!cols.length) { card.hidden = true; return; }
+    $('notes-title').textContent = `Know the ${t.label}`;
+    const grid = $('notes-grid'); grid.textContent = '';
+    for (const [k, label] of cols) grid.appendChild(el('div', null, el('div', { class: 'sc-eyebrow' }, label), el('ul', null, ...n[k].map((s) => el('li', null, s)))));
+    card.hidden = false;
   }
   function deltaEl(cur, before, prevDate, goodWhenDown, nDays) {
     if (cur == null || before == null) return el('div', { class: 'sc-delta sc-delta--flat' }, nDays < 2 ? 'first snapshot' : 'no prior value');
@@ -762,9 +821,10 @@
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'), el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shop.label : `${rows.length} models`),
       el('div', { class: 'sc-tile__sub' }, shop ? (shop.best ? `from ${money(shop.best.price)} · ${shop.n} on the market · ${shop.n_local} in-state` : `${shop.n} on the market`) : 'no target marked as shopping')));
 
-    // the two takeaways across every model
-    const labelOf = (b) => { const r = rows.find((q) => q.best === b || q.bestLocal === b); return r ? r.label : ''; };
-    renderTakeaway(bestRow && bestRow.best, bestLocalRow && bestLocalRow.bestLocal, labelOf);
+    // our picks across every model: best value, not lowest price
+    const P = pickParams();
+    renderPicks(choosePicks(rows.flatMap((r) => scorePicks(applyShared(r.m.listings || []), r.label)), P.count, P.per_model));
+    $('notes-card').hidden = true;
 
     // the chart: every model's lowest asking price over time
     $('chart-card').hidden = false;
@@ -820,8 +880,9 @@
     const rows = filtered();
     renderHeader();
     renderKpis(rows);
-    const t = model(), priced = rows.filter(hasPrice);
-    renderTakeaway(lowestBy(priced, 'price'), lowestBy(priced.filter(isLocal), 'price'), () => t.label);
+    const t = model();
+    renderPicks(choosePicks(scorePicks(rows, t.label), pickParams().count));
+    renderNotes(t);
     renderChart();
     renderList(rows);
     renderGone();
@@ -857,6 +918,7 @@
     $('f-miles').value = String(S.miles);
     $('f-sort').value = S.sort;
     $('f-clean').checked = S.clean;
+    $('f-rental').checked = S.rental;
     $('filters').hidden = false;
   }
 
@@ -867,6 +929,7 @@
     $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); render(); });
     $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; render(); });
     $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; render(); });
+    $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; render(); });
     let raf = null, wasNarrow = narrow();
     window.addEventListener('resize', () => {
       if (raf) cancelAnimationFrame(raf);

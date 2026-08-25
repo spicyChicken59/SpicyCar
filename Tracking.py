@@ -45,6 +45,7 @@ CFG = json.loads(Path("targets.json").read_text())
 BUYER = CFG.get("buyer", {})
 STATES = [str(s).strip().upper() for s in BUYER.get("states", [])]
 SHOPPING = [str(s) for s in BUYER.get("shopping", [])]   # target ids being shopped
+PICKS = BUYER.get("picks", {})                            # how "our picks" are chosen
 TODAY_ORD = date.fromisoformat(TODAY).toordinal()
 WATCHLIST = CFG["watchlist"]
 DEFAULTS = CFG.get("defaults", {})
@@ -98,6 +99,7 @@ def build_targets():
                     "model_key": mkey, "model_label": m.get("label", mkey),
                     "model": m.get("model", mkey),
                     "model_note": m.get("note", ""),
+                    "model_notes": m.get("notes", {}),
                     "trim_key": tkey or "all",
                     "label": tr.get("label", tkey or "all trims"),
                     "note": tr.get("note", ""),
@@ -346,6 +348,98 @@ def adjusted(price, miles, ship=0):
 def landed(r):
     ship = ship_for(r)
     return adjusted(to_int(r["price"]), to_int(r["miles"]), ship), ship
+
+
+# --------------------------------------------------------------------------
+# Our picks: best value, not lowest price. Eligible cars are ranked by how far
+# under the typical (median) value of their own model they sit, where value is
+# asking + shipping + a mileage allowance. The reader only ever sees asking.
+# --------------------------------------------------------------------------
+NON_PERSONAL = ("rental", "fleet", "corporate", "commercial", "taxi", "livery",
+                "government", "multiple")
+
+
+def is_rental(x):
+    u = str(x.get("usage", "")).lower()
+    return any(k in u for k in NON_PERSONAL)
+
+
+def pick_value(x):
+    price, miles = to_int(x.get("price")), to_int(x.get("miles"))
+    if price is None or miles is None:
+        return None
+    base = to_int(PICKS.get("mileage_baseline")) or 20000
+    cpm = to_float(PICKS.get("cents_per_mile"))
+    if cpm is None:
+        cpm = 0.30
+    ship = 0 if x.get("local") else (to_int(x.get("ship")) or 0)
+    return price + ship + (miles - base) * cpm
+
+
+def pick_eligible(x):
+    price, miles = to_int(x.get("price")), to_int(x.get("miles"))
+    if price is None or miles is None:
+        return False
+    if miles > (to_int(PICKS.get("max_miles")) or 50000):
+        return False
+    if PICKS.get("exclude_accidents", True) and (to_int(x.get("accidents")) or 0) > 0:
+        return False
+    if PICKS.get("exclude_rental", True) and is_rental(x):
+        return False
+    return True
+
+
+def score_picks(listings, model_label):
+    """Every eligible car of one model, scored against that model's median."""
+    pool = [x for x in listings if pick_eligible(x)]
+    if len(pool) < 3:
+        return []
+    med = median([pick_value(x) for x in pool])
+    out = []
+    for x in pool:
+        v = pick_value(x)
+        out.append({**x, "model_label": model_label,
+                    "pick_under": int(round(med - v)),
+                    "pick_pct": (med - v) / med if med else 0.0})
+    out.sort(key=lambda p: -p["pick_pct"])
+    return out
+
+
+def choose_picks(scored, n, per_model=None):
+    out, per = [], Counter()
+    for p in sorted(scored, key=lambda p: -p["pick_pct"]):
+        if per_model and per[p["model_label"]] >= per_model:
+            continue
+        out.append(p)
+        per[p["model_label"]] += 1
+        if len(out) >= n:
+            break
+    return out
+
+
+def fmt_pick(p):
+    bits = [f"**{money(to_int(p['price']))}**", p["model_label"], str(p.get("year", ""))]
+    if to_int(p.get("miles")) is not None:
+        bits.append(f"{to_int(p['miles']):,} mi")
+    bits.append("no shipping" if p.get("local") else
+                (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
+    bits.append(f"{p.get('city', '')}, {p.get('state', '')}")
+    line = "- " + " · ".join(b for b in bits if b)
+    line += (f"\n  _our pick: {p['pick_pct']:.0%} under typical for a {p['model_label']} "
+             f"({money(p['pick_under'])} less)_")
+    if p.get("flags"):
+        line += f" · _{' · '.join(p['flags'])}_"
+    if p.get("url"):
+        line += f"\n  [listing]({p['url']})"
+    line += f" `{p.get('vin', '')}`"
+    return line
+
+
+def picks_rule():
+    return (f"under {(to_int(PICKS.get('max_miles')) or 50000):,} miles, no reported "
+            f"accidents, no rental or fleet history; ranked by how far under the "
+            f"typical price for the model a car sits, allowing "
+            f"{(to_float(PICKS.get('cents_per_mile')) if to_float(PICKS.get('cents_per_mile')) is not None else 0.30):.2f}/mi")
 
 
 # --------------------------------------------------------------------------
@@ -854,6 +948,12 @@ def build_outputs(today_rows, all_rows, hist):
             "states": STATES,
             "state_names": {s: STATE_NAMES.get(s, s) for s in STATES},
             "shopping": SHOPPING,
+            "picks": {"count": PICKS.get("count", 4), "per_model": PICKS.get("per_model", 2),
+                      "max_miles": PICKS.get("max_miles", 50000),
+                      "cents_per_mile": PICKS.get("cents_per_mile", 0.30),
+                      "mileage_baseline": PICKS.get("mileage_baseline", 20000),
+                      "exclude_accidents": PICKS.get("exclude_accidents", True),
+                      "exclude_rental": PICKS.get("exclude_rental", True)},
             "ship_per_mile": BUYER.get("ship_per_mile"),
             "ship_min": BUYER.get("ship_min"),
             "ship_cost": BUYER.get("ship_cost"),
@@ -869,7 +969,7 @@ def build_outputs(today_rows, all_rows, hist):
     for t in TARGETS.values():
         tree[t["brand"]][t["model_key"]].append(t)
 
-    full, compact = [], []      # report sections, assembled at the end
+    full, compact, all_scored = [], [], []      # report sections, assembled at the end
     for bkey, models in tree.items():
         b_entry = {"label": WATCHLIST[bkey].get("label", bkey),
                    "models": {}}
@@ -886,6 +986,7 @@ def build_outputs(today_rows, all_rows, hist):
             prev_day = m_days[-2] if len(m_days) >= 2 else None
             m_entry = {
                 "label": label, "note": m0["model_note"],
+                "notes": m0["model_notes"],
                 "years": sorted({str(y) for t in trims for y in t["years"]}),
                 "shopping": shopping,
                 "cadence": min(t["cadence"] for t in trims),
@@ -919,6 +1020,8 @@ def build_outputs(today_rows, all_rows, hist):
             listings = [listing_entry(r, summarize((r["target"], r["vin"]), hist))
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
+            scored = score_picks(m_entry["listings"], label)
+            all_scored += scored
 
             if not shopping:
                 compact.append(compact_line(m_entry, label))
@@ -928,6 +1031,10 @@ def build_outputs(today_rows, all_rows, hist):
             if as_of != TODAY:
                 sec += [f"_Not fetched today — showing {as_of}._", ""]
             sec += brief_lines(m_entry, m_entry["listings"], prev_day) + [""]
+            picks = choose_picks(scored, PICKS.get("count", 4))
+            if picks:
+                sec += [f"**Our picks** — {picks_rule()}", ""]
+                sec += [fmt_pick(p) for p in picks] + [""]
             counts = Counter(x["state"] for x in listings if x["local"])
             n_out = sum(1 for x in listings if not x["local"])
             summary = " · ".join([f"{st} {counts.get(st, 0)}" for st in STATES]
@@ -944,6 +1051,11 @@ def build_outputs(today_rows, all_rows, hist):
             full += sec
 
     report = [f"# {APP} — {TODAY}", ""] + full
+    top = choose_picks(all_scored, PICKS.get("count", 4), PICKS.get("per_model", 2))
+    if top:
+        report += ["## Our picks across the watchlist", "",
+                   f"_{picks_rule()}. Asking prices shown._", ""]
+        report += [fmt_pick(p) for p in top] + [""]
     if compact:
         report += ["## Comparison", "",
                    "_By asking price, shipping stated per car, on a slower cadence: "
