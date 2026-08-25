@@ -19,18 +19,18 @@ CSV in the repository is the ledger.
 
 ## The idea
 
-Asking price is the least useful number on a listing. A $38,000 car in San Diego and a $45,000 car
-in Indianapolis are not $7,000 apart if one has to ride a truck for 1,800 miles and the other has
-20,000 more miles on it. SpicyCar makes that comparison honest, every day:
+Asking price alone does not tell you what a car costs. A $38,000 car in San Diego and a $45,000 car
+in Indianapolis are not $7,000 apart for a buyer in Chicago if one has to ride a truck for 1,800
+miles. SpicyCar shows both numbers, every day, on every car:
 
 ```
-landed = asking
-       + shipping                  0 in-state · else max($350, miles_from_home × $0.65)
-       + (miles − 20,000) × $0.30
+asking            exactly as listed — every sort, tile and chart uses it
++ shipping        0 in-state · else max($350, miles_from_home × $0.65), stated on the car
 ```
 
-Everything sorts by landed. Which cars are sitting, which are being cut, which just disappeared —
-all relative to what they would really cost *this* buyer.
+The sum is never less than asking. Miles are shown next to every price, not priced in. Which cars
+are sitting, which are being cut, which just disappeared — the cheapest anywhere and the cheapest
+close to home, for *this* buyer.
 
 Two things are configured, separately:
 
@@ -93,10 +93,10 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
   every in-state listing grouped by state, and the five best-value cars out of state.
-- The dashboard — an "All" overview with one row per model (best value nationwide and in-state,
-  median, freshness) and brand and model tabs; on every model, best value nationwide and in-state
-  under the current filters; trim, state, year and mileage filters; lowest and median
-  landed price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
+- The dashboard — opens on every model at once: a photo per model, lowest asking nationwide and
+  in-state, median, a trend line, and one chart with every model's lowest asking price over time.
+  Then brand and model tabs; on every model, the two lowest-asking cars with photos under the
+  current filters; trim, state, year and mileage filters; lowest and median asking price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
   ex-lease), distance from home, shipping estimate, days on market and a price sparkline; and the
   "gone" list.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home.
@@ -123,7 +123,7 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 | `states` | Two-letter codes. Listings in these states are drivable: no shipping. |
 | `ship_per_mile`, `ship_min` | Shipping estimate for everything else: `max(ship_min, distance × ship_per_mile)`. Set `ship_per_mile` to `null` for a flat rate. |
 | `ship_cost` | Flat shipping, used when distance is unknown or `ship_per_mile` is off. |
-| `cents_per_mile`, `mileage_baseline` | Mileage adjustment: each mile above the baseline costs this much; each mile below credits it. |
+| `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
 | `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full and the dashboard opens on the first; every other model is a one-line comparison. |
 
 ### watchlist

@@ -11,7 +11,7 @@
     "ship_per_mile": 0.65,
     "ship_min": 350,
     "ship_cost": 1100,
-    "cents_per_mile": 0.30,
+    "cents_per_mile": 0,
     "mileage_baseline": 20000
   },
 

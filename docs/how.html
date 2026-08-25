@@ -6,10 +6,10 @@
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#111F31">
 <title>How SpicyCar works</title>
-<meta name="description" content="How SpicyCar prices a used car as landed cost, stays inside a free API plan, and decides what counts as local.">
+<meta name="description" content="How SpicyCar reads asking prices, estimates shipping, stays inside a free API plan, and decides what counts as local.">
 <meta property="og:type" content="article">
 <meta property="og:title" content="How SpicyCar works">
-<meta property="og:description" content="Landed price, a 20-call-a-day budget, and why scoping by state beat scoping by radius.">
+<meta property="og:description" content="Asking prices as listed, shipping stated per car, a 30-call-a-day budget, and why scoping by state beat scoping by radius.">
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/how.html">
 <meta name="twitter:card" content="summary_large_image">
@@ -46,10 +46,10 @@
   <div class="sc-title">
     <div class="sc-eyebrow">Methodology</div>
     <h1>How SpicyCar works</h1>
-    <p class="sc-dek">SpicyCar watches a list of cars every day and answers one question for one buyer: which specific vehicle is the best deal once you count what it costs to actually get it home.</p>
+    <p class="sc-dek">SpicyCar watches a list of cars every day and shows, for one buyer, the cheapest of each anywhere and the cheapest close to home — with the cost of getting a far one home stated, not hidden.</p>
     <nav class="sc-toc" aria-label="On this page">
       <a href="#question">The question</a>
-      <a href="#landed">Landed price</a>
+      <a href="#prices">Prices</a>
       <a href="#data">Where the data comes from</a>
       <a href="#budget">Staying inside a free plan</a>
       <a href="#local">What counts as local</a>
@@ -61,41 +61,39 @@
 
   <article class="sc-doc sc-doc--flat">
     <h2 id="question">The question</h2>
-    <p>Asking price is the least useful number on a listing. A $38,000 car in San Diego and a $45,000 car in Indianapolis are not $7,000 apart if one of them has to ride a truck for 1,800 miles and the other has 20,000 more miles on it. SpicyCar exists to make that comparison honest — and to make it every day, so you can see which cars are sitting, which are being cut, and which just disappeared.</p>
-    <p>It is built around a <strong>buyer</strong> — a home zip code, the states they are willing to drive to, and how they value miles and shipping — and a <strong>watchlist</strong> of brands, models and trims. The two are configured separately, so a second buyer is an addition rather than a rewrite.</p>
+    <p>Asking price alone does not tell you what a car costs. A $38,000 car in San Diego and a $45,000 car in Indianapolis are not $7,000 apart for a buyer in Chicago if one of them has to ride a truck for 1,800 miles. SpicyCar shows both numbers side by side, every day — asking as listed, shipping stated — so you can see which cars are sitting, which are being cut, and which just disappeared.</p>
+    <p>It is built around a <strong>buyer</strong> — a home zip code, the states they are willing to drive to, and what shipping costs them — and a <strong>watchlist</strong> of brands, models and trims. The two are configured separately, so a second buyer is an addition rather than a rewrite.</p>
     <p>The first buyer is real: someone near Chicago, shopping for a BMW i5 eDrive40. The watchlist is every trim of the i4 and i5, so the one they want can be judged against its siblings — and comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet, so it can be judged against its rivals. The report leads with what is being shopped, in full, and gives every comparison model one line.</p>
 
-    <h2 id="landed">Landed price</h2>
-    <p>Everything sorts by one number: what the car would cost sitting in the buyer's driveway.</p>
-<pre>landed = asking
-       + shipping
-       + (miles − 20,000) × $0.30</pre>
-    <p><strong>Shipping.</strong> Nothing if the car is in one of the buyer's states — you drive it home. Otherwise an estimate from the distance between the listing and the buyer's home: $0.65 a mile with a $350 floor, roughly what open-carrier transport costs. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
-    <p><strong>Mileage.</strong> Every mile above a 20,000-mile baseline costs 30 cents; every mile below it is credited. A 10,000-mile car gets $3,000 taken off its landed price; a 40,000-mile car has $6,000 added. The rate is a buyer setting, not a market fact — it is how much <em>this</em> buyer cares about miles.</p>
-    <p>Three illustrative cars, priced for a buyer near Chicago whose states are Illinois, Ohio and Indiana:</p>
+    <h2 id="prices">Prices</h2>
+    <p>The number everywhere is the <strong>asking price</strong>, exactly as the dealer listed it. Nothing is adjusted or inferred. Every sort, tile and chart uses it, and miles are shown next to every price so you can weigh them yourself.</p>
+    <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A car in one of the buyer's states costs nothing to bring home — you drive it. Anything else gets an estimate from the distance between the listing and the buyer's home: $0.65 a mile with a $350 floor, roughly what open-carrier transport costs. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
+<pre>asking + shipping        shipping = 0 in-state
+                                  = max($350, miles from home × $0.65) otherwise</pre>
+    <p>That sum is never less than asking; it is only ever the listed price plus the truck. Three illustrative cars for a buyer near Chicago whose states are Illinois, Ohio and Indiana:</p>
     <div class="sc-table-scroll">
       <table class="sc-table sc-table--compact">
-        <thead><tr><th>Car</th><th class="sc-num">Asking</th><th class="sc-num">Miles</th><th>Where</th><th class="sc-num">Shipping</th><th class="sc-num">Mileage adj.</th><th class="sc-num">Landed</th></tr></thead>
+        <thead><tr><th>Car</th><th class="sc-num">Asking</th><th class="sc-num">Miles</th><th>Where</th><th class="sc-num">Shipping</th><th class="sc-num">Asking + shipping</th></tr></thead>
         <tbody>
-          <tr><td>A</td><td class="sc-num">$46,000</td><td class="sc-num">16,000</td><td>Indiana — in-state</td><td class="sc-num">$0</td><td class="sc-num">−$1,200</td><td class="sc-num"><strong>$44,800</strong></td></tr>
-          <tr><td>B</td><td class="sc-num">$42,000</td><td class="sc-num">24,000</td><td>Michigan — 150 mi away</td><td class="sc-num">$350</td><td class="sc-num">+$1,200</td><td class="sc-num"><strong>$43,550</strong></td></tr>
-          <tr><td>C</td><td class="sc-num">$38,000</td><td class="sc-num">18,000</td><td>California — 1,800 mi away</td><td class="sc-num">$1,170</td><td class="sc-num">−$600</td><td class="sc-num"><strong>$38,570</strong></td></tr>
+          <tr><td>A</td><td class="sc-num">$46,000</td><td class="sc-num">16,000</td><td>Indiana — in-state</td><td class="sc-num">$0</td><td class="sc-num"><strong>$46,000</strong></td></tr>
+          <tr><td>B</td><td class="sc-num">$42,000</td><td class="sc-num">24,000</td><td>Michigan — 150 mi away</td><td class="sc-num">$350</td><td class="sc-num"><strong>$42,350</strong></td></tr>
+          <tr><td>C</td><td class="sc-num">$38,000</td><td class="sc-num">18,000</td><td>California — 1,800 mi away</td><td class="sc-num">$1,170</td><td class="sc-num"><strong>$39,170</strong></td></tr>
         </tbody>
       </table>
     </div>
-    <p>Car C is the best value by more than $5,000 despite being the farthest away — which is the point. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible instead of hiding it inside the asking price.</p>
+    <p>Car C is still the cheapest by more than $3,000 after the truck — which is the point of stating it. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible.</p>
 
     <h2 id="data">Where the data comes from</h2>
-    <p>Listings come from the <a href="https://auto.dev" rel="noopener">auto.dev</a> API. Every day at 11:00 UTC a GitHub Action runs the tracker, which fetches each trim, prices every listing, and writes three things back into the repository: a CSV with one row per vehicle per day, a Markdown report (also sent by email), and the JSON behind the dashboard.</p>
+    <p>Listings come from the <a href="https://auto.dev" rel="noopener">auto.dev</a> API. Every day at 11:00 UTC a GitHub Action runs the tracker, which fetches each target due that day, states shipping on every listing, and writes three things back into the repository: a CSV with one row per vehicle per day, a Markdown report (also sent by email), and the JSON behind the dashboard.</p>
     <p>There is no server and no database. The CSV in the repository is the ledger, and git history is the backup. A same-day re-run replaces that day's rows rather than duplicating them.</p>
 
     <h2 id="budget">Staying inside a free plan</h2>
     <p>The free plan allows <strong>1,000 calls a month</strong> and returns at most <strong>20 listings per call</strong>. That shapes the whole design.</p>
     <ul>
-      <li><strong>Two queries per trim.</strong> One filtered to the buyer's states — the API takes a comma-separated list, so three states cost one call — and one national. Adding a state costs nothing.</li>
+      <li><strong>Two queries per target.</strong> One filtered to the buyer's states — the API takes a comma-separated list, so three states cost one call — and one national. Adding a state costs nothing.</li>
       <li><strong>Depth.</strong> The one or two trims a buyer is actually shopping get <code>full</code> depth: two sort orders, two pages each. Everything else gets <code>light</code>: the cheapest 20 and nothing more. The i5 eDrive40 is full; every other target is light.</li>
       <li><strong>Cadence.</strong> Comparison brands are fetched every other day, spread evenly across the cycle in watchlist order, so six brands fit in about 30 calls a day — roughly 900 a month. On a model's off day the dashboard and report show its last fetch, marked "as of".</li>
-      <li><strong>A hard budget.</strong> The script prints its plan before it starts — today, the worst day in the next two weeks, the monthly average — and refuses to run if any day would exceed <code>budget_per_day</code>.</li>
+      <li><strong>A hard budget.</strong> The script prints its plan before it starts — today, the worst day in the next two weeks, the monthly average — and refuses to run if any day would exceed <code>budget_per_day</code> or the average would exceed <code>budget_per_month</code>.</li>
     </ul>
     <p>Because each query returns only the cheapest N, the data is a sample of the bottom of the market, not the whole market. That has one consequence worth being explicit about.</p>
     <div class="sc-callout sc-callout--core">
@@ -106,7 +104,7 @@
     <h2 id="local">What counts as local — and why not a radius</h2>
     <p>The first version scoped by city: a 200-mile radius around each of three Midwest cities, with listings placed by their coordinates. It returned one or two local cars a day, while the same cars showed up in the national results with Midwest addresses.</p>
     <p>The cause took a week to find. For listings it cannot geocode, the API returns coordinates of exactly (0, 0) — a point in the Atlantic off West Africa, about 5,900 miles from Indianapolis. Those values are not null, so every emptiness check passed them through, and the distance math confidently placed the cars outside every radius. About 7% of listings were affected, including the two cheapest i5 eDrive40s in Indianapolis.</p>
-    <p>SpicyCar now scopes by <strong>state</strong>. A listing is in-state when its own <code>state</code> field is one of the buyer's states — no coordinates involved. Coordinates are used only to price shipping, and when they are missing or zero the listing's zip code is geocoded instead, once, with the result cached in the repository.</p>
+    <p>SpicyCar now scopes by <strong>state</strong>. A listing is in-state when its own <code>state</code> field is one of the buyer's states — no coordinates involved. Coordinates are used only to estimate shipping, and when they are missing or zero the listing's zip code is geocoded instead, once, with the result cached in the repository.</p>
     <div class="sc-callout sc-callout--ink">
       <div class="sc-callout__label">The rule that came out of it</div>
       <p>Use the field that means the thing. State was on every record from the start; deriving it from coordinates was a mistake that looked like a feature.</p>
@@ -114,11 +112,10 @@
 
     <h2 id="reading">Reading the dashboard</h2>
     <ul>
-      <li><strong>Every model</strong> — the "All" tab: one row per model with cars, in-state count, best value nationwide, best value in-state and the median, all under the same filters. Shopping first, then by value.</li>
-      <li><strong>Best value, twice</strong> — on every model: the cheapest landed anywhere and the cheapest in-state, both recomputed as you filter.</li>
-      <li><strong>Lowest and median landed</strong> — the market floor and the market middle for the selected model and trim, with the change since the previous day.</li>
-      <li><strong>Landed price over time</strong> — both series by day. The median is context; the lowest is what you would pay.</li>
-      <li><strong>Listings</strong> — one row per VIN with photo, history flags, distance from home, shipping estimate, days on market, and a price sparkline. Filter by trim, state, year and miles; sort by landed, asking, miles, biggest drop, longest on market, or newest.</li>
+      <li><strong>Every model</strong> — the front page: one row per model with a photo, cars on the market, in-state count, lowest asking nationwide, lowest asking in-state, the median and a trend line, all under the same filters. Shopping first, then by price.</li>
+      <li><strong>Every model over time</strong> — one line per model, lowest asking price by day. The model being shopped is in colour; the rest are context, each named at its line's end.</li>
+      <li><strong>Lowest asking, twice</strong> — on the front page and on every model: the cheapest anywhere and the cheapest in-state, with the photo, the shipping line, and the listing link, recomputed as you filter.</li>
+      <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags, distance from home, days on market, and a price sparkline. Filter by trim, state, year and miles; sort by asking, asking plus shipping, miles, biggest drop, longest on market, or newest.</li>
       <li><strong>Gone from the market</strong> — with the out-of-window flag described above.</li>
     </ul>
     <p>The signals worth acting on: <strong>days on market</strong> past 30 usually means a dealer who will negotiate. <strong>Price cuts</strong> show how many times and how far. <strong>new</strong> marks cars first seen today. <strong>1-owner</strong>, <strong>no accidents</strong> and <strong>cpo</strong> are the history flags worth filtering on; <strong>ex-lease</strong> usually means one careful owner and a full service record.</p>
@@ -127,6 +124,7 @@
     <ul>
       <li>It samples the cheapest end of the market. A car that never sat in the bottom 20–80 for its trim never appears.</li>
       <li>Shipping is an estimate. Get a quote before believing it to the dollar.</li>
+      <li>Miles are shown, not priced. A 5,000-mile car and a 50,000-mile car at the same asking price sort together; the miles column is there so you can tell them apart.</li>
       <li>State is a proxy for "drivable." Eastern Ohio is 350 miles from Chicago; Benton Harbor, Michigan is 90 — and pays shipping.</li>
       <li>One data source. Private-party sales, and dealers not in the feed, are invisible.</li>
       <li>Taxes, dealer fees, and the plane ticket to go and look are not included.</li>

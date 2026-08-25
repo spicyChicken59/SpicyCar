@@ -333,13 +333,14 @@ def ship_for(r):
 
 
 def adjusted(price, miles, ship=0):
-    if price is None or miles is None:
+    """Asking plus shipping. The optional mileage adjustment (cents_per_mile,
+    off by default) is the only thing that could ever take it below asking."""
+    if price is None:
         return None
     base = to_int(BUYER.get("mileage_baseline")) or 20000
-    cpm = to_float(BUYER.get("cents_per_mile"))
-    if cpm is None:
-        cpm = 0.25
-    return int(price + ship + (miles - base) * cpm)
+    cpm = to_float(BUYER.get("cents_per_mile")) or 0
+    mileage = (miles - base) * cpm if (miles is not None and cpm) else 0
+    return int(price + ship + mileage)
 
 
 def landed(r):
@@ -578,9 +579,11 @@ def fmt_row(r, s):
     bits = [f"**{money(to_int(r['price']))}**"]
     if miles is not None:
         bits.append(f"{miles:,} mi")
-    if adj is not None:
-        bits.append(f"landed {money(adj)}"
-                    + (f" (ship {money(ship)})" if ship else ""))
+    if ship:
+        bits.append(f"+ {money(ship)} shipping"
+                    + (f" = {money(adj)}" if adj is not None else ""))
+    else:
+        bits.append("no shipping")
     where = f"{r['year']} · {r['city']}, {r['state']}"
     d = row_distance(r)
     if d is not None:
@@ -624,6 +627,7 @@ def daily_stats(rows):
             "date": d,
             "n": len(display),
             "n_local": sum(1 for r in display if in_scope(r)),
+            "min_price": min(prices) if prices else None,
             "min_adj": min(adjs) if adjs else None,
             "median_adj": int(median(adjs)) if adjs else None,
             "median_price": int(median(prices)) if prices else None,
@@ -729,21 +733,23 @@ def brief_lines(m_entry, listings, prev_day):
     today = daily[-1] if daily else None
     prev = daily[-2] if len(daily) >= 2 else None
     out = []
-    if today and today["min_adj"] is not None:
-        line = f"- Lowest landed **{money(today['min_adj'])}**"
-        best = next((x for x in listings if x["adj"] == today["min_adj"]), None)
-        if best:
-            line += f" ({best['city']}, {best['state']})"
-        if prev and prev["min_adj"] is not None:
-            d = today["min_adj"] - prev["min_adj"]
+    priced = [x for x in listings if x["price"] is not None]     # sorted by asking
+    if priced:
+        b = priced[0]
+        line = f"- Lowest asking **{money(b['price'])}** ({b['city']}, {b['state']})"
+        if not b["local"] and b["ship"]:
+            line += f" · + {money(b['ship'])} shipping"
+        if (today and prev and today.get("min_price") is not None
+                and prev.get("min_price") is not None):
+            d = today["min_price"] - prev["min_price"]
             line += (" · = vs " if d == 0 else
                      f" · {'▼' if d < 0 else '▲'} {money(abs(d))} vs ") + prev["date"]
         out.append(line)
-    local = [x for x in listings if x["local"] and x["adj"] is not None]
+    local = [x for x in priced if x["local"]]
     if local:
         b = local[0]
-        out.append(f"- Lowest in {'/'.join(STATES)} **{money(b['adj'])}** "
-                   f"({b['city']}, {b['state']})")
+        out.append(f"- Lowest asking in {'/'.join(STATES)} **{money(b['price'])}** "
+                   f"({b['city']}, {b['state']}) · no shipping")
     elif STATES:
         out.append(f"- Nothing in {'/'.join(STATES)}")
     movers = sum(1 for x in listings if len(x["series"]) >= 2
@@ -762,10 +768,10 @@ def brief_lines(m_entry, listings, prev_day):
 
 def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
     """Movers, departures, in-state cars by state, best value out of state."""
-    best = next((x for x in tl if x["adj"] is not None), None)
+    best = next((x for x in tl if x["price"] is not None), None)
     head = f"### {t['label']} — {len(tl)} vehicles"
     if best:
-        head += (f" · lowest landed {money(best['adj'])} "
+        head += (f" · lowest asking {money(best['price'])} "
                  f"({best['city']}, {best['state']})")
     sec += [head, ""]
     if t["note"]:
@@ -799,9 +805,9 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
             sec.append(fmt_row(rows_by_vin[x["vin"]],
                                summarize((t["id"], x["vin"]), hist)))
         sec.append("")
-    best5 = [x for x in tl if x["adj"] is not None and not x["local"]][:5]
+    best5 = [x for x in tl if x["price"] is not None and not x["local"]][:5]
     if best5:
-        sec.append("**Best value out of state (landed)**")
+        sec.append("**Cheapest out of state (shipping stated)**")
         for x in best5:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
                                summarize((t["id"], x["vin"]), hist)))
@@ -817,17 +823,19 @@ def compact_line(m_entry, label):
     if not xs:
         line = f"- **{label}** — nothing found"
     else:
-        priced = [x for x in xs if x["adj"] is not None]      # sorted by landed
+        priced = [x for x in xs if x["price"] is not None]    # sorted by asking
         local = [x for x in priced if x["local"]]
         bits = [f"{len(xs)} cars", f"{sum(1 for x in xs if x['local'])} in-state"]
         if priced:
             b = priced[0]
-            bits.append(f"lowest landed {money(b['adj'])} ({b['city']}, {b['state']})")
+            bits.append(f"lowest asking {money(b['price'])} ({b['city']}, {b['state']})"
+                        + (f" + {money(b['ship'])} shipping"
+                           if (not b["local"] and b["ship"]) else ""))
         if local:
-            bits.append(f"in-state from {money(local[0]['adj'])} "
+            bits.append(f"in-state from {money(local[0]['price'])} "
                         f"({local[0]['city']}, {local[0]['state']})")
         if priced:
-            bits.append(f"median {money(int(median([x['adj'] for x in priced])))}")
+            bits.append(f"median asking {money(int(median([x['price'] for x in priced])))}")
         line = f"- **{label}** — " + " · ".join(bits)
     tail = []
     if m_entry["cadence"] > 1:
@@ -910,7 +918,7 @@ def build_outputs(today_rows, all_rows, hist):
             display = pick_display_rows(m_rows)
             listings = [listing_entry(r, summarize((r["target"], r["vin"]), hist))
                         for r in display]
-            m_entry["listings"] = sorted(listings, key=lambda x: x["adj"] or 10**9)
+            m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
 
             if not shopping:
                 compact.append(compact_line(m_entry, label))
@@ -938,9 +946,9 @@ def build_outputs(today_rows, all_rows, hist):
     report = [f"# {APP} — {TODAY}", ""] + full
     if compact:
         report += ["## Comparison", "",
-                   "_The same landed maths on a slower cadence: the cheapest 20 in "
-                   f"{'/'.join(STATES) or 'your states'} and the cheapest 20 "
-                   "nationwide per model. Every car is on the dashboard._", ""]
+                   "_By asking price, shipping stated per car, on a slower cadence: "
+                   f"the cheapest 20 in {'/'.join(STATES) or 'your states'} and the "
+                   "cheapest 20 nationwide per model. Every car is on the dashboard._", ""]
         report += compact + [""]
     report += ["---",
                f"_{len(hist)} vehicle histories across {len(days)} "
