@@ -70,6 +70,22 @@
             "watch": ["Confirm the software is current and all campaigns are done; 2023 cars had electronics glitches", "Check the air suspension cycles properly and the tires (21–22 in) have life left — a set is expensive", "Decide whether you want the theater screen and lounge rear seats before you shop; they are not on every car", "Check the trim: eDrive50 (rear-drive, from 2024) vs xDrive60 (all-wheel) vs M70"]
           }
         },
+        "ix": {
+          "label": "BMW iX",
+          "model": "iX",
+          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "min_price": 25000,
+          "cadence": 2,
+          "notes": {
+            "good": ["One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size", "Depreciation has been brutal — $90k cars now sit in the $40k–60k range", "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"],
+            "bad": ["Divisive looks, and the big grille is a plastic sensor panel that is expensive if damaged", "21–22 in tires and a heavy car: consumables cost real money", "2022 cars had high-voltage battery and software recalls; charging peaks near 195 kW"],
+            "watch": ["Confirm the battery recall and software campaigns are done on the VIN", "Know which generation you are looking at: 2022–2025 xDrive50 / M60, or the 2026 xDrive45 / xDrive60 / M70 with bigger batteries", "Check tire life and the windshield (the camera glass is pricey); verify Driving Assistance Pro and the Sport package"]
+          },
+          "trims": {
+            "xdrive": { "label": "xDrive (45 / 50 / 60)", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive" },
+            "m":      { "label": "M (M60 / M70)",         "trim_query": "M60,M70", "trim_match": "", "trim_exclude": "xdrive", "min_price": 35000 }
+          }
+        },
         "i4": {
           "label": "BMW i4",
           "model": "i4",
