@@ -37,10 +37,10 @@ Two things are configured, separately:
 - **buyer** — who is purchasing: home zip, the states they will drive to for a car, and how they
   value miles and shipping. One buyer today; the first real use is a buyer near Chicago shopping
   for an i5 eDrive40. The shape is built for more.
-- **watchlist** — what to track: brands → models → trims. Every trim of the BMW i4 and i5, plus
-  comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet on a slower cadence, so the one
-  they want can be judged against its siblings and its rivals. `buyer.shopping` names the targets
-  that lead the report in full; everything else gets one line.
+- **watchlist** — what to track: brands → models → trims. The BMW i5 and i7 being shopped, every
+  trim of the i4, plus comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet on a slower
+  cadence, so the ones they want can be judged against their siblings and their rivals.
+  `buyer.shopping` names the targets that lead the report in full; everything else gets one line.
 
 ## Design decisions
 

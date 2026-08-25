@@ -818,7 +818,7 @@
     const total = rows.reduce((a, r) => a + r.n, 0), localTotal = rows.reduce((a, r) => a + r.n_local, 0);
     const bestRow = rows.filter((r) => r.best).reduce((a, r) => (!a || r.best.price < a.best.price ? r : a), null);
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
-    const shop = rows.find((r) => r.shopping);
+    const shops = rows.filter((r) => r.shopping), shop = shops[0];
     const host = $('kpis'); host.textContent = '';
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
       el('div', { class: 'sc-tile__sub' }, `${localTotal} in ${st} · ${total - localTotal} out of state · ${rows.length} models`)));
@@ -826,8 +826,9 @@
       el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${bestRow.best.city}, ${bestRow.best.state}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, `Lowest asking in ${st}`), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${bestLocalRow.bestLocal.city}, ${bestLocalRow.bestLocal.state} · no shipping` : `Nothing in ${st} under these filters`)));
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'), el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shop.label : `${rows.length} models`),
-      el('div', { class: 'sc-tile__sub' }, shop ? (shop.best ? `from ${money(shop.best.price)} · ${shop.n} on the market · ${shop.n_local} in-state` : `${shop.n} on the market`) : 'no target marked as shopping')));
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'),
+      el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shops.map((r) => r.label).join(' · ') : `${rows.length} models`),
+      el('div', { class: 'sc-tile__sub' }, shop ? shops.map((r) => `${r.label.replace(/^\S+ /, '')} ${r.best ? 'from ' + money(r.best.price) : '—'} · ${r.n_local} in-state`).join(' · ') : 'no target marked as shopping')));
 
     // our picks across every model: best value, not lowest price
     const P = pickParams();
@@ -843,7 +844,7 @@
       : 'One snapshot so far for most models — lines appear as daily runs accumulate. The model being shopped is in colour; the rest are context.';
     const C = chartColors();
     const lg = $('legend'); lg.textContent = '';
-    if (shop) lg.appendChild(el('span', null, el('i', { style: 'background:' + C.emphasis }), `${shop.label} (shopping)`));
+    if (shop) lg.appendChild(el('span', null, el('i', { style: 'background:' + C.emphasis }), `${shops.map((r) => r.label).join(', ')} (shopping)`));
     lg.appendChild(el('span', null, el('i', { style: 'background:' + C.context }), shop ? 'comparison models' : 'each model'));
     lineChart($('chart'), rows.map((r) => ({ label: r.label, emphasis: r.shopping, points: askingSeries(r.m, r.m.daily || []) })), { named: true, height: 340 });
     const tb = $('chart-table'); tb.textContent = '';
