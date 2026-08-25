@@ -438,8 +438,8 @@ def fmt_pick(p):
 def picks_rule():
     return (f"under {(to_int(PICKS.get('max_miles')) or 50000):,} miles, no reported "
             f"accidents, no rental or fleet history; ranked by how far under the "
-            f"typical price for the model a car sits, allowing "
-            f"{(to_float(PICKS.get('cents_per_mile')) if to_float(PICKS.get('cents_per_mile')) is not None else 0.30):.2f}/mi")
+            f"typical price for the model a car sits, allowing $"
+            f"{(to_float(PICKS.get('cents_per_mile')) if to_float(PICKS.get('cents_per_mile')) is not None else 0.30):.2f} a mile")
 
 
 # --------------------------------------------------------------------------
