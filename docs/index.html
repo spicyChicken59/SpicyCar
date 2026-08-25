@@ -436,11 +436,14 @@
   }
 
   // ---------- shared pieces ----------
-  function thumbFor(x, large) {
+  // The photo slot. alts are other photos to fall through to if a dealer's image will not load (a model row, never a specific car).
+  function thumbFor(x, large, alts) {
     const cls = 'sc-frame' + (large ? ' sc-frame--lg' : '');
-    return x && x.image
-      ? el('img', { class: cls, src: x.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer', onerror: (e) => { e.target.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, 'no photo')); } })
-      : el('div', { class: cls + ' sc-frame--empty' }, 'no photo');
+    const queue = [x && x.image, ...(alts || [])].filter((u, i, a) => u && a.indexOf(u) === i);
+    if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, 'no photo');
+    const img = el('img', { class: cls, src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+    img.addEventListener('error', () => { if (queue.length) img.src = queue.shift(); else img.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, 'no photo')); });
+    return img;
   }
   // History flags: the two that change a decision are chips (good / danger outline); the rest are words.
   function flagsCell(x) {
@@ -715,7 +718,8 @@
       const best = lowestBy(priced, 'price'), bestLocal = lowestBy(priced.filter(isLocal), 'price');
       const photo = (best && best.image) ? best : (bestLocal && bestLocal.image ? bestLocal : rows.find((x) => x.image) || null);
       return { bk, mk, m, brand: b.label || bk, label: m.label || mk, shopping: !!m.shopping, cadence: m.cadence || 1, as_of: m.as_of, next_due: m.next_due,
-        n: rows.length, n_local: rows.filter(isLocal).length, best, bestLocal, photo, median: median(priced.map((x) => x.price)),
+        n: rows.length, n_local: rows.filter(isLocal).length, best, bestLocal, photo, photos: rows.filter((x) => x.image).map((x) => x.image).slice(0, 8),
+        median: median(priced.map((x) => x.price)),
         trend: askingSeries(m, m.daily || []).map((p) => p.value) };
     }).sort((a, b) => (b.shopping - a.shopping) || ((a.best ? a.best.price : 1e12) - (b.best ? b.best.price : 1e12)));
   }
@@ -787,7 +791,7 @@
       el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, `Lowest asking in ${st}`), el('th', { class: 'sc-num' }, 'Median asking'), el('th', null, 'Trend'), el('th', null, 'Data'))));
     const obody = el('tbody');
     for (const r of rows) {
-      const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, true), el('div', { class: 'sc-media__body' },
+      const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, true, r.photos), el('div', { class: 'sc-media__body' },
         el('div', { class: 'sc-media__title' }, r.label),
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} in-state`),
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
