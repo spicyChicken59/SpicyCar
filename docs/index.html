@@ -442,7 +442,9 @@
     const queue = [x && x.image, ...(alts || [])].filter((u, i, a) => u && a.indexOf(u) === i);
     if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, 'no photo');
     const img = el('img', { class: cls, src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
-    img.addEventListener('error', () => { if (queue.length) img.src = queue.shift(); else img.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, 'no photo')); });
+    const next = () => { if (queue.length) img.src = queue.shift(); else img.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, 'no photo')); };
+    img.addEventListener('error', next);
+    img.addEventListener('load', () => { if (img.naturalWidth < 40) next(); });   // a placeholder pixel is not a photo
     return img;
   }
   // History flags: the two that change a decision are chips (good / danger outline); the rest are words.
