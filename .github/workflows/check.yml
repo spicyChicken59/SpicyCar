@@ -1,0 +1,40 @@
+name: check
+
+# Runs on every push and pull request, before the daily tracker ever fires.
+# The point is the budget guard: a config edit that would overspend the free
+# API plan fails here, not on the invoice.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Tests
+        env:
+          AUTODEV_API_KEY: test-key-not-used
+        run: python -m unittest discover -s tests -t . -v
+      - name: Config and outputs are valid JSON
+        run: |
+          python -c "import json; json.load(open('targets.json')); print('targets.json ok')"
+          python -c "import json; json.load(open('docs/data.json')); print('data.json ok')"
+      - name: Call plan
+        env:
+          AUTODEV_API_KEY: test-key-not-used
+        run: |
+          python -c "
+          import Tracking as T
+          today, worst, avg = T.planned_calls()
+          print(f'{len(T.TARGETS)} targets | today {today} | worst {worst}/{T.BUDGET} | '
+                f'avg {avg:.1f}/day = {avg*30.5:,.0f}/month of {T.MONTHLY:,} '
+                f'({avg*30.5/T.MONTHLY:.0%} of plan)')
+          "

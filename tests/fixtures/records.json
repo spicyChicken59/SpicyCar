@@ -1,0 +1,82 @@
+{
+  "_comment": "API-shaped listing records. Each one encodes a bug that actually reached production, so the suite is a regression net rather than a formality. Shape mirrors data/sample_record.json.",
+
+  "clean": {
+    "@id": "https://api.auto.dev/listings/WBY43FK01RCP74017",
+    "vin": "WBY43FK01RCP74017",
+    "createdAt": "2026-08-09 02:54:08",
+    "location": [-85.54008, 38.21223],
+    "vehicle": {"make": "BMW", "model": "i5", "year": 2024, "trim": "M60", "series": "M60 4dr Sedan AWD (electric DD)", "style": "Sedan", "exteriorColor": "Dark Graphite Metallic", "baseMsrp": 84100, "vin": "WBY43FK01RCP74017"},
+    "retailListing": {"price": 60999, "miles": 15922, "city": "Louisville", "state": "KY", "zip": "40299", "cpo": false, "dealer": "BMW of Louisville", "vdp": "https://louisvillebmw.com/used/BMW/2024-BMW-i5-x.htm", "primaryImage": "https://retail.photos.vin/WBY43FK01RCP74017-1.jpg", "carfaxUrl": "https://www.carfax.com/x"},
+    "history": {"accidentCount": 0, "ownerCount": 2, "usageType": "Lease"}
+  },
+
+  "null_island": {
+    "_bug": "The API returns location [0,0] for listings it cannot geocode. Not null, so every emptiness check passed it; haversine then put an Indianapolis car 5,924 miles away and it fell out of every local market for a week.",
+    "vin": "WBY33FK09RCR29277",
+    "createdAt": "2026-08-11 00:00:00",
+    "location": [0, 0],
+    "vehicle": {"make": "BMW", "model": "i5", "year": 2024, "trim": "eDrive40", "vin": "WBY33FK09RCR29277"},
+    "retailListing": {"price": 42990, "miles": 26983, "city": "Indianapolis", "state": "IN", "zip": "46202", "dealer": "Carvana", "vdp": "https://www.carvana.com/vehicle/4620141"},
+    "history": {"accidentCount": 0, "ownerCount": 2, "usageType": "Lease"}
+  },
+
+  "awkward_field_paths": {
+    "_bug": "dealer lives at retailListing.dealer (a string) and the listing URL at retailListing.vdp. The original paths guessed dealerName/vdpUrl, so both columns were empty on all 78 rows for days.",
+    "vin": "WBY33FK09RCP96469",
+    "createdAt": "2026-08-09 00:00:00",
+    "location": [-89.4012, 43.0731],
+    "vehicle": {"make": "BMW", "model": "i5", "year": 2024, "trim": "eDrive40", "vin": "WBY33FK09RCP96469"},
+    "retailListing": {"price": 46216, "miles": 15707, "city": "Madison", "state": "WI", "zip": "53703", "cpo": true, "dealer": "Rosen Nissan of Madison", "vdp": "https://rosennissanmadison.com/certified/x.htm"},
+    "history": {"accidentCount": 0, "ownerCount": 1, "usageType": "Personal Use"}
+  },
+
+  "rental": {
+    "_bug": "Rental and fleet cars should be excluded from picks and hideable in the UI.",
+    "vin": "KNDC34LA3N5029938",
+    "createdAt": "2026-07-01 00:00:00",
+    "location": [-80.3973, 27.6386],
+    "vehicle": {"make": "Kia", "model": "EV6", "year": 2022, "trim": "GT-Line", "vin": "KNDC34LA3N5029938"},
+    "retailListing": {"price": 22400, "miles": 41000, "city": "Vero Beach", "state": "FL", "zip": "32960", "dealer": "Coastal Auto", "vdp": "https://example.com/x"},
+    "history": {"accidentCount": 0, "ownerCount": 1, "usageType": "Rental Use"}
+  },
+
+  "too_cheap": {
+    "_bug": "Sub-min_price rows are monthly payments or placeholders, not cars.",
+    "vin": "WBY33FK09RCR00001",
+    "createdAt": "2026-08-20 00:00:00",
+    "location": [-87.6221, 41.8855],
+    "vehicle": {"make": "BMW", "model": "i5", "year": 2024, "trim": "eDrive40", "vin": "WBY33FK09RCR00001"},
+    "retailListing": {"price": 599, "miles": 12000, "city": "Chicago", "state": "IL", "zip": "60601", "dealer": "Payment Motors", "vdp": "https://example.com/y"},
+    "history": {"accidentCount": 0, "ownerCount": 1, "usageType": "Personal Use"}
+  },
+
+  "wrong_year": {
+    "_bug": "The API's year range is inclusive at the edges; out-of-range years must still be dropped client-side.",
+    "vin": "WBY33FK09RCR00002",
+    "createdAt": "2026-08-20 00:00:00",
+    "location": [-87.6221, 41.8855],
+    "vehicle": {"make": "BMW", "model": "i5", "year": 2021, "trim": "eDrive40", "vin": "WBY33FK09RCR00002"},
+    "retailListing": {"price": 39000, "miles": 30000, "city": "Chicago", "state": "IL", "zip": "60601", "dealer": "Old Stock", "vdp": "https://example.com/z"},
+    "history": {"accidentCount": 0, "ownerCount": 1, "usageType": "Personal Use"}
+  },
+
+  "trim_mismatch_decoy": {
+    "_bug": "trim_match used to run against json.dumps(whole record), so a short match like 'rs' hit dealer names and URLs. It must only look at the trim-bearing fields.",
+    "vin": "WBY33FK09RCR00003",
+    "createdAt": "2026-08-20 00:00:00",
+    "location": [-87.6221, 41.8855],
+    "vehicle": {"make": "BMW", "model": "i5", "year": 2024, "trim": "M60", "vin": "WBY33FK09RCR00003"},
+    "retailListing": {"price": 62000, "miles": 18000, "city": "Chicago", "state": "IL", "zip": "60601", "dealer": "eDrive40 Motors of Chicago", "vdp": "https://edrive40motors.example.com/listing"},
+    "history": {"accidentCount": 0, "ownerCount": 1, "usageType": "Personal Use"}
+  },
+
+  "no_coords_has_zip": {
+    "_bug": "When coordinates are absent entirely, the zip is geocoded once and cached.",
+    "vin": "WBY33FK09RCR00004",
+    "createdAt": "2026-08-20 00:00:00",
+    "vehicle": {"make": "BMW", "model": "i5", "year": 2025, "trim": "eDrive40", "vin": "WBY33FK09RCR00004"},
+    "retailListing": {"price": 47000, "miles": 9000, "city": "Columbus", "state": "OH", "zip": "43215", "dealer": "Buckeye BMW", "vdp": "https://example.com/w"},
+    "history": {"accidentCount": 1, "ownerCount": 1, "usageType": "Personal Use"}
+  }
+}
