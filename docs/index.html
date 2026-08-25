@@ -36,6 +36,8 @@
   .takeaway-col .sc-media { align-items: flex-start; }
   .takeaway-col .sc-media__body > :last-child { margin-bottom: 0; }
   .picks-grid { grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); }   /* two picks per row on a desktop, one on a phone */
+  .with-mark { display: flex; align-items: center; gap: 8px; }        /* a label or card head that carries the chick beside its text */
+  .with-mark img.sc-mark { height: 18px; }
   #notes-grid ul { margin: 0; padding-left: 18px; }
   #notes-grid li { margin-top: 6px; font-size: 14px; }
 </style>
@@ -83,6 +85,7 @@
         <h2 id="notes-title">Know the model</h2>
         <p class="sc-hint">The good, the bad, and what to check before you go and look. Written by hand, not by the tracker.</p>
       </div>
+      <div class="with-mark" id="notes-mark"></div>
     </div>
     <div class="sc-grid sc-grid--3" id="notes-grid"></div>
   </section>
@@ -231,6 +234,10 @@
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   };
   const isLocal = (x) => !!x.local;
+  // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
+  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/';
+  const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
+  const markImg = () => el('img', { class: 'sc-mark', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '' });
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
   // Asking plus the stated shipping estimate — never less than asking. Computed here so it never depends on the data's vintage.
   const landed = (x) => (hasPrice(x) ? x.price + (x.local ? 0 : (x.ship || 0)) : null);
@@ -539,12 +546,12 @@
       el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${p.modelLabel}, miles allowed for`),
       para)));
   }
-  // Our picks, under the current filters — on the front page across every model, on a model view within it.
+  // Spicy picks, under the current filters — on the front page across every model, on a model view within it.
   function renderPicks(picks) {
     const host = $('takeaway'); host.textContent = '';
     if (!picks.length) { host.hidden = true; return; }
     host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
-      el('div', { class: 'sc-callout__label' }, 'our picks'),
+      el('div', { class: 'sc-callout__label with-mark' }, 'spicy picks', markImg()),
       el('div', { class: 'sc-grid picks-grid' }, ...picks.map(pickCard)),
       el('p', { class: 'sc-hint' }, picksRule())));
     host.hidden = false;
@@ -554,6 +561,7 @@
     const cols = [['good', 'The good'], ['bad', 'The bad'], ['watch', 'Watch out for']].filter(([k]) => Array.isArray(n[k]) && n[k].length);
     if (!cols.length) { card.hidden = true; return; }
     $('notes-title').textContent = `Know the ${t.label}`;
+    const sign = $('notes-mark'); sign.textContent = ''; sign.appendChild(markImg());
     const grid = $('notes-grid'); grid.textContent = '';
     for (const [k, label] of cols) grid.appendChild(el('div', null, el('div', { class: 'sc-eyebrow' }, label), el('ul', null, ...n[k].map((s) => el('li', null, s)))));
     card.hidden = false;

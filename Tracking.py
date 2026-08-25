@@ -425,7 +425,7 @@ def fmt_pick(p):
                 (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
     bits.append(f"{p.get('city', '')}, {p.get('state', '')}")
     line = "- " + " · ".join(b for b in bits if b)
-    line += (f"\n  _our pick: {p['pick_pct']:.0%} under typical for a {p['model_label']} "
+    line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {p['model_label']} "
              f"({money(p['pick_under'])} less)_")
     if p.get("flags"):
         line += f" · _{' · '.join(p['flags'])}_"
@@ -1033,7 +1033,7 @@ def build_outputs(today_rows, all_rows, hist):
             sec += brief_lines(m_entry, m_entry["listings"], prev_day) + [""]
             picks = choose_picks(scored, PICKS.get("count", 4))
             if picks:
-                sec += [f"**Our picks** — {picks_rule()}", ""]
+                sec += [f"**Spicy picks** — {picks_rule()}", ""]
                 sec += [fmt_pick(p) for p in picks] + [""]
             counts = Counter(x["state"] for x in listings if x["local"])
             n_out = sum(1 for x in listings if not x["local"])
@@ -1053,7 +1053,7 @@ def build_outputs(today_rows, all_rows, hist):
     report = [f"# {APP} — {TODAY}", ""] + full
     top = choose_picks(all_scored, PICKS.get("count", 4), PICKS.get("per_model", 2))
     if top:
-        report += ["## Our picks across the watchlist", "",
+        report += ["## Spicy picks across the watchlist", "",
                    f"_{picks_rule()}. Asking prices shown._", ""]
         report += [fmt_pick(p) for p in top] + [""]
     if compact:

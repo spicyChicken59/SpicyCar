@@ -95,7 +95,7 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   every in-state listing grouped by state, and the five best-value cars out of state.
 - The dashboard — opens on every model at once: a photo per model, lowest asking nationwide and
   in-state, median, a trend line, one chart with every model's lowest asking price over time, and
-  **our picks** — four cars ranked by value (miles allowed for, shipping stated) but shown at asking
+  **spicy picks** — four cars ranked by value (miles allowed for, shipping stated) but shown at asking
   price. Then brand and model tabs; on every model, its own picks, a hand-written *know the model*
   card (the good, the bad, what to check); trim, state, year and mileage filters plus hide-accidents
   and hide-rentals; lowest and median asking price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
@@ -127,7 +127,7 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 | `ship_cost` | Flat shipping, used when distance is unknown or `ship_per_mile` is off. |
 | `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
 | `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full; every other model is a one-line comparison. |
-| `picks` | How "our picks" are chosen: `count`, `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own model and shown at asking price. |
+| `picks` | How the spicy picks are chosen: `count`, `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own model and shown at asking price. |
 
 ### watchlist
 
