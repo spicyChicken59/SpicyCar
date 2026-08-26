@@ -119,9 +119,10 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 - The dashboard — opens on the whole market at once: a photo per model, lowest asking nationwide
   and lowest drivable, median, brand-coloured trend lines, a **market map** — on the front page
   and every model page: each car at its own coordinates, filled when drivable, hollow when it pays
-  shipping, the five-hour drive ring drawn around the anchor, photos on hover (on a phone, tap
-  previews and a second tap opens), and a view that zooms to whatever the Where filter selects
-  (plus pinch or Ctrl-scroll zoom and drag pan) — and one
+  shipping, the five-hour drive ring drawn around the anchor, spicy picks ringed and shortlisted
+  cars drawn in the accent, photos on hover (on a phone, tap previews and a second tap opens),
+  and a view that zooms to whatever the Where filter selects (plus pinch or Ctrl-scroll zoom and
+  drag pan) — and one
   **market-over-time chart** —
   colour is the brand, the dash is the model, the shopped models are drawn heavier, and an
   interactive legend hides, shows and highlights any line. A **multi-select Where filter** (each

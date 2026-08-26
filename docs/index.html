@@ -73,6 +73,7 @@
   .map-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }     /* the 1px surface ring keeps overlapping dots separable */
   .map-dot.is-hollow { fill: none; stroke-width: 1.6; }
   .map-dot:hover { stroke-width: 2.6; }
+  .map-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
   .scatter-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }
   .scatter-dot.is-hollow { fill: none; stroke-width: 1.6; }
   .scatter-dot.has-url { cursor: pointer; }
@@ -695,6 +696,16 @@
       if (token !== MAP_RENDER) return;
       if (!states) { card.hidden = true; return; }
       const buyer = S.site.buyer || {};
+      // The cars the system elevates, marked on the map: spicy picks ringed in
+      // the accent (the scatter's encoding), shortlisted VINs drawn in the
+      // accent outright. Same pick sets as the cards above the map.
+      const P = pickParams();
+      const scored = mode === 'model'
+        ? scoredFrom(rowsForModel || [], model().label || '')
+        : allModels().flatMap(({ m }) => scoredFrom(applyShared(m.listings || []), m.label || ''));
+      const perM = mode === 'model' ? undefined : P.per_model;
+      const picked = new Set([...choosePicks(scored.filter((p) => p.x.local), P.count, perM),
+                              ...choosePicks(scored.filter((p) => !p.x.local), P.count, perM)].map((p) => p.x.vin));
       const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
       let view = S.mapView || MAP_FULL;
       let animateTo = null;
@@ -735,8 +746,12 @@
         tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${c.m.label} · ${c.x.year || ''}`));
         tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + brandColor(c.bk) }),
           el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
+        const extras = [];
+        if (picked.has(c.x.vin)) extras.push('spicy pick');
+        if (onShortlist(c.x)) extras.push('on your shortlist');
         tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, (c.x.miles != null ? `${num(c.x.miles)} mi · ` : '')
-          + (c.x.local ? 'drivable · no shipping' : (c.x.ship ? `+ ${money(c.x.ship)} shipping` : 'shipping n/a'))));
+          + (c.x.local ? 'drivable · no shipping' : (c.x.ship ? `+ ${money(c.x.ship)} shipping` : 'shipping n/a'))
+          + (extras.length ? ' · ' + extras.join(' · ') : '')));
         if (tap) {
           const u = mode === 'model' ? safeUrl(c.x.url) : null;
           if (u) tip.appendChild(el('a', { class: 'map-tip-open', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
@@ -760,12 +775,17 @@
         const key = (px | 0) + ',' + (py | 0);
         const i = seen[key] = (seen[key] || 0) + 1;
         const a = i * 2.39996, r = i > 1 ? 2.4 * Math.sqrt(i) : 0;
+        const cx = (px + r * Math.cos(a)).toFixed(1), cy = (py + r * Math.sin(a)).toFixed(1);
+        const isPick = picked.has(c.x.vin), isShort = onShortlist(c.x);
+        const hue = isShort ? tok('accent') : brandColor(c.bk);
+        if (isPick || isShort) svg.appendChild(svgEl('circle', { class: 'map-pick-ring',
+          cx, cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke' }));
         const dot = svgEl('circle', {
           class: 'map-dot ' + (c.x.local ? 'is-filled' : 'is-hollow'),
-          cx: (px + r * Math.cos(a)).toFixed(1), cy: (py + r * Math.sin(a)).toFixed(1),
+          cx, cy,
           r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke',
-          fill: c.x.local ? brandColor(c.bk) : 'none',
-          stroke: c.x.local ? null : brandColor(c.bk),
+          fill: c.x.local ? hue : 'none',
+          stroke: c.x.local ? null : hue,
         });
         dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
         dot.addEventListener('click', () => {
@@ -895,6 +915,8 @@
       const lg = $('map-legend'); lg.textContent = '';
       lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + chartColors().context }), 'filled — drivable'));
       lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + chartColors().context }), 'hollow — shipping added'));
+      if (picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
+      if (cars.some((c) => onShortlist(c.x))) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
       if (Array.isArray(buyer.anchor)) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('brand-strong') }), `≤ ${buyer.drive_hours || 5}h drive of ${homeName()}`));
       $('map-hint').textContent = `${cars.length - offMap} cars under the current filters`
         + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
@@ -985,6 +1007,7 @@
         el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
       const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
       if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
+      if (onShortlist(x)) bits.push('on your shortlist');
       tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
       const u = safeUrl(x.url);
       if (tap && u) {
@@ -1004,10 +1027,12 @@
     });
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
-      if (ringed.has(x.vin)) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5 }));
+      const isShort = onShortlist(x);
+      const hue = isShort ? tok('accent') : color;      // shortlisted cars wear the accent outright
+      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5 }));
       const u = safeUrl(x.url);
       const dot = svgEl('circle', { class: 'scatter-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' has-url' : ''),
-        cx, cy, r: 4, fill: x.local ? color : 'none', stroke: x.local ? null : color });
+        cx, cy, r: 4, fill: x.local ? hue : 'none', stroke: x.local ? null : hue });
       dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
       dot.addEventListener('click', () => {
         if (lastPtr === 'touch' && armed !== dot) {
@@ -1031,6 +1056,7 @@
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + color }), 'drivable'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + color }), 'shipping added'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
+    if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
     if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('border-strong') }), 'typical value by year'));
     $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover a dot for the car and click to open the listing; on a phone, tap previews and a second tap opens.`;
     card.hidden = false;
