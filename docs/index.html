@@ -13,33 +13,22 @@
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
-<!-- SpicyChicken Design System v2.1.0, pinned — DESIGN_SYSTEM.md §11 -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/apple-touch-icon.png">
+<!-- SpicyChicken Design System v2.2.0, pinned by commit (d19ac88) — swap to @v2.2.0 once the tag exists · DESIGN_SYSTEM.md §11 -->
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-avatar-tile.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/sc.css">
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/sc-theme.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc.css">
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc-theme.js"></script>
 <style>
   /* Page-specific only. Everything else is sc.css; semantic tokens only. */
 
-  /* ---- Readability overrides — page-level, the design system stays pinned.
-     The "//" prefixes go (sc.css 337/388), the eyebrow keeps its case so
-     state codes read as IL not il (336), and the squint-level 10.5–11px
-     mono roles are lifted to readable sizes; information moves to the body
-     face, the mono stays for codes, chips and the footer signature. */
-  .sc-eyebrow::before, .sc-callout__label::before { content: none; }
+  /* The readability pass lives in the design system since v2.2.0; the one
+     SpicyCar-specific override left is the eyebrow's case, because state
+     codes must read as IL · OH, not il · oh. */
   .sc-eyebrow { text-transform: none; letter-spacing: .5px; }
-  .sc-meta { font-size: 12.5px; }
-  .sc-tile__sub { font-size: 12.5px; letter-spacing: .1px; }
-  .sc-chip { font-size: 11px; }
-  .sc-field, .sc-check { font-size: 11.5px; }
-  .sc-legend { font-size: 12.5px; }
-  .sc-note { font: 400 12px/1.45 var(--sc-font-body); letter-spacing: 0; }
-  .sc-media__sub { font-size: 12.5px; }
-  .sc-media__code { font-size: 11px; }
   .col-vehicle { min-width: 230px; }
   .col-model { min-width: 280px; }
   .loc { max-width: 190px; }
@@ -107,7 +96,7 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/sc-mark-color-dark.svg" alt="">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-mark-color-dark.svg" alt="">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
   </a>
   <div class="sc-masthead__right">
@@ -261,7 +250,7 @@
 <footer class="sc-foot">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
-    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
+    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-lockup-cream.svg" alt="SpicyChicken">
   </a>
 </footer>
 
@@ -351,7 +340,7 @@
   };
   const isLocal = (x) => !!x.local;
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
-  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/';
+  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
   const markImg = () => el('img', { class: 'sc-mark', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '' });
   // the faint chick that stands in when a dealer sent no photo
