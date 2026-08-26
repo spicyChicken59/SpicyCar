@@ -217,6 +217,7 @@
         <h2 id="chart-title">Asking price over time</h2>
         <p class="sc-hint" id="chart-hint"></p>
       </div>
+      <div class="sc-tabs" id="chart-range" role="group" aria-label="Time range" hidden></div>
     </div>
     <div class="sc-legend" id="legend"></div>
     <div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div>
@@ -289,7 +290,7 @@
   // The front page is the overview of every model (brand 'all'); a model view is a brand + model.
   // where: a multi-select of place keys (state codes, 'drive', 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) hidden from the market chart via the legend.
-  const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'price', clean: false, rental: false, showAllList: false, showAllGone: false, mapView: null };
+  const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'price', clean: false, rental: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   const tok = (name) => getComputedStyle(root).getPropertyValue('--sc-' + name).trim();
@@ -301,10 +302,11 @@
       const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
       S.where = new Set(Array.isArray(p.where) ? p.where : []);
       S.hidden = new Set(Array.isArray(p.hidden) ? p.hidden : []);
-    } catch (e) { S.where = new Set(); S.hidden = new Set(); }
+      S.range = ['30', '90', 'all'].includes(p.range) ? p.range : '90';
+    } catch (e) { S.where = new Set(); S.hidden = new Set(); S.range = '90'; }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden] })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden], range: S.range })); } catch (e) { /* private mode etc. */ }
   }
   // Brand palette — categorical slots in fixed watchlist order, validated (six
   // checks, both themes, on this site's surfaces). Hue carries the BRAND; the
@@ -525,8 +527,11 @@
     }
     const maxLabels = Math.max(2, Math.floor(iw / 72));
     const every = Math.ceil(dates.length / maxLabels);
+    const lastX = xOf(dates[dates.length - 1]);
     dates.forEach((d, i) => {
-      if (i % every && i !== dates.length - 1) return;
+      const isLast = i === dates.length - 1;
+      if (i % every && !isLast) return;
+      if (!isLast && lastX - xOf(d) < 46) return;   // keep clear of the end-date label
       svg.appendChild(svgEl('text', { x: xOf(d), y: H - m.b + 20, 'text-anchor': 'middle' }, document.createTextNode(fmtDate(d))));
     });
     const showDots = dates.length <= 45;
@@ -1136,6 +1141,19 @@
   function model() { return S.site.brands[S.brand].models[S.model]; }
   function trimRows(rows) { return S.trim === 'all' ? rows : rows.filter((x) => x.trim_id === S.trim); }
   function dailyFor(m) { return S.trim === 'all' ? (m.daily || []) : ((m.daily_by_trim || {})[S.trim] || []); }
+  // The chart's time window: the last N days ending at the newest snapshot,
+  // or everything. The y-scale follows, so recent movement stays readable
+  // once months of history accumulate.
+  function rangeDaily(daily) {
+    if (S.range === 'all' || !Array.isArray(daily) || !daily.length) return daily || [];
+    const end = Date.parse((S.site.generated || daily[daily.length - 1].date) + 'T00:00:00Z');
+    const cut = end - (+S.range) * 86400000;
+    return daily.filter((d) => Date.parse(d.date + 'T00:00:00Z') >= cut);
+  }
+  function rangeChips() {
+    segment($('chart-range'), ['30', '90', 'all'], S.range, (id) => (id === 'all' ? 'All' : id + 'd'), false,
+      (id) => { S.range = id; savePrefs(); rerender(); });
+  }
   // Lowest asking per day. Days written before min_price existed are skipped; a model with none gets its latest snapshot as one point.
   function askingSeries(m, daily) {
     const pts = (daily || []).filter((d) => d.min_price !== null && d.min_price !== undefined).map((d) => ({ date: d.date, value: d.min_price }));
@@ -1484,13 +1502,15 @@
   }
 
   function renderChart() {
-    const t = model(), daily = dailyFor(t);
+    const t = model(), daily = rangeDaily(dailyFor(t));
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'Asking price over time';
+    rangeChips();
     const scope = S.trim === 'all' ? 'all trims, drivable and beyond combined' : `${(t.trims[S.trim] || {}).label || 'this trim'}, drivable and beyond combined`;
-    $('chart-hint').textContent = daily.length >= 2
+    $('chart-hint').textContent = (daily.length >= 2
       ? `Lowest and median asking price on the market each day — ${scope}.`
-      : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`;
+      : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
+      + (S.range !== 'all' ? ` Showing the last ${S.range} days.` : '');
     const C = chartColors();
     const lg = $('legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { style: 'background:' + C.emphasis }), 'Lowest asking'));
@@ -1714,11 +1734,13 @@
     // or show a model; hover one to pick its line out of the crowd.
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'The market over time';
-    const nDays = new Set(rows.flatMap((r) => askingSeries(r.m, r.m.daily || []).map((p) => p.date))).size;
+    rangeChips();
+    const nDays = new Set(rows.flatMap((r) => askingSeries(r.m, rangeDaily(r.m.daily || [])).map((p) => p.date))).size;
     $('chart-hint').textContent = (nDays >= 2
       ? 'Lowest asking price on the market each day — one line per model, colored by brand, the models being shopped drawn heavier. '
       : 'One snapshot so far for most models — lines fill in as daily runs accumulate. ')
-      + 'Click a legend chip to hide or show a model; hover the chart for any day\'s numbers. The chart always shows the whole market, whatever the filters.';
+      + 'Click a legend chip to hide or show a model; hover the chart for any day\'s numbers. The chart always shows the whole market, whatever the filters.'
+      + (S.range !== 'all' ? ` Showing the last ${S.range} days.` : '');
     const highlightSeries = (id) => {
       for (const n of $('chart').querySelectorAll('[data-sid]')) n.style.opacity = (!id || n.getAttribute('data-sid') === id) ? '' : '0.15';
     };
@@ -1739,13 +1761,13 @@
       .filter(({ bk, mk }) => !S.hidden.has(bk + '/' + mk))
       .map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label, emphasis: !!m.shopping,
         color: brandColor(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
-        labeled: !!m.shopping, points: askingSeries(m, m.daily || []) })),
+        labeled: !!m.shopping, points: askingSeries(m, rangeDaily(m.daily || [])) })),
       { named: true, height: 340 });
     const tb = $('chart-table'); tb.textContent = '';
-    const dates = [...new Set(rows.flatMap((r) => askingSeries(r.m, r.m.daily || []).map((p) => p.date)))].sort().reverse();
+    const dates = [...new Set(rows.flatMap((r) => askingSeries(r.m, rangeDaily(r.m.daily || [])).map((p) => p.date)))].sort().reverse();
     const table = el('table', { class: 'sc-table sc-table--compact' }, el('thead', null, el('tr', null, el('th', null, 'Day'), ...rows.map((r) => el('th', { class: 'sc-num sc-case' }, r.label)))));
     const body = el('tbody');
-    for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = askingSeries(r.m, r.m.daily || []).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
+    for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = askingSeries(r.m, rangeDaily(r.m.daily || [])).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
     table.appendChild(body); tb.appendChild(table);
 
     // the table: one row per model, with a photo — the row itself is the door in
