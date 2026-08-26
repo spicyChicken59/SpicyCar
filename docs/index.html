@@ -70,6 +70,8 @@
   .scatter-dot:hover { stroke-width: 2.6; }
   .scatter-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
   .scatter-line { fill: none; stroke: var(--sc-border-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }         /* the drawn SpicyChicken lockup, as drawn */
+  .frame-chick { height: 45%; max-height: 44px; width: auto; opacity: .28; }     /* the chick keeps watch where a dealer sent no photo */
   .legend-chip { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none;
     padding: 4px 8px; cursor: pointer; color: inherit; font: 500 12.5px/1.4 var(--sc-font-mono); border-radius: 6px; }
   .legend-chip[aria-pressed="false"] span { opacity: .45; text-decoration: line-through; }
@@ -239,9 +241,8 @@
 
 <footer class="sc-foot">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
-  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/sc-mark-mono-cream.svg" alt="">
-    <span class="sc-watermark__name">SpicyChicken</span>
+  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
+    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
   </a>
 </footer>
 
@@ -334,6 +335,8 @@
   const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
   const markImg = () => el('img', { class: 'sc-mark', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '' });
+  // the faint chick that stands in when a dealer sent no photo
+  const frameChick = () => el('img', { class: 'frame-chick', src: ASSETS + (isLightTheme() ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'), alt: 'no photo' });
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
   // Asking plus the stated shipping estimate — never less than asking. Computed here so it never depends on the data's vintage.
   const landed = (x) => (hasPrice(x) ? x.price + (x.local ? 0 : (x.ship || 0)) : null);
@@ -905,9 +908,9 @@
   function thumbFor(x, large, alts) {
     const cls = 'sc-frame' + (large ? ' sc-frame--lg' : '');
     const queue = [x && x.image, ...(alts || [])].map(safeUrl).filter((u, i, a) => u && a.indexOf(u) === i);
-    if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, 'no photo');
+    if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, frameChick());
     const img = el('img', { class: cls, src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
-    const next = () => { if (queue.length) img.src = queue.shift(); else img.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, 'no photo')); };
+    const next = () => { if (queue.length) img.src = queue.shift(); else img.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, frameChick())); };
     img.addEventListener('error', next);
     img.addEventListener('load', () => { if (img.naturalWidth < 40) next(); });   // a placeholder pixel is not a photo
     return img;
