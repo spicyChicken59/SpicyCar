@@ -22,6 +22,29 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/sc.css">
 <script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/sc-theme.js"></script>
+<style>
+  /* Readability overrides — page-level, the design system stays pinned.
+     Same set as the dashboard: no "//" prefixes (sc.css 337/388), the
+     eyebrow keeps its case, small mono roles lifted to readable sizes. */
+  .sc-eyebrow::before, .sc-callout__label::before { content: none; }
+  .sc-eyebrow { text-transform: none; letter-spacing: .5px; }
+  .sc-meta { font-size: 12.5px; }
+  .sc-note { font: 400 12px/1.45 var(--sc-font-body); letter-spacing: 0; }
+  .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }
+  /* Inline diagrams — everything wears the theme's own tokens */
+  .diagram { margin: 20px 0; }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .dg-box { fill: var(--sc-surface); stroke: var(--sc-border); }
+  .dg-box--core { stroke: var(--sc-brand-line); stroke-width: 1.5; }
+  .dg-title { font: 600 13.5px var(--sc-font-body); fill: var(--sc-heading); }
+  .dg-sub { font: 500 10.5px var(--sc-font-mono); fill: var(--sc-text-2); }
+  .dg-side { font: 600 11px var(--sc-font-mono); fill: var(--sc-text-2); }
+  .dg-line { stroke: var(--sc-text-3); stroke-width: 1.3; fill: none; }
+  .dg-head { fill: var(--sc-text-3); }
+  .dg-bar-ask { fill: var(--sc-brand-fill); stroke: var(--sc-brand-line); }
+  .dg-bar-ship { fill: var(--sc-accent-fill); stroke: var(--sc-accent); }
+  .dg-figure { font: 700 13.5px var(--sc-font-body); fill: var(--sc-heading); }
+</style>
 </head>
 <body>
 <a class="sc-skip" href="#main">Skip to content</a>
@@ -68,6 +91,26 @@
     <h2 id="prices">Prices</h2>
     <p>The number everywhere is the <strong>asking price</strong>, exactly as the dealer listed it. Nothing is adjusted or inferred. Every sort, tile and chart uses it, and miles are shown next to every price so you can weigh them yourself.</p>
     <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A drivable car costs nothing to bring home — you drive it. Anything else gets an estimate from the distance between the listing and the buyer's anchor point: $0.65 a mile with a $350 floor, roughly what open-carrier transport costs. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
+    <figure class="diagram" role="img" aria-label="Price anatomy: a drivable car costs its asking price alone; a car beyond driving range costs asking plus a stated shipping estimate.">
+      <svg viewBox="0 0 720 178" xmlns="http://www.w3.org/2000/svg">
+        <text class="dg-side" x="10" y="34">DRIVABLE</text>
+        <rect class="dg-bar-ask" x="100" y="16" width="470" height="28" rx="4"/>
+        <text class="dg-title" x="112" y="35">asking — exactly as listed</text>
+        <text class="dg-figure" x="584" y="35">$46,000</text>
+        <text class="dg-sub" x="100" y="62">nothing added · you drive it home</text>
+
+        <text class="dg-side" x="10" y="118">BEYOND</text>
+        <rect class="dg-bar-ask" x="100" y="100" width="388" height="28" rx="4"/>
+        <text class="dg-title" x="112" y="119">asking</text>
+        <text class="dg-figure" x="400" y="119">$38,000</text>
+        <rect class="dg-bar-ship" x="492" y="100" width="78" height="28" rx="4"/>
+        <text class="dg-title" x="500" y="119">+ ship</text>
+        <text class="dg-figure" x="584" y="119">= $39,170</text>
+        <path class="dg-line" d="M492 138 v6 h78 v-6"/>
+        <text class="dg-sub" x="531" y="160" text-anchor="middle">max($350, miles × $0.65)</text>
+        <text class="dg-sub" x="100" y="160">the sum is never less than asking</text>
+      </svg>
+    </figure>
 <pre>asking + shipping        shipping = 0 if drivable
                                   = max($350, miles from home × $0.65) otherwise</pre>
     <p>That sum is never less than asking; it is only ever the listed price plus the truck. Three illustrative cars for a buyer near Chicago whose states are Illinois, Ohio, Indiana and Wisconsin, with a five-hour drive radius:</p>
@@ -86,6 +129,49 @@
 
     <h2 id="data">Where the data comes from</h2>
     <p>Listings come from the <a href="https://auto.dev" rel="noopener">auto.dev</a> API. Every day at 11:00 UTC a GitHub Action runs the tracker, which fetches each target due that day, states shipping on every listing, and writes three things back into the repository: a CSV with one row per vehicle per day, a Markdown report (also sent by email), and the JSON behind the dashboard.</p>
+    <figure class="diagram" role="img" aria-label="Pipeline: targets.json configures the tracker, which queries the auto.dev API daily and writes the snapshot ledger, the report and email, and the dashboard's data file.">
+      <svg viewBox="0 0 720 292" xmlns="http://www.w3.org/2000/svg">
+        <rect class="dg-box" x="256" y="10" width="212" height="56" rx="8"/>
+        <text class="dg-title" x="362" y="33" text-anchor="middle">auto.dev listings API</text>
+        <text class="dg-sub" x="362" y="52" text-anchor="middle">~31 calls · cheapest + newest</text>
+        <path class="dg-line" d="M362 72 v34"/>
+        <path class="dg-head" d="M362 66 l-4.5 8 h9 Z"/>
+        <path class="dg-head" d="M362 112 l-4.5 -8 h9 Z"/>
+
+        <rect class="dg-box" x="10" y="118" width="188" height="56" rx="8"/>
+        <text class="dg-title" x="104" y="141" text-anchor="middle">targets.json</text>
+        <text class="dg-sub" x="104" y="160" text-anchor="middle">buyer · watchlist · budgets</text>
+        <path class="dg-line" d="M198 146 h50"/>
+        <path class="dg-head" d="M254 146 l-8 -4.5 v9 Z"/>
+
+        <rect class="dg-box dg-box--core" x="256" y="118" width="212" height="56" rx="8"/>
+        <text class="dg-title" x="362" y="141" text-anchor="middle">Tracking.py</text>
+        <text class="dg-sub" x="362" y="160" text-anchor="middle">GitHub Action · daily 11:00 UTC</text>
+
+        <path class="dg-line" d="M468 138 C 500 120, 500 52, 524 42"/>
+        <path class="dg-head" d="M530 40 l-9 -1.5 4 8 Z"/>
+        <path class="dg-line" d="M468 146 h56"/>
+        <path class="dg-head" d="M530 146 l-8 -4.5 v9 Z"/>
+        <path class="dg-line" d="M468 154 C 500 172, 500 240, 524 250"/>
+        <path class="dg-head" d="M530 252 l-9 1.5 4 -8 Z"/>
+
+        <rect class="dg-box" x="532" y="14" width="178" height="56" rx="8"/>
+        <text class="dg-title" x="621" y="37" text-anchor="middle">data/snapshots.csv</text>
+        <text class="dg-sub" x="621" y="56" text-anchor="middle">a row per car per day</text>
+
+        <rect class="dg-box" x="532" y="118" width="178" height="56" rx="8"/>
+        <text class="dg-title" x="621" y="141" text-anchor="middle">REPORT.md</text>
+        <text class="dg-sub" x="621" y="160" text-anchor="middle">the brief → your inbox</text>
+
+        <rect class="dg-box" x="532" y="222" width="178" height="56" rx="8"/>
+        <text class="dg-title" x="621" y="245" text-anchor="middle">docs/data.json</text>
+        <text class="dg-sub" x="621" y="264" text-anchor="middle">this dashboard, on Pages</text>
+
+        <text class="dg-sub" x="10" y="230">no servers, no database —</text>
+        <text class="dg-sub" x="10" y="248">the repository is the ledger,</text>
+        <text class="dg-sub" x="10" y="266">git history is the backup</text>
+      </svg>
+    </figure>
     <p>There is no server and no database. The CSV in the repository is the ledger, and git history is the backup. A same-day re-run replaces that day's rows rather than duplicating them.</p>
 
     <h2 id="budget">Staying inside a free plan</h2>
@@ -114,11 +200,14 @@
 
     <h2 id="reading">Reading the dashboard</h2>
     <ul>
-      <li><strong>Every model</strong> — the front page: one row per model with a photo, cars on the market, drivable count, lowest asking nationwide, lowest drivable asking, the median and a trend line, all under the same filters. Shopping first, then by price.</li>
-      <li><strong>Every model over time</strong> — one line per model, lowest asking price by day. The model being shopped is in colour; the rest are context, each named at its line's end.</li>
+      <li><strong>Every model</strong> — the front page: one row per model with a photo, cars on the market, drivable count, lowest asking nationwide, lowest drivable asking, the median and a brand-coloured trend line, all under the same filters. Shopping first, then by price; click a row to open the model.</li>
+      <li><strong>The market on the map</strong> — every car at its own coordinates on a US map, coloured by brand: filled dots are drivable, hollow ones pay shipping, and the dashed ring is the five-hour drive around the anchor. Hover a dot for the car, click to open its model; the Where chips narrow it live.</li>
+      <li><strong>The market over time</strong> — one line per model: colour is the brand, the dash pattern is the model within it, and the models being shopped are drawn heavier. The legend is the control — click a chip to hide or show a model, hover one to pick its line out of the crowd — and the crosshair reads out every model's price for any day.</li>
+      <li><strong>Where</strong> — a multi-select: press any mix of your states, "≤ 5h drive" (within the radius, whatever the state) and "Beyond"; nothing pressed means everywhere. It narrows the whole page — tiles, picks, tables — and your selection is remembered between visits.</li>
       <li><strong>Spicy picks</strong> — two lists, on the front page across every model and on each model within it: the best values within driving range, and the best worth shipping from anywhere else. Photo, asking price, the shipping line, and how far under typical the car sits. Recomputed as you filter.</li>
+      <li><strong>Price against miles</strong> — on every model page: one dot per car, filled when drivable, hollow when it pays shipping, the spicy picks ringed, and a dashed typical-value line per model year — a dot below its year's line asks less than a typical car of that year, miles allowed for. Hover for the car, click to open the listing.</li>
       <li><strong>Know the model</strong> — on every model page: the good, the bad, and what to check before you go and look. Written by hand and kept in the config, so it can be corrected as we learn.</li>
-      <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags (rental and fleet cars are marked), distance from home, days on market, and a price sparkline. Filter by trim, scope (drivable, a state, or beyond), year and miles, hide accidents, hide rentals and fleet; sort by asking, asking plus shipping, best value vs typical, miles, biggest drop, longest on market, or newest.</li>
+      <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags (rental and fleet cars are marked), distance from home, days on market, and a price sparkline. Filter by trim, where, year and miles, hide accidents, hide rentals and fleet; sort by asking, asking plus shipping, best value vs typical, miles, biggest drop, longest on market, or newest.</li>
       <li><strong>Gone from the market</strong> — with the out-of-window flag described above.</li>
     </ul>
     <p>The signals worth acting on: <strong>days on market</strong> past 30 usually means a dealer who will negotiate. <strong>Price cuts</strong> show how many times and how far. <strong>new</strong> marks cars first seen today. <strong>1-owner</strong>, <strong>no accidents</strong> and <strong>cpo</strong> are the history flags worth filtering on; <strong>ex-lease</strong> usually means one careful owner and a full service record.</p>
@@ -151,9 +240,8 @@
 
 <footer class="sc-foot">
   <span>Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
-  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/sc-mark-mono-cream.svg" alt="">
-    <span class="sc-watermark__name">SpicyChicken</span>
+  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
+    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
   </a>
 </footer>
 </body>

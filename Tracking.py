@@ -1191,6 +1191,9 @@ def listing_entry(r, s):
         "vin": r["vin"], "year": to_int(r["year"]), "trim": r["trim"],
         "trim_id": t["id"], "trim_label": t["label"],
         "state": r["state"], "local": in_scope(r),
+        # the car's own public location (already in the committed CSV),
+        # so the dashboard can put every listing on the map
+        "lat": to_float(r.get("lat")), "lon": to_float(r.get("lon")),
         "distance": row_distance(r), "ship": ship,
         "miles": to_int(r["miles"]), "price": to_int(r["price"]),
         "adj": adj, "msrp": to_int(r.get("msrp")),
@@ -1365,6 +1368,10 @@ def build_outputs(today_rows, all_rows, hist):
             "search_states": SEARCH_STATES,
             "drive_hours": DRIVE_HOURS or None,
             "drive_radius_miles": DRIVE_RADIUS or None,
+            # the anchor is published ONLY when it came from the public
+            # buyer.anchor config — never coordinates a legacy home zip resolved to
+            "anchor": ([HOME[0], HOME[1]]
+                       if (ANCHOR and coords_ok(*HOME)) else None),
             "scope_label": scope_label(),
             "shopping": SHOPPING,
             "picks": {"count": PICKS.get("count", 4), "per_model": PICKS.get("per_model", 2),

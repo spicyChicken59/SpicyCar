@@ -125,6 +125,20 @@ class TestGeography(unittest.TestCase):
 # the state list.
 # --------------------------------------------------------------------------
 class TestDrivable(unittest.TestCase):
+    def test_listing_entries_carry_the_cars_public_coordinates(self):
+        """The dashboard map needs each car's own location — public data the
+        committed CSV already carries; never anything home-derived."""
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": "V", "year": "2024",
+                  "trim": "eDrive40", "price": 45000, "state": "WI",
+                  "lat": 43.07306, "lon": -89.40123})
+        e = T.listing_entry(r, {"series": []})
+        self.assertAlmostEqual(e["lat"], 43.07306)
+        self.assertAlmostEqual(e["lon"], -89.40123)
+        r2 = dict(r, lat="", lon="")
+        e2 = T.listing_entry(r2, {"series": []})
+        self.assertIsNone(e2["lat"])
+
     def test_wisconsin_is_a_buyer_state(self):
         self.assertIn("WI", T.STATES)
         self.assertTrue(T.in_scope({"state": "WI"}))
