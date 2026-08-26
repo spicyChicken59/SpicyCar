@@ -125,7 +125,8 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   state, "≤ 5h drive", "Beyond" — press any mix, remembered between visits) narrows every tile,
   pick and table. **Spicy picks** come in two lists — the best values within driving range and the
   best worth shipping — ranked by value but shown at asking price. Rows click through to each
-  model; on every model, its own picks, a hand-written *know the model* card, trim/year/mileage
+  model; on every model, its own picks, a hand-written *know the model* card, a **price-vs-miles
+  scatter** (picks ringed, a dashed typical-value line per model year), trim/year/mileage
   filters plus hide-accidents and hide-rentals; sort by asking, asking + shipping, or best value
   vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
   and a price sparkline; and the "gone" list.

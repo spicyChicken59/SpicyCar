@@ -64,6 +64,12 @@
   .map-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }     /* the 1px surface ring keeps overlapping dots separable */
   .map-dot.is-hollow { fill: none; stroke-width: 1.6; }
   .map-dot:hover { stroke-width: 2.6; }
+  .scatter-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }
+  .scatter-dot.is-hollow { fill: none; stroke-width: 1.6; }
+  .scatter-dot.has-url { cursor: pointer; }
+  .scatter-dot:hover { stroke-width: 2.6; }
+  .scatter-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
+  .scatter-line { fill: none; stroke: var(--sc-border-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
   .legend-chip { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none;
     padding: 4px 8px; cursor: pointer; color: inherit; font: 500 12.5px/1.4 var(--sc-font-mono); border-radius: 6px; }
   .legend-chip[aria-pressed="false"] span { opacity: .45; text-decoration: line-through; }
@@ -180,6 +186,17 @@
     <div class="sc-legend" id="legend"></div>
     <div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div>
     <details class="sc-details"><summary>Table view</summary><div class="sc-table-scroll" id="chart-table"></div></details>
+  </section>
+
+  <section class="sc-card" id="scatter-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2>Price against miles</h2>
+        <p class="sc-hint" id="scatter-hint"></p>
+      </div>
+    </div>
+    <div class="sc-legend" id="scatter-legend"></div>
+    <div class="sc-chart" id="scatter"></div>
   </section>
 
   <section class="sc-card" id="overview-card" hidden>
@@ -656,6 +673,98 @@
         + (offMap ? ` · ${offMap} beyond the lower 48` : '') + ' — hover a dot for the car, click to open its model.';
       card.hidden = false;
     });
+  }
+
+  // ---------- price-vs-miles scatter (model view) ----------
+  // One dot per car under the current filters: the brand hue, filled when
+  // drivable and hollow when it pays shipping (the map's encoding), spicy
+  // picks ringed in the accent. The dashed lines are the typical-value
+  // lines per model year (the same cohort medians the picks are scored
+  // against, at the drivable reference), so "18% under typical" reads as a
+  // visible gap below the year's line. Click a dot to open its listing;
+  // the listings table below is the accessible twin.
+  function renderScatter(rows) {
+    const card = $('scatter-card');
+    const t = model();
+    const pts = rows.filter((x) => hasPrice(x) && x.miles != null);
+    if (pts.length < 3) { card.hidden = true; return; }
+    const host = $('scatter'); host.textContent = '';
+    const color = brandColor(S.brand);
+    const W = Math.max(320, host.clientWidth || 720), H = 300;
+    const m = { t: 16, r: 60, b: 40, l: 56 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const xt = niceTicks(0, Math.max(...pts.map((x) => x.miles)), 5);
+    const yt = niceTicks(Math.min(...pts.map((x) => x.price)), Math.max(...pts.map((x) => x.price)), 4);
+    const xOf = (mi) => m.l + (mi - xt.lo) / (xt.hi - xt.lo) * iw;
+    const yOf = (p) => m.t + (yt.hi - p) / (yt.hi - yt.lo) * ih;
+    const miK = (v) => (v >= 1000 ? (v / 1000) + 'K' : String(v));
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, 'aria-hidden': 'true' });
+    for (const tick of yt.ticks) {
+      svg.appendChild(svgEl('line', { class: 'sc-chart__grid', x1: m.l, x2: W - m.r, y1: yOf(tick), y2: yOf(tick), 'stroke-width': 1 }));
+      svg.appendChild(svgEl('text', { x: m.l - 8, y: yOf(tick) + 4, 'text-anchor': 'end', style: 'font-variant-numeric: tabular-nums' }, document.createTextNode(moneyK(tick))));
+    }
+    for (const tick of xt.ticks) {
+      svg.appendChild(svgEl('text', { x: xOf(tick), y: H - m.b + 20, 'text-anchor': 'middle' }, document.createTextNode(miK(tick) + (tick === xt.ticks[xt.ticks.length - 1] ? ' mi' : ''))));
+    }
+    // typical-value lines: per model-year cohort with 3+ eligible cars, from
+    // the FULL model market (stable under filters, matching the row scores)
+    const P = pickParams();
+    const pool = (t.listings || []).filter((x) => pickEligible(x, P));
+    const byYear = {};
+    for (const x of pool) { const y = String(x.year || ''); (byYear[y] = byYear[y] || []).push(pickValue(x, P)); }
+    const cohorts = Object.entries(byYear).filter(([, vs]) => vs.length >= 3)
+      .map(([y, vs]) => ({ year: y, med: median(vs) })).sort((a, b) => a.year < b.year ? -1 : 1);
+    const priceAt = (med, mi) => med - (mi - P.base) * P.cpm;
+    for (const c of cohorts) {
+      // clip the line to the plotted price band
+      const miFor = (p) => P.base + (c.med - p) / (P.cpm || 1e-9);
+      let m1 = xt.lo, m2 = xt.hi;
+      if (P.cpm) {
+        m1 = Math.max(m1, miFor(yt.hi)); m2 = Math.min(m2, miFor(yt.lo));
+      }
+      if (m2 <= m1) continue;
+      svg.appendChild(svgEl('line', { class: 'scatter-line', x1: xOf(m1), y1: yOf(priceAt(c.med, m1)), x2: xOf(m2), y2: yOf(priceAt(c.med, m2)) }));
+      svg.appendChild(svgEl('text', { x: Math.min(xOf(m2) + 4, W - 4), y: yOf(priceAt(c.med, m2)) + 4 }, document.createTextNode(c.year)));
+    }
+    // the picks currently shown above, ringed
+    const sc = scoredFrom(rows, t.label), PC = pickParams();
+    const ringed = new Set([...choosePicks(sc.filter((p) => p.x.local), PC.count),
+                            ...choosePicks(sc.filter((p) => !p.x.local), PC.count)].map((p) => p.x.vin));
+    const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
+    for (const x of pts) {
+      const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
+      if (ringed.has(x.vin)) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5 }));
+      const u = safeUrl(x.url);
+      const dot = svgEl('circle', { class: 'scatter-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' has-url' : ''),
+        cx, cy, r: 4, fill: x.local ? color : 'none', stroke: x.local ? null : color });
+      if (u) dot.addEventListener('click', () => window.open(u, '_blank', 'noopener'));
+      dot.addEventListener('pointerenter', (e) => {
+        tip.textContent = '';
+        tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${x.year || ''} ${x.trim || ''}`.trim()));
+        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + color }),
+          el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
+        const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
+        if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
+        tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
+        const rect = host.getBoundingClientRect();
+        const fx = e.clientX - rect.left, flip = fx > rect.width * 0.6;
+        tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
+        tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
+        tip.style.top = Math.max(4, e.clientY - rect.top - 34) + 'px';
+        tip.classList.add('is-on');
+      });
+      dot.addEventListener('pointerleave', () => tip.classList.remove('is-on'));
+      svg.appendChild(dot);
+    }
+    host.appendChild(svg);
+    host.appendChild(tip);
+    const lg = $('scatter-legend'); lg.textContent = '';
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + color }), 'drivable'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + color }), 'shipping added'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
+    if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('border-strong') }), 'typical value by year'));
+    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover for the car, click to open the listing.`;
+    card.hidden = false;
   }
 
   // ---------- data access ----------
@@ -1175,7 +1284,7 @@
   function renderOverview() {
     const site = S.site, buyer = site.buyer || {}, states = buyer.states || [];
     const rows = overviewRows();
-    for (const id of ['list-card', 'gone-card']) $(id).hidden = true;
+    for (const id of ['list-card', 'gone-card', 'scatter-card']) $(id).hidden = true;
     $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
     $('eyebrow').textContent = ['Watchlist', states.join(' · ')].filter(Boolean).join(' · ');
     $('h1').textContent = 'Every model';
@@ -1291,6 +1400,7 @@
     renderPicks(scoredFrom(rows, t.label));
     renderNotes(t);
     renderChart();
+    renderScatter(rows);
     renderList(rows);
     renderGone();
     footLine();
@@ -1350,6 +1460,7 @@
         if (!S.site) return;
         if (S.brand === 'all') { render(); return; }
         renderChart();
+        renderScatter(filtered());
         if (narrow() !== wasNarrow) { wasNarrow = narrow(); renderList(filtered()); }
       });
     });
