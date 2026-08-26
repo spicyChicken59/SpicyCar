@@ -54,10 +54,12 @@ Two things are configured, separately:
 **It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
 each. So each target is fetched twice — once filtered to the buyer's states plus `search_states`
 (the API takes a comma list, so eight states cost one call) and once nationally — and each target
-has a *depth* (the two being shopped get every sort, three and two pages; the rest get the cheapest
-20) and a *cadence*: BMW siblings run every other day, rival brands every third day, spread evenly
-across the cycle in watchlist order. A hard `budget_per_day` makes the script refuse to run if any
-day in the next two weeks would exceed it, and it prints the plan before it starts.
+has a *depth* (the two being shopped get both sorts at two pages **plus a newest-first page**, so a
+fresh listing is seen the day it appears instead of whenever it ranks among the cheapest; the rest
+get the cheapest 20) and a *cadence*: BMW siblings run every other day, rival brands every third
+day, spread evenly across the cycle in watchlist order. A hard `budget_per_day` makes the script
+refuse to run if any day in the next two weeks would exceed it, and it prints the plan before it
+starts.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
@@ -173,6 +175,7 @@ Parameters resolve trim ← model ← brand ← defaults:
 | `depth` | `light` (1 call per source) or `full` (`sorts` × `pages` calls per source) |
 | `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked "as of" |
 | `sorts`, `pages` | what `full` depth fetches (defaults: `price.asc` + `miles.asc`, 2 pages) |
+| `newest` | extra newest-first (`createdAt.desc`) pages per source, so brand-new listings are caught the day they list. On for the shopped targets; new cars lead their report section as **New today**. Skipped automatically when a query already returned its whole scope. |
 | `years` | model years; sent as a range and also filtered client-side |
 
 A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as

@@ -52,7 +52,7 @@
             "watch": ["Confirm the software is current — early 2024 cars had bugs fixed over the air", "Check which packages the specific VIN has (Driving Assistance Pro, Premium, heated seats)", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
           },
           "trims": {
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 3,
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1,
                           "note": "First real buyer, near Chicago. Decide by mid-Sept." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },
             "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
@@ -65,6 +65,7 @@
           "min_price": 30000,
           "depth": "full",
           "pages": 2,
+          "newest": 1,
           "note": "Shopping alongside the i5. Every trim: eDrive50, xDrive60, M70.",
           "notes": {
             "good": ["The quietest, most comfortable EV in its class — a 7-Series first, an EV second", "Around 300 miles for the eDrive50 and xDrive60; the M70 trades some range for speed", "Six-figure cars now sell used in the $50k–70k range; many carry the rear theater screen and Executive Lounge seats"],

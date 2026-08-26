@@ -92,7 +92,7 @@
     <p>The free plan allows <strong>1,000 calls a month</strong> and returns at most <strong>20 listings per call</strong>. That shapes the whole design.</p>
     <ul>
       <li><strong>Two queries per target.</strong> One filtered to the buyer's states plus the <code>search_states</code> that overlap the drive radius — the API takes a comma-separated list, so eight states cost one call — and one national. Adding a state costs nothing.</li>
-      <li><strong>Depth.</strong> The two targets being shopped get <code>full</code> depth: two sort orders, three pages for the i5 eDrive40 and two for the i7. Everything else gets <code>light</code>: the cheapest 20 and nothing more.</li>
+      <li><strong>Depth.</strong> The two targets being shopped get <code>full</code> depth: two sort orders at two pages each, plus one <strong>newest-first</strong> page per query — the price and miles sorts sample the settled bottom of the market, and a fresh, well-priced car can sell before it ever ranks there. New cars lead the report as <em>New today</em>. Everything else gets <code>light</code>: the cheapest 20 and nothing more.</li>
       <li><strong>Cadence.</strong> BMW siblings are fetched every other day and rival brands every third day, spread evenly across the cycle in watchlist order — about 31 calls a day, roughly 930 a month. On a model's off day the dashboard and report show its last fetch, marked "as of".</li>
       <li><strong>A hard budget.</strong> The script prints its plan before it starts — today, the worst day in the next two weeks, the monthly average — and refuses to run if any day would exceed <code>budget_per_day</code> or the average would exceed <code>budget_per_month</code>.</li>
     </ul>
@@ -125,7 +125,7 @@
 
     <h2 id="limits">What it does not know</h2>
     <ul>
-      <li>It samples the cheapest end of the market. A car that never sat in the bottom of its trim's price order never appears.</li>
+      <li>It samples the cheapest end of the market, plus — for the shopped trims — the newest listings each day. A comparison-model car that never sat in the bottom of its trim's price order never appears.</li>
       <li>Shipping is an estimate. Get a quote before believing it to the dollar.</li>
       <li>Miles are shown, not priced. A 5,000-mile car and a 50,000-mile car at the same asking price sort together; the miles column is there so you can tell them apart.</li>
       <li>The drive radius is straight-line miles, not road miles — a lake or a mountain range can make a "five-hour" car a seven-hour one. Distances are also rounded to 25 miles on purpose.</li>

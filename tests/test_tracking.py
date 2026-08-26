@@ -82,6 +82,16 @@ class TestBudget(unittest.TestCase):
             self.assertIn(tid, T.TARGETS,
                           f"buyer.shopping names {tid!r}, which is not a target")
 
+    def test_newest_pages_are_budgeted(self):
+        """The newest-first fetch must be counted, or the plan lies."""
+        i5 = target("bmw-i5-edrive40")
+        self.assertEqual(i5["newest"], 1)
+        self.assertEqual(T.calls_for(i5), 10,
+                         "2 sources x (2 sorts x 2 pages + 1 newest page)")
+        self.assertEqual(T.calls_for(target("bmw-i7")), 10)
+        self.assertEqual(target("bmw-i5-xdrive40")["newest"], 0,
+                         "newest is a shopped-target parameter, not a default")
+
 
 # --------------------------------------------------------------------------
 # Geography. The null-island bug cost a week; it gets three tests.

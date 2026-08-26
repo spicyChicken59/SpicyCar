@@ -61,7 +61,12 @@ LEGACY_IDS = CFG.get("legacy_ids", {})
 BUDGET = CFG.get("budget_per_day", 40)          # cap on any single day
 MONTHLY = CFG.get("budget_per_month", 1000)     # the API plan; checked on the average
 PER_PAGE = 20                       # the free plan clamps limit to 20
-PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years"]
+PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years", "newest"]
+# The price/miles sorts sample the settled bottom of the market; a fresh,
+# well-priced car can list and sell before it ever ranks there. Targets with
+# newest > 0 also fetch that many newest-first pages per source, so a new
+# listing is seen the day it appears. Overridable in case the API renames it.
+NEWEST_SORT = str(CFG.get("newest_sort") or "createdAt.desc")
 
 DATA = Path("data")
 DATA.mkdir(exist_ok=True)
@@ -120,6 +125,10 @@ def build_targets():
                 t.setdefault("pages", 1)
                 t.setdefault("depth", "light")
                 try:
+                    t["newest"] = max(0, int(t.get("newest") or 0))
+                except (TypeError, ValueError):
+                    t["newest"] = 0
+                try:
                     t["cadence"] = max(1, int(t.get("cadence") or 1))
                 except (TypeError, ValueError):
                     t["cadence"] = 1
@@ -149,7 +158,7 @@ def sorts_pages(t):
 
 def calls_for(t):
     sorts, pages = sorts_pages(t)
-    return len(SOURCES) * len(sorts) * pages
+    return len(SOURCES) * (len(sorts) * pages + t["newest"])
 
 
 def due_on(t, ordinal):
@@ -516,6 +525,30 @@ def fmt_pick(p):
     if p.get("url"):
         line += f"\n  [listing]({p['url']})"
     line += f" `{p.get('vin', '')}`"
+    return line
+
+
+def fmt_new(x, p=None):
+    """One line for a car first seen this run — the time-sensitive block."""
+    bits = [f"**{money(x['price'])}**", str(x.get("year") or "")]
+    if x.get("miles") is not None:
+        bits.append(f"{x['miles']:,} mi")
+    bits.append("drivable · no shipping" if x.get("local") else
+                (f"+ {money(x['ship'])} shipping" if x.get("ship") else "shipping n/a"))
+    bits.append(place(x))
+    dl = x.get("days_listed")
+    if dl is not None and dl <= 7:
+        bits.append(f"listed {dl}d ago")
+    elif dl is not None:
+        bits.append(f"on market {dl}d, new to the tracker")
+    else:
+        bits.append("new to the tracker")
+    line = "- " + " · ".join(b for b in bits if b)
+    if p and p.get("pick_pct", 0) > 0:
+        line += f"\n  _{p['pick_pct']:.0%} under typical ({money(p['pick_under'])} less)_"
+    if x.get("url"):
+        line += f"\n  [listing]({x['url']})"
+    line += f" `{x.get('vin', '')}`"
     return line
 
 
@@ -1165,6 +1198,21 @@ def build_outputs(today_rows, all_rows, hist):
             if as_of != TODAY:
                 sec += [f"_Not fetched today — showing {as_of}._", ""]
             sec += brief_lines(m_entry, m_entry["listings"], prev_day) + [""]
+            # cars first seen this run lead the section — a well-priced new
+            # listing is the one thing the buyer must catch before it sells
+            if prev_day and m_entry["fetched_today"]:
+                by_vin = {p["vin"]: p for p in scored}
+                new_today = sorted(
+                    [x for x in m_entry["listings"] if x["days_tracked"] == 1],
+                    key=lambda x: -(by_vin[x["vin"]]["pick_pct"]
+                                    if x["vin"] in by_vin else -1.0))
+                if new_today:
+                    sec += [f"**New today ({len(new_today)})** — first seen this run,"
+                            " best value first", ""]
+                    sec += [fmt_new(x, by_vin.get(x["vin"])) for x in new_today[:8]]
+                    if len(new_today) > 8:
+                        sec.append(f"- …and {len(new_today) - 8} more on the dashboard")
+                    sec.append("")
             local_picks, ship_picks = split_picks(scored, PICKS.get("count", 4))
             if local_picks or ship_picks:
                 sec += [f"**Spicy picks** — {picks_rule()}", ""]
@@ -1289,6 +1337,27 @@ def main():
                         # its scope — the sort order cannot change the set
                         EXHAUSTED.add((tid, source_name))
                         break
+            # newest-first pages: catch cars listed since the last run before
+            # they ever rank among the cheapest. An exhausted scope was
+            # already fetched in full, so newest would only repeat it.
+            for page in range(1, t["newest"] + 1):
+                if (tid, source_name) in EXHAUSTED:
+                    break
+                batch = fetch(source_name, source, NEWEST_SORT, page, t)
+                if batch is None:
+                    break
+                raw_n += len(batch)
+                for rec in batch:
+                    n = normalize(rec, t, dropped)
+                    if not n:
+                        continue
+                    key = (tid, n["vin"])
+                    cur = rows.get(key)
+                    if cur is None or n["price"] < to_int(cur["price"]):
+                        rows[key] = n
+                if len(batch) < PER_PAGE:
+                    EXHAUSTED.add((tid, source_name))
+                    break
         kept = sum(1 for k in rows if k[0] == tid)
         print(f"{tid}: {raw_n} raw -> {kept} kept")
     if dropped:
