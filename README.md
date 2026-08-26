@@ -25,43 +25,57 @@ miles. SpicyCar shows both numbers, every day, on every car:
 
 ```
 asking            exactly as listed — every sort, tile and chart uses it
-+ shipping        0 in-state · else max($350, miles_from_home × $0.65), stated on the car
++ shipping        0 if drivable · else max($350, miles_from_home × $0.65), stated on the car
 ```
 
 The sum is never less than asking. Miles are shown next to every price, not priced in. Which cars
 are sitting, which are being cut, which just disappeared — the cheapest anywhere and the cheapest
 close to home, for *this* buyer.
 
+A car is **drivable** — no shipping — when it sits in one of the buyer's states *or* within a
+configured drive of home (`drive_hours`, five for the Chicago buyer). So a car in Benton Harbor,
+Michigan — 90 miles away — no longer pays shipping just because Michigan is not on the state list.
+**Spicy picks** come in two lists computed under one rule: the best values within driving range,
+and the best values worth shipping from anywhere else.
+
 Two things are configured, separately:
 
-- **buyer** — who is purchasing: home zip, the states they will drive to for a car, and how they
-  value miles and shipping. One buyer today; the first real use is a buyer near Chicago shopping
-  for an i5 eDrive40. The shape is built for more.
-- **watchlist** — what to track: brands → models → trims. The BMW i5 and i7 being shopped, the i4
-  and iX in every variant, plus comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet on a
-  slower cadence, so the ones they want can be judged against their siblings and their rivals.
-  `buyer.shopping` names the targets that lead the report in full; everything else gets one line.
+- **buyer** — who is purchasing: home zip, the states they will drive to for a car, the drive
+  radius, and how they value miles and shipping. One buyer today; the first real use is a buyer
+  near Chicago shopping for an i5 eDrive40. The shape is built for more.
+- **watchlist** — what to track: brands → models → trims. The BMW i5 and i7 being shopped get the
+  deepest fetches; their siblings (i4, iX) run every other day; comparison models from Hyundai,
+  Kia, Audi, Lucid and Chevrolet run every third day, so the ones they want can be judged against
+  their siblings and their rivals. `buyer.shopping` names the targets that lead the report in
+  full; everything else gets one line.
 
 ## Design decisions
 
-**It runs on about 30 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
-each. So each target is fetched twice — once filtered to the buyer's states (the API takes a comma
-list, so three states cost one call) and once nationally — and each target has a *depth* (the one
-being shopped gets every sort and page, the rest get the cheapest 20) and a *cadence*: comparison
-brands run every other day, spread evenly across the cycle in watchlist order, so six brands fit the
-plan. A hard `budget_per_day` makes the script refuse to run if any day in the next two weeks would
-exceed it, and it prints the plan before it starts.
+**It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
+each. So each target is fetched twice — once filtered to the buyer's states plus `search_states`
+(the API takes a comma list, so eight states cost one call) and once nationally — and each target
+has a *depth* (the two being shopped get every sort, three and two pages; the rest get the cheapest
+20) and a *cadence*: BMW siblings run every other day, rival brands every third day, spread evenly
+across the cycle in watchlist order. A hard `budget_per_day` makes the script refuse to run if any
+day in the next two weeks would exceed it, and it prints the plan before it starts.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
 labelled "priced above today's cut-off" on the dashboard and left out of the report's "gone" list.
 
-**Scope by state, not by radius.** The first version placed listings into city radii by their
+**Scope by state first, radius second.** The first version placed listings into city radii by their
 coordinates and returned one or two local cars a day while the same cars appeared nationally with
 Midwest addresses. The cause: for listings it cannot geocode, the API returns exactly `(0, 0)` —
 null island, 5,900 miles from Indianapolis — which passes every null check and fails every radius.
-Now a listing is in-state when its own `state` field says so; coordinates only price shipping, with
-a cached zip-code fallback. *Use the field that means the thing.*
+Now a listing is drivable when its own `state` field is one of the buyer's states — no coordinates
+involved — *or* when its distance from home (null island caught, zip-code fallback cached) sits
+inside the drive radius. The state check runs first, so a car that cannot be placed on the map
+still lands in the right bucket. *Use the field that means the thing.*
+
+**Published distances are deliberately coarse.** Every listing's distance from home appears in
+public outputs; exact values could be triangulated back to the home the `BUYER_HOME_ZIP` secret
+keeps out of the repo. Distances are rounded to 25 miles everywhere — precise enough to price
+shipping and judge a drive, too blunt to locate a house.
 
 **Buyer and watchlist are separate.** Cost model and geography belong to a person; brands and trims
 belong to the market. Keeping them apart is what makes the second buyer an addition, not a rewrite.
@@ -92,13 +106,16 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 ## What you get each day
 
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
-  every in-state listing grouped by state, and the five best-value cars out of state.
+  every drivable listing grouped by state (drive-radius states marked), and the five best-value
+  cars beyond driving range.
 - The dashboard — opens on every model at once: a photo per model, lowest asking nationwide and
-  in-state, median, a trend line, one chart with every model's lowest asking price over time, and
-  **spicy picks** — four cars ranked by value (miles allowed for, shipping stated) but shown at asking
-  price. Then brand and model tabs; on every model, its own picks, a hand-written *know the model*
-  card (the good, the bad, what to check); trim, state, year and mileage filters plus hide-accidents
-  and hide-rentals; lowest and median asking price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
+  lowest drivable, median, a trend line, one chart with every model's lowest asking price over
+  time, and **spicy picks** in two lists — the best values within driving range and the best worth
+  shipping, ranked by value (miles allowed for, shipping stated) but shown at asking price. Then
+  brand and model tabs; on every model, its own picks, a hand-written *know the model*
+  card (the good, the bad, what to check); trim, scope, year and mileage filters plus hide-accidents
+  and hide-rentals; sort by asking, asking + shipping, or best value vs typical; lowest and median
+  asking price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
   ex-lease), distance from home, shipping estimate, days on market and a price sparkline; and the
   "gone" list.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home.
@@ -123,11 +140,13 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 |---|---|
 | `home_zip` | Where the car ends up; distances are measured from here. Leave it `null` and set the `BUYER_HOME_ZIP` repository secret instead — the tracker reads it from the environment, never caches it, and never writes it to any output. |
 | `states` | Two-letter codes. Listings in these states are drivable: no shipping. |
+| `drive_hours` | Anything within this many hours' drive of home is also drivable, whatever its state. An hour counts as 55 straight-line miles (interstate speed less road curvature); needs the home zip to be set. |
+| `search_states` | Extra states included in the state-filtered API query because parts of them sit inside the drive radius (for Chicago: MI, IA, MO, KY). A comma list is one call, so they cost nothing. |
 | `ship_per_mile`, `ship_min` | Shipping estimate for everything else: `max(ship_min, distance × ship_per_mile)`. Set `ship_per_mile` to `null` for a flat rate. |
 | `ship_cost` | Flat shipping, used when distance is unknown or `ship_per_mile` is off. |
 | `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
 | `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full; every other model is a one-line comparison. |
-| `picks` | How the spicy picks are chosen: `count`, `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own model and shown at asking price. |
+| `picks` | How the spicy picks are chosen: `count` (per list), `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own model — never a separate local median — then split into two lists: within driving range, and worth the ship. Only cars genuinely under typical qualify. Shown at asking price. |
 
 ### watchlist
 
@@ -157,9 +176,9 @@ any change — it shows today, the worst day in the next two weeks, and the mont
 ## Roadmap
 
 - Drill below state: county or metro.
-- Distance-based "drivable" instead of state lines.
+- ~~Distance-based "drivable" instead of state lines.~~ Done: `drive_hours` + `search_states`.
 - A second buyer profile — the config is already shaped for it.
-- More brands on the watchlist.
+- Alerts worth waking for: email only when a new spicy pick appears or a watched VIN is cut.
 
 ## Author
 

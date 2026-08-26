@@ -109,6 +109,59 @@ class TestGeography(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# Drivable: the state list plus the drive radius. A Benton Harbor car 90
+# miles from Chicago must not pay shipping just because Michigan is not on
+# the state list.
+# --------------------------------------------------------------------------
+class TestDrivable(unittest.TestCase):
+    def test_wisconsin_is_a_buyer_state(self):
+        self.assertIn("WI", T.STATES)
+        self.assertTrue(T.in_scope({"state": "WI"}))
+
+    def test_drive_radius_comes_from_drive_hours(self):
+        self.assertEqual(T.DRIVE_RADIUS, int(round(T.DRIVE_HOURS * 55)))
+        self.assertGreater(T.DRIVE_RADIUS, 0, "buyer.drive_hours should be set")
+
+    def test_within_the_radius_is_drivable_and_ships_free(self):
+        near_mi = {"state": "MI", "distance": 90}       # Benton Harbor-ish
+        self.assertTrue(T.in_scope(near_mi))
+        self.assertEqual(T.ship_for(near_mi), 0)
+
+    def test_beyond_the_radius_pays_shipping(self):
+        msp = {"state": "MN", "distance": 400}          # Twin Cities-ish
+        self.assertFalse(T.in_scope(msp))
+        self.assertGreater(T.ship_for(msp), 0)
+
+    def test_the_radius_boundary_is_inclusive(self):
+        self.assertTrue(T.in_scope({"state": "MO", "distance": T.DRIVE_RADIUS}))
+        self.assertFalse(T.in_scope({"state": "MO", "distance": T.DRIVE_RADIUS + 25}))
+
+    def test_a_car_with_no_location_falls_back_to_the_state_list(self):
+        """No coordinates and no stored distance: only the state field decides."""
+        self.assertFalse(T.in_scope({"state": "MI"}))
+        self.assertEqual(T.ship_for({"state": "MI"}), T.to_int(T.BUYER.get("ship_cost")))
+
+    def test_search_states_widen_the_query_without_duplicates(self):
+        for st in T.STATES:
+            self.assertIn(st, T.SEARCH_STATES)
+        self.assertIn("MI", T.SEARCH_STATES)
+        self.assertEqual(len(T.SEARCH_STATES), len(set(T.SEARCH_STATES)))
+
+    def test_published_distances_are_coarse(self):
+        """Distances go into public outputs; exact values could be
+        triangulated back to the home zip, so they are rounded to 25."""
+        old_home = T.HOME
+        T.HOME = CHICAGO
+        try:
+            d = T.dist_home(INDY[0], INDY[1])
+            self.assertEqual(d % 25, 0)
+            self.assertAlmostEqual(d, 165, delta=25)
+            self.assertGreaterEqual(T.dist_home(CHICAGO[0], CHICAGO[1]), 25)
+        finally:
+            T.HOME = old_home
+
+
+# --------------------------------------------------------------------------
 # Money. "Landed below asking" confused a real reader; it must be impossible.
 # --------------------------------------------------------------------------
 class TestMoney(unittest.TestCase):
@@ -128,10 +181,12 @@ class TestMoney(unittest.TestCase):
 
     def test_in_state_cars_never_pay_shipping(self):
         self.assertEqual(T.ship_for({"state": "IL", "distance": 900}), 0)
+        self.assertEqual(T.ship_for({"state": "WI", "distance": 900}), 0)
         self.assertEqual(T.ship_for({"state": "IN", "lat": 39.7, "lon": -86.1}), 0)
 
-    def test_out_of_state_shipping_scales_with_distance_and_has_a_floor(self):
-        near = T.ship_for({"state": "MI", "distance": 90})
+    def test_undrivable_shipping_scales_with_distance_and_has_a_floor(self):
+        """Both cars sit beyond the drive radius, so both pay shipping."""
+        near = T.ship_for({"state": "MN", "distance": 400})
         far = T.ship_for({"state": "CA", "distance": 1800})
         self.assertGreaterEqual(near, T.to_int(T.BUYER.get("ship_min")) or 0)
         self.assertGreater(far, near)
@@ -246,12 +301,63 @@ class TestPicks(unittest.TestCase):
     def test_a_thin_pool_produces_no_picks(self):
         self.assertEqual(T.score_picks([listing(), listing()], "Two Cars"), [])
 
+    def test_scoring_uses_the_model_year_cohort_when_it_is_big_enough(self):
+        """A 2023 car must be judged against 2023 prices, not a median that
+        blends in far dearer 2026 cars."""
+        old = [listing(price=p, year="2023") for p in (58000, 60000, 62000)]
+        new = [listing(price=p, year="2026") for p in (118000, 120000, 122000)]
+        scored = T.score_picks(old + new, "i7")
+        mid_old = next(p for p in scored if p["price"] == 60000)
+        self.assertLess(abs(mid_old["pick_pct"]), 0.05,
+                        "the median 2023 car is typical for 2023, not 50% under")
+        self.assertEqual(mid_old["pick_year"], "2023")
+
+    def test_a_thin_year_falls_back_to_the_model_median(self):
+        pool = ([listing(price=p, year="2024") for p in (40000, 42000, 44000)]
+                + [listing(price=39000, year="2022")])
+        scored = T.score_picks(pool, "M")
+        lone = next(p for p in scored if p["price"] == 39000)
+        self.assertEqual(lone["pick_year"], "", "one 2022 car is not a cohort")
+        self.assertGreater(lone["pick_pct"], 0, "still judged against the model")
+
+    def test_a_pick_must_sit_under_typical(self):
+        """A thin drivable pool must not promote above-median cars to picks."""
+        scored = T.score_picks([listing(price=p) for p in (40000, 44000, 48000)], "M")
+        picks = T.choose_picks(scored, 4)
+        self.assertTrue(picks, "the genuinely-under-typical car is still a pick")
+        self.assertTrue(all(p["pick_pct"] > 0 for p in picks),
+                        "no car at or above its model's typical value may be a pick")
+
     def test_per_model_cap_spreads_the_picks(self):
         scored = (T.score_picks([listing(price=p) for p in (30000, 40000, 41000, 42000)], "A")
                   + T.score_picks([listing(price=p) for p in (30000, 40000, 41000, 42000)], "B"))
         picks = T.choose_picks(scored, 4, per_model=2)
         counts = Counter(p["model_label"] for p in picks)
         self.assertLessEqual(max(counts.values()), 2)
+
+    def test_picks_split_into_drivable_and_worth_the_ship(self):
+        """Every car is scored against the whole model, then split: drivable
+        picks on one side, everything else on the other, no overlap."""
+        pool = [listing(price=30000, local=True, state="IL"),
+                listing(price=40000, local=True, state="WI"),
+                listing(price=31000, local=False, state="CA"),
+                listing(price=41000, local=False, state="TX")]
+        local, ship = T.split_picks(T.score_picks(pool, "M"), 4)
+        self.assertTrue(local and ship)
+        self.assertTrue(all(p["local"] for p in local))
+        self.assertTrue(all(not p["local"] for p in ship))
+        both = {id(p) for p in local} & {id(p) for p in ship}
+        self.assertFalse(both, "a car must not appear in both lists")
+
+    def test_a_drivable_pick_is_scored_against_the_whole_market(self):
+        """The drivable list must not get its own median — a merely-average
+        local car scores the same whether or not remote cars exist."""
+        locals_ = [listing(price=p, local=True) for p in (40000, 41000, 42000)]
+        remotes = [listing(price=p, local=False, ship=1200) for p in (30000, 30500)]
+        scored_all = T.score_picks(locals_ + remotes, "M")
+        by_price = {p["price"]: p for p in scored_all if p["local"]}
+        self.assertLess(by_price[42000]["pick_pct"], 0.05,
+                        "an above-median local car is not a bargain just for being local")
 
 
 # --------------------------------------------------------------------------

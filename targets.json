@@ -6,7 +6,9 @@
     "id": "chicago",
     "label": "Chicago",
     "home_zip": null,
-    "states": ["IL", "OH", "IN"],
+    "states": ["IL", "OH", "IN", "WI"],
+    "drive_hours": 5,
+    "search_states": ["MI", "IA", "MO", "KY"],
     "shopping": ["bmw-i5-edrive40", "bmw-i7"],
     "ship_per_mile": 0.65,
     "ship_min": 350,
@@ -50,7 +52,7 @@
             "watch": ["Confirm the software is current — early 2024 cars had bugs fixed over the air", "Check which packages the specific VIN has (Driving Assistance Pro, Premium, heated seats)", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
           },
           "trims": {
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full",
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 3,
                           "note": "First real buyer, near Chicago. Decide by mid-Sept." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },
             "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
@@ -62,7 +64,7 @@
           "years": ["2023", "2024", "2025", "2026"],
           "min_price": 30000,
           "depth": "full",
-          "pages": 1,
+          "pages": 2,
           "note": "Shopping alongside the i5. Every trim: eDrive50, xDrive60, M70.",
           "notes": {
             "good": ["The quietest, most comfortable EV in its class — a 7-Series first, an EV second", "Around 300 miles for the eDrive50 and xDrive60; the M70 trades some range for speed", "Six-figure cars now sell used in the $50k–70k range; many carry the rear theater screen and Executive Lounge seats"],
@@ -97,9 +99,9 @@
             "watch": ["Ask for proof that open recalls and software campaigns are done", "Check the 12V battery — a weak one causes odd faults", "Verify heated seats and steering wheel; not every car has them"]
           },
           "trims": {
-            "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"] },
+            "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"], "active": false },
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40" },
-            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"] },
+            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"], "active": false },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }
         }
@@ -109,7 +111,7 @@
     "hyundai": {
       "label": "Hyundai",
       "make": "Hyundai",
-      "cadence": 2,
+      "cadence": 3,
       "models": {
         "ioniq5": {
           "label": "Hyundai Ioniq 5",
@@ -125,6 +127,7 @@
           "label": "Hyundai Ioniq 9",
           "model": "Ioniq 9,IONIQ 9",
           "years": ["2026"],
+          "active": false,
           "notes": {
             "good": ["Three rows, a 110 kWh battery and around 335 miles rear-drive", "800-volt charging and a NACS port from day one", "Almost every used one is a near-new car"],
             "bad": ["Brand new: thin used supply and prices close to new", "First model year — expect software updates", "Very large and heavy for city parking"],
@@ -137,7 +140,7 @@
     "kia": {
       "label": "Kia",
       "make": "Kia",
-      "cadence": 2,
+      "cadence": 3,
       "models": {
         "ev6": {
           "label": "Kia EV6",
@@ -165,7 +168,7 @@
     "audi": {
       "label": "Audi",
       "make": "Audi",
-      "cadence": 2,
+      "cadence": 3,
       "models": {
         "q4-etron": {
           "label": "Audi Q4 e-tron",
@@ -181,6 +184,7 @@
           "label": "Audi Q6 e-tron",
           "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6",
           "years": ["2025", "2026"],
+          "active": false,
           "notes": {
             "good": ["New 800-volt platform shared with the Porsche Macan EV: fast charging and 300+ miles", "Excellent interior and driving refinement"],
             "bad": ["New model: used supply is thin and prices sit close to new", "First-year software complaints are common"],
@@ -193,7 +197,7 @@
     "lucid": {
       "label": "Lucid",
       "make": "Lucid",
-      "cadence": 2,
+      "cadence": 3,
       "models": {
         "air": {
           "label": "Lucid Air",
@@ -216,7 +220,7 @@
     "chevrolet": {
       "label": "Chevrolet",
       "make": "Chevrolet",
-      "cadence": 2,
+      "cadence": 3,
       "models": {
         "equinox-ev": {
           "label": "Chevrolet Equinox EV",
@@ -233,6 +237,7 @@
           "label": "Chevrolet Blazer EV",
           "model": "Blazer EV",
           "years": ["2024", "2025", "2026"],
+          "active": false,
           "notes": {
             "good": ["Sharp looks and a comfortable, quiet cabin", "RS trims run roughly 280–320 miles depending on drivetrain", "Heavy discounts made used ones cheap"],
             "bad": ["The 2024 launch was stopped for software faults; fixed by updates, but ask", "No Apple CarPlay or Android Auto", "Middling efficiency"],

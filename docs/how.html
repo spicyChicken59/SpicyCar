@@ -6,10 +6,10 @@
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#111F31">
 <title>How SpicyCar works</title>
-<meta name="description" content="How SpicyCar reads asking prices, estimates shipping, stays inside a free API plan, and decides what counts as local.">
+<meta name="description" content="How SpicyCar reads asking prices, estimates shipping, stays inside a free API plan, and decides what counts as drivable.">
 <meta property="og:type" content="article">
 <meta property="og:title" content="How SpicyCar works">
-<meta property="og:description" content="Asking prices as listed, shipping stated per car, a 30-call-a-day budget, and why scoping by state beat scoping by radius.">
+<meta property="og:description" content="Asking prices as listed, shipping stated per car, a 31-call-a-day budget, and what counts as drivable: the buyer's states plus a five-hour drive.">
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/how.html">
 <meta name="twitter:card" content="summary_large_image">
@@ -62,27 +62,27 @@
   <article class="sc-doc sc-doc--flat">
     <h2 id="question">The question</h2>
     <p>Asking price alone does not tell you what a car costs. A $38,000 car in San Diego and a $45,000 car in Indianapolis are not $7,000 apart for a buyer in Chicago if one of them has to ride a truck for 1,800 miles. SpicyCar shows both numbers side by side, every day — asking as listed, shipping stated — so you can see which cars are sitting, which are being cut, and which just disappeared.</p>
-    <p>It is built around a <strong>buyer</strong> — a home zip code, the states they are willing to drive to, and what shipping costs them — and a <strong>watchlist</strong> of brands, models and trims. The two are configured separately, so a second buyer is an addition rather than a rewrite.</p>
-    <p>The first buyer is real: someone near Chicago, shopping for a BMW i5 eDrive40 or an i7. The watchlist is every variant of the i4, i5, i7 and iX, so the ones they want can be judged against their siblings — and comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet, so they can be judged against their rivals. The report leads with what is being shopped, in full, and gives every comparison model one line.</p>
+    <p>It is built around a <strong>buyer</strong> — a home zip code, the states they are willing to drive to, how far a drive still beats a truck, and what shipping costs them — and a <strong>watchlist</strong> of brands, models and trims. The two are configured separately, so a second buyer is an addition rather than a rewrite.</p>
+    <p>The first buyer is real: someone near Chicago, shopping for a BMW i5 eDrive40 or an i7. The watchlist is the i5 and i7 in depth, their siblings the i4 and iX, and comparison models from Hyundai, Kia, Audi, Lucid and Chevrolet, so the ones they want can be judged against their siblings and their rivals. The report leads with what is being shopped, in full, and gives every comparison model one line.</p>
 
     <h2 id="prices">Prices</h2>
     <p>The number everywhere is the <strong>asking price</strong>, exactly as the dealer listed it. Nothing is adjusted or inferred. Every sort, tile and chart uses it, and miles are shown next to every price so you can weigh them yourself.</p>
-    <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A car in one of the buyer's states costs nothing to bring home — you drive it. Anything else gets an estimate from the distance between the listing and the buyer's home: $0.65 a mile with a $350 floor, roughly what open-carrier transport costs. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
-<pre>asking + shipping        shipping = 0 in-state
+    <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A drivable car costs nothing to bring home — you drive it. Anything else gets an estimate from the distance between the listing and the buyer's home: $0.65 a mile with a $350 floor, roughly what open-carrier transport costs. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
+<pre>asking + shipping        shipping = 0 if drivable
                                   = max($350, miles from home × $0.65) otherwise</pre>
-    <p>That sum is never less than asking; it is only ever the listed price plus the truck. Three illustrative cars for a buyer near Chicago whose states are Illinois, Ohio and Indiana:</p>
+    <p>That sum is never less than asking; it is only ever the listed price plus the truck. Three illustrative cars for a buyer near Chicago whose states are Illinois, Ohio, Indiana and Wisconsin, with a five-hour drive radius:</p>
     <div class="sc-table-scroll">
       <table class="sc-table sc-table--compact">
         <thead><tr><th>Car</th><th class="sc-num">Asking</th><th class="sc-num">Miles</th><th>Where</th><th class="sc-num">Shipping</th><th class="sc-num">Asking + shipping</th></tr></thead>
         <tbody>
-          <tr><td>A</td><td class="sc-num">$46,000</td><td class="sc-num">16,000</td><td>Indiana — in-state</td><td class="sc-num">$0</td><td class="sc-num"><strong>$46,000</strong></td></tr>
-          <tr><td>B</td><td class="sc-num">$42,000</td><td class="sc-num">24,000</td><td>Michigan — 150 mi away</td><td class="sc-num">$350</td><td class="sc-num"><strong>$42,350</strong></td></tr>
-          <tr><td>C</td><td class="sc-num">$38,000</td><td class="sc-num">18,000</td><td>California — 1,800 mi away</td><td class="sc-num">$1,170</td><td class="sc-num"><strong>$39,170</strong></td></tr>
+          <tr><td>A</td><td class="sc-num">$46,000</td><td class="sc-num">16,000</td><td>Indiana — a buyer state</td><td class="sc-num">$0</td><td class="sc-num"><strong>$46,000</strong></td></tr>
+          <tr><td>B</td><td class="sc-num">$42,000</td><td class="sc-num">24,000</td><td>Michigan — ~150 mi, inside the drive radius</td><td class="sc-num">$0</td><td class="sc-num"><strong>$42,000</strong></td></tr>
+          <tr><td>C</td><td class="sc-num">$38,000</td><td class="sc-num">18,000</td><td>California — ~1,800 mi away</td><td class="sc-num">$1,170</td><td class="sc-num"><strong>$39,170</strong></td></tr>
         </tbody>
       </table>
     </div>
     <p>Car C is still the cheapest by more than $3,000 after the truck — which is the point of stating it. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible.</p>
-    <p><strong>Spicy picks</strong> are the one place miles are priced in — but only to rank, never to change a number you see. A car is eligible under 50,000 miles with no reported accidents and no rental or fleet history. Each eligible car gets a value: asking, plus shipping, plus 30 cents for every mile above 20,000 (or minus, below). It is then compared with the typical value for its own model, so a cheap model does not win just for being cheap; the picks are the cars furthest under typical, and the label says by how much. The price on the card is still the asking price.</p>
+    <p><strong>Spicy picks</strong> are the one place miles are priced in — but only to rank, never to change a number you see. A car is eligible under 50,000 miles with no reported accidents and no rental or fleet history. Each eligible car gets a value: asking, plus shipping, plus 30 cents for every mile above 20,000 (or minus, below). It is then compared with the typical value for its own model, so a cheap model does not win just for being cheap. The picks come in two lists under that one rule — the best values <em>within driving range</em>, and the best values <em>worth the ship</em> from everywhere else — and only cars genuinely under typical qualify, so a thin local market never promotes an ordinary car. The label says how far under typical each pick sits; the price on the card is still the asking price.</p>
 
     <h2 id="data">Where the data comes from</h2>
     <p>Listings come from the <a href="https://auto.dev" rel="noopener">auto.dev</a> API. Every day at 11:00 UTC a GitHub Action runs the tracker, which fetches each target due that day, states shipping on every listing, and writes three things back into the repository: a CSV with one row per vehicle per day, a Markdown report (also sent by email), and the JSON behind the dashboard.</p>
@@ -91,9 +91,9 @@
     <h2 id="budget">Staying inside a free plan</h2>
     <p>The free plan allows <strong>1,000 calls a month</strong> and returns at most <strong>20 listings per call</strong>. That shapes the whole design.</p>
     <ul>
-      <li><strong>Two queries per target.</strong> One filtered to the buyer's states — the API takes a comma-separated list, so three states cost one call — and one national. Adding a state costs nothing.</li>
-      <li><strong>Depth.</strong> The one or two trims a buyer is actually shopping get <code>full</code> depth: two sort orders, two pages each. Everything else gets <code>light</code>: the cheapest 20 and nothing more. The i5 eDrive40 is full; every other target is light.</li>
-      <li><strong>Cadence.</strong> Comparison brands are fetched every other day, spread evenly across the cycle in watchlist order, so six brands fit in about 30 calls a day — roughly 900 a month. On a model's off day the dashboard and report show its last fetch, marked "as of".</li>
+      <li><strong>Two queries per target.</strong> One filtered to the buyer's states plus the <code>search_states</code> that overlap the drive radius — the API takes a comma-separated list, so eight states cost one call — and one national. Adding a state costs nothing.</li>
+      <li><strong>Depth.</strong> The two targets being shopped get <code>full</code> depth: two sort orders, three pages for the i5 eDrive40 and two for the i7. Everything else gets <code>light</code>: the cheapest 20 and nothing more.</li>
+      <li><strong>Cadence.</strong> BMW siblings are fetched every other day and rival brands every third day, spread evenly across the cycle in watchlist order — about 31 calls a day, roughly 930 a month. On a model's off day the dashboard and report show its last fetch, marked "as of".</li>
       <li><strong>A hard budget.</strong> The script prints its plan before it starts — today, the worst day in the next two weeks, the monthly average — and refuses to run if any day would exceed <code>budget_per_day</code> or the average would exceed <code>budget_per_month</code>.</li>
     </ul>
     <p>Because each query returns only the cheapest N, the data is a sample of the bottom of the market, not the whole market. That has one consequence worth being explicit about.</p>
@@ -102,32 +102,33 @@
       <p>If a listing's price rises above the day's cheapest-N cut-off, it simply is not fetched. The dashboard checks a vanished car's last price against that cut-off and labels it <em>priced above today's cut-off</em> rather than <em>gone</em>, and the report leaves those out of its "gone" list. Anything else would be a guess dressed up as a fact.</p>
     </div>
 
-    <h2 id="local">What counts as local — and why not a radius</h2>
+    <h2 id="local">What counts as drivable — states first, then a radius</h2>
     <p>The first version scoped by city: a 200-mile radius around each of three Midwest cities, with listings placed by their coordinates. It returned one or two local cars a day, while the same cars showed up in the national results with Midwest addresses.</p>
     <p>The cause took a week to find. For listings it cannot geocode, the API returns coordinates of exactly (0, 0) — a point in the Atlantic off West Africa, about 5,900 miles from Indianapolis. Those values are not null, so every emptiness check passed them through, and the distance math confidently placed the cars outside every radius. About 7% of listings were affected, including the two cheapest i5 eDrive40s in Indianapolis.</p>
-    <p>SpicyCar now scopes by <strong>state</strong>. A listing is in-state when its own <code>state</code> field is one of the buyer's states — no coordinates involved. Coordinates are used only to estimate shipping, and when they are missing or zero the listing's zip code is geocoded instead, once, with the result cached in the repository.</p>
+    <p>SpicyCar now checks <strong>state first</strong>: a listing is drivable when its own <code>state</code> field is one of the buyer's states — no coordinates involved, so a car that cannot be placed on the map still lands in the right bucket. Then the radius gets its second chance, on honest terms: a car in any other state is also drivable when its distance from home sits within the buyer's <code>drive_hours</code> (five hours ≈ 275 straight-line miles), with null island caught and a cached zip-code fallback for missing coordinates. Eastern Ohio, 350 miles out, stays drivable because Ohio is on the list; Benton Harbor, Michigan — 90 miles from Chicago — is drivable now too, instead of paying $350 to cross a state line.</p>
     <div class="sc-callout sc-callout--ink">
       <div class="sc-callout__label">The rule that came out of it</div>
-      <p>Use the field that means the thing. State was on every record from the start; deriving it from coordinates was a mistake that looked like a feature.</p>
+      <p>Use the field that means the thing. State was on every record from the start; deriving it from coordinates was a mistake that looked like a feature. The radius came back only once the coordinates could be trusted — and it decides in the buyer's favour, never against a car the map cannot place.</p>
     </div>
+    <p>One more honesty note: distances from home are published rounded to 25 miles. Exact per-listing distances could be triangulated back to the home the <code>BUYER_HOME_ZIP</code> secret keeps private; coarse ones price shipping just as well.</p>
 
     <h2 id="reading">Reading the dashboard</h2>
     <ul>
-      <li><strong>Every model</strong> — the front page: one row per model with a photo, cars on the market, in-state count, lowest asking nationwide, lowest asking in-state, the median and a trend line, all under the same filters. Shopping first, then by price.</li>
+      <li><strong>Every model</strong> — the front page: one row per model with a photo, cars on the market, drivable count, lowest asking nationwide, lowest drivable asking, the median and a trend line, all under the same filters. Shopping first, then by price.</li>
       <li><strong>Every model over time</strong> — one line per model, lowest asking price by day. The model being shopped is in colour; the rest are context, each named at its line's end.</li>
-      <li><strong>Spicy picks</strong> — four cars, on the front page across every model and on each model within it: photo, asking price, the shipping line, and how far under typical the car sits. Recomputed as you filter.</li>
+      <li><strong>Spicy picks</strong> — two lists, on the front page across every model and on each model within it: the best values within driving range, and the best worth shipping from anywhere else. Photo, asking price, the shipping line, and how far under typical the car sits. Recomputed as you filter.</li>
       <li><strong>Know the model</strong> — on every model page: the good, the bad, and what to check before you go and look. Written by hand and kept in the config, so it can be corrected as we learn.</li>
-      <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags (rental and fleet cars are marked), distance from home, days on market, and a price sparkline. Filter by trim, state, year and miles, hide accidents, hide rentals and fleet; sort by asking, asking plus shipping, miles, biggest drop, longest on market, or newest.</li>
+      <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags (rental and fleet cars are marked), distance from home, days on market, and a price sparkline. Filter by trim, scope (drivable, a state, or beyond), year and miles, hide accidents, hide rentals and fleet; sort by asking, asking plus shipping, best value vs typical, miles, biggest drop, longest on market, or newest.</li>
       <li><strong>Gone from the market</strong> — with the out-of-window flag described above.</li>
     </ul>
     <p>The signals worth acting on: <strong>days on market</strong> past 30 usually means a dealer who will negotiate. <strong>Price cuts</strong> show how many times and how far. <strong>new</strong> marks cars first seen today. <strong>1-owner</strong>, <strong>no accidents</strong> and <strong>cpo</strong> are the history flags worth filtering on; <strong>ex-lease</strong> usually means one careful owner and a full service record.</p>
 
     <h2 id="limits">What it does not know</h2>
     <ul>
-      <li>It samples the cheapest end of the market. A car that never sat in the bottom 20–80 for its trim never appears.</li>
+      <li>It samples the cheapest end of the market. A car that never sat in the bottom of its trim's price order never appears.</li>
       <li>Shipping is an estimate. Get a quote before believing it to the dollar.</li>
       <li>Miles are shown, not priced. A 5,000-mile car and a 50,000-mile car at the same asking price sort together; the miles column is there so you can tell them apart.</li>
-      <li>State is a proxy for "drivable." Eastern Ohio is 350 miles from Chicago; Benton Harbor, Michigan is 90 — and pays shipping.</li>
+      <li>The drive radius is straight-line miles, not road miles — a lake or a mountain range can make a "five-hour" car a seven-hour one. Distances are also rounded to 25 miles on purpose.</li>
       <li>One data source. Private-party sales, and dealers not in the feed, are invisible.</li>
       <li>Taxes, dealer fees, and the plane ticket to go and look are not included.</li>
     </ul>
@@ -135,9 +136,9 @@
     <h2 id="roadmap">Roadmap</h2>
     <ul>
       <li>Drill below state: county or metro.</li>
-      <li>Distance-based "drivable" instead of state lines.</li>
+      <li><s>Distance-based "drivable" instead of state lines.</s> Done — <code>drive_hours</code> plus <code>search_states</code>.</li>
       <li>A second buyer profile — the config is already shaped for it.</li>
-      <li>More brands on the watchlist.</li>
+      <li>Alerts worth waking for: email only when a new spicy pick appears or a watched VIN is cut.</li>
     </ul>
 
     <div class="sc-callout sc-callout--spice">
