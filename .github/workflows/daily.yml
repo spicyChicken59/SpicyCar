@@ -8,9 +8,16 @@ on:
 permissions:
   contents: write
 
+# One tracker at a time: an overlapping manual run would double the day's
+# API spend and race the other run's push.
+concurrency:
+  group: daily-tracker
+  cancel-in-progress: false
+
 jobs:
   track:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,9 +32,28 @@ jobs:
           BUYER_HOME_ZIP: ${{ secrets.BUYER_HOME_ZIP }}
         run: python Tracking.py
       - name: Commit outputs
+        # The listings API is live-only: a rejected push would discard a
+        # snapshot that can never be re-fetched. Rebase onto whatever landed
+        # on main during the run (the tracker's outputs never conflict with
+        # source edits) and retry.
         run: |
           git config user.name  "tracker"
           git config user.email "actions@github.com"
           git add data docs REPORT.md
-          git diff --staged --quiet || git commit -m "snapshot $(date -u +%F)"
+          git diff --staged --quiet && exit 0
+          git commit -m "snapshot $(date -u +%F)"
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase origin main
+          done
           git push
+      - name: Keep the snapshot if the push still failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-${{ github.run_id }}
+          path: |
+            data/
+            docs/data.json
+            REPORT.md
+          retention-days: 7

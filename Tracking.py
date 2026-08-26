@@ -27,6 +27,7 @@ import json
 import math
 import os
 import sys
+import time
 from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -52,6 +53,24 @@ SEARCH_STATES = STATES + [s for s in
                           (str(x).strip().upper() for x in BUYER.get("search_states", []))
                           if s and s not in STATES]
 SHOPPING = [str(s) for s in BUYER.get("shopping", [])]   # target ids being shopped
+
+
+def _parse_shortlist(raw):
+    """buyer.shortlist: the specific cars being decided on, by VIN. Entries
+    are "VIN" or {"vin": ..., "note": ...}; order is the buyer's own."""
+    out = {}
+    for entry in raw or []:
+        if isinstance(entry, dict):
+            vin, note = str(entry.get("vin") or ""), str(entry.get("note") or "")
+        else:
+            vin, note = str(entry or ""), ""
+        vin = vin.strip().upper()
+        if vin:
+            out[vin] = note
+    return out
+
+
+SHORTLIST = _parse_shortlist(BUYER.get("shortlist"))
 PICKS = BUYER.get("picks", {})                            # how "our picks" are chosen
 TODAY_ORD = date.fromisoformat(TODAY).toordinal()
 WATCHLIST = CFG["watchlist"]
@@ -60,7 +79,12 @@ LEGACY_IDS = CFG.get("legacy_ids", {})
 BUDGET = CFG.get("budget_per_day", 40)          # cap on any single day
 MONTHLY = CFG.get("budget_per_month", 1000)     # the API plan; checked on the average
 PER_PAGE = 20                       # the free plan clamps limit to 20
-PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years"]
+PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years", "newest"]
+# The price/miles sorts sample the settled bottom of the market; a fresh,
+# well-priced car can list and sell before it ever ranks there. Targets with
+# newest > 0 also fetch that many newest-first pages per source, so a new
+# listing is seen the day it appears. Overridable in case the API renames it.
+NEWEST_SORT = str(CFG.get("newest_sort") or "createdAt.desc")
 
 DATA = Path("data")
 DATA.mkdir(exist_ok=True)
@@ -119,6 +143,10 @@ def build_targets():
                 t.setdefault("pages", 1)
                 t.setdefault("depth", "light")
                 try:
+                    t["newest"] = max(0, int(t.get("newest") or 0))
+                except (TypeError, ValueError):
+                    t["newest"] = 0
+                try:
                     t["cadence"] = max(1, int(t.get("cadence") or 1))
                 except (TypeError, ValueError):
                     t["cadence"] = 1
@@ -148,7 +176,7 @@ def sorts_pages(t):
 
 def calls_for(t):
     sorts, pages = sorts_pages(t)
-    return len(SOURCES) * len(sorts) * pages
+    return len(SOURCES) * (len(sorts) * pages + t["newest"])
 
 
 def due_on(t, ordinal):
@@ -272,15 +300,20 @@ def zip_coords(z, cache=True):
         r = requests.get(f"https://api.zippopotam.us/us/{z}", timeout=15)
         ZIP_LOOKUPS += 1
         if r.status_code == 200:
-            place = ((r.json() or {}).get("places") or [{}])[0]
-            lat = to_float(place.get("latitude"))
-            lon = to_float(place.get("longitude"))
+            hit = ((r.json() or {}).get("places") or [{}])[0]
+            lat = to_float(hit.get("latitude"))
+            lon = to_float(hit.get("longitude"))
             if coords_ok(lat, lon):
                 if cache:
                     ZIP_CACHE[z] = [round(lat, 5), round(lon, 5)]
                 return lat, lon
-        if cache:
-            ZIP_CACHE[z] = None
+        # only a definitive miss is cached — a throttle or server error must
+        # not poison the committed cache and stop the zip ever being retried
+        if r.status_code in (200, 404):
+            if cache:
+                ZIP_CACHE[z] = None
+        else:
+            print(f"  ! zip {z}: HTTP {r.status_code} — will retry next run")
     except requests.RequestException as e:
         print(f"  ! zip {z}: {e}" if cache else f"  ! home zip lookup failed: {e}")
     return None, None
@@ -306,14 +339,28 @@ STATE_NAMES = dict(zip(
      "Utah Vermont Virginia Washington West_Virginia Wisconsin Wyoming").split()))
 STATE_NAMES = {k: v.replace("_", " ") for k, v in STATE_NAMES.items()}
 
-# The home zip is private. It comes from the BUYER_HOME_ZIP secret (targets.json
-# only as a fallback for anyone who chooses to put it there), is looked up
-# without touching the committed cache, and never appears in any output.
-HOME_ZIP = os.environ.get("BUYER_HOME_ZIP") or BUYER.get("home_zip")
-HOME = zip_coords(HOME_ZIP, cache=False) if HOME_ZIP else (None, None)
+# The distance anchor is PUBLIC — a city-centre [lat, lon] in targets.json —
+# so no published number derives from a private location. Exact per-listing
+# distances measured from a private home zip can be trilaterated back to the
+# house (hundreds of dealer coordinates plus a distance each overdetermine
+# it, and ship/rate leaks the same signal), so the anchor is the only shape
+# of this feature that keeps a home private. BUYER_HOME_ZIP remains as a
+# legacy fallback for anyone who accepts that trade.
+ANCHOR = BUYER.get("anchor") or []
+HOME = ((to_float(ANCHOR[0]), to_float(ANCHOR[1]))
+        if isinstance(ANCHOR, (list, tuple)) and len(ANCHOR) == 2
+        else (None, None))
 if not coords_ok(*HOME):
-    print("  ! home zip missing or could not be located — distances unavailable, "
-          "flat ship_cost applies (set the BUYER_HOME_ZIP secret)")
+    HOME_ZIP = os.environ.get("BUYER_HOME_ZIP") or BUYER.get("home_zip")
+    HOME = zip_coords(HOME_ZIP, cache=False) if HOME_ZIP else (None, None)
+    if coords_ok(*HOME):
+        print("  ! distances anchored to the private home zip — published "
+              "distances can be traced to it; set buyer.anchor to a public "
+              "point (your city centre) instead")
+    else:
+        print("  ! no buyer.anchor and no home zip — distances unavailable, "
+              "flat ship_cost applies")
+HOME_NAME = str(BUYER.get("label") or "home")
 
 # "Drivable" reaches beyond the state list: anything within drive_hours of
 # home costs nothing to ship either. Straight-line miles understate road
@@ -327,9 +374,10 @@ if DRIVE_RADIUS and not coords_ok(*HOME):
 
 
 def dist_home(lat, lon):
-    """Miles from the buyer's home, or None. Rounded to 25 because the
-    outputs are public: exact per-listing distances could be triangulated
-    back to the home the README promises to keep private."""
+    """Miles from the buyer's anchor, or None. Rounded to 25: distances are
+    estimates for judging a drive, and in legacy home-zip mode coarseness at
+    least blunts casual reading (it does NOT stop trilateration — only a
+    public anchor does)."""
     if coords_ok(lat, lon) and coords_ok(*HOME):
         return max(25, int(round(haversine(lat, lon, HOME[0], HOME[1]) / 25) * 25))
     return None
@@ -358,7 +406,7 @@ def scope_label():
     """The one phrase that says what "drivable" means for this buyer."""
     states = "/".join(STATES)
     if DRIVE_RADIUS:
-        drive = f"a {DRIVE_HOURS:g}h drive of home"
+        drive = f"a {DRIVE_HOURS:g}h drive of {HOME_NAME}"
         return f"{states} or {drive}" if states else drive
     return states or "your states"
 
@@ -431,26 +479,46 @@ def pick_eligible(x):
     return True
 
 
+def trim_disp(model_label, trim):
+    """The trim, minus any words the model label already carries, so a
+    cohort reads '2023 BMW i7 xDrive60' and never 'BMW i7 i7 xDrive60'."""
+    words = {w.lower() for w in str(model_label).split()}
+    return " ".join(w for w in str(trim or "").split() if w.lower() not in words)
+
+
 def score_picks(listings, model_label):
-    """Every eligible car of one model, scored against the median of its own
-    model year when that year has three or more eligible cars, else the whole
-    model. Without the year cohorts a 2023 i7 reads as half price simply
-    because the model median blends in six-figure 2026 cars."""
+    """Every eligible car of one model, scored against the tightest cohort
+    with three or more eligible cars: its own trim and model year first,
+    then the model year, then the whole model. Without the cohorts a 2023
+    eDrive50 i7 reads as half price simply because the blended median
+    carries six-figure M70s and 2026 cars."""
     pool = [x for x in listings if pick_eligible(x)]
     if len(pool) < 3:
         return []
-    med_all = median([pick_value(x) for x in pool])
-    by_year = defaultdict(list)
+    values = {id(x): pick_value(x) for x in pool}
+    med_all = median(values.values())
+    by_year, by_ty = defaultdict(list), defaultdict(list)
     for x in pool:
-        by_year[str(x.get("year") or "")].append(pick_value(x))
+        y = str(x.get("year") or "")
+        tr = str(x.get("trim") or "").strip().lower()
+        by_year[y].append(values[id(x)])
+        if tr:
+            by_ty[(tr, y)].append(values[id(x)])
     year_med = {y: median(vs) for y, vs in by_year.items() if len(vs) >= 3}
+    ty_med = {k: median(vs) for k, vs in by_ty.items() if len(vs) >= 3}
     out = []
     for x in pool:
         y = str(x.get("year") or "")
-        med = year_med.get(y, med_all)
-        v = pick_value(x)
+        tr = str(x.get("trim") or "").strip().lower()
+        if (tr, y) in ty_med:
+            med, p_year, p_trim = ty_med[(tr, y)], y, trim_disp(model_label, x.get("trim"))
+        elif y in year_med:
+            med, p_year, p_trim = year_med[y], y, ""
+        else:
+            med, p_year, p_trim = med_all, "", ""
+        v = values[id(x)]
         out.append({**x, "model_label": model_label,
-                    "pick_year": y if y in year_med else "",
+                    "pick_year": p_year, "pick_trim": p_trim,
                     "pick_under": int(round(med - v)),
                     "pick_pct": (med - v) / med if med else 0.0})
     out.sort(key=lambda p: -p["pick_pct"])
@@ -487,7 +555,8 @@ def fmt_pick(p):
                 (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
     bits.append(place(p))
     line = "- " + " · ".join(b for b in bits if b)
-    cohort = f"{p['pick_year']} {p['model_label']}" if p.get("pick_year") else p["model_label"]
+    cohort = " ".join(b for b in (p.get("pick_year"), p["model_label"],
+                                  p.get("pick_trim")) if b)
     line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {cohort} "
              f"({money(p['pick_under'])} less)_")
     if p.get("flags"):
@@ -498,19 +567,247 @@ def fmt_pick(p):
     return line
 
 
+def market_stats(listings):
+    """Per-model market context — the numbers a negotiation opens with: how
+    long cars typically sit, what share have been cut while tracked, and the
+    typical size of a cut. Also stamps each listing with stale_pct: the share
+    of the model's cars it has outlasted on the market."""
+    dl = sorted(x["days_listed"] for x in listings
+                if x.get("days_listed") is not None)
+    for x in listings:
+        d = x.get("days_listed")
+        x["stale_pct"] = (round(sum(1 for v in dl if v < d) / len(dl), 2)
+                          if dl and d is not None else None)
+    tracked = [x for x in listings if x.get("days_tracked", 0) >= 2]
+    cut_cars = [x for x in tracked if x.get("cuts")]
+    drops = []
+    for x in listings:
+        s = x.get("series") or []
+        drops += [a - b for (_, a), (_, b) in zip(s, s[1:]) if b < a]
+    return {
+        "median_days_listed": int(median(dl)) if dl else None,
+        "tracked_2d": len(tracked),
+        "cut_share": round(len(cut_cars) / len(tracked), 2) if tracked else None,
+        "median_cut": int(median(drops)) if drops else None,
+    }
+
+
+def sale_stats(gone):
+    """How fast this model's cars actually leave, from the ones that really
+    left: days from the listing date (or first sighting, when the dealer
+    never said) to the last day the car was seen. Out-of-window and
+    unchecked departures are not sales and are left out."""
+    spans = []
+    for g in gone:
+        if g.get("likely") != "delisted":
+            continue
+        start = g.get("listed_since") or g.get("first_seen")
+        try:
+            spans.append(max(0, (date.fromisoformat(str(g.get("last_seen"))[:10])
+                                 - date.fromisoformat(str(start)[:10])).days))
+        except (TypeError, ValueError):
+            continue
+    return {"n_sold": len(spans),
+            "median_days_to_sale": int(median(spans)) if spans else None}
+
+
+def market_line(stats):
+    """The market context as one report phrase, or ''. """
+    bits = []
+    if stats.get("median_days_listed") is not None:
+        bits.append(f"typical car {stats['median_days_listed']}d on market")
+    if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
+        cut = f"{stats['cut_share']:.0%} cut while tracked"
+        if stats.get("median_cut"):
+            cut += f", median {money(stats['median_cut'])}"
+        bits.append(cut)
+    if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 5:
+        bits.append(f"sold cars lasted ~{stats['median_days_to_sale']}d "
+                    f"({stats['n_sold']} sold)")
+    return " · ".join(bits)
+
+
+def build_today(events):
+    """The day's changes, once: '## Today' lines for the report, and the
+    fragments for an email subject that says what happened. Priority:
+    shortlist alerts, then cuts (shopping and drivable first), then new
+    cars, then departures."""
+    sec, bits = [], []
+    for e in events["gone"]:
+        if str(e["vin"]).upper() in SHORTLIST:
+            sec.append(f"- **Shortlist: GONE** — {e['label']} last seen "
+                       f"{e['last_seen']} at {money(e['last_price'])} `{e['vin']}`")
+            bits.append("shortlist car GONE")
+    for e in events["cuts"]:
+        x = e["x"]
+        if str(x["vin"]).upper() in SHORTLIST:
+            sec.append(f"- **Shortlist: ▼ {money(e['amount'])} cut** — {e['label']} "
+                       f"now {money(x['price'])} ({place(x)}) `{x['vin']}`")
+            bits.append(f"▼{money(e['amount'])} on your shortlist")
+    cuts = sorted(events["cuts"],
+                  key=lambda e: (-e["shopping"], -bool(e["x"]["local"]), -e["amount"]))
+    for e in cuts[:3]:
+        x = e["x"]
+        sec.append(f"- ▼ {money(e['amount'])} cut · {e['label']} · now "
+                   f"{money(x['price'])} · {place(x)}"
+                   f"{' · drivable' if x['local'] else ''} `{x['vin']}`")
+    if len(cuts) > 3:
+        sec.append(f"- …and {len(cuts) - 3} more price change{'s' if len(cuts) - 3 != 1 else ''}"
+                   " in the sections below")
+    if cuts and not bits:
+        e = cuts[0]
+        bits.append(f"▼{money(e['amount'])} cut on "
+                    f"{'drivable ' if e['x']['local'] else ''}{e['label']}")
+    news = [e for e in events["new"] if e["shopping"]]
+    if news:
+        best = max(news, key=lambda e: e["pct"] if e["pct"] is not None else -1)
+        line = f"- {len(news)} new on the shopped models"
+        if best["pct"] and best["pct"] > 0:
+            line += (f" · best {best['pct']:.0%} under typical "
+                     f"({money(best['x']['price'])}, {place(best['x'])})")
+        sec.append(line)
+        bits.append(f"{len(news)} new")
+    gones = [e for e in events["gone"] if e["shopping"]]
+    if gones:
+        sec.append(f"- {len(gones)} gone since the last fetch on the shopped models")
+        bits.append(f"{len(gones)} gone")
+    subject = (f"{APP} — " + " · ".join(bits[:3])) if bits else f"{APP} — quiet day · {TODAY}"
+    if not sec:
+        return [], subject
+    return ["## Today", ""] + sec + [""], subject
+
+
+def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
+    """The cars actually being decided on, first in the report. A live one
+    shows its price and movement; a vanished one says so loudly, with the
+    honest read on whether it sold or just fell out of the fetch window."""
+    if not SHORTLIST:
+        return []
+    sec = ["## Shortlist", "",
+           f"_The {len(SHORTLIST)} car{'s' if len(SHORTLIST) != 1 else ''} "
+           "being decided on, watched by VIN._", ""]
+    for vin, note in SHORTLIST.items():
+        if vin in live_by_vin:
+            x, label = live_by_vin[vin]
+            obj = x
+            bits = [f"**{money(x['price'])}**", label, str(x.get("year") or "")]
+            if x.get("miles") is not None:
+                bits.append(f"{x['miles']:,} mi")
+            bits.append("drivable · no shipping" if x.get("local") else
+                        (f"+ {money(x['ship'])} shipping" if x.get("ship")
+                         else "shipping n/a"))
+            bits.append(place(x))
+            line = "- " + " · ".join(b for b in bits if b)
+            tags = []
+            series = x.get("series") or []
+            if (len(series) >= 2 and series[-1][0] == TODAY
+                    and series[-1][1] < series[-2][1]):
+                tags.append(f"▼ CUT {money(series[-2][1] - series[-1][1])} today")
+            elif x.get("cuts"):
+                tags.append(f"down {x['cuts']}x ({money(x['delta'])})")
+            if x.get("days_listed") is not None:
+                tags.append(f"on market {x['days_listed']}d")
+            p = scored_by_vin.get(vin)
+            if p and p["pick_pct"] > 0:
+                tags.append(f"{p['pick_pct']:.0%} under typical")
+            tags += x.get("flags") or []
+            if tags:
+                line += f"\n  _{' · '.join(tags)}_"
+        elif vin in gone_by_vin:
+            g = gone_by_vin[vin]
+            obj = g
+            verdict = {
+                "delisted": "**GONE — likely sold or pulled**",
+                "out of window": "missing today — priced above the fetch "
+                                 "cut-off, probably still for sale",
+                "unknown": "not checked today (its trim was not due)",
+            }.get(g["likely"], "missing today")
+            line = (f"- {verdict} · last seen {g['last_seen']} at "
+                    f"{money(g['last_price'])} · {g.get('trim_label') or ''} · "
+                    f"{place(g)}")
+        else:
+            sec.append(f"- not seen yet by the tracker `{vin}`"
+                       + (f" — {note}" if note else ""))
+            continue
+        if note:
+            line += f"\n  note: {note}"
+        if obj.get("url"):
+            line += f"\n  [listing]({obj['url']})"
+        line += f" `{vin}`"
+        sec.append(line)
+    sec.append("")
+    return sec
+
+
+def fmt_new(x, p=None):
+    """One line for a car first seen this run — the time-sensitive block."""
+    bits = [f"**{money(x['price'])}**", str(x.get("year") or "")]
+    if x.get("miles") is not None:
+        bits.append(f"{x['miles']:,} mi")
+    bits.append("drivable · no shipping" if x.get("local") else
+                (f"+ {money(x['ship'])} shipping" if x.get("ship") else "shipping n/a"))
+    bits.append(place(x))
+    dl = x.get("days_listed")
+    if dl is not None and dl <= 7:
+        bits.append(f"listed {dl}d ago")
+    elif dl is not None:
+        bits.append(f"on market {dl}d, new to the tracker")
+    else:
+        bits.append("new to the tracker")
+    line = "- " + " · ".join(b for b in bits if b)
+    if p and p.get("pick_pct", 0) > 0:
+        line += f"\n  _{p['pick_pct']:.0%} under typical ({money(p['pick_under'])} less)_"
+    if x.get("url"):
+        line += f"\n  [listing]({x['url']})"
+    line += f" `{x.get('vin', '')}`"
+    return line
+
+
 def picks_rule():
-    return (f"under {(to_int(PICKS.get('max_miles')) or 50000):,} miles, no reported "
-            f"accidents, no rental or fleet history; ranked by how far under the "
-            f"typical price for the model — its own model year when there are "
-            f"enough of them — a car sits, allowing $"
-            f"{(to_float(PICKS.get('cents_per_mile')) if to_float(PICKS.get('cents_per_mile')) is not None else 0.30):.2f} a mile")
+    bits = [f"under {(to_int(PICKS.get('max_miles')) or 50000):,} miles"]
+    if PICKS.get("exclude_accidents", True):
+        bits.append("no reported accidents")
+    if PICKS.get("exclude_rental", True):
+        bits.append("no rental or fleet history")
+    cpm = to_float(PICKS.get("cents_per_mile"))
+    if cpm is None:
+        cpm = 0.30
+    return (", ".join(bits) + "; ranked by how far under the typical price "
+            "for the model — its own trim and model year when there are "
+            f"enough of them — a car sits, allowing ${cpm:.2f} a mile")
 
 
 # --------------------------------------------------------------------------
 # Fetch
 # --------------------------------------------------------------------------
 CALLS = 0
-PRICE_WINDOW = {}      # target id -> highest price returned by its price.asc query today
+PRICE_WINDOW = {}      # (target id, source) -> highest price its price.asc query returned today
+EXHAUSTED = set()      # (target id, source): a query came back short, so it returned
+                       # that scope's ENTIRE result set — no cheapest-N cut-off applies
+FAILED_FETCHES = 0     # requests that still failed after the retry
+TOTALS = {}            # (target id, source) -> the API's own total result count,
+                       # when the response envelope carries one — the honest
+                       # denominator behind "N tracked"
+ENVELOPE_WARNED = False
+
+
+def envelope_total(payload):
+    """The total-result count from a listings response envelope, or None.
+    The key is probed, not assumed — API envelopes rename these freely."""
+    if not isinstance(payload, dict):
+        return None
+    for k in ("total", "totalCount", "count", "hitsCount", "totalResults"):
+        n = to_int(payload.get(k))
+        if n is not None:
+            return n
+    for parent in ("meta", "pagination"):
+        sub = payload.get(parent)
+        if isinstance(sub, dict):
+            for k in ("total", "totalCount", "totalItems", "count", "totalResults"):
+                n = to_int(sub.get(k))
+                if n is not None:
+                    return n
+    return None
 
 
 def year_param(years):
@@ -521,7 +818,10 @@ def year_param(years):
 
 
 def fetch(source_name, source, sort, page, t):
-    global CALLS
+    """One API page, retried once on a transient failure. Returns the list of
+    records, or None when the request failed even after the retry — callers
+    must treat None as "unknown", never as "the market is empty"."""
+    global CALLS, FAILED_FETCHES
     params = {
         "vehicle.make": t["make"],
         "vehicle.model": t["model"],
@@ -536,20 +836,38 @@ def fetch(source_name, source, sort, page, t):
         params["vehicle.trim"] = t["trim_query"]
     if source:
         params.update(source)
-    CALLS += 1
-    try:
-        r = requests.get(BASE, headers=HEADERS, params=params, timeout=45)
-    except requests.RequestException as e:
-        print(f"  ! {t['id']} {source_name} {sort} p{page}: {e}")
-        return []
-    if r.status_code != 200:
-        print(f"  ! {t['id']} {source_name} {sort} p{page}: "
-              f"HTTP {r.status_code} {r.text[:200]}")
-        return []
-    batch = (r.json() or {}).get("data") or []
-    if batch and not SAMPLE.exists():
-        SAMPLE.write_text(json.dumps(batch[0], indent=2))
-    return batch
+    for attempt in (1, 2):
+        CALLS += 1
+        err = None
+        try:
+            r = requests.get(BASE, headers=HEADERS, params=params, timeout=45)
+        except requests.RequestException as e:
+            err = str(e)
+        else:
+            if r.status_code == 200:
+                global ENVELOPE_WARNED
+                try:
+                    payload = r.json() or {}
+                except ValueError:
+                    payload = {}
+                batch = payload.get("data") or [] if isinstance(payload, dict) else []
+                tot = envelope_total(payload)
+                if tot is not None:
+                    key = (t["id"], source_name)
+                    TOTALS[key] = max(TOTALS.get(key, 0), tot)
+                elif batch and not ENVELOPE_WARNED:
+                    ENVELOPE_WARNED = True
+                    print("  ! no total count found in the response envelope — "
+                          f"keys were {sorted(payload)[:8]}")
+                if batch and not SAMPLE.exists():
+                    SAMPLE.write_text(json.dumps(batch[0], indent=2))
+                return batch
+            err = f"HTTP {r.status_code} {r.text[:200]}"
+        print(f"  ! {t['id']} {source_name} {sort} p{page} (try {attempt}): {err}")
+        if attempt == 1:
+            time.sleep(2)
+    FAILED_FETCHES += 1
+    return None
 
 
 def normalize(rec, t, dropped):
@@ -731,7 +1049,7 @@ def pick_display_rows(rows):
             for rs in by_vin.values()]
 
 
-def fmt_row(r, s):
+def fmt_row(r, s, entry=None):
     miles = to_int(r["miles"])
     adj, ship = landed(r)
     bits = [f"**{money(to_int(r['price']))}**"]
@@ -745,7 +1063,7 @@ def fmt_row(r, s):
     where = f"{r['year']} · {r['city']}, {r['state']}"
     d = row_distance(r)
     if d is not None:
-        where += f" · ~{d:,} mi from home"
+        where += f" · ~{d:,} mi from {HOME_NAME}"
     bits.append(where)
     out = "- " + " · ".join(str(b) for b in bits)
     tags = []
@@ -758,6 +1076,10 @@ def fmt_row(r, s):
     dl = days_listed(r)
     if dl is not None and dl >= 30:
         tags.append(f"on market {dl}d")
+    # negotiation context: a car most of its own model has outsold is a car
+    # whose dealer has a reason to talk
+    if entry and (entry.get("stale_pct") or 0) >= 0.75:
+        tags.append(f"sits longer than {entry['stale_pct']:.0%} of the model")
     tags += flags(r)
     if tags:
         out += f"\n  _{' · '.join(tags)}_"
@@ -796,22 +1118,35 @@ def daily_stats(rows):
 def delisted(tids, all_rows, today_rows, hist):
     """Vehicles seen before but not today. Because each query only returns
     the cheapest N, a car priced above today's window for its trim may simply
-    have been pushed out rather than sold — that is flagged, not hidden."""
+    have been pushed out rather than sold — that is flagged, not hidden. When
+    a query came back short it returned its scope's whole market, so absence
+    there is a real delisting whatever the price. Each entry carries its own
+    trim's previous fetch day, because trims of one model can run on
+    different cadences and the model's yesterday is not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
     window_max = PRICE_WINDOW
+    days_by_tid = defaultdict(set)
+    for r in all_rows:
+        if r["target"] in tids:
+            days_by_tid[r["target"]].add(r["snapshot_date"])
     by_key = defaultdict(list)
     for r in all_rows:
         if r["target"] in tids and (r["target"], r["vin"]) not in today_vins:
             by_key[(r["target"], r["vin"])].append(r)
+    horizon = date.fromordinal(TODAY_ORD - 60).isoformat()
     out = []
     for (tid, vin), rows in by_key.items():
         last_day = max(r["snapshot_date"] for r in rows)
+        if last_day < horizon:
+            continue    # keep the gone list (and data.json) from growing forever
         r = pick_display_rows([x for x in rows
                                if x["snapshot_date"] == last_day])[0]
         s = summarize((tid, vin), hist)
         adj, ship = landed(r)
         t = TARGETS[tid]
         last_price = to_int(r["price"])
+        tdays = sorted(days_by_tid[tid])
+        prev_fetch = tdays[-2] if len(tdays) >= 2 else None
         # a car in a queried state comes back through either query, so it is
         # only out of window when it is above both cut-offs
         keys = (["States", "National"] if r["state"] in SEARCH_STATES
@@ -819,7 +1154,9 @@ def delisted(tids, all_rows, today_rows, hist):
         cutoffs = [c for c in (window_max.get((tid, k)) for k in keys)
                    if c is not None]
         cutoff = max(cutoffs) if cutoffs else None
-        if cutoff is None:
+        if any((tid, k) in EXHAUSTED for k in keys):
+            likely = "delisted"         # a query that saw everything missed it
+        elif cutoff is None:
             likely = "unknown"          # nothing fetched for this trim today
         elif last_price is not None and last_price > cutoff:
             likely = "out of window"    # pricier than today's cheapest-N cut-off
@@ -835,6 +1172,8 @@ def delisted(tids, all_rows, today_rows, hist):
             "last_price": last_price, "adj": adj,
             "city": r["city"], "dealer": r["dealer"],
             "url": r["url"], "last_seen": last_day,
+            "listed_since": r["listed_since"],
+            "prev_fetch_day": prev_fetch,
             "first_seen": s.get("first_seen"),
             "days_tracked": s.get("days_tracked", 0),
             "cuts": s.get("cuts", 0), "delta": s.get("delta", 0),
@@ -914,8 +1253,11 @@ def brief_lines(m_entry, listings, prev_day):
     movers = sum(1 for x in listings if len(x["series"]) >= 2
                  and x["series"][-1][1] != x["series"][-2][1])
     new = sum(1 for x in listings if x["days_tracked"] == 1) if prev else 0
+    # each trim vanishes on its own cadence — compare against the trim's own
+    # previous fetch day, or a slower trim's departures never count
     gone = sum(1 for g in m_entry["gone"]
-               if g["last_seen"] == prev_day and g["likely"] == "delisted")
+               if g["likely"] == "delisted" and g["prev_fetch_day"]
+               and g["last_seen"] == g["prev_fetch_day"])
     line = (f"- {len(listings)} on the market · "
             f"{sum(1 for x in listings if x['local'])} drivable")
     if prev_day:
@@ -929,6 +1271,9 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
     """Movers, departures, in-state cars by state, best value out of state."""
     best = next((x for x in tl if x["price"] is not None), None)
     head = f"### {t['label']} — {len(tl)} vehicles"
+    tot = TOTALS.get((t["id"], "National"))
+    if tot and tot > len(tl):
+        head += f" tracked of {tot:,} the API lists nationwide"
     if best:
         head += (f" · lowest asking {money(best['price'])} "
                  f"({place(best)})")
@@ -945,9 +1290,10 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
                        f"({x['city']}, {x['state']}) `{x['vin']}`")
         sec.append("")
     just_gone = [g for g in gone if g["trim_id"] == t["id"]
-                 and g["last_seen"] == prev_day and g["likely"] == "delisted"]
+                 and g["likely"] == "delisted" and g["prev_fetch_day"]
+                 and g["last_seen"] == g["prev_fetch_day"]]
     if just_gone:
-        sec.append(f"**Gone since {prev_day}**")
+        sec.append(f"**Gone since {just_gone[0]['last_seen']}**")
         for g in just_gone:
             sec.append(f"- {money(g['last_price'])} · {g['year']} · "
                        f"{g['city']}, {g['state']} · tracked "
@@ -966,14 +1312,14 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
                    + ("" if st in STATES else " — within the drive radius"))
         for x in in_st:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
-                               summarize((t["id"], x["vin"]), hist)))
+                               summarize((t["id"], x["vin"]), hist), x))
         sec.append("")
     best5 = [x for x in tl if x["price"] is not None and not x["local"]][:5]
     if best5:
         sec.append("**Cheapest beyond driving range (shipping stated)**")
         for x in best5:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
-                               summarize((t["id"], x["vin"]), hist)))
+                               summarize((t["id"], x["vin"]), hist), x))
         sec.append("")
 
 
@@ -1032,6 +1378,7 @@ def build_outputs(today_rows, all_rows, hist):
             "ship_cost": BUYER.get("ship_cost"),
             "cents_per_mile": BUYER.get("cents_per_mile"),
             "mileage_baseline": BUYER.get("mileage_baseline"),
+            "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
         },
         "brands": {},
     }
@@ -1043,6 +1390,8 @@ def build_outputs(today_rows, all_rows, hist):
         tree[t["brand"]][t["model_key"]].append(t)
 
     full, compact, all_scored = [], [], []      # report sections, assembled at the end
+    live_by_vin, gone_by_vin = {}, {}           # shortlist lookups, across every model
+    events = {"cuts": [], "new": [], "gone": []}    # what changed today, once
     for bkey, models in tree.items():
         b_entry = {"label": WATCHLIST[bkey].get("label", bkey),
                    "models": {}}
@@ -1071,7 +1420,8 @@ def build_outputs(today_rows, all_rows, hist):
                                     "depth": t["depth"], "cadence": t["cadence"],
                                     "shopping": t["shopping"],
                                     "years": [str(y) for y in t["years"]],
-                                    "min_price": t.get("min_price")}
+                                    "min_price": t.get("min_price"),
+                                    "market_total": TOTALS.get((t["id"], "National"))}
                           for t in trims},
                 "listings": [],
                 "daily": daily_stats(m_rows_all),
@@ -1081,6 +1431,9 @@ def build_outputs(today_rows, all_rows, hist):
                 "gone": delisted(tids, all_rows, m_rows, hist),
             }
             b_entry["models"][mkey] = m_entry
+            if SHORTLIST:
+                for g in m_entry["gone"]:
+                    gone_by_vin.setdefault(str(g["vin"]).upper(), g)
 
             if not m_rows:
                 if shopping:
@@ -1093,8 +1446,36 @@ def build_outputs(today_rows, all_rows, hist):
             listings = [listing_entry(r, summarize((r["target"], r["vin"]), hist))
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
+            m_entry["market"] = {**market_stats(m_entry["listings"]),
+                                 **sale_stats(m_entry["gone"])}
             scored = score_picks(m_entry["listings"], label)
             all_scored += scored
+            if SHORTLIST:
+                for x in m_entry["listings"]:
+                    live_by_vin.setdefault(str(x["vin"]).upper(), (x, label))
+            if prev_day and m_entry["fetched_today"]:
+                by_vin = {p["vin"]: p for p in scored}
+                for x in m_entry["listings"]:
+                    s_ = x["series"]
+                    tl = str(x.get("trim_label") or "")
+                    name = label if tl.lower() in ("", "all", "all trims") else f"{label} {tl}"
+                    if len(s_) >= 2 and s_[-1][0] == TODAY and s_[-1][1] < s_[-2][1]:
+                        events["cuts"].append({"amount": s_[-2][1] - s_[-1][1],
+                                               "x": x, "label": name,
+                                               "shopping": shopping})
+                    if x["days_tracked"] == 1:
+                        p = by_vin.get(x["vin"])
+                        events["new"].append({"x": x, "label": name,
+                                              "pct": p["pick_pct"] if p else None,
+                                              "shopping": shopping})
+                for g in m_entry["gone"]:
+                    if (g["likely"] == "delisted" and g["prev_fetch_day"]
+                            and g["last_seen"] == g["prev_fetch_day"]):
+                        events["gone"].append({"vin": g["vin"],
+                                               "label": f"{label} {g.get('trim_label') or ''}".strip(),
+                                               "last_seen": g["last_seen"],
+                                               "last_price": g["last_price"],
+                                               "shopping": shopping})
 
             if not shopping:
                 compact.append(compact_line(m_entry, label))
@@ -1104,6 +1485,21 @@ def build_outputs(today_rows, all_rows, hist):
             if as_of != TODAY:
                 sec += [f"_Not fetched today — showing {as_of}._", ""]
             sec += brief_lines(m_entry, m_entry["listings"], prev_day) + [""]
+            # cars first seen this run lead the section — a well-priced new
+            # listing is the one thing the buyer must catch before it sells
+            if prev_day and m_entry["fetched_today"]:
+                by_vin = {p["vin"]: p for p in scored}
+                new_today = sorted(
+                    [x for x in m_entry["listings"] if x["days_tracked"] == 1],
+                    key=lambda x: -(by_vin[x["vin"]]["pick_pct"]
+                                    if x["vin"] in by_vin else -1.0))
+                if new_today:
+                    sec += [f"**New today ({len(new_today)})** — first seen this run,"
+                            " best value first", ""]
+                    sec += [fmt_new(x, by_vin.get(x["vin"])) for x in new_today[:8]]
+                    if len(new_today) > 8:
+                        sec.append(f"- …and {len(new_today) - 8} more on the dashboard")
+                    sec.append("")
             local_picks, ship_picks = split_picks(scored, PICKS.get("count", 4))
             if local_picks or ship_picks:
                 sec += [f"**Spicy picks** — {picks_rule()}", ""]
@@ -1122,8 +1518,10 @@ def build_outputs(today_rows, all_rows, hist):
                                  + [f"{st} {counts[st]} (drive radius)"
                                     for st in radius_states]
                                  + [f"beyond driving range {n_out}"])
+            mline = market_line(m_entry["market"])
             sec += [f"_{len(listings)} vehicles across {len(trims)} "
-                    f"trim{'s' if len(trims) != 1 else ''} · {summary}_", ""]
+                    f"trim{'s' if len(trims) != 1 else ''} · {summary}_"
+                    + (f"\n_{mline}_" if mline else ""), ""]
             rows_by_vin = {r["vin"]: r for r in display}
             for t in trims:
                 tl = [x for x in m_entry["listings"] if x["trim_id"] == t["id"]]
@@ -1133,7 +1531,12 @@ def build_outputs(today_rows, all_rows, hist):
                 trim_detail(sec, t, tl, rows_by_vin, hist, m_entry["gone"], prev_day)
             full += sec
 
-    report = [f"# {APP} — {TODAY}", ""] + full
+    scored_by_vin = {str(p["vin"]).upper(): p for p in all_scored}
+    today_sec, subject = build_today(events)
+    report = ([f"# {APP} — {TODAY}", ""]
+              + shortlist_section(live_by_vin, gone_by_vin, scored_by_vin)
+              + today_sec
+              + full)
     top_local, top_ship = split_picks(all_scored, PICKS.get("count", 4),
                                       PICKS.get("per_model", 2))
     if top_local or top_ship:
@@ -1156,10 +1559,10 @@ def build_outputs(today_rows, all_rows, hist):
     report += ["---",
                f"_{len(hist)} vehicle histories across {len(days)} "
                f"day{'s' if len(days) != 1 else ''} · {CALLS} API calls today._"]
-    return "\n".join(report), site
+    return "\n".join(report), site, subject
 
 
-def send_email(report):
+def send_email(report, subject=None):
     key = os.environ.get("RESEND_API_KEY")
     to = os.environ.get("EMAIL_TO")
     if not (key and to):
@@ -1170,7 +1573,7 @@ def send_email(report):
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {key}"},
             json={"from": f"{APP} <onboarding@resend.dev>", "to": [to],
-                  "subject": f"{APP} — {TODAY}", "text": report},
+                  "subject": subject or f"{APP} — {TODAY}", "text": report},
             timeout=30)
         print(f"Email: HTTP {r.status_code}")
     except requests.RequestException as e:
@@ -1201,9 +1604,15 @@ def main():
         raw_n = 0
         sorts, pages = sorts_pages(t)
         for source_name, source in SOURCES:
-            for sort in sorts:
+            for si, sort in enumerate(sorts):
+                if si and (tid, source_name) in EXHAUSTED:
+                    break   # the first sort already returned this scope's
+                            # entire result set; another sort re-fetches it
                 for page in range(1, pages + 1):
                     batch = fetch(source_name, source, sort, page, t)
+                    if batch is None:
+                        break   # failed even after the retry: keep what we
+                                # have, and never call this scope exhausted
                     raw_n += len(batch)
                     for rec in batch:
                         n = normalize(rec, t, dropped)
@@ -1218,33 +1627,69 @@ def main():
                         if cur is None or n["price"] < to_int(cur["price"]):
                             rows[key] = n
                     if len(batch) < PER_PAGE:
-                        break   # short page: nothing further for this sort
+                        # a short page means the query returned everything in
+                        # its scope — the sort order cannot change the set
+                        EXHAUSTED.add((tid, source_name))
+                        break
+            # newest-first pages: catch cars listed since the last run before
+            # they ever rank among the cheapest. An exhausted scope was
+            # already fetched in full, so newest would only repeat it.
+            for page in range(1, t["newest"] + 1):
+                if (tid, source_name) in EXHAUSTED:
+                    break
+                batch = fetch(source_name, source, NEWEST_SORT, page, t)
+                if batch is None:
+                    break
+                raw_n += len(batch)
+                for rec in batch:
+                    n = normalize(rec, t, dropped)
+                    if not n:
+                        continue
+                    key = (tid, n["vin"])
+                    cur = rows.get(key)
+                    if cur is None or n["price"] < to_int(cur["price"]):
+                        rows[key] = n
+                if len(batch) < PER_PAGE:
+                    EXHAUSTED.add((tid, source_name))
+                    break
         kept = sum(1 for k in rows if k[0] == tid)
         print(f"{tid}: {raw_n} raw -> {kept} kept")
     if dropped:
         print("Dropped: " + ", ".join(f"{k} x{v}" for k, v in dropped.items()))
-    print(f"API calls made: {CALLS}")
+    print(f"API calls made: {CALLS}"
+          + (f" · {FAILED_FETCHES} failed after retry" if FAILED_FETCHES else "")
+          + (f" · {len(EXHAUSTED)} exhaustive queries" if EXHAUSTED else ""))
     print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "
           f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
     save_zip_cache()
 
     today_rows = list(rows.values())
     if not today_rows:
-        sys.exit("No listings fetched for any target — "
-                 "leaving data, report and site untouched.")
+        msg = ("No listings fetched for any target — "
+               "leaving data, report and site untouched.")
+        send_email(msg, subject=f"{APP} — run FAILED {TODAY}")
+        sys.exit(msg)
 
     history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY]
     all_rows = history_rows + today_rows
     write_rows(all_rows)
 
     hist = build_history(all_rows)
-    report, site = build_outputs(today_rows, all_rows, hist)
+    report, site, subject = build_outputs(today_rows, all_rows, hist)
 
     Path("REPORT.md").write_text(report)
     (DOCS / "data.json").write_text(json.dumps(site, indent=1))
     print("\n" + report)
-    send_email(report)
+    print(f"\nSubject: {subject}")
+    send_email(report, subject=subject)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:      # a silent dead tracker looks like a quiet market
+        send_email(f"The daily run crashed before finishing:\n\n{e!r}",
+                   subject=f"{APP} — run FAILED {TODAY}")
+        raise

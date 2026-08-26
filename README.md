@@ -54,10 +54,12 @@ Two things are configured, separately:
 **It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
 each. So each target is fetched twice — once filtered to the buyer's states plus `search_states`
 (the API takes a comma list, so eight states cost one call) and once nationally — and each target
-has a *depth* (the two being shopped get every sort, three and two pages; the rest get the cheapest
-20) and a *cadence*: BMW siblings run every other day, rival brands every third day, spread evenly
-across the cycle in watchlist order. A hard `budget_per_day` makes the script refuse to run if any
-day in the next two weeks would exceed it, and it prints the plan before it starts.
+has a *depth* (the two being shopped get both sorts at two pages **plus a newest-first page**, so a
+fresh listing is seen the day it appears instead of whenever it ranks among the cheapest; the rest
+get the cheapest 20) and a *cadence*: BMW siblings run every other day, rival brands every third
+day, spread evenly across the cycle in watchlist order. A hard `budget_per_day` makes the script
+refuse to run if any day in the next two weeks would exceed it, and it prints the plan before it
+starts.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
@@ -72,17 +74,23 @@ involved — *or* when its distance from home (null island caught, zip-code fall
 inside the drive radius. The state check runs first, so a car that cannot be placed on the map
 still lands in the right bucket. *Use the field that means the thing.*
 
-**Published distances are deliberately coarse.** Every listing's distance from home appears in
-public outputs; exact values could be triangulated back to the home the `BUYER_HOME_ZIP` secret
-keeps out of the repo. Distances are rounded to 25 miles everywhere — precise enough to price
-shipping and judge a drive, too blunt to locate a house.
+**Distances measure from a public anchor, not the home.** Every listing's distance appears in
+public outputs, and a distance is an exact constraint: hundreds of dealer coordinates plus a
+distance each overdetermine the origin, so distances measured from a private home zip can be
+trilaterated back to the house no matter how they are rounded (the shipping dollars leak the same
+signal at `ship ÷ rate`). So `buyer.anchor` is a public point — downtown Chicago, whose name the
+config publishes anyway — and every distance, shipping estimate and the drive radius measure from
+it. Nothing private feeds any output. The old `BUYER_HOME_ZIP` secret still works as a fallback
+for anyone who accepts that trade. Distances are also rounded to 25 miles: they are estimates for
+judging a drive, not measurements.
 
 **Buyer and watchlist are separate.** Cost model and geography belong to a person; brands and trims
 belong to the market. Keeping them apart is what makes the second buyer an addition, not a rewrite.
 
-**Nothing to operate.** A scheduled Action, a CSV rewritten in place each run (so a same-day re-run
-replaces rather than duplicates), a static dashboard that reads one JSON file, and a design system
-loaded live from its own repo's Pages so the app restyles itself when the system updates.
+**Nothing to operate.** A scheduled Action (with a concurrency guard, and a rebase-and-retry push
+so a busy `main` can never cost a day's snapshot), a CSV rewritten in place each run (so a same-day
+re-run replaces rather than duplicates), a static dashboard that reads one JSON file, and the
+SpicyChicken design system pinned at v2.1.0 via jsDelivr.
 
 ## Architecture
 
@@ -122,9 +130,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 
 ## Run it yourself
 
-1. Fork. Add repository secrets: `AUTODEV_API_KEY` (required), `BUYER_HOME_ZIP` (the buyer's zip —
-   it stays out of the repo and out of every output), and `RESEND_API_KEY` + `EMAIL_TO` if you want
-   the email.
+1. Fork. Add repository secrets: `AUTODEV_API_KEY` (required), and `RESEND_API_KEY` + `EMAIL_TO`
+   if you want the email (the email also warns you when a run fails). Set `buyer.anchor` in
+   `targets.json` to your city's coordinates — distances measure from there.
 2. Settings → Pages → *Deploy from a branch* → `main` → `/docs`.
 3. Edit `targets.json`: your `buyer`, your `watchlist`. The Action runs at 11:00 UTC and can be
    started by hand from the Actions tab.
@@ -138,14 +146,15 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 
 | Key | Meaning |
 |---|---|
-| `home_zip` | Where the car ends up; distances are measured from here. Leave it `null` and set the `BUYER_HOME_ZIP` repository secret instead — the tracker reads it from the environment, never caches it, and never writes it to any output. |
+| `anchor` | `[lat, lon]` of a **public** point distances measure from — your city centre, not your house. Committed on purpose: published distances from a private point can be trilaterated back to it. Legacy: leave it out and set the `BUYER_HOME_ZIP` secret instead, accepting that exposure. |
 | `states` | Two-letter codes. Listings in these states are drivable: no shipping. |
-| `drive_hours` | Anything within this many hours' drive of home is also drivable, whatever its state. An hour counts as 55 straight-line miles (interstate speed less road curvature); needs the home zip to be set. |
+| `drive_hours` | Anything within this many hours' drive of the anchor is also drivable, whatever its state. An hour counts as 55 straight-line miles (interstate speed less road curvature). |
 | `search_states` | Extra states included in the state-filtered API query because parts of them sit inside the drive radius (for Chicago: MI, IA, MO, KY). A comma list is one call, so they cost nothing. |
 | `ship_per_mile`, `ship_min` | Shipping estimate for everything else: `max(ship_min, distance × ship_per_mile)`. Set `ship_per_mile` to `null` for a flat rate. |
 | `ship_cost` | Flat shipping, used when distance is unknown or `ship_per_mile` is off. |
 | `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
 | `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full; every other model is a one-line comparison. |
+| `shortlist` | The specific cars being decided on, by VIN: `["WBY33FK09RCR29277", {"vin": "…", "note": "called dealer 8/25"}]`. They open the report and pin to the dashboard's front page with price, movement and your note — and say loudly when one is cut, or gone. |
 | `picks` | How the spicy picks are chosen: `count` (per list), `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own model — never a separate local median — then split into two lists: within driving range, and worth the ship. Only cars genuinely under typical qualify. Shown at asking price. |
 
 ### watchlist
@@ -167,6 +176,7 @@ Parameters resolve trim ← model ← brand ← defaults:
 | `depth` | `light` (1 call per source) or `full` (`sorts` × `pages` calls per source) |
 | `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked "as of" |
 | `sorts`, `pages` | what `full` depth fetches (defaults: `price.asc` + `miles.asc`, 2 pages) |
+| `newest` | extra newest-first (`createdAt.desc`) pages per source, so brand-new listings are caught the day they list. On for the shopped targets; new cars lead their report section as **New today**. Skipped automatically when a query already returned its whole scope. |
 | `years` | model years; sent as a range and also filtered client-side |
 
 A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as
