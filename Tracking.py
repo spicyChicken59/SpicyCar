@@ -9,15 +9,17 @@ Two things are configured, separately:
              (id "brand-model-trim").
 
 Every target is fetched twice on its day: once filtered to the buyer's
-states (one call, the API takes a comma list) and once nationally. A
-target's cadence (1 = daily, 2 = every other day, ...) spreads the
-comparison brands across days so the whole watchlist fits the API plan;
-buyer.shopping names the targets that lead the report in full, while the
-rest get one line each. A listing is
-"in-state" when its own state field is one of the buyer's states — no
-coordinates involved, so listings the API could not geocode still land in
-the right bucket. Coordinates are only used for the distance from home,
-which prices shipping for out-of-state cars.
+states plus search_states (one call, the API takes a comma list) and once
+nationally. A target's cadence (1 = daily, 2 = every other day, ...)
+spreads the comparison brands across days so the whole watchlist fits the
+API plan; buyer.shopping names the targets that lead the report in full,
+while the rest get one line each. A listing is
+"drivable" — no shipping — when its own state field is one of the buyer's
+states (no coordinates involved, so listings the API could not geocode
+still land in the right bucket), or when it sits within drive_hours of
+home. search_states widens the query net to neighbouring states that are
+partially inside that radius. Coordinates otherwise price shipping, from
+the distance to home.
 """
 
 import csv
@@ -44,6 +46,11 @@ APP = "SpicyCar"
 CFG = json.loads(Path("targets.json").read_text())
 BUYER = CFG.get("buyer", {})
 STATES = [str(s).strip().upper() for s in BUYER.get("states", [])]
+# The query net: the buyer's states plus neighbours partially within the
+# drive radius (search_states). One comma list, so the extras cost nothing.
+SEARCH_STATES = STATES + [s for s in
+                          (str(x).strip().upper() for x in BUYER.get("search_states", []))
+                          if s and s not in STATES]
 SHOPPING = [str(s) for s in BUYER.get("shopping", [])]   # target ids being shopped
 PICKS = BUYER.get("picks", {})                            # how "our picks" are chosen
 TODAY_ORD = date.fromisoformat(TODAY).toordinal()
@@ -126,9 +133,10 @@ def build_targets():
 
 TARGETS = build_targets()
 # Each source is a dict of extra query params. The States source asks the
-# API for the buyer's states directly (comma = OR), one call per sort/page.
-SOURCES = ([("States", {"retailListing.state": ",".join(STATES)})] if STATES
-           else []) + [("National", None)]
+# API for the buyer's states and search_states directly (comma = OR), one
+# call per sort/page.
+SOURCES = ([("States", {"retailListing.state": ",".join(SEARCH_STATES)})]
+           if SEARCH_STATES else []) + [("National", None)]
 
 
 def sorts_pages(t):
@@ -301,11 +309,23 @@ if not coords_ok(*HOME):
     print("  ! home zip missing or could not be located — distances unavailable, "
           "flat ship_cost applies (set the BUYER_HOME_ZIP secret)")
 
+# "Drivable" reaches beyond the state list: anything within drive_hours of
+# home costs nothing to ship either. Straight-line miles understate road
+# miles, so an hour of driving counts as 55 straight-line miles (~65 mph on
+# the interstate, less the winding of real roads).
+DRIVE_HOURS = to_float(BUYER.get("drive_hours")) or 0
+DRIVE_RADIUS = int(round(DRIVE_HOURS * 55))
+if DRIVE_RADIUS and not coords_ok(*HOME):
+    print("  ! drive_hours is set but home is unknown — "
+          "drivable falls back to the state list alone")
+
 
 def dist_home(lat, lon):
-    """Whole miles from the buyer's home, or None."""
+    """Miles from the buyer's home, or None. Rounded to 25 because the
+    outputs are public: exact per-listing distances could be triangulated
+    back to the home the README promises to keep private."""
     if coords_ok(lat, lon) and coords_ok(*HOME):
-        return int(round(haversine(lat, lon, HOME[0], HOME[1])))
+        return max(25, int(round(haversine(lat, lon, HOME[0], HOME[1]) / 25) * 25))
     return None
 
 
@@ -317,8 +337,24 @@ def row_distance(r):
 
 
 def in_scope(r):
-    """In one of the buyer's states: drivable, no shipping."""
-    return str(r.get("state", "")).strip().upper() in STATES
+    """Drivable, so no shipping: in one of the buyer's states, or within the
+    drive radius of home. State is checked first — listings the API could
+    not geocode still land in the right bucket."""
+    if str(r.get("state", "")).strip().upper() in STATES:
+        return True
+    if DRIVE_RADIUS:
+        d = row_distance(r)
+        return d is not None and d <= DRIVE_RADIUS
+    return False
+
+
+def scope_label():
+    """The one phrase that says what "drivable" means for this buyer."""
+    states = "/".join(STATES)
+    if DRIVE_RADIUS:
+        drive = f"a {DRIVE_HOURS:g}h drive of home"
+        return f"{states} or {drive}" if states else drive
+    return states or "your states"
 
 
 def ship_for(r):
@@ -408,6 +444,8 @@ def score_picks(listings, model_label):
 def choose_picks(scored, n, per_model=None):
     out, per = [], Counter()
     for p in sorted(scored, key=lambda p: -p["pick_pct"]):
+        if p["pick_pct"] <= 0:
+            break    # sorted, so nothing after this is under typical either
         if per_model and per[p["model_label"]] >= per_model:
             continue
         out.append(p)
@@ -417,11 +455,19 @@ def choose_picks(scored, n, per_model=None):
     return out
 
 
+def split_picks(scored, n, per_model=None):
+    """Two lists under the same rule: drivable picks, and worth-the-ship
+    picks from everywhere else. Scoring stays within-model across the whole
+    market, so a drivable pick means the same thing as a national one."""
+    return (choose_picks([p for p in scored if p.get("local")], n, per_model),
+            choose_picks([p for p in scored if not p.get("local")], n, per_model))
+
+
 def fmt_pick(p):
     bits = [f"**{money(to_int(p['price']))}**", p["model_label"], str(p.get("year", ""))]
     if to_int(p.get("miles")) is not None:
         bits.append(f"{to_int(p['miles']):,} mi")
-    bits.append("no shipping" if p.get("local") else
+    bits.append("drivable · no shipping" if p.get("local") else
                 (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
     bits.append(f"{p.get('city', '')}, {p.get('state', '')}")
     line = "- " + " · ".join(b for b in bits if b)
@@ -681,7 +727,7 @@ def fmt_row(r, s):
     where = f"{r['year']} · {r['city']}, {r['state']}"
     d = row_distance(r)
     if d is not None:
-        where += f" · {d:,} mi from home"
+        where += f" · ~{d:,} mi from home"
     bits.append(where)
     out = "- " + " · ".join(str(b) for b in bits)
     tags = []
@@ -748,9 +794,10 @@ def delisted(tids, all_rows, today_rows, hist):
         adj, ship = landed(r)
         t = TARGETS[tid]
         last_price = to_int(r["price"])
-        # an in-state car comes back through either query, so it is only
-        # out of window when it is above both cut-offs
-        keys = ["States", "National"] if in_scope(r) else ["National"]
+        # a car in a queried state comes back through either query, so it is
+        # only out of window when it is above both cut-offs
+        keys = (["States", "National"] if r["state"] in SEARCH_STATES
+                else ["National"])
         cutoffs = [c for c in (window_max.get((tid, k)) for k in keys)
                    if c is not None]
         cutoff = max(cutoffs) if cutoffs else None
@@ -842,17 +889,17 @@ def brief_lines(m_entry, listings, prev_day):
     local = [x for x in priced if x["local"]]
     if local:
         b = local[0]
-        out.append(f"- Lowest asking in {'/'.join(STATES)} **{money(b['price'])}** "
+        out.append(f"- Lowest drivable **{money(b['price'])}** "
                    f"({b['city']}, {b['state']}) · no shipping")
-    elif STATES:
-        out.append(f"- Nothing in {'/'.join(STATES)}")
+    elif STATES or DRIVE_RADIUS:
+        out.append(f"- Nothing drivable ({scope_label()})")
     movers = sum(1 for x in listings if len(x["series"]) >= 2
                  and x["series"][-1][1] != x["series"][-2][1])
     new = sum(1 for x in listings if x["days_tracked"] == 1) if prev else 0
     gone = sum(1 for g in m_entry["gone"]
                if g["last_seen"] == prev_day and g["likely"] == "delisted")
     line = (f"- {len(listings)} on the market · "
-            f"{sum(1 for x in listings if x['local'])} in-state")
+            f"{sum(1 for x in listings if x['local'])} drivable")
     if prev_day:
         line += (f" · {movers} price change{'s' if movers != 1 else ''} · "
                  f"{new} new · {gone} gone")
@@ -888,20 +935,24 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
                        f"{g['city']}, {g['state']} · tracked "
                        f"{g['days_tracked']}d `{g['vin']}`")
         sec.append("")
-    if STATES and not any(x["local"] for x in tl):
-        sec += [f"_Nothing in {'/'.join(STATES)}._", ""]
-    for st in STATES:
+    if (STATES or DRIVE_RADIUS) and not any(x["local"] for x in tl):
+        sec += [f"_Nothing drivable ({scope_label()})._", ""]
+    # the buyer's states in their configured order, then any state a car is
+    # drivable from only because of the drive radius
+    local_states = ([st for st in STATES if any(
+        x["local"] and x["state"] == st for x in tl)]
+        + sorted({x["state"] for x in tl if x["local"]} - set(STATES)))
+    for st in local_states:
         in_st = [x for x in tl if x["local"] and x["state"] == st]
-        if not in_st:
-            continue
-        sec.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**")
+        sec.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**"
+                   + ("" if st in STATES else " — within the drive radius"))
         for x in in_st:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
                                summarize((t["id"], x["vin"]), hist)))
         sec.append("")
     best5 = [x for x in tl if x["price"] is not None and not x["local"]][:5]
     if best5:
-        sec.append("**Cheapest out of state (shipping stated)**")
+        sec.append("**Cheapest beyond driving range (shipping stated)**")
         for x in best5:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
                                summarize((t["id"], x["vin"]), hist)))
@@ -919,14 +970,14 @@ def compact_line(m_entry, label):
     else:
         priced = [x for x in xs if x["price"] is not None]    # sorted by asking
         local = [x for x in priced if x["local"]]
-        bits = [f"{len(xs)} cars", f"{sum(1 for x in xs if x['local'])} in-state"]
+        bits = [f"{len(xs)} cars", f"{sum(1 for x in xs if x['local'])} drivable"]
         if priced:
             b = priced[0]
             bits.append(f"lowest asking {money(b['price'])} ({b['city']}, {b['state']})"
                         + (f" + {money(b['ship'])} shipping"
                            if (not b["local"] and b["ship"]) else ""))
         if local:
-            bits.append(f"in-state from {money(local[0]['price'])} "
+            bits.append(f"drivable from {money(local[0]['price'])} "
                         f"({local[0]['city']}, {local[0]['state']})")
         if priced:
             bits.append(f"median asking {money(int(median([x['price'] for x in priced])))}")
@@ -947,6 +998,10 @@ def build_outputs(today_rows, all_rows, hist):
             "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
             "states": STATES,
             "state_names": {s: STATE_NAMES.get(s, s) for s in STATES},
+            "search_states": SEARCH_STATES,
+            "drive_hours": DRIVE_HOURS or None,
+            "drive_radius_miles": DRIVE_RADIUS or None,
+            "scope_label": scope_label(),
             "shopping": SHOPPING,
             "picks": {"count": PICKS.get("count", 4), "per_model": PICKS.get("per_model", 2),
                       "max_miles": PICKS.get("max_miles", 50000),
@@ -1031,14 +1086,24 @@ def build_outputs(today_rows, all_rows, hist):
             if as_of != TODAY:
                 sec += [f"_Not fetched today — showing {as_of}._", ""]
             sec += brief_lines(m_entry, m_entry["listings"], prev_day) + [""]
-            picks = choose_picks(scored, PICKS.get("count", 4))
-            if picks:
+            local_picks, ship_picks = split_picks(scored, PICKS.get("count", 4))
+            if local_picks or ship_picks:
                 sec += [f"**Spicy picks** — {picks_rule()}", ""]
-                sec += [fmt_pick(p) for p in picks] + [""]
+                if local_picks:
+                    sec += [f"_Within driving range ({scope_label()}):_", ""]
+                    sec += [fmt_pick(p) for p in local_picks] + [""]
+                else:
+                    sec += [f"_Nothing drivable qualifies yet ({scope_label()})._", ""]
+                if ship_picks:
+                    sec += ["_Worth the ship:_", ""]
+                    sec += [fmt_pick(p) for p in ship_picks] + [""]
             counts = Counter(x["state"] for x in listings if x["local"])
             n_out = sum(1 for x in listings if not x["local"])
+            radius_states = sorted(set(counts) - set(STATES))
             summary = " · ".join([f"{st} {counts.get(st, 0)}" for st in STATES]
-                                 + [f"out of state {n_out}"])
+                                 + [f"{st} {counts[st]} (drive radius)"
+                                    for st in radius_states]
+                                 + [f"beyond driving range {n_out}"])
             sec += [f"_{len(listings)} vehicles across {len(trims)} "
                     f"trim{'s' if len(trims) != 1 else ''} · {summary}_", ""]
             rows_by_vin = {r["vin"]: r for r in display}
@@ -1051,15 +1116,23 @@ def build_outputs(today_rows, all_rows, hist):
             full += sec
 
     report = [f"# {APP} — {TODAY}", ""] + full
-    top = choose_picks(all_scored, PICKS.get("count", 4), PICKS.get("per_model", 2))
-    if top:
+    top_local, top_ship = split_picks(all_scored, PICKS.get("count", 4),
+                                      PICKS.get("per_model", 2))
+    if top_local or top_ship:
         report += ["## Spicy picks across the watchlist", "",
                    f"_{picks_rule()}. Asking prices shown._", ""]
-        report += [fmt_pick(p) for p in top] + [""]
+        if top_local:
+            report += [f"### Within driving range — {scope_label()}", ""]
+            report += [fmt_pick(p) for p in top_local] + [""]
+        else:
+            report += [f"_Nothing drivable qualifies yet ({scope_label()})._", ""]
+        if top_ship:
+            report += ["### Worth the ship — nationwide", ""]
+            report += [fmt_pick(p) for p in top_ship] + [""]
     if compact:
         report += ["## Comparison", "",
                    "_By asking price, shipping stated per car, on a slower cadence: "
-                   f"the cheapest 20 in {'/'.join(STATES) or 'your states'} and the "
+                   f"the cheapest 20 in {'/'.join(SEARCH_STATES) or 'your states'} and the "
                    "cheapest 20 nationwide per model. Every car is on the dashboard._", ""]
         report += compact + [""]
     report += ["---",

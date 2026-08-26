@@ -6,10 +6,10 @@
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#111F31">
 <title>SpicyCar</title>
-<meta name="description" content="SpicyCar — a used-car purchase analyzer. Every model on the watchlist, snapshotted daily, with asking prices, shipping stated, and the cheapest cars nationwide and in your states.">
+<meta name="description" content="SpicyCar — a used-car purchase analyzer. Every model on the watchlist, snapshotted daily, with asking prices, shipping stated, and the cheapest cars nationwide and within driving range.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="SpicyCar — used-car purchase analyzer">
-<meta property="og:description" content="Every model on the watchlist, snapshotted daily: asking prices, shipping stated per car, the cheapest nationwide and in-state, and how each model moves over time. Built on the free tier of one API and GitHub Actions.">
+<meta property="og:description" content="Every model on the watchlist, snapshotted daily: asking prices, shipping stated per car, the cheapest nationwide and within driving range, and how each model moves over time. Built on the free tier of one API and GitHub Actions.">
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
@@ -36,6 +36,8 @@
   .takeaway-col .sc-media { align-items: flex-start; }
   .takeaway-col .sc-media__body > :last-child { margin-bottom: 0; }
   .picks-grid { grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); }   /* two picks per row on a desktop, one on a phone */
+  .picks-group + .picks-group { margin-top: 18px; }
+  .picks-group .sc-eyebrow { margin-bottom: 10px; }
   .with-mark { display: flex; align-items: center; gap: 8px; }        /* a label or card head that carries the chick beside its text */
   .with-mark img.sc-mark { height: 18px; }
   #notes-grid ul { margin: 0; padding-left: 18px; }
@@ -113,6 +115,7 @@
       <select class="sc-select" id="f-sort">
         <option value="price">Asking price</option>
         <option value="landed">Asking + shipping</option>
+        <option value="value">Best value vs typical</option>
         <option value="miles">Miles</option>
         <option value="delta">Biggest price drop</option>
         <option value="days_listed">Longest on market</option>
@@ -169,7 +172,7 @@
   <div class="sc-callout sc-callout--spice">
     <div class="sc-callout__label">next</div>
     <div class="sc-callout__figure">See how the numbers are made</div>
-    <p>Asking prices as listed, shipping stated per car, and why in-state beat a radius. <a href="how.html">How it works →</a></p>
+    <p>Asking prices as listed, shipping stated per car, and what counts as drivable. <a href="how.html">How it works →</a></p>
   </div>
 </main>
 
@@ -241,9 +244,13 @@
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
   // Asking plus the stated shipping estimate — never less than asking. Computed here so it never depends on the data's vintage.
   const landed = (x) => (hasPrice(x) ? x.price + (x.local ? 0 : (x.ship || 0)) : null);
-  const shipNote = (x) => (x.local ? 'in-state · no shipping' : (x.ship ? `+ ${money(x.ship)} shipping = ${money(landed(x))}` : 'shipping estimate n/a'));
+  const shipNote = (x) => (x.local ? 'drivable · no shipping' : (x.ship ? `+ ${money(x.ship)} shipping = ${money(landed(x))}` : 'shipping estimate n/a'));
   function lowestBy(arr, key) { let best = null; for (const x of arr) { const v = x[key]; if (v === null || v === undefined) continue; if (!best || v < best[key]) best = x; } return best; }
   function statesTxt() { return (((S.site || {}).buyer || {}).states || []).join('/') || 'your states'; }
+  // What "drivable" means for this buyer, e.g. "IL/OH/IN/WI or a 5h drive of home".
+  function scopeTxt() { return (((S.site || {}).buyer || {}).scope_label) || statesTxt(); }
+  // Listing URLs and images come from the API — only ever follow real web addresses.
+  const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null);
 
   // ---------- our picks: best value, not lowest price ----------
   // Eligible cars are ranked by how far under the typical (median) value of their own model they sit,
@@ -266,6 +273,7 @@
   function choosePicks(scored, n, perModel) {
     const out = [], per = {};
     for (const p of scored.slice().sort((a, b) => b.pct - a.pct)) {
+      if (p.pct <= 0) break;   // a pick must actually sit under typical
       if (perModel && (per[p.modelLabel] || 0) >= perModel) continue;
       out.push(p); per[p.modelLabel] = (per[p.modelLabel] || 0) + 1;
       if (out.length >= n) break;
@@ -417,6 +425,14 @@
     return out;
   }
 
+  // Every eligible listing gets its within-model value score, so "best value
+  // vs typical" is sortable and the discount shows on the row itself.
+  function annotateValue(site) {
+    for (const b of Object.values(site.brands || {})) for (const m of Object.values(b.models || {})) {
+      for (const p of scorePicks(m.listings || [], m.label || '')) p.x.pick_pct = p.pct;
+    }
+  }
+
   // A data.json written before the buyer/state model carries per-market fields instead; map them so the page keeps working until the next run.
   function adapt(site) {
     site.app = site.app || 'SpicyCar';
@@ -439,12 +455,17 @@
     let rows = trimRows(t.listings || []);
     if (S.scope === 'local') rows = rows.filter(isLocal);
     else if (S.scope === 'national') rows = rows.filter((x) => !x.local);
-    else if (S.scope !== 'all') rows = rows.filter((x) => (x.state || '').toUpperCase() === S.scope);
+    else if (S.scope !== 'all') {
+      // a buyer state shows every car there; a drive-radius state only its drivable ones
+      const core = (((S.site || {}).buyer || {}).states || []).includes(S.scope);
+      rows = rows.filter((x) => (x.state || '').toUpperCase() === S.scope && (core || x.local));
+    }
     rows = applyShared(rows);
     const big = 1e12;
     const keyFns = {
       price: (x) => x.price ?? big,
       landed: (x) => landed(x) ?? big,
+      value: (x) => (x.pick_pct == null ? big : -x.pick_pct),
       miles: (x) => x.miles ?? big,
       delta: (x) => (x.delta ?? 0),
       days_listed: (x) => -(x.days_listed ?? -1),
@@ -465,13 +486,33 @@
 
   // ---------- navigation ----------
   function brandLabel(id) { return id === 'all' ? 'All' : (S.site.brands[id].label || id); }
+  // The address bar follows the view, so the back button and a shared link both work.
+  function syncUrl(replace) {
+    const q = new URLSearchParams();
+    if (S.brand !== 'all') { q.set('brand', S.brand); if (S.model) q.set('m', S.model); }
+    history[replace ? 'replaceState' : 'pushState'](null, '', location.pathname + (q.toString() ? '?' + q : ''));
+  }
+  // ?brand=bmw opens a brand; ?m=i5 names its model; ?model=bmw-i5-edrive40 opens the model that trim belongs to.
+  function applyUrl() {
+    const q = new URLSearchParams(location.search);
+    const wantBrand = q.get('brand'), wantModel = q.get('model'), wantM = q.get('m');
+    S.brand = 'all'; S.model = null;
+    if (wantModel) {
+      for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if ((m.trims || {})[wantModel]) { S.brand = bk; S.model = mk; }
+    } else if (wantBrand && S.site.brands[wantBrand]) {
+      const models = S.site.brands[wantBrand].models || {};
+      S.brand = wantBrand;
+      S.model = (wantM && models[wantM]) ? wantM : Object.keys(models)[0];
+    }
+    S.trim = 'all'; S.scope = 'all'; S.year = 'all';
+  }
   function pickBrand(id) {
     S.brand = id;
     if (id !== 'all') S.model = Object.keys(S.site.brands[id].models)[0];
     S.trim = 'all'; S.scope = 'all'; S.year = 'all';
-    buildFilters(); render();
+    syncUrl(); buildFilters(); render();
   }
-  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.scope = 'all'; buildFilters(); render(); window.scrollTo(0, 0); }
+  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.scope = 'all'; syncUrl(); buildFilters(); render(); window.scrollTo(0, 0); }
   function segment(host, ids, current, labelOf, caseClass, onPick) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
@@ -483,9 +524,9 @@
     bits.filter(Boolean).forEach((b, i) => { if (i) meta.appendChild(el('span', { class: 'sc-sep' }, '·')); meta.appendChild(el('span', null, b)); });
   }
   function shippingSentence() {
-    const buyer = S.site.buyer || {}, st = statesTxt();
-    if (buyer.ship_per_mile) return `Shipping is estimated at $${Number(buyer.ship_per_mile).toFixed(2)}/mi${buyer.ship_min ? ` (min ${money(buyer.ship_min)})` : ''} for cars outside ${st} and stated on every car.`;
-    if (buyer.ship_cost) return `Shipping is estimated at ${money(buyer.ship_cost)} for cars outside ${st} and stated on every car.`;
+    const buyer = S.site.buyer || {}, st = scopeTxt();
+    if (buyer.ship_per_mile) return `Shipping is estimated at $${Number(buyer.ship_per_mile).toFixed(2)}/mi${buyer.ship_min ? ` (min ${money(buyer.ship_min)})` : ''} for cars beyond ${st} and stated on every car.`;
+    if (buyer.ship_cost) return `Shipping is estimated at ${money(buyer.ship_cost)} for cars beyond ${st} and stated on every car.`;
     return '';
   }
 
@@ -493,7 +534,7 @@
   // The photo slot. alts are other photos to fall through to if a dealer's image will not load (a model row, never a specific car).
   function thumbFor(x, large, alts) {
     const cls = 'sc-frame' + (large ? ' sc-frame--lg' : '');
-    const queue = [x && x.image, ...(alts || [])].filter((u, i, a) => u && a.indexOf(u) === i);
+    const queue = [x && x.image, ...(alts || [])].map(safeUrl).filter((u, i, a) => u && a.indexOf(u) === i);
     if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, 'no photo');
     const img = el('img', { class: cls, src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
     const next = () => { if (queue.length) img.src = queue.shift(); else img.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, 'no photo')); };
@@ -518,8 +559,8 @@
   }
   function quietLinks(x, inline) {
     const links = el(inline ? 'span' : 'div', { class: 'sc-media__links' + (inline ? ' sc-right' : '') });
-    if (x.url) links.appendChild(el('a', { class: 'sc-link--quiet', href: x.url, target: '_blank', rel: 'noopener' }, 'Listing ↗'));
-    if (x.carfax) links.appendChild(el('a', { class: 'sc-link--quiet', href: x.carfax, target: '_blank', rel: 'noopener' }, 'Carfax ↗'));
+    if (safeUrl(x.url)) links.appendChild(el('a', { class: 'sc-link--quiet', href: safeUrl(x.url), target: '_blank', rel: 'noopener' }, 'Listing ↗'));
+    if (safeUrl(x.carfax)) links.appendChild(el('a', { class: 'sc-link--quiet', href: safeUrl(x.carfax), target: '_blank', rel: 'noopener' }, 'Carfax ↗'));
     return links;
   }
   // Price movement: a cut is a good delta (▼), a rise since first seen a bad one (▲), first appearance a spice chip.
@@ -529,16 +570,16 @@
     if (x.days_tracked === 1 && daily.length >= 2) return el('div', null, el('span', { class: 'sc-chip sc-chip--spice' }, 'new'));
     return null;
   }
-  const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'In one of your states — no shipping' : 'Out of state — shipping added' }, (x.state || '—').toUpperCase());
+  const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Beyond driving range — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
 
   // One pick: photo, asking price, the shipping line, why it is a pick, and the facts.
   function pickCard(p) {
     const b = p.x;
     const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
-    const where = `${b.city || '—'}, ${b.state || ''}${b.distance != null ? ` — ${num(b.distance)} mi from home` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
+    const where = `${b.city || '—'}, ${b.state || ''}${b.distance != null ? ` — ~${num(b.distance)} mi from home` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
     const para = el('p', null, `${facts}. ${where}. `);
-    if (b.url) para.appendChild(el('a', { href: b.url, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+    if (safeUrl(b.url)) para.appendChild(el('a', { href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Open the listing →'));
     return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, thumbFor(b, true), el('div', { class: 'sc-media__body' },
       el('div', { class: 'sc-callout__figure' }, `${money(b.price)} asking`),
       el('div', { class: 'sc-media__sub' }, shipNote(b)),
@@ -546,13 +587,22 @@
       el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${p.modelLabel}, miles allowed for`),
       para)));
   }
-  // Spicy picks, under the current filters — on the front page across every model, on a model view within it.
-  function renderPicks(picks) {
+  // Spicy picks, under the current filters, in two lists: drivable cars, then
+  // the rest of the country. Front page: across every model; model view: within it.
+  function renderPicks(scored, perModel) {
     const host = $('takeaway'); host.textContent = '';
-    if (!picks.length) { host.hidden = true; return; }
+    const P = pickParams();
+    const local = choosePicks(scored.filter((p) => p.x.local), P.count, perModel);
+    const far = choosePicks(scored.filter((p) => !p.x.local), P.count, perModel);
+    if (!local.length && !far.length) { host.hidden = true; return; }
+    const group = (label, picks, empty) => el('div', { class: 'picks-group' },
+      el('div', { class: 'sc-eyebrow' }, label),
+      picks.length ? el('div', { class: 'sc-grid picks-grid' }, ...picks.map(pickCard))
+                   : el('p', { class: 'sc-hint' }, empty));
     host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
       el('div', { class: 'sc-callout__label with-mark' }, 'spicy picks', markImg()),
-      el('div', { class: 'sc-grid picks-grid' }, ...picks.map(pickCard)),
+      group(`Within driving range — ${scopeTxt()}`, local, 'Nothing drivable qualifies yet — the best of the rest is below.'),
+      group('Worth the ship — nationwide', far, 'Nothing beyond driving range qualifies under these filters.'),
       el('p', { class: 'sc-hint' }, picksRule())));
     host.hidden = false;
   }
@@ -604,7 +654,7 @@
     ]);
     segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand);
     segment($('tabs'), modelIds, S.model, (id) => brand.models[id].label || id, true,
-      (id) => { S.model = id; S.trim = 'all'; S.scope = 'all'; S.year = 'all'; buildFilters(); render(); });
+      (id) => { S.model = id; S.trim = 'all'; S.scope = 'all'; S.year = 'all'; syncUrl(); buildFilters(); render(); });
   }
 
   function renderKpis(rows) {
@@ -631,7 +681,7 @@
     const local = rows.filter(isLocal).length;
     const tile3 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'),
       el('div', { class: 'sc-tile__value' }, String(rows.length)),
-      el('div', { class: 'sc-tile__sub' }, `${local} in ${statesTxt()} · ${rows.length - local} out of state`));
+      el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local} beyond driving range`));
     if (daily.length >= 2) tile3.appendChild(el('div', { class: 'sc-tile__spark' }, spark(daily.map((d) => d.n), 120, 26, true)));
     else tile3.appendChild(el('div', { class: 'sc-delta sc-delta--flat' }, 'trend appears after day 2'));
     host.appendChild(tile3);
@@ -649,7 +699,7 @@
     const t = model(), daily = dailyFor(t);
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'Asking price over time';
-    const scope = S.trim === 'all' ? 'all trims, in-state and out combined' : `${(t.trims[S.trim] || {}).label || 'this trim'}, in-state and out combined`;
+    const scope = S.trim === 'all' ? 'all trims, drivable and beyond combined' : `${(t.trims[S.trim] || {}).label || 'this trim'}, drivable and beyond combined`;
     $('chart-hint').textContent = daily.length >= 2
       ? `Lowest and median asking price on the market each day — ${scope}.`
       : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`;
@@ -661,10 +711,10 @@
     lineChart($('chart'), [
       { label: 'median asking', emphasis: false, points: daily.filter((d) => d.median_price != null).map((d) => ({ date: d.date, value: d.median_price })) },
       { label: 'lowest asking', emphasis: true, points: askingSeries(t, daily) },
-    ], { meta: (d) => { const x = byDate[d]; return x ? `${x.n} vehicle${x.n === 1 ? '' : 's'}${x.n_local ? ` · ${x.n_local} in-state` : ''}` : ''; } });
+    ], { meta: (d) => { const x = byDate[d]; return x ? `${x.n} vehicle${x.n === 1 ? '' : 's'}${x.n_local ? ` · ${x.n_local} drivable` : ''}` : ''; } });
     const tb = $('chart-table'); tb.textContent = '';
     const table = el('table', { class: 'sc-table sc-table--compact' }, el('thead', null, el('tr', null,
-      el('th', null, 'Day'), el('th', { class: 'sc-num' }, 'Vehicles'), el('th', { class: 'sc-num' }, 'In-state'),
+      el('th', null, 'Day'), el('th', { class: 'sc-num' }, 'Vehicles'), el('th', { class: 'sc-num' }, 'Drivable'),
       el('th', { class: 'sc-num' }, 'Lowest asking'), el('th', { class: 'sc-num' }, 'Median asking'))));
     const body = el('tbody');
     for (const d of daily.slice().reverse()) body.appendChild(el('tr', null,
@@ -686,7 +736,8 @@
   function listingCard(x, daily) {
     const trim = (x.trim || '').length > 22 ? (x.trim || '').slice(0, 22) + '…' : (x.trim || '');
     const aside = el('div', { class: 'sc-media__aside' }, el('div', { class: 'sc-figure' }, money(x.price)),
-      el('span', { class: 'sc-note' }, shipNote(x)), movement(x, daily));
+      el('span', { class: 'sc-note' }, shipNote(x)), movement(x, daily),
+      x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null);
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
@@ -696,7 +747,7 @@
       (x.url || x.carfax) ? quietLinks(x, true) : null);
     return el('div', { class: 'sc-media sc-media--card' }, thumbFor(x),
       el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim()), aside,
-      el('div', { class: 'sc-media__sub' }, [x.color, `${x.city || '—'}, ${x.state || ''}`, x.local ? 'in-state' : null].filter(Boolean).join(' · ')),
+      el('div', { class: 'sc-media__sub' }, [x.color, `${x.city || '—'}, ${x.state || ''}`, x.local ? 'drivable' : null].filter(Boolean).join(' · ')),
       el('div', { class: 'sc-media__code' }, x.vin),
       foot);
   }
@@ -733,11 +784,12 @@
     if (!rows.length) body.appendChild(el('tr', { class: 'sc-empty' }, el('td', { colspan: cols.length }, 'Nothing matches these filters.')));
     for (const x of rows) {
       const price = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
+        x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
         x.msrp ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
-      const shipping = el('td', { class: 'sc-num' }, x.local ? el('span', { class: 'sc-note' }, 'none · in-state') : (x.ship ? el('span', { class: 'sc-figure' }, money(x.ship)) : el('span', { class: 'sc-note' }, 'n/a')));
+      const shipping = el('td', { class: 'sc-num' }, x.local ? el('span', { class: 'sc-note' }, 'none · drivable') : (x.ship ? el('span', { class: 'sc-figure' }, money(x.ship)) : el('span', { class: 'sc-note' }, 'n/a')));
       const total = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(landed(x))));
       const loc = el('td', { class: 'loc sc-nowrap' }, `${x.city || '—'}, ${x.state || ''}`, el('br'), scopeChip(x),
-        x.distance != null ? el('span', { class: 'sc-note' }, `${num(x.distance)} mi from home`) : null,
+        x.distance != null ? el('span', { class: 'sc-note' }, `~${num(x.distance)} mi from home`) : null,
         x.dealer ? el('span', { class: 'sc-note sc-truncate dealer', title: x.dealer }, x.dealer) : null);
       const listed = el('td', { class: 'sc-nowrap' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
@@ -797,11 +849,11 @@
     const td = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(b.price)),
       el('span', { class: 'sc-note' }, `${b.year || ''}${b.miles != null ? ` · ${num(b.miles)} mi` : ''} · ${b.city || '—'}, ${b.state || ''}`),
       el('span', { class: 'sc-note' }, shipNote(b)));
-    if (b.url) td.appendChild(el('span', { class: 'sc-note' }, el('a', { class: 'sc-link--quiet', href: b.url, target: '_blank', rel: 'noopener' }, 'Listing ↗')));
+    if (safeUrl(b.url)) td.appendChild(el('span', { class: 'sc-note' }, el('a', { class: 'sc-link--quiet', href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Listing ↗')));
     return td;
   }
   function renderOverview() {
-    const site = S.site, buyer = site.buyer || {}, states = buyer.states || [], st = statesTxt();
+    const site = S.site, buyer = site.buyer || {}, states = buyer.states || [];
     const rows = overviewRows();
     for (const id of ['list-card', 'gone-card']) $(id).hidden = true;
     $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
@@ -810,7 +862,7 @@
     document.title = `Every model — ${site.app || 'SpicyCar'}`;
     $('dek').textContent = `${rows.length} models, snapshotted daily, compared on asking price. ${shippingSentence()}`;
     const nShop = rows.filter((r) => r.shopping).length;
-    metaRow([`Updated ${fmtDateLong(site.generated)}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`, `${states.length ? 'In-state = ' + st : ''}`]);
+    metaRow([`Updated ${fmtDateLong(site.generated)}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`, `${(states.length || buyer.drive_radius_miles) ? 'Drivable = ' + scopeTxt() : ''}`]);
     segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand);
     $('tabs').hidden = true;
 
@@ -821,18 +873,17 @@
     const shops = rows.filter((r) => r.shopping), shop = shops[0];
     const host = $('kpis'); host.textContent = '';
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
-      el('div', { class: 'sc-tile__sub' }, `${localTotal} in ${st} · ${total - localTotal} out of state · ${rows.length} models`)));
+      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond driving range · ${rows.length} models`)));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${bestRow.best.city}, ${bestRow.best.state}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, `Lowest asking in ${st}`), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${bestLocalRow.bestLocal.city}, ${bestLocalRow.bestLocal.state} · no shipping` : `Nothing in ${st} under these filters`)));
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
+      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${bestLocalRow.bestLocal.city}, ${bestLocalRow.bestLocal.state} · no shipping` : 'Nothing drivable under these filters')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'),
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shops.map((r) => r.label).join(' · ') : `${rows.length} models`),
-      el('div', { class: 'sc-tile__sub' }, shop ? shops.map((r) => `${r.label.replace(/^\S+ /, '')} ${r.best ? 'from ' + money(r.best.price) : '—'} · ${r.n_local} in-state`).join(' · ') : 'no target marked as shopping')));
+      el('div', { class: 'sc-tile__sub' }, shop ? shops.map((r) => `${r.label.replace(/^\S+ /, '')} ${r.best ? 'from ' + money(r.best.price) : '—'} · ${r.n_local} drivable`).join(' · ') : 'no target marked as shopping')));
 
     // our picks across every model: best value, not lowest price
-    const P = pickParams();
-    renderPicks(choosePicks(rows.flatMap((r) => scorePicks(applyShared(r.m.listings || []), r.label)), P.count, P.per_model));
+    renderPicks(rows.flatMap((r) => scorePicks(applyShared(r.m.listings || []), r.label)), pickParams().per_model);
     $('notes-card').hidden = true;
 
     // the chart: every model's lowest asking price over time
@@ -858,19 +909,19 @@
     $('overview-card').hidden = false;
     $('overview-hint').textContent = 'One row per model under the current filters — shopping first, then by lowest asking. Open a model for its listings, chart and history.';
     const ot = $('overview-table'); ot.textContent = '';
-    ot.appendChild(el('thead', null, el('tr', null, el('th', null, 'Model'), el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'In-state'),
-      el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, `Lowest asking in ${st}`), el('th', { class: 'sc-num' }, 'Median asking'), el('th', null, 'Trend'), el('th', null, 'Data'))));
+    ot.appendChild(el('thead', null, el('tr', null, el('th', null, 'Model'), el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'Drivable'),
+      el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, 'Lowest drivable asking'), el('th', { class: 'sc-num' }, 'Median asking'), el('th', null, 'Trend'), el('th', null, 'Data'))));
     const obody = el('tbody');
     for (const r of rows) {
       const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, true, r.photos), el('div', { class: 'sc-media__body' },
         el('div', { class: 'sc-media__title' }, r.label),
-        el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} in-state`),
+        el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
       const data = el('td', null, el('span', { class: 'sc-note' }, r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—')));
       const trend = el('td', null, spark(r.trend, 80, 26, r.shopping));
       obody.appendChild(el('tr', null, modelCell, el('td', { class: 'sc-num' }, num(r.n)), el('td', { class: 'sc-num' }, num(r.n_local)),
-        bestCell(r.best, r.as_of ? 'none under these filters' : 'not fetched yet'), bestCell(r.bestLocal, r.as_of ? `none in ${st}` : 'not fetched yet'),
+        bestCell(r.best, r.as_of ? 'none under these filters' : 'not fetched yet'), bestCell(r.bestLocal, r.as_of ? 'none drivable' : 'not fetched yet'),
         el('td', { class: 'sc-num' }, r.median != null ? money(r.median) : '—'), trend, data));
     }
     ot.appendChild(obody);
@@ -890,7 +941,7 @@
     renderHeader();
     renderKpis(rows);
     const t = model();
-    renderPicks(choosePicks(scorePicks(rows, t.label), pickParams().count));
+    renderPicks(scorePicks(rows, t.label));
     renderNotes(t);
     renderChart();
     renderList(rows);
@@ -912,9 +963,13 @@
     const fm = $('f-scope'); fm.textContent = '';
     const buyer = S.site.buyer || {}, states = buyer.states || [], names = buyer.state_names || {};
     fm.appendChild(el('option', { value: 'all' }, 'Everywhere'));
-    if (states.length) fm.appendChild(el('option', { value: 'local' }, `In-state (${states.join('/')})`));
+    if (states.length || buyer.drive_radius_miles) fm.appendChild(el('option', { value: 'local' }, `Drivable (${scopeTxt()})`));
     for (const s of states) fm.appendChild(el('option', { value: s }, names[s] || s));
-    fm.appendChild(el('option', { value: 'national' }, 'Out of state'));
+    // states that only reach "drivable" through the drive radius, from the data itself
+    const extra = [...new Set(allModels().flatMap(({ m }) => (m.listings || []).filter(isLocal).map((x) => (x.state || '').toUpperCase())))]
+      .filter((s) => s && !states.includes(s)).sort();
+    for (const s of extra) fm.appendChild(el('option', { value: s }, `${s} — drive radius`));
+    fm.appendChild(el('option', { value: 'national' }, 'Beyond driving range'));
     fm.value = S.scope;
     fm.parentElement.hidden = overview;            // the overview shows nationwide and in-state side by side
     $('f-sort').parentElement.hidden = overview;   // and has its own order: shopping first, then lowest asking
@@ -972,14 +1027,9 @@
       const site = adapt(raw || {});
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }
       S.site = site;
-      // The overview is the front page. ?brand=bmw opens a brand; ?model=bmw-i5-edrive40 opens the model that trim belongs to.
-      const q = new URLSearchParams(location.search);
-      const wantBrand = q.get('brand'), wantModel = q.get('model');
-      if (wantModel) {
-        for (const [bk, b] of Object.entries(site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if ((m.trims || {})[wantModel]) { S.brand = bk; S.model = mk; }
-      } else if (wantBrand && site.brands[wantBrand]) {
-        S.brand = wantBrand; S.model = Object.keys(site.brands[wantBrand].models)[0];
-      }
+      annotateValue(site);
+      applyUrl();
+      window.addEventListener('popstate', () => { applyUrl(); buildFilters(); render(); });
       buildFilters();
       render();
     })
