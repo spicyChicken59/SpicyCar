@@ -22,6 +22,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/sc.css">
 <script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/sc-theme.js"></script>
+<style>
+  /* Readability overrides — page-level, the design system stays pinned.
+     Same set as the dashboard: no "//" prefixes (sc.css 337/388), the
+     eyebrow keeps its case, small mono roles lifted to readable sizes. */
+  .sc-eyebrow::before, .sc-callout__label::before { content: none; }
+  .sc-eyebrow { text-transform: none; letter-spacing: .5px; }
+  .sc-meta { font-size: 12.5px; }
+  .sc-note { font: 400 12px/1.45 var(--sc-font-body); letter-spacing: 0; }
+</style>
 </head>
 <body>
 <a class="sc-skip" href="#main">Skip to content</a>

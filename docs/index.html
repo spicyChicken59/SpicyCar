@@ -24,11 +24,27 @@
 <script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.1.0/sc-theme.js"></script>
 <style>
   /* Page-specific only. Everything else is sc.css; semantic tokens only. */
+
+  /* ---- Readability overrides — page-level, the design system stays pinned.
+     The "//" prefixes go (sc.css 337/388), the eyebrow keeps its case so
+     state codes read as IL not il (336), and the squint-level 10.5–11px
+     mono roles are lifted to readable sizes; information moves to the body
+     face, the mono stays for codes, chips and the footer signature. */
+  .sc-eyebrow::before, .sc-callout__label::before { content: none; }
+  .sc-eyebrow { text-transform: none; letter-spacing: .5px; }
+  .sc-meta { font-size: 12.5px; }
+  .sc-tile__sub { font-size: 12.5px; letter-spacing: .1px; }
+  .sc-chip { font-size: 11px; }
+  .sc-field, .sc-check { font-size: 11.5px; }
+  .sc-legend { font-size: 12.5px; }
+  .sc-note { font: 400 12px/1.45 var(--sc-font-body); letter-spacing: 0; }
+  .sc-media__sub { font-size: 12.5px; }
+  .sc-media__code { font-size: 11px; }
   .col-vehicle { min-width: 230px; }
   .col-model { min-width: 280px; }
   .loc { max-width: 190px; }
   .dealer { max-width: 150px; }
-  .flags { font: 500 11.5px/1.6 var(--sc-font-mono); color: var(--sc-text-2); min-width: 150px; max-width: 220px; }
+  .flags { font: 500 12.5px/1.6 var(--sc-font-body); color: var(--sc-text-2); min-width: 150px; max-width: 220px; }
   .flags span { white-space: nowrap; }
   .sc-media__foot .flags { min-width: 0; max-width: none; }
   .sc-chart .hit { cursor: crosshair; }
@@ -693,14 +709,14 @@
     const b = p.x;
     const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
-    const para = el('p', null, `${facts}. ${where}. `);
-    if (safeUrl(b.url)) para.appendChild(el('a', { href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+    const para = el('p', null, `${facts}. ${where}.`);
+    const open = safeUrl(b.url) ? el('p', { style: 'margin-top:4px' }, el('a', { href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Open the listing →')) : null;
     return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, thumbFor(b, true), el('div', { class: 'sc-media__body' },
       el('div', { class: 'sc-callout__figure' }, `${money(b.price)} asking`),
       el('div', { class: 'sc-media__sub' }, shipNote(b)),
       el('div', null, el('span', { class: 'sc-chip sc-chip--good' }, `${Math.round(p.pct * 100)}% under typical`)),
       el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${[p.year, p.modelLabel, p.trim].filter(Boolean).join(' ')}, miles allowed for`),
-      para)));
+      para, open)));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
   // the rest of the country. Front page: across every model; model view: within it.
@@ -787,7 +803,7 @@
     const yearSpan = years.length > 1 ? `${years[0]}–${years[years.length - 1]}` : (years[0] || '');
     const buyer = site.buyer || {}, states = buyer.states || [];
     const anyShopping = ((buyer.shopping || []).length > 0);
-    const role = anyShopping ? (t.shopping ? 'shopping' : 'comparison') : null;
+    const role = anyShopping ? (t.shopping ? 'Shopping' : 'Comparison') : null;
     $('eyebrow').textContent = [brand.label, yearSpan, states.join(' · '), role].filter(Boolean).join(' · ') || 'Analyzer';
     $('h1').textContent = trim ? `${t.label} ${trim.label}` : (t.label || S.model);
     document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
@@ -1027,7 +1043,7 @@
     const rows = overviewRows();
     for (const id of ['list-card', 'gone-card']) $(id).hidden = true;
     $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
-    $('eyebrow').textContent = ['watchlist', states.join(' · ')].filter(Boolean).join(' · ');
+    $('eyebrow').textContent = ['Watchlist', states.join(' · ')].filter(Boolean).join(' · ');
     $('h1').textContent = 'Every model';
     document.title = `Every model — ${site.app || 'SpicyCar'}`;
     $('dek').textContent = `${rows.length} models, snapshotted daily, compared on asking price. ${shippingSentence()}`;
@@ -1110,7 +1126,7 @@
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
-      const data = el('td', null, el('span', { class: 'sc-note' }, r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—')));
+      const data = el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—')));
       const trend = el('td', null, spark(r.trend, 80, 26, r.shopping, brandColor(r.bk)));
       obody.appendChild(el('tr', { class: 'is-clickable', title: 'Open ' + r.label,
         onclick: (e) => { if (e.target.closest('a, button')) return; goTo(r.bk, r.mk); } },
