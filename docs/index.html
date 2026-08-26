@@ -45,20 +45,52 @@
   .picks-group .sc-eyebrow { margin-bottom: 10px; }
   .where-chips { flex-wrap: wrap; }              /* the multi-select: any number of chips may be pressed */
   .map-host { position: relative; }
-  .map-host svg { display: block; width: 100%; height: auto; }
+  .map-host svg { display: block; width: 100%; height: auto; touch-action: pan-y; cursor: grab; }
+  .map-host svg:active { cursor: grabbing; }
+  .map-btns { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .map-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--sc-border); background: var(--sc-surface);
+    color: var(--sc-heading); font: 600 16px/1 var(--sc-font-body); cursor: pointer; }
+  .map-btn:hover { border-color: var(--sc-border-strong); }
+  .map-btn:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
+  .map-tip-img { display: block; width: 150px; height: 94px; object-fit: cover; border-radius: 6px; margin-bottom: 7px; }
+  /* Plain scroll scrolls the page (the embedded-map convention); this hint teaches the modifier */
+  .map-scrollhint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity .25s ease; z-index: 4; }
+  .map-scrollhint.is-on { opacity: 1; }
+  .map-scrollhint span { background: var(--sc-ink); color: var(--sc-on-ink); border-radius: 8px;
+    padding: 8px 14px; font: 600 13px/1.4 var(--sc-font-body); box-shadow: var(--sc-shadow-pop); }
+  /* A tap-opened tooltip is a small card with a live Open link, so it must take the pointer */
+  .sc-tooltip--tap { pointer-events: auto; }
+  .map-tip-open { display: inline-block; margin-top: 6px; font: 600 12.5px/1.4 var(--sc-font-body);
+    color: var(--sc-on-ink); text-decoration: underline; text-underline-offset: 2px; }
   .map-state { fill: var(--sc-bg); stroke: var(--sc-border); stroke-width: .75; }
+  .map-state-label { fill: var(--sc-text-2); font-family: var(--sc-font-mono); font-weight: 600;
+    letter-spacing: .08em; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+  .map-labels-on .map-state-label { opacity: .5; }
   .map-ring { fill: none; stroke: var(--sc-brand-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
-  .map-anchor { fill: var(--sc-accent); stroke: var(--sc-surface); stroke-width: 1.5; }
+  .map-anchor { fill: var(--sc-accent); stroke: var(--sc-surface); stroke-width: 1.5; pointer-events: all; cursor: help; }
+  /* fill="none" makes an svg circle's interior untouchable by default — hollow
+     dots must still hit-test on their whole area, not just the stroke ring */
+  .map-dot, .scatter-dot { pointer-events: all; }
   .map-dot { cursor: pointer; }
   .map-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }     /* the 1px surface ring keeps overlapping dots separable */
   .map-dot.is-hollow { fill: none; stroke-width: 1.6; }
   .map-dot:hover { stroke-width: 2.6; }
+  .map-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
   .scatter-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }
   .scatter-dot.is-hollow { fill: none; stroke-width: 1.6; }
   .scatter-dot.has-url { cursor: pointer; }
   .scatter-dot:hover { stroke-width: 2.6; }
   .scatter-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
   .scatter-line { fill: none; stroke: var(--sc-border-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .scatter-line-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+  .scatter-year-label { cursor: pointer; }
+  .scatter-dot, .scatter-pick-ring, .scatter-line, .scatter-year-label { transition: opacity .15s ease; }
+  /* year chips select rather than hide — pressed-off must not read as struck-through */
+  .legend-chip--year[aria-pressed="false"] span { opacity: 1; text-decoration: none; }
+  .legend-chip--year[aria-pressed="true"] { background: var(--sc-bg); box-shadow: inset 0 0 0 1px var(--sc-border-strong); }
+  .sc-tooltip__dash { flex: none; display: inline-block; }
+  .show-more { display: flex; justify-content: center; padding: 14px 0 2px; }
   .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }         /* the drawn SpicyChicken lockup, as drawn */
   .frame-chick { height: 45%; max-height: 44px; width: auto; opacity: .28; }     /* the chick keeps watch where a dealer sent no photo */
   /* Photos: same frame box, but the image blurs in and zooms on hover inside it */
@@ -192,6 +224,7 @@
         <h2 id="chart-title">Asking price over time</h2>
         <p class="sc-hint" id="chart-hint"></p>
       </div>
+      <div class="sc-tabs" id="chart-range" role="group" aria-label="Time range" hidden></div>
     </div>
     <div class="sc-legend" id="legend"></div>
     <div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div>
@@ -206,7 +239,7 @@
       </div>
     </div>
     <div class="sc-legend" id="scatter-legend"></div>
-    <div class="sc-chart" id="scatter"></div>
+    <div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div>
   </section>
 
   <section class="sc-card" id="overview-card" hidden>
@@ -228,6 +261,7 @@
     </div>
     <div class="sc-table-scroll" id="list-scroll"><table class="sc-table" id="list-table"></table></div>
     <div class="sc-stack" id="list-cards" hidden></div>
+    <div class="show-more" id="list-more" hidden></div>
   </section>
 
   <section class="sc-card" id="gone-card" hidden>
@@ -238,6 +272,7 @@
       </div>
     </div>
     <div class="sc-table-scroll"><table class="sc-table" id="gone-table"></table></div>
+    <div class="show-more" id="gone-more" hidden></div>
   </section>
 
   <div class="sc-callout sc-callout--spice">
@@ -262,7 +297,7 @@
   // The front page is the overview of every model (brand 'all'); a model view is a brand + model.
   // where: a multi-select of place keys (state codes, 'drive', 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) hidden from the market chart via the legend.
-  const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'price', clean: false, rental: false };
+  const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'price', clean: false, rental: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   const tok = (name) => getComputedStyle(root).getPropertyValue('--sc-' + name).trim();
@@ -274,10 +309,11 @@
       const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
       S.where = new Set(Array.isArray(p.where) ? p.where : []);
       S.hidden = new Set(Array.isArray(p.hidden) ? p.hidden : []);
-    } catch (e) { S.where = new Set(); S.hidden = new Set(); }
+      S.range = ['30', '90', 'all'].includes(p.range) ? p.range : '90';
+    } catch (e) { S.where = new Set(); S.hidden = new Set(); S.range = '90'; }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden] })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden], range: S.range })); } catch (e) { /* private mode etc. */ }
   }
   // Brand palette — categorical slots in fixed watchlist order, validated (six
   // checks, both themes, on this site's surfaces). Hue carries the BRAND; the
@@ -498,8 +534,11 @@
     }
     const maxLabels = Math.max(2, Math.floor(iw / 72));
     const every = Math.ceil(dates.length / maxLabels);
+    const lastX = xOf(dates[dates.length - 1]);
     dates.forEach((d, i) => {
-      if (i % every && i !== dates.length - 1) return;
+      const isLast = i === dates.length - 1;
+      if (i % every && !isLast) return;
+      if (!isLast && lastX - xOf(d) < 46) return;   // keep clear of the end-date label
       svg.appendChild(svgEl('text', { x: xOf(d), y: H - m.b + 20, 'text-anchor': 'middle' }, document.createTextNode(fmtDate(d))));
     });
     const showDots = dates.length <= 45;
@@ -547,7 +586,15 @@
       tip.textContent = '';
       tip.appendChild(el('div', { class: 'sc-tooltip__date' }, fmtDateLong(d)));
       const rows = series.map((s) => ({ s, p: s.points.find((p) => p.date === d) })).filter((r) => r.p).sort((a, b) => a.p.value - b.p.value);
-      for (const r of rows) tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + (r.s.color || (r.s.emphasis ? C.emphasis : C.context)) }), el('b', null, money(r.p.value)), el('span', null, r.s.label)));
+      // the swatch carries the dash pattern too, so three same-hue BMWs
+      // read apart in the tooltip exactly as they do in the legend
+      const swatch = (s) => {
+        const cv = s.color || (s.emphasis ? C.emphasis : C.context);
+        if (!s.dash) return el('i', { style: 'background:' + cv });
+        return svgEl('svg', { class: 'sc-tooltip__dash', width: 14, height: 6, viewBox: '0 0 14 6', 'aria-hidden': 'true' },
+          svgEl('line', { x1: 0, y1: 3, x2: 14, y2: 3, stroke: cv, 'stroke-width': 2, 'stroke-dasharray': s.dash }));
+      };
+      for (const r of rows) tip.appendChild(el('div', { class: 'sc-tooltip__row' }, swatch(r.s), el('b', null, money(r.p.value)), el('span', null, r.s.label)));
       if (opts.meta) { const t = opts.meta(d); if (t) tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, t)); }
       tip.classList.add('is-on');
       const scale = host.clientWidth / W;
@@ -575,10 +622,13 @@
   // ---------- the market map ----------
   // US states from the same pinned-CDN pattern the design system uses; the
   // topology is pre-projected (geoAlbersUsa, 975×610), and the dots use the
-  // matching hand-rolled Albers for the lower 48. If the fetch fails or no
-  // listing carries coordinates yet, the card simply stays hidden.
+  // matching hand-rolled Albers for the lower 48. The view is dynamic: it
+  // fits itself to the Where selection, and scroll/pinch/drag (or the
+  // buttons) zoom and pan it freely. If the fetch fails or no listing
+  // carries coordinates yet, the card simply stays hidden.
   const MAP_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json';
-  let MAP_STATES = null, MAP_PROMISE = null, MAP_RENDER = 0;
+  const MAP_FULL = { x: 0, y: 0, w: 975, h: 610 };
+  let MAP_STATES = null, MAP_PROMISE = null, MAP_RENDER = 0, MAP_FIT_KEY = null, MAP_ANIM = null;
   const albers48 = (() => {
     const rad = Math.PI / 180, y0 = 29.5 * rad, y1 = 45.5 * rad;
     const n = (Math.sin(y0) + Math.sin(y1)) / 2;
@@ -594,11 +644,37 @@
     const ring = (ai) => (ai < 0 ? arcs[~ai].slice().reverse() : arcs[ai]);
     return topo.objects.states.geometries.map((g) => {
       const polys = g.type === 'Polygon' ? [g.arcs] : g.arcs;
-      const d = polys.map((poly) => poly.map((r) =>
-        'M' + r.flatMap(ring).map(([x, y]) => x.toFixed(1) + ',' + y.toFixed(1)).join('L') + 'Z').join('')).join('');
-      return { name: (g.properties || {}).name || '', d };
+      let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+      // the label anchors on the centroid of the largest polygon, so Michigan
+      // labels its lower peninsula and Florida its mainland, not the bbox lake
+      let bestA = 0, cx = 0, cy = 0;
+      const d = polys.map((poly) => poly.map((r, ri) => {
+        const pts = r.flatMap(ring);
+        for (const [x, y] of pts) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+        if (ri === 0) {
+          let a = 0, mx = 0, my = 0;
+          for (let i = 0; i < pts.length; i++) {
+            const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+            const w = x1 * y2 - x2 * y1;
+            a += w; mx += (x1 + x2) * w; my += (y1 + y2) * w;
+          }
+          if (Math.abs(a) > Math.abs(bestA)) { bestA = a; cx = mx / (3 * a); cy = my / (3 * a); }
+        }
+        return 'M' + pts.map(([x, y]) => x.toFixed(1) + ',' + y.toFixed(1)).join('L') + 'Z';
+      }).join('')).join('');
+      return { name: (g.properties || {}).name || '', d, bbox: [minX, minY, maxX, maxY], center: [cx, cy] };
     });
   }
+  // Census names → postal codes, for the zoomed-in state labels.
+  const STATE_ABBR = { Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO',
+    Connecticut: 'CT', Delaware: 'DE', 'District of Columbia': 'DC', Florida: 'FL', Georgia: 'GA', Hawaii: 'HI',
+    Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA',
+    Maine: 'ME', Maryland: 'MD', Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS',
+    Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH',
+    Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', 'Puerto Rico': 'PR', 'Rhode Island': 'RI',
+    'South Carolina': 'SC', 'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT',
+    Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY' };
   function fetchMap() {
     if (MAP_STATES) return Promise.resolve(MAP_STATES);
     MAP_PROMISE = MAP_PROMISE || fetch(MAP_URL).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -607,81 +683,349 @@
     return MAP_PROMISE;
   }
   // A geodesic circle of `miles` around [lat, lon], projected — the drive ring.
-  function ringPath(lat, lon, miles) {
+  function ringPoints(lat, lon, miles) {
     const rad = Math.PI / 180, d = miles / 3958.8, p1 = lat * rad, l1 = lon * rad;
     const pts = [];
     for (let i = 0; i <= 72; i++) {
       const th = (i / 72) * 2 * Math.PI;
       const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(th));
       const l2 = l1 + Math.atan2(Math.sin(th) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
-      const [x, y] = albers48(l2 / rad, p2 / rad);
-      pts.push((i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1));
+      pts.push(albers48(l2 / rad, p2 / rad));
     }
-    return pts.join('') + 'Z';
+    return pts;
   }
-  function renderMap(show) {
-    const card = $('map-card');
-    if (!show) { card.hidden = true; return; }
-    const cars = [];
-    for (const { bk, mk, m } of allModels()) {
-      if (S.hidden.has(bk + '/' + mk)) continue;
-      for (const x of applyShared(m.listings || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk, mk, m });
+  const ringPath = (lat, lon, miles) => ringPoints(lat, lon, miles)
+    .map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1)).join('') + 'Z';
+  // The view the current selection deserves: picked states framed, the drive
+  // ring framed when the drive chip is on — and with nothing picked, the cars
+  // themselves (plus the ring, so home stays in frame). A coast-to-coast
+  // market still reads as the whole country.
+  function mapFitTarget(states, cars) {
+    const buyer = (S.site || {}).buyer || {}, names = buyer.state_names || {};
+    const boxes = [];
+    const ringBox = () => {
+      if (!Array.isArray(buyer.anchor) || !buyer.drive_radius_miles) return null;
+      const pts = ringPoints(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles);
+      return [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])),
+              Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
+    };
+    for (const key of S.where) {
+      if (key === 'beyond') return MAP_FULL;
+      if (key === 'drive') { const rb = ringBox(); if (rb) boxes.push(rb); }
+      const st = states.find((s) => s.name === names[key]);
+      if (st) boxes.push(st.bbox);
     }
-    if (!cars.length) { card.hidden = true; return; }   // pre-coordinates data.json, or filters left nothing
+    if (!boxes.length && cars && cars.length) {
+      let b = [1e9, 1e9, -1e9, -1e9];
+      for (const c of cars) {
+        const [px, py] = albers48(c.x.lon, c.x.lat);
+        if (!(px >= -8 && px <= 983 && py >= -8 && py <= 618)) continue;
+        b = [Math.min(b[0], px), Math.min(b[1], py), Math.max(b[2], px), Math.max(b[3], py)];
+      }
+      if (b[2] > b[0]) { boxes.push(b); const rb = ringBox(); if (rb) boxes.push(rb); }
+    }
+    if (!boxes.length) return MAP_FULL;
+    let [x1, y1, x2, y2] = boxes.reduce((a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]);
+    const pad = Math.max((x2 - x1), (y2 - y1)) * 0.12 + 8;
+    x1 -= pad; y1 -= pad; x2 += pad; y2 += pad;
+    // keep the map aspect so nothing distorts
+    let w = x2 - x1, h = y2 - y1;
+    const ar = MAP_FULL.w / MAP_FULL.h;
+    if (w / h > ar) { const nh = w / ar; y1 -= (nh - h) / 2; h = nh; } else { const nw = h * ar; x1 -= (nw - w) / 2; w = nw; }
+    if (w > MAP_FULL.w) return MAP_FULL;
+    return { x: x1, y: y1, w, h };
+  }
+  function renderMap(mode, rowsForModel) {
+    const card = $('map-card');
+    if (!mode) { card.hidden = true; return; }
+    const cars = [];
+    if (mode === 'overview') {
+      for (const { bk, mk, m } of allModels()) {
+        if (S.hidden.has(bk + '/' + mk)) continue;
+        for (const x of applyShared(m.listings || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk, mk, m });
+      }
+    } else {
+      const m = model();
+      for (const x of (rowsForModel || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk: S.brand, mk: S.model, m });
+    }
+    if (!cars.length) { card.hidden = true; return; }
     const token = ++MAP_RENDER;
     fetchMap().then((states) => {
       if (token !== MAP_RENDER) return;
       if (!states) { card.hidden = true; return; }
-      const svg = svgEl('svg', { viewBox: '0 0 975 610', 'aria-hidden': 'true' });
-      for (const st of states) svg.appendChild(svgEl('path', { class: 'map-state', d: st.d }));
       const buyer = S.site.buyer || {};
-      if (Array.isArray(buyer.anchor) && buyer.drive_radius_miles) {
-        svg.appendChild(svgEl('path', { class: 'map-ring', d: ringPath(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles) }));
-        const [ax, ay] = albers48(buyer.anchor[1], buyer.anchor[0]);
-        svg.appendChild(svgEl('circle', { class: 'map-anchor', cx: ax, cy: ay, r: 4.5 }));
+      // The cars the system elevates, marked on the map: spicy picks ringed in
+      // the accent (the scatter's encoding), shortlisted VINs drawn in the
+      // accent outright. Same pick sets as the cards above the map.
+      const P = pickParams();
+      const scored = mode === 'model'
+        ? scoredFrom(rowsForModel || [], model().label || '')
+        : allModels().flatMap(({ m }) => scoredFrom(applyShared(m.listings || []), m.label || ''));
+      const perM = mode === 'model' ? undefined : P.per_model;
+      const picked = new Set([...choosePicks(scored.filter((p) => p.x.local), P.count, perM),
+                              ...choosePicks(scored.filter((p) => !p.x.local), P.count, perM)].map((p) => p.x.vin));
+      const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
+      let view = S.mapView || MAP_FULL;
+      let animateTo = null;
+      if (fitKey !== MAP_FIT_KEY) { MAP_FIT_KEY = fitKey; animateTo = mapFitTarget(states, cars); }
+
+      const svg = svgEl('svg', { viewBox: `${view.x} ${view.y} ${view.w} ${view.h}`, 'aria-hidden': 'true' });
+      for (const st of states) svg.appendChild(svgEl('path', { class: 'map-state', d: st.d, 'vector-effect': 'non-scaling-stroke' }));
+      // quiet postal labels, invisible at the full-US view and fading in once
+      // the zoom is tight enough for them to read
+      for (const st of states) {
+        const ab = STATE_ABBR[st.name];
+        if (ab) svg.appendChild(svgEl('text', { class: 'map-state-label', x: st.center[0].toFixed(1), y: st.center[1].toFixed(1), 'data-bf': 13 }, document.createTextNode(ab)));
       }
-      // dots — jittered on a small spiral when several cars share a dealer
-      let offMap = 0;
-      const seen = {};
+      let anchorEl = null;
+      if (Array.isArray(buyer.anchor) && buyer.drive_radius_miles) {
+        svg.appendChild(svgEl('path', { class: 'map-ring', d: ringPath(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles), 'vector-effect': 'non-scaling-stroke' }));
+        const [ax, ay] = albers48(buyer.anchor[1], buyer.anchor[0]);
+        anchorEl = svgEl('circle', { class: 'map-anchor', cx: ax, cy: ay, r: 4.5, 'data-br': 4.5, 'vector-effect': 'non-scaling-stroke' });
+        svg.appendChild(anchorEl);
+      }
       const host = $('map'); host.textContent = '';
       const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
+      // Interaction guards: a pan that ends on a dot must not fire its click,
+      // and on touch — where hover isn't real — the first tap previews the car
+      // (tooltip with an Open link) and only a second tap opens it.
+      let dragDist = 0, lastPtr = 'mouse', armed = null;
+      const hideTip = () => { tip.classList.remove('is-on', 'sc-tooltip--tap'); armed = null; };
+      const clampTip = () => {
+        const rect = host.getBoundingClientRect();
+        const top = parseFloat(tip.style.top) || 4;
+        tip.style.top = Math.max(4, Math.min(top, rect.height - tip.offsetHeight - 4)) + 'px';
+      };
+      const openCar = (c) => {
+        if (mode === 'model') { const u = safeUrl(c.x.url); if (u) window.open(u, '_blank', 'noopener'); else goTo(c.bk, c.mk); }
+        else goTo(c.bk, c.mk);
+      };
+      const fillTip = (c, clientX, clientY, tap) => {
+        tip.textContent = '';
+        const photo = safeUrl(c.x.image);
+        if (photo) {
+          const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+          img.addEventListener('error', () => { img.remove(); clampTip(); });
+          img.addEventListener('load', clampTip);
+          tip.appendChild(img);
+        }
+        tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${c.m.label} · ${c.x.year || ''}`));
+        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + brandColor(c.bk) }),
+          el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
+        const extras = [];
+        if (picked.has(c.x.vin)) extras.push('spicy pick');
+        if (onShortlist(c.x)) extras.push('on your shortlist');
+        tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, (c.x.miles != null ? `${num(c.x.miles)} mi · ` : '')
+          + (c.x.local ? 'drivable · no shipping' : (c.x.ship ? `+ ${money(c.x.ship)} shipping` : 'shipping n/a'))
+          + (extras.length ? ' · ' + extras.join(' · ') : '')));
+        if (tap) {
+          const u = mode === 'model' ? safeUrl(c.x.url) : null;
+          if (u) tip.appendChild(el('a', { class: 'map-tip-open', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+          else if (mode !== 'model') tip.appendChild(el('a', { class: 'map-tip-open', href: '#',
+            onclick: (ev) => { ev.preventDefault(); openCar(c); } }, `Open ${c.m.label} →`));
+          tip.classList.add('sc-tooltip--tap');
+        } else tip.classList.remove('sc-tooltip--tap');
+        const rect = host.getBoundingClientRect();
+        const fx = clientX - rect.left, flip = fx > rect.width * 0.55;
+        tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
+        tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
+        tip.style.top = Math.max(4, clientY - rect.top - 40) + 'px';
+        tip.classList.add('is-on');
+        clampTip();
+      };
+      if (anchorEl) {
+        const showAnchorTip = (clientX, clientY) => {
+          tip.textContent = '';
+          tip.classList.remove('sc-tooltip--tap');
+          tip.appendChild(el('div', { class: 'sc-tooltip__date' }, homeName()));
+          tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, 'Home anchor — distances, shipping and the drive ring all measure from here.'));
+          const rect = host.getBoundingClientRect();
+          const fx = clientX - rect.left, flip = fx > rect.width * 0.55;
+          tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
+          tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
+          tip.style.top = Math.max(4, clientY - rect.top - 34) + 'px';
+          tip.classList.add('is-on');
+          clampTip();
+        };
+        anchorEl.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') showAnchorTip(e.clientX, e.clientY); });
+        anchorEl.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
+        anchorEl.addEventListener('click', () => {
+          if (dragDist > 4) return;
+          const r = anchorEl.getBoundingClientRect();
+          showAnchorTip(r.left + r.width / 2, r.top);
+        });
+      }
+      let offMap = 0;
+      const seen = {};
       for (const c of cars) {
         const [px, py] = albers48(c.x.lon, c.x.lat);
         if (!(px >= -8 && px <= 983 && py >= -8 && py <= 618)) { offMap++; continue; }
         const key = (px | 0) + ',' + (py | 0);
         const i = seen[key] = (seen[key] || 0) + 1;
         const a = i * 2.39996, r = i > 1 ? 2.4 * Math.sqrt(i) : 0;
+        const cx = (px + r * Math.cos(a)).toFixed(1), cy = (py + r * Math.sin(a)).toFixed(1);
+        // co-located cars carry their spiral index so the view engine can keep
+        // their on-screen spread constant instead of exploding it under zoom
+        const spread = { 'data-px': px.toFixed(1), 'data-py': py.toFixed(1), 'data-di': i };
+        const isPick = picked.has(c.x.vin), isShort = onShortlist(c.x);
+        const hue = isShort ? tok('accent') : brandColor(c.bk);
+        if (isPick || isShort) svg.appendChild(svgEl('circle', { class: 'map-pick-ring',
+          cx, cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke', ...spread }));
         const dot = svgEl('circle', {
           class: 'map-dot ' + (c.x.local ? 'is-filled' : 'is-hollow'),
-          cx: (px + r * Math.cos(a)).toFixed(1), cy: (py + r * Math.sin(a)).toFixed(1), r: 3.2,
-          fill: c.x.local ? brandColor(c.bk) : 'none',
-          stroke: c.x.local ? null : brandColor(c.bk),
+          cx, cy,
+          r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke', ...spread,
+          fill: c.x.local ? hue : 'none',
+          stroke: c.x.local ? null : hue,
         });
-        dot.addEventListener('click', () => goTo(c.bk, c.mk));
+        dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
+        dot.addEventListener('click', () => {
+          if (dragDist > 4) return;                      // that was a pan, not a click
+          if (lastPtr === 'touch' && armed !== dot) {    // first tap previews
+            armed = dot;
+            const r = dot.getBoundingClientRect();
+            fillTip(c, r.left + r.width / 2, r.top, true);
+            return;
+          }
+          openCar(c);
+        });
         dot.addEventListener('pointerenter', (e) => {
-          tip.textContent = '';
-          tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${c.m.label} · ${c.x.year || ''}`));
-          tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + brandColor(c.bk) }),
-            el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
-          tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, c.x.local ? 'drivable · no shipping' : (c.x.ship ? `+ ${money(c.x.ship)} shipping` : 'shipping n/a')));
-          const rect = host.getBoundingClientRect();
-          const fx = (e.clientX - rect.left), flip = fx > rect.width * 0.6;
-          tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
-          tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
-          tip.style.top = Math.max(4, e.clientY - rect.top - 30) + 'px';
-          tip.classList.add('is-on');
+          if (e.pointerType === 'touch') return;
+          fillTip(c, e.clientX, e.clientY, false);
         });
-        dot.addEventListener('pointerleave', () => tip.classList.remove('is-on'));
+        dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
         svg.appendChild(dot);
       }
       host.appendChild(svg);
       host.appendChild(tip);
+
+      // --- the view engine: apply, animate, and the zoom/pan gestures ---
+      const applyView = (v) => {
+        S.mapView = v;
+        svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
+        const s = Math.max(v.w / MAP_FULL.w, 0.12);
+        for (const n of svg.querySelectorAll('[data-br]')) n.setAttribute('r', (parseFloat(n.getAttribute('data-br')) * s).toFixed(2));
+        // spiral offsets shrink in view units as the zoom tightens, so
+        // co-located cars keep a constant on-screen spread near their true spot
+        for (const n of svg.querySelectorAll('[data-di]')) {
+          const di = +n.getAttribute('data-di');
+          if (di < 2) continue;
+          const a2 = di * 2.39996, rr = 2.4 * Math.sqrt(di) * s;
+          n.setAttribute('cx', (+n.getAttribute('data-px') + rr * Math.cos(a2)).toFixed(1));
+          n.setAttribute('cy', (+n.getAttribute('data-py') + rr * Math.sin(a2)).toFixed(1));
+        }
+        // the postal labels: constant screen size, visible only once zoomed in
+        for (const n of svg.querySelectorAll('[data-bf]')) n.setAttribute('font-size', (parseFloat(n.getAttribute('data-bf')) * s).toFixed(2));
+        svg.classList.toggle('map-labels-on', v.w < MAP_FULL.w * 0.72);
+      };
+      const clampView = (v) => {
+        const w = Math.min(Math.max(v.w, MAP_FULL.w / 40), MAP_FULL.w * 1.15);
+        const h = w * MAP_FULL.h / MAP_FULL.w;
+        return { w, h,
+          x: Math.min(Math.max(v.x, MAP_FULL.x - w * 0.25), MAP_FULL.x + MAP_FULL.w - w * 0.75),
+          y: Math.min(Math.max(v.y, MAP_FULL.y - h * 0.25), MAP_FULL.y + MAP_FULL.h - h * 0.75) };
+      };
+      const animate = (from, to) => {
+        if (MAP_ANIM) cancelAnimationFrame(MAP_ANIM);
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { applyView(to); return; }
+        const t0 = performance.now(), D = 340;
+        const step = (now) => {
+          const u = Math.min(1, (now - t0) / D), e2 = u < .5 ? 2 * u * u : 1 - ((-2 * u + 2) ** 2) / 2;
+          applyView({ x: from.x + (to.x - from.x) * e2, y: from.y + (to.y - from.y) * e2,
+                      w: from.w + (to.w - from.w) * e2, h: from.h + (to.h - from.h) * e2 });
+          if (u < 1) MAP_ANIM = requestAnimationFrame(step);
+        };
+        MAP_ANIM = requestAnimationFrame(step);
+      };
+      const toViewPt = (clientX, clientY) => {
+        const r = svg.getBoundingClientRect(), v = S.mapView;
+        return [v.x + (clientX - r.left) / r.width * v.w, v.y + (clientY - r.top) / r.height * v.h];
+      };
+      const zoomAt = (vx, vy, f) => {
+        const v = S.mapView;
+        applyView(clampView({ w: v.w * f, h: v.h * f, x: vx - (vx - v.x) * f, y: vy - (vy - v.y) * f }));
+      };
+      // Plain scroll keeps scrolling the page; Ctrl/⌘+scroll (and trackpad
+      // pinch, which browsers report the same way) zooms the map. The overlay
+      // hint teaches the modifier the first time someone plain-scrolls here.
+      const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+      const scrollHint = el('div', { class: 'map-scrollhint', 'aria-hidden': 'true' },
+        el('span', null, `Use ${isMac ? '⌘' : 'Ctrl'} + scroll to zoom the map`));
+      host.appendChild(scrollHint);
+      let hintTimer = null;
+      const nudgeHint = () => {
+        scrollHint.classList.add('is-on');
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => scrollHint.classList.remove('is-on'), 1200);
+      };
+      svg.addEventListener('wheel', (e) => {
+        if (!e.ctrlKey && !e.metaKey) { nudgeHint(); return; }
+        e.preventDefault();
+        const [vx, vy] = toViewPt(e.clientX, e.clientY);
+        zoomAt(vx, vy, e.deltaY < 0 ? 0.82 : 1 / 0.82);
+      }, { passive: false });
+      const ptrs = new Map();
+      svg.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (!(e.target.classList && e.target.classList.contains('map-dot'))) hideTip();
+        dragDist = 0;
+        ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (ptrs.size === 2) svg.setPointerCapture(e.pointerId);
+      });
+      svg.addEventListener('pointermove', (e) => {
+        if (!ptrs.has(e.pointerId)) return;
+        const prev = { ...ptrs.get(e.pointerId) };
+        ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        dragDist += Math.hypot(e.clientX - prev.x, e.clientY - prev.y);
+        // capture only once a real drag starts — capturing on pointerdown
+        // would re-target the eventual click at the svg and kill dot clicks
+        if (dragDist > 4) {
+          hideTip();
+          if (e.pointerType === 'mouse' && !svg.hasPointerCapture(e.pointerId)) svg.setPointerCapture(e.pointerId);
+        }
+        const r = svg.getBoundingClientRect(), v = S.mapView, scale = v.w / r.width;
+        if (ptrs.size === 1 && e.pointerType === 'mouse') {          // mouse drag pans
+          applyView(clampView({ ...v, x: v.x - (e.clientX - prev.x) * scale, y: v.y - (e.clientY - prev.y) * scale }));
+        } else if (ptrs.size === 2) {                                 // two fingers pan and pinch
+          e.preventDefault();
+          const [a, b] = [...ptrs.values()];
+          const other = [...ptrs.entries()].find(([id]) => id !== e.pointerId)[1];
+          const dPrev = Math.hypot(prev.x - other.x, prev.y - other.y);
+          const dNow = Math.hypot(e.clientX - other.x, e.clientY - other.y);
+          const midPrev = [(prev.x + other.x) / 2, (prev.y + other.y) / 2];
+          const midNow = [(a.x + b.x) / 2, (a.y + b.y) / 2];
+          let nv = { ...v, x: v.x - (midNow[0] - midPrev[0]) * scale, y: v.y - (midNow[1] - midPrev[1]) * scale };
+          if (dPrev > 24 && dNow > 24) {
+            const f = dPrev / dNow;
+            const [vx, vy] = toViewPt(midNow[0], midNow[1]);
+            nv = { w: nv.w * f, h: nv.h * f, x: vx - (vx - nv.x) * f, y: vy - (vy - nv.y) * f };
+          }
+          applyView(clampView(nv));
+        }
+      }, { passive: false });
+      const drop = (e) => ptrs.delete(e.pointerId);
+      svg.addEventListener('pointerup', drop);
+      svg.addEventListener('pointercancel', drop);
+      // buttons: zoom in, zoom out, and back to the selection's own view
+      const btns = el('div', { class: 'map-btns' },
+        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Zoom in', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 0.67) }, '+'),
+        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Zoom out', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 1.5) }, '−'),
+        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Reset view', onclick: () => animate(S.mapView, mapFitTarget(states, cars)) }, '⤢'));
+      host.appendChild(btns);
+
+      if (animateTo) animate(view, animateTo); else applyView(view);
+
       const lg = $('map-legend'); lg.textContent = '';
       lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + chartColors().context }), 'filled — drivable'));
       lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + chartColors().context }), 'hollow — shipping added'));
-      if (Array.isArray(buyer.anchor)) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('brand-strong') || '' }), `≤ ${buyer.drive_hours || 5}h drive of ${homeName()}`));
-      $('map-hint').textContent = `${cars.length - offMap} cars under the current filters, colored by brand like the chart below`
-        + (offMap ? ` · ${offMap} beyond the lower 48` : '') + ' — hover a dot for the car, click to open its model.';
+      if (picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
+      if (cars.some((c) => onShortlist(c.x))) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
+      if (Array.isArray(buyer.anchor)) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('brand-strong') }), `≤ ${buyer.drive_hours || 5}h drive of ${homeName()}`));
+      $('map-hint').textContent = `${cars.length - offMap} cars under the current filters`
+        + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
+        + (mode === 'model' ? ' — hover or tap a dot for the car, click to open its listing'
+                            : ', colored by brand like the chart below — hover or tap a dot for the car, click to open its model')
+        + `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`;
       card.hidden = false;
     });
   }
@@ -699,6 +1043,7 @@
     const t = model();
     const pts = rows.filter((x) => hasPrice(x) && x.miles != null);
     if (pts.length < 3) { card.hidden = true; return; }
+    card.hidden = false;            // unhide before measuring, or clientWidth is 0 on a direct load
     const host = $('scatter'); host.textContent = '';
     const color = brandColor(S.brand);
     const W = Math.max(320, host.clientWidth || 720), H = 300;
@@ -726,6 +1071,16 @@
     const cohorts = Object.entries(byYear).filter(([, vs]) => vs.length >= 3)
       .map(([y, vs]) => ({ year: y, med: median(vs) })).sort((a, b) => a.year < b.year ? -1 : 1);
     const priceAt = (med, mi) => med - (mi - P.base) * P.cpm;
+    // The year, made visible: hovering a year's line, its label, or its legend
+    // chip keeps that cohort's dots at full strength and dims the rest — the
+    // same pick-it-out gesture the trend chart's legend taught. A chip click
+    // makes it stick (the touch path); clicking again clears it.
+    let stuckYear = null;
+    const highlightYear = (y) => {
+      for (const n of svg.querySelectorAll('[data-year]')) n.style.opacity = (!y || n.getAttribute('data-year') === y) ? '' : '0.15';
+      for (const n of svg.querySelectorAll('[data-yline]')) n.style.opacity = (!y || n.getAttribute('data-yline') === y) ? '' : '0.25';
+    };
+    const yLabels = [];
     for (const c of cohorts) {
       // clip the line to the plotted price band
       const miFor = (p) => P.base + (c.med - p) / (P.cpm || 1e-9);
@@ -734,47 +1089,141 @@
         m1 = Math.max(m1, miFor(yt.hi)); m2 = Math.min(m2, miFor(yt.lo));
       }
       if (m2 <= m1) continue;
-      svg.appendChild(svgEl('line', { class: 'scatter-line', x1: xOf(m1), y1: yOf(priceAt(c.med, m1)), x2: xOf(m2), y2: yOf(priceAt(c.med, m2)) }));
-      svg.appendChild(svgEl('text', { x: Math.min(xOf(m2) + 4, W - 4), y: yOf(priceAt(c.med, m2)) + 4 }, document.createTextNode(c.year)));
+      const x1 = xOf(m1), y1 = yOf(priceAt(c.med, m1)), x2 = xOf(m2), y2 = yOf(priceAt(c.med, m2));
+      svg.appendChild(svgEl('line', { class: 'scatter-line', 'data-yline': c.year, x1, y1, x2, y2 }));
+      const hit = svgEl('line', { class: 'scatter-line-hit', x1, y1, x2, y2 });
+      hit.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(c.year); });
+      hit.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
+      svg.appendChild(hit);
+      yLabels.push({ year: c.year, x: Math.min(x2 + 4, W - 4), y: y2 + 4 });
+    }
+    // labels pushed apart vertically so converging lines never overprint
+    yLabels.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < yLabels.length; i++) if (yLabels[i].y - yLabels[i - 1].y < 12) yLabels[i].y = yLabels[i - 1].y + 12;
+    for (let i = yLabels.length - 1; i >= 0; i--) { const max = H - m.b - 2 - (yLabels.length - 1 - i) * 12; if (yLabels[i].y > max) yLabels[i].y = max; }
+    for (let i = 1; i < yLabels.length; i++) if (yLabels[i].y - yLabels[i - 1].y < 12) yLabels[i].y = yLabels[i - 1].y + 12;
+    for (const L of yLabels) {
+      const t2 = svgEl('text', { class: 'scatter-year-label', 'data-yline': L.year, x: L.x.toFixed(1), y: L.y.toFixed(1) }, document.createTextNode(L.year));
+      t2.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(L.year); });
+      t2.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
+      svg.appendChild(t2);
     }
     // the picks currently shown above, ringed
     const sc = scoredFrom(rows, t.label), PC = pickParams();
     const ringed = new Set([...choosePicks(sc.filter((p) => p.x.local), PC.count),
                             ...choosePicks(sc.filter((p) => !p.x.local), PC.count)].map((p) => p.x.vin));
     const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
+    // Same touch contract as the map: first tap previews (photo, facts, an
+    // Open link), the second tap opens; hover keeps doing both jobs at once.
+    let lastPtr = 'mouse', armed = null;
+    const hideTip = () => { tip.classList.remove('is-on', 'sc-tooltip--tap'); armed = null; };
+    const clampTip = () => {
+      const rect = host.getBoundingClientRect();
+      const top = parseFloat(tip.style.top) || 4;
+      tip.style.top = Math.max(4, Math.min(top, rect.height - tip.offsetHeight - 4)) + 'px';
+    };
+    const fillTip = (x, clientX, clientY, tap) => {
+      tip.textContent = '';
+      const photo = safeUrl(x.image);
+      if (photo) {
+        const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+        img.addEventListener('error', () => { img.remove(); clampTip(); });
+        img.addEventListener('load', clampTip);
+        tip.appendChild(img);
+      }
+      tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${x.year || ''} ${x.trim || ''}`.trim()));
+      tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + color }),
+        el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
+      const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
+      if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
+      if (onShortlist(x)) bits.push('on your shortlist');
+      tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
+      const u = safeUrl(x.url);
+      if (tap && u) {
+        tip.appendChild(el('a', { class: 'map-tip-open', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+        tip.classList.add('sc-tooltip--tap');
+      } else tip.classList.remove('sc-tooltip--tap');
+      const rect = host.getBoundingClientRect();
+      const fx = clientX - rect.left, flip = fx > rect.width * 0.6;
+      tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
+      tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
+      tip.style.top = Math.max(4, clientY - rect.top - 34) + 'px';
+      tip.classList.add('is-on');
+      clampTip();
+    };
+    svg.addEventListener('pointerdown', (e) => {
+      if (!(e.target.classList && e.target.classList.contains('scatter-dot'))) hideTip();
+    });
+    const kOrder = [];
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
-      if (ringed.has(x.vin)) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5 }));
+      const isShort = onShortlist(x);
+      const hue = isShort ? tok('accent') : color;      // shortlisted cars wear the accent outright
+      const yr = String(x.year || '');
+      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5, 'data-year': yr }));
       const u = safeUrl(x.url);
       const dot = svgEl('circle', { class: 'scatter-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' has-url' : ''),
-        cx, cy, r: 4, fill: x.local ? color : 'none', stroke: x.local ? null : color });
-      if (u) dot.addEventListener('click', () => window.open(u, '_blank', 'noopener'));
-      dot.addEventListener('pointerenter', (e) => {
-        tip.textContent = '';
-        tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${x.year || ''} ${x.trim || ''}`.trim()));
-        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + color }),
-          el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
-        const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
-        if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
-        tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
-        const rect = host.getBoundingClientRect();
-        const fx = e.clientX - rect.left, flip = fx > rect.width * 0.6;
-        tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
-        tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
-        tip.style.top = Math.max(4, e.clientY - rect.top - 34) + 'px';
-        tip.classList.add('is-on');
+        cx, cy, r: 4, 'data-year': yr, fill: x.local ? hue : 'none', stroke: x.local ? null : hue });
+      dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
+      dot.addEventListener('click', () => {
+        if (lastPtr === 'touch' && armed !== dot) {
+          armed = dot;
+          const r = dot.getBoundingClientRect();
+          fillTip(x, r.left + r.width / 2, r.top, true);
+          return;
+        }
+        if (u) window.open(u, '_blank', 'noopener');
       });
-      dot.addEventListener('pointerleave', () => tip.classList.remove('is-on'));
+      dot.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'touch') return;
+        fillTip(x, e.clientX, e.clientY, false);
+      });
+      dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
       svg.appendChild(dot);
+      kOrder.push({ x, dot });
     }
     host.appendChild(svg);
     host.appendChild(tip);
+    // keyboard: arrows step through the cars by mileage (the same order the
+    // x-axis reads), Enter opens the listing, Escape clears — the trend
+    // chart's contract, adapted to dots
+    kOrder.sort((a, b) => (a.x.miles ?? 0) - (b.x.miles ?? 0));
+    let kIdx = -1, kBig = null;
+    const focusDot = (i) => {
+      if (kBig) { kBig.setAttribute('r', 4); kBig = null; }
+      if (i < 0 || i >= kOrder.length) { kIdx = -1; hideTip(); return; }
+      kIdx = i;
+      kBig = kOrder[i].dot; kBig.setAttribute('r', 6);
+      const r = kBig.getBoundingClientRect();
+      fillTip(kOrder[i].x, r.left + r.width / 2, r.top, false);
+    };
+    host.onkeydown = (e) => {
+      if (e.key === 'ArrowRight') { focusDot(kIdx < 0 ? 0 : Math.min(kOrder.length - 1, kIdx + 1)); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { focusDot(kIdx < 0 ? kOrder.length - 1 : Math.max(0, kIdx - 1)); e.preventDefault(); }
+      else if (e.key === 'Enter' && kIdx >= 0) { const u = safeUrl(kOrder[kIdx].x.url); if (u) window.open(u, '_blank', 'noopener'); }
+      else if (e.key === 'Escape') focusDot(-1);
+    };
+    host.onblur = () => focusDot(-1);
     const lg = $('scatter-legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + color }), 'drivable'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + color }), 'shipping added'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
+    if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
     if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('border-strong') }), 'typical value by year'));
-    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover for the car, click to open the listing.`;
+    // one chip per model year — hover to preview, press to hold (the touch path)
+    const setChips = () => { for (const b of lg.querySelectorAll('.legend-chip--year')) b.setAttribute('aria-pressed', String(b.dataset.y === stuckYear)); };
+    for (const c of cohorts) {
+      const sample = svgEl('svg', { width: 20, height: 10, viewBox: '0 0 20 10', 'aria-hidden': 'true' },
+        svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, stroke: tok('border-strong'), 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
+      const chip = el('button', { class: 'legend-chip legend-chip--year', type: 'button', 'aria-pressed': 'false',
+        title: `Highlight the ${c.year} cars`,
+        onclick: () => { stuckYear = stuckYear === c.year ? null : c.year; highlightYear(stuckYear); setChips(); },
+        onmouseenter: () => highlightYear(c.year),
+        onmouseleave: () => highlightYear(stuckYear) }, sample, el('span', null, c.year));
+      chip.dataset.y = c.year;
+      lg.appendChild(chip);
+    }
+    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover a line or press a year chip to light up that year's cars. Hover a dot for the car and click to open the listing; on a phone, tap previews and a second tap opens.`;
     card.hidden = false;
   }
 
@@ -782,6 +1231,19 @@
   function model() { return S.site.brands[S.brand].models[S.model]; }
   function trimRows(rows) { return S.trim === 'all' ? rows : rows.filter((x) => x.trim_id === S.trim); }
   function dailyFor(m) { return S.trim === 'all' ? (m.daily || []) : ((m.daily_by_trim || {})[S.trim] || []); }
+  // The chart's time window: the last N days ending at the newest snapshot,
+  // or everything. The y-scale follows, so recent movement stays readable
+  // once months of history accumulate.
+  function rangeDaily(daily) {
+    if (S.range === 'all' || !Array.isArray(daily) || !daily.length) return daily || [];
+    const end = Date.parse((S.site.generated || daily[daily.length - 1].date) + 'T00:00:00Z');
+    const cut = end - (+S.range) * 86400000;
+    return daily.filter((d) => Date.parse(d.date + 'T00:00:00Z') >= cut);
+  }
+  function rangeChips() {
+    segment($('chart-range'), ['30', '90', 'all'], S.range, (id) => (id === 'all' ? 'All' : id + 'd'), false,
+      (id) => { S.range = id; savePrefs(); rerender(); });
+  }
   // Lowest asking per day. Days written before min_price existed are skipped; a model with none gets its latest snapshot as one point.
   function askingSeries(m, daily) {
     const pts = (daily || []).filter((d) => d.min_price !== null && d.min_price !== undefined).map((d) => ({ date: d.date, value: d.min_price }));
@@ -885,15 +1347,15 @@
       S.brand = wantBrand;
       S.model = (wantM && models[wantM]) ? wantM : Object.keys(models)[0];
     }
-    S.trim = 'all'; S.year = 'all';
+    S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
   }
   function pickBrand(id) {
     S.brand = id;
     if (id !== 'all') S.model = Object.keys(S.site.brands[id].models)[0];
-    S.trim = 'all'; S.year = 'all';
+    S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
     syncUrl(); buildFilters(); render();
   }
-  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.year = 'all'; syncUrl(); buildFilters(); render(); window.scrollTo(0, 0); }
+  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); render(); window.scrollTo(0, 0); }
   function segment(host, ids, current, labelOf, caseClass, onPick) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
@@ -1086,7 +1548,7 @@
     ]);
     segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand);
     segment($('tabs'), modelIds, S.model, (id) => brand.models[id].label || id, true,
-      (id) => { S.model = id; S.trim = 'all'; S.year = 'all'; syncUrl(); buildFilters(); render(); });
+      (id) => { S.model = id; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); render(); });
   }
 
   function renderKpis(rows) {
@@ -1130,13 +1592,15 @@
   }
 
   function renderChart() {
-    const t = model(), daily = dailyFor(t);
+    const t = model(), daily = rangeDaily(dailyFor(t));
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'Asking price over time';
+    rangeChips();
     const scope = S.trim === 'all' ? 'all trims, drivable and beyond combined' : `${(t.trims[S.trim] || {}).label || 'this trim'}, drivable and beyond combined`;
-    $('chart-hint').textContent = daily.length >= 2
+    $('chart-hint').textContent = (daily.length >= 2
       ? `Lowest and median asking price on the market each day — ${scope}.`
-      : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`;
+      : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
+      + (S.range !== 'all' ? ` Showing the last ${S.range} days.` : '');
     const C = chartColors();
     const lg = $('legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { style: 'background:' + C.emphasis }), 'Lowest asking'));
@@ -1202,7 +1666,15 @@
     if (mk.median_days_listed != null) mbits.push(`typical car ${mk.median_days_listed}d on market`);
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
     if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 5) mbits.push(`sold cars lasted ~${mk.median_days_to_sale}d (${mk.n_sold} sold)`);
-    $('list-hint').textContent = `${rows.length} of ${all} tracked${cover && cover > all ? ` — the API lists ${num(cover)} nationwide` : ''} · one row per VIN · asking price as listed, shipping stated per car.`
+    // the full list is scannable nowhere — show the first slice, offer the rest
+    const LIMIT = 30;
+    const shown = S.showAllList ? rows : rows.slice(0, LIMIT);
+    const more = $('list-more'); more.textContent = '';
+    more.hidden = shown.length >= rows.length;
+    if (!more.hidden) more.appendChild(el('button', { class: 'sc-btn', type: 'button',
+      onclick: () => { S.showAllList = true; renderList(filtered()); } },
+      `Show all ${rows.length} cars`));
+    $('list-hint').textContent = `${shown.length < rows.length ? `first ${shown.length} of ` : ''}${rows.length} of ${all} tracked${cover && cover > all ? ` — the API lists ${num(cover)} nationwide` : ''} · one row per VIN · asking price as listed, shipping stated per car.`
       + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '');
     const table = $('list-table'); table.textContent = '';
     const scroll = $('list-scroll');
@@ -1210,7 +1682,7 @@
     if (narrow()) {
       scroll.hidden = true; cardsHost.hidden = false;
       if (!rows.length) cardsHost.appendChild(el('p', { class: 'sc-empty' }, 'Nothing matches these filters.'));
-      for (const x of rows) cardsHost.appendChild(listingCard(x, daily));
+      for (const x of shown) cardsHost.appendChild(listingCard(x, daily));
       return;
     }
     scroll.hidden = false; cardsHost.hidden = true;
@@ -1229,7 +1701,7 @@
     table.appendChild(el('thead', null, tr));
     const body = el('tbody');
     if (!rows.length) body.appendChild(el('tr', { class: 'sc-empty' }, el('td', { colspan: cols.length }, 'Nothing matches these filters.')));
-    for (const x of rows) {
+    for (const x of shown) {
       const price = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
         x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
         x.msrp ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
@@ -1258,14 +1730,22 @@
     $('gone-hint').textContent = 'Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day\'s cheapest-N cut-off and simply not fetched.';
     const table = $('gone-table'); table.textContent = '';
     if (!gone.length) {
+      $('gone-more').hidden = true;
       card.hidden = daily.length < 2;
       if (!card.hidden) table.appendChild(el('tbody', null, el('tr', { class: 'sc-empty' }, el('td', null, 'Nothing has dropped off the market yet.'))));
       return;
     }
     card.hidden = false;
+    const LIMITG = 12;
+    const shownG = S.showAllGone ? gone : gone.slice(0, LIMITG);
+    const moreG = $('gone-more'); moreG.textContent = '';
+    moreG.hidden = shownG.length >= gone.length;
+    if (!moreG.hidden) moreG.appendChild(el('button', { class: 'sc-btn', type: 'button',
+      onclick: () => { S.showAllGone = true; renderGone(); } },
+      `Show all ${gone.length} departures`));
     table.appendChild(el('thead', null, el('tr', null, el('th', null, 'Vehicle'), el('th', { class: 'sc-num' }, 'Last asking'), el('th', { class: 'sc-num' }, 'Miles'), el('th', { class: 'sc-num' }, 'Shipping'), el('th', null, 'Location'), el('th', null, 'Last seen'), el('th', null, 'Tracked'))));
     const body = el('tbody');
-    for (const g of gone.slice(0, 40)) {
+    for (const g of shownG) {
       const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin)))),
@@ -1277,7 +1757,7 @@
         el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
     table.appendChild(body);
-    if (gone.length > 40) $('gone-hint').textContent = `Showing the 40 most recent of ${gone.length} departed vehicles.`;
+    if (shownG.length < gone.length) $('gone-hint').textContent = `The ${shownG.length} most recent of ${gone.length} departed vehicles — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.`;
   }
 
   // ---------- overview: every model on the watchlist, priced the same way ----------
@@ -1334,7 +1814,8 @@
     // the shortlist first, then our picks across every model, then the map
     renderShortlist(true);
     renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label)), pickParams().per_model);
-    renderMap(true);
+    $('takeaway').after($('map-card'));
+    renderMap('overview');
     $('notes-card').hidden = true;
 
     // the chart: every model's lowest asking price over time — one line per
@@ -1343,11 +1824,13 @@
     // or show a model; hover one to pick its line out of the crowd.
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'The market over time';
-    const nDays = new Set(rows.flatMap((r) => askingSeries(r.m, r.m.daily || []).map((p) => p.date))).size;
+    rangeChips();
+    const nDays = new Set(rows.flatMap((r) => askingSeries(r.m, rangeDaily(r.m.daily || [])).map((p) => p.date))).size;
     $('chart-hint').textContent = (nDays >= 2
       ? 'Lowest asking price on the market each day — one line per model, colored by brand, the models being shopped drawn heavier. '
       : 'One snapshot so far for most models — lines fill in as daily runs accumulate. ')
-      + 'Click a legend chip to hide or show a model; hover the chart for any day\'s numbers. The chart always shows the whole market, whatever the filters.';
+      + 'Click a legend chip to hide or show a model; hover the chart for any day\'s numbers. The chart always shows the whole market, whatever the filters.'
+      + (S.range !== 'all' ? ` Showing the last ${S.range} days.` : '');
     const highlightSeries = (id) => {
       for (const n of $('chart').querySelectorAll('[data-sid]')) n.style.opacity = (!id || n.getAttribute('data-sid') === id) ? '' : '0.15';
     };
@@ -1359,7 +1842,7 @@
                         'stroke-dasharray': modelDash(bk, mk) || null, 'stroke-linecap': 'round', opacity: off ? 0.35 : 1 }));
       lg.appendChild(el('button', { class: 'legend-chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
         title: (off ? 'Show ' : 'Hide ') + m.label + (m.shopping ? ' (shopping)' : ''),
-        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); savePrefs(); render(); },
+        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); savePrefs(); rerender(); },
         onmouseenter: () => { if (!off) highlightSeries(id); },
         onmouseleave: () => highlightSeries(null) },
         sample, el('span', null, m.label)));
@@ -1368,13 +1851,13 @@
       .filter(({ bk, mk }) => !S.hidden.has(bk + '/' + mk))
       .map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label, emphasis: !!m.shopping,
         color: brandColor(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
-        labeled: !!m.shopping, points: askingSeries(m, m.daily || []) })),
+        labeled: !!m.shopping, points: askingSeries(m, rangeDaily(m.daily || [])) })),
       { named: true, height: 340 });
     const tb = $('chart-table'); tb.textContent = '';
-    const dates = [...new Set(rows.flatMap((r) => askingSeries(r.m, r.m.daily || []).map((p) => p.date)))].sort().reverse();
+    const dates = [...new Set(rows.flatMap((r) => askingSeries(r.m, rangeDaily(r.m.daily || [])).map((p) => p.date)))].sort().reverse();
     const table = el('table', { class: 'sc-table sc-table--compact' }, el('thead', null, el('tr', null, el('th', null, 'Day'), ...rows.map((r) => el('th', { class: 'sc-num sc-case' }, r.label)))));
     const body = el('tbody');
-    for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = askingSeries(r.m, r.m.daily || []).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
+    for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = askingSeries(r.m, rangeDaily(r.m.daily || [])).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
     table.appendChild(body); tb.appendChild(table);
 
     // the table: one row per model, with a photo — the row itself is the door in
@@ -1415,12 +1898,13 @@
     renderHeader();
     renderKpis(rows);
     renderShortlist(false);      // front page only — model rows carry a chip instead
-    renderMap(false);            // front page only
     const t = model();
     renderPicks(scoredFrom(rows, t.label));
     renderNotes(t);
     renderChart();
     renderScatter(rows);
+    $('scatter-card').after($('map-card'));
+    renderMap('model', rows);
     renderList(rows);
     renderGone();
     footLine();
@@ -1449,7 +1933,7 @@
       const on = S.where.has(key);
       fw.appendChild(el('button', { class: 'sc-tab sc-tab--case', type: 'button', 'aria-pressed': on ? 'true' : 'false',
         title: `${tip} — pick any; none selected means everywhere`,
-        onclick: () => { if (S.where.has(key)) S.where.delete(key); else S.where.add(key); savePrefs(); buildFilters(); render(); } }, lab));
+        onclick: () => { if (S.where.has(key)) S.where.delete(key); else S.where.add(key); savePrefs(); buildFilters(); rerender(); } }, lab));
     }
     $('f-sort').parentElement.hidden = overview;   // the overview has its own order: shopping first, then lowest asking
     const fy = $('f-year'); fy.textContent = '';
@@ -1466,18 +1950,29 @@
     $('filters').hidden = false;
   }
 
+  // A filter change re-renders in place: the page must not jump back to the
+  // top (it read as a full page refresh, especially on a phone).
+  function rerender() {
+    const y = window.scrollY;
+    render();
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }
   function wireFilters() {
-    $('f-trim').addEventListener('change', (e) => { S.trim = e.target.value; render(); });
-    $('f-year').addEventListener('change', (e) => { S.year = e.target.value; render(); });
-    $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); render(); });
-    $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; render(); });
-    $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; render(); });
-    $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; render(); });
-    let raf = null, wasNarrow = narrow();
+    $('f-trim').addEventListener('change', (e) => { S.trim = e.target.value; rerender(); });
+    $('f-year').addEventListener('change', (e) => { S.year = e.target.value; rerender(); });
+    $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); rerender(); });
+    $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender(); });
+    $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender(); });
+    $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender(); });
+    // React to WIDTH changes only: on phones, scrolling collapses the URL bar,
+    // which fires resize with a height-only change — re-rendering on that made
+    // every scroll feel like a page refresh.
+    let raf = null, wasNarrow = narrow(), lastW = window.innerWidth;
     window.addEventListener('resize', () => {
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        if (!S.site) return;
+        if (!S.site || window.innerWidth === lastW) return;
+        lastW = window.innerWidth;
         if (S.brand === 'all') { render(); return; }
         renderChart();
         renderScatter(filtered());
