@@ -863,11 +863,16 @@
     const t = model(), daily = dailyFor(t);
     $('list-card').hidden = false;
     const all = trimRows(t.listings || []).length;
+    // the honest denominator, when the API said how big the market really is
+    const trims = t.trims || {};
+    let cover = null;
+    if (S.trim !== 'all') cover = (trims[S.trim] || {}).market_total;
+    else { const vals = Object.values(trims).map((q) => q.market_total); if (vals.length && vals.every((v) => v != null)) cover = vals.reduce((a, b) => a + b, 0); }
     const mk = t.market || {}, mbits = [];
     if (mk.median_days_listed != null) mbits.push(`typical car ${mk.median_days_listed}d on market`);
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
     if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 5) mbits.push(`sold cars lasted ~${mk.median_days_to_sale}d (${mk.n_sold} sold)`);
-    $('list-hint').textContent = `${rows.length} of ${all} vehicles · one row per VIN · asking price as listed, shipping stated per car.`
+    $('list-hint').textContent = `${rows.length} of ${all} tracked${cover && cover > all ? ` — the API lists ${num(cover)} nationwide` : ''} · one row per VIN · asking price as listed, shipping stated per car.`
       + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '');
     const table = $('list-table'); table.textContent = '';
     const scroll = $('list-scroll');

@@ -785,6 +785,29 @@ PRICE_WINDOW = {}      # (target id, source) -> highest price its price.asc quer
 EXHAUSTED = set()      # (target id, source): a query came back short, so it returned
                        # that scope's ENTIRE result set — no cheapest-N cut-off applies
 FAILED_FETCHES = 0     # requests that still failed after the retry
+TOTALS = {}            # (target id, source) -> the API's own total result count,
+                       # when the response envelope carries one — the honest
+                       # denominator behind "N tracked"
+ENVELOPE_WARNED = False
+
+
+def envelope_total(payload):
+    """The total-result count from a listings response envelope, or None.
+    The key is probed, not assumed — API envelopes rename these freely."""
+    if not isinstance(payload, dict):
+        return None
+    for k in ("total", "totalCount", "count", "hitsCount", "totalResults"):
+        n = to_int(payload.get(k))
+        if n is not None:
+            return n
+    for parent in ("meta", "pagination"):
+        sub = payload.get(parent)
+        if isinstance(sub, dict):
+            for k in ("total", "totalCount", "totalItems", "count", "totalResults"):
+                n = to_int(sub.get(k))
+                if n is not None:
+                    return n
+    return None
 
 
 def year_param(years):
@@ -822,10 +845,20 @@ def fetch(source_name, source, sort, page, t):
             err = str(e)
         else:
             if r.status_code == 200:
+                global ENVELOPE_WARNED
                 try:
-                    batch = (r.json() or {}).get("data") or []
+                    payload = r.json() or {}
                 except ValueError:
-                    batch = []
+                    payload = {}
+                batch = payload.get("data") or [] if isinstance(payload, dict) else []
+                tot = envelope_total(payload)
+                if tot is not None:
+                    key = (t["id"], source_name)
+                    TOTALS[key] = max(TOTALS.get(key, 0), tot)
+                elif batch and not ENVELOPE_WARNED:
+                    ENVELOPE_WARNED = True
+                    print("  ! no total count found in the response envelope — "
+                          f"keys were {sorted(payload)[:8]}")
                 if batch and not SAMPLE.exists():
                     SAMPLE.write_text(json.dumps(batch[0], indent=2))
                 return batch
@@ -1238,6 +1271,9 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
     """Movers, departures, in-state cars by state, best value out of state."""
     best = next((x for x in tl if x["price"] is not None), None)
     head = f"### {t['label']} — {len(tl)} vehicles"
+    tot = TOTALS.get((t["id"], "National"))
+    if tot and tot > len(tl):
+        head += f" tracked of {tot:,} the API lists nationwide"
     if best:
         head += (f" · lowest asking {money(best['price'])} "
                  f"({place(best)})")
@@ -1384,7 +1420,8 @@ def build_outputs(today_rows, all_rows, hist):
                                     "depth": t["depth"], "cadence": t["cadence"],
                                     "shopping": t["shopping"],
                                     "years": [str(y) for y in t["years"]],
-                                    "min_price": t.get("min_price")}
+                                    "min_price": t.get("min_price"),
+                                    "market_total": TOTALS.get((t["id"], "National"))}
                           for t in trims},
                 "listings": [],
                 "daily": daily_stats(m_rows_all),

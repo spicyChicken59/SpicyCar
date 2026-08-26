@@ -445,6 +445,30 @@ class TestZipCache(unittest.TestCase):
 # fetch(): an error is "unknown", never "the market is empty".
 # --------------------------------------------------------------------------
 class TestFetch(unittest.TestCase):
+    def test_envelope_total_probes_the_common_shapes(self):
+        self.assertEqual(T.envelope_total({"total": 82, "data": []}), 82)
+        self.assertEqual(T.envelope_total({"totalCount": "82"}), 82)
+        self.assertEqual(T.envelope_total({"meta": {"totalItems": 82}}), 82)
+        self.assertEqual(T.envelope_total({"pagination": {"total": 82}}), 82)
+        self.assertIsNone(T.envelope_total({"data": []}))
+        self.assertIsNone(T.envelope_total(None))
+
+    def test_fetch_records_the_market_total(self):
+        old_get = T.requests.get
+        try:
+            class R:
+                status_code = 200
+                def json(self):
+                    return {"totalCount": 82, "data": [{"vin": "X"}] * 3}
+            T.requests.get = lambda *a, **k: R()
+            batch = T.fetch("National", None, "price.asc", 1,
+                            target("bmw-i5-edrive40"))
+            self.assertEqual(len(batch), 3)
+            self.assertEqual(T.TOTALS[("bmw-i5-edrive40", "National")], 82)
+        finally:
+            T.requests.get = old_get
+            T.TOTALS.clear()
+
     def test_persistent_failure_returns_none_after_one_retry(self):
         old_get, old_sleep = T.requests.get, T.time.sleep
         try:
