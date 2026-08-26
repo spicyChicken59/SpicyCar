@@ -534,6 +534,21 @@ class TestMarketStats(unittest.TestCase):
                                               "cut_share": None,
                                               "median_cut": None})
 
+    def test_days_to_sale_counts_only_real_delistings(self):
+        gone = [
+            {"likely": "delisted", "listed_since": "2026-08-10",
+             "last_seen": "2026-08-20", "first_seen": "2026-08-15"},   # 10d, by listing date
+            {"likely": "delisted", "listed_since": "",
+             "last_seen": "2026-08-20", "first_seen": "2026-08-16"},   # 4d, by first sighting
+            {"likely": "out of window", "listed_since": "2026-07-01",
+             "last_seen": "2026-08-20", "first_seen": "2026-07-02"},   # not a sale
+            {"likely": "delisted", "listed_since": "garbage",
+             "last_seen": "2026-08-20", "first_seen": None},           # unparseable: skipped
+        ]
+        stats = T.sale_stats(gone)
+        self.assertEqual(stats["n_sold"], 2)
+        self.assertEqual(stats["median_days_to_sale"], 7)   # median of 10 and 4
+
     def test_market_line_reads_like_a_sentence(self):
         line = T.market_line({"median_days_listed": 34, "tracked_2d": 40,
                               "cut_share": 0.41, "median_cut": 1050})

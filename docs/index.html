@@ -850,6 +850,7 @@
     const mk = t.market || {}, mbits = [];
     if (mk.median_days_listed != null) mbits.push(`typical car ${mk.median_days_listed}d on market`);
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
+    if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 5) mbits.push(`sold cars lasted ~${mk.median_days_to_sale}d (${mk.n_sold} sold)`);
     $('list-hint').textContent = `${rows.length} of ${all} vehicles · one row per VIN · asking price as listed, shipping stated per car.`
       + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '');
     const table = $('list-table'); table.textContent = '';

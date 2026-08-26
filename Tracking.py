@@ -571,6 +571,25 @@ def market_stats(listings):
     }
 
 
+def sale_stats(gone):
+    """How fast this model's cars actually leave, from the ones that really
+    left: days from the listing date (or first sighting, when the dealer
+    never said) to the last day the car was seen. Out-of-window and
+    unchecked departures are not sales and are left out."""
+    spans = []
+    for g in gone:
+        if g.get("likely") != "delisted":
+            continue
+        start = g.get("listed_since") or g.get("first_seen")
+        try:
+            spans.append(max(0, (date.fromisoformat(str(g.get("last_seen"))[:10])
+                                 - date.fromisoformat(str(start)[:10])).days))
+        except (TypeError, ValueError):
+            continue
+    return {"n_sold": len(spans),
+            "median_days_to_sale": int(median(spans)) if spans else None}
+
+
 def market_line(stats):
     """The market context as one report phrase, or ''. """
     bits = []
@@ -581,6 +600,9 @@ def market_line(stats):
         if stats.get("median_cut"):
             cut += f", median {money(stats['median_cut'])}"
         bits.append(cut)
+    if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 5:
+        bits.append(f"sold cars lasted ~{stats['median_days_to_sale']}d "
+                    f"({stats['n_sold']} sold)")
     return " · ".join(bits)
 
 
@@ -1096,6 +1118,7 @@ def delisted(tids, all_rows, today_rows, hist):
             "last_price": last_price, "adj": adj,
             "city": r["city"], "dealer": r["dealer"],
             "url": r["url"], "last_seen": last_day,
+            "listed_since": r["listed_since"],
             "prev_fetch_day": prev_fetch,
             "first_seen": s.get("first_seen"),
             "days_tracked": s.get("days_tracked", 0),
@@ -1365,7 +1388,8 @@ def build_outputs(today_rows, all_rows, hist):
             listings = [listing_entry(r, summarize((r["target"], r["vin"]), hist))
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
-            m_entry["market"] = market_stats(m_entry["listings"])
+            m_entry["market"] = {**market_stats(m_entry["listings"]),
+                                 **sale_stats(m_entry["gone"])}
             scored = score_picks(m_entry["listings"], label)
             all_scored += scored
             if SHORTLIST:
