@@ -301,6 +301,25 @@ class TestPicks(unittest.TestCase):
     def test_a_thin_pool_produces_no_picks(self):
         self.assertEqual(T.score_picks([listing(), listing()], "Two Cars"), [])
 
+    def test_scoring_uses_the_model_year_cohort_when_it_is_big_enough(self):
+        """A 2023 car must be judged against 2023 prices, not a median that
+        blends in far dearer 2026 cars."""
+        old = [listing(price=p, year="2023") for p in (58000, 60000, 62000)]
+        new = [listing(price=p, year="2026") for p in (118000, 120000, 122000)]
+        scored = T.score_picks(old + new, "i7")
+        mid_old = next(p for p in scored if p["price"] == 60000)
+        self.assertLess(abs(mid_old["pick_pct"]), 0.05,
+                        "the median 2023 car is typical for 2023, not 50% under")
+        self.assertEqual(mid_old["pick_year"], "2023")
+
+    def test_a_thin_year_falls_back_to_the_model_median(self):
+        pool = ([listing(price=p, year="2024") for p in (40000, 42000, 44000)]
+                + [listing(price=39000, year="2022")])
+        scored = T.score_picks(pool, "M")
+        lone = next(p for p in scored if p["price"] == 39000)
+        self.assertEqual(lone["pick_year"], "", "one 2022 car is not a cohort")
+        self.assertGreater(lone["pick_pct"], 0, "still judged against the model")
+
     def test_a_pick_must_sit_under_typical(self):
         """A thin drivable pool must not promote above-median cars to picks."""
         scored = T.score_picks([listing(price=p) for p in (40000, 44000, 48000)], "M")

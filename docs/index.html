@@ -264,11 +264,22 @@
   }
   function pickValue(x, P) { return (!hasPrice(x) || x.miles == null) ? null : x.price + (x.local ? 0 : (x.ship || 0)) + (x.miles - P.base) * P.cpm; }
   function pickEligible(x, P) { return hasPrice(x) && x.miles != null && x.miles <= P.max_miles && !(P.no_acc && x.accidents > 0) && !(P.no_rental && isRental(x)); }
+  // Scored against the median of the car's own model year when that year has
+  // three or more eligible cars, else the whole model — otherwise a 2023 i7
+  // reads as half price because the model median blends in 2026 cars.
   function scorePicks(listings, modelLabel) {
     const P = pickParams(), pool = listings.filter((x) => pickEligible(x, P));
     if (pool.length < 3) return [];
-    const med = median(pool.map((x) => pickValue(x, P)));
-    return pool.map((x) => { const v = pickValue(x, P); return { x, modelLabel, under: Math.round(med - v), pct: med ? (med - v) / med : 0 }; }).sort((a, b) => b.pct - a.pct);
+    const medAll = median(pool.map((x) => pickValue(x, P)));
+    const byYear = {};
+    for (const x of pool) { const y = String(x.year || ''); (byYear[y] = byYear[y] || []).push(pickValue(x, P)); }
+    const yearMed = {};
+    for (const y in byYear) if (byYear[y].length >= 3) yearMed[y] = median(byYear[y]);
+    return pool.map((x) => {
+      const y = String(x.year || ''), med = yearMed[y] !== undefined ? yearMed[y] : medAll;
+      const v = pickValue(x, P);
+      return { x, modelLabel, year: yearMed[y] !== undefined ? y : '', under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
+    }).sort((a, b) => b.pct - a.pct);
   }
   function choosePicks(scored, n, perModel) {
     const out = [], per = {};
@@ -282,7 +293,7 @@
   }
   function picksRule() {
     const P = pickParams();
-    return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model a car sits, allowing $${P.cpm.toFixed(2)} a mile. Asking prices shown.`;
+    return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model — its own model year when there are enough of them — a car sits, allowing $${P.cpm.toFixed(2)} a mile. Asking prices shown.`;
   }
 
   // ---------- sparkline: svg.sc-spark — the sheet colours the path and end dot ----------
@@ -584,7 +595,7 @@
       el('div', { class: 'sc-callout__figure' }, `${money(b.price)} asking`),
       el('div', { class: 'sc-media__sub' }, shipNote(b)),
       el('div', null, el('span', { class: 'sc-chip sc-chip--good' }, `${Math.round(p.pct * 100)}% under typical`)),
-      el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${p.modelLabel}, miles allowed for`),
+      el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${p.year ? p.year + ' ' : ''}${p.modelLabel}, miles allowed for`),
       para)));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then

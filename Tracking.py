@@ -219,6 +219,12 @@ def money(n):
     return f"-${-n:,}" if n < 0 else f"${n:,}"
 
 
+def place(x):
+    """City, ST — or an honest 'location n/a' instead of an empty '(, )'."""
+    bits = [str(x.get(k) or "").strip() for k in ("city", "state")]
+    return ", ".join(b for b in bits if b) or "location n/a"
+
+
 def haversine(lat1, lon1, lat2, lon2):
     """Miles between two points."""
     r = 3958.8
@@ -426,15 +432,25 @@ def pick_eligible(x):
 
 
 def score_picks(listings, model_label):
-    """Every eligible car of one model, scored against that model's median."""
+    """Every eligible car of one model, scored against the median of its own
+    model year when that year has three or more eligible cars, else the whole
+    model. Without the year cohorts a 2023 i7 reads as half price simply
+    because the model median blends in six-figure 2026 cars."""
     pool = [x for x in listings if pick_eligible(x)]
     if len(pool) < 3:
         return []
-    med = median([pick_value(x) for x in pool])
+    med_all = median([pick_value(x) for x in pool])
+    by_year = defaultdict(list)
+    for x in pool:
+        by_year[str(x.get("year") or "")].append(pick_value(x))
+    year_med = {y: median(vs) for y, vs in by_year.items() if len(vs) >= 3}
     out = []
     for x in pool:
+        y = str(x.get("year") or "")
+        med = year_med.get(y, med_all)
         v = pick_value(x)
         out.append({**x, "model_label": model_label,
+                    "pick_year": y if y in year_med else "",
                     "pick_under": int(round(med - v)),
                     "pick_pct": (med - v) / med if med else 0.0})
     out.sort(key=lambda p: -p["pick_pct"])
@@ -469,9 +485,10 @@ def fmt_pick(p):
         bits.append(f"{to_int(p['miles']):,} mi")
     bits.append("drivable · no shipping" if p.get("local") else
                 (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
-    bits.append(f"{p.get('city', '')}, {p.get('state', '')}")
+    bits.append(place(p))
     line = "- " + " · ".join(b for b in bits if b)
-    line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {p['model_label']} "
+    cohort = f"{p['pick_year']} {p['model_label']}" if p.get("pick_year") else p["model_label"]
+    line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {cohort} "
              f"({money(p['pick_under'])} less)_")
     if p.get("flags"):
         line += f" · _{' · '.join(p['flags'])}_"
@@ -484,7 +501,8 @@ def fmt_pick(p):
 def picks_rule():
     return (f"under {(to_int(PICKS.get('max_miles')) or 50000):,} miles, no reported "
             f"accidents, no rental or fleet history; ranked by how far under the "
-            f"typical price for the model a car sits, allowing $"
+            f"typical price for the model — its own model year when there are "
+            f"enough of them — a car sits, allowing $"
             f"{(to_float(PICKS.get('cents_per_mile')) if to_float(PICKS.get('cents_per_mile')) is not None else 0.30):.2f} a mile")
 
 
@@ -877,7 +895,7 @@ def brief_lines(m_entry, listings, prev_day):
     priced = [x for x in listings if x["price"] is not None]     # sorted by asking
     if priced:
         b = priced[0]
-        line = f"- Lowest asking **{money(b['price'])}** ({b['city']}, {b['state']})"
+        line = f"- Lowest asking **{money(b['price'])}** ({place(b)})"
         if not b["local"] and b["ship"]:
             line += f" · + {money(b['ship'])} shipping"
         if (today and prev and today.get("min_price") is not None
@@ -890,7 +908,7 @@ def brief_lines(m_entry, listings, prev_day):
     if local:
         b = local[0]
         out.append(f"- Lowest drivable **{money(b['price'])}** "
-                   f"({b['city']}, {b['state']}) · no shipping")
+                   f"({place(b)}) · no shipping")
     elif STATES or DRIVE_RADIUS:
         out.append(f"- Nothing drivable ({scope_label()})")
     movers = sum(1 for x in listings if len(x["series"]) >= 2
@@ -913,7 +931,7 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
     head = f"### {t['label']} — {len(tl)} vehicles"
     if best:
         head += (f" · lowest asking {money(best['price'])} "
-                 f"({best['city']}, {best['state']})")
+                 f"({place(best)})")
     sec += [head, ""]
     if t["note"]:
         sec += [f"_{t['note']}_", ""]
@@ -973,12 +991,12 @@ def compact_line(m_entry, label):
         bits = [f"{len(xs)} cars", f"{sum(1 for x in xs if x['local'])} drivable"]
         if priced:
             b = priced[0]
-            bits.append(f"lowest asking {money(b['price'])} ({b['city']}, {b['state']})"
+            bits.append(f"lowest asking {money(b['price'])} ({place(b)})"
                         + (f" + {money(b['ship'])} shipping"
                            if (not b["local"] and b["ship"]) else ""))
         if local:
             bits.append(f"drivable from {money(local[0]['price'])} "
-                        f"({local[0]['city']}, {local[0]['state']})")
+                        f"({place(local[0])})")
         if priced:
             bits.append(f"median asking {money(int(median([x['price'] for x in priced])))}")
         line = f"- **{label}** — " + " · ".join(bits)
