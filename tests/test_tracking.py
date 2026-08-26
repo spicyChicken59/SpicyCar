@@ -323,6 +323,32 @@ class TestPicks(unittest.TestCase):
                         "the median 2023 car is typical for 2023, not 50% under")
         self.assertEqual(mid_old["pick_year"], "2023")
 
+    def test_scoring_prefers_the_trim_cohort_when_it_is_big_enough(self):
+        """A cheapest-trim car must be judged against its own trim, not a
+        median blended with the model's six-figure flagship trim."""
+        base = [listing(price=p, year="2023", trim="eDrive50")
+                for p in (58000, 60000, 62000)]
+        flag = [listing(price=p, year="2023", trim="M70")
+                for p in (118000, 120000, 122000)]
+        scored = T.score_picks(base + flag, "BMW i7")
+        mid = next(p for p in scored if p["price"] == 60000)
+        self.assertLess(abs(mid["pick_pct"]), 0.05,
+                        "a median eDrive50 is typical for eDrive50s, not 45% under")
+        self.assertEqual(mid["pick_year"], "2023")
+        self.assertEqual(mid["pick_trim"], "eDrive50")
+
+    def test_a_thin_trim_falls_back_to_the_year_cohort(self):
+        pool = ([listing(price=p, year="2023", trim="xDrive60")
+                 for p in (60000, 62000)]              # two: no trim cohort
+                + [listing(price=61000, year="2023", trim="eDrive50")])
+        scored = T.score_picks(pool, "BMW i7")
+        self.assertTrue(all(p["pick_trim"] == "" for p in scored))
+        self.assertTrue(all(p["pick_year"] == "2023" for p in scored))
+
+    def test_trim_display_drops_model_words(self):
+        self.assertEqual(T.trim_disp("BMW i7", "i7 xDrive60"), "xDrive60")
+        self.assertEqual(T.trim_disp("BMW i5", "eDrive40"), "eDrive40")
+
     def test_a_thin_year_falls_back_to_the_model_median(self):
         pool = ([listing(price=p, year="2024") for p in (40000, 42000, 44000)]
                 + [listing(price=39000, year="2022")])

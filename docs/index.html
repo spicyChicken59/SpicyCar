@@ -290,21 +290,37 @@
   }
   function pickValue(x, P) { return (!hasPrice(x) || x.miles == null) ? null : x.price + (x.local ? 0 : (x.ship || 0)) + (x.miles - P.base) * P.cpm; }
   function pickEligible(x, P) { return hasPrice(x) && x.miles != null && x.miles <= P.max_miles && !(P.no_acc && x.accidents > 0) && !(P.no_rental && isRental(x)); }
-  // Scored against the median of the car's own model year when that year has
-  // three or more eligible cars, else the whole model — otherwise a 2023 i7
-  // reads as half price because the model median blends in 2026 cars.
+  // The trim, minus words the model label already carries — a cohort reads
+  // "2023 BMW i7 xDrive60", never "BMW i7 i7 xDrive60".
+  function trimDisp(modelLabel, trim) {
+    const words = new Set(String(modelLabel).toLowerCase().split(/\s+/));
+    return String(trim || '').split(/\s+/).filter((w) => w && !words.has(w.toLowerCase())).join(' ');
+  }
+  // Scored against the tightest cohort with three or more eligible cars: the
+  // car's own trim and model year first, then the model year, then the whole
+  // model — otherwise a cheapest-trim 2023 i7 reads as half price because the
+  // blended median carries M70s and 2026 cars. Mirrors Tracking.py.
   function scorePicks(listings, modelLabel) {
     const P = pickParams(), pool = listings.filter((x) => pickEligible(x, P));
     if (pool.length < 3) return [];
-    const medAll = median(pool.map((x) => pickValue(x, P)));
-    const byYear = {};
-    for (const x of pool) { const y = String(x.year || ''); (byYear[y] = byYear[y] || []).push(pickValue(x, P)); }
-    const yearMed = {};
+    const vals = new Map(pool.map((x) => [x, pickValue(x, P)]));
+    const medAll = median([...vals.values()]);
+    const byYear = {}, byTY = {};
+    for (const x of pool) {
+      const y = String(x.year || ''), tr = String(x.trim || '').trim().toLowerCase();
+      (byYear[y] = byYear[y] || []).push(vals.get(x));
+      if (tr) (byTY[tr + '|' + y] = byTY[tr + '|' + y] || []).push(vals.get(x));
+    }
+    const yearMed = {}, tyMed = {};
     for (const y in byYear) if (byYear[y].length >= 3) yearMed[y] = median(byYear[y]);
+    for (const k in byTY) if (byTY[k].length >= 3) tyMed[k] = median(byTY[k]);
     return pool.map((x) => {
-      const y = String(x.year || ''), med = yearMed[y] !== undefined ? yearMed[y] : medAll;
-      const v = pickValue(x, P);
-      return { x, modelLabel, year: yearMed[y] !== undefined ? y : '', under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
+      const y = String(x.year || ''), tr = String(x.trim || '').trim().toLowerCase();
+      let med = medAll, year = '', trim = '';
+      if (tyMed[tr + '|' + y] !== undefined) { med = tyMed[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); }
+      else if (yearMed[y] !== undefined) { med = yearMed[y]; year = y; }
+      const v = vals.get(x);
+      return { x, modelLabel, year, trim, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
   function choosePicks(scored, n, perModel) {
@@ -319,7 +335,7 @@
   }
   function picksRule() {
     const P = pickParams();
-    return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model — its own model year when there are enough of them — a car sits, allowing $${P.cpm.toFixed(2)} a mile. Asking prices shown.`;
+    return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $${P.cpm.toFixed(2)} a mile. Asking prices shown.`;
   }
 
   // ---------- sparkline: svg.sc-spark — the sheet colours the path and end dot ----------
@@ -467,13 +483,13 @@
   // all say the same number instead of a median that shifts under filters.
   function annotateValue(site) {
     for (const b of Object.values(site.brands || {})) for (const m of Object.values(b.models || {})) {
-      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; }
+      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; }
     }
   }
   // The boot-time full-market scores, restricted to the rows currently in view.
   function scoredFrom(rows, label) {
     return rows.filter((x) => x.pick_pct != null)
-      .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', under: x.pick_under, pct: x.pick_pct }))
+      .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', trim: x.pick_trim || '', under: x.pick_under, pct: x.pick_pct }))
       .sort((a, b) => b.pct - a.pct);
   }
 
@@ -632,7 +648,7 @@
       el('div', { class: 'sc-callout__figure' }, `${money(b.price)} asking`),
       el('div', { class: 'sc-media__sub' }, shipNote(b)),
       el('div', null, el('span', { class: 'sc-chip sc-chip--good' }, `${Math.round(p.pct * 100)}% under typical`)),
-      el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${p.year ? p.year + ' ' : ''}${p.modelLabel}, miles allowed for`),
+      el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${[p.year, p.modelLabel, p.trim].filter(Boolean).join(' ')}, miles allowed for`),
       para)));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then

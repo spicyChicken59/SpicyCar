@@ -479,26 +479,46 @@ def pick_eligible(x):
     return True
 
 
+def trim_disp(model_label, trim):
+    """The trim, minus any words the model label already carries, so a
+    cohort reads '2023 BMW i7 xDrive60' and never 'BMW i7 i7 xDrive60'."""
+    words = {w.lower() for w in str(model_label).split()}
+    return " ".join(w for w in str(trim or "").split() if w.lower() not in words)
+
+
 def score_picks(listings, model_label):
-    """Every eligible car of one model, scored against the median of its own
-    model year when that year has three or more eligible cars, else the whole
-    model. Without the year cohorts a 2023 i7 reads as half price simply
-    because the model median blends in six-figure 2026 cars."""
+    """Every eligible car of one model, scored against the tightest cohort
+    with three or more eligible cars: its own trim and model year first,
+    then the model year, then the whole model. Without the cohorts a 2023
+    eDrive50 i7 reads as half price simply because the blended median
+    carries six-figure M70s and 2026 cars."""
     pool = [x for x in listings if pick_eligible(x)]
     if len(pool) < 3:
         return []
-    med_all = median([pick_value(x) for x in pool])
-    by_year = defaultdict(list)
+    values = {id(x): pick_value(x) for x in pool}
+    med_all = median(values.values())
+    by_year, by_ty = defaultdict(list), defaultdict(list)
     for x in pool:
-        by_year[str(x.get("year") or "")].append(pick_value(x))
+        y = str(x.get("year") or "")
+        tr = str(x.get("trim") or "").strip().lower()
+        by_year[y].append(values[id(x)])
+        if tr:
+            by_ty[(tr, y)].append(values[id(x)])
     year_med = {y: median(vs) for y, vs in by_year.items() if len(vs) >= 3}
+    ty_med = {k: median(vs) for k, vs in by_ty.items() if len(vs) >= 3}
     out = []
     for x in pool:
         y = str(x.get("year") or "")
-        med = year_med.get(y, med_all)
-        v = pick_value(x)
+        tr = str(x.get("trim") or "").strip().lower()
+        if (tr, y) in ty_med:
+            med, p_year, p_trim = ty_med[(tr, y)], y, trim_disp(model_label, x.get("trim"))
+        elif y in year_med:
+            med, p_year, p_trim = year_med[y], y, ""
+        else:
+            med, p_year, p_trim = med_all, "", ""
+        v = values[id(x)]
         out.append({**x, "model_label": model_label,
-                    "pick_year": y if y in year_med else "",
+                    "pick_year": p_year, "pick_trim": p_trim,
                     "pick_under": int(round(med - v)),
                     "pick_pct": (med - v) / med if med else 0.0})
     out.sort(key=lambda p: -p["pick_pct"])
@@ -535,7 +555,8 @@ def fmt_pick(p):
                 (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
     bits.append(place(p))
     line = "- " + " · ".join(b for b in bits if b)
-    cohort = f"{p['pick_year']} {p['model_label']}" if p.get("pick_year") else p["model_label"]
+    cohort = " ".join(b for b in (p.get("pick_year"), p["model_label"],
+                                  p.get("pick_trim")) if b)
     line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {cohort} "
              f"({money(p['pick_under'])} less)_")
     if p.get("flags"):
@@ -752,8 +773,8 @@ def picks_rule():
     if cpm is None:
         cpm = 0.30
     return (", ".join(bits) + "; ranked by how far under the typical price "
-            "for the model — its own model year when there are enough of "
-            f"them — a car sits, allowing ${cpm:.2f} a mile")
+            "for the model — its own trim and model year when there are "
+            f"enough of them — a car sits, allowing ${cpm:.2f} a mile")
 
 
 # --------------------------------------------------------------------------
