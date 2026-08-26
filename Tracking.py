@@ -546,6 +546,56 @@ def fmt_pick(p):
     return line
 
 
+def build_today(events):
+    """The day's changes, once: '## Today' lines for the report, and the
+    fragments for an email subject that says what happened. Priority:
+    shortlist alerts, then cuts (shopping and drivable first), then new
+    cars, then departures."""
+    sec, bits = [], []
+    for e in events["gone"]:
+        if str(e["vin"]).upper() in SHORTLIST:
+            sec.append(f"- **Shortlist: GONE** — {e['label']} last seen "
+                       f"{e['last_seen']} at {money(e['last_price'])} `{e['vin']}`")
+            bits.append("shortlist car GONE")
+    for e in events["cuts"]:
+        x = e["x"]
+        if str(x["vin"]).upper() in SHORTLIST:
+            sec.append(f"- **Shortlist: ▼ {money(e['amount'])} cut** — {e['label']} "
+                       f"now {money(x['price'])} ({place(x)}) `{x['vin']}`")
+            bits.append(f"▼{money(e['amount'])} on your shortlist")
+    cuts = sorted(events["cuts"],
+                  key=lambda e: (-e["shopping"], -bool(e["x"]["local"]), -e["amount"]))
+    for e in cuts[:3]:
+        x = e["x"]
+        sec.append(f"- ▼ {money(e['amount'])} cut · {e['label']} · now "
+                   f"{money(x['price'])} · {place(x)}"
+                   f"{' · drivable' if x['local'] else ''} `{x['vin']}`")
+    if len(cuts) > 3:
+        sec.append(f"- …and {len(cuts) - 3} more price change{'s' if len(cuts) - 3 != 1 else ''}"
+                   " in the sections below")
+    if cuts and not bits:
+        e = cuts[0]
+        bits.append(f"▼{money(e['amount'])} cut on "
+                    f"{'drivable ' if e['x']['local'] else ''}{e['label']}")
+    news = [e for e in events["new"] if e["shopping"]]
+    if news:
+        best = max(news, key=lambda e: e["pct"] if e["pct"] is not None else -1)
+        line = f"- {len(news)} new on the shopped models"
+        if best["pct"] and best["pct"] > 0:
+            line += (f" · best {best['pct']:.0%} under typical "
+                     f"({money(best['x']['price'])}, {place(best['x'])})")
+        sec.append(line)
+        bits.append(f"{len(news)} new")
+    gones = [e for e in events["gone"] if e["shopping"]]
+    if gones:
+        sec.append(f"- {len(gones)} gone since the last fetch on the shopped models")
+        bits.append(f"{len(gones)} gone")
+    subject = (f"{APP} — " + " · ".join(bits[:3])) if bits else f"{APP} — quiet day · {TODAY}"
+    if not sec:
+        return [], subject
+    return ["## Today", ""] + sec + [""], subject
+
+
 def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
     """The cars actually being decided on, first in the report. A live one
     shows its price and movement; a vanished one says so loudly, with the
@@ -1219,6 +1269,7 @@ def build_outputs(today_rows, all_rows, hist):
 
     full, compact, all_scored = [], [], []      # report sections, assembled at the end
     live_by_vin, gone_by_vin = {}, {}           # shortlist lookups, across every model
+    events = {"cuts": [], "new": [], "gone": []}    # what changed today, once
     for bkey, models in tree.items():
         b_entry = {"label": WATCHLIST[bkey].get("label", bkey),
                    "models": {}}
@@ -1277,6 +1328,29 @@ def build_outputs(today_rows, all_rows, hist):
             if SHORTLIST:
                 for x in m_entry["listings"]:
                     live_by_vin.setdefault(str(x["vin"]).upper(), (x, label))
+            if prev_day and m_entry["fetched_today"]:
+                by_vin = {p["vin"]: p for p in scored}
+                for x in m_entry["listings"]:
+                    s_ = x["series"]
+                    tl = str(x.get("trim_label") or "")
+                    name = label if tl.lower() in ("", "all", "all trims") else f"{label} {tl}"
+                    if len(s_) >= 2 and s_[-1][0] == TODAY and s_[-1][1] < s_[-2][1]:
+                        events["cuts"].append({"amount": s_[-2][1] - s_[-1][1],
+                                               "x": x, "label": name,
+                                               "shopping": shopping})
+                    if x["days_tracked"] == 1:
+                        p = by_vin.get(x["vin"])
+                        events["new"].append({"x": x, "label": name,
+                                              "pct": p["pick_pct"] if p else None,
+                                              "shopping": shopping})
+                for g in m_entry["gone"]:
+                    if (g["likely"] == "delisted" and g["prev_fetch_day"]
+                            and g["last_seen"] == g["prev_fetch_day"]):
+                        events["gone"].append({"vin": g["vin"],
+                                               "label": f"{label} {g.get('trim_label') or ''}".strip(),
+                                               "last_seen": g["last_seen"],
+                                               "last_price": g["last_price"],
+                                               "shopping": shopping})
 
             if not shopping:
                 compact.append(compact_line(m_entry, label))
@@ -1331,8 +1405,10 @@ def build_outputs(today_rows, all_rows, hist):
             full += sec
 
     scored_by_vin = {str(p["vin"]).upper(): p for p in all_scored}
+    today_sec, subject = build_today(events)
     report = ([f"# {APP} — {TODAY}", ""]
               + shortlist_section(live_by_vin, gone_by_vin, scored_by_vin)
+              + today_sec
               + full)
     top_local, top_ship = split_picks(all_scored, PICKS.get("count", 4),
                                       PICKS.get("per_model", 2))
@@ -1356,7 +1432,7 @@ def build_outputs(today_rows, all_rows, hist):
     report += ["---",
                f"_{len(hist)} vehicle histories across {len(days)} "
                f"day{'s' if len(days) != 1 else ''} · {CALLS} API calls today._"]
-    return "\n".join(report), site
+    return "\n".join(report), site, subject
 
 
 def send_email(report, subject=None):
@@ -1472,12 +1548,13 @@ def main():
     write_rows(all_rows)
 
     hist = build_history(all_rows)
-    report, site = build_outputs(today_rows, all_rows, hist)
+    report, site, subject = build_outputs(today_rows, all_rows, hist)
 
     Path("REPORT.md").write_text(report)
     (DOCS / "data.json").write_text(json.dumps(site, indent=1))
     print("\n" + report)
-    send_email(report)
+    print(f"\nSubject: {subject}")
+    send_email(report, subject=subject)
 
 
 if __name__ == "__main__":

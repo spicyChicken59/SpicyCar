@@ -498,6 +498,60 @@ class TestDelisted(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# Today: one event engine feeds the report lead and the email subject.
+# --------------------------------------------------------------------------
+class TestToday(unittest.TestCase):
+    @staticmethod
+    def cut(amount, price, local=False, shopping=True, vin="V1", label="BMW i5 eDrive40"):
+        return {"amount": amount, "shopping": shopping, "label": label,
+                "x": {"vin": vin, "price": price, "local": local,
+                      "city": "Plano", "state": "TX"}}
+
+    def test_quiet_day_has_an_honest_subject_and_no_section(self):
+        sec, subject = T.build_today({"cuts": [], "new": [], "gone": []})
+        self.assertEqual(sec, [])
+        self.assertIn("quiet day", subject)
+
+    def test_the_biggest_relevant_cut_leads_the_subject(self):
+        sec, subject = T.build_today({
+            "cuts": [self.cut(400, 45000, local=True),
+                     self.cut(1200, 46000, local=False, shopping=False,
+                              vin="V2", label="Kia EV6")],
+            "new": [], "gone": []})
+        self.assertIn("▼$400 cut on drivable BMW i5 eDrive40", subject,
+                      "a shopping-model drivable cut outranks a bigger rival cut")
+        self.assertIn("## Today", sec[0])
+
+    def test_shortlist_alerts_outrank_everything(self):
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear()
+        T.SHORTLIST.update({"V9": ""})
+        try:
+            sec, subject = T.build_today({
+                "cuts": [self.cut(2500, 40000)],
+                "new": [],
+                "gone": [{"vin": "V9", "label": "BMW i7", "last_seen": "2026-08-25",
+                          "last_price": 62000, "shopping": True}]})
+            self.assertTrue(subject.startswith(f"{T.APP} — shortlist car GONE"))
+            self.assertIn("**Shortlist: GONE**", "\n".join(sec))
+        finally:
+            T.SHORTLIST.clear()
+            T.SHORTLIST.update(old)
+
+    def test_new_and_gone_counts_reach_the_subject(self):
+        sec, subject = T.build_today({
+            "cuts": [],
+            "new": [{"x": {"vin": "N1", "price": 44000, "city": "Plano",
+                           "state": "TX", "local": False},
+                     "label": "BMW i5", "pct": 0.06, "shopping": True}],
+            "gone": [{"vin": "G1", "label": "BMW i5", "last_seen": "2026-08-25",
+                      "last_price": 47000, "shopping": True}]})
+        self.assertIn("1 new", subject)
+        self.assertIn("1 gone", subject)
+        self.assertIn("best 6% under typical", "\n".join(sec))
+
+
+# --------------------------------------------------------------------------
 # The shortlist: specific cars watched by VIN, first in the report.
 # --------------------------------------------------------------------------
 class TestShortlist(unittest.TestCase):
