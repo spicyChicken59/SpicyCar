@@ -89,6 +89,7 @@
   /* year chips select rather than hide — pressed-off must not read as struck-through */
   .legend-chip--year[aria-pressed="false"] span { opacity: 1; text-decoration: none; }
   .legend-chip--year[aria-pressed="true"] { background: var(--sc-bg); box-shadow: inset 0 0 0 1px var(--sc-border-strong); }
+  .sc-tooltip__dash { flex: none; display: inline-block; }
   .show-more { display: flex; justify-content: center; padding: 14px 0 2px; }
   .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }         /* the drawn SpicyChicken lockup, as drawn */
   .frame-chick { height: 45%; max-height: 44px; width: auto; opacity: .28; }     /* the chick keeps watch where a dealer sent no photo */
@@ -238,7 +239,7 @@
       </div>
     </div>
     <div class="sc-legend" id="scatter-legend"></div>
-    <div class="sc-chart" id="scatter"></div>
+    <div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div>
   </section>
 
   <section class="sc-card" id="overview-card" hidden>
@@ -585,7 +586,15 @@
       tip.textContent = '';
       tip.appendChild(el('div', { class: 'sc-tooltip__date' }, fmtDateLong(d)));
       const rows = series.map((s) => ({ s, p: s.points.find((p) => p.date === d) })).filter((r) => r.p).sort((a, b) => a.p.value - b.p.value);
-      for (const r of rows) tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + (r.s.color || (r.s.emphasis ? C.emphasis : C.context)) }), el('b', null, money(r.p.value)), el('span', null, r.s.label)));
+      // the swatch carries the dash pattern too, so three same-hue BMWs
+      // read apart in the tooltip exactly as they do in the legend
+      const swatch = (s) => {
+        const cv = s.color || (s.emphasis ? C.emphasis : C.context);
+        if (!s.dash) return el('i', { style: 'background:' + cv });
+        return svgEl('svg', { class: 'sc-tooltip__dash', width: 14, height: 6, viewBox: '0 0 14 6', 'aria-hidden': 'true' },
+          svgEl('line', { x1: 0, y1: 3, x2: 14, y2: 3, stroke: cv, 'stroke-width': 2, 'stroke-dasharray': s.dash }));
+      };
+      for (const r of rows) tip.appendChild(el('div', { class: 'sc-tooltip__row' }, swatch(r.s), el('b', null, money(r.p.value)), el('span', null, r.s.label)));
       if (opts.meta) { const t = opts.meta(d); if (t) tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, t)); }
       tip.classList.add('is-on');
       const scale = host.clientWidth / W;
@@ -687,20 +696,33 @@
   }
   const ringPath = (lat, lon, miles) => ringPoints(lat, lon, miles)
     .map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1)).join('') + 'Z';
-  // The view the current Where selection deserves: picked states framed, the
-  // drive ring framed when the drive chip is on, the whole country otherwise.
-  function mapFitTarget(states) {
+  // The view the current selection deserves: picked states framed, the drive
+  // ring framed when the drive chip is on — and with nothing picked, the cars
+  // themselves (plus the ring, so home stays in frame). A coast-to-coast
+  // market still reads as the whole country.
+  function mapFitTarget(states, cars) {
     const buyer = (S.site || {}).buyer || {}, names = buyer.state_names || {};
     const boxes = [];
+    const ringBox = () => {
+      if (!Array.isArray(buyer.anchor) || !buyer.drive_radius_miles) return null;
+      const pts = ringPoints(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles);
+      return [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])),
+              Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
+    };
     for (const key of S.where) {
       if (key === 'beyond') return MAP_FULL;
-      if (key === 'drive' && Array.isArray(buyer.anchor) && buyer.drive_radius_miles) {
-        const pts = ringPoints(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles);
-        boxes.push([Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])),
-                    Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))]);
-      }
+      if (key === 'drive') { const rb = ringBox(); if (rb) boxes.push(rb); }
       const st = states.find((s) => s.name === names[key]);
       if (st) boxes.push(st.bbox);
+    }
+    if (!boxes.length && cars && cars.length) {
+      let b = [1e9, 1e9, -1e9, -1e9];
+      for (const c of cars) {
+        const [px, py] = albers48(c.x.lon, c.x.lat);
+        if (!(px >= -8 && px <= 983 && py >= -8 && py <= 618)) continue;
+        b = [Math.min(b[0], px), Math.min(b[1], py), Math.max(b[2], px), Math.max(b[3], py)];
+      }
+      if (b[2] > b[0]) { boxes.push(b); const rb = ringBox(); if (rb) boxes.push(rb); }
     }
     if (!boxes.length) return MAP_FULL;
     let [x1, y1, x2, y2] = boxes.reduce((a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]);
@@ -745,7 +767,7 @@
       const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
       let view = S.mapView || MAP_FULL;
       let animateTo = null;
-      if (fitKey !== MAP_FIT_KEY) { MAP_FIT_KEY = fitKey; animateTo = mapFitTarget(states); }
+      if (fitKey !== MAP_FIT_KEY) { MAP_FIT_KEY = fitKey; animateTo = mapFitTarget(states, cars); }
 
       const svg = svgEl('svg', { viewBox: `${view.x} ${view.y} ${view.w} ${view.h}`, 'aria-hidden': 'true' });
       for (const st of states) svg.appendChild(svgEl('path', { class: 'map-state', d: st.d, 'vector-effect': 'non-scaling-stroke' }));
@@ -988,7 +1010,7 @@
       const btns = el('div', { class: 'map-btns' },
         el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Zoom in', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 0.67) }, '+'),
         el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Zoom out', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 1.5) }, '−'),
-        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Reset view', onclick: () => animate(S.mapView, mapFitTarget(states)) }, '⤢'));
+        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Reset view', onclick: () => animate(S.mapView, mapFitTarget(states, cars)) }, '⤢'));
       host.appendChild(btns);
 
       if (animateTo) animate(view, animateTo); else applyView(view);
@@ -1132,6 +1154,7 @@
     svg.addEventListener('pointerdown', (e) => {
       if (!(e.target.classList && e.target.classList.contains('scatter-dot'))) hideTip();
     });
+    const kOrder = [];
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
       const isShort = onShortlist(x);
@@ -1157,9 +1180,30 @@
       });
       dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
       svg.appendChild(dot);
+      kOrder.push({ x, dot });
     }
     host.appendChild(svg);
     host.appendChild(tip);
+    // keyboard: arrows step through the cars by mileage (the same order the
+    // x-axis reads), Enter opens the listing, Escape clears — the trend
+    // chart's contract, adapted to dots
+    kOrder.sort((a, b) => (a.x.miles ?? 0) - (b.x.miles ?? 0));
+    let kIdx = -1, kBig = null;
+    const focusDot = (i) => {
+      if (kBig) { kBig.setAttribute('r', 4); kBig = null; }
+      if (i < 0 || i >= kOrder.length) { kIdx = -1; hideTip(); return; }
+      kIdx = i;
+      kBig = kOrder[i].dot; kBig.setAttribute('r', 6);
+      const r = kBig.getBoundingClientRect();
+      fillTip(kOrder[i].x, r.left + r.width / 2, r.top, false);
+    };
+    host.onkeydown = (e) => {
+      if (e.key === 'ArrowRight') { focusDot(kIdx < 0 ? 0 : Math.min(kOrder.length - 1, kIdx + 1)); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { focusDot(kIdx < 0 ? kOrder.length - 1 : Math.max(0, kIdx - 1)); e.preventDefault(); }
+      else if (e.key === 'Enter' && kIdx >= 0) { const u = safeUrl(kOrder[kIdx].x.url); if (u) window.open(u, '_blank', 'noopener'); }
+      else if (e.key === 'Escape') focusDot(-1);
+    };
+    host.onblur = () => focusDot(-1);
     const lg = $('scatter-legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + color }), 'drivable'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + color }), 'shipping added'));
