@@ -5,7 +5,7 @@
   "buyer": {
     "id": "chicago",
     "label": "Chicago",
-    "home_zip": null,
+    "anchor": [41.8781, -87.6298],
     "states": ["IL", "OH", "IN", "WI"],
     "drive_hours": 5,
     "search_states": ["MI", "IA", "MO", "KY"],

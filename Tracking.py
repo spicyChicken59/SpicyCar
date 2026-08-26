@@ -27,6 +27,7 @@ import json
 import math
 import os
 import sys
+import time
 from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -272,15 +273,20 @@ def zip_coords(z, cache=True):
         r = requests.get(f"https://api.zippopotam.us/us/{z}", timeout=15)
         ZIP_LOOKUPS += 1
         if r.status_code == 200:
-            place = ((r.json() or {}).get("places") or [{}])[0]
-            lat = to_float(place.get("latitude"))
-            lon = to_float(place.get("longitude"))
+            hit = ((r.json() or {}).get("places") or [{}])[0]
+            lat = to_float(hit.get("latitude"))
+            lon = to_float(hit.get("longitude"))
             if coords_ok(lat, lon):
                 if cache:
                     ZIP_CACHE[z] = [round(lat, 5), round(lon, 5)]
                 return lat, lon
-        if cache:
-            ZIP_CACHE[z] = None
+        # only a definitive miss is cached — a throttle or server error must
+        # not poison the committed cache and stop the zip ever being retried
+        if r.status_code in (200, 404):
+            if cache:
+                ZIP_CACHE[z] = None
+        else:
+            print(f"  ! zip {z}: HTTP {r.status_code} — will retry next run")
     except requests.RequestException as e:
         print(f"  ! zip {z}: {e}" if cache else f"  ! home zip lookup failed: {e}")
     return None, None
@@ -306,14 +312,28 @@ STATE_NAMES = dict(zip(
      "Utah Vermont Virginia Washington West_Virginia Wisconsin Wyoming").split()))
 STATE_NAMES = {k: v.replace("_", " ") for k, v in STATE_NAMES.items()}
 
-# The home zip is private. It comes from the BUYER_HOME_ZIP secret (targets.json
-# only as a fallback for anyone who chooses to put it there), is looked up
-# without touching the committed cache, and never appears in any output.
-HOME_ZIP = os.environ.get("BUYER_HOME_ZIP") or BUYER.get("home_zip")
-HOME = zip_coords(HOME_ZIP, cache=False) if HOME_ZIP else (None, None)
+# The distance anchor is PUBLIC — a city-centre [lat, lon] in targets.json —
+# so no published number derives from a private location. Exact per-listing
+# distances measured from a private home zip can be trilaterated back to the
+# house (hundreds of dealer coordinates plus a distance each overdetermine
+# it, and ship/rate leaks the same signal), so the anchor is the only shape
+# of this feature that keeps a home private. BUYER_HOME_ZIP remains as a
+# legacy fallback for anyone who accepts that trade.
+ANCHOR = BUYER.get("anchor") or []
+HOME = ((to_float(ANCHOR[0]), to_float(ANCHOR[1]))
+        if isinstance(ANCHOR, (list, tuple)) and len(ANCHOR) == 2
+        else (None, None))
 if not coords_ok(*HOME):
-    print("  ! home zip missing or could not be located — distances unavailable, "
-          "flat ship_cost applies (set the BUYER_HOME_ZIP secret)")
+    HOME_ZIP = os.environ.get("BUYER_HOME_ZIP") or BUYER.get("home_zip")
+    HOME = zip_coords(HOME_ZIP, cache=False) if HOME_ZIP else (None, None)
+    if coords_ok(*HOME):
+        print("  ! distances anchored to the private home zip — published "
+              "distances can be traced to it; set buyer.anchor to a public "
+              "point (your city centre) instead")
+    else:
+        print("  ! no buyer.anchor and no home zip — distances unavailable, "
+              "flat ship_cost applies")
+HOME_NAME = str(BUYER.get("label") or "home")
 
 # "Drivable" reaches beyond the state list: anything within drive_hours of
 # home costs nothing to ship either. Straight-line miles understate road
@@ -327,9 +347,10 @@ if DRIVE_RADIUS and not coords_ok(*HOME):
 
 
 def dist_home(lat, lon):
-    """Miles from the buyer's home, or None. Rounded to 25 because the
-    outputs are public: exact per-listing distances could be triangulated
-    back to the home the README promises to keep private."""
+    """Miles from the buyer's anchor, or None. Rounded to 25: distances are
+    estimates for judging a drive, and in legacy home-zip mode coarseness at
+    least blunts casual reading (it does NOT stop trilateration — only a
+    public anchor does)."""
     if coords_ok(lat, lon) and coords_ok(*HOME):
         return max(25, int(round(haversine(lat, lon, HOME[0], HOME[1]) / 25) * 25))
     return None
@@ -358,7 +379,7 @@ def scope_label():
     """The one phrase that says what "drivable" means for this buyer."""
     states = "/".join(STATES)
     if DRIVE_RADIUS:
-        drive = f"a {DRIVE_HOURS:g}h drive of home"
+        drive = f"a {DRIVE_HOURS:g}h drive of {HOME_NAME}"
         return f"{states} or {drive}" if states else drive
     return states or "your states"
 
@@ -499,18 +520,27 @@ def fmt_pick(p):
 
 
 def picks_rule():
-    return (f"under {(to_int(PICKS.get('max_miles')) or 50000):,} miles, no reported "
-            f"accidents, no rental or fleet history; ranked by how far under the "
-            f"typical price for the model — its own model year when there are "
-            f"enough of them — a car sits, allowing $"
-            f"{(to_float(PICKS.get('cents_per_mile')) if to_float(PICKS.get('cents_per_mile')) is not None else 0.30):.2f} a mile")
+    bits = [f"under {(to_int(PICKS.get('max_miles')) or 50000):,} miles"]
+    if PICKS.get("exclude_accidents", True):
+        bits.append("no reported accidents")
+    if PICKS.get("exclude_rental", True):
+        bits.append("no rental or fleet history")
+    cpm = to_float(PICKS.get("cents_per_mile"))
+    if cpm is None:
+        cpm = 0.30
+    return (", ".join(bits) + "; ranked by how far under the typical price "
+            "for the model — its own model year when there are enough of "
+            f"them — a car sits, allowing ${cpm:.2f} a mile")
 
 
 # --------------------------------------------------------------------------
 # Fetch
 # --------------------------------------------------------------------------
 CALLS = 0
-PRICE_WINDOW = {}      # target id -> highest price returned by its price.asc query today
+PRICE_WINDOW = {}      # (target id, source) -> highest price its price.asc query returned today
+EXHAUSTED = set()      # (target id, source): a query came back short, so it returned
+                       # that scope's ENTIRE result set — no cheapest-N cut-off applies
+FAILED_FETCHES = 0     # requests that still failed after the retry
 
 
 def year_param(years):
@@ -521,7 +551,10 @@ def year_param(years):
 
 
 def fetch(source_name, source, sort, page, t):
-    global CALLS
+    """One API page, retried once on a transient failure. Returns the list of
+    records, or None when the request failed even after the retry — callers
+    must treat None as "unknown", never as "the market is empty"."""
+    global CALLS, FAILED_FETCHES
     params = {
         "vehicle.make": t["make"],
         "vehicle.model": t["model"],
@@ -536,20 +569,28 @@ def fetch(source_name, source, sort, page, t):
         params["vehicle.trim"] = t["trim_query"]
     if source:
         params.update(source)
-    CALLS += 1
-    try:
-        r = requests.get(BASE, headers=HEADERS, params=params, timeout=45)
-    except requests.RequestException as e:
-        print(f"  ! {t['id']} {source_name} {sort} p{page}: {e}")
-        return []
-    if r.status_code != 200:
-        print(f"  ! {t['id']} {source_name} {sort} p{page}: "
-              f"HTTP {r.status_code} {r.text[:200]}")
-        return []
-    batch = (r.json() or {}).get("data") or []
-    if batch and not SAMPLE.exists():
-        SAMPLE.write_text(json.dumps(batch[0], indent=2))
-    return batch
+    for attempt in (1, 2):
+        CALLS += 1
+        err = None
+        try:
+            r = requests.get(BASE, headers=HEADERS, params=params, timeout=45)
+        except requests.RequestException as e:
+            err = str(e)
+        else:
+            if r.status_code == 200:
+                try:
+                    batch = (r.json() or {}).get("data") or []
+                except ValueError:
+                    batch = []
+                if batch and not SAMPLE.exists():
+                    SAMPLE.write_text(json.dumps(batch[0], indent=2))
+                return batch
+            err = f"HTTP {r.status_code} {r.text[:200]}"
+        print(f"  ! {t['id']} {source_name} {sort} p{page} (try {attempt}): {err}")
+        if attempt == 1:
+            time.sleep(2)
+    FAILED_FETCHES += 1
+    return None
 
 
 def normalize(rec, t, dropped):
@@ -745,7 +786,7 @@ def fmt_row(r, s):
     where = f"{r['year']} · {r['city']}, {r['state']}"
     d = row_distance(r)
     if d is not None:
-        where += f" · ~{d:,} mi from home"
+        where += f" · ~{d:,} mi from {HOME_NAME}"
     bits.append(where)
     out = "- " + " · ".join(str(b) for b in bits)
     tags = []
@@ -796,22 +837,35 @@ def daily_stats(rows):
 def delisted(tids, all_rows, today_rows, hist):
     """Vehicles seen before but not today. Because each query only returns
     the cheapest N, a car priced above today's window for its trim may simply
-    have been pushed out rather than sold — that is flagged, not hidden."""
+    have been pushed out rather than sold — that is flagged, not hidden. When
+    a query came back short it returned its scope's whole market, so absence
+    there is a real delisting whatever the price. Each entry carries its own
+    trim's previous fetch day, because trims of one model can run on
+    different cadences and the model's yesterday is not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
     window_max = PRICE_WINDOW
+    days_by_tid = defaultdict(set)
+    for r in all_rows:
+        if r["target"] in tids:
+            days_by_tid[r["target"]].add(r["snapshot_date"])
     by_key = defaultdict(list)
     for r in all_rows:
         if r["target"] in tids and (r["target"], r["vin"]) not in today_vins:
             by_key[(r["target"], r["vin"])].append(r)
+    horizon = date.fromordinal(TODAY_ORD - 60).isoformat()
     out = []
     for (tid, vin), rows in by_key.items():
         last_day = max(r["snapshot_date"] for r in rows)
+        if last_day < horizon:
+            continue    # keep the gone list (and data.json) from growing forever
         r = pick_display_rows([x for x in rows
                                if x["snapshot_date"] == last_day])[0]
         s = summarize((tid, vin), hist)
         adj, ship = landed(r)
         t = TARGETS[tid]
         last_price = to_int(r["price"])
+        tdays = sorted(days_by_tid[tid])
+        prev_fetch = tdays[-2] if len(tdays) >= 2 else None
         # a car in a queried state comes back through either query, so it is
         # only out of window when it is above both cut-offs
         keys = (["States", "National"] if r["state"] in SEARCH_STATES
@@ -819,7 +873,9 @@ def delisted(tids, all_rows, today_rows, hist):
         cutoffs = [c for c in (window_max.get((tid, k)) for k in keys)
                    if c is not None]
         cutoff = max(cutoffs) if cutoffs else None
-        if cutoff is None:
+        if any((tid, k) in EXHAUSTED for k in keys):
+            likely = "delisted"         # a query that saw everything missed it
+        elif cutoff is None:
             likely = "unknown"          # nothing fetched for this trim today
         elif last_price is not None and last_price > cutoff:
             likely = "out of window"    # pricier than today's cheapest-N cut-off
@@ -835,6 +891,7 @@ def delisted(tids, all_rows, today_rows, hist):
             "last_price": last_price, "adj": adj,
             "city": r["city"], "dealer": r["dealer"],
             "url": r["url"], "last_seen": last_day,
+            "prev_fetch_day": prev_fetch,
             "first_seen": s.get("first_seen"),
             "days_tracked": s.get("days_tracked", 0),
             "cuts": s.get("cuts", 0), "delta": s.get("delta", 0),
@@ -914,8 +971,11 @@ def brief_lines(m_entry, listings, prev_day):
     movers = sum(1 for x in listings if len(x["series"]) >= 2
                  and x["series"][-1][1] != x["series"][-2][1])
     new = sum(1 for x in listings if x["days_tracked"] == 1) if prev else 0
+    # each trim vanishes on its own cadence — compare against the trim's own
+    # previous fetch day, or a slower trim's departures never count
     gone = sum(1 for g in m_entry["gone"]
-               if g["last_seen"] == prev_day and g["likely"] == "delisted")
+               if g["likely"] == "delisted" and g["prev_fetch_day"]
+               and g["last_seen"] == g["prev_fetch_day"])
     line = (f"- {len(listings)} on the market · "
             f"{sum(1 for x in listings if x['local'])} drivable")
     if prev_day:
@@ -945,9 +1005,10 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
                        f"({x['city']}, {x['state']}) `{x['vin']}`")
         sec.append("")
     just_gone = [g for g in gone if g["trim_id"] == t["id"]
-                 and g["last_seen"] == prev_day and g["likely"] == "delisted"]
+                 and g["likely"] == "delisted" and g["prev_fetch_day"]
+                 and g["last_seen"] == g["prev_fetch_day"]]
     if just_gone:
-        sec.append(f"**Gone since {prev_day}**")
+        sec.append(f"**Gone since {just_gone[0]['last_seen']}**")
         for g in just_gone:
             sec.append(f"- {money(g['last_price'])} · {g['year']} · "
                        f"{g['city']}, {g['state']} · tracked "
@@ -1159,7 +1220,7 @@ def build_outputs(today_rows, all_rows, hist):
     return "\n".join(report), site
 
 
-def send_email(report):
+def send_email(report, subject=None):
     key = os.environ.get("RESEND_API_KEY")
     to = os.environ.get("EMAIL_TO")
     if not (key and to):
@@ -1170,7 +1231,7 @@ def send_email(report):
             "https://api.resend.com/emails",
             headers={"Authorization": f"Bearer {key}"},
             json={"from": f"{APP} <onboarding@resend.dev>", "to": [to],
-                  "subject": f"{APP} — {TODAY}", "text": report},
+                  "subject": subject or f"{APP} — {TODAY}", "text": report},
             timeout=30)
         print(f"Email: HTTP {r.status_code}")
     except requests.RequestException as e:
@@ -1201,9 +1262,15 @@ def main():
         raw_n = 0
         sorts, pages = sorts_pages(t)
         for source_name, source in SOURCES:
-            for sort in sorts:
+            for si, sort in enumerate(sorts):
+                if si and (tid, source_name) in EXHAUSTED:
+                    break   # the first sort already returned this scope's
+                            # entire result set; another sort re-fetches it
                 for page in range(1, pages + 1):
                     batch = fetch(source_name, source, sort, page, t)
+                    if batch is None:
+                        break   # failed even after the retry: keep what we
+                                # have, and never call this scope exhausted
                     raw_n += len(batch)
                     for rec in batch:
                         n = normalize(rec, t, dropped)
@@ -1218,20 +1285,27 @@ def main():
                         if cur is None or n["price"] < to_int(cur["price"]):
                             rows[key] = n
                     if len(batch) < PER_PAGE:
-                        break   # short page: nothing further for this sort
+                        # a short page means the query returned everything in
+                        # its scope — the sort order cannot change the set
+                        EXHAUSTED.add((tid, source_name))
+                        break
         kept = sum(1 for k in rows if k[0] == tid)
         print(f"{tid}: {raw_n} raw -> {kept} kept")
     if dropped:
         print("Dropped: " + ", ".join(f"{k} x{v}" for k, v in dropped.items()))
-    print(f"API calls made: {CALLS}")
+    print(f"API calls made: {CALLS}"
+          + (f" · {FAILED_FETCHES} failed after retry" if FAILED_FETCHES else "")
+          + (f" · {len(EXHAUSTED)} exhaustive queries" if EXHAUSTED else ""))
     print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "
           f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
     save_zip_cache()
 
     today_rows = list(rows.values())
     if not today_rows:
-        sys.exit("No listings fetched for any target — "
-                 "leaving data, report and site untouched.")
+        msg = ("No listings fetched for any target — "
+               "leaving data, report and site untouched.")
+        send_email(msg, subject=f"{APP} — run FAILED {TODAY}")
+        sys.exit(msg)
 
     history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY]
     all_rows = history_rows + today_rows
@@ -1247,4 +1321,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:      # a silent dead tracker looks like a quiet market
+        send_email(f"The daily run crashed before finishing:\n\n{e!r}",
+                   subject=f"{APP} — run FAILED {TODAY}")
+        raise

@@ -251,6 +251,8 @@
   function scopeTxt() { return (((S.site || {}).buyer || {}).scope_label) || statesTxt(); }
   // Listing URLs and images come from the API — only ever follow real web addresses.
   const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null);
+  const placeTxt = (x) => [x.city, x.state].filter(Boolean).join(', ') || 'location n/a';
+  const homeName = () => (((S.site || {}).buyer || {}).label) || 'home';
 
   // ---------- our picks: best value, not lowest price ----------
   // Eligible cars are ranked by how far under the typical (median) value of their own model they sit,
@@ -436,12 +438,19 @@
     return out;
   }
 
-  // Every eligible listing gets its within-model value score, so "best value
-  // vs typical" is sortable and the discount shows on the row itself.
+  // Every eligible listing gets its within-model value score once, at boot,
+  // against the FULL market — so the row note, the sort, and the pick cards
+  // all say the same number instead of a median that shifts under filters.
   function annotateValue(site) {
     for (const b of Object.values(site.brands || {})) for (const m of Object.values(b.models || {})) {
-      for (const p of scorePicks(m.listings || [], m.label || '')) p.x.pick_pct = p.pct;
+      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; }
     }
+  }
+  // The boot-time full-market scores, restricted to the rows currently in view.
+  function scoredFrom(rows, label) {
+    return rows.filter((x) => x.pick_pct != null)
+      .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', under: x.pick_under, pct: x.pick_pct }))
+      .sort((a, b) => b.pct - a.pct);
   }
 
   // A data.json written before the buyer/state model carries per-market fields instead; map them so the page keeps working until the next run.
@@ -471,7 +480,7 @@
       const core = (((S.site || {}).buyer || {}).states || []).includes(S.scope);
       rows = rows.filter((x) => (x.state || '').toUpperCase() === S.scope && (core || x.local));
     }
-    rows = applyShared(rows);
+    rows = applyShared(rows).slice();   // copy: sort() below must not reorder the site data in place
     const big = 1e12;
     const keyFns = {
       price: (x) => x.price ?? big,
@@ -523,7 +532,7 @@
     S.trim = 'all'; S.scope = 'all'; S.year = 'all';
     syncUrl(); buildFilters(); render();
   }
-  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.scope = 'all'; syncUrl(); buildFilters(); render(); window.scrollTo(0, 0); }
+  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.scope = 'all'; S.year = 'all'; syncUrl(); buildFilters(); render(); window.scrollTo(0, 0); }
   function segment(host, ids, current, labelOf, caseClass, onPick) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
@@ -574,10 +583,14 @@
     if (safeUrl(x.carfax)) links.appendChild(el('a', { class: 'sc-link--quiet', href: safeUrl(x.carfax), target: '_blank', rel: 'noopener' }, 'Carfax ↗'));
     return links;
   }
-  // Price movement: a cut is a good delta (▼), a rise since first seen a bad one (▲), first appearance a spice chip.
+  // Price movement, by the NET change since first seen: down is good (▼), up is bad (▲)
+  // even when there was a cut along the way — a car asking more than it started at
+  // must never wear a green arrow. First appearance gets a spice chip.
   function movement(x, daily) {
-    if (x.cuts) return el('div', null, el('span', { class: 'sc-delta sc-delta--good' }, `▼ ${money(Math.abs(x.delta))} · ${x.cuts} cut${x.cuts > 1 ? 's' : ''}`));
-    if (x.delta > 0) return el('div', null, el('span', { class: 'sc-delta sc-delta--bad' }, `▲ ${money(x.delta)} since first seen`));
+    const cuts = x.cuts ? `${x.cuts} cut${x.cuts > 1 ? 's' : ''}` : '';
+    if (x.delta < 0) return el('div', null, el('span', { class: 'sc-delta sc-delta--good' }, `▼ ${money(-x.delta)}${cuts ? ` · ${cuts}` : ''}`));
+    if (x.delta > 0) return el('div', null, el('span', { class: 'sc-delta sc-delta--bad' }, `▲ ${money(x.delta)} since first seen${cuts ? ` · ${cuts}` : ''}`));
+    if (x.cuts) return el('div', null, el('span', { class: 'sc-delta sc-delta--flat' }, `cut, then back up · ${cuts}`));
     if (x.days_tracked === 1 && daily.length >= 2) return el('div', null, el('span', { class: 'sc-chip sc-chip--spice' }, 'new'));
     return null;
   }
@@ -588,7 +601,7 @@
   function pickCard(p) {
     const b = p.x;
     const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
-    const where = `${b.city || '—'}, ${b.state || ''}${b.distance != null ? ` — ~${num(b.distance)} mi from home` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
+    const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
     const para = el('p', null, `${facts}. ${where}. `);
     if (safeUrl(b.url)) para.appendChild(el('a', { href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Open the listing →'));
     return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, thumbFor(b, true), el('div', { class: 'sc-media__body' },
@@ -679,7 +692,7 @@
 
     const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking price'),
       el('div', { class: 'sc-tile__value' }, best ? money(best.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${best.city}, ${best.state}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
+      el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
     if (!filteredView && today) tile1.appendChild(deltaEl(today.min_price, prev && prev.min_price, prev && prev.date, true, daily.length));
     host.appendChild(tile1);
 
@@ -699,7 +712,9 @@
 
     const cuts = all.filter((x) => x.series && x.series.length >= 2 && x.series[x.series.length - 1][1] < x.series[x.series.length - 2][1]).length;
     const newToday = daily.length >= 2 ? all.filter((x) => x.days_tracked === 1).length : 0;
-    const gone = trimRows(t.gone || []).filter((g) => prev && g.last_seen === prev.date && g.likely !== 'out of window').length;
+    // same rule as the report: real delistings at each trim's own previous fetch
+    const gone = trimRows(t.gone || []).filter((g) => g.likely === 'delisted'
+      && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : (prev && g.last_seen === prev.date))).length;
     const tile4 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Since the previous snapshot'),
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, daily.length >= 2 ? `${cuts} price cut${cuts === 1 ? '' : 's'}` : '—'),
       el('div', { class: 'sc-tile__sub' }, daily.length >= 2 ? `${newToday} new · ${gone} gone` : 'movement shows from day 2'));
@@ -800,12 +815,12 @@
       const shipping = el('td', { class: 'sc-num' }, x.local ? el('span', { class: 'sc-note' }, 'none · drivable') : (x.ship ? el('span', { class: 'sc-figure' }, money(x.ship)) : el('span', { class: 'sc-note' }, 'n/a')));
       const total = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(landed(x))));
       const loc = el('td', { class: 'loc sc-nowrap' }, `${x.city || '—'}, ${x.state || ''}`, el('br'), scopeChip(x),
-        x.distance != null ? el('span', { class: 'sc-note' }, `~${num(x.distance)} mi from home`) : null,
+        x.distance != null ? el('span', { class: 'sc-note' }, `~${num(x.distance)} mi from ${homeName()}`) : null,
         x.dealer ? el('span', { class: 'sc-note sc-truncate dealer', title: x.dealer }, x.dealer) : null);
       const listed = el('td', { class: 'sc-nowrap' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
         x.days_tracked ? el('span', { class: 'sc-note' }, `tracked ${x.days_tracked}d`) : null);
-      const trend = el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, !!x.cuts));
+      const trend = el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
       trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');
       body.appendChild(el('tr', null,
         el('td', { class: 'col-vehicle' }, vehicleCell(x)), price,
@@ -818,6 +833,7 @@
   function renderGone() {
     const t = model(), gone = trimRows(t.gone || []), card = $('gone-card');
     const daily = dailyFor(t);
+    $('gone-hint').textContent = 'Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day\'s cheapest-N cut-off and simply not fetched.';
     const table = $('gone-table'); table.textContent = '';
     if (!gone.length) {
       card.hidden = daily.length < 2;
@@ -835,7 +851,7 @@
         el('td', { class: 'sc-num' }, g.miles != null ? num(g.miles) : '—'),
         el('td', { class: 'sc-num' }, g.local ? el('span', { class: 'sc-note' }, 'none') : (g.ship ? money(g.ship) : '—')),
         el('td', { class: 'loc sc-nowrap' }, `${g.city || '—'}, ${g.state || ''}`, el('br'), scopeChip(g)),
-        el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above today\'s cut-off' : 'fetch failed') : null),
+        el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above today\'s cut-off' : 'not checked that day') : null),
         el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
     table.appendChild(body);
@@ -858,7 +874,7 @@
   function bestCell(b, emptyText) {
     if (!b) return el('td', { class: 'sc-num' }, el('span', { class: 'sc-note' }, emptyText));
     const td = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(b.price)),
-      el('span', { class: 'sc-note' }, `${b.year || ''}${b.miles != null ? ` · ${num(b.miles)} mi` : ''} · ${b.city || '—'}, ${b.state || ''}`),
+      el('span', { class: 'sc-note' }, `${b.year || ''}${b.miles != null ? ` · ${num(b.miles)} mi` : ''} · ${placeTxt(b)}`),
       el('span', { class: 'sc-note' }, shipNote(b)));
     if (safeUrl(b.url)) td.appendChild(el('span', { class: 'sc-note' }, el('a', { class: 'sc-link--quiet', href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Listing ↗')));
     return td;
@@ -886,15 +902,15 @@
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
       el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond driving range · ${rows.length} models`)));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${bestRow.best.city}, ${bestRow.best.state}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
+      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${bestLocalRow.bestLocal.city}, ${bestLocalRow.bestLocal.state} · no shipping` : 'Nothing drivable under these filters')));
+      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping` : 'Nothing drivable under these filters')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'),
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shops.map((r) => r.label).join(' · ') : `${rows.length} models`),
       el('div', { class: 'sc-tile__sub' }, shop ? shops.map((r) => `${r.label.replace(/^\S+ /, '')} ${r.best ? 'from ' + money(r.best.price) : '—'} · ${r.n_local} drivable`).join(' · ') : 'no target marked as shopping')));
 
     // our picks across every model: best value, not lowest price
-    renderPicks(rows.flatMap((r) => scorePicks(applyShared(r.m.listings || []), r.label)), pickParams().per_model);
+    renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label)), pickParams().per_model);
     $('notes-card').hidden = true;
 
     // the chart: every model's lowest asking price over time
@@ -952,7 +968,7 @@
     renderHeader();
     renderKpis(rows);
     const t = model();
-    renderPicks(scorePicks(rows, t.label));
+    renderPicks(scoredFrom(rows, t.label));
     renderNotes(t);
     renderChart();
     renderList(rows);
@@ -966,7 +982,7 @@
     const ft = $('f-trim'); ft.textContent = '';
     const trimIds = t ? Object.keys(t.trims || {}) : [];
     if (t) {
-      ft.appendChild(el('option', { value: 'all' }, trimIds.length > 1 ? 'All trims' : ((t.trims[trimIds[0]] || {}).label || 'All')));
+      ft.appendChild(el('option', { value: 'all' }, trimIds.length > 1 ? 'All trims' : (((t.trims || {})[trimIds[0]] || {}).label || 'All')));
       if (trimIds.length > 1) for (const id of trimIds) ft.appendChild(el('option', { value: id }, t.trims[id].label || id));
       ft.value = S.trim;
     }
@@ -989,6 +1005,7 @@
     const pool = overview ? allModels().map(({ m }) => m) : [t];
     const years = [...new Set(pool.flatMap((m) => [...(m.years || []), ...(m.listings || []).map((x) => String(x.year))]))].filter(Boolean).sort();
     for (const y of years) fy.appendChild(el('option', { value: y }, y));
+    if (S.year !== 'all' && !years.includes(S.year)) S.year = 'all';   // a stale year would blank the select and silently empty the list
     fy.value = S.year;
     $('f-miles').value = String(S.miles);
     $('f-sort').value = S.sort;

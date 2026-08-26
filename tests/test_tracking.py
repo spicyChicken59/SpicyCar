@@ -17,6 +17,7 @@ import json
 import os
 import unittest
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 os.environ.setdefault("AUTODEV_API_KEY", "test-key-not-used")
@@ -358,6 +359,132 @@ class TestPicks(unittest.TestCase):
         by_price = {p["price"]: p for p in scored_all if p["local"]}
         self.assertLess(by_price[42000]["pick_pct"], 0.05,
                         "an above-median local car is not a bargain just for being local")
+
+
+# --------------------------------------------------------------------------
+# The public anchor. Distances must come from a committed city-centre point,
+# resolved without any network call — a private home zip would let anyone
+# trilaterate the house from the published distances.
+# --------------------------------------------------------------------------
+class TestAnchor(unittest.TestCase):
+    def test_distances_measure_from_the_public_anchor(self):
+        self.assertTrue(T.coords_ok(*T.HOME),
+                        "buyer.anchor must resolve offline at import")
+        self.assertAlmostEqual(T.HOME[0], 41.8781, places=3)   # downtown Chicago
+        self.assertEqual(T.HOME_NAME, "Chicago")
+
+
+# --------------------------------------------------------------------------
+# The zip cache is committed: a transient throttle cached as a miss would
+# never be retried, so only definitive answers may be written to it.
+# --------------------------------------------------------------------------
+class TestZipCache(unittest.TestCase):
+    @staticmethod
+    def _fake(status, body=None):
+        class R:
+            status_code = status
+            def json(self):
+                return body or {}
+        return lambda *a, **k: R()
+
+    def test_transient_failures_are_not_cached_but_misses_are(self):
+        old_get, old_cache = T.requests.get, dict(T.ZIP_CACHE)
+        try:
+            T.ZIP_CACHE.clear()
+            T.requests.get = self._fake(429)
+            self.assertEqual(T.zip_coords("60601"), (None, None))
+            self.assertNotIn("60601", T.ZIP_CACHE,
+                             "a throttle must be retried on the next run")
+            T.requests.get = self._fake(404)
+            T.zip_coords("00000")
+            self.assertIn("00000", T.ZIP_CACHE)
+            self.assertIsNone(T.ZIP_CACHE["00000"])
+        finally:
+            T.requests.get = old_get
+            T.ZIP_CACHE.clear()
+            T.ZIP_CACHE.update(old_cache)
+
+
+# --------------------------------------------------------------------------
+# fetch(): an error is "unknown", never "the market is empty".
+# --------------------------------------------------------------------------
+class TestFetch(unittest.TestCase):
+    def test_persistent_failure_returns_none_after_one_retry(self):
+        old_get, old_sleep = T.requests.get, T.time.sleep
+        try:
+            T.time.sleep = lambda s: None
+            def boom(*a, **k):
+                raise T.requests.RequestException("connection reset")
+            T.requests.get = boom
+            calls0 = T.CALLS
+            self.assertIsNone(
+                T.fetch("National", None, "price.asc", 1, target("bmw-i5-edrive40")))
+            self.assertEqual(T.CALLS - calls0, 2, "one retry, then give up")
+        finally:
+            T.requests.get, T.time.sleep = old_get, old_sleep
+            T.FAILED_FETCHES = 0
+
+
+# --------------------------------------------------------------------------
+# delisted(): the departure classifier, against a mixed-cadence model. The
+# i5's daily eDrive40 must not define "yesterday" for its every-other-day
+# siblings, and a query that returned everything proves a delisting.
+# --------------------------------------------------------------------------
+class TestDelisted(unittest.TestCase):
+    def setUp(self):
+        self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
+        T.PRICE_WINDOW.clear()
+        T.EXHAUSTED.clear()
+
+    def tearDown(self):
+        T.PRICE_WINDOW.clear()
+        T.PRICE_WINDOW.update(self._pw)
+        T.EXHAUSTED.clear()
+        T.EXHAUSTED.update(self._ex)
+
+    @staticmethod
+    def row(tid, vin, day, price, state="IL"):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": tid, "vin": vin, "snapshot_date": day,
+                  "price": price, "year": "2024", "miles": 10000,
+                  "state": state, "city": "Chicago"})
+        return r
+
+    @staticmethod
+    def days_ago(n):
+        return date.fromordinal(T.TODAY_ORD - n).isoformat()
+
+    def test_slow_trim_departures_carry_their_own_prev_fetch_day(self):
+        d2, d1 = self.days_ago(2), self.days_ago(1)
+        fast, slow = "bmw-i5-edrive40", "bmw-i5-xdrive40"
+        all_rows = ([self.row(fast, "F1", d, 45000) for d in (d2, d1, T.TODAY)]
+                    + [self.row(slow, "S1", d2, 48000),
+                       self.row(slow, "S2", d2, 50000),
+                       self.row(slow, "S2", T.TODAY, 50000)])
+        today = [r for r in all_rows if r["snapshot_date"] == T.TODAY]
+        T.PRICE_WINDOW[(slow, "National")] = 60000       # window above S1's price
+        gone = T.delisted({fast, slow}, all_rows, today,
+                          T.build_history(all_rows))
+        g = next(x for x in gone if x["vin"] == "S1")
+        self.assertEqual(g["likely"], "delisted")
+        self.assertEqual(g["last_seen"], d2)
+        self.assertEqual(g["prev_fetch_day"], d2,
+                         "the slow trim's previous fetch is two days ago — "
+                         "compared against the model's yesterday it would "
+                         "never be reported gone")
+
+    def test_exhaustive_query_turns_out_of_window_into_delisted(self):
+        d1, tid = self.days_ago(1), "bmw-i5-m60"
+        all_rows = [self.row(tid, "V1", d1, 55000),
+                    self.row(tid, "V2", T.TODAY, 40000)]
+        today = [r for r in all_rows if r["snapshot_date"] == T.TODAY]
+        T.PRICE_WINDOW[(tid, "National")] = 40000        # V1 sits above the window
+        hist = T.build_history(all_rows)
+        self.assertEqual(T.delisted({tid}, all_rows, today, hist)[0]["likely"],
+                         "out of window")
+        T.EXHAUSTED.add((tid, "States"))                 # the States query saw everything
+        self.assertEqual(T.delisted({tid}, all_rows, today, hist)[0]["likely"],
+                         "delisted")
 
 
 # --------------------------------------------------------------------------
