@@ -117,7 +117,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   every drivable listing grouped by state (drive-radius states marked), and the five best-value
   cars beyond driving range.
 - The dashboard — opens on the whole market at once: a photo per model, lowest asking nationwide
-  and lowest drivable, median, brand-coloured trend lines, and one **market-over-time chart** —
+  and lowest drivable, median, brand-coloured trend lines, a **market map** — every car at its own
+  coordinates, filled when drivable, hollow when it pays shipping, with the five-hour drive ring
+  drawn around the anchor — and one **market-over-time chart** —
   colour is the brand, the dash is the model, the shopped models are drawn heavier, and an
   interactive legend hides, shows and highlights any line. A **multi-select Where filter** (each
   state, "≤ 5h drive", "Beyond" — press any mix, remembered between visits) narrows every tile,
