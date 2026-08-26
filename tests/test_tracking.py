@@ -498,6 +498,50 @@ class TestDelisted(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# The shortlist: specific cars watched by VIN, first in the report.
+# --------------------------------------------------------------------------
+class TestShortlist(unittest.TestCase):
+    def test_entries_parse_both_shapes(self):
+        sl = T._parse_shortlist(["wby123", {"vin": " wba999 ", "note": "called dealer"},
+                                 "", None])
+        self.assertEqual(list(sl), ["WBY123", "WBA999"])
+        self.assertEqual(sl["WBA999"], "called dealer")
+
+    def test_section_reports_live_gone_and_unseen(self):
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear()
+        T.SHORTLIST.update({"LIVE1": "my favourite", "GONE1": "", "NOPE1": ""})
+        try:
+            live = {"LIVE1": ({"vin": "LIVE1", "price": 42000, "year": 2024,
+                               "miles": 12000, "local": True, "ship": 0,
+                               "city": "Madison", "state": "WI", "series": [],
+                               "cuts": 0, "delta": 0, "days_listed": 12,
+                               "flags": [], "url": "https://x.example/1"},
+                              "BMW i5")}
+            gone = {"GONE1": {"vin": "GONE1", "likely": "delisted",
+                              "last_seen": "2026-08-25", "last_price": 47000,
+                              "trim_label": "eDrive40", "city": "", "state": "",
+                              "url": ""}}
+            sec = "\n".join(T.shortlist_section(live, gone, {}))
+            self.assertIn("$42,000", sec)
+            self.assertIn("my favourite", sec)
+            self.assertIn("GONE — likely sold or pulled", sec)
+            self.assertIn("location n/a", sec)
+            self.assertIn("not seen yet by the tracker `NOPE1`", sec)
+        finally:
+            T.SHORTLIST.clear()
+            T.SHORTLIST.update(old)
+
+    def test_empty_shortlist_adds_nothing(self):
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear()
+        try:
+            self.assertEqual(T.shortlist_section({}, {}, {}), [])
+        finally:
+            T.SHORTLIST.update(old)
+
+
+# --------------------------------------------------------------------------
 # Config resolution and small parsers.
 # --------------------------------------------------------------------------
 class TestConfig(unittest.TestCase):

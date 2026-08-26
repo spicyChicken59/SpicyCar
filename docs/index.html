@@ -79,6 +79,8 @@
 
   <section class="sc-grid sc-grid--4" id="kpis" aria-label="Today at a glance"></section>
 
+  <div id="shortlist" hidden></div>
+
   <div id="takeaway" hidden></div>
 
   <section class="sc-card" id="notes-card" hidden>
@@ -253,6 +255,28 @@
   const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null);
   const placeTxt = (x) => [x.city, x.state].filter(Boolean).join(', ') || 'location n/a';
   const homeName = () => (((S.site || {}).buyer || {}).label) || 'home';
+  // buyer.shortlist: the specific cars being decided on, by VIN.
+  function shortlistMap() {
+    const m = {};
+    for (const s of (((S.site || {}).buyer || {}).shortlist) || []) {
+      const vin = String((typeof s === 'string' ? s : s.vin) || '').toUpperCase();
+      if (vin) m[vin] = (typeof s === 'string' ? '' : (s.note || ''));
+    }
+    return m;
+  }
+  const onShortlist = (x) => String(x.vin || '').toUpperCase() in shortlistMap();
+  // Find one VIN anywhere on the watchlist — among live listings first, then the gone lists.
+  function findVin(vin) {
+    for (const { bk, mk, m } of allModels()) {
+      const x = (m.listings || []).find((l) => String(l.vin || '').toUpperCase() === vin);
+      if (x) return { x, m, bk, mk, gone: false };
+    }
+    for (const { bk, mk, m } of allModels()) {
+      const g = (m.gone || []).find((l) => String(l.vin || '').toUpperCase() === vin);
+      if (g) return { x: g, m, bk, mk, gone: true };
+    }
+    return null;
+  }
 
   // ---------- our picks: best value, not lowest price ----------
   // Eligible cars are ranked by how far under the typical (median) value of their own model they sit,
@@ -630,6 +654,44 @@
       el('p', { class: 'sc-hint' }, picksRule())));
     host.hidden = false;
   }
+  // The shortlist: the cars actually being decided on, pinned to the front page.
+  function shortlistCard(vin, note) {
+    const hit = findVin(vin);
+    if (!hit) {
+      return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' },
+        el('div', { class: 'sc-media__title' }, 'Not seen yet by the tracker'),
+        el('div', { class: 'sc-media__code' }, vin),
+        note ? el('span', { class: 'sc-note' }, note) : null)));
+    }
+    const { x, m, bk, mk, gone } = hit;
+    const daily = m.daily || [];
+    const title = `${m.label || ''} · ${x.year || ''} ${x.trim_label || x.trim || ''}`.trim();
+    const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — likely sold or pulled'
+      : (x.likely === 'out of window' ? 'missing — priced above the fetch cut-off, probably still for sale' : 'not checked recently')) : null;
+    const price = gone ? x.last_price : x.price;
+    const body = el('div', { class: 'sc-media__body' },
+      el('div', { class: 'sc-media__title' }, title),
+      el('div', { class: 'sc-callout__figure' }, `${money(price)}${gone ? ` · last seen ${fmtDate(x.last_seen)}` : ' asking'}`),
+      gone ? el('div', null, el('span', { class: 'sc-chip ' + (x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine))
+           : el('div', { class: 'sc-media__sub' }, `${x.miles != null ? num(x.miles) + ' mi · ' : ''}${shipNote(x)} · ${placeTxt(x)}`),
+      gone ? null : movement(x, daily),
+      x.pick_pct > 0 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
+      note ? el('span', { class: 'sc-note' }, `note: ${note}`) : null,
+      el('div', { class: 'sc-media__code' }, x.vin),
+      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(bk, mk); } }, 'Open model →')));
+    return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, thumbFor(gone ? null : x, true), body));
+  }
+  function renderShortlist(show) {
+    const host = $('shortlist'); host.textContent = '';
+    const map = shortlistMap(), vins = Object.keys(map);
+    if (!show || !vins.length) { host.hidden = true; return; }
+    host.appendChild(el('div', { class: 'sc-callout sc-callout--spice' },
+      el('div', { class: 'sc-callout__label with-mark' }, 'shortlist', markImg()),
+      el('div', { class: 'sc-grid picks-grid' }, ...vins.map((v) => shortlistCard(v, map[v]))),
+      el('p', { class: 'sc-hint' }, 'The specific cars being decided on, watched by VIN — set in targets.json under buyer.shortlist.')));
+    host.hidden = false;
+  }
+
   function renderNotes(t) {
     const card = $('notes-card'), n = t.notes || {};
     const cols = [['good', 'The good'], ['bad', 'The bad'], ['watch', 'Watch out for']].filter(([k]) => Array.isArray(n[k]) && n[k].length);
@@ -752,7 +814,8 @@
   function vehicleCell(x) {
     const trim = (x.trim || '').length > 22 ? (x.trim || '').slice(0, 22) + '…' : (x.trim || '');
     return el('div', { class: 'sc-media' }, thumbFor(x), el('div', { class: 'sc-media__body' },
-      el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim()),
+      el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim(),
+        onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null),
       x.color ? el('div', { class: 'sc-media__sub' }, x.color) : null,
       el('div', { class: 'sc-media__code' }, x.vin),
       (x.url || x.carfax) ? quietLinks(x) : null));
@@ -772,7 +835,8 @@
       flagsCell(x),
       (x.url || x.carfax) ? quietLinks(x, true) : null);
     return el('div', { class: 'sc-media sc-media--card' }, thumbFor(x),
-      el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim()), aside,
+      el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim(),
+        onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null), aside,
       el('div', { class: 'sc-media__sub' }, [x.color, `${x.city || '—'}, ${x.state || ''}`, x.local ? 'drivable' : null].filter(Boolean).join(' · ')),
       el('div', { class: 'sc-media__code' }, x.vin),
       foot);
@@ -909,7 +973,8 @@
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shops.map((r) => r.label).join(' · ') : `${rows.length} models`),
       el('div', { class: 'sc-tile__sub' }, shop ? shops.map((r) => `${r.label.replace(/^\S+ /, '')} ${r.best ? 'from ' + money(r.best.price) : '—'} · ${r.n_local} drivable`).join(' · ') : 'no target marked as shopping')));
 
-    // our picks across every model: best value, not lowest price
+    // the shortlist first, then our picks across every model
+    renderShortlist(true);
     renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label)), pickParams().per_model);
     $('notes-card').hidden = true;
 
@@ -967,6 +1032,7 @@
     const rows = filtered();
     renderHeader();
     renderKpis(rows);
+    renderShortlist(false);      // front page only — model rows carry a chip instead
     const t = model();
     renderPicks(scoredFrom(rows, t.label));
     renderNotes(t);

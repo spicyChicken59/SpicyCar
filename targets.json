@@ -10,6 +10,7 @@
     "drive_hours": 5,
     "search_states": ["MI", "IA", "MO", "KY"],
     "shopping": ["bmw-i5-edrive40", "bmw-i7"],
+    "shortlist": [],
     "ship_per_mile": 0.65,
     "ship_min": 350,
     "ship_cost": 1100,

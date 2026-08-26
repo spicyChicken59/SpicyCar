@@ -53,6 +53,24 @@ SEARCH_STATES = STATES + [s for s in
                           (str(x).strip().upper() for x in BUYER.get("search_states", []))
                           if s and s not in STATES]
 SHOPPING = [str(s) for s in BUYER.get("shopping", [])]   # target ids being shopped
+
+
+def _parse_shortlist(raw):
+    """buyer.shortlist: the specific cars being decided on, by VIN. Entries
+    are "VIN" or {"vin": ..., "note": ...}; order is the buyer's own."""
+    out = {}
+    for entry in raw or []:
+        if isinstance(entry, dict):
+            vin, note = str(entry.get("vin") or ""), str(entry.get("note") or "")
+        else:
+            vin, note = str(entry or ""), ""
+        vin = vin.strip().upper()
+        if vin:
+            out[vin] = note
+    return out
+
+
+SHORTLIST = _parse_shortlist(BUYER.get("shortlist"))
 PICKS = BUYER.get("picks", {})                            # how "our picks" are chosen
 TODAY_ORD = date.fromisoformat(TODAY).toordinal()
 WATCHLIST = CFG["watchlist"]
@@ -526,6 +544,68 @@ def fmt_pick(p):
         line += f"\n  [listing]({p['url']})"
     line += f" `{p.get('vin', '')}`"
     return line
+
+
+def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
+    """The cars actually being decided on, first in the report. A live one
+    shows its price and movement; a vanished one says so loudly, with the
+    honest read on whether it sold or just fell out of the fetch window."""
+    if not SHORTLIST:
+        return []
+    sec = ["## Shortlist", "",
+           f"_The {len(SHORTLIST)} car{'s' if len(SHORTLIST) != 1 else ''} "
+           "being decided on, watched by VIN._", ""]
+    for vin, note in SHORTLIST.items():
+        if vin in live_by_vin:
+            x, label = live_by_vin[vin]
+            obj = x
+            bits = [f"**{money(x['price'])}**", label, str(x.get("year") or "")]
+            if x.get("miles") is not None:
+                bits.append(f"{x['miles']:,} mi")
+            bits.append("drivable · no shipping" if x.get("local") else
+                        (f"+ {money(x['ship'])} shipping" if x.get("ship")
+                         else "shipping n/a"))
+            bits.append(place(x))
+            line = "- " + " · ".join(b for b in bits if b)
+            tags = []
+            series = x.get("series") or []
+            if (len(series) >= 2 and series[-1][0] == TODAY
+                    and series[-1][1] < series[-2][1]):
+                tags.append(f"▼ CUT {money(series[-2][1] - series[-1][1])} today")
+            elif x.get("cuts"):
+                tags.append(f"down {x['cuts']}x ({money(x['delta'])})")
+            if x.get("days_listed") is not None:
+                tags.append(f"on market {x['days_listed']}d")
+            p = scored_by_vin.get(vin)
+            if p and p["pick_pct"] > 0:
+                tags.append(f"{p['pick_pct']:.0%} under typical")
+            tags += x.get("flags") or []
+            if tags:
+                line += f"\n  _{' · '.join(tags)}_"
+        elif vin in gone_by_vin:
+            g = gone_by_vin[vin]
+            obj = g
+            verdict = {
+                "delisted": "**GONE — likely sold or pulled**",
+                "out of window": "missing today — priced above the fetch "
+                                 "cut-off, probably still for sale",
+                "unknown": "not checked today (its trim was not due)",
+            }.get(g["likely"], "missing today")
+            line = (f"- {verdict} · last seen {g['last_seen']} at "
+                    f"{money(g['last_price'])} · {g.get('trim_label') or ''} · "
+                    f"{place(g)}")
+        else:
+            sec.append(f"- not seen yet by the tracker `{vin}`"
+                       + (f" — {note}" if note else ""))
+            continue
+        if note:
+            line += f"\n  note: {note}"
+        if obj.get("url"):
+            line += f"\n  [listing]({obj['url']})"
+        line += f" `{vin}`"
+        sec.append(line)
+    sec.append("")
+    return sec
 
 
 def fmt_new(x, p=None):
@@ -1126,6 +1206,7 @@ def build_outputs(today_rows, all_rows, hist):
             "ship_cost": BUYER.get("ship_cost"),
             "cents_per_mile": BUYER.get("cents_per_mile"),
             "mileage_baseline": BUYER.get("mileage_baseline"),
+            "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
         },
         "brands": {},
     }
@@ -1137,6 +1218,7 @@ def build_outputs(today_rows, all_rows, hist):
         tree[t["brand"]][t["model_key"]].append(t)
 
     full, compact, all_scored = [], [], []      # report sections, assembled at the end
+    live_by_vin, gone_by_vin = {}, {}           # shortlist lookups, across every model
     for bkey, models in tree.items():
         b_entry = {"label": WATCHLIST[bkey].get("label", bkey),
                    "models": {}}
@@ -1175,6 +1257,9 @@ def build_outputs(today_rows, all_rows, hist):
                 "gone": delisted(tids, all_rows, m_rows, hist),
             }
             b_entry["models"][mkey] = m_entry
+            if SHORTLIST:
+                for g in m_entry["gone"]:
+                    gone_by_vin.setdefault(str(g["vin"]).upper(), g)
 
             if not m_rows:
                 if shopping:
@@ -1189,6 +1274,9 @@ def build_outputs(today_rows, all_rows, hist):
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
             scored = score_picks(m_entry["listings"], label)
             all_scored += scored
+            if SHORTLIST:
+                for x in m_entry["listings"]:
+                    live_by_vin.setdefault(str(x["vin"]).upper(), (x, label))
 
             if not shopping:
                 compact.append(compact_line(m_entry, label))
@@ -1242,7 +1330,10 @@ def build_outputs(today_rows, all_rows, hist):
                 trim_detail(sec, t, tl, rows_by_vin, hist, m_entry["gone"], prev_day)
             full += sec
 
-    report = [f"# {APP} — {TODAY}", ""] + full
+    scored_by_vin = {str(p["vin"]).upper(): p for p in all_scored}
+    report = ([f"# {APP} — {TODAY}", ""]
+              + shortlist_section(live_by_vin, gone_by_vin, scored_by_vin)
+              + full)
     top_local, top_ship = split_picks(all_scored, PICKS.get("count", 4),
                                       PICKS.get("per_model", 2))
     if top_local or top_ship:
