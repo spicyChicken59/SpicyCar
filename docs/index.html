@@ -83,6 +83,12 @@
   .scatter-dot:hover { stroke-width: 2.6; }
   .scatter-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
   .scatter-line { fill: none; stroke: var(--sc-border-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+  .scatter-line-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
+  .scatter-year-label { cursor: pointer; }
+  .scatter-dot, .scatter-pick-ring, .scatter-line, .scatter-year-label { transition: opacity .15s ease; }
+  /* year chips select rather than hide — pressed-off must not read as struck-through */
+  .legend-chip--year[aria-pressed="false"] span { opacity: 1; text-decoration: none; }
+  .legend-chip--year[aria-pressed="true"] { background: var(--sc-bg); box-shadow: inset 0 0 0 1px var(--sc-border-strong); }
   .show-more { display: flex; justify-content: center; padding: 14px 0 2px; }
   .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }         /* the drawn SpicyChicken lockup, as drawn */
   .frame-chick { height: 45%; max-height: 44px; width: auto; opacity: .28; }     /* the chick keeps watch where a dealer sent no photo */
@@ -1043,6 +1049,16 @@
     const cohorts = Object.entries(byYear).filter(([, vs]) => vs.length >= 3)
       .map(([y, vs]) => ({ year: y, med: median(vs) })).sort((a, b) => a.year < b.year ? -1 : 1);
     const priceAt = (med, mi) => med - (mi - P.base) * P.cpm;
+    // The year, made visible: hovering a year's line, its label, or its legend
+    // chip keeps that cohort's dots at full strength and dims the rest — the
+    // same pick-it-out gesture the trend chart's legend taught. A chip click
+    // makes it stick (the touch path); clicking again clears it.
+    let stuckYear = null;
+    const highlightYear = (y) => {
+      for (const n of svg.querySelectorAll('[data-year]')) n.style.opacity = (!y || n.getAttribute('data-year') === y) ? '' : '0.15';
+      for (const n of svg.querySelectorAll('[data-yline]')) n.style.opacity = (!y || n.getAttribute('data-yline') === y) ? '' : '0.25';
+    };
+    const yLabels = [];
     for (const c of cohorts) {
       // clip the line to the plotted price band
       const miFor = (p) => P.base + (c.med - p) / (P.cpm || 1e-9);
@@ -1051,8 +1067,24 @@
         m1 = Math.max(m1, miFor(yt.hi)); m2 = Math.min(m2, miFor(yt.lo));
       }
       if (m2 <= m1) continue;
-      svg.appendChild(svgEl('line', { class: 'scatter-line', x1: xOf(m1), y1: yOf(priceAt(c.med, m1)), x2: xOf(m2), y2: yOf(priceAt(c.med, m2)) }));
-      svg.appendChild(svgEl('text', { x: Math.min(xOf(m2) + 4, W - 4), y: yOf(priceAt(c.med, m2)) + 4 }, document.createTextNode(c.year)));
+      const x1 = xOf(m1), y1 = yOf(priceAt(c.med, m1)), x2 = xOf(m2), y2 = yOf(priceAt(c.med, m2));
+      svg.appendChild(svgEl('line', { class: 'scatter-line', 'data-yline': c.year, x1, y1, x2, y2 }));
+      const hit = svgEl('line', { class: 'scatter-line-hit', x1, y1, x2, y2 });
+      hit.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(c.year); });
+      hit.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
+      svg.appendChild(hit);
+      yLabels.push({ year: c.year, x: Math.min(x2 + 4, W - 4), y: y2 + 4 });
+    }
+    // labels pushed apart vertically so converging lines never overprint
+    yLabels.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < yLabels.length; i++) if (yLabels[i].y - yLabels[i - 1].y < 12) yLabels[i].y = yLabels[i - 1].y + 12;
+    for (let i = yLabels.length - 1; i >= 0; i--) { const max = H - m.b - 2 - (yLabels.length - 1 - i) * 12; if (yLabels[i].y > max) yLabels[i].y = max; }
+    for (let i = 1; i < yLabels.length; i++) if (yLabels[i].y - yLabels[i - 1].y < 12) yLabels[i].y = yLabels[i - 1].y + 12;
+    for (const L of yLabels) {
+      const t2 = svgEl('text', { class: 'scatter-year-label', 'data-yline': L.year, x: L.x.toFixed(1), y: L.y.toFixed(1) }, document.createTextNode(L.year));
+      t2.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(L.year); });
+      t2.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
+      svg.appendChild(t2);
     }
     // the picks currently shown above, ringed
     const sc = scoredFrom(rows, t.label), PC = pickParams();
@@ -1104,10 +1136,11 @@
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
       const isShort = onShortlist(x);
       const hue = isShort ? tok('accent') : color;      // shortlisted cars wear the accent outright
-      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5 }));
+      const yr = String(x.year || '');
+      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5, 'data-year': yr }));
       const u = safeUrl(x.url);
       const dot = svgEl('circle', { class: 'scatter-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' has-url' : ''),
-        cx, cy, r: 4, fill: x.local ? hue : 'none', stroke: x.local ? null : hue });
+        cx, cy, r: 4, 'data-year': yr, fill: x.local ? hue : 'none', stroke: x.local ? null : hue });
       dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
       dot.addEventListener('click', () => {
         if (lastPtr === 'touch' && armed !== dot) {
@@ -1133,7 +1166,20 @@
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
     if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
     if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('border-strong') }), 'typical value by year'));
-    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover a dot for the car and click to open the listing; on a phone, tap previews and a second tap opens.`;
+    // one chip per model year — hover to preview, press to hold (the touch path)
+    const setChips = () => { for (const b of lg.querySelectorAll('.legend-chip--year')) b.setAttribute('aria-pressed', String(b.dataset.y === stuckYear)); };
+    for (const c of cohorts) {
+      const sample = svgEl('svg', { width: 20, height: 10, viewBox: '0 0 20 10', 'aria-hidden': 'true' },
+        svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, stroke: tok('border-strong'), 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
+      const chip = el('button', { class: 'legend-chip legend-chip--year', type: 'button', 'aria-pressed': 'false',
+        title: `Highlight the ${c.year} cars`,
+        onclick: () => { stuckYear = stuckYear === c.year ? null : c.year; highlightYear(stuckYear); setChips(); },
+        onmouseenter: () => highlightYear(c.year),
+        onmouseleave: () => highlightYear(stuckYear) }, sample, el('span', null, c.year));
+      chip.dataset.y = c.year;
+      lg.appendChild(chip);
+    }
+    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover a line or press a year chip to light up that year's cars. Hover a dot for the car and click to open the listing; on a phone, tap previews and a second tap opens.`;
     card.hidden = false;
   }
 
