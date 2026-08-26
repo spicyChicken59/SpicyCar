@@ -53,9 +53,22 @@
   .map-btn:hover { border-color: var(--sc-border-strong); }
   .map-btn:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
   .map-tip-img { display: block; width: 150px; height: 94px; object-fit: cover; border-radius: 6px; margin-bottom: 7px; }
+  /* Plain scroll scrolls the page (the embedded-map convention); this hint teaches the modifier */
+  .map-scrollhint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity .25s ease; z-index: 4; }
+  .map-scrollhint.is-on { opacity: 1; }
+  .map-scrollhint span { background: var(--sc-ink); color: var(--sc-on-ink); border-radius: 8px;
+    padding: 8px 14px; font: 600 13px/1.4 var(--sc-font-body); box-shadow: var(--sc-shadow-pop); }
+  /* A tap-opened tooltip is a small card with a live Open link, so it must take the pointer */
+  .sc-tooltip--tap { pointer-events: auto; }
+  .map-tip-open { display: inline-block; margin-top: 6px; font: 600 12.5px/1.4 var(--sc-font-body);
+    color: var(--sc-on-ink); text-decoration: underline; text-underline-offset: 2px; }
   .map-state { fill: var(--sc-bg); stroke: var(--sc-border); stroke-width: .75; }
   .map-ring { fill: none; stroke: var(--sc-brand-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
   .map-anchor { fill: var(--sc-accent); stroke: var(--sc-surface); stroke-width: 1.5; }
+  /* fill="none" makes an svg circle's interior untouchable by default — hollow
+     dots must still hit-test on their whole area, not just the stroke ring */
+  .map-dot, .scatter-dot { pointer-events: all; }
   .map-dot { cursor: pointer; }
   .map-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }     /* the 1px surface ring keeps overlapping dots separable */
   .map-dot.is-hollow { fill: none; stroke-width: 1.6; }
@@ -696,6 +709,49 @@
       }
       const host = $('map'); host.textContent = '';
       const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
+      // Interaction guards: a pan that ends on a dot must not fire its click,
+      // and on touch — where hover isn't real — the first tap previews the car
+      // (tooltip with an Open link) and only a second tap opens it.
+      let dragDist = 0, lastPtr = 'mouse', armed = null;
+      const hideTip = () => { tip.classList.remove('is-on', 'sc-tooltip--tap'); armed = null; };
+      const clampTip = () => {
+        const rect = host.getBoundingClientRect();
+        const top = parseFloat(tip.style.top) || 4;
+        tip.style.top = Math.max(4, Math.min(top, rect.height - tip.offsetHeight - 4)) + 'px';
+      };
+      const openCar = (c) => {
+        if (mode === 'model') { const u = safeUrl(c.x.url); if (u) window.open(u, '_blank', 'noopener'); else goTo(c.bk, c.mk); }
+        else goTo(c.bk, c.mk);
+      };
+      const fillTip = (c, clientX, clientY, tap) => {
+        tip.textContent = '';
+        const photo = safeUrl(c.x.image);
+        if (photo) {
+          const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+          img.addEventListener('error', () => { img.remove(); clampTip(); });
+          img.addEventListener('load', clampTip);
+          tip.appendChild(img);
+        }
+        tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${c.m.label} · ${c.x.year || ''}`));
+        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + brandColor(c.bk) }),
+          el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
+        tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, (c.x.miles != null ? `${num(c.x.miles)} mi · ` : '')
+          + (c.x.local ? 'drivable · no shipping' : (c.x.ship ? `+ ${money(c.x.ship)} shipping` : 'shipping n/a'))));
+        if (tap) {
+          const u = mode === 'model' ? safeUrl(c.x.url) : null;
+          if (u) tip.appendChild(el('a', { class: 'map-tip-open', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+          else if (mode !== 'model') tip.appendChild(el('a', { class: 'map-tip-open', href: '#',
+            onclick: (ev) => { ev.preventDefault(); openCar(c); } }, `Open ${c.m.label} →`));
+          tip.classList.add('sc-tooltip--tap');
+        } else tip.classList.remove('sc-tooltip--tap');
+        const rect = host.getBoundingClientRect();
+        const fx = clientX - rect.left, flip = fx > rect.width * 0.55;
+        tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
+        tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
+        tip.style.top = Math.max(4, clientY - rect.top - 40) + 'px';
+        tip.classList.add('is-on');
+        clampTip();
+      };
       let offMap = 0;
       const seen = {};
       for (const c of cars) {
@@ -711,32 +767,22 @@
           fill: c.x.local ? brandColor(c.bk) : 'none',
           stroke: c.x.local ? null : brandColor(c.bk),
         });
+        dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
         dot.addEventListener('click', () => {
-          if (mode === 'model') { const u = safeUrl(c.x.url); if (u) window.open(u, '_blank', 'noopener'); else goTo(c.bk, c.mk); }
-          else goTo(c.bk, c.mk);
+          if (dragDist > 4) return;                      // that was a pan, not a click
+          if (lastPtr === 'touch' && armed !== dot) {    // first tap previews
+            armed = dot;
+            const r = dot.getBoundingClientRect();
+            fillTip(c, r.left + r.width / 2, r.top, true);
+            return;
+          }
+          openCar(c);
         });
         dot.addEventListener('pointerenter', (e) => {
           if (e.pointerType === 'touch') return;
-          tip.textContent = '';
-          const photo = safeUrl(c.x.image);
-          if (photo) {
-            const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
-            img.addEventListener('error', () => img.remove());
-            tip.appendChild(img);
-          }
-          tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${c.m.label} · ${c.x.year || ''}`));
-          tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + brandColor(c.bk) }),
-            el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
-          tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, (c.x.miles != null ? `${num(c.x.miles)} mi · ` : '')
-            + (c.x.local ? 'drivable · no shipping' : (c.x.ship ? `+ ${money(c.x.ship)} shipping` : 'shipping n/a'))));
-          const rect = host.getBoundingClientRect();
-          const fx = (e.clientX - rect.left), flip = fx > rect.width * 0.55;
-          tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
-          tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
-          tip.style.top = Math.max(4, e.clientY - rect.top - 40) + 'px';
-          tip.classList.add('is-on');
+          fillTip(c, e.clientX, e.clientY, false);
         });
-        dot.addEventListener('pointerleave', () => tip.classList.remove('is-on'));
+        dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
         svg.appendChild(dot);
       }
       host.appendChild(svg);
@@ -776,7 +822,21 @@
         const v = S.mapView;
         applyView(clampView({ w: v.w * f, h: v.h * f, x: vx - (vx - v.x) * f, y: vy - (vy - v.y) * f }));
       };
+      // Plain scroll keeps scrolling the page; Ctrl/⌘+scroll (and trackpad
+      // pinch, which browsers report the same way) zooms the map. The overlay
+      // hint teaches the modifier the first time someone plain-scrolls here.
+      const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+      const scrollHint = el('div', { class: 'map-scrollhint', 'aria-hidden': 'true' },
+        el('span', null, `Use ${isMac ? '⌘' : 'Ctrl'} + scroll to zoom the map`));
+      host.appendChild(scrollHint);
+      let hintTimer = null;
+      const nudgeHint = () => {
+        scrollHint.classList.add('is-on');
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => scrollHint.classList.remove('is-on'), 1200);
+      };
       svg.addEventListener('wheel', (e) => {
+        if (!e.ctrlKey && !e.metaKey) { nudgeHint(); return; }
         e.preventDefault();
         const [vx, vy] = toViewPt(e.clientX, e.clientY);
         zoomAt(vx, vy, e.deltaY < 0 ? 0.82 : 1 / 0.82);
@@ -784,13 +844,22 @@
       const ptrs = new Map();
       svg.addEventListener('pointerdown', (e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (!(e.target.classList && e.target.classList.contains('map-dot'))) hideTip();
+        dragDist = 0;
         ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        if (e.pointerType === 'mouse' || ptrs.size === 2) svg.setPointerCapture(e.pointerId);
+        if (ptrs.size === 2) svg.setPointerCapture(e.pointerId);
       });
       svg.addEventListener('pointermove', (e) => {
         if (!ptrs.has(e.pointerId)) return;
         const prev = { ...ptrs.get(e.pointerId) };
         ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        dragDist += Math.hypot(e.clientX - prev.x, e.clientY - prev.y);
+        // capture only once a real drag starts — capturing on pointerdown
+        // would re-target the eventual click at the svg and kill dot clicks
+        if (dragDist > 4) {
+          hideTip();
+          if (e.pointerType === 'mouse' && !svg.hasPointerCapture(e.pointerId)) svg.setPointerCapture(e.pointerId);
+        }
         const r = svg.getBoundingClientRect(), v = S.mapView, scale = v.w / r.width;
         if (ptrs.size === 1 && e.pointerType === 'mouse') {          // mouse drag pans
           applyView(clampView({ ...v, x: v.x - (e.clientX - prev.x) * scale, y: v.y - (e.clientY - prev.y) * scale }));
@@ -828,9 +897,10 @@
       lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + chartColors().context }), 'hollow — shipping added'));
       if (Array.isArray(buyer.anchor)) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('brand-strong') }), `≤ ${buyer.drive_hours || 5}h drive of ${homeName()}`));
       $('map-hint').textContent = `${cars.length - offMap} cars under the current filters`
-        + (mode === 'model' ? ' — click a dot to open its listing' : ', colored by brand like the chart below — click a dot to open its model')
-        + (offMap ? ` · ${offMap} beyond the lower 48` : '')
-        + '. The view follows your Where picks; scroll or pinch to zoom, drag with a mouse or two fingers to pan, ⤢ resets.';
+        + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
+        + (mode === 'model' ? ' — hover or tap a dot for the car, click to open its listing'
+                            : ', colored by brand like the chart below — hover or tap a dot for the car, click to open its model')
+        + `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`;
       card.hidden = false;
     });
   }
@@ -848,6 +918,7 @@
     const t = model();
     const pts = rows.filter((x) => hasPrice(x) && x.miles != null);
     if (pts.length < 3) { card.hidden = true; return; }
+    card.hidden = false;            // unhide before measuring, or clientWidth is 0 on a direct load
     const host = $('scatter'); host.textContent = '';
     const color = brandColor(S.brand);
     const W = Math.max(320, host.clientWidth || 720), H = 300;
@@ -891,35 +962,67 @@
     const ringed = new Set([...choosePicks(sc.filter((p) => p.x.local), PC.count),
                             ...choosePicks(sc.filter((p) => !p.x.local), PC.count)].map((p) => p.x.vin));
     const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
+    // Same touch contract as the map: first tap previews (photo, facts, an
+    // Open link), the second tap opens; hover keeps doing both jobs at once.
+    let lastPtr = 'mouse', armed = null;
+    const hideTip = () => { tip.classList.remove('is-on', 'sc-tooltip--tap'); armed = null; };
+    const clampTip = () => {
+      const rect = host.getBoundingClientRect();
+      const top = parseFloat(tip.style.top) || 4;
+      tip.style.top = Math.max(4, Math.min(top, rect.height - tip.offsetHeight - 4)) + 'px';
+    };
+    const fillTip = (x, clientX, clientY, tap) => {
+      tip.textContent = '';
+      const photo = safeUrl(x.image);
+      if (photo) {
+        const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+        img.addEventListener('error', () => { img.remove(); clampTip(); });
+        img.addEventListener('load', clampTip);
+        tip.appendChild(img);
+      }
+      tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${x.year || ''} ${x.trim || ''}`.trim()));
+      tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + color }),
+        el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
+      const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
+      if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
+      tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
+      const u = safeUrl(x.url);
+      if (tap && u) {
+        tip.appendChild(el('a', { class: 'map-tip-open', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+        tip.classList.add('sc-tooltip--tap');
+      } else tip.classList.remove('sc-tooltip--tap');
+      const rect = host.getBoundingClientRect();
+      const fx = clientX - rect.left, flip = fx > rect.width * 0.6;
+      tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
+      tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
+      tip.style.top = Math.max(4, clientY - rect.top - 34) + 'px';
+      tip.classList.add('is-on');
+      clampTip();
+    };
+    svg.addEventListener('pointerdown', (e) => {
+      if (!(e.target.classList && e.target.classList.contains('scatter-dot'))) hideTip();
+    });
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
       if (ringed.has(x.vin)) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5 }));
       const u = safeUrl(x.url);
       const dot = svgEl('circle', { class: 'scatter-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' has-url' : ''),
         cx, cy, r: 4, fill: x.local ? color : 'none', stroke: x.local ? null : color });
-      if (u) dot.addEventListener('click', () => window.open(u, '_blank', 'noopener'));
-      dot.addEventListener('pointerenter', (e) => {
-        tip.textContent = '';
-        const photo = safeUrl(x.image);
-        if (photo && e.pointerType !== 'touch') {
-          const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
-          img.addEventListener('error', () => img.remove());
-          tip.appendChild(img);
+      dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
+      dot.addEventListener('click', () => {
+        if (lastPtr === 'touch' && armed !== dot) {
+          armed = dot;
+          const r = dot.getBoundingClientRect();
+          fillTip(x, r.left + r.width / 2, r.top, true);
+          return;
         }
-        tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${x.year || ''} ${x.trim || ''}`.trim()));
-        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + color }),
-          el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
-        const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
-        if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
-        tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
-        const rect = host.getBoundingClientRect();
-        const fx = e.clientX - rect.left, flip = fx > rect.width * 0.6;
-        tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
-        tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
-        tip.style.top = Math.max(4, e.clientY - rect.top - 34) + 'px';
-        tip.classList.add('is-on');
+        if (u) window.open(u, '_blank', 'noopener');
       });
-      dot.addEventListener('pointerleave', () => tip.classList.remove('is-on'));
+      dot.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'touch') return;
+        fillTip(x, e.clientX, e.clientY, false);
+      });
+      dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
       svg.appendChild(dot);
     }
     host.appendChild(svg);
@@ -929,7 +1032,7 @@
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + color }), 'shipping added'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
     if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('border-strong') }), 'typical value by year'));
-    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover for the car, click to open the listing.`;
+    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover a dot for the car and click to open the listing; on a phone, tap previews and a second tap opens.`;
     card.hidden = false;
   }
 
