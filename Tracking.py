@@ -546,6 +546,44 @@ def fmt_pick(p):
     return line
 
 
+def market_stats(listings):
+    """Per-model market context — the numbers a negotiation opens with: how
+    long cars typically sit, what share have been cut while tracked, and the
+    typical size of a cut. Also stamps each listing with stale_pct: the share
+    of the model's cars it has outlasted on the market."""
+    dl = sorted(x["days_listed"] for x in listings
+                if x.get("days_listed") is not None)
+    for x in listings:
+        d = x.get("days_listed")
+        x["stale_pct"] = (round(sum(1 for v in dl if v < d) / len(dl), 2)
+                          if dl and d is not None else None)
+    tracked = [x for x in listings if x.get("days_tracked", 0) >= 2]
+    cut_cars = [x for x in tracked if x.get("cuts")]
+    drops = []
+    for x in listings:
+        s = x.get("series") or []
+        drops += [a - b for (_, a), (_, b) in zip(s, s[1:]) if b < a]
+    return {
+        "median_days_listed": int(median(dl)) if dl else None,
+        "tracked_2d": len(tracked),
+        "cut_share": round(len(cut_cars) / len(tracked), 2) if tracked else None,
+        "median_cut": int(median(drops)) if drops else None,
+    }
+
+
+def market_line(stats):
+    """The market context as one report phrase, or ''. """
+    bits = []
+    if stats.get("median_days_listed") is not None:
+        bits.append(f"typical car {stats['median_days_listed']}d on market")
+    if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
+        cut = f"{stats['cut_share']:.0%} cut while tracked"
+        if stats.get("median_cut"):
+            cut += f", median {money(stats['median_cut'])}"
+        bits.append(cut)
+    return " · ".join(bits)
+
+
 def build_today(events):
     """The day's changes, once: '## Today' lines for the report, and the
     fragments for an email subject that says what happened. Priority:
@@ -935,7 +973,7 @@ def pick_display_rows(rows):
             for rs in by_vin.values()]
 
 
-def fmt_row(r, s):
+def fmt_row(r, s, entry=None):
     miles = to_int(r["miles"])
     adj, ship = landed(r)
     bits = [f"**{money(to_int(r['price']))}**"]
@@ -962,6 +1000,10 @@ def fmt_row(r, s):
     dl = days_listed(r)
     if dl is not None and dl >= 30:
         tags.append(f"on market {dl}d")
+    # negotiation context: a car most of its own model has outsold is a car
+    # whose dealer has a reason to talk
+    if entry and (entry.get("stale_pct") or 0) >= 0.75:
+        tags.append(f"sits longer than {entry['stale_pct']:.0%} of the model")
     tags += flags(r)
     if tags:
         out += f"\n  _{' · '.join(tags)}_"
@@ -1190,14 +1232,14 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
                    + ("" if st in STATES else " — within the drive radius"))
         for x in in_st:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
-                               summarize((t["id"], x["vin"]), hist)))
+                               summarize((t["id"], x["vin"]), hist), x))
         sec.append("")
     best5 = [x for x in tl if x["price"] is not None and not x["local"]][:5]
     if best5:
         sec.append("**Cheapest beyond driving range (shipping stated)**")
         for x in best5:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
-                               summarize((t["id"], x["vin"]), hist)))
+                               summarize((t["id"], x["vin"]), hist), x))
         sec.append("")
 
 
@@ -1323,6 +1365,7 @@ def build_outputs(today_rows, all_rows, hist):
             listings = [listing_entry(r, summarize((r["target"], r["vin"]), hist))
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
+            m_entry["market"] = market_stats(m_entry["listings"])
             scored = score_picks(m_entry["listings"], label)
             all_scored += scored
             if SHORTLIST:
@@ -1393,8 +1436,10 @@ def build_outputs(today_rows, all_rows, hist):
                                  + [f"{st} {counts[st]} (drive radius)"
                                     for st in radius_states]
                                  + [f"beyond driving range {n_out}"])
+            mline = market_line(m_entry["market"])
             sec += [f"_{len(listings)} vehicles across {len(trims)} "
-                    f"trim{'s' if len(trims) != 1 else ''} · {summary}_", ""]
+                    f"trim{'s' if len(trims) != 1 else ''} · {summary}_"
+                    + (f"\n_{mline}_" if mline else ""), ""]
             rows_by_vin = {r["vin"]: r for r in display}
             for t in trims:
                 tl = [x for x in m_entry["listings"] if x["trim_id"] == t["id"]]

@@ -830,6 +830,7 @@
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
+      x.stale_pct >= 0.75 ? el('span', null, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
       x.days_tracked > 1 ? el('span', null, `tracked ${x.days_tracked}d`) : null,
       x.dealer ? el('span', null, x.dealer) : null,
       flagsCell(x),
@@ -846,7 +847,11 @@
     const t = model(), daily = dailyFor(t);
     $('list-card').hidden = false;
     const all = trimRows(t.listings || []).length;
-    $('list-hint').textContent = `${rows.length} of ${all} vehicles · one row per VIN · asking price as listed, shipping estimate stated for out-of-state cars.`;
+    const mk = t.market || {}, mbits = [];
+    if (mk.median_days_listed != null) mbits.push(`typical car ${mk.median_days_listed}d on market`);
+    if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
+    $('list-hint').textContent = `${rows.length} of ${all} vehicles · one row per VIN · asking price as listed, shipping stated per car.`
+      + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '');
     const table = $('list-table'); table.textContent = '';
     const scroll = $('list-scroll');
     const cardsHost = $('list-cards'); cardsHost.textContent = '';
@@ -883,6 +888,7 @@
         x.dealer ? el('span', { class: 'sc-note sc-truncate dealer', title: x.dealer }, x.dealer) : null);
       const listed = el('td', { class: 'sc-nowrap' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
+        x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
         x.days_tracked ? el('span', { class: 'sc-note' }, `tracked ${x.days_tracked}d`) : null);
       const trend = el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
       trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');

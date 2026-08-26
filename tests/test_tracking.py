@@ -498,6 +498,54 @@ class TestDelisted(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# Market stats: the negotiation context — how long cars sit, how often and
+# how much they get cut, and each car's staleness within its own model.
+# --------------------------------------------------------------------------
+class TestMarketStats(unittest.TestCase):
+    @staticmethod
+    def entry(days_listed=None, days_tracked=1, series=None):
+        return {"days_listed": days_listed, "days_tracked": days_tracked,
+                "cuts": sum(1 for (_, a), (_, b) in
+                            zip(series or [], (series or [])[1:]) if b < a),
+                "series": series or []}
+
+    def test_medians_cut_share_and_staleness(self):
+        pool = [self.entry(days_listed=5, days_tracked=3,
+                           series=[("d1", 50000), ("d2", 50000), ("d3", 50000)]),
+                self.entry(days_listed=20, days_tracked=3,
+                           series=[("d1", 48000), ("d2", 47000), ("d3", 46500)]),
+                self.entry(days_listed=60, days_tracked=3,
+                           series=[("d1", 45000), ("d2", 44000), ("d3", 44000)])]
+        stats = T.market_stats(pool)
+        self.assertEqual(stats["median_days_listed"], 20)
+        self.assertAlmostEqual(stats["cut_share"], 2 / 3, places=2)
+        self.assertEqual(stats["median_cut"], 1000)   # drops: 1000, 500, 1000
+        self.assertEqual(pool[2]["stale_pct"], round(2 / 3, 2),
+                         "the 60-day car has outlasted two of three")
+        self.assertEqual(pool[0]["stale_pct"], 0.0)
+
+    def test_empty_and_unknown_inputs_do_not_crash(self):
+        stats = T.market_stats([self.entry()])
+        self.assertIsNone(stats["median_days_listed"])
+        self.assertIsNone(stats["cut_share"])
+        self.assertIsNone(stats["median_cut"])
+        self.assertEqual(T.market_stats([]), {"median_days_listed": None,
+                                              "tracked_2d": 0,
+                                              "cut_share": None,
+                                              "median_cut": None})
+
+    def test_market_line_reads_like_a_sentence(self):
+        line = T.market_line({"median_days_listed": 34, "tracked_2d": 40,
+                              "cut_share": 0.41, "median_cut": 1050})
+        self.assertIn("typical car 34d on market", line)
+        self.assertIn("41% cut while tracked, median $1,050", line)
+        self.assertEqual(T.market_line({"median_days_listed": None,
+                                        "tracked_2d": 2, "cut_share": 0.5,
+                                        "median_cut": None}), "",
+                         "thin data must not fake a market read")
+
+
+# --------------------------------------------------------------------------
 # Today: one event engine feeds the report lead and the email subject.
 # --------------------------------------------------------------------------
 class TestToday(unittest.TestCase):
