@@ -72,6 +72,25 @@
   .scatter-line { fill: none; stroke: var(--sc-border-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
   .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }         /* the drawn SpicyChicken lockup, as drawn */
   .frame-chick { height: 45%; max-height: 44px; width: auto; opacity: .28; }     /* the chick keeps watch where a dealer sent no photo */
+  /* Photos: same frame box, but the image blurs in and zooms on hover inside it */
+  .frame-wrap { overflow: hidden; position: relative; padding: 0; }
+  .frame-wrap .frame-img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; filter: blur(10px); }
+  .frame-wrap .frame-img.is-loaded { opacity: 1; filter: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .frame-wrap .frame-img { transition: opacity .35s ease, filter .5s ease, transform .35s ease; }
+    .sc-media:hover .frame-img.is-loaded, .photo-card:hover .frame-img.is-loaded { transform: scale(1.06); }
+  }
+  /* Photo-led cards: the picture on top, the price on a scrim, the facts below */
+  .photo-card { display: flex; flex-direction: column; border: 1px solid var(--sc-border); border-radius: 10px; overflow: hidden; background: var(--sc-surface); }
+  .photo-card__media { position: relative; aspect-ratio: 16 / 10; }
+  .photo-card__media .sc-frame { width: 100%; height: 100%; border-radius: 0; }
+  .photo-card__price { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 14px 10px; pointer-events: none;
+    font: 700 21px/1.1 var(--sc-font-body); letter-spacing: -.3px; color: #fff;
+    background: linear-gradient(transparent, rgba(9, 17, 27, .82)); }
+  .photo-card__price .sub { display: block; font: 500 12px/1.5 var(--sc-font-body); letter-spacing: 0; color: rgba(255,255,255,.85); }
+  .photo-card__chip { position: absolute; top: 10px; right: 10px; }
+  .photo-card__body { padding: 11px 14px 13px; display: grid; gap: 4px; align-content: start; }
+  .photo-card__body p { margin: 0; }
   .legend-chip { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none;
     padding: 4px 8px; cursor: pointer; color: inherit; font: 500 12.5px/1.4 var(--sc-font-mono); border-radius: 6px; }
   .legend-chip[aria-pressed="false"] span { opacity: .45; text-decoration: line-through; }
@@ -909,11 +928,17 @@
     const cls = 'sc-frame' + (large ? ' sc-frame--lg' : '');
     const queue = [x && x.image, ...(alts || [])].map(safeUrl).filter((u, i, a) => u && a.indexOf(u) === i);
     if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, frameChick());
-    const img = el('img', { class: cls, src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
-    const next = () => { if (queue.length) img.src = queue.shift(); else img.replaceWith(el('div', { class: cls + ' sc-frame--empty' }, frameChick())); };
+    // a wrapper carries the frame so the photo can blur in and zoom on hover
+    // without ever changing the layout box
+    const img = el('img', { class: 'frame-img', src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+    const wrap = el('div', { class: cls + ' frame-wrap' }, img);
+    const next = () => {
+      if (queue.length) { img.classList.remove('is-loaded'); img.src = queue.shift(); }
+      else { wrap.classList.add('sc-frame--empty'); wrap.textContent = ''; wrap.appendChild(frameChick()); }
+    };
     img.addEventListener('error', next);
-    img.addEventListener('load', () => { if (img.naturalWidth < 40) next(); });   // a placeholder pixel is not a photo
-    return img;
+    img.addEventListener('load', () => { if (img.naturalWidth < 40) next(); else img.classList.add('is-loaded'); });   // a placeholder pixel is not a photo
+    return wrap;
   }
   // History flags: the two that change a decision are chips (good / danger outline); the rest are words.
   function flagsCell(x) {
@@ -950,19 +975,19 @@
   const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Beyond driving range — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
 
-  // One pick: photo, asking price, the shipping line, why it is a pick, and the facts.
+  // One pick, photo first: the picture on top with the price on a scrim and
+  // the value chip in the corner; the reasoning and facts below.
   function pickCard(p) {
     const b = p.x;
     const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
-    const para = el('p', null, `${facts}. ${where}.`);
-    const open = safeUrl(b.url) ? el('p', { style: 'margin-top:4px' }, el('a', { href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Open the listing →')) : null;
-    return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, thumbFor(b, true), el('div', { class: 'sc-media__body' },
-      el('div', { class: 'sc-callout__figure' }, `${money(b.price)} asking`),
-      el('div', { class: 'sc-media__sub' }, shipNote(b)),
-      el('div', null, el('span', { class: 'sc-chip sc-chip--good' }, `${Math.round(p.pct * 100)}% under typical`)),
+    const media = el('div', { class: 'photo-card__media' }, thumbFor(b, true),
+      el('div', { class: 'photo-card__price' }, `${money(b.price)} asking`, el('span', { class: 'sub' }, shipNote(b))),
+      el('span', { class: 'sc-chip sc-chip--good photo-card__chip' }, `${Math.round(p.pct * 100)}% under typical`));
+    const open = safeUrl(b.url) ? el('p', null, el('a', { href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Open the listing →')) : null;
+    return el('div', { class: 'photo-card' }, media, el('div', { class: 'photo-card__body' },
       el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${[p.year, p.modelLabel, p.trim].filter(Boolean).join(' ')}, miles allowed for`),
-      para, open)));
+      el('p', null, `${facts}. ${where}.`), open));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
   // the rest of the country. Front page: across every model; model view: within it.
@@ -983,14 +1008,16 @@
       el('p', { class: 'sc-hint' }, picksRule())));
     host.hidden = false;
   }
-  // The shortlist: the cars actually being decided on, pinned to the front page.
+  // The shortlist: the cars actually being decided on, pinned to the front
+  // page — photo first, like the picks; a vanished one wears its verdict chip
+  // over the frame.
   function shortlistCard(vin, note) {
     const hit = findVin(vin);
     if (!hit) {
-      return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' },
+      return el('div', { class: 'photo-card' }, el('div', { class: 'photo-card__body' },
         el('div', { class: 'sc-media__title' }, 'Not seen yet by the tracker'),
         el('div', { class: 'sc-media__code' }, vin),
-        note ? el('span', { class: 'sc-note' }, note) : null)));
+        note ? el('span', { class: 'sc-note' }, note) : null));
     }
     const { x, m, bk, mk, gone } = hit;
     const daily = m.daily || [];
@@ -998,17 +1025,18 @@
     const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — likely sold or pulled'
       : (x.likely === 'out of window' ? 'missing — priced above the fetch cut-off, probably still for sale' : 'not checked recently')) : null;
     const price = gone ? x.last_price : x.price;
-    const body = el('div', { class: 'sc-media__body' },
+    const media = el('div', { class: 'photo-card__media' }, thumbFor(gone ? null : x, true),
+      el('div', { class: 'photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
+        el('span', { class: 'sub' }, gone ? `last seen ${fmtDate(x.last_seen)}` : shipNote(x))),
+      gone ? el('span', { class: 'sc-chip photo-card__chip ' + (x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
+           : (x.pick_pct > 0 ? el('span', { class: 'sc-chip sc-chip--good photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
+    return el('div', { class: 'photo-card' }, media, el('div', { class: 'photo-card__body' },
       el('div', { class: 'sc-media__title' }, title),
-      el('div', { class: 'sc-callout__figure' }, `${money(price)}${gone ? ` · last seen ${fmtDate(x.last_seen)}` : ' asking'}`),
-      gone ? el('div', null, el('span', { class: 'sc-chip ' + (x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine))
-           : el('div', { class: 'sc-media__sub' }, `${x.miles != null ? num(x.miles) + ' mi · ' : ''}${shipNote(x)} · ${placeTxt(x)}`),
+      gone ? null : el('div', { class: 'sc-media__sub' }, `${x.miles != null ? num(x.miles) + ' mi · ' : ''}${placeTxt(x)}`),
       gone ? null : movement(x, daily),
-      x.pick_pct > 0 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
       note ? el('span', { class: 'sc-note' }, `note: ${note}`) : null,
       el('div', { class: 'sc-media__code' }, x.vin),
-      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(bk, mk); } }, 'Open model →')));
-    return el('div', { class: 'takeaway-col' }, el('div', { class: 'sc-media' }, thumbFor(gone ? null : x, true), body));
+      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(bk, mk); } }, 'Open model →'))));
   }
   function renderShortlist(show) {
     const host = $('shortlist'); host.textContent = '';
