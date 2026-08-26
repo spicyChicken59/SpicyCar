@@ -116,16 +116,17 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
   every drivable listing grouped by state (drive-radius states marked), and the five best-value
   cars beyond driving range.
-- The dashboard — opens on every model at once: a photo per model, lowest asking nationwide and
-  lowest drivable, median, a trend line, one chart with every model's lowest asking price over
-  time, and **spicy picks** in two lists — the best values within driving range and the best worth
-  shipping, ranked by value (miles allowed for, shipping stated) but shown at asking price. Then
-  brand and model tabs; on every model, its own picks, a hand-written *know the model*
-  card (the good, the bad, what to check); trim, scope, year and mileage filters plus hide-accidents
-  and hide-rentals; sort by asking, asking + shipping, or best value vs typical; lowest and median
-  asking price over time; one row per vehicle with photo, history flags (CPO, owners, accidents,
-  ex-lease), distance from home, shipping estimate, days on market and a price sparkline; and the
-  "gone" list.
+- The dashboard — opens on the whole market at once: a photo per model, lowest asking nationwide
+  and lowest drivable, median, brand-coloured trend lines, and one **market-over-time chart** —
+  colour is the brand, the dash is the model, the shopped models are drawn heavier, and an
+  interactive legend hides, shows and highlights any line. A **multi-select Where filter** (each
+  state, "≤ 5h drive", "Beyond" — press any mix, remembered between visits) narrows every tile,
+  pick and table. **Spicy picks** come in two lists — the best values within driving range and the
+  best worth shipping — ranked by value but shown at asking price. Rows click through to each
+  model; on every model, its own picks, a hand-written *know the model* card, trim/year/mileage
+  filters plus hide-accidents and hide-rentals; sort by asking, asking + shipping, or best value
+  vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
+  and a price sparkline; and the "gone" list.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home.
 
 ## Run it yourself
