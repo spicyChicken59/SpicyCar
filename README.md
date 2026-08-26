@@ -117,9 +117,11 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   every drivable listing grouped by state (drive-radius states marked), and the five best-value
   cars beyond driving range.
 - The dashboard — opens on the whole market at once: a photo per model, lowest asking nationwide
-  and lowest drivable, median, brand-coloured trend lines, a **market map** — every car at its own
-  coordinates, filled when drivable, hollow when it pays shipping, with the five-hour drive ring
-  drawn around the anchor — and one **market-over-time chart** —
+  and lowest drivable, median, brand-coloured trend lines, a **market map** — on the front page
+  and every model page: each car at its own coordinates, filled when drivable, hollow when it pays
+  shipping, the five-hour drive ring drawn around the anchor, photos on hover, and a view that
+  zooms to whatever the Where filter selects (plus scroll/pinch zoom and drag pan) — and one
+  **market-over-time chart** —
   colour is the brand, the dash is the model, the shopped models are drawn heavier, and an
   interactive legend hides, shows and highlights any line. A **multi-select Where filter** (each
   state, "≤ 5h drive", "Beyond" — press any mix, remembered between visits) narrows every tile,
@@ -129,7 +131,8 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   scatter** (picks ringed, a dashed typical-value line per model year), trim/year/mileage
   filters plus hide-accidents and hide-rentals; sort by asking, asking + shipping, or best value
   vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
-  and a price sparkline; and the "gone" list.
+  and a price sparkline — the top thirty shown, one press for all; and the "gone" list, twelve
+  most recent first.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home.
 
 ## Run it yourself
