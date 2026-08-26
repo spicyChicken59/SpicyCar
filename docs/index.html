@@ -64,8 +64,11 @@
   .map-tip-open { display: inline-block; margin-top: 6px; font: 600 12.5px/1.4 var(--sc-font-body);
     color: var(--sc-on-ink); text-decoration: underline; text-underline-offset: 2px; }
   .map-state { fill: var(--sc-bg); stroke: var(--sc-border); stroke-width: .75; }
+  .map-state-label { fill: var(--sc-text-2); font-family: var(--sc-font-mono); font-weight: 600;
+    letter-spacing: .08em; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+  .map-labels-on .map-state-label { opacity: .5; }
   .map-ring { fill: none; stroke: var(--sc-brand-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
-  .map-anchor { fill: var(--sc-accent); stroke: var(--sc-surface); stroke-width: 1.5; }
+  .map-anchor { fill: var(--sc-accent); stroke: var(--sc-surface); stroke-width: 1.5; pointer-events: all; cursor: help; }
   /* fill="none" makes an svg circle's interior untouchable by default — hollow
      dots must still hit-test on their whole area, not just the stroke ring */
   .map-dot, .scatter-dot { pointer-events: all; }
@@ -622,14 +625,36 @@
     return topo.objects.states.geometries.map((g) => {
       const polys = g.type === 'Polygon' ? [g.arcs] : g.arcs;
       let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-      const d = polys.map((poly) => poly.map((r) => {
+      // the label anchors on the centroid of the largest polygon, so Michigan
+      // labels its lower peninsula and Florida its mainland, not the bbox lake
+      let bestA = 0, cx = 0, cy = 0;
+      const d = polys.map((poly) => poly.map((r, ri) => {
         const pts = r.flatMap(ring);
         for (const [x, y] of pts) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+        if (ri === 0) {
+          let a = 0, mx = 0, my = 0;
+          for (let i = 0; i < pts.length; i++) {
+            const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+            const w = x1 * y2 - x2 * y1;
+            a += w; mx += (x1 + x2) * w; my += (y1 + y2) * w;
+          }
+          if (Math.abs(a) > Math.abs(bestA)) { bestA = a; cx = mx / (3 * a); cy = my / (3 * a); }
+        }
         return 'M' + pts.map(([x, y]) => x.toFixed(1) + ',' + y.toFixed(1)).join('L') + 'Z';
       }).join('')).join('');
-      return { name: (g.properties || {}).name || '', d, bbox: [minX, minY, maxX, maxY] };
+      return { name: (g.properties || {}).name || '', d, bbox: [minX, minY, maxX, maxY], center: [cx, cy] };
     });
   }
+  // Census names → postal codes, for the zoomed-in state labels.
+  const STATE_ABBR = { Alabama: 'AL', Alaska: 'AK', Arizona: 'AZ', Arkansas: 'AR', California: 'CA', Colorado: 'CO',
+    Connecticut: 'CT', Delaware: 'DE', 'District of Columbia': 'DC', Florida: 'FL', Georgia: 'GA', Hawaii: 'HI',
+    Idaho: 'ID', Illinois: 'IL', Indiana: 'IN', Iowa: 'IA', Kansas: 'KS', Kentucky: 'KY', Louisiana: 'LA',
+    Maine: 'ME', Maryland: 'MD', Massachusetts: 'MA', Michigan: 'MI', Minnesota: 'MN', Mississippi: 'MS',
+    Missouri: 'MO', Montana: 'MT', Nebraska: 'NE', Nevada: 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', Ohio: 'OH',
+    Oklahoma: 'OK', Oregon: 'OR', Pennsylvania: 'PA', 'Puerto Rico': 'PR', 'Rhode Island': 'RI',
+    'South Carolina': 'SC', 'South Dakota': 'SD', Tennessee: 'TN', Texas: 'TX', Utah: 'UT', Vermont: 'VT',
+    Virginia: 'VA', Washington: 'WA', 'West Virginia': 'WV', Wisconsin: 'WI', Wyoming: 'WY' };
   function fetchMap() {
     if (MAP_STATES) return Promise.resolve(MAP_STATES);
     MAP_PROMISE = MAP_PROMISE || fetch(MAP_URL).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -713,10 +738,18 @@
 
       const svg = svgEl('svg', { viewBox: `${view.x} ${view.y} ${view.w} ${view.h}`, 'aria-hidden': 'true' });
       for (const st of states) svg.appendChild(svgEl('path', { class: 'map-state', d: st.d, 'vector-effect': 'non-scaling-stroke' }));
+      // quiet postal labels, invisible at the full-US view and fading in once
+      // the zoom is tight enough for them to read
+      for (const st of states) {
+        const ab = STATE_ABBR[st.name];
+        if (ab) svg.appendChild(svgEl('text', { class: 'map-state-label', x: st.center[0].toFixed(1), y: st.center[1].toFixed(1), 'data-bf': 13 }, document.createTextNode(ab)));
+      }
+      let anchorEl = null;
       if (Array.isArray(buyer.anchor) && buyer.drive_radius_miles) {
         svg.appendChild(svgEl('path', { class: 'map-ring', d: ringPath(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles), 'vector-effect': 'non-scaling-stroke' }));
         const [ax, ay] = albers48(buyer.anchor[1], buyer.anchor[0]);
-        svg.appendChild(svgEl('circle', { class: 'map-anchor', cx: ax, cy: ay, r: 4.5, 'data-br': 4.5, 'vector-effect': 'non-scaling-stroke' }));
+        anchorEl = svgEl('circle', { class: 'map-anchor', cx: ax, cy: ay, r: 4.5, 'data-br': 4.5, 'vector-effect': 'non-scaling-stroke' });
+        svg.appendChild(anchorEl);
       }
       const host = $('map'); host.textContent = '';
       const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
@@ -767,6 +800,28 @@
         tip.classList.add('is-on');
         clampTip();
       };
+      if (anchorEl) {
+        const showAnchorTip = (clientX, clientY) => {
+          tip.textContent = '';
+          tip.classList.remove('sc-tooltip--tap');
+          tip.appendChild(el('div', { class: 'sc-tooltip__date' }, homeName()));
+          tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, 'Home anchor — distances, shipping and the drive ring all measure from here.'));
+          const rect = host.getBoundingClientRect();
+          const fx = clientX - rect.left, flip = fx > rect.width * 0.55;
+          tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
+          tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
+          tip.style.top = Math.max(4, clientY - rect.top - 34) + 'px';
+          tip.classList.add('is-on');
+          clampTip();
+        };
+        anchorEl.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') showAnchorTip(e.clientX, e.clientY); });
+        anchorEl.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
+        anchorEl.addEventListener('click', () => {
+          if (dragDist > 4) return;
+          const r = anchorEl.getBoundingClientRect();
+          showAnchorTip(r.left + r.width / 2, r.top);
+        });
+      }
       let offMap = 0;
       const seen = {};
       for (const c of cars) {
@@ -776,14 +831,17 @@
         const i = seen[key] = (seen[key] || 0) + 1;
         const a = i * 2.39996, r = i > 1 ? 2.4 * Math.sqrt(i) : 0;
         const cx = (px + r * Math.cos(a)).toFixed(1), cy = (py + r * Math.sin(a)).toFixed(1);
+        // co-located cars carry their spiral index so the view engine can keep
+        // their on-screen spread constant instead of exploding it under zoom
+        const spread = { 'data-px': px.toFixed(1), 'data-py': py.toFixed(1), 'data-di': i };
         const isPick = picked.has(c.x.vin), isShort = onShortlist(c.x);
         const hue = isShort ? tok('accent') : brandColor(c.bk);
         if (isPick || isShort) svg.appendChild(svgEl('circle', { class: 'map-pick-ring',
-          cx, cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke' }));
+          cx, cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke', ...spread }));
         const dot = svgEl('circle', {
           class: 'map-dot ' + (c.x.local ? 'is-filled' : 'is-hollow'),
           cx, cy,
-          r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke',
+          r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke', ...spread,
           fill: c.x.local ? hue : 'none',
           stroke: c.x.local ? null : hue,
         });
@@ -812,8 +870,20 @@
       const applyView = (v) => {
         S.mapView = v;
         svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
-        const s = v.w / MAP_FULL.w;
-        for (const n of svg.querySelectorAll('[data-br]')) n.setAttribute('r', (parseFloat(n.getAttribute('data-br')) * Math.max(s, 0.12)).toFixed(2));
+        const s = Math.max(v.w / MAP_FULL.w, 0.12);
+        for (const n of svg.querySelectorAll('[data-br]')) n.setAttribute('r', (parseFloat(n.getAttribute('data-br')) * s).toFixed(2));
+        // spiral offsets shrink in view units as the zoom tightens, so
+        // co-located cars keep a constant on-screen spread near their true spot
+        for (const n of svg.querySelectorAll('[data-di]')) {
+          const di = +n.getAttribute('data-di');
+          if (di < 2) continue;
+          const a2 = di * 2.39996, rr = 2.4 * Math.sqrt(di) * s;
+          n.setAttribute('cx', (+n.getAttribute('data-px') + rr * Math.cos(a2)).toFixed(1));
+          n.setAttribute('cy', (+n.getAttribute('data-py') + rr * Math.sin(a2)).toFixed(1));
+        }
+        // the postal labels: constant screen size, visible only once zoomed in
+        for (const n of svg.querySelectorAll('[data-bf]')) n.setAttribute('font-size', (parseFloat(n.getAttribute('data-bf')) * s).toFixed(2));
+        svg.classList.toggle('map-labels-on', v.w < MAP_FULL.w * 0.72);
       };
       const clampView = (v) => {
         const w = Math.min(Math.max(v.w, MAP_FULL.w / 40), MAP_FULL.w * 1.15);
