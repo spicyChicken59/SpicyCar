@@ -86,8 +86,10 @@
   .scatter-line-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
   .scatter-year-label { cursor: pointer; }
   .scatter-dot, .scatter-pick-ring, .scatter-line, .scatter-year-label { transition: opacity .15s ease; }
-  /* year chips select rather than hide — pressed-off must not read as struck-through */
-  .legend-chip--year[aria-pressed="false"] span { opacity: 1; text-decoration: none; }
+  /* year chips select rather than hide — pressed-off must not read as struck-through
+     or dimmed (the hide-chips' .45 opacity fails AA contrast on these labels); the
+     extra .sc-legend ancestor outranks the generic pressed-off rule below */
+  .sc-legend .legend-chip--year[aria-pressed="false"] span { opacity: 1; text-decoration: none; }
   .legend-chip--year[aria-pressed="true"] { background: var(--sc-bg); box-shadow: inset 0 0 0 1px var(--sc-border-strong); }
   .sc-tooltip__dash { flex: none; display: inline-block; }
   .show-more { display: flex; justify-content: center; padding: 14px 0 2px; }
@@ -128,7 +130,7 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-mark-color-dark.svg" alt="">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
   </a>
   <div class="sc-masthead__right">
@@ -378,7 +380,7 @@
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
   const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
-  const markImg = () => el('img', { class: 'sc-mark', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '' });
+  const markImg = () => el('img', { class: 'sc-mark', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '', width: 22, height: 26 });
   // the faint chick that stands in when a dealer sent no photo
   const frameChick = () => el('img', { class: 'frame-chick', src: ASSETS + (isLightTheme() ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'), alt: 'no photo' });
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
