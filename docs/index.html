@@ -33,6 +33,7 @@
   .col-listed { max-width: 158px; white-space: normal; }
   #list-table tbody td { padding-top: 8px; padding-bottom: 8px; }
   #list-table .sc-media__code { margin-top: 1px; }
+  .chart-head__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .col-model { min-width: 280px; }
   .loc { max-width: 190px; }
   .dealer { max-width: 150px; }
@@ -277,7 +278,11 @@
         <h2 id="chart-title">Asking price over time</h2>
         <p class="sc-hint" id="chart-hint"></p>
       </div>
-      <div class="sc-tabs" id="chart-range" role="group" aria-label="Time range" hidden></div>
+      <div class="chart-head__right">
+        <span class="sc-chip sc-chip--neutral" id="chart-scope" hidden
+              title="This chart plots the whole market so the trend stays comparable day to day">whole market — not filtered</span>
+        <div class="sc-tabs" id="chart-range" role="group" aria-label="Time range" hidden></div>
+      </div>
     </div>
     <div class="sc-legend" id="legend"></div>
     <div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div>
@@ -1327,8 +1332,29 @@
     const cut = end - (+S.range) * 86400000;
     return daily.filter((d) => Date.parse(d.date + 'T00:00:00Z') >= cut);
   }
+  // The widest history any model has, and the span the reader is actually
+  // looking at — the chips claimed "the last 90 days" over four snapshot days,
+  // and 30d/90d/All drew byte-identical charts.
+  function spanDays() {
+    const dates = new Set(allModels().flatMap(({ m }) => (m.daily || []).map((d) => d.date)));
+    if (dates.size < 2) return dates.size;
+    const sorted = [...dates].sort();
+    return Math.round((Date.parse(sorted[sorted.length - 1] + 'T00:00:00Z') - Date.parse(sorted[0] + 'T00:00:00Z')) / 86400000) + 1;
+  }
+  function spanText() {
+    const dates = [...new Set(allModels().flatMap(({ m }) => (m.daily || []).map((d) => d.date)))].sort();
+    if (!dates.length) return '';
+    const n = dates.length;
+    return n === 1 ? `One snapshot day (${fmtDate(dates[0])})`
+                   : `${n} snapshot day${n === 1 ? '' : 's'} · ${fmtDate(dates[0])}–${fmtDate(dates[n - 1])}`;
+  }
   function rangeChips() {
-    segment($('chart-range'), ['30', '90', 'all'], S.range, (id) => (id === 'all' ? 'All' : id + 'd'), false,
+    const host = $('chart-range');
+    // Offer only the ranges the record can actually distinguish.
+    const opts = ['30', '90', 'all'].filter((id) => id === 'all' || spanDays() > +id);
+    if (opts.length < 2) { host.hidden = true; host.textContent = ''; return; }
+    if (!opts.includes(S.range)) S.range = opts[0];
+    segment(host, opts, S.range, (id) => (id === 'all' ? 'All' : id + 'd'), false,
       (id) => { S.range = id; savePrefs(); rerender(); });
   }
   // Lowest asking per day. Days written before min_price existed are skipped; a model with none gets its latest snapshot as one point.
@@ -1747,12 +1773,13 @@
     const t = model(), daily = rangeDaily(dailyFor(t));
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'Asking price over time';
+    $('chart-scope').hidden = false;
     rangeChips();
     const scope = S.trim === 'all' ? 'all trims, drivable and beyond combined' : `${(t.trims[S.trim] || {}).label || 'this trim'}, drivable and beyond combined`;
     $('chart-hint').textContent = (daily.length >= 2
       ? `Lowest and median asking price on the market each day — ${scope}.`
       : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
-      + (S.range !== 'all' ? ` Showing the last ${S.range} days.` : '');
+      + ` ${spanText()}.`;
     const C = chartColors();
     const lg = $('legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { style: 'background:' + C.emphasis }), 'Lowest asking'));
@@ -2025,13 +2052,14 @@
     // or show a model; hover one to pick its line out of the crowd.
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'The market over time';
+    $('chart-scope').hidden = false;
     rangeChips();
     const nDays = new Set(rows.flatMap((r) => askingSeries(r.m, rangeDaily(r.m.daily || [])).map((p) => p.date))).size;
     $('chart-hint').textContent = (nDays >= 2
       ? 'Lowest asking price on the market each day — one line per model, colored by brand, the models being shopped drawn heavier. '
       : 'One snapshot so far for most models — lines fill in as daily runs accumulate. ')
-      + 'Click a legend chip to hide or show a model; hover the chart for any day\'s numbers. The chart always shows the whole market, whatever the filters.'
-      + (S.range !== 'all' ? ` Showing the last ${S.range} days.` : '');
+      + 'Click a legend chip to hide or show a model; hover the chart for any day\'s numbers.'
+      + ` ${spanText()}.`;
     const highlightSeries = (id) => {
       for (const n of $('chart').querySelectorAll('[data-sid]')) n.style.opacity = (!id || n.getAttribute('data-sid') === id) ? '' : '0.15';
     };
