@@ -34,6 +34,18 @@
   #list-table tbody td { padding-top: 8px; padding-bottom: 8px; }
   #list-table .sc-media__code { margin-top: 1px; }
   .chart-head__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  /* Two heading levels, both on the system scale: the sections that answer
+     "what should I buy" keep --sc-h3, the evidence and reference sections step
+     down to --sc-text-lg. Every h2 being the same size made a 3,000px listings
+     table and a 260px notes card look equally important. */
+  .sec-support .sc-card__head h2 { font-size: var(--sc-text-lg); }
+  /* Chapter spacing: 32px where the page changes subject, the stack's own 16px
+     within one. Uniform gaps everywhere meant nothing read as a group. */
+  main.sc-stack > .sec-chapter { margin-top: var(--sc-s4); }
+  /* Captions ran 173 characters a line at 1280px because they span the whole
+     card; 65-75 is the readable band. */
+  #map-hint, #chart-hint, #list-hint, #scatter-hint, #gone-hint, #overview-hint,
+  .picks-head .sc-hint { max-width: 58ch; }   /* ~72 rendered characters; ch is wider than the average glyph */
   .col-model { min-width: 280px; }
   .loc { max-width: 190px; }
   .dealer { max-width: 150px; }
@@ -2136,12 +2148,21 @@
     overview: ['notice', 'kpis', 'filters-card', 'shortlist', 'takeaway', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
     model: ['notice', 'kpis', 'filters-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
   };
+  // Supporting sections (the evidence and the reference material) wear the
+  // smaller heading; the chapter starts get the wider gap above them.
+  const SUPPORT = new Set(['scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card']);
+  const CHAPTERS = {
+    overview: new Set(['takeaway', 'map-card', 'next-callout']),
+    model: new Set(['takeaway', 'list-card', 'scatter-card', 'notes-card', 'next-callout']),
+  };
   function orderSections(view) {
     let prev = document.querySelector('main#main > .sc-title');
     for (const id of SECTION_ORDER[view]) {
       const n = $(id);
       if (!n || !prev) continue;
       if (n.previousElementSibling !== prev) prev.after(n);   // only move what is out of place
+      n.classList.toggle('sec-support', SUPPORT.has(id));
+      n.classList.toggle('sec-chapter', CHAPTERS[view].has(id));
       prev = n;
     }
   }
