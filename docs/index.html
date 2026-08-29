@@ -123,6 +123,24 @@
   .with-mark img.sc-mark { height: 18px; }
   #notes-grid ul { margin: 0; padding-left: 18px; }
   #notes-grid li { margin-top: 6px; font-size: 14px; }
+  /* The filter bar: a real control with a name and a live count, pinned to the
+     top so it stays under the cursor while the page below it re-renders. */
+  .filter-bar { position: sticky; top: 0; z-index: 4; padding: 12px 16px 14px;
+    background: var(--sc-surface); box-shadow: var(--sc-shadow); }
+  .filter-bar__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .filter-bar__head .sc-eyebrow { margin: 0; }
+  .filter-bar__head .sc-note { margin: 0; }
+  .filter-bar__toggle { display: none; margin-left: auto; }
+  .filter-bar .sc-filters { padding-top: 0; }
+  /* On a phone the bar collapses to a single row that expands on tap — the
+     state stays visible without the controls eating the fold. */
+  @media (max-width: 720px) {
+    .filter-bar { padding: 8px 14px; }
+    .filter-bar__head { margin-bottom: 0; min-height: 44px; align-items: center; }
+    .filter-bar__toggle { display: inline-flex; min-height: 44px; padding-inline: 14px; }
+    .filter-bar .sc-filters { display: none; }
+    .filter-bar.is-open .sc-filters { display: flex; padding-top: 10px; }
+  }
   /* the theme toggle, once it moves out of the masthead on a phone */
   @media (max-width: 720px) {
     .sc-foot { flex-wrap: wrap; row-gap: 10px; }
@@ -165,6 +183,48 @@
 
   <section class="sc-grid sc-grid--4" id="kpis" aria-label="Today at a glance"></section>
 
+  <section class="sc-card filter-bar" id="filters-card" hidden>
+    <div class="filter-bar__head">
+      <span class="sc-eyebrow">filters</span>
+      <span class="sc-note" id="filter-count"></span>
+      <button class="sc-btn sc-btn--ghost sc-btn--sm filter-bar__toggle" id="filter-toggle" type="button"
+              aria-expanded="false" aria-controls="filters">Filters</button>
+    </div>
+    <div class="sc-filters" id="filters">
+      <label class="sc-field">Trim
+        <select class="sc-select" id="f-trim"></select>
+      </label>
+      <div class="sc-field">Where
+        <div class="sc-tabs where-chips" id="f-where" role="group" aria-label="Where — pick any; none selected means everywhere"></div>
+      </div>
+      <label class="sc-field">Year
+        <select class="sc-select" id="f-year"></select>
+      </label>
+      <label class="sc-field">Miles
+        <select class="sc-select" id="f-miles">
+          <option value="0">Any</option>
+          <option value="15000">Under 15k</option>
+          <option value="25000">Under 25k</option>
+          <option value="35000">Under 35k</option>
+          <option value="50000">Under 50k</option>
+        </select>
+      </label>
+      <label class="sc-field">Sort
+        <select class="sc-select" id="f-sort">
+          <option value="price">Asking price</option>
+          <option value="landed">Asking + shipping</option>
+          <option value="value">Best value vs typical</option>
+          <option value="miles">Miles</option>
+          <option value="delta">Biggest price drop</option>
+          <option value="days_listed">Longest on market</option>
+          <option value="newest">Newest to tracker</option>
+        </select>
+      </label>
+      <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
+      <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
+    </div>
+  </section>
+
   <div id="shortlist" hidden></div>
 
   <div id="takeaway" hidden></div>
@@ -190,40 +250,6 @@
     </div>
     <div class="sc-grid sc-grid--3" id="notes-grid"></div>
   </section>
-
-  <div class="sc-filters" id="filters" hidden>
-    <label class="sc-field">Trim
-      <select class="sc-select" id="f-trim"></select>
-    </label>
-    <div class="sc-field">Where
-      <div class="sc-tabs where-chips" id="f-where" role="group" aria-label="Where — pick any; none selected means everywhere"></div>
-    </div>
-    <label class="sc-field">Year
-      <select class="sc-select" id="f-year"></select>
-    </label>
-    <label class="sc-field">Miles
-      <select class="sc-select" id="f-miles">
-        <option value="0">Any</option>
-        <option value="15000">Under 15k</option>
-        <option value="25000">Under 25k</option>
-        <option value="35000">Under 35k</option>
-        <option value="50000">Under 50k</option>
-      </select>
-    </label>
-    <label class="sc-field">Sort
-      <select class="sc-select" id="f-sort">
-        <option value="price">Asking price</option>
-        <option value="landed">Asking + shipping</option>
-        <option value="value">Best value vs typical</option>
-        <option value="miles">Miles</option>
-        <option value="delta">Biggest price drop</option>
-        <option value="days_listed">Longest on market</option>
-        <option value="newest">Newest to tracker</option>
-      </select>
-    </label>
-    <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
-    <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
-  </div>
 
   <section class="sc-card" id="chart-card" hidden>
     <div class="sc-card__head">
@@ -1020,7 +1046,11 @@
         el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Reset view', onclick: () => animate(S.mapView, mapFitTarget(states, cars)) }, '⤢'));
       host.appendChild(btns);
 
-      if (animateTo) animate(view, animateTo); else applyView(view);
+      // Re-read the view at apply time. `view` was captured before this render
+      // built its SVG; if the reader zoomed or panned in that window, applying
+      // the captured value would silently throw their view away.
+      const live = S.mapView || view;
+      if (animateTo) animate(live, animateTo); else applyView(live);
 
       const lg = $('map-legend'); lg.textContent = '';
       lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + chartColors().context }), 'filled — drivable'));
@@ -1313,6 +1343,16 @@
     rows.sort((a, b) => k(a) - k(b) || (a.price ?? big) - (b.price ?? big));
     return rows;
   }
+  // The where chips, defined once so the filter bar's summary line can name the
+  // same things the chips do.
+  function whereOpts() {
+    const buyer = (S.site || {}).buyer || {}, states = buyer.states || [], names = buyer.state_names || {};
+    const opts = states.map((s) => [s, s, names[s] || s]);
+    if (buyer.drive_radius_miles) opts.push(['drive', `≤ ${buyer.drive_hours || 5}h drive`, `Within about ${num(buyer.drive_radius_miles)} straight-line miles of ${homeName()}, whatever the state`]);
+    opts.push(['beyond', 'Beyond', 'Beyond driving range — shipping added']);
+    return opts;
+  }
+  const whereLabel = (key) => { const o = whereOpts().find((x) => x[0] === key); return o ? o[1] : key; };
   // The where multi-select: a car matches when it sits in any picked state, or
   // within the drive radius when '≤ Nh drive' is picked, or beyond driving
   // range when 'Beyond' is picked. Nothing picked means everywhere.
@@ -1935,9 +1975,7 @@
     // overview too, so the whole-market view narrows with it.
     const fw = $('f-where'); fw.textContent = '';
     const buyer = S.site.buyer || {}, states = buyer.states || [], names = buyer.state_names || {};
-    const opts = states.map((s) => [s, s, names[s] || s]);
-    if (buyer.drive_radius_miles) opts.push(['drive', `≤ ${buyer.drive_hours || 5}h drive`, `Within about ${num(buyer.drive_radius_miles)} straight-line miles of ${homeName()}, whatever the state`]);
-    opts.push(['beyond', 'Beyond', 'Beyond driving range — shipping added']);
+    const opts = whereOpts();
     for (const [key, lab, tip] of opts) {
       const on = S.where.has(key);
       fw.appendChild(el('button', { class: 'sc-tab sc-tab--case', type: 'button', 'aria-pressed': on ? 'true' : 'false',
@@ -1956,15 +1994,46 @@
     $('f-sort').value = S.sort;
     $('f-clean').checked = S.clean;
     $('f-rental').checked = S.rental;
-    $('filters').hidden = false;
+    $('filters-card').hidden = false;
+    filterCount();
+  }
+  // What the filters are actually doing, said in one line beside their name.
+  function filterCount() {
+    const overview = S.brand === 'all';
+    const shown = overview
+      ? allModels().reduce((a, { m }) => a + applyShared(m.listings || []).length, 0)
+      : filtered().length;
+    const total = overview
+      ? allModels().reduce((a, { m }) => a + (m.listings || []).length, 0)
+      : (model().listings || []).length;
+    const bits = [];
+    if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
+    if (S.trim !== 'all' && !overview) bits.push(((model().trims || {})[S.trim] || {}).label || S.trim);
+    if (S.year !== 'all') bits.push(S.year);
+    if (S.miles) bits.push(`under ${num(S.miles)} mi`);
+    if (S.clean) bits.push('no accidents');
+    if (S.rental) bits.push('no rentals');
+    $('filter-count').textContent = shown === total
+      ? `showing all ${num(total)} cars`
+      : `showing ${num(shown)} of ${num(total)} cars${bits.length ? ' · ' + bits.join(' · ') : ''}`;
+    $('filter-toggle').textContent = bits.length ? `Filters · ${bits.length}` : 'Filters';
   }
 
-  // A filter change re-renders in place: the page must not jump back to the
-  // top (it read as a full page refresh, especially on a phone).
+  // A filter change re-renders in place. Restoring raw scrollY was not enough:
+  // sections above the filter bar change height, so the bar itself could jump
+  // hundreds of pixels off screen. Anchor on the bar and put it back where it was.
   function rerender() {
+    const bar = $('filters-card');
+    const anchored = bar && !bar.hidden;
+    const before = anchored ? bar.getBoundingClientRect().top : null;
     const y = window.scrollY;
     render();
-    requestAnimationFrame(() => window.scrollTo(0, y));
+    requestAnimationFrame(() => {
+      if (anchored && !bar.hidden) {
+        const after = bar.getBoundingClientRect().top;
+        window.scrollTo(0, Math.max(0, window.scrollY + (after - before)));
+      } else window.scrollTo(0, y);
+    });
   }
   function wireFilters() {
     $('f-trim').addEventListener('change', (e) => { S.trim = e.target.value; rerender(); });
@@ -1973,6 +2042,12 @@
     $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender(); });
     $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender(); });
     $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender(); });
+    // The phone bar: one 44px row that expands on tap, so the controls are one
+    // press away instead of five screens down.
+    $('filter-toggle').addEventListener('click', () => {
+      const card = $('filters-card'), open = card.classList.toggle('is-open');
+      $('filter-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
     // React to WIDTH changes only: on phones, scrolling collapses the URL bar,
     // which fires resize with a height-only change — re-rendering on that made
     // every scroll feel like a page refresh.
