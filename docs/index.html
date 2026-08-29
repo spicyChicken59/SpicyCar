@@ -29,7 +29,8 @@
      SpicyCar-specific override left is the eyebrow's case, because state
      codes must read as IL · OH, not il · oh. */
   .sc-eyebrow { text-transform: none; letter-spacing: .5px; }
-  .col-vehicle { min-width: 230px; }
+  .col-vehicle { min-width: 198px; }   /* the last pixels that kept the table from fitting its 1174px column */
+  .col-listed { max-width: 158px; white-space: normal; }
   .col-model { min-width: 280px; }
   .loc { max-width: 190px; }
   .dealer { max-width: 150px; }
@@ -97,6 +98,18 @@
   .legend-chip--year[aria-pressed="true"] { background: var(--sc-bg); box-shadow: inset 0 0 0 1px var(--sc-border-strong); }
   .sc-tooltip__dash { flex: none; display: inline-block; }
   .show-more { display: flex; justify-content: center; padding: 14px 0 2px; }
+  /* A horizontally scrolling table hid its first column — the one naming the
+     thing each row is about — and gave no sign it scrolled at all. */
+  .sc-table-scroll { position: relative; }
+  .sc-table-scroll table th:first-child,
+  .sc-table-scroll table td:first-child {
+    position: sticky; left: 0; z-index: 1; background: var(--sc-surface);
+  }
+  .sc-table-scroll table thead th:first-child { z-index: 2; }
+  .sc-table-scroll.is-clipped::after {
+    content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 34px;
+    pointer-events: none; background: linear-gradient(to right, transparent, var(--sc-surface));
+  }
   .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }         /* the drawn SpicyChicken lockup, as drawn */
   .frame-chick { height: 45%; max-height: 44px; width: auto; opacity: .28; }     /* the chick keeps watch where a dealer sent no photo */
   /* Photos: same frame box, but the image blurs in and zooms on hover inside it */
@@ -309,7 +322,8 @@
         <p class="sc-hint" id="gone-hint">Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.</p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table" id="gone-table"></table></div>
+    <div class="sc-table-scroll" id="gone-scroll"><table class="sc-table" id="gone-table"></table></div>
+    <div class="sc-stack" id="gone-cards" hidden></div>
     <div class="show-more" id="gone-more" hidden></div>
   </section>
 
@@ -1505,6 +1519,12 @@
   const isNew = (x) => x.days_tracked === 1 && trackedDays() >= 2;
   const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Beyond driving range — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
+  // Mark a scroller that actually has more to the right, so the fade only
+  // appears when something is hidden.
+  function markClipped(el2) {
+    if (!el2) return;
+    requestAnimationFrame(() => el2.classList.toggle('is-clipped', el2.scrollWidth > el2.clientWidth + 2));
+  }
 
   // One pick, photo first: the picture on top with the price on a scrim and
   // the value chip in the corner; the reasoning and facts below.
@@ -1816,8 +1836,16 @@
       return;
     }
     scroll.hidden = false; cardsHost.hidden = true;
+    // The page caps its content column at 1174px at every desktop width, so the
+    // nine-column table always overflowed — clipping "Listed" mid-word and
+    // pushing "Trend" off-screen entirely. "Asking + shipping" leaves the header
+    // row and moves into the shipping cell beside it, so the landed total — the
+    // number this whole site is about — is still on every row.
+    const dropLanded = true;
     const cols = [
-      ['Vehicle', null], ['Asking', 'price'], ['Miles', 'miles'], ['Shipping', null], ['Asking + shipping', 'landed'], ['Location', null], ['History', null], ['Listed', 'days_listed'], ['Trend', null],
+      ['Vehicle', null], ['Asking', 'price'], ['Miles', 'miles'], ['Shipping', null],
+      ...(dropLanded ? [] : [['Asking + shipping', 'landed']]),
+      ['Location', null], ['History', null], ['Listed', 'days_listed'], ['Trend', null],
     ];
     const tr = el('tr');
     for (const [label, key] of cols) {
@@ -1835,12 +1863,17 @@
       const price = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
         x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
         x.msrp ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
-      const shipping = el('td', { class: 'sc-num' }, x.local ? el('span', { class: 'sc-note' }, 'none · drivable') : (x.ship ? el('span', { class: 'sc-figure' }, money(x.ship)) : el('span', { class: 'sc-note' }, 'n/a')));
+      const shipping = el('td', { class: 'sc-num' }, x.local
+        ? el('span', { class: 'sc-note' }, 'none · drivable')
+        : (x.ship
+            ? el('span', null, el('span', { class: 'sc-figure' }, money(x.ship)),
+                 el('span', { class: 'sc-note' }, `${money(landed(x))} landed`))
+            : el('span', { class: 'sc-note' }, 'n/a')));
       const total = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(landed(x))));
       const loc = el('td', { class: 'loc sc-nowrap' }, `${x.city || '—'}, ${x.state || ''}`, el('br'), scopeChip(x),
         x.distance != null ? el('span', { class: 'sc-note' }, `~${num(x.distance)} mi from ${homeName()}`) : null,
         x.dealer ? el('span', { class: 'sc-note sc-truncate dealer', title: x.dealer }, x.dealer) : null);
-      const listed = el('td', { class: 'sc-nowrap' },
+      const listed = el('td', { class: 'sc-nowrap col-listed' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
         x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
         x.days_tracked ? el('span', { class: 'sc-note' }, `tracked ${x.days_tracked}d`) : null);
@@ -1849,11 +1882,31 @@
       body.appendChild(el('tr', null,
         el('td', { class: 'col-vehicle' }, vehicleCell(x)), price,
         el('td', { class: 'sc-num' }, x.miles != null ? num(x.miles) : '—'),
-        shipping, total, loc, el('td', null, flagsCell(x)), listed, trend));
+        shipping, ...(dropLanded ? [] : [total]), loc, el('td', null, flagsCell(x)), listed, trend));
     }
     table.appendChild(body);
+    markClipped(scroll);
   }
 
+  // The phone twin of a gone-list row. renderList has had one of these since the
+  // beginning; renderGone never got one, so it scrolled 935px inside 348px.
+  function goneCard(g) {
+    const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
+    const aside = el('div', { class: 'sc-media__aside' },
+      el('div', { class: 'sc-figure' }, money(g.last_price)),
+      el('span', { class: 'sc-note' }, g.local ? 'was drivable' : (g.ship ? `+ ${money(g.ship)} ship` : 'shipping n/a')));
+    const foot = el('div', { class: 'sc-media__foot' },
+      el('span', null, g.miles != null ? `${num(g.miles)} mi` : '— mi'),
+      el('span', null, `last seen ${fmtDate(g.last_seen)}`),
+      el('span', null, `tracked ${g.days_tracked || 0}d${drop}`),
+      g.likely && g.likely !== 'delisted'
+        ? el('span', null, g.likely === 'out of window' ? 'priced above that day\'s cut-off' : 'not checked that day') : null,
+      (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
+    return el('div', { class: 'sc-media sc-media--card' },
+      el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), aside,
+      el('div', { class: 'sc-media__sub' }, `${g.city || '—'}, ${g.state || ''}`),
+      el('div', { class: 'sc-media__code' }, g.vin), foot);
+  }
   function renderGone() {
     const t = model(), gone = trimRows(t.gone || []), card = $('gone-card');
     const daily = dailyFor(t);
@@ -1861,6 +1914,7 @@
     const table = $('gone-table'); table.textContent = '';
     if (!gone.length) {
       $('gone-more').hidden = true;
+      $('gone-cards').hidden = true; $('gone-scroll').hidden = false;
       card.hidden = daily.length < 2;
       if (!card.hidden) table.appendChild(el('tbody', null, el('tr', { class: 'sc-empty' }, el('td', null, 'Nothing has dropped off the market yet.'))));
       return;
@@ -1873,6 +1927,15 @@
     if (!moreG.hidden) moreG.appendChild(el('button', { class: 'sc-btn', type: 'button',
       onclick: () => { S.showAllGone = true; renderGone(); } },
       `Show all ${gone.length} departures`));
+    const goneScroll = $('gone-scroll'), goneCards = $('gone-cards');
+    goneCards.textContent = '';
+    if (narrow()) {
+      goneScroll.hidden = true; goneCards.hidden = false;
+      for (const g of shownG) goneCards.appendChild(goneCard(g));
+      if (shownG.length < gone.length) $('gone-hint').textContent = `The ${shownG.length} most recent of ${gone.length} departed vehicles — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.`;
+      return;
+    }
+    goneScroll.hidden = false; goneCards.hidden = true;
     table.appendChild(el('thead', null, el('tr', null, el('th', null, 'Vehicle'), el('th', { class: 'sc-num' }, 'Last asking'), el('th', { class: 'sc-num' }, 'Miles'), el('th', { class: 'sc-num' }, 'Shipping'), el('th', null, 'Location'), el('th', null, 'Last seen'), el('th', null, 'Tracked'))));
     const body = el('tbody');
     for (const g of shownG) {
@@ -1887,6 +1950,7 @@
         el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
     table.appendChild(body);
+    markClipped(goneScroll);
     if (shownG.length < gone.length) $('gone-hint').textContent = `The ${shownG.length} most recent of ${gone.length} departed vehicles — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.`;
   }
 
@@ -1995,8 +2059,12 @@
     $('overview-card').hidden = false;
     $('overview-hint').textContent = 'One row per model under the current filters — shopping first, then by lowest asking. Click a row to open its listings, chart and history.';
     const ot = $('overview-table'); ot.textContent = '';
-    ot.appendChild(el('thead', null, el('tr', null, el('th', null, 'Model'), el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'Drivable'),
-      el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, 'Lowest drivable asking'), el('th', { class: 'sc-num' }, 'Median asking'), el('th', null, 'Trend'), el('th', null, 'Data'))));
+    const slimOverview = narrow();   // the model cell already states cars and drivable
+    ot.appendChild(el('thead', null, el('tr', null, el('th', null, 'Model'),
+      ...(slimOverview ? [] : [el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'Drivable')]),
+      el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, 'Lowest drivable asking'),
+      ...(slimOverview ? [] : [el('th', { class: 'sc-num' }, 'Median asking')]),
+      el('th', null, 'Trend'), el('th', null, 'Data'))));
     const obody = el('tbody');
     for (const r of rows) {
       const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, true, r.photos), el('div', { class: 'sc-media__body' },
@@ -2008,11 +2076,14 @@
       const trend = el('td', null, spark(r.trend, 80, 26, r.shopping, brandColor(r.bk)));
       obody.appendChild(el('tr', { class: 'is-clickable', title: 'Open ' + r.label,
         onclick: (e) => { if (e.target.closest('a, button')) return; goTo(r.bk, r.mk); } },
-        modelCell, el('td', { class: 'sc-num' }, num(r.n)), el('td', { class: 'sc-num' }, num(r.n_local)),
+        modelCell,
+        ...(slimOverview ? [] : [el('td', { class: 'sc-num' }, num(r.n)), el('td', { class: 'sc-num' }, num(r.n_local))]),
         bestCell(r.best, r.as_of ? 'none under these filters' : 'not fetched yet'), bestCell(r.bestLocal, r.as_of ? 'none drivable' : 'not fetched yet'),
-        el('td', { class: 'sc-num' }, r.median != null ? money(r.median) : '—'), trend, data));
+        ...(slimOverview ? [] : [el('td', { class: 'sc-num' }, r.median != null ? money(r.median) : '—')]),
+        trend, data));
     }
     ot.appendChild(obody);
+    markClipped(ot.closest('.sc-table-scroll'));
     orderSections('overview');
     footLine();
   }
