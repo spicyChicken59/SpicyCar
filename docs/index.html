@@ -42,6 +42,10 @@
   .takeaway-col .sc-media__body > :last-child { margin-bottom: 0; }
   .picks-grid { grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); }   /* two picks per row on a desktop, one on a phone */
   .picks-group + .picks-group { margin-top: 18px; }
+  .picks-head { margin-bottom: 14px; }
+  .picks-title { margin: 0 0 4px; font: 700 20px/1.3 var(--sc-font-display); color: var(--sc-heading); }
+  .picks-head .sc-hint { margin: 0; max-width: 78ch; }
+  details.picks-group > summary { font: 600 13px/1.5 var(--sc-font-mono); cursor: pointer; padding: 6px 0; }
   .picks-group .sc-eyebrow { margin-bottom: 10px; }
   .where-chips { flex-wrap: wrap; }              /* the multi-select: any number of chips may be pressed */
   .map-host { position: relative; }
@@ -1302,9 +1306,10 @@
     }
   }
   // The boot-time full-market scores, restricted to the rows currently in view.
-  function scoredFrom(rows, label) {
+  function scoredFrom(rows, label, shopping) {
     return rows.filter((x) => x.pick_pct != null)
-      .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', trim: x.pick_trim || '', under: x.pick_under, pct: x.pick_pct }))
+      .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', trim: x.pick_trim || '',
+                     under: x.pick_under, pct: x.pick_pct, shopping }))
       .sort((a, b) => b.pct - a.pct);
   }
 
@@ -1473,12 +1478,25 @@
     const b = p.x;
     const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
-    const media = el('div', { class: 'photo-card__media' }, thumbFor(b, true),
+    const url = safeUrl(b.url);
+    // A 2% saving should not wear the same green as a 33% one.
+    const pct = Math.round(p.pct * 100);
+    const inner = [thumbFor(b, true),
       el('div', { class: 'photo-card__price' }, `${money(b.price)} asking`, el('span', { class: 'sub' }, shipNote(b))),
-      el('span', { class: 'sc-chip sc-chip--good photo-card__chip' }, `${Math.round(p.pct * 100)}% under typical`));
-    const open = safeUrl(b.url) ? el('p', null, el('a', { href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Open the listing →')) : null;
+      el('span', { class: 'sc-chip photo-card__chip ' + (p.pct >= 0.10 ? 'sc-chip--good' : 'sc-chip--neutral') }, `${pct}% under typical`)];
+    // The photograph is the obvious thing to press; make it the link it looks like.
+    const media = url
+      ? el('a', { class: 'photo-card__media', href: url, target: '_blank', rel: 'noopener',
+                  'aria-label': `Open the listing for this ${p.modelLabel}` }, ...inner)
+      : el('div', { class: 'photo-card__media' }, ...inner);
+    const open = url ? el('p', null, el('a', { href: url, target: '_blank', rel: 'noopener' }, 'Open the listing →')) : null;
+    const cohort = [p.year, p.modelLabel, p.trim].filter(Boolean).join(' ');
     return el('div', { class: 'photo-card' }, media, el('div', { class: 'photo-card__body' },
-      el('span', { class: 'sc-note' }, `${money(p.under)} less than a typical ${[p.year, p.modelLabel, p.trim].filter(Boolean).join(' ')}, miles allowed for`),
+      el('div', { class: 'sc-nowrap' },
+        p.shopping === undefined ? null
+          : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') },
+               p.shopping ? 'shopping' : 'comparison')),
+      el('span', { class: 'sc-note' }, `${money(p.under)} below a typical ${cohort} with similar mileage`),
       el('p', null, `${facts}. ${where}.`), open));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
@@ -1486,18 +1504,30 @@
   function renderPicks(scored, perModel) {
     const host = $('takeaway'); host.textContent = '';
     const P = pickParams();
-    const local = choosePicks(scored.filter((p) => p.x.local), P.count, perModel);
-    const far = choosePicks(scored.filter((p) => !p.x.local), P.count, perModel);
+    // Selection is unchanged; the shopped models simply lead the display, so the
+    // marquee block does not open with cars the buyer is not looking for.
+    const byRole = (a, b) => (Number(!!b.shopping) - Number(!!a.shopping)) || (b.pct - a.pct);
+    const local = choosePicks(scored.filter((p) => p.x.local), P.count, perModel).sort(byRole);
+    const far = choosePicks(scored.filter((p) => !p.x.local), P.count, perModel).sort(byRole);
     if (!local.length && !far.length) { host.hidden = true; return; }
-    const group = (label, picks, empty) => el('div', { class: 'picks-group' },
-      el('div', { class: 'sc-eyebrow' }, label),
-      picks.length ? el('div', { class: 'sc-grid picks-grid' }, ...picks.map(pickCard))
-                   : el('p', { class: 'sc-hint' }, empty));
+    const cheapest = (picks) => picks.reduce((a, p) => (a == null || p.x.price < a ? p.x.price : a), null);
+    const group = (label, picks, empty, collapse) => {
+      const body = picks.length ? el('div', { class: 'sc-grid picks-grid' }, ...picks.map(pickCard))
+                                : el('p', { class: 'sc-hint' }, empty);
+      // On a phone the nationwide list is 1,500px of cars that all cost extra to
+      // fetch home; it folds away behind its own headline until asked for.
+      if (collapse && picks.length && narrow()) {
+        return el('details', { class: 'sc-details picks-group' },
+          el('summary', null, `${label.split(' — ')[0]} — ${picks.length} more from ${money(cheapest(picks))} + shipping`), body);
+      }
+      return el('div', { class: 'picks-group' }, el('div', { class: 'sc-eyebrow' }, label), body);
+    };
     host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
-      el('div', { class: 'sc-callout__label with-mark' }, 'spicy picks', markImg()),
+      el('div', { class: 'picks-head' },
+        el('h2', { class: 'picks-title with-mark' }, 'Spicy picks', markImg()),
+        el('p', { class: 'sc-hint' }, picksRule())),
       group(`Within driving range — ${scopeTxt()}`, local, 'Nothing drivable qualifies yet — the best of the rest is below.'),
-      group('Worth the ship — nationwide', far, 'Nothing beyond driving range qualifies under these filters.'),
-      el('p', { class: 'sc-hint' }, picksRule())));
+      group('Worth the ship — nationwide', far, 'Nothing beyond driving range qualifies under these filters.', true)));
     host.hidden = false;
   }
   // The shortlist: the cars actually being decided on, pinned to the front
@@ -1862,7 +1892,7 @@
 
     // the shortlist first, then our picks across every model, then the map
     renderShortlist(true);
-    renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label)), pickParams().per_model);
+    renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label, r.shopping)), pickParams().per_model);
     $('takeaway').after($('map-card'));
     renderMap('overview');
     $('notes-card').hidden = true;
@@ -1948,7 +1978,7 @@
     renderKpis(rows);
     renderShortlist(false);      // front page only — model rows carry a chip instead
     const t = model();
-    renderPicks(scoredFrom(rows, t.label));
+    renderPicks(scoredFrom(rows, t.label, !!t.shopping));
     renderNotes(t);
     renderChart();
     renderScatter(rows);
