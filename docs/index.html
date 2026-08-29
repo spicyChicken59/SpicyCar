@@ -22,184 +22,44 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc.css">
 <script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc-theme.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc-charts.js" defer></script>
 <style>
-  /* Page-specific only. Everything else is sc.css; semantic tokens only. */
+  /* Page-specific only. Everything generic now lives in sc.css v2.3.0 — the
+     map, the data dots, the legend chips, the photo card, the filter bar, the
+     frame's photo loader and the 44px touch targets were all promoted out of
+     this file and are no longer maintained here. */
 
-  /* The readability pass lives in the design system since v2.2.0; the one
-     SpicyCar-specific override left is the eyebrow's case, because state
-     codes must read as IL · OH, not il · oh. */
-  .sc-eyebrow { text-transform: none; letter-spacing: .5px; }
-  .col-vehicle { min-width: 198px; }   /* the last pixels that kept the table from fitting its 1174px column */
+  /* Column widths, tuned to the strings this table actually holds */
+  .col-vehicle { min-width: 198px; }
   .col-listed { max-width: 158px; white-space: normal; }
-  #list-table tbody td { padding-top: 8px; padding-bottom: 8px; }
-  #list-table .sc-media__code { margin-top: 1px; }
-  .chart-head__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  /* Two heading levels, both on the system scale: the sections that answer
-     "what should I buy" keep --sc-h3, the evidence and reference sections step
-     down to --sc-text-lg. Every h2 being the same size made a 3,000px listings
-     table and a 260px notes card look equally important. */
-  .sec-support .sc-card__head h2 { font-size: var(--sc-text-lg); }
-  /* Chapter spacing: 32px where the page changes subject, the stack's own 16px
-     within one. Uniform gaps everywhere meant nothing read as a group. */
-  main.sc-stack > .sec-chapter { margin-top: var(--sc-s4); }
-  /* Captions ran 173 characters a line at 1280px because they span the whole
-     card; 65-75 is the readable band. */
-  #map-hint, #chart-hint, #list-hint, #scatter-hint, #gone-hint, #overview-hint,
-  .picks-head .sc-hint { max-width: 58ch; }   /* ~72 rendered characters; ch is wider than the average glyph */
   .col-model { min-width: 280px; }
   .loc { max-width: 190px; }
   .dealer { max-width: 150px; }
   .flags { font: 500 12.5px/1.6 var(--sc-font-body); color: var(--sc-text-2); min-width: 150px; max-width: 220px; }
   .flags span { white-space: nowrap; }
   .sc-media__foot .flags { min-width: 0; max-width: none; }
-  .sc-chart .hit { cursor: crosshair; }
-  .takeaway-col > :last-child { margin-bottom: 0; }
-  .takeaway-col .sc-media { align-items: flex-start; }
-  .takeaway-col .sc-media__body > :last-child { margin-bottom: 0; }
+  #list-table tbody td { padding-top: 8px; padding-bottom: 8px; }
+  #list-table .sc-media__code { margin-top: 1px; }
+  #overview-table tr.is-clickable { cursor: pointer; }
+  #notes-grid ul { margin: 0; padding-left: 18px; }
+  #notes-grid li { margin-top: 6px; font-size: 14px; }
+  .chart-head__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* Captions ran 173 characters a line at 1280px because they span the whole
+     card; 65-75 is the readable band. (The picks head sets its own width
+     below — it used to appear in this list too, where it was dead code.) */
+  #map-hint, #chart-hint, #list-hint, #scatter-hint, #gone-hint, #overview-hint { max-width: 58ch; }
+
+  /* Spicy picks — this app's own idea, and the one block that stays */
   .picks-grid { grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); }   /* two picks per row on a desktop, one on a phone */
   .picks-group + .picks-group { margin-top: 18px; }
   .picks-head { margin-bottom: 14px; }
   .picks-title { margin: 0 0 4px; font: 700 20px/1.3 var(--sc-font-display); color: var(--sc-heading); }
   .picks-head .sc-hint { margin: 0; max-width: 78ch; }
   details.picks-group > summary { font: 600 13px/1.5 var(--sc-font-mono); cursor: pointer; padding: 6px 0; }
-  .picks-group .sc-eyebrow { margin-bottom: 10px; }
-  .where-chips { flex-wrap: wrap; }              /* the multi-select: any number of chips may be pressed */
-  .map-host { position: relative; }
-  .map-host svg { display: block; width: 100%; height: auto; touch-action: pan-y; cursor: grab; }
-  @media (max-width: 720px) { .map-host { min-height: 300px; } .map-host svg { min-height: 300px; } }
-  .map-host svg:active { cursor: grabbing; }
-  .map-btns { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
-  .map-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--sc-border); background: var(--sc-surface);
-    color: var(--sc-heading); font: 600 16px/1 var(--sc-font-body); cursor: pointer; }
-  .map-btn:hover { border-color: var(--sc-border-strong); }
-  .map-btn:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
-  .map-tip-img { display: block; width: 150px; height: 94px; object-fit: cover; border-radius: 6px; margin-bottom: 7px; }
-  /* Plain scroll scrolls the page (the embedded-map convention); this hint teaches the modifier */
-  .map-scrollhint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    pointer-events: none; opacity: 0; transition: opacity .25s ease; z-index: 4; }
-  .map-scrollhint.is-on { opacity: 1; }
-  .map-scrollhint span { background: var(--sc-ink); color: var(--sc-on-ink); border-radius: 8px;
-    padding: 8px 14px; font: 600 13px/1.4 var(--sc-font-body); box-shadow: var(--sc-shadow-pop); }
-  /* A tap-opened tooltip is a small card with a live Open link, so it must take the pointer */
-  .sc-tooltip--tap { pointer-events: auto; }
-  .map-tip-open { display: inline-block; margin-top: 6px; font: 600 12.5px/1.4 var(--sc-font-body);
-    color: var(--sc-on-ink); text-decoration: underline; text-underline-offset: 2px; }
-  .map-state { fill: var(--sc-bg); stroke: var(--sc-border); stroke-width: .75; }
-  .map-state-label { fill: var(--sc-text-2); font-family: var(--sc-font-mono); font-weight: 600;
-    letter-spacing: .08em; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-  .map-labels-on .map-state-label { opacity: .5; }
-  .map-ring { fill: none; stroke: var(--sc-brand-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }
-  .map-anchor { fill: var(--sc-accent); stroke: var(--sc-surface); stroke-width: 1.5; pointer-events: all; cursor: help; }
-  /* fill="none" makes an svg circle's interior untouchable by default — hollow
-     dots must still hit-test on their whole area, not just the stroke ring */
-  .map-dot, .scatter-dot { pointer-events: all; }
-  .map-dot { cursor: pointer; }
-  .map-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }     /* the 1px surface ring keeps overlapping dots separable */
-  .map-dot.is-hollow { fill: none; stroke-width: 1.6; }
-  .map-dot:hover { stroke-width: 2.6; }
-  .map-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
-  .scatter-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }
-  .scatter-dot.is-hollow { fill: none; stroke-width: 1.6; }
-  .scatter-dot.has-url { cursor: pointer; }
-  .scatter-dot:hover { stroke-width: 2.6; }
-  .scatter-pick-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }
-  .scatter-line { fill: none; stroke: var(--sc-border-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
-  .scatter-line-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
-  .scatter-year-label { cursor: pointer; }
-  .scatter-dot, .scatter-pick-ring, .scatter-line, .scatter-year-label { transition: opacity .15s ease; }
-  /* year chips select rather than hide — pressed-off must not read as struck-through
-     or dimmed (the hide-chips' .45 opacity fails AA contrast on these labels); the
-     extra .sc-legend ancestor outranks the generic pressed-off rule below */
-  .sc-legend .legend-chip--year[aria-pressed="false"] span { opacity: 1; text-decoration: none; }
-  .legend-chip--year[aria-pressed="true"] { background: var(--sc-bg); box-shadow: inset 0 0 0 1px var(--sc-border-strong); }
-  .sc-tooltip__dash { flex: none; display: inline-block; }
-  .show-more { display: flex; justify-content: center; padding: 14px 0 2px; }
-  /* A horizontally scrolling table hid its first column — the one naming the
-     thing each row is about — and gave no sign it scrolled at all. */
-  .sc-table-scroll { position: relative; }
-  .sc-table-scroll table th:first-child,
-  .sc-table-scroll table td:first-child {
-    position: sticky; left: 0; z-index: 1; background: var(--sc-surface);
-  }
-  .sc-table-scroll table thead th:first-child { z-index: 2; }
-  .sc-table-scroll.is-clipped::after {
-    content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 34px;
-    pointer-events: none; background: linear-gradient(to right, transparent, var(--sc-surface));
-  }
-  .sc-lockup { display: block; height: 20px; width: auto; opacity: .9; }         /* the drawn SpicyChicken lockup, as drawn */
-  .frame-chick { height: 45%; max-height: 44px; width: auto; opacity: .28; }     /* the chick keeps watch where a dealer sent no photo */
-  /* Photos: same frame box, but the image blurs in and zooms on hover inside it */
-  .frame-wrap { overflow: hidden; position: relative; padding: 0; }
-  .frame-wrap .frame-img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; filter: blur(10px); }
-  .frame-wrap .frame-img.is-loaded { opacity: 1; filter: none; }
-  :root[data-theme="dark"] .frame-wrap .frame-img.is-loaded,
-  :root[data-theme="dark"] .map-tip-img { filter: brightness(.82) saturate(.95); }
-  :root[data-theme="dark"] .sc-media:hover .frame-img.is-loaded,
-  :root[data-theme="dark"] .photo-card:hover .frame-img.is-loaded,
-  :root[data-theme="dark"] .photo-card:focus-within .frame-img.is-loaded { filter: none; }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .frame-wrap .frame-img.is-loaded,
-    :root:not([data-theme="light"]) .map-tip-img { filter: brightness(.82) saturate(.95); }
-    :root:not([data-theme="light"]) .sc-media:hover .frame-img.is-loaded,
-    :root:not([data-theme="light"]) .photo-card:hover .frame-img.is-loaded,
-    :root:not([data-theme="light"]) .photo-card:focus-within .frame-img.is-loaded { filter: none; }
-  }
-  /* Masthead controls were 24-27px against a 44px guideline. */
-  @media (max-width: 720px) {
-    .sc-theme-toggle button { min-height: 44px; padding-inline: 14px; }
-    .sc-masthead .sc-nav a, .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
-    .sc-foot a { display: inline-block; padding: 10px 2px; }
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .frame-wrap .frame-img { transition: opacity .35s ease, filter .5s ease, transform .35s ease; }
-    .sc-media:hover .frame-img.is-loaded, .photo-card:hover .frame-img.is-loaded { transform: scale(1.06); }
-  }
-  /* Photo-led cards: the picture on top, the price on a scrim, the facts below */
-  .photo-card { display: flex; flex-direction: column; border: 1px solid var(--sc-border); border-radius: 10px; overflow: hidden; background: var(--sc-surface); }
-  .photo-card__media { position: relative; aspect-ratio: 16 / 10; max-height: 300px; overflow: hidden; }
+
   @media (min-width: 721px) and (max-width: 1000px) {
     #kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* 2x2, not three columns for four tiles */
-    .photo-card__media { max-height: 240px; }
-  }
-  .photo-card__media .sc-frame { width: 100%; height: 100%; border-radius: 0; }
-  .photo-card__price { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 14px 10px; pointer-events: none;
-    font: 700 21px/1.1 var(--sc-font-body); letter-spacing: -.3px; color: #fff;
-    background: linear-gradient(transparent, rgba(9, 17, 27, .82)); }
-  .photo-card__price .sub { display: block; font: 500 12px/1.5 var(--sc-font-body); letter-spacing: 0; color: rgba(255,255,255,.85); }
-  .photo-card__chip { position: absolute; top: 10px; right: 10px; }
-  .photo-card__body { padding: 11px 14px 13px; display: grid; gap: 4px; align-content: start; }
-  .photo-card__body p { margin: 0; }
-  .legend-chip { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none;
-    padding: 4px 8px; cursor: pointer; color: inherit; font: 500 12.5px/1.4 var(--sc-font-mono); border-radius: 6px; }
-  .legend-chip[aria-pressed="false"] span { opacity: .45; text-decoration: line-through; }
-  .legend-chip:focus-visible { outline: 2px solid var(--sc-chart-emphasis, currentColor); outline-offset: 2px; }
-  #overview-table tr.is-clickable { cursor: pointer; }
-  .with-mark { display: flex; align-items: center; gap: 8px; }        /* a label or card head that carries the chick beside its text */
-  .with-mark img.sc-mark { height: 18px; }
-  #notes-grid ul { margin: 0; padding-left: 18px; }
-  #notes-grid li { margin-top: 6px; font-size: 14px; }
-  /* The filter bar: a real control with a name and a live count, pinned to the
-     top so it stays under the cursor while the page below it re-renders. */
-  .filter-bar { position: sticky; top: 0; z-index: 4; padding: 12px 16px 14px;
-    background: var(--sc-surface); box-shadow: var(--sc-shadow); }
-  .filter-bar__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
-  .filter-bar__head .sc-eyebrow { margin: 0; }
-  .filter-bar__head .sc-note { margin: 0; }
-  .filter-bar__toggle { display: none; margin-left: auto; }
-  .filter-bar .sc-filters { padding-top: 0; }
-  /* On a phone the bar collapses to a single row that expands on tap — the
-     state stays visible without the controls eating the fold. */
-  @media (max-width: 720px) {
-    .filter-bar { padding: 8px 14px; }
-    .filter-bar__head { margin-bottom: 0; min-height: 44px; align-items: center; }
-    .filter-bar__toggle { display: inline-flex; min-height: 44px; padding-inline: 14px; }
-    .filter-bar .sc-filters { display: none; }
-    .filter-bar.is-open .sc-filters { display: flex; padding-top: 10px; }
-  }
-  /* the theme toggle, once it moves out of the masthead on a phone */
-  @media (max-width: 720px) {
-    .sc-foot { flex-wrap: wrap; row-gap: 10px; }
-    .sc-foot .sc-theme-toggle { order: 3; flex: none; }
   }
 </style>
 </head>
@@ -226,7 +86,7 @@
 
 <main class="sc-wrap sc-wrap--wide sc-stack" id="main">
   <div class="sc-title">
-    <div class="sc-eyebrow" id="eyebrow">Analyzer</div>
+    <div class="sc-eyebrow sc-eyebrow--case" id="eyebrow">Analyzer</div>
     <h1 id="h1">Loading snapshot…</h1>
     <p class="sc-dek" id="dek"></p>
     <div class="sc-meta" id="meta"></div>
@@ -238,11 +98,11 @@
 
   <section class="sc-grid sc-grid--4" id="kpis" aria-label="Today at a glance"></section>
 
-  <section class="sc-card filter-bar" id="filters-card" hidden>
-    <div class="filter-bar__head">
+  <section class="sc-card sc-filter-bar" id="filters-card" hidden>
+    <div class="sc-filter-bar__head">
       <span class="sc-eyebrow">filters</span>
       <span class="sc-note" id="filter-count"></span>
-      <button class="sc-btn sc-btn--ghost sc-btn--sm filter-bar__toggle" id="filter-toggle" type="button"
+      <button class="sc-btn sc-btn--ghost sc-btn--sm sc-filter-bar__toggle" id="filter-toggle" type="button"
               aria-expanded="false" aria-controls="filters">Filters</button>
     </div>
     <div class="sc-filters" id="filters">
@@ -250,7 +110,7 @@
         <select class="sc-select" id="f-trim"></select>
       </label>
       <div class="sc-field">Where
-        <div class="sc-tabs where-chips" id="f-where" role="group" aria-label="Where — pick any; none selected means everywhere"></div>
+        <div class="sc-tabs" id="f-where" role="group" aria-label="Where — pick any; none selected means everywhere"></div>
       </div>
       <label class="sc-field">Year
         <select class="sc-select" id="f-year"></select>
@@ -293,7 +153,7 @@
       </div>
     </div>
     <div class="sc-legend" id="map-legend"></div>
-    <div class="map-host" id="map"></div>
+    <div class="sc-map" id="map"></div>
   </section>
 
   <section class="sc-card" id="notes-card" hidden>
@@ -302,7 +162,7 @@
         <h2 id="notes-title">Know the model</h2>
         <p class="sc-hint">The good, the bad, and what to check before you go and look. Written by hand, not by the tracker.</p>
       </div>
-      <div class="with-mark" id="notes-mark"></div>
+      <div class="sc-with-mark" id="notes-mark"></div>
     </div>
     <div class="sc-grid sc-grid--3" id="notes-grid"></div>
   </section>
@@ -354,7 +214,7 @@
     </div>
     <div class="sc-table-scroll" id="list-scroll"><table class="sc-table" id="list-table"></table></div>
     <div class="sc-stack" id="list-cards" hidden></div>
-    <div class="show-more" id="list-more" hidden></div>
+    <div class="sc-show-more" id="list-more" hidden></div>
   </section>
 
   <section class="sc-card" id="gone-card" hidden>
@@ -366,7 +226,7 @@
     </div>
     <div class="sc-table-scroll" id="gone-scroll"><table class="sc-table" id="gone-table"></table></div>
     <div class="sc-stack" id="gone-cards" hidden></div>
-    <div class="show-more" id="gone-more" hidden></div>
+    <div class="sc-show-more" id="gone-more" hidden></div>
   </section>
 
   <div class="sc-callout sc-callout--spice" id="next-callout">
@@ -473,7 +333,7 @@
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
   const markImg = () => el('img', { class: 'sc-mark', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '', width: 22, height: 26 });
   // the faint chick that stands in when a dealer sent no photo
-  const frameChick = () => el('img', { class: 'frame-chick', src: ASSETS + (isLightTheme() ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'), alt: 'no photo' });
+  const frameChick = () => el('img', { class: 'sc-frame__mark', src: ASSETS + (isLightTheme() ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'), alt: 'no photo' });
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
   // Asking plus the stated shipping estimate — never less than asking. Computed here so it never depends on the data's vintage.
   const landed = (x) => (hasPrice(x) ? x.price + (x.local ? 0 : (x.ship || 0)) : null);
@@ -693,7 +553,7 @@
 
     const cross = svgEl('line', { class: 'sc-chart__crosshair', x1: 0, x2: 0, y1: m.t, y2: H - m.b, 'stroke-width': 1, opacity: 0 });
     svg.appendChild(cross);
-    const hit = svgEl('rect', { class: 'hit', x: m.l - 10, y: 0, width: iw + 20, height: H, fill: 'transparent' });
+    const hit = svgEl('rect', { class: 'sc-chart__hit', x: m.l - 10, y: 0, width: iw + 20, height: H, fill: 'transparent' });
     svg.appendChild(hit);
     host.appendChild(svg);
     const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
@@ -892,18 +752,18 @@
       if (fitKey !== MAP_FIT_KEY) { MAP_FIT_KEY = fitKey; animateTo = mapFitTarget(states, cars); }
 
       const svg = svgEl('svg', { viewBox: `${view.x} ${view.y} ${view.w} ${view.h}`, 'aria-hidden': 'true' });
-      for (const st of states) svg.appendChild(svgEl('path', { class: 'map-state', d: st.d, 'vector-effect': 'non-scaling-stroke' }));
+      for (const st of states) svg.appendChild(svgEl('path', { class: 'sc-map__state', d: st.d, 'vector-effect': 'non-scaling-stroke' }));
       // quiet postal labels, invisible at the full-US view and fading in once
       // the zoom is tight enough for them to read
       for (const st of states) {
         const ab = STATE_ABBR[st.name];
-        if (ab) svg.appendChild(svgEl('text', { class: 'map-state-label', x: st.center[0].toFixed(1), y: st.center[1].toFixed(1), 'data-bf': 13 }, document.createTextNode(ab)));
+        if (ab) svg.appendChild(svgEl('text', { class: 'sc-map__state-label', x: st.center[0].toFixed(1), y: st.center[1].toFixed(1), 'data-bf': 13 }, document.createTextNode(ab)));
       }
       let anchorEl = null;
       if (Array.isArray(buyer.anchor) && buyer.drive_radius_miles) {
-        svg.appendChild(svgEl('path', { class: 'map-ring', d: ringPath(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles), 'vector-effect': 'non-scaling-stroke' }));
+        svg.appendChild(svgEl('path', { class: 'sc-map__radius', d: ringPath(buyer.anchor[0], buyer.anchor[1], buyer.drive_radius_miles), 'vector-effect': 'non-scaling-stroke' }));
         const [ax, ay] = albers48(buyer.anchor[1], buyer.anchor[0]);
-        anchorEl = svgEl('circle', { class: 'map-anchor', cx: ax, cy: ay, r: 4.5, 'data-br': 4.5, 'vector-effect': 'non-scaling-stroke' });
+        anchorEl = svgEl('circle', { class: 'sc-map__anchor', cx: ax, cy: ay, r: 4.5, 'data-br': 4.5, 'vector-effect': 'non-scaling-stroke' });
         svg.appendChild(anchorEl);
       }
       const host = $('map'); host.textContent = '';
@@ -926,7 +786,7 @@
         tip.textContent = '';
         const photo = safeUrl(c.x.image);
         if (photo) {
-          const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+          const img = el('img', { class: 'sc-tooltip__img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
           img.addEventListener('error', () => { img.remove(); clampTip(); });
           img.addEventListener('load', clampTip);
           tip.appendChild(img);
@@ -942,8 +802,8 @@
           + (extras.length ? ' · ' + extras.join(' · ') : '')));
         if (tap) {
           const u = mode === 'model' ? safeUrl(c.x.url) : null;
-          if (u) tip.appendChild(el('a', { class: 'map-tip-open', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
-          else if (mode !== 'model') tip.appendChild(el('a', { class: 'map-tip-open', href: '#',
+          if (u) tip.appendChild(el('a', { class: 'sc-tooltip__link', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+          else if (mode !== 'model') tip.appendChild(el('a', { class: 'sc-tooltip__link', href: '#',
             onclick: (ev) => { ev.preventDefault(); openCar(c); } }, `Open ${c.m.label} →`));
           tip.classList.add('sc-tooltip--tap');
         } else tip.classList.remove('sc-tooltip--tap');
@@ -991,10 +851,10 @@
         const spread = { 'data-px': px.toFixed(1), 'data-py': py.toFixed(1), 'data-di': i };
         const isPick = picked.has(c.x.vin), isShort = onShortlist(c.x);
         const hue = isShort ? tok('accent') : brandColor(c.bk);
-        if (isPick || isShort) svg.appendChild(svgEl('circle', { class: 'map-pick-ring',
+        if (isPick || isShort) svg.appendChild(svgEl('circle', { class: 'sc-dot-ring',
           cx, cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke', ...spread }));
         const dot = svgEl('circle', {
-          class: 'map-dot ' + (c.x.local ? 'is-filled' : 'is-hollow'),
+          class: 'sc-dot sc-dot--link ' + (c.x.local ? 'is-filled' : 'is-hollow'),
           cx, cy,
           r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke', ...spread,
           fill: c.x.local ? hue : 'none',
@@ -1038,7 +898,7 @@
         }
         // the postal labels: constant screen size, visible only once zoomed in
         for (const n of svg.querySelectorAll('[data-bf]')) n.setAttribute('font-size', (parseFloat(n.getAttribute('data-bf')) * s).toFixed(2));
-        svg.classList.toggle('map-labels-on', v.w < MAP_FULL.w * 0.72);
+        svg.classList.toggle('sc-map--labels', v.w < MAP_FULL.w * 0.72);
       };
       const clampView = (v) => {
         const w = Math.min(Math.max(v.w, MAP_FULL.w / 40), MAP_FULL.w * 1.15);
@@ -1071,7 +931,7 @@
       // pinch, which browsers report the same way) zooms the map. The overlay
       // hint teaches the modifier the first time someone plain-scrolls here.
       const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
-      const scrollHint = el('div', { class: 'map-scrollhint', 'aria-hidden': 'true' },
+      const scrollHint = el('div', { class: 'sc-map__scrollhint', 'aria-hidden': 'true' },
         el('span', null, `Use ${isMac ? '⌘' : 'Ctrl'} + scroll to zoom the map`));
       host.appendChild(scrollHint);
       let hintTimer = null;
@@ -1089,7 +949,7 @@
       const ptrs = new Map();
       svg.addEventListener('pointerdown', (e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
-        if (!(e.target.classList && e.target.classList.contains('map-dot'))) hideTip();
+        if (!(e.target.classList && e.target.classList.contains('sc-dot'))) hideTip();
         dragDist = 0;
         ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (ptrs.size === 2) svg.setPointerCapture(e.pointerId);
@@ -1129,10 +989,10 @@
       svg.addEventListener('pointerup', drop);
       svg.addEventListener('pointercancel', drop);
       // buttons: zoom in, zoom out, and back to the selection's own view
-      const btns = el('div', { class: 'map-btns' },
-        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Zoom in', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 0.67) }, '+'),
-        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Zoom out', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 1.5) }, '−'),
-        el('button', { class: 'map-btn', type: 'button', 'aria-label': 'Reset view', onclick: () => animate(S.mapView, mapFitTarget(states, cars)) }, '⤢'));
+      const btns = el('div', { class: 'sc-map__btns' },
+        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom in', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 0.67) }, '+'),
+        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom out', onclick: () => zoomAt(S.mapView.x + S.mapView.w / 2, S.mapView.y + S.mapView.h / 2, 1.5) }, '−'),
+        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Reset view', onclick: () => animate(S.mapView, mapFitTarget(states, cars)) }, '⤢'));
       host.appendChild(btns);
 
       // Re-read the view at apply time. `view` was captured before this render
@@ -1218,8 +1078,8 @@
       }
       if (m2 <= m1) continue;
       const x1 = xOf(m1), y1 = yOf(priceAt(c.med, m1)), x2 = xOf(m2), y2 = yOf(priceAt(c.med, m2));
-      svg.appendChild(svgEl('line', { class: 'scatter-line', 'data-yline': c.year, x1, y1, x2, y2 }));
-      const hit = svgEl('line', { class: 'scatter-line-hit', x1, y1, x2, y2 });
+      svg.appendChild(svgEl('line', { class: 'sc-scatter__line', 'data-yline': c.year, x1, y1, x2, y2 }));
+      const hit = svgEl('line', { class: 'sc-scatter__line-hit', x1, y1, x2, y2 });
       hit.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(c.year); });
       hit.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
       svg.appendChild(hit);
@@ -1231,7 +1091,7 @@
     for (let i = yLabels.length - 1; i >= 0; i--) { const max = H - m.b - 2 - (yLabels.length - 1 - i) * 12; if (yLabels[i].y > max) yLabels[i].y = max; }
     for (let i = 1; i < yLabels.length; i++) if (yLabels[i].y - yLabels[i - 1].y < 12) yLabels[i].y = yLabels[i - 1].y + 12;
     for (const L of yLabels) {
-      const t2 = svgEl('text', { class: 'scatter-year-label', 'data-yline': L.year, x: L.x.toFixed(1), y: L.y.toFixed(1) }, document.createTextNode(L.year));
+      const t2 = svgEl('text', { class: 'sc-scatter__series-label', 'data-yline': L.year, x: L.x.toFixed(1), y: L.y.toFixed(1) }, document.createTextNode(L.year));
       t2.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(L.year); });
       t2.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
       svg.appendChild(t2);
@@ -1254,7 +1114,7 @@
       tip.textContent = '';
       const photo = safeUrl(x.image);
       if (photo) {
-        const img = el('img', { class: 'map-tip-img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+        const img = el('img', { class: 'sc-tooltip__img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
         img.addEventListener('error', () => { img.remove(); clampTip(); });
         img.addEventListener('load', clampTip);
         tip.appendChild(img);
@@ -1268,7 +1128,7 @@
       tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
       const u = safeUrl(x.url);
       if (tap && u) {
-        tip.appendChild(el('a', { class: 'map-tip-open', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+        tip.appendChild(el('a', { class: 'sc-tooltip__link', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
         tip.classList.add('sc-tooltip--tap');
       } else tip.classList.remove('sc-tooltip--tap');
       const rect = host.getBoundingClientRect();
@@ -1280,7 +1140,7 @@
       clampTip();
     };
     svg.addEventListener('pointerdown', (e) => {
-      if (!(e.target.classList && e.target.classList.contains('scatter-dot'))) hideTip();
+      if (!(e.target.classList && e.target.classList.contains('sc-dot'))) hideTip();
     });
     const kOrder = [];
     for (const x of pts) {
@@ -1288,9 +1148,9 @@
       const isShort = onShortlist(x);
       const hue = isShort ? tok('accent') : color;      // shortlisted cars wear the accent outright
       const yr = String(x.year || '');
-      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'scatter-pick-ring', cx, cy, r: 7.5, 'data-year': yr }));
+      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'sc-dot-ring', cx, cy, r: 7.5, 'data-year': yr }));
       const u = safeUrl(x.url);
-      const dot = svgEl('circle', { class: 'scatter-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' has-url' : ''),
+      const dot = svgEl('circle', { class: 'sc-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' sc-dot--link' : ''),
         cx, cy, r: 4, 'data-year': yr, fill: x.local ? hue : 'none', stroke: x.local ? null : hue });
       dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
       dot.addEventListener('click', () => {
@@ -1339,11 +1199,11 @@
     if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
     if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('border-strong') }), 'typical value by year'));
     // one chip per model year — hover to preview, press to hold (the touch path)
-    const setChips = () => { for (const b of lg.querySelectorAll('.legend-chip--year')) b.setAttribute('aria-pressed', String(b.dataset.y === stuckYear)); };
+    const setChips = () => { for (const b of lg.querySelectorAll('.sc-legend__chip--select')) b.setAttribute('aria-pressed', String(b.dataset.y === stuckYear)); };
     for (const c of cohorts) {
       const sample = svgEl('svg', { width: 20, height: 10, viewBox: '0 0 20 10', 'aria-hidden': 'true' },
         svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, stroke: tok('border-strong'), 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
-      const chip = el('button', { class: 'legend-chip legend-chip--year', type: 'button', 'aria-pressed': 'false',
+      const chip = el('button', { class: 'sc-legend__chip sc-legend__chip--select', type: 'button', 'aria-pressed': 'false',
         title: `Highlight the ${c.year} cars`,
         onclick: () => { stuckYear = stuckYear === c.year ? null : c.year; highlightYear(stuckYear); setChips(); },
         onmouseenter: () => highlightYear(c.year),
@@ -1539,8 +1399,8 @@
     if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, frameChick());
     // a wrapper carries the frame so the photo can blur in and zoom on hover
     // without ever changing the layout box
-    const img = el('img', { class: 'frame-img', src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
-    const wrap = el('div', { class: cls + ' frame-wrap' }, img);
+    const img = el('img', { class: 'sc-frame__img', src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+    const wrap = el('div', { class: cls + ' sc-frame--photo' }, img);
     const next = () => {
       if (queue.length) { img.classList.remove('is-loaded'); img.src = queue.shift(); }
       else { wrap.classList.add('sc-frame--empty'); wrap.textContent = ''; wrap.appendChild(frameChick()); }
@@ -1605,16 +1465,16 @@
     // A 2% saving should not wear the same green as a 33% one.
     const pct = Math.round(p.pct * 100);
     const inner = [thumbFor(b, true),
-      el('div', { class: 'photo-card__price' }, `${money(b.price)} asking`, el('span', { class: 'sub' }, shipNote(b))),
-      el('span', { class: 'sc-chip photo-card__chip ' + (p.pct >= 0.10 ? 'sc-chip--good' : 'sc-chip--neutral') }, `${pct}% under typical`)];
+      el('div', { class: 'sc-photo-card__price' }, `${money(b.price)} asking`, el('span', { class: 'sc-photo-card__price-sub' }, shipNote(b))),
+      el('span', { class: 'sc-chip sc-photo-card__chip ' + (p.pct >= 0.10 ? 'sc-chip--good' : 'sc-chip--neutral') }, `${pct}% under typical`)];
     // The photograph is the obvious thing to press; make it the link it looks like.
     const media = url
-      ? el('a', { class: 'photo-card__media', href: url, target: '_blank', rel: 'noopener',
+      ? el('a', { class: 'sc-photo-card__media', href: url, target: '_blank', rel: 'noopener',
                   'aria-label': `Open the listing for this ${p.modelLabel}` }, ...inner)
-      : el('div', { class: 'photo-card__media' }, ...inner);
+      : el('div', { class: 'sc-photo-card__media' }, ...inner);
     const open = url ? el('p', null, el('a', { href: url, target: '_blank', rel: 'noopener' }, 'Open the listing →')) : null;
     const cohort = [p.year, p.modelLabel, p.trim].filter(Boolean).join(' ');
-    return el('div', { class: 'photo-card' }, media, el('div', { class: 'photo-card__body' },
+    return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
       el('div', { class: 'sc-nowrap' },
         p.shopping === undefined ? null
           : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') },
@@ -1643,11 +1503,11 @@
         return el('details', { class: 'sc-details picks-group' },
           el('summary', null, `${label.split(' — ')[0]} — ${picks.length} more from ${money(cheapest(picks))} + shipping`), body);
       }
-      return el('div', { class: 'picks-group' }, el('div', { class: 'sc-eyebrow' }, label), body);
+      return el('div', { class: 'picks-group' }, el('div', { class: 'sc-eyebrow sc-eyebrow--case' }, label), body);
     };
     host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
       el('div', { class: 'picks-head' },
-        el('h2', { class: 'picks-title with-mark' }, 'Spicy picks', markImg()),
+        el('h2', { class: 'picks-title sc-with-mark' }, 'Spicy picks', markImg()),
         el('p', { class: 'sc-hint' }, picksRule())),
       group(`Within driving range — ${scopeTxt()}`, local, 'Nothing drivable qualifies yet — the best of the rest is below.'),
       group('Worth the ship — nationwide', far, 'Nothing beyond driving range qualifies under these filters.', true)));
@@ -1659,7 +1519,7 @@
   function shortlistCard(vin, note) {
     const hit = findVin(vin);
     if (!hit) {
-      return el('div', { class: 'photo-card' }, el('div', { class: 'photo-card__body' },
+      return el('div', { class: 'sc-photo-card' }, el('div', { class: 'sc-photo-card__body' },
         el('div', { class: 'sc-media__title' }, 'Not seen yet by the tracker'),
         el('div', { class: 'sc-media__code' }, vin),
         note ? el('span', { class: 'sc-note' }, note) : null));
@@ -1670,12 +1530,12 @@
     const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — likely sold or pulled'
       : (x.likely === 'out of window' ? 'missing — priced above the fetch cut-off, probably still for sale' : 'not checked recently')) : null;
     const price = gone ? x.last_price : x.price;
-    const media = el('div', { class: 'photo-card__media' }, thumbFor(gone ? null : x, true),
-      el('div', { class: 'photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
-        el('span', { class: 'sub' }, gone ? `last seen ${fmtDate(x.last_seen)}` : shipNote(x))),
-      gone ? el('span', { class: 'sc-chip photo-card__chip ' + (x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
-           : (x.pick_pct > 0 ? el('span', { class: 'sc-chip sc-chip--good photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
-    return el('div', { class: 'photo-card' }, media, el('div', { class: 'photo-card__body' },
+    const media = el('div', { class: 'sc-photo-card__media' }, thumbFor(gone ? null : x, true),
+      el('div', { class: 'sc-photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
+        el('span', { class: 'sc-photo-card__price-sub' }, gone ? `last seen ${fmtDate(x.last_seen)}` : shipNote(x))),
+      gone ? el('span', { class: 'sc-chip sc-photo-card__chip ' + (x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
+           : (x.pick_pct > 0 ? el('span', { class: 'sc-chip sc-chip--good sc-photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
+    return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
       el('div', { class: 'sc-media__title' }, title),
       gone ? null : el('div', { class: 'sc-media__sub' }, `${x.miles != null ? num(x.miles) + ' mi · ' : ''}${placeTxt(x)}`),
       gone ? null : movement(x, daily),
@@ -1688,7 +1548,7 @@
     const map = shortlistMap(), vins = Object.keys(map);
     if (!show || !vins.length) { host.hidden = true; return; }
     host.appendChild(el('div', { class: 'sc-callout sc-callout--spice' },
-      el('div', { class: 'sc-callout__label with-mark' }, 'shortlist', markImg()),
+      el('div', { class: 'sc-callout__label sc-with-mark' }, 'shortlist', markImg()),
       el('div', { class: 'sc-grid picks-grid' }, ...vins.map((v) => shortlistCard(v, map[v]))),
       el('p', { class: 'sc-hint' }, 'The specific cars being decided on, watched by VIN — set in targets.json under buyer.shortlist.')));
     host.hidden = false;
@@ -2111,7 +1971,7 @@
       const sample = svgEl('svg', { width: 24, height: 10, viewBox: '0 0 24 10', 'aria-hidden': 'true' },
         svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, stroke: brandColor(bk), 'stroke-width': m.shopping ? 3 : 2,
                         'stroke-dasharray': modelDash(bk, mk) || null, 'stroke-linecap': 'round', opacity: off ? 0.35 : 1 }));
-      lg.appendChild(el('button', { class: 'legend-chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
+      lg.appendChild(el('button', { class: 'sc-legend__chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
         title: (off ? 'Show ' : 'Hide ') + m.label + (m.shopping ? ' (shopping)' : ''),
         onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); savePrefs(); rerender(); },
         onmouseenter: () => { if (!off) highlightSeries(id); },
@@ -2229,8 +2089,8 @@
       const n = $(id);
       if (!n || !prev) continue;
       if (n.previousElementSibling !== prev) prev.after(n);   // only move what is out of place
-      n.classList.toggle('sec-support', SUPPORT.has(id));
-      n.classList.toggle('sec-chapter', CHAPTERS[view].has(id));
+      n.classList.toggle('sc-section--support', SUPPORT.has(id));
+      n.classList.toggle('sc-section--chapter', CHAPTERS[view].has(id));
       prev = n;
     }
   }
