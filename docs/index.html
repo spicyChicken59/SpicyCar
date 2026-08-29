@@ -313,7 +313,7 @@
     <div class="show-more" id="gone-more" hidden></div>
   </section>
 
-  <div class="sc-callout sc-callout--spice">
+  <div class="sc-callout sc-callout--spice" id="next-callout">
     <div class="sc-callout__label">next</div>
     <div class="sc-callout__figure">See how the numbers are made</div>
     <p>Asking prices as listed, shipping stated per car, and what counts as drivable. <a href="how.html">How it works →</a></p>
@@ -1946,7 +1946,6 @@
     // the shortlist first, then our picks across every model, then the map
     renderShortlist(true);
     renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label, r.shopping)), pickParams().per_model);
-    $('takeaway').after($('map-card'));
     renderMap('overview');
     $('notes-card').hidden = true;
 
@@ -2014,6 +2013,7 @@
         el('td', { class: 'sc-num' }, r.median != null ? money(r.median) : '—'), trend, data));
     }
     ot.appendChild(obody);
+    orderSections('overview');
     footLine();
   }
 
@@ -2021,6 +2021,24 @@
     const site = S.site;
     const n = Object.values(site.brands).reduce((a, b) => a + Object.values(b.models).reduce((c, m) => c + Object.keys(m.trims || {}).length, 0), 0);
     $('foot-left').textContent = `Source: auto.dev listings API · ${n} trim${n === 1 ? '' : 's'} tracked · snapshot ${site.generated || '—'} · runs daily 11:00 UTC`;
+  }
+
+  // The page is ordered around the decision, not around how it was built: what
+  // can I buy, then the evidence, then the reference material. Declared here so
+  // the order is readable in one place instead of emerging from .after() calls
+  // scattered through two render paths.
+  const SECTION_ORDER = {
+    overview: ['notice', 'kpis', 'filters-card', 'shortlist', 'takeaway', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
+    model: ['notice', 'kpis', 'filters-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
+  };
+  function orderSections(view) {
+    let prev = document.querySelector('main#main > .sc-title');
+    for (const id of SECTION_ORDER[view]) {
+      const n = $(id);
+      if (!n || !prev) continue;
+      if (n.previousElementSibling !== prev) prev.after(n);   // only move what is out of place
+      prev = n;
+    }
   }
 
   function render() {
@@ -2035,10 +2053,10 @@
     renderNotes(t);
     renderChart();
     renderScatter(rows);
-    $('scatter-card').after($('map-card'));
     renderMap('model', rows);
     renderList(rows);
     renderGone();
+    orderSections('model');
     footLine();
   }
 
