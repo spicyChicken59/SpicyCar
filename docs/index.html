@@ -156,7 +156,11 @@
   }
   /* Photo-led cards: the picture on top, the price on a scrim, the facts below */
   .photo-card { display: flex; flex-direction: column; border: 1px solid var(--sc-border); border-radius: 10px; overflow: hidden; background: var(--sc-surface); }
-  .photo-card__media { position: relative; aspect-ratio: 16 / 10; }
+  .photo-card__media { position: relative; aspect-ratio: 16 / 10; max-height: 300px; overflow: hidden; }
+  @media (min-width: 721px) and (max-width: 1000px) {
+    #kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* 2x2, not three columns for four tiles */
+    .photo-card__media { max-height: 240px; }
+  }
   .photo-card__media .sc-frame { width: 100%; height: 100%; border-radius: 0; }
   .photo-card__price { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 14px 10px; pointer-events: none;
     font: 700 21px/1.1 var(--sc-font-body); letter-spacing: -.3px; color: #fff;
@@ -367,8 +371,8 @@
 
   <div class="sc-callout sc-callout--spice" id="next-callout">
     <div class="sc-callout__label">next</div>
-    <div class="sc-callout__figure">See how the numbers are made</div>
-    <p>Asking prices as listed, shipping stated per car, and what counts as drivable. <a href="how.html">How it works →</a></p>
+    <div class="sc-callout__figure" id="next-figure">See how the numbers are made</div>
+    <p id="next-body">Asking prices as listed, shipping stated per car, and what counts as drivable. <a href="how.html">How it works →</a></p>
   </div>
 </main>
 
@@ -2159,10 +2163,29 @@
     markClipped(ot.closest('.sc-table-scroll'));
     renderEmptyNotice(rows.reduce((a, r) => a + r.n, 0),
                       allModels().reduce((a, { m }) => a + (m.listings || []).length, 0));
+    renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car');
     orderSections('overview');
     footLine();
   }
 
+  // The page ends on the answer it just computed, not on a third link to the
+  // methodology. Falls back to the methodology when there is nothing to point at.
+  function renderNext(best, scope) {
+    const fig = $('next-figure'), body = $('next-body');
+    fig.textContent = ''; body.textContent = '';
+    const url = best && safeUrl(best.x.url);
+    if (!best) {
+      fig.textContent = 'See how the numbers are made';
+      body.appendChild(document.createTextNode('Asking prices as listed, shipping stated per car, and what counts as drivable. '));
+      body.appendChild(el('a', { href: 'how.html' }, 'How it works →'));
+      return;
+    }
+    fig.textContent = `The cheapest ${scope} you can drive to today: ${money(best.x.price)}`;
+    body.appendChild(document.createTextNode(
+      `${best.label} · ${best.x.year || ''} · ${best.x.miles != null ? num(best.x.miles) + ' mi' : ''} · ${placeTxt(best.x)} — no shipping. `.replace(/\s+·\s+·/g, ' ·')));
+    if (url) body.appendChild(el('a', { href: url, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
+    else body.appendChild(el('a', { href: 'how.html' }, 'How it works →'));
+  }
   function footLine() {
     const site = S.site;
     const n = Object.values(site.brands).reduce((a, b) => a + Object.values(b.models).reduce((c, m) => c + Object.keys(m.trims || {}).length, 0), 0);
@@ -2229,6 +2252,8 @@
     renderList(rows);
     renderGone();
     renderEmptyNotice(rows.length, trimRows(t.listings || []).length);
+    const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
+    renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
     orderSections('model');
     footLine();
   }
