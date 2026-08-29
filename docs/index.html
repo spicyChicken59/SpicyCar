@@ -123,6 +123,11 @@
   .with-mark img.sc-mark { height: 18px; }
   #notes-grid ul { margin: 0; padding-left: 18px; }
   #notes-grid li { margin-top: 6px; font-size: 14px; }
+  /* the theme toggle, once it moves out of the masthead on a phone */
+  @media (max-width: 720px) {
+    .sc-foot { flex-wrap: wrap; row-gap: 10px; }
+    .sc-foot .sc-theme-toggle { order: 3; flex: none; }
+  }
 </style>
 </head>
 <body>
@@ -247,7 +252,7 @@
   <section class="sc-card" id="overview-card" hidden>
     <div class="sc-card__head">
       <div>
-        <h2>Every model</h2>
+        <h2>Model index</h2>
         <p class="sc-hint" id="overview-hint"></p>
       </div>
     </div>
@@ -1368,12 +1373,6 @@
     const meta = $('meta'); meta.textContent = '';
     bits.filter(Boolean).forEach((b, i) => { if (i) meta.appendChild(el('span', { class: 'sc-sep' }, '·')); meta.appendChild(el('span', null, b)); });
   }
-  function shippingSentence() {
-    const buyer = S.site.buyer || {}, st = scopeTxt();
-    if (buyer.ship_per_mile) return `Shipping is estimated at $${Number(buyer.ship_per_mile).toFixed(2)}/mi${buyer.ship_min ? ` (min ${money(buyer.ship_min)})` : ''} for cars beyond ${st} and stated on every car.`;
-    if (buyer.ship_cost) return `Shipping is estimated at ${money(buyer.ship_cost)} for cars beyond ${st} and stated on every car.`;
-    return '';
-  }
 
   // ---------- shared pieces ----------
   // The photo slot. alts are other photos to fall through to if a dealer's image will not load (a model row, never a specific car).
@@ -1535,7 +1534,7 @@
     $('h1').textContent = trim ? `${t.label} ${trim.label}` : (t.label || S.model);
     document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
     const note = trim ? (trim.note || '') : (t.note || '');
-    $('dek').textContent = [note, `Asking prices as listed. ${shippingSentence()}${buyer.label ? ` Home base: ${buyer.label}.` : ''}`].filter(Boolean).join(' ');
+    $('dek').textContent = [note, `Asking prices as listed; shipping stated per car.`].filter(Boolean).join(' ');
     const daily = dailyFor(t), nDays = daily.length || 1, nTrims = Object.keys(t.trims || {}).length;
     const p = t.params || {}, minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
     const stale = t.as_of && site.generated && t.as_of !== site.generated;
@@ -1562,22 +1561,28 @@
     const med = median(priced.map((x) => x.price));
     const filteredView = rows.length !== all.length;
 
-    const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking price'),
+    // Labels mirror the overview's, and the decision number a buyer here actually
+    // needs — the cheapest car they can drive to — gets its own tile rather than
+    // being left to the table. Median moves into the market tile's sub-line.
+    const bestLocal = lowestBy(priced.filter(isLocal), 'price');
+    const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
       el('div', { class: 'sc-tile__value' }, best ? money(best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
     if (!filteredView && today) tile1.appendChild(deltaEl(today.min_price, prev && prev.min_price, prev && prev.date, true, daily.length));
     host.appendChild(tile1);
 
-    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Median asking (filtered)' : 'Median asking price'),
-      el('div', { class: 'sc-tile__value' }, med != null ? money(med) : '—'),
-      el('div', { class: 'sc-tile__sub' }, `${priced.length} priced vehicle${priced.length === 1 ? '' : 's'}`));
-    if (!filteredView && today) tile2.appendChild(deltaEl(today.median_price, prev && prev.median_price, prev && prev.date, true, daily.length));
+    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
+      el('div', { class: 'sc-tile__value' }, bestLocal ? money(bestLocal.price) : '—'),
+      el('div', { class: 'sc-tile__sub' }, bestLocal
+        ? `${bestLocal.year} · ${num(bestLocal.miles)} mi · ${placeTxt(bestLocal)} · no shipping`
+        : 'Nothing drivable under these filters'));
     host.appendChild(tile2);
 
     const local = rows.filter(isLocal).length;
     const tile3 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'),
       el('div', { class: 'sc-tile__value' }, String(rows.length)),
-      el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local} beyond driving range`));
+      el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local} beyond driving range`
+        + (med != null ? ` · median ${money(med)}` : '')));
     if (daily.length >= 2) tile3.appendChild(el('div', { class: 'sc-tile__spark' }, spark(daily.map((d) => d.n), 120, 26, true)));
     else tile3.appendChild(el('div', { class: 'sc-delta sc-delta--flat' }, 'trend appears after day 2'));
     host.appendChild(tile3);
@@ -1789,11 +1794,13 @@
     for (const id of ['list-card', 'gone-card', 'scatter-card']) $(id).hidden = true;
     $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
     $('eyebrow').textContent = ['Watchlist', states.join(' · ')].filter(Boolean).join(' · ');
-    $('h1').textContent = 'Every model';
-    document.title = `Every model — ${site.app || 'SpicyCar'}`;
-    $('dek').textContent = `${rows.length} models, snapshotted daily, compared on asking price. ${shippingSentence()}`;
+    $('h1').textContent = 'The watchlist';
+    document.title = `The watchlist — ${site.app || 'SpicyCar'}`;
+    // One sentence of purpose. The shipping formula lives in how.html; repeating
+    // it here cost the phone fold and said nothing a buyer can act on.
+    $('dek').textContent = `${rows.length} electric cars, priced every day for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
-    metaRow([`Updated ${fmtDateLong(site.generated)}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`, `${(states.length || buyer.drive_radius_miles) ? 'Drivable = ' + scopeTxt() : ''}`]);
+    metaRow([`Updated ${fmtDateLong(site.generated)}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
     segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand);
     $('tabs').hidden = true;
 
@@ -1803,12 +1810,12 @@
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
     const shops = rows.filter((r) => r.shopping), shop = shops[0];
     const host = $('kpis'); host.textContent = '';
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
-      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond driving range · ${rows.length} models`)));
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping` : 'Nothing drivable under these filters')));
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
+      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
+      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond driving range · ${rows.length} models`)));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'),
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shops.map((r) => r.label).join(' · ') : `${rows.length} models`),
       el('div', { class: 'sc-tile__sub' }, shop ? shops.map((r) => `${r.label.replace(/^\S+ /, '')} ${r.best ? 'from ' + money(r.best.price) : '—'} · ${r.n_local} drivable`).join(' · ') : 'no target marked as shopping')));
@@ -1969,12 +1976,28 @@
     // React to WIDTH changes only: on phones, scrolling collapses the URL bar,
     // which fires resize with a height-only change — re-rendering on that made
     // every scroll feel like a page refresh.
+    // The theme toggle is a set-once control; in the masthead it eats a whole row
+    // of the phone fold, so below 720px it moves to the footer (same element, so
+    // its wiring and pressed state come along).
+    const toggle = document.querySelector('.sc-theme-toggle');
+    const mastRight = toggle && toggle.parentElement;
+    const toggleSep = toggle && toggle.previousElementSibling;   // the separator it leaves behind
+    const footHome = document.querySelector('footer.sc-foot');
+    function placeToggle() {
+      if (!toggle || !mastRight || !footHome) return;
+      const wantFoot = narrow();
+      if (wantFoot && toggle.parentElement !== footHome) footHome.appendChild(toggle);
+      else if (!wantFoot && toggle.parentElement !== mastRight) mastRight.appendChild(toggle);
+      if (toggleSep && toggleSep.classList.contains('sc-sep')) toggleSep.hidden = wantFoot;
+    }
+    placeToggle();
     let raf = null, wasNarrow = narrow(), lastW = window.innerWidth;
     window.addEventListener('resize', () => {
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         if (!S.site || window.innerWidth === lastW) return;
         lastW = window.innerWidth;
+        placeToggle();
         if (S.brand === 'all') { render(); return; }
         renderChart();
         renderScatter(filtered());
