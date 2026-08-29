@@ -13,16 +13,16 @@
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
-<!-- SpicyChicken Design System v2.2.0, pinned by commit (d19ac88) — swap to @v2.2.0 once the tag exists · DESIGN_SYSTEM.md §11 -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-avatar-tile.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/apple-touch-icon.png">
+<!-- SpicyChicken Design System v2.3.0, pinned by commit (dbbb790) — swap to @v2.3.0 once the tag is pushed · DESIGN_SYSTEM.md §11 -->
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/assets/sc-avatar-tile.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc.css">
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc-theme.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/sc-charts.js" defer></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/sc.css">
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/sc-theme.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/sc-charts.js"></script>
 <style>
   /* Page-specific only. Everything generic now lives in sc.css v2.3.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
@@ -68,7 +68,7 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
   </a>
   <div class="sc-masthead__right">
@@ -239,7 +239,7 @@
 <footer class="sc-foot">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
-    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/sc-lockup-cream.svg" alt="SpicyChicken">
+    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
   </a>
 </footer>
 
@@ -277,12 +277,16 @@
   // the light/dark split belongs to the sheet, not to a table in this file.
   const BRAND_TONES = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'];
   const DASHES = ['', '6 4', '2 3', '8 3 2 3'];   // solid, dashed, dotted, dash-dot per model within a brand
-  function brandColor(bk) {
+  // The slot name — what goes through the --sc-tone channel, so the colour stays
+  // a live var() reference and re-resolves on a theme flip with no re-render.
+  function brandTone(bk) {
     const idx = Object.keys((S.site || {}).brands || {}).indexOf(bk);
-    // currentColor, not a hex, when the sheet has not loaded: an empty fill would
-    // paint nothing, while inheriting the text colour keeps every dot visible.
-    return tok(idx >= 0 && idx < BRAND_TONES.length ? BRAND_TONES[idx] : 'chart-other') || 'currentColor';
+    return idx >= 0 && idx < BRAND_TONES.length ? BRAND_TONES[idx] : 'chart-other';
   }
+  // The resolved value, for the few marks the sheet leaves uncoloured and that
+  // therefore take a plain attribute. currentColor, not '', if the sheet is late:
+  // an empty fill paints nothing, while inheriting keeps every dot visible.
+  function brandColor(bk) { return SC.tone(brandTone(bk)) || 'currentColor'; }
   function modelDash(bk, mk) {
     const models = Object.keys((((S.site || {}).brands || {})[bk] || {}).models || {});
     return DASHES[Math.max(0, models.indexOf(mk)) % DASHES.length];
@@ -329,11 +333,11 @@
   };
   const isLocal = (x) => !!x.local;
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
-  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@d19ac88d68909aa4844ca8ac62af2ca1ff5138bb/assets/';
+  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@dbbb79086f1addff674bbd40074139e668f645a0/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
-  const markImg = () => el('img', { class: 'sc-mark', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '', width: 22, height: 26 });
+  const markImg = () => el('img', { class: 'sc-mark', 'data-mark': 'color', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '', width: 22, height: 26 });
   // the faint chick that stands in when a dealer sent no photo
-  const frameChick = () => el('img', { class: 'sc-frame__mark', src: ASSETS + (isLightTheme() ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'), alt: 'no photo' });
+  const frameChick = () => el('img', { class: 'sc-frame__mark', 'data-mark': 'mono', src: ASSETS + (isLightTheme() ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'), alt: 'no photo' });
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
   // Asking plus the stated shipping estimate — never less than asking. Computed here so it never depends on the data's vintage.
   const landed = (x) => (hasPrice(x) ? x.price + (x.local ? 0 : (x.ship || 0)) : null);
@@ -458,37 +462,12 @@
     return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $${P.cpm.toFixed(2)} a mile. Asking prices shown.`;
   }
 
-  // ---------- sparkline: svg.sc-spark — the sheet colours the path and end dot,
-  // unless an explicit color (a brand slot) is passed ----------
-  function spark(values, w, h, emphasis, color) {
-    w = w || 80; h = h || 26;
-    const svg = svgEl('svg', { class: 'sc-spark' + (emphasis ? ' sc-spark--emphasis' : ''), width: w, height: h, viewBox: `0 0 ${w} ${h}`, 'aria-hidden': 'true' });
-    const v = values.filter((x) => x !== null && x !== undefined);
-    if (!v.length) return svg;
-    const pad = 4, lo = Math.min(...v), hi = Math.max(...v);
-    const y = (val) => hi === lo ? h / 2 : pad + (hi - val) / (hi - lo) * (h - pad * 2);
-    const x = (i) => v.length === 1 ? w / 2 : pad + i / (v.length - 1) * (w - pad * 2);
-    if (v.length > 1) {
-      const d = v.map((val, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(val).toFixed(1)}`).join(' ');
-      svg.appendChild(svgEl('path', { d, style: color ? `stroke:${color}` : null }));
-    }
-    const last = v.length - 1;
-    svg.appendChild(svgEl('circle', { cx: x(last), cy: y(v[last]), r: 3, style: color ? `fill:${color}` : null }));
-    return svg;
-  }
-
-  // ---------- nice axis ticks ----------
-  function niceTicks(lo, hi, count) {
-    if (hi === lo) { hi = lo + Math.max(1, Math.abs(lo) * 0.02); lo = lo - Math.max(1, Math.abs(lo) * 0.02); }
-    const span = hi - lo, raw = span / count, p = Math.pow(10, Math.floor(Math.log10(raw)));
-    const steps = [1, 2, 2.5, 5, 10];
-    let step = p * 10;
-    for (const s of steps) { if (raw <= s * p) { step = s * p; break; } }
-    const start = Math.floor(lo / step) * step, end = Math.ceil(hi / step) * step;
-    const ticks = [];
-    for (let t = start; t <= end + step / 2; t += step) ticks.push(Math.round(t * 1000) / 1000);
-    return { ticks, lo: start, hi: end };
-  }
+  // The sparkline and the tick solver live in sc-charts.js now. Both had bugs
+  // this copy could not see on its own: one NaN or one stringified price made
+  // the whole spark path empty, and a flat domain made the tick loop divide by
+  // a zero step and never terminate.
+  const spark = (values, w, h, emphasis, tone) => SC.spark(values, { width: w, height: h, emphasis, tone });
+  const niceTicks = (lo, hi, count) => SC.ticks(lo, hi, count);
 
   // ---------- line chart in the .sc-chart host ----------
   // series: [{ label, points: [{ date, value }], emphasis }]. Emphasised series wear the emphasis colour,
@@ -526,16 +505,19 @@
     const showDots = dates.length <= 45;
     series.forEach((s, si) => {
       const sp = s.points;
-      const color = s.color || (s.emphasis ? C.emphasis : C.context);
       if (sp.length > 1) {
         const d = sp.map((p, i) => `${i ? 'L' : 'M'}${xOf(p.date).toFixed(1)},${yOf(p.value).toFixed(1)}`).join(' ');
         const attrs = { class: 'sc-chart__series sc-chart__series--' + (s.emphasis ? 'emphasis' : 'context'), d, 'data-sid': s.id || null };
-        if (s.color) attrs.style = `stroke:${s.color};stroke-width:${s.width || 2}px`;
+        // the channel, not `stroke:` — the sheet keeps the declaration and the
+        // value stays a live var(), so dark/light costs nothing
+        if (s.tone || s.width) attrs.style = (s.tone ? `--sc-tone:${SC.toneRef(s.tone)};` : '') + (s.width ? `--sc-weight:${s.width};` : '');
         if (s.dash) attrs['stroke-dasharray'] = s.dash;
         svg.appendChild(svgEl('path', attrs));
       }
       if (showDots) for (const p of sp) {
-        svg.appendChild(svgEl('circle', { class: 'sc-chart__marker', cx: xOf(p.date), cy: yOf(p.value), r: s.emphasis ? 4 : 3, fill: color, 'data-s': si, 'data-d': p.date, 'data-sid': s.id || null }));
+        svg.appendChild(svgEl('circle', { class: 'sc-chart__marker', cx: xOf(p.date), cy: yOf(p.value), r: s.emphasis ? 4 : 3,
+          style: s.tone ? `--sc-tone:${SC.toneRef(s.tone)}` : (s.emphasis ? `--sc-tone:${SC.toneRef('chart-emphasis')}` : null),
+          'data-s': si, 'data-d': p.date, 'data-sid': s.id || null }));
       }
     });
     // End labels: selective — series flagged labeled (or all, when the flag is
@@ -544,10 +526,7 @@
       .filter(({ s }) => s.labeled === undefined || s.labeled)
       .map(({ s, si }) => { const last = s.points[s.points.length - 1]; return { si, y: yOf(last.value), text: opts.named ? `${s.label} ${money(last.value)}` : money(last.value), emphasis: s.emphasis }; })
       .sort((a, b) => a.y - b.y);
-    const gap = 13;
-    for (let i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < gap) labels[i].y = labels[i - 1].y + gap;
-    for (let i = labels.length - 1; i >= 0; i--) { const max = H - m.b - 2 - (labels.length - 1 - i) * gap; if (labels[i].y > max) labels[i].y = max; }
-    for (let i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < gap) labels[i].y = labels[i - 1].y + gap;
+    SC.spreadLabels(labels, { gap: 13, min: m.t, max: H - m.b - 2 });
     const xEnd = xOf(dates[dates.length - 1]) + 10;
     for (const L of labels) svg.appendChild(svgEl('text', { class: L.emphasis ? 'sc-chart__label' : null, x: xEnd, y: L.y + 4 }, document.createTextNode(L.text)));
 
@@ -556,8 +535,11 @@
     const hit = svgEl('rect', { class: 'sc-chart__hit', x: m.l - 10, y: 0, width: iw + 20, height: H, fill: 'transparent' });
     svg.appendChild(hit);
     host.appendChild(svg);
-    const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
-    host.appendChild(tip);
+    // aria-live because the crosshair is keyboard-driven — the arrow keys move
+    // it and the values have to be announced. The map's tooltip is hover-only
+    // and passes live:false, or it would announce on every pointer pixel.
+    const TIP = SC.tooltip(host, { live: true, flip: 0.62, offsetX: 12, top: 6 });
+    const tip = TIP.node;
 
     let active = -1;
     const setActive = (i) => {
@@ -571,19 +553,16 @@
       // the swatch carries the dash pattern too, so three same-hue BMWs
       // read apart in the tooltip exactly as they do in the legend
       const swatch = (s) => {
-        const cv = s.color || (s.emphasis ? C.emphasis : C.context);
+        const cv = s.tone ? SC.toneRef(s.tone) : (s.emphasis ? SC.toneRef('chart-emphasis') : SC.toneRef('chart-context'));
         if (!s.dash) return el('i', { style: 'background:' + cv });
         return svgEl('svg', { class: 'sc-tooltip__dash', width: 14, height: 6, viewBox: '0 0 14 6', 'aria-hidden': 'true' },
-          svgEl('line', { x1: 0, y1: 3, x2: 14, y2: 3, stroke: cv, 'stroke-width': 2, 'stroke-dasharray': s.dash }));
+          svgEl('line', { x1: 0, y1: 3, x2: 14, y2: 3, style: 'stroke:' + cv, 'stroke-width': 2, 'stroke-dasharray': s.dash }));
       };
       for (const r of rows) tip.appendChild(el('div', { class: 'sc-tooltip__row' }, swatch(r.s), el('b', null, money(r.p.value)), el('span', null, r.s.label)));
       if (opts.meta) { const t = opts.meta(d); if (t) tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, t)); }
       tip.classList.add('is-on');
       const scale = host.clientWidth / W;
-      const px = x * scale, flip = px > host.clientWidth * 0.62;
-      tip.style.left = flip ? 'auto' : (px + 12) + 'px';
-      tip.style.right = flip ? (host.clientWidth - px + 12) + 'px' : 'auto';
-      tip.style.top = '6px';
+      TIP.place({ px: x * scale, py: 0 });
     };
     const nearest = (clientX) => {
       const r = svg.getBoundingClientRect(), vx = (clientX - r.left) / r.width * W;
@@ -767,17 +746,14 @@
         svg.appendChild(anchorEl);
       }
       const host = $('map'); host.textContent = '';
-      const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
+      const TIP = SC.tooltip(host, { live: false, flip: 0.55, offsetX: 14, offsetY: -40 });
+      const tip = TIP.node;
       // Interaction guards: a pan that ends on a dot must not fire its click,
       // and on touch — where hover isn't real — the first tap previews the car
       // (tooltip with an Open link) and only a second tap opens it.
       let dragDist = 0, lastPtr = 'mouse', armed = null;
-      const hideTip = () => { tip.classList.remove('is-on', 'sc-tooltip--tap'); armed = null; };
-      const clampTip = () => {
-        const rect = host.getBoundingClientRect();
-        const top = parseFloat(tip.style.top) || 4;
-        tip.style.top = Math.max(4, Math.min(top, rect.height - tip.offsetHeight - 4)) + 'px';
-      };
+      const hideTip = () => { TIP.hide(); armed = null; };
+      const clampTip = () => TIP.clamp();
       const openCar = (c) => {
         if (mode === 'model') { const u = safeUrl(c.x.url); if (u) window.open(u, '_blank', 'noopener'); else goTo(c.bk, c.mk); }
         else goTo(c.bk, c.mk);
@@ -808,12 +784,8 @@
           tip.classList.add('sc-tooltip--tap');
         } else tip.classList.remove('sc-tooltip--tap');
         const rect = host.getBoundingClientRect();
-        const fx = clientX - rect.left, flip = fx > rect.width * 0.55;
-        tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
-        tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
-        tip.style.top = Math.max(4, clientY - rect.top - 40) + 'px';
         tip.classList.add('is-on');
-        clampTip();
+        TIP.place({ clientX, clientY });
       };
       if (anchorEl) {
         const showAnchorTip = (clientX, clientY) => {
@@ -822,12 +794,8 @@
           tip.appendChild(el('div', { class: 'sc-tooltip__date' }, homeName()));
           tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, 'Home anchor — distances, shipping and the drive ring all measure from here.'));
           const rect = host.getBoundingClientRect();
-          const fx = clientX - rect.left, flip = fx > rect.width * 0.55;
-          tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
-          tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
-          tip.style.top = Math.max(4, clientY - rect.top - 34) + 'px';
           tip.classList.add('is-on');
-          clampTip();
+          TIP.place({ clientX, clientY }, { offsetY: -34 });   // the home marker's tooltip is one line, so it sits closer
         };
         anchorEl.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') showAnchorTip(e.clientX, e.clientY); });
         anchorEl.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
@@ -1100,15 +1068,15 @@
     const sc = scoredFrom(rows, t.label, !!t.shopping);
     const scSets = pickSets(sc);
     const ringed = new Set([...scSets.local, ...scSets.far].map((p) => p.x.vin));
-    const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
+    const TIP = SC.tooltip(host, { live: false, flip: 0.6, offsetX: 14, offsetY: -34 });
+    const tip = TIP.node;
     // Same touch contract as the map: first tap previews (photo, facts, an
     // Open link), the second tap opens; hover keeps doing both jobs at once.
     let lastPtr = 'mouse', armed = null;
     const hideTip = () => { tip.classList.remove('is-on', 'sc-tooltip--tap'); armed = null; };
     const clampTip = () => {
       const rect = host.getBoundingClientRect();
-      const top = parseFloat(tip.style.top) || 4;
-      tip.style.top = Math.max(4, Math.min(top, rect.height - tip.offsetHeight - 4)) + 'px';
+      TIP.clamp();
     };
     const fillTip = (x, clientX, clientY, tap) => {
       tip.textContent = '';
@@ -1132,12 +1100,8 @@
         tip.classList.add('sc-tooltip--tap');
       } else tip.classList.remove('sc-tooltip--tap');
       const rect = host.getBoundingClientRect();
-      const fx = clientX - rect.left, flip = fx > rect.width * 0.6;
-      tip.style.left = flip ? 'auto' : (fx + 14) + 'px';
-      tip.style.right = flip ? (rect.width - fx + 14) + 'px' : 'auto';
-      tip.style.top = Math.max(4, clientY - rect.top - 34) + 'px';
       tip.classList.add('is-on');
-      clampTip();
+      TIP.place({ clientX, clientY });
     };
     svg.addEventListener('pointerdown', (e) => {
       if (!(e.target.classList && e.target.classList.contains('sc-dot'))) hideTip();
@@ -1969,7 +1933,7 @@
     for (const { bk, mk, m } of allModels()) {
       const id = bk + '/' + mk, off = S.hidden.has(id);
       const sample = svgEl('svg', { width: 24, height: 10, viewBox: '0 0 24 10', 'aria-hidden': 'true' },
-        svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, stroke: brandColor(bk), 'stroke-width': m.shopping ? 3 : 2,
+        svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, style: 'stroke:' + SC.toneRef(brandTone(bk)), 'stroke-width': m.shopping ? 3 : 2,
                         'stroke-dasharray': modelDash(bk, mk) || null, 'stroke-linecap': 'round', opacity: off ? 0.35 : 1 }));
       lg.appendChild(el('button', { class: 'sc-legend__chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
         title: (off ? 'Show ' : 'Hide ') + m.label + (m.shopping ? ' (shopping)' : ''),
@@ -1981,7 +1945,7 @@
     lineChart($('chart'), allModels()
       .filter(({ bk, mk }) => !S.hidden.has(bk + '/' + mk))
       .map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label, emphasis: !!m.shopping,
-        color: brandColor(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
+        tone: brandTone(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
         labeled: !!m.shopping, points: askingSeries(m, rangeDaily(m.daily || [])) })),
       { named: true, height: 340 });
     const tb = $('chart-table'); tb.textContent = '';
@@ -2009,7 +1973,7 @@
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
       const data = el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—')));
-      const trend = el('td', null, spark(r.trend, 80, 26, r.shopping, brandColor(r.bk)));
+      const trend = el('td', null, spark(r.trend, 80, 26, false, brandTone(r.bk)));
       obody.appendChild(el('tr', { class: 'is-clickable', title: 'Open ' + r.label,
         onclick: (e) => { if (e.target.closest('a, button')) return; goTo(r.bk, r.mk); } },
         modelCell,
@@ -2239,8 +2203,23 @@
     });
     // theme changes re-paint the attribute-coloured marks (legend keys, tooltip keys, marker fills)
     const rerender = () => { if (S.site) setTimeout(render, 0); };
-    new MutationObserver(rerender).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', rerender);
+    // A theme flip used to redraw the entire page, because every chart colour
+    // had been resolved to a hex at draw time. They ride the --sc-tone channel
+    // now and re-resolve in CSS, so the only things left to change are the two
+    // chick marks — <img src>, which no stylesheet can swap. Re-pointing two
+    // attributes also means a flip can no longer throw away the reader's map
+    // zoom, which a full re-render could.
+    const syncMarks = () => {
+      const light = isLightTheme();
+      for (const img of document.querySelectorAll('img[data-mark]')) {
+        const kind = img.getAttribute('data-mark');
+        img.src = ASSETS + (kind === 'color'
+          ? (light ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg')
+          : (light ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'));
+      }
+    };
+    new MutationObserver(syncMarks).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', syncMarks);
   }
 
   function fail(msg) {
