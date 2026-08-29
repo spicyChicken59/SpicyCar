@@ -1720,7 +1720,8 @@
     const buyer = site.buyer || {}, states = buyer.states || [];
     const anyShopping = ((buyer.shopping || []).length > 0);
     const role = anyShopping ? (t.shopping ? 'Shopping' : 'Comparison') : null;
-    $('eyebrow').textContent = [brand.label, yearSpan, states.join(' · '), role].filter(Boolean).join(' · ') || 'Analyzer';
+    const whereNow = S.where.size ? [...S.where].map(whereLabel) : states;
+    $('eyebrow').textContent = [brand.label, yearSpan, whereNow.join(' · '), role].filter(Boolean).join(' · ') || 'Analyzer';
     $('h1').textContent = trim ? `${t.label} ${trim.label}` : (t.label || S.model);
     document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
     const note = trim ? (trim.note || '') : (t.note || '');
@@ -1773,8 +1774,8 @@
       el('div', { class: 'sc-tile__value' }, String(rows.length)),
       el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local} beyond driving range`
         + (med != null ? ` · median ${money(med)}` : '')));
-    if (daily.length >= 2) tile3.appendChild(el('div', { class: 'sc-tile__spark' }, spark(daily.map((d) => d.n), 120, 26, true)));
-    else tile3.appendChild(el('div', { class: 'sc-delta sc-delta--flat' }, 'trend appears after day 2'));
+    if (daily.length >= 2 && rows.length) tile3.appendChild(el('div', { class: 'sc-tile__spark' }, spark(daily.map((d) => d.n), 120, 26, true)));
+    else if (daily.length < 2) tile3.appendChild(el('div', { class: 'sc-delta sc-delta--flat' }, 'trend appears after day 2'));
     host.appendChild(tile3);
 
     const cuts = all.filter((x) => x.series && x.series.length >= 2 && x.series[x.series.length - 1][1] < x.series[x.series.length - 2][1]).length;
@@ -1799,7 +1800,8 @@
               ` · ${gone} gone`)
           : el('div', { class: 'sc-tile__sub' }, `${newToday} new · ${gone} gone`))
       : el('div', { class: 'sc-tile__sub' }, 'movement shows from day 2');
-    const tile4 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Since the previous snapshot'),
+    const tile4 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' },
+        filteredView ? 'Since the previous snapshot (all cars)' : 'Since the previous snapshot'),
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, daily.length >= 2 ? `${cuts} price cut${cuts === 1 ? '' : 's'}` : '—'),
       sub);
     host.appendChild(tile4);
@@ -2049,7 +2051,8 @@
     const rows = overviewRows();
     for (const id of ['list-card', 'gone-card', 'scatter-card']) $(id).hidden = true;
     $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
-    $('eyebrow').textContent = ['Watchlist', states.join(' · ')].filter(Boolean).join(' · ');
+    const whereNow = S.where.size ? [...S.where].map(whereLabel) : states;
+    $('eyebrow').textContent = ['Watchlist', whereNow.join(' · ')].filter(Boolean).join(' · ');
     $('h1').textContent = 'The watchlist';
     document.title = `The watchlist — ${site.app || 'SpicyCar'}`;
     // One sentence of purpose. The shipping formula lives in how.html; repeating
@@ -2154,6 +2157,8 @@
     }
     ot.appendChild(obody);
     markClipped(ot.closest('.sc-table-scroll'));
+    renderEmptyNotice(rows.reduce((a, r) => a + r.n, 0),
+                      allModels().reduce((a, { m }) => a + (m.listings || []).length, 0));
     orderSections('overview');
     footLine();
   }
@@ -2179,6 +2184,23 @@
     overview: new Set(['takeaway', 'map-card', 'next-callout']),
     model: new Set(['takeaway', 'list-card', 'scatter-card', 'notes-card', 'next-callout']),
   };
+  // Filtering to nothing used to make the picks, the scatter and the map simply
+  // disappear — three sections gone, no message, the page just shorter. Say it
+  // once, where the filters are, and offer the way back.
+  function renderEmptyNotice(shown, total) {
+    const n = $('notice');
+    n.textContent = '';
+    if (shown > 0 || !total) { n.hidden = true; return; }
+    n.appendChild(el('div', { class: 'sc-notice' },
+      el('div', { class: 'sc-eyebrow' }, 'nothing matches these filters'),
+      el('p', null, `All ${num(total)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
+        el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => {
+          e.preventDefault();
+          S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.trim = 'all';
+          savePrefs(); buildFilters(); rerender();
+        } }, 'Clear the filters'), '.')));
+    n.hidden = false;
+  }
   function orderSections(view) {
     let prev = document.querySelector('main#main > .sc-title');
     for (const id of SECTION_ORDER[view]) {
@@ -2206,6 +2228,7 @@
     renderMap('model', rows);
     renderList(rows);
     renderGone();
+    renderEmptyNotice(rows.length, trimRows(t.listings || []).length);
     orderSections('model');
     footLine();
   }
