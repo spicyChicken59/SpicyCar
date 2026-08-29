@@ -31,6 +31,8 @@
   .sc-eyebrow { text-transform: none; letter-spacing: .5px; }
   .col-vehicle { min-width: 198px; }   /* the last pixels that kept the table from fitting its 1174px column */
   .col-listed { max-width: 158px; white-space: normal; }
+  #list-table tbody td { padding-top: 8px; padding-bottom: 8px; }
+  #list-table .sc-media__code { margin-top: 1px; }
   .col-model { min-width: 280px; }
   .loc { max-width: 190px; }
   .dealer { max-width: 150px; }
@@ -444,6 +446,8 @@
   // Listing URLs and images come from the API — only ever follow real web addresses.
   const safeUrl = (u) => (typeof u === 'string' && /^https?:\/\//i.test(u) ? u : null);
   const placeTxt = (x) => [x.city, x.state].filter(Boolean).join(', ') || 'location n/a';
+  // Same thing for table cells, where a missing city used to leave "—," hanging.
+  const placeCell = (x) => [x.city, x.state].filter(Boolean).join(', ') || '—';
   const homeName = () => (((S.site || {}).buyer || {}).label) || 'home';
   // buyer.shortlist: the specific cars being decided on, by VIN.
   function shortlistMap() {
@@ -1771,10 +1775,10 @@
 
   function vehicleCell(x) {
     const trim = (x.trim || '').length > 22 ? (x.trim || '').slice(0, 22) + '…' : (x.trim || '');
+    const title = [`${x.year || ''} ${trim}`.trim(), x.color].filter(Boolean).join(' · ');
     return el('div', { class: 'sc-media' }, thumbFor(x), el('div', { class: 'sc-media__body' },
-      el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim(),
+      el('div', { class: 'sc-media__title' }, title,
         onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null),
-      x.color ? el('div', { class: 'sc-media__sub' }, x.color) : null,
       el('div', { class: 'sc-media__code' }, x.vin),
       (x.url || x.carfax) ? quietLinks(x) : null));
   }
@@ -1796,7 +1800,7 @@
     return el('div', { class: 'sc-media sc-media--card' }, thumbFor(x),
       el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim(),
         onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null), aside,
-      el('div', { class: 'sc-media__sub' }, [x.color, `${x.city || '—'}, ${x.state || ''}`, x.local ? 'drivable' : null].filter(Boolean).join(' · ')),
+      el('div', { class: 'sc-media__sub' }, [x.color, placeCell(x), x.local ? 'drivable' : null].filter(Boolean).join(' · ')),
       el('div', { class: 'sc-media__code' }, x.vin),
       foot);
   }
@@ -1859,10 +1863,12 @@
     table.appendChild(el('thead', null, tr));
     const body = el('tbody');
     if (!rows.length) body.appendChild(el('tr', { class: 'sc-empty' }, el('td', { colspan: cols.length }, 'Nothing matches these filters.')));
+    let lastMsrp = null;
     for (const x of shown) {
       const price = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
         x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
-        x.msrp ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
+        (x.msrp && x.msrp !== lastMsrp) ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
+      lastMsrp = x.msrp || lastMsrp;
       const shipping = el('td', { class: 'sc-num' }, x.local
         ? el('span', { class: 'sc-note' }, 'none · drivable')
         : (x.ship
@@ -1870,7 +1876,7 @@
                  el('span', { class: 'sc-note' }, `${money(landed(x))} landed`))
             : el('span', { class: 'sc-note' }, 'n/a')));
       const total = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(landed(x))));
-      const loc = el('td', { class: 'loc sc-nowrap' }, `${x.city || '—'}, ${x.state || ''}`, el('br'), scopeChip(x),
+      const loc = el('td', { class: 'loc sc-nowrap' }, placeCell(x), el('br'), scopeChip(x),
         x.distance != null ? el('span', { class: 'sc-note' }, `~${num(x.distance)} mi from ${homeName()}`) : null,
         x.dealer ? el('span', { class: 'sc-note sc-truncate dealer', title: x.dealer }, x.dealer) : null);
       const listed = el('td', { class: 'sc-nowrap col-listed' },
@@ -1904,7 +1910,7 @@
       (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
     return el('div', { class: 'sc-media sc-media--card' },
       el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), aside,
-      el('div', { class: 'sc-media__sub' }, `${g.city || '—'}, ${g.state || ''}`),
+      el('div', { class: 'sc-media__sub' }, placeCell(g)),
       el('div', { class: 'sc-media__code' }, g.vin), foot);
   }
   function renderGone() {
@@ -1945,7 +1951,7 @@
         el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(g.last_price)), (g.flags || []).length ? el('span', { class: 'sc-note' }, g.flags.join(' · ')) : null),
         el('td', { class: 'sc-num' }, g.miles != null ? num(g.miles) : '—'),
         el('td', { class: 'sc-num' }, g.local ? el('span', { class: 'sc-note' }, 'none') : (g.ship ? money(g.ship) : '—')),
-        el('td', { class: 'loc sc-nowrap' }, `${g.city || '—'}, ${g.state || ''}`, el('br'), scopeChip(g)),
+        el('td', { class: 'loc sc-nowrap' }, placeCell(g), el('br'), scopeChip(g)),
         el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above today\'s cut-off' : 'not checked that day') : null),
         el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
