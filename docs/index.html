@@ -409,20 +409,19 @@
   function savePrefs() {
     try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden], range: S.range })); } catch (e) { /* private mode etc. */ }
   }
-  // Brand palette — categorical slots in fixed watchlist order, validated (six
-  // checks, both themes, on this site's surfaces). Hue carries the BRAND; the
-  // dash pattern carries the model within it, so identity never rides on color
-  // alone. A brand past the sixth slot falls back to the context grey and
-  // leans on its labels — hues are never invented or cycled.
-  const BRAND_SLOTS = {
-    light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300'],
-    dark:  ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300'],
-  };
+  // Brand palette — the design system's categorical slots, in fixed watchlist
+  // order. Hue carries the BRAND; the dash pattern carries the model within it,
+  // so identity never rides on color alone. The sheet ships five slots and folds
+  // everything past them into "Other" (sc.css: `5 slots; a 6th folds to "Other"`),
+  // so that is exactly where this stops — hues are never invented or cycled, and
+  // the light/dark split belongs to the sheet, not to a table in this file.
+  const BRAND_TONES = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'];
   const DASHES = ['', '6 4', '2 3', '8 3 2 3'];   // solid, dashed, dotted, dash-dot per model within a brand
   function brandColor(bk) {
     const idx = Object.keys((S.site || {}).brands || {}).indexOf(bk);
-    const slots = BRAND_SLOTS[isLightTheme() ? 'light' : 'dark'];
-    return idx >= 0 && idx < slots.length ? slots[idx] : chartColors().context;
+    // currentColor, not a hex, when the sheet has not loaded: an empty fill would
+    // paint nothing, while inheriting the text colour keeps every dot visible.
+    return tok(idx >= 0 && idx < BRAND_TONES.length ? BRAND_TONES[idx] : 'chart-other') || 'currentColor';
   }
   function modelDash(bk, mk) {
     const models = Object.keys((((S.site || {}).brands || {})[bk] || {}).models || {});
