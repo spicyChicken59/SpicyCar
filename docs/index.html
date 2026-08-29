@@ -66,6 +66,7 @@
   .where-chips { flex-wrap: wrap; }              /* the multi-select: any number of chips may be pressed */
   .map-host { position: relative; }
   .map-host svg { display: block; width: 100%; height: auto; touch-action: pan-y; cursor: grab; }
+  @media (max-width: 720px) { .map-host { min-height: 300px; } .map-host svg { min-height: 300px; } }
   .map-host svg:active { cursor: grabbing; }
   .map-btns { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
   .map-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--sc-border); background: var(--sc-surface);
@@ -131,6 +132,24 @@
   .frame-wrap { overflow: hidden; position: relative; padding: 0; }
   .frame-wrap .frame-img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; filter: blur(10px); }
   .frame-wrap .frame-img.is-loaded { opacity: 1; filter: none; }
+  :root[data-theme="dark"] .frame-wrap .frame-img.is-loaded,
+  :root[data-theme="dark"] .map-tip-img { filter: brightness(.82) saturate(.95); }
+  :root[data-theme="dark"] .sc-media:hover .frame-img.is-loaded,
+  :root[data-theme="dark"] .photo-card:hover .frame-img.is-loaded,
+  :root[data-theme="dark"] .photo-card:focus-within .frame-img.is-loaded { filter: none; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .frame-wrap .frame-img.is-loaded,
+    :root:not([data-theme="light"]) .map-tip-img { filter: brightness(.82) saturate(.95); }
+    :root:not([data-theme="light"]) .sc-media:hover .frame-img.is-loaded,
+    :root:not([data-theme="light"]) .photo-card:hover .frame-img.is-loaded,
+    :root:not([data-theme="light"]) .photo-card:focus-within .frame-img.is-loaded { filter: none; }
+  }
+  /* Masthead controls were 24-27px against a 44px guideline. */
+  @media (max-width: 720px) {
+    .sc-theme-toggle button { min-height: 44px; padding-inline: 14px; }
+    .sc-masthead .sc-nav a, .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
+    .sc-foot a { display: inline-block; padding: 10px 2px; }
+  }
   @media (prefers-reduced-motion: no-preference) {
     .frame-wrap .frame-img { transition: opacity .35s ease, filter .5s ease, transform .35s ease; }
     .sc-media:hover .frame-img.is-loaded, .photo-card:hover .frame-img.is-loaded { transform: scale(1.06); }
@@ -1125,11 +1144,13 @@
       if (picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
       if (cars.some((c) => onShortlist(c.x))) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
       if (Array.isArray(buyer.anchor)) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('brand-strong') }), `≤ ${buyer.drive_hours || 5}h drive of ${homeName()}`));
+      const noPointer = window.matchMedia('(hover: none)').matches;
       $('map-hint').textContent = `${cars.length - offMap} cars under the current filters`
         + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
-        + (mode === 'model' ? ' — hover or tap a dot for the car, click to open its listing'
-                            : ', colored by brand like the chart below — hover or tap a dot for the car, click to open its model')
-        + `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`;
+        + (mode === 'model' ? ' — tap a dot for the car' : ', colored by brand — tap a dot for the car')
+        + (noPointer
+            ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
+            : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
       card.hidden = false;
     });
   }
@@ -1327,7 +1348,10 @@
       chip.dataset.y = c.year;
       lg.appendChild(chip);
     }
-    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for — hover a line or press a year chip to light up that year's cars. Hover a dot for the car and click to open the listing; on a phone, tap previews and a second tap opens.`;
+    const touch = window.matchMedia('(hover: none)').matches;
+    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for.`
+      + (touch ? ' Tap a dot to preview it, tap again to open; press a year chip to light up that year.'
+               : ' Hover a line or year chip to light up that year; hover a dot for the car, click to open the listing.');
     card.hidden = false;
   }
 
