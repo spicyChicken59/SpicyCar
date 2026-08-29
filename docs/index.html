@@ -460,7 +460,8 @@
   const isRental = (x) => NON_PERSONAL.test(x.usage || '');
   function pickParams() {
     const p = ((S.site || {}).buyer || {}).picks || {};
-    return { count: p.count || 4, per_model: p.per_model || 2, max_miles: p.max_miles || 50000, cpm: p.cents_per_mile != null ? p.cents_per_mile : 0.30,
+    return { count: p.count || 4, per_model: p.per_model || 2, reserve: p.reserve_shopping != null ? p.reserve_shopping : 2,
+      max_miles: p.max_miles || 50000, cpm: p.cents_per_mile != null ? p.cents_per_mile : 0.30,
       base: p.mileage_baseline || 20000, no_acc: p.exclude_accidents !== false, no_rental: p.exclude_rental !== false };
   }
   function pickValue(x, P) { return (!hasPrice(x) || x.miles == null) ? null : x.price + (x.local ? 0 : (x.ship || 0)) + (x.miles - P.base) * P.cpm; }
@@ -498,15 +499,41 @@
       return { x, modelLabel, year, trim, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
-  function choosePicks(scored, n, perModel) {
-    const out = [], per = {};
+  function choosePicks(scored, n, perModel, seed) {
+    const out = [], per = Object.assign({}, seed && seed.per);
+    const taken = new Set((seed && seed.taken) || []);
     for (const p of scored.slice().sort((a, b) => b.pct - a.pct)) {
       if (p.pct <= 0) break;   // a pick must actually sit under typical
+      if (taken.has(p.x.vin)) continue;
       if (perModel && (per[p.modelLabel] || 0) >= perModel) continue;
       out.push(p); per[p.modelLabel] = (per[p.modelLabel] || 0) + 1;
       if (out.length >= n) break;
     }
     return out;
+  }
+  // The drivable list keeps seats for the models actually being shopped. A
+  // comparison car can sit further under its own typical price than any i5 ever
+  // will, so ranking by margin alone filled the front page with cars this buyer
+  // is not looking for. The reserved seats go to the best qualifying shopped
+  // cars; the rest of the list is chosen exactly as before, and the per-model
+  // cap still applies across the whole set.
+  function choosePicksReserving(scored, n, perModel, reserve) {
+    if (!reserve) return choosePicks(scored, n, perModel);
+    const shop = choosePicks(scored.filter((p) => p.shopping), Math.min(reserve, n), perModel);
+    if (!shop.length) return choosePicks(scored, n, perModel);
+    const per = {};
+    for (const p of shop) per[p.modelLabel] = (per[p.modelLabel] || 0) + 1;
+    const rest = choosePicks(scored, n - shop.length, perModel, { per, taken: shop.map((p) => p.x.vin) });
+    return [...shop, ...rest];
+  }
+  // Decided once, so the cards, the map rings and the scatter rings cannot drift
+  // apart — they were each running their own copy of this.
+  function pickSets(scored, perModel) {
+    const P = pickParams();
+    return {
+      local: choosePicksReserving(scored.filter((p) => p.x.local), P.count, perModel, P.reserve),
+      far: choosePicks(scored.filter((p) => !p.x.local), P.count, perModel),
+    };
   }
   function picksRule() {
     const P = pickParams();
@@ -796,11 +823,11 @@
       // accent outright. Same pick sets as the cards above the map.
       const P = pickParams();
       const scored = mode === 'model'
-        ? scoredFrom(rowsForModel || [], model().label || '')
-        : allModels().flatMap(({ m }) => scoredFrom(applyShared(m.listings || []), m.label || ''));
+        ? scoredFrom(rowsForModel || [], model().label || '', !!model().shopping)
+        : allModels().flatMap(({ m }) => scoredFrom(applyShared(m.listings || []), m.label || '', !!m.shopping));
       const perM = mode === 'model' ? undefined : P.per_model;
-      const picked = new Set([...choosePicks(scored.filter((p) => p.x.local), P.count, perM),
-                              ...choosePicks(scored.filter((p) => !p.x.local), P.count, perM)].map((p) => p.x.vin));
+      const sets = pickSets(scored, perM);
+      const picked = new Set([...sets.local, ...sets.far].map((p) => p.x.vin));
       const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
       let view = S.mapView || MAP_FULL;
       let animateTo = null;
@@ -1150,9 +1177,9 @@
       svg.appendChild(t2);
     }
     // the picks currently shown above, ringed
-    const sc = scoredFrom(rows, t.label), PC = pickParams();
-    const ringed = new Set([...choosePicks(sc.filter((p) => p.x.local), PC.count),
-                            ...choosePicks(sc.filter((p) => !p.x.local), PC.count)].map((p) => p.x.vin));
+    const sc = scoredFrom(rows, t.label, !!t.shopping);
+    const scSets = pickSets(sc);
+    const ringed = new Set([...scSets.local, ...scSets.far].map((p) => p.x.vin));
     const tip = el('div', { class: 'sc-tooltip', role: 'status', 'aria-live': 'polite' });
     // Same touch contract as the map: first tap previews (photo, facts, an
     // Open link), the second tap opens; hover keeps doing both jobs at once.
@@ -1503,12 +1530,11 @@
   // the rest of the country. Front page: across every model; model view: within it.
   function renderPicks(scored, perModel) {
     const host = $('takeaway'); host.textContent = '';
-    const P = pickParams();
-    // Selection is unchanged; the shopped models simply lead the display, so the
-    // marquee block does not open with cars the buyer is not looking for.
+    // The shopped models lead the display as well as holding reserved seats.
     const byRole = (a, b) => (Number(!!b.shopping) - Number(!!a.shopping)) || (b.pct - a.pct);
-    const local = choosePicks(scored.filter((p) => p.x.local), P.count, perModel).sort(byRole);
-    const far = choosePicks(scored.filter((p) => !p.x.local), P.count, perModel).sort(byRole);
+    const sets = pickSets(scored, perModel);
+    const local = sets.local.slice().sort(byRole);
+    const far = sets.far.slice().sort(byRole);
     if (!local.length && !far.length) { host.hidden = true; return; }
     const cheapest = (picks) => picks.reduce((a, p) => (a == null || p.x.price < a ? p.x.price : a), null);
     const group = (label, picks, empty, collapse) => {
