@@ -1889,7 +1889,7 @@
     metaRow([
       unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}` : `Data through ${fmtDateLong(t.as_of || dataThrough())}`,
       t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
-      `${nDays} snapshot day${nDays === 1 ? '' : 's'}`,
+      unfetched ? null : `${nDays} snapshot day${nDays === 1 ? '' : 's'}`,   // a never-fetched model has no snapshot days to claim
       nTrims > 1 && !trim ? `${nTrims} trims` : null,
       trim && trim.depth ? (trim.depth === 'full' ? 'Deep fetch' : 'Light fetch — cheapest 20 per query') : null,
       minPrice ? `Listings under ${money(minPrice)} ignored` : null,
@@ -1911,7 +1911,9 @@
       cuts: listings.filter((x) => lastStep(x) < 0).length,
       fresh: daily.length >= 2 ? listings.filter((x) => x.days_tracked === 1).length : 0,
       // same rule as the report: real delistings at each trim's own previous fetch
-      gone: goneRows.filter((g) => g.likely === 'delisted'
+      // gone respects hasPrev like the others: one snapshot day cannot
+      // distinguish a departure, whatever a gone row claims
+      gone: daily.length < 2 ? 0 : goneRows.filter((g) => g.likely === 'delisted'
         && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : (prev && g.last_seen === prev.date))).length,
     };
   }
@@ -2124,6 +2126,11 @@
     let lastMsrp = null;
     for (const x of shown) {
       const price = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
+        // Sorted by the latest snapshot's cut, the number the sort ran on must
+        // be visible — the movement badge shows the LIFETIME change, which can
+        // read non-monotonic (or "cut, then back up") against this ordering.
+        S.sort === 'cut' && lastStep(x) < 0
+          ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
         x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
         (x.msrp && x.msrp !== lastMsrp) ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
       lastMsrp = x.msrp || lastMsrp;
@@ -2294,8 +2301,8 @@
     // page: what moved since the last check? Counted per model against its
     // own previous snapshot (models run on different cadences), by the same
     // helper the model tile uses. It takes the Shopping tile's spot: the
-    // shopped models and their from-prices already lead the table below and
-    // the meta line above, so that tile repeated the page; nothing else on
+    // shopped models still lead the page three ways — the meta count, the
+    // shopping-chipped table rows, and the picks — while nothing else on
     // the overview said what changed. The sub names the models that moved
     // most, as doors — each model's own tile breaks its movement down.
     const mvs = allModels().map(({ bk, mk, m }) => ({ bk, mk, label: m.label || mk,
@@ -2318,7 +2325,8 @@
           onclick: (e) => { e.preventDefault(); goTo(v.bk, v.mk); } }, v.label));
       });
     }
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' },
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label',
+        title: 'Each model against its own previous fetch — cadences differ, so the windows do too. A cut is any car whose latest tracked price is below its last one.' },
         total !== allTotal ? 'Since the previous snapshot (all cars)' : 'Since the previous snapshot'),
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, anyPrev ? `${cuts} price cut${cuts === 1 ? '' : 's'}` : '—'),
       sub4));

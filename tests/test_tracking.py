@@ -755,6 +755,26 @@ class TestConfig(unittest.TestCase):
         shopped = sorted(t for t, v in T.TARGETS.items() if v["shopping"])
         self.assertEqual(shopped, ["bmw-i4-edrive40", "bmw-i5-edrive40"])
 
+    def test_site_dates_the_data_not_the_build(self):
+        """generated is the day the file was BUILT (an offline rebuild stamps
+        it with no fetch); data_through is the newest snapshot day anywhere —
+        the honest date the pages show. It must equal the max snapshot_date
+        and never exceed generated."""
+        rows = [
+            {"snapshot_date": "2026-08-27", "vin": "A", "target": "t"},
+            {"snapshot_date": "2026-08-29", "vin": "B", "target": "t"},
+            {"snapshot_date": "2026-08-28", "vin": "C", "target": "t"},
+        ]
+        self.assertEqual(max(r["snapshot_date"] for r in rows), "2026-08-29")
+        import json, pathlib
+        site = json.loads((pathlib.Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        self.assertIn("data_through", site)
+        dates = [d["date"] for b in site["brands"].values()
+                 for m in b["models"].values() for d in (m.get("daily") or [])]
+        if dates:
+            self.assertEqual(site["data_through"], max(dates))
+        self.assertLessEqual(site["data_through"], site["generated"])
+
     def test_parsers_survive_dirty_input(self):
         self.assertEqual(T.to_int("$46,590"), 46590)
         self.assertEqual(T.to_int(""), None)

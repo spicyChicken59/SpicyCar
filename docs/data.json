@@ -1,6 +1,7 @@
 {
  "app": "SpicyCar",
  "generated": "2026-08-30",
+ "data_through": "2026-08-29",
  "buyer": {
   "id": "chicago",
   "label": "Chicago",
