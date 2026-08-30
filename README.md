@@ -6,9 +6,10 @@
 
 [![SpicyCar daily](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml)
 
-**A used-car purchase analyzer.** Every day it snapshots every BMW i4 and i5 on the market, prices
-each one as what it would actually cost to land in a specific buyer's driveway, and publishes the
-result as a report, an email, and a dashboard.
+**A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i4 eDrive40s being
+shopped — their siblings and rivals follow on their own cadence — prices each car as what it would
+actually cost to land in a specific buyer's driveway, and publishes the result as a report, an
+email, and a dashboard.
 
 It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
 CSV in the repository is the ledger.
@@ -65,7 +66,7 @@ starts.
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
 labelled "priced above today's cut-off" on the dashboard and left out of the report's "gone" list.
 
-**Scope by state first, radius second.** The first version placed listings into city radii by their
+**Scope by state, not coordinates.** The first version placed listings into city radii by their
 coordinates and returned one or two local cars a day while the same cars appeared nationally with
 Midwest addresses. The cause: for listings it cannot geocode, the API returns exactly `(0, 0)` —
 null island, 5,900 miles from Indianapolis — which passes every null check and fails every radius.
@@ -113,7 +114,7 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 ## What you get each day
 
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
-  every drivable listing grouped by state (drive-radius states marked), and the five best-value
+  every drivable listing grouped by state, and the five best-value
   cars beyond the buyer's states.
 - The dashboard — "the watchlist" opens on the number that decides things: **lowest drivable
   asking**, then lowest nationwide, the market count and what moved since the last snapshot. Below
@@ -127,7 +128,7 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   colour is the brand, the dash is the model, the shopped models are drawn heavier, an
   interactive legend hides, shows and highlights any line, and 30d / 90d / All chips set a
   remembered time window with the price scale fitted to it. A **multi-select Where filter** (each
-  state plus "Beyond" — press any mix, remembered between visits) narrows every tile,
+  state plus "beyond" — press any mix, remembered between visits) narrows every tile,
   pick and table. **Spicy picks** come in two lists — the best values in the buyer's states and the
   best worth shipping — ranked by value but shown at asking price. Rows click through to each
   model; on every model, its own picks, a hand-written *know the model* card, a **price-vs-miles

@@ -103,7 +103,7 @@
       <a href="#prices">Prices</a>
       <a href="#data">Where the data comes from</a>
       <a href="#budget">Staying inside a free plan</a>
-      <a href="#local">What counts as local</a>
+      <a href="#local">What counts as drivable</a>
       <a href="#reading">Reading the dashboard</a>
       <a href="#limits">What it does not know</a>
       <a href="#roadmap">Roadmap</a>
@@ -121,13 +121,13 @@
     <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A drivable car costs nothing to bring home — you drive it. Anything else gets an estimate from the distance between the listing and the buyer's anchor point: $0.65 a mile with a $350 floor, roughly what open-carrier transport costs. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
     <figure class="diagram" role="img" aria-label="Price anatomy: a drivable car costs its asking price alone; a car outside your states costs asking plus a stated shipping estimate.">
       <svg viewBox="0 0 720 178" xmlns="http://www.w3.org/2000/svg">
-        <text class="dg-side" x="10" y="34">DRIVABLE</text>
+        <text class="dg-side" x="10" y="34">drivable</text>
         <rect class="dg-bar-ask" x="100" y="16" width="470" height="28" rx="4"/>
         <text class="dg-title" x="112" y="35">asking — exactly as listed</text>
         <text class="dg-figure" x="584" y="35">$46,000</text>
         <text class="dg-sub" x="100" y="62">nothing added · you drive it home</text>
 
-        <text class="dg-side" x="10" y="118">BEYOND</text>
+        <text class="dg-side" x="10" y="118">beyond</text>
         <rect class="dg-bar-ask" x="100" y="100" width="388" height="28" rx="4"/>
         <text class="dg-title" x="112" y="119">asking</text>
         <text class="dg-figure" x="400" y="119">$38,000</text>
@@ -153,7 +153,7 @@
       </table>
     </div>
     <p>Car C is still the cheapest by more than $3,000 after the truck — which is the point of stating it. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible.</p>
-    <p><strong>Spicy picks</strong> are the one place miles are priced in — but only to rank, never to change a number you see. A car is eligible under 50,000 miles with no reported accidents and no rental or fleet history. Each eligible car gets a value: asking, plus shipping, plus 30 cents for every mile above 20,000 (or minus, below). It is then compared with the typical value for its own model, so a cheap model does not win just for being cheap. The picks come in two lists under that one rule — the best values <em>in your states</em>, and the best values <em>worth the ship</em> from everywhere else — and only cars genuinely under typical qualify, so a thin local market never promotes an ordinary car. The label says how far under typical each pick sits; the price on the card is still the asking price.</p>
+    <p><strong>Spicy picks</strong> are the one place miles are priced in — but only to rank, never to change a number you see. A car is eligible under 50,000 miles with no reported accidents and no rental or fleet history. Each eligible car gets a value: asking, plus shipping, plus 30 cents for every mile above 20,000 (or minus, below). It is then compared with the typical value for its own model, so a cheap model does not win just for being cheap. The picks come in two lists under that one rule — the best values <em>in your states</em>, and the best values <em>worth the ship</em> from everywhere else — and only cars genuinely under typical qualify, so a thin drivable market never promotes an ordinary car. The label says how far under typical each pick sits; the price on the card is still the asking price.</p>
 
     <h2 id="data">Where the data comes from</h2>
     <p>Listings come from the <a href="https://auto.dev" rel="noopener">auto.dev</a> API. Every day at 11:00 UTC a GitHub Action runs the tracker, which fetches each target due that day, states shipping on every listing, and writes three things back into the repository: a CSV with one row per vehicle per day, a Markdown report (also sent by email), and the JSON behind the dashboard.</p>
@@ -216,20 +216,20 @@
       <p>If a listing's price rises above the day's cheapest-N cut-off, it simply is not fetched. The dashboard checks a vanished car's last price against that cut-off and labels it <em>priced above today's cut-off</em> rather than <em>gone</em>, and the report leaves those out of its "gone" list. Anything else would be a guess dressed up as a fact.</p>
     </div>
 
-    <h2 id="local">What counts as drivable — states first, then a radius</h2>
+    <h2 id="local">What counts as drivable — your states, nothing else</h2>
     <p>The first version scoped by city: a 200-mile radius around each of three Midwest cities, with listings placed by their coordinates. It returned one or two local cars a day, while the same cars showed up in the national results with Midwest addresses.</p>
     <p>The cause took a week to find. For listings it cannot geocode, the API returns coordinates of exactly (0, 0) — a point in the Atlantic off West Africa, about 5,900 miles from Indianapolis. Those values are not null, so every emptiness check passed them through, and the distance math confidently placed the cars outside every radius. About 7% of listings were affected, including the two cheapest i5 eDrive40s in Indianapolis.</p>
     <p>SpicyCar checks <strong>state, and only state</strong>: a listing is drivable when its own <code>state</code> field is one of the buyer's states. No coordinates are involved, so a car the API could not place on the map still lands in the right bucket — and the line sits exactly where the buyer drew it. There used to be a five-hour drive radius layered on top; it was removed on purpose. A radius sounds generous but it is a claim about roads that straight-line miles cannot honestly make, and it blurred the one question this bucket answers: <em>will I go get it myself?</em> States are the buyer's own answer to that. Benton Harbor, Michigan — 90 miles from Chicago — now pays the $350 shipping floor, because Michigan is not on this buyer's list; add Michigan to <code>buyer.states</code> and every Michigan car flips to drivable on the next run.</p>
     <div class="sc-callout sc-callout--ink">
       <div class="sc-callout__label">The rule that came out of it</div>
-      <p>Use the field that means the thing. State was on every record from the start; deriving it from coordinates was a mistake that looked like a feature. The radius came back only once the coordinates could be trusted — and it decides in the buyer's favour, never against a car the map cannot place.</p>
+      <p>Use the field that means the thing. State was on every record from the start; deriving it from coordinates was a mistake that looked like a feature. The radius never came back: state alone decides, so the line is the buyer's own — and a car the map cannot place still lands in the right bucket.</p>
     </div>
     <p>One more honesty note, about privacy this time: every distance measures from a <strong>public anchor</strong> — downtown Chicago, set as coordinates in the config — never from anyone's home. A published distance is an exact constraint, and hundreds of dealer coordinates plus a distance each would pin a private origin down to a city block no matter how the numbers were rounded. Anchoring to a public point makes the whole question moot. Distances are also rounded to 25 miles, because they are estimates for judging a drive, not measurements.</p>
 
     <h2 id="reading">Reading the dashboard</h2>
     <p>In the order the page presents them — what you can buy first, the evidence behind it next, the reference material last.</p>
     <ul>
-      <li><strong>Filters</strong> — a bar directly under the tiles that stays pinned to the top as you scroll, so the controls are always to hand and never below the things they change. It names what it is doing ("showing 232 of 629 cars · IL"); on a phone it collapses to a single row that expands on tap. <strong>Where</strong> is a multi-select: press any mix of your states and "Beyond"; nothing pressed means everywhere. It narrows the whole page — tiles, picks, tables — and your selection is remembered between visits.</li>
+      <li><strong>Filters</strong> — a bar directly under the tiles that stays pinned to the top as you scroll, so the controls are always to hand and never below the things they change. It names what it is doing ("showing 232 of 629 cars · IL"); on a phone it collapses to a single row that expands on tap. <strong>Where</strong> is a multi-select: press any mix of your states and "beyond"; nothing pressed means everywhere. It narrows the whole page — tiles, picks, tables — and your selection is remembered between visits.</li>
       <li><strong>Spicy picks</strong> — two lists, on the front page across every model and on each model within it: the best values in your states, and the best worth shipping from anywhere else. Photo (press it to open the listing), asking price, the shipping line, and how far under typical the car sits — a strong saving is green, a slim one grey, so a 2% pick never wears the same badge as a 30% one. Each card says whether the model is one you are <em>shopping</em> or a <em>comparison</em>, and the shopped ones lead. On a phone the nationwide list folds behind its own headline. Recomputed as you filter.</li>
       <li><strong>Listings</strong> — one row per VIN with photo, asking, miles, the shipping estimate, asking plus shipping, history flags (rental and fleet cars are marked), distance from home, days on market, and a price sparkline. Filter by trim, where, year and miles, hide accidents, hide rentals and fleet; sort by drivable-first (the default), newest, asking, asking plus shipping, best value vs typical, miles, biggest drop, cut at the latest snapshot, or longest on market. The table shows the top thirty under the current sort; one press shows them all. On a phone each car becomes a stacked card instead of a table; on a desktop the vehicle column stays pinned while the rest scrolls, and the landed total sits beside the shipping estimate rather than in a column of its own.</li>
       <li><strong>Price against miles</strong> — on every model page: one dot per car, filled when drivable, hollow when it pays shipping, the spicy picks ringed, and a dashed typical-value line per model year — a dot below its year's line asks less than a typical car of that year, miles allowed for. Hover a line or press its year chip to light up that year's cars; hover a dot for the car, click to open the listing.</li>

@@ -6,10 +6,10 @@
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#111F31">
 <title>SpicyCar</title>
-<meta name="description" content="SpicyCar — a used-car purchase analyzer. Every model on the watchlist, snapshotted daily, with asking prices, shipping stated, and the cheapest cars nationwide and in your own states.">
+<meta name="description" content="SpicyCar — a used-car purchase analyzer. Every model on the watchlist, on a dashboard updated daily: asking prices as listed, shipping stated, and the cheapest cars nationwide and in your own states.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="SpicyCar — used-car purchase analyzer">
-<meta property="og:description" content="Every model on the watchlist, snapshotted daily: asking prices, shipping stated per car, the cheapest nationwide and in your own states, and how each model moves over time. Built on the free tier of one API and GitHub Actions.">
+<meta property="og:description" content="Every model on the watchlist, on a dashboard updated daily: asking prices, shipping stated per car, the cheapest nationwide and in your own states, and how each model moves over time. Built on the free tier of one API and GitHub Actions.">
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
@@ -194,7 +194,7 @@
 
 <main class="sc-wrap sc-wrap--wide sc-stack" id="main">
   <div class="sc-title">
-    <div class="sc-eyebrow sc-eyebrow--case" id="eyebrow">Analyzer</div>
+    <div class="sc-eyebrow sc-eyebrow--case" id="eyebrow">analyzer</div>
     <h1 id="h1">Loading snapshot…</h1>
     <p class="sc-dek" id="dek"></p>
     <div class="sc-meta" id="meta"></div>
@@ -1607,7 +1607,7 @@
   function whereOpts() {
     const buyer = (S.site || {}).buyer || {}, states = buyer.states || [], names = buyer.state_names || {};
     const opts = states.map((s) => [s, s, names[s] || s]);
-    opts.push(['beyond', 'Beyond', 'Outside your states — shipping added']);
+    opts.push(['beyond', 'beyond', 'Outside your states — shipping added']);
     return opts;
   }
   const whereLabel = (key) => { const o = whereOpts().find((x) => x[0] === key); return o ? o[1] : key; };
@@ -1634,7 +1634,7 @@
   const SORT_DESC = { days_listed: true, newest: true };
 
   // ---------- navigation ----------
-  function brandLabel(id) { return id === 'all' ? 'All' : (S.site.brands[id].label || id); }
+  function brandLabel(id) { return id === 'all' ? 'all' : (S.site.brands[id].label || id); }
   // The address bar follows the view, so the back button and a shared link both work.
   function syncUrl(replace) {
     const q = new URLSearchParams();
@@ -1844,8 +1844,8 @@
       el('div', { class: 'picks-head' },
         el('h2', { class: 'picks-title sc-with-mark' }, 'Spicy picks', markImg()),
         el('p', { class: 'sc-hint' }, picksRule())),
-      group(`Drivable — ${scopeTxt()}`, local, 'Nothing drivable qualifies yet — the best of the rest is below.'),
-      group('Worth the ship — nationwide', far, 'Nothing beyond your states qualifies under these filters.', true)));
+      group(`drivable — ${scopeTxt()}`, local, 'Nothing drivable qualifies yet — the best of the rest is below.'),
+      group('worth the ship — nationwide', far, 'Nothing beyond your states qualifies under these filters.', true)));
     host.hidden = false;
   }
   // The shortlist: the cars actually being decided on, pinned to the front
@@ -1885,7 +1885,7 @@
     host.appendChild(el('div', { class: 'sc-callout sc-callout--spice' },
       el('div', { class: 'sc-callout__label sc-with-mark' }, 'shortlist', markImg()),
       el('div', { class: 'sc-grid picks-grid' }, ...vins.map((v) => shortlistCard(v, map[v]))),
-      el('p', { class: 'sc-hint' }, 'The specific cars being decided on, watched by VIN — set in targets.json under buyer.shortlist.')));
+      el('p', { class: 'sc-hint' }, 'The specific cars being decided on, watched by VIN — your shortlist, pinned to the front page.')));
     host.hidden = false;
   }
 
@@ -1914,7 +1914,7 @@
     const states = (S.site.buyer || {}).states || [];
     const whereNow = S.where.size ? [...S.where].map(whereLabel) : states;
     if (S.brand === 'all') {
-      $('eyebrow').textContent = ['Watchlist', whereNow.join(' · ')].filter(Boolean).join(' · ');
+      $('eyebrow').textContent = ['watchlist', whereNow.join(' · ')].filter(Boolean).join(' · ');
       return;
     }
     const t = model(), brand = S.site.brands[S.brand];
@@ -1922,8 +1922,8 @@
     const years = trim && trim.years && trim.years.length ? trim.years : (t.years || []);
     const yearSpan = years.length > 1 ? `${years[0]}–${years[years.length - 1]}` : (years[0] || '');
     const anyShopping = (((S.site.buyer || {}).shopping || []).length > 0);
-    const role = anyShopping ? (t.shopping ? 'Shopping' : 'Comparison') : null;
-    $('eyebrow').textContent = [brand.label, yearSpan, whereNow.join(' · '), role].filter(Boolean).join(' · ') || 'Analyzer';
+    const role = anyShopping ? (t.shopping ? 'shopping' : 'comparison') : null;
+    $('eyebrow').textContent = [brand.label, yearSpan, whereNow.join(' · '), role].filter(Boolean).join(' · ') || 'analyzer';
   }
   function renderHeader() {
     const t = model(), site = S.site, brand = site.brands[S.brand];
@@ -1989,7 +1989,7 @@
     if (!filteredView && today) tile1.appendChild(deltaEl(today.min_price, prev && prev.min_price, prev && prev.date, true, daily.length));
     host.appendChild(tile1);
 
-    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
+    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
       el('div', { class: 'sc-tile__value' }, bestLocal ? money(bestLocal.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestLocal
         ? `${bestLocal.year} · ${num(bestLocal.miles)} mi · ${placeTxt(bestLocal)} · no shipping`
@@ -2341,7 +2341,7 @@
     document.title = `The watchlist — ${site.app || 'SpicyCar'}`;
     // One sentence of purpose. The shipping formula lives in how.html; repeating
     // it here cost the phone fold and said nothing a buyer can act on.
-    $('dek').textContent = `${rows.length} electric cars, priced every day for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
+    $('dek').textContent = `${rows.length} electric cars, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
     metaRow([`Data through ${fmtDateLong(dataThrough())}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
     segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand, 'tab-brand');
@@ -2376,7 +2376,7 @@
     const bestRow = rows.filter((r) => r.best).reduce((a, r) => (!a || r.best.price < a.best.price ? r : a), null);
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
     const host = $('kpis'); host.textContent = '';
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping` : 'Nothing drivable under these filters')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
