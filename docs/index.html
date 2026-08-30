@@ -1717,7 +1717,8 @@
     else if (x.owners > 1) words.push(`${x.owners} owners`);
     if (x.accidents === 0) words.push('no accidents');
     if ((x.usage || '').toLowerCase().includes('lease')) words.push('ex-lease');
-    if (!words.length && !(x.accidents > 0)) return null;
+    // "no data" is a statement, not a gap — the full table says it, so this must too
+    if (!words.length && !(x.accidents > 0)) words.push('history n/a');
     return el('div', { class: 'sc-note' },
       x.accidents > 0 ? el('span', { class: 'sc-chip sc-chip--danger' }, `${x.accidents} accident${x.accidents > 1 ? 's' : ''}`) : null,
       x.accidents > 0 && words.length ? ' ' : null,
