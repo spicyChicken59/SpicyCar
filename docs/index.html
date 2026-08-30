@@ -53,12 +53,12 @@
      in the tap handler keeps precision honest. No cursor either — a huge
      zoomed halo's outer ring dismisses rather than opens, so it must not
      advertise a pointer. */
-  #map .sc-dot-hit { fill: none; stroke: none; pointer-events: all; }
+  #map .dot-hit { fill: none; stroke: none; pointer-events: all; }
   /* The scatter wears the same halos on coarse pointers. Its svg rebuilds
      wholesale on every filter change, so these need no is-off syncing —
      they die with the rebuild. Sized once per build, in user units, to
      ~25px on screen at the card's rendered width. */
-  #scatter .sc-dot-hit { fill: none; stroke: none; pointer-events: all; }
+  #scatter .dot-hit { fill: none; stroke: none; pointer-events: all; }
   /* The gaps between the zoom buttons must not eat a tap meant for a dot */
   #map .sc-map__btns { pointer-events: none; }
   #map .sc-map__btns .sc-map__btn { pointer-events: auto; }
@@ -109,7 +109,7 @@
   /* Bridge, dense surfaces — touch targets below the masthead block above.
      Two mechanisms, split by whether layout may move:
 
-     1) Halos, keyed to (any-pointer: coarse) — the #map/#scatter .sc-dot-hit
+     1) Halos, keyed to (any-pointer: coarse) — the #map/#scatter .dot-hit
         precedent: they change ZERO layout or pixels, so a hybrid laptop earns
         them too. An invisible ::before overlay grows the HIT box, never the
         painted box — padding would repaint .sc-link--quiet's underline 8px
@@ -882,7 +882,7 @@
         anchorEl.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
         // clicks and taps reach the anchor through the delegated handler below
         if (COARSE) {   // the anchor's halo, so home is tappable too
-          const ahit = svgEl('circle', { class: 'sc-dot-hit', cx: anchorEl.getAttribute('cx'),
+          const ahit = svgEl('circle', { class: 'dot-hit', cx: anchorEl.getAttribute('cx'),
             cy: anchorEl.getAttribute('cy'), r: 1 });
           ahit.style.cursor = 'help';
           svg.appendChild(ahit);
@@ -925,7 +925,7 @@
         // cap below does the actual disambiguation. r is sized once, below.
         let hit = null;
         if (COARSE) {
-          hit = svgEl('circle', { class: 'sc-dot-hit is-off', cx, cy, r: 1 });
+          hit = svgEl('circle', { class: 'dot-hit is-off', cx, cy, r: 1 });
           halos.push(hit);
         }
         svg.appendChild(dot);
@@ -938,7 +938,7 @@
       svg.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
       svg.addEventListener('click', (e) => {
         const cl = e.target.classList;
-        if (!cl || !(cl.contains('sc-dot') || cl.contains('sc-dot-hit') || cl.contains('sc-map__anchor'))) return;
+        if (!cl || !(cl.contains('sc-dot') || cl.contains('dot-hit') || cl.contains('sc-map__anchor'))) return;
         if (VIEW.dragDistance() > 4) return;             // that was a pan, not a click
         // A precise pointer that clicked a painted mark means THAT mark — the
         // hovered dot and the opened car must be the same car even when two
@@ -966,15 +966,15 @@
       // a mouse paired with a touch-primary device hovers the halos; give it
       // the same nearest-car tooltip instead of nothing
       svg.addEventListener('pointerover', (e) => {
-        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('dot-hit')) return;
         const en = nearestEntry(e.clientX, e.clientY);
         if (en && !en.anchor) fillTip(en.c, e.clientX, e.clientY, false);
         else if (en && en.anchor && showAnchorTip) showAnchorTip(e.clientX, e.clientY);
       });
       svg.addEventListener('pointerout', (e) => {
-        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('dot-hit')) return;
         const rt = e.relatedTarget;
-        if (!(rt && rt.classList && (rt.classList.contains('sc-dot-hit') || rt.classList.contains('sc-dot')))) hideTip();
+        if (!(rt && rt.classList && (rt.classList.contains('dot-hit') || rt.classList.contains('sc-dot')))) hideTip();
       });
       host.appendChild(svg);
       host.appendChild(tip);
@@ -1000,7 +1000,7 @@
           clearTimeout(hintTimer);
           hintTimer = setTimeout(() => scrollHint.classList.remove('is-on'), 1200);
         },
-        isPointNode: (n) => n.classList && (n.classList.contains('sc-dot') || n.classList.contains('sc-dot-hit')),
+        isPointNode: (n) => n.classList && (n.classList.contains('sc-dot') || n.classList.contains('dot-hit')),
         onPressBackground: hideTip,
         onDragStart: hideTip,
       });
@@ -1358,11 +1358,11 @@
     svg.addEventListener('pointerdown', (e) => {
       lastPtr = e.pointerType || 'mouse';
       const cl = e.target.classList;
-      if (!(cl && (cl.contains('sc-dot') || cl.contains('sc-dot-hit')))) hideTip();
+      if (!(cl && (cl.contains('sc-dot') || cl.contains('dot-hit')))) hideTip();
     });
     svg.addEventListener('click', (e) => {
       const cl = e.target.classList;
-      if (!cl || !(cl.contains('sc-dot') || cl.contains('sc-dot-hit'))) return;
+      if (!cl || !(cl.contains('sc-dot') || cl.contains('dot-hit'))) return;
       // Same rule as the map: a precise pointer that clicked a painted dot
       // opens that dot, never an overlapping neighbour with a nearer centre.
       let k = null;
@@ -1381,14 +1381,14 @@
     // a mouse paired with a touch-primary device hovers the halos; give it
     // the same nearest-car tooltip instead of nothing
     svg.addEventListener('pointerover', (e) => {
-      if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+      if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('dot-hit')) return;
       const k = nearestPt(e.clientX, e.clientY);
       if (k) fillTip(k.x, e.clientX, e.clientY, false);
     });
     svg.addEventListener('pointerout', (e) => {
-      if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+      if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('dot-hit')) return;
       const rt = e.relatedTarget;
-      if (!(rt && rt.classList && (rt.classList.contains('sc-dot-hit') || rt.classList.contains('sc-dot')))) hideTip();
+      if (!(rt && rt.classList && (rt.classList.contains('dot-hit') || rt.classList.contains('sc-dot')))) hideTip();
     });
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
@@ -1410,7 +1410,7 @@
       // The halo: a listener-less tap catcher, invisible, no data-year — the
       // year highlight's opacity sweep never touches it (nothing to dim), and
       // the nearest-dot cap above does the actual disambiguation.
-      if (COARSE) halos.push(svgEl('circle', { class: 'sc-dot-hit', cx, cy, r: 1 }));
+      if (COARSE) halos.push(svgEl('circle', { class: 'dot-hit', cx, cy, r: 1 }));
       kOrder.push({ x, dot });
     }
     host.appendChild(svg);
