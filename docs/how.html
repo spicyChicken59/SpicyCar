@@ -28,6 +28,13 @@
   /* Inline diagrams — everything wears the theme's own tokens */
   .diagram { margin: 20px 0; }
   .diagram svg { display: block; width: 100%; height: auto; }
+  /* dg-* — the hand-drawn SVG explainer vocabulary: boxes, arrows, labelled
+     bars. consumer-lint flags all ten as promotion candidates, and it is right
+     that they are generic — nothing below knows about cars. Deliberately NOT
+     promoted yet: one consumer, used once, and a promoted family must be
+     demonstrated and maintained in the style guide (anti-accretion rule 12).
+     The day a second project draws an explainer diagram, this block moves
+     upstream as .sc-diagram and both pages delete their copy. */
   .dg-box { fill: var(--sc-surface); stroke: var(--sc-border); }
   .dg-box--core { stroke: var(--sc-brand-line); stroke-width: 1.5; }
   .dg-title { font: 600 13.5px var(--sc-font-body); fill: var(--sc-heading); }
