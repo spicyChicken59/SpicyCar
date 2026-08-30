@@ -224,7 +224,7 @@
          36479
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK01RCR76593",
@@ -296,7 +296,7 @@
          36997
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK08RCS83536",
@@ -364,7 +364,7 @@
          37677
         ]
        ],
-       "stale_pct": 0.95
+       "stale_pct": 0.94
       },
       {
        "vin": "WBY33FK02RCS83564",
@@ -436,7 +436,7 @@
          38498
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK07RCS83186",
@@ -444,18 +444,18 @@
        "trim": "eDrive40",
        "trim_id": "bmw-i5-edrive40",
        "trim_label": "eDrive40",
-       "state": "CA",
+       "state": "OR",
        "local": false,
-       "lat": 38.4797,
-       "lon": -121.4438,
-       "distance": 1800,
-       "ship": 1170,
+       "lat": 45.484,
+       "lon": -122.5973,
+       "distance": 1750,
+       "ship": 1138,
        "miles": 27237,
        "price": 38990,
-       "adj": 40160,
+       "adj": 40128,
        "msrp": 66800,
        "dealer": "Carvana",
-       "city": "Sacramento",
+       "city": "Portland",
        "url": "https://www.carvana.com/vehicle/4531340",
        "image": "https://retail.photos.vin/WBY33FK07RCS83186-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?partner=CVN_0&vin=WBY33FK07RCS83186",
@@ -576,7 +576,7 @@
          39862
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.29
       },
       {
        "vin": "WBY33FK08RCS78319",
@@ -700,7 +700,7 @@
          39995
         ]
        ],
-       "stale_pct": 0.34
+       "stale_pct": 0.32
       },
       {
        "vin": "WBY33FK06RCR47204",
@@ -772,7 +772,7 @@
          39997
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK07RCR36227",
@@ -789,13 +789,13 @@
        "miles": 42121,
        "price": 39998,
        "adj": 40388,
-       "msrp": null,
-       "dealer": "bmw of rockville",
-       "city": "Rockville",
+       "msrp": 66800,
+       "dealer": "AutoNation Chevrolet Timonium",
+       "city": "Timonium",
        "url": "https://bmwrockville.com/used/BMW/2024-BMW-i5-41f68777ac18090da9ed9f9d122f2219.htm",
        "image": "https://retail.photos.vin/WBY33FK07RCR36227-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK07RCR36227&partner=FRD_2",
-       "color": "Tanzanite Blue II",
+       "color": "Tanzanite Blue II Metallic",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
@@ -896,7 +896,7 @@
          39998
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK06RCR58557",
@@ -1024,18 +1024,18 @@
        "trim": "eDrive40",
        "trim_id": "bmw-i5-edrive40",
        "trim_label": "eDrive40",
-       "state": "CA",
+       "state": "AZ",
        "local": false,
-       "lat": 38.4797,
-       "lon": -121.4438,
-       "distance": 1800,
-       "ship": 1170,
+       "lat": 33.5623,
+       "lon": -112.0559,
+       "distance": 1450,
+       "ship": 942,
        "miles": 29317,
        "price": 40990,
-       "adj": 42160,
+       "adj": 41932,
        "msrp": 66800,
        "dealer": "Carvana",
-       "city": "Sacramento",
+       "city": "Phoenix",
        "url": "https://www.carvana.com/vehicle/4571921",
        "image": "https://retail.photos.vin/WBY33FK05RCS80027-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?partner=CVN_0&vin=WBY33FK05RCS80027",
@@ -1088,7 +1088,7 @@
          40990
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY33FK00RCP55213",
@@ -1160,7 +1160,7 @@
          40997
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK06RCR89422",
@@ -1204,6 +1204,78 @@
         ]
        ],
        "stale_pct": 0.01
+      },
+      {
+       "vin": "WBY33FK00SCT64147",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "state": "FL",
+       "local": false,
+       "lat": 26.05406,
+       "lon": -80.2532,
+       "distance": 1175,
+       "ship": 764,
+       "miles": 18074,
+       "price": 41588,
+       "adj": 42352,
+       "msrp": 67100,
+       "dealer": "University Mitsubishi",
+       "city": "Davie",
+       "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK00SCT64147",
+       "image": "https://retail.photos.vin/WBY33FK00SCT64147-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK00SCT64147&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Rental Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-15",
+       "days_listed": 15,
+       "first_seen": "2026-08-23",
+       "cuts": 3,
+       "delta": -3000,
+       "days_tracked": 8,
+       "series": [
+        [
+         "2026-08-23",
+         44588
+        ],
+        [
+         "2026-08-24",
+         44588
+        ],
+        [
+         "2026-08-25",
+         44588
+        ],
+        [
+         "2026-08-26",
+         42488
+        ],
+        [
+         "2026-08-27",
+         42488
+        ],
+        [
+         "2026-08-28",
+         43937
+        ],
+        [
+         "2026-08-29",
+         42188
+        ],
+        [
+         "2026-08-30",
+         41588
+        ]
+       ],
+       "stale_pct": 0.32
       },
       {
        "vin": "WBY33FK04RCS86613",
@@ -1292,8 +1364,8 @@
        "miles": 21736,
        "price": 41645,
        "adj": 42766,
-       "msrp": null,
-       "dealer": "bmw of buena park",
+       "msrp": 66800,
+       "dealer": "BMW of Buena Park",
        "city": "Buena Park",
        "url": "https://bmwbuenapark.com/used/BMW/2024-BMW-i5-674d649fac1851c1ca6e0f38917fdd8a.htm",
        "image": "https://retail.photos.vin/WBY33FK06RCR93843-1.jpg",
@@ -1347,7 +1419,7 @@
          41645
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK04RCR68522",
@@ -1430,9 +1502,9 @@
        "miles": 31492,
        "price": 41905,
        "adj": 42506,
-       "msrp": null,
-       "dealer": "bmw of the woodlands",
-       "city": "Conroe",
+       "msrp": 66800,
+       "dealer": "BMW of The Woodlands",
+       "city": "The Woodlands",
        "url": "https://bmwofthewoodlands.com/used/BMW/2024-BMW-i5-bed898c8ac1843b4d08f34f950be5f76.htm",
        "image": "https://retail.photos.vin/WBY33FK09RCS35723-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK09RCS35723&partner=FRD_2",
@@ -1481,7 +1553,7 @@
          41905
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK09RCP95158",
@@ -1552,7 +1624,7 @@
          41977
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK05RCS37890",
@@ -1624,7 +1696,7 @@
          41987
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK06RCR50278",
@@ -1641,19 +1713,18 @@
        "miles": 40530,
        "price": 41990,
        "adj": 43160,
-       "msrp": null,
-       "dealer": "niello acura",
-       "city": "Roseville",
+       "msrp": 66800,
+       "dealer": "Niello BMW Elk Grove",
+       "city": "Elk Grove",
        "url": "https://niello.com/certified/BMW/2024-BMW-i5-06a2060dac1846fa1e332511092a5081.htm",
        "image": "https://retail.photos.vin/WBY33FK06RCR50278-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK06RCR50278&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
-       "cpo": true,
+       "color": "Black",
+       "cpo": false,
        "owners": 2,
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
-        "CPO",
         "2 owners",
         "no accidents"
        ],
@@ -1769,79 +1840,7 @@
          41998
         ]
        ],
-       "stale_pct": 0.91
-      },
-      {
-       "vin": "WBY33FK00SCT64147",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "state": "FL",
-       "local": false,
-       "lat": 26.05406,
-       "lon": -80.2532,
-       "distance": 1175,
-       "ship": 764,
-       "miles": 18074,
-       "price": 42188,
-       "adj": 42952,
-       "msrp": 67100,
-       "dealer": "University Mitsubishi",
-       "city": "Davie",
-       "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK00SCT64147",
-       "image": "https://retail.photos.vin/WBY33FK00SCT64147-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK00SCT64147&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Rental Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-15",
-       "days_listed": 15,
-       "first_seen": "2026-08-23",
-       "cuts": 2,
-       "delta": -2400,
-       "days_tracked": 8,
-       "series": [
-        [
-         "2026-08-23",
-         44588
-        ],
-        [
-         "2026-08-24",
-         44588
-        ],
-        [
-         "2026-08-25",
-         44588
-        ],
-        [
-         "2026-08-26",
-         42488
-        ],
-        [
-         "2026-08-27",
-         42488
-        ],
-        [
-         "2026-08-28",
-         43937
-        ],
-        [
-         "2026-08-29",
-         42188
-        ],
-        [
-         "2026-08-30",
-         42188
-        ]
-       ],
-       "stale_pct": 0.34
+       "stale_pct": 0.9
       },
       {
        "vin": "WBY33FK02RCS61015",
@@ -1913,7 +1912,7 @@
          42500
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY33FK0XRCP53727",
@@ -1984,7 +1983,7 @@
          42531
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK03RCS37886",
@@ -2079,11 +2078,11 @@
        "url": "https://ecarone.com/used/BMW/2024-BMW-i5-near-dallas-tx-1cb49c13ac1832e951f5fea7d2565774.htm",
        "image": "https://retail.photos.vin/WBY33FK08RCR89549-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK08RCR89549&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "color": "Black",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Corporate Fleet",
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
         "no accidents"
@@ -2200,7 +2199,7 @@
          42987
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.38
       },
       {
        "vin": "WBY33FK09RCR29277",
@@ -2273,7 +2272,7 @@
          42990
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY33FK06RCP59377",
@@ -2407,7 +2406,7 @@
          42999
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.29
       },
       {
        "vin": "WBY33FK07RCR83662",
@@ -2432,10 +2431,11 @@
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK07RCR83662&partner=FRD_2",
        "color": "Gray",
        "cpo": false,
-       "owners": 0,
+       "owners": 2,
        "accidents": 0,
        "usage": "Vehicle Use",
        "flags": [
+        "2 owners",
         "no accidents"
        ],
        "listed_since": "2026-08-09",
@@ -2478,7 +2478,7 @@
          43094
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK03SCT63915",
@@ -2550,7 +2550,71 @@
          43514
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
+      },
+      {
+       "vin": "WBY33FK0XRCP37866",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "state": "CA",
+       "local": false,
+       "lat": 37.32375,
+       "lon": -121.97793,
+       "distance": 1850,
+       "ship": 1202,
+       "miles": 21404,
+       "price": 43568,
+       "adj": 44770,
+       "msrp": 66800,
+       "dealer": "Stevens Creek BMW",
+       "city": "Santa Clara",
+       "url": "https://www.carfax.com/vehicle/WBY33FK0XRCP37866",
+       "image": "https://retail.photos.vin/WBY33FK0XRCP37866-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK0XRCP37866&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-11",
+       "days_listed": 19,
+       "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": -511,
+       "days_tracked": 6,
+       "series": [
+        [
+         "2026-08-23",
+         44079
+        ],
+        [
+         "2026-08-24",
+         44079
+        ],
+        [
+         "2026-08-25",
+         44079
+        ],
+        [
+         "2026-08-26",
+         44079
+        ],
+        [
+         "2026-08-28",
+         44079
+        ],
+        [
+         "2026-08-30",
+         43568
+        ]
+       ],
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY33FK01RCP17182",
@@ -2682,7 +2746,7 @@
          43590
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY33FK00RCS84678",
@@ -2829,66 +2893,6 @@
        "stale_pct": 0.28
       },
       {
-       "vin": "WBY33FK02RCS84701",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "state": "AR",
-       "local": false,
-       "lat": 36.34578,
-       "lon": -94.18438,
-       "distance": 525,
-       "ship": 350,
-       "miles": 23043,
-       "price": 43631,
-       "adj": 43981,
-       "msrp": 66800,
-       "dealer": "BMW Northwest Arkansas",
-       "city": "Bentonville",
-       "url": "https://www.carfax.com/vehicle/WBY33FK02RCS84701",
-       "image": "https://retail.photos.vin/WBY33FK02RCS84701-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK02RCS84701&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Rental Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -500,
-       "days_tracked": 5,
-       "series": [
-        [
-         "2026-08-25",
-         44131
-        ],
-        [
-         "2026-08-26",
-         43631
-        ],
-        [
-         "2026-08-27",
-         43631
-        ],
-        [
-         "2026-08-29",
-         43631
-        ],
-        [
-         "2026-08-30",
-         43631
-        ]
-       ],
-       "stale_pct": 0.49
-      },
-      {
        "vin": "WBY33FK05RCS39462",
        "year": 2024,
        "trim": "eDrive40",
@@ -2911,10 +2915,13 @@
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK05RCS39462&partner=FRD_2",
        "color": "White",
        "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Rental Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
        "listed_since": "2026-06-25",
        "days_listed": 66,
        "first_seen": "2026-08-23",
@@ -3027,7 +3034,7 @@
          44582
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK06RCR98802",
@@ -3155,7 +3162,7 @@
          44998
         ]
        ],
-       "stale_pct": 0.34
+       "stale_pct": 0.32
       },
       {
        "vin": "WBY33FK0XRCR35394",
@@ -3178,12 +3185,16 @@
        "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK0XRCR35394",
        "image": "https://retail.photos.vin/WBY33FK0XRCR35394-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK0XRCR35394&partner=FRD_2",
-       "color": "Black",
+       "color": "Black Sapphire Metallic",
        "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Lease",
+       "flags": [
+        "1-owner",
+        "no accidents",
+        "ex-lease"
+       ],
        "listed_since": "2026-06-27",
        "days_listed": 64,
        "first_seen": "2026-08-23",
@@ -3224,7 +3235,7 @@
          45209
         ]
        ],
-       "stale_pct": 0.96
+       "stale_pct": 0.95
       },
       {
        "vin": "WBY33FK06RCR64195",
@@ -3296,7 +3307,7 @@
          45290
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK0XRCR64149",
@@ -3421,7 +3432,7 @@
          45717
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK09SCT64650",
@@ -3493,7 +3504,7 @@
          45990
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY33FK06RCR88075",
@@ -3568,21 +3579,20 @@
        "distance": 1750,
        "ship": 1138,
        "miles": 5171,
-       "price": 45998,
-       "adj": 47136,
-       "msrp": null,
-       "dealer": "bmw mini of monrovia",
-       "city": "Monrovia",
+       "price": 46078,
+       "adj": 47216,
+       "msrp": 66800,
+       "dealer": "Beverly Hills BMW",
+       "city": "Los Angeles",
        "url": "https://bmwofmonrovia.net/certified/BMW/2024-BMW-i5-near-Los-Angeles-ca9ec478ac1854b88187b0c1815b8aba.htm",
        "image": "https://retail.photos.vin/WBY33FK03RCP55559-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK03RCP55559&partner=FRD_2",
-       "color": "Alpine White",
-       "cpo": true,
+       "color": "White",
+       "cpo": false,
        "owners": 1,
        "accidents": 0,
        "usage": "Personal Use",
        "flags": [
-        "CPO",
         "1-owner",
         "no accidents"
        ],
@@ -3590,7 +3600,7 @@
        "days_listed": 21,
        "first_seen": "2026-08-23",
        "cuts": 2,
-       "delta": -1,
+       "delta": 79,
        "days_tracked": 8,
        "series": [
         [
@@ -3623,10 +3633,10 @@
         ],
         [
          "2026-08-30",
-         45998
+         46078
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK04RCP70801",
@@ -3802,7 +3812,7 @@
          46470
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG09SCS84860",
@@ -3862,7 +3872,7 @@
          46538
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK03RCR45219",
@@ -3987,7 +3997,7 @@
          46998
         ]
        ],
-       "stale_pct": 0.89
+       "stale_pct": 0.88
       },
       {
        "vin": "WBY33FK00RCR18216",
@@ -4118,7 +4128,7 @@
          47359
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK01RCR49667",
@@ -4172,55 +4182,6 @@
         ]
        ],
        "stale_pct": 0.08
-      },
-      {
-       "vin": "WBY33FK03SCT79709",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "state": "NC",
-       "local": false,
-       "lat": 36.06046,
-       "lon": -79.87755,
-       "distance": 575,
-       "ship": 374,
-       "miles": 21200,
-       "price": 47862,
-       "adj": 48236,
-       "msrp": null,
-       "dealer": "bmw of greensboro",
-       "city": "Greensboro",
-       "url": "https://bmwofgreensboro.com/inventory/Used-2025-BMW-i5-eDrive40-WBY33FK03SCT79709",
-       "image": "https://retail.photos.vin/WBY33FK03SCT79709-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK03SCT79709&partner=FRD_2",
-       "color": "Dark Graphite Metallic",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-28",
-       "days_listed": 2,
-       "first_seen": "2026-08-29",
-       "cuts": 1,
-       "delta": -899,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-29",
-         48761
-        ],
-        [
-         "2026-08-30",
-         47862
-        ]
-       ],
-       "stale_pct": 0.01
       },
       {
        "vin": "WBY33FK04SCT75975",
@@ -4292,7 +4253,7 @@
          48640
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG06SCS41187",
@@ -4352,79 +4313,7 @@
          48643
         ]
        ],
-       "stale_pct": 0.49
-      },
-      {
-       "vin": "WBY33FK06SCU63880",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "state": "GA",
-       "local": false,
-       "lat": 34.05967,
-       "lon": -84.324,
-       "distance": 575,
-       "ship": 374,
-       "miles": 6819,
-       "price": 48654,
-       "adj": 49028,
-       "msrp": null,
-       "dealer": "nalley bmw",
-       "city": "Decatur",
-       "url": "https://nalleybmw.com/used/BMW/2025-BMW-i5-in-Atlanta-7b35269aac18013719a6da34dc4e0804.htm",
-       "image": "https://retail.photos.vin/WBY33FK06SCU63880-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK06SCU63880&partner=FRD_2",
-       "color": "Mineral White",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-23",
-       "cuts": 1,
-       "delta": -846,
-       "days_tracked": 8,
-       "series": [
-        [
-         "2026-08-23",
-         49500
-        ],
-        [
-         "2026-08-24",
-         49500
-        ],
-        [
-         "2026-08-25",
-         49500
-        ],
-        [
-         "2026-08-26",
-         49752
-        ],
-        [
-         "2026-08-27",
-         49752
-        ],
-        [
-         "2026-08-28",
-         50598
-        ],
-        [
-         "2026-08-29",
-         48654
-        ],
-        [
-         "2026-08-30",
-         48654
-        ]
-       ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK0XSCU70010",
@@ -4497,7 +4386,7 @@
          48675
         ]
        ],
-       "stale_pct": 0.97
+       "stale_pct": 0.96
       },
       {
        "vin": "WBY33FK06RCR84771",
@@ -4569,7 +4458,55 @@
          48749
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
+      },
+      {
+       "vin": "WBY33FK03SCT79709",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "state": "NC",
+       "local": false,
+       "lat": 36.06046,
+       "lon": -79.87756,
+       "distance": 575,
+       "ship": 374,
+       "miles": 21200,
+       "price": 48761,
+       "adj": 49135,
+       "msrp": 67100,
+       "dealer": "BMW of Greensboro",
+       "city": "Greensboro",
+       "url": "https://bmwofgreensboro.com/inventory/Used-2025-BMW-i5-eDrive40-WBY33FK03SCT79709",
+       "image": "https://retail.photos.vin/WBY33FK03SCT79709-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK03SCT79709&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-28",
+       "days_listed": 2,
+       "first_seen": "2026-08-29",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-29",
+         48761
+        ],
+        [
+         "2026-08-30",
+         48761
+        ]
+       ],
+       "stale_pct": 0.01
       },
       {
        "vin": "WBY33FK09RCR29425",
@@ -4586,19 +4523,18 @@
        "miles": 23844,
        "price": 48998,
        "adj": 50152,
-       "msrp": null,
-       "dealer": "niello acura",
-       "city": "Roseville",
+       "msrp": 66800,
+       "dealer": "Niello BMW Sacramento",
+       "city": "Sacramento",
        "url": "https://niello.com/certified/BMW/2024-BMW-i5-45166335ac182f002812faeb562f63a8.htm",
        "image": "https://retail.photos.vin/WBY33FK09RCR29425-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK09RCR29425&partner=FRD_2",
-       "color": "Dark Graphite Metallic",
-       "cpo": true,
+       "color": "Gray",
+       "cpo": false,
        "owners": 1,
        "accidents": 0,
        "usage": "Personal Use",
        "flags": [
-        "CPO",
         "1-owner",
         "no accidents"
        ],
@@ -4694,7 +4630,7 @@
          49000
         ]
        ],
-       "stale_pct": 0.92
+       "stale_pct": 0.91
       },
       {
        "vin": "WBY33FK07RCR64187",
@@ -4909,13 +4845,16 @@
        "url": "https://www.autolist.com/bmw-i5#vin=WBY33FK05SCU88074",
        "image": "https://retail.photos.vin/WBY33FK05SCU88074-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK05SCU88074&partner=FRD_2",
-       "color": "Gray",
+       "color": "Mineral White Metallic",
        "cpo": true,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Lease",
        "flags": [
-        "CPO"
+        "CPO",
+        "1-owner",
+        "no accidents",
+        "ex-lease"
        ],
        "listed_since": "2026-07-29",
        "days_listed": 32,
@@ -4945,7 +4884,7 @@
          49388
         ]
        ],
-       "stale_pct": 0.92
+       "stale_pct": 0.91
       },
       {
        "vin": "WBY13HG01SCS85680",
@@ -5005,7 +4944,7 @@
          49495
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK08RCR39315",
@@ -5078,6 +5017,78 @@
         ]
        ],
        "stale_pct": 0.21
+      },
+      {
+       "vin": "WBY33FK06SCU63880",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "state": "GA",
+       "local": false,
+       "lat": 34.05967,
+       "lon": -84.324,
+       "distance": 575,
+       "ship": 374,
+       "miles": 6819,
+       "price": 49752,
+       "adj": 50126,
+       "msrp": 67100,
+       "dealer": "Audi North Atlanta",
+       "city": "Roswell",
+       "url": "https://nalleybmw.com/used/BMW/2025-BMW-i5-in-Atlanta-7b35269aac18013719a6da34dc4e0804.htm",
+       "image": "https://retail.photos.vin/WBY33FK06SCU63880-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK06SCU63880&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-23",
+       "cuts": 1,
+       "delta": 252,
+       "days_tracked": 8,
+       "series": [
+        [
+         "2026-08-23",
+         49500
+        ],
+        [
+         "2026-08-24",
+         49500
+        ],
+        [
+         "2026-08-25",
+         49500
+        ],
+        [
+         "2026-08-26",
+         49752
+        ],
+        [
+         "2026-08-27",
+         49752
+        ],
+        [
+         "2026-08-28",
+         50598
+        ],
+        [
+         "2026-08-29",
+         48654
+        ],
+        [
+         "2026-08-30",
+         49752
+        ]
+       ],
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK07SCT62315",
@@ -5273,6 +5284,58 @@
        "stale_pct": 0.23
       },
       {
+       "vin": "WBY13HG04SCS35730",
+       "year": 2025,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i5-xdrive40",
+       "trim_label": "xDrive40",
+       "state": "MD",
+       "local": false,
+       "lat": 39.067,
+       "lon": -77.127,
+       "distance": 575,
+       "ship": 374,
+       "miles": 33845,
+       "price": 50239,
+       "adj": 50613,
+       "msrp": 70100,
+       "dealer": "BMW of Rockville",
+       "city": "Rockville",
+       "url": "https://bmwrockville.com/used/BMW/2025-BMW-i5-3025d47fac18090df99629c93f1b130d.htm",
+       "image": "https://retail.photos.vin/WBY13HG04SCS35730-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG04SCS35730&partner=FRD_2",
+       "color": "Black Sapphire Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-24",
+       "days_listed": 6,
+       "first_seen": "2026-08-26",
+       "cuts": 1,
+       "delta": -555,
+       "days_tracked": 3,
+       "series": [
+        [
+         "2026-08-26",
+         50794
+        ],
+        [
+         "2026-08-28",
+         50794
+        ],
+        [
+         "2026-08-30",
+         50239
+        ]
+       ],
+       "stale_pct": 0.16
+      },
+      {
        "vin": "WBY43FK0XRCP79863",
        "year": 2024,
        "trim": "M60",
@@ -5402,59 +5465,7 @@
          50698
         ]
        ],
-       "stale_pct": 0.49
-      },
-      {
-       "vin": "WBY13HG04SCS35730",
-       "year": 2025,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i5-xdrive40",
-       "trim_label": "xDrive40",
-       "state": "MD",
-       "local": false,
-       "lat": 39.067,
-       "lon": -77.127,
-       "distance": 575,
-       "ship": 374,
-       "miles": 33845,
-       "price": 50794,
-       "adj": 51168,
-       "msrp": null,
-       "dealer": "bmw of rockville",
-       "city": "Rockville",
-       "url": "https://bmwrockville.com/used/BMW/2025-BMW-i5-3025d47fac18090df99629c93f1b130d.htm",
-       "image": "https://retail.photos.vin/WBY13HG04SCS35730-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG04SCS35730&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-24",
-       "days_listed": 6,
-       "first_seen": "2026-08-26",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-26",
-         50794
-        ],
-        [
-         "2026-08-28",
-         50794
-        ],
-        [
-         "2026-08-30",
-         50794
-        ]
-       ],
-       "stale_pct": 0.16
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK09SCT65958",
@@ -5471,8 +5482,8 @@
        "miles": 9184,
        "price": 51588,
        "adj": 52579,
-       "msrp": null,
-       "dealer": "bmw of las vegas",
+       "msrp": 67100,
+       "dealer": "BMW of Las Vegas",
        "city": "Las Vegas",
        "url": "https://bmwvegas.com/certified/BMW/2025-BMW-i5-b9b2a649ac18131151cd1f59eab9849b.htm",
        "image": "https://retail.photos.vin/WBY33FK09SCT65958-1.jpg",
@@ -5527,7 +5538,7 @@
          51588
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG08SCT69740",
@@ -5542,8 +5553,8 @@
        "distance": 1200,
        "ship": 780,
        "miles": 13621,
-       "price": 52750,
-       "adj": 53530,
+       "price": 52250,
+       "adj": 53030,
        "msrp": 70100,
        "dealer": "BMW of Miami South and Mini of Miami South",
        "city": "Miami",
@@ -5562,8 +5573,8 @@
        "listed_since": "2026-08-09",
        "days_listed": 21,
        "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
+       "cuts": 1,
+       "delta": -500,
        "days_tracked": 5,
        "series": [
         [
@@ -5584,10 +5595,70 @@
         ],
         [
          "2026-08-30",
-         52750
+         52250
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
+      },
+      {
+       "vin": "WBY13HG00SCU51722",
+       "year": 2025,
+       "trim": "xDrive40",
+       "trim_id": "bmw-i5-xdrive40",
+       "trim_label": "xDrive40",
+       "state": "PA",
+       "local": false,
+       "lat": 40.13429,
+       "lon": -75.20732,
+       "distance": 650,
+       "ship": 422,
+       "miles": 2590,
+       "price": 52476,
+       "adj": 52898,
+       "msrp": 70100,
+       "dealer": "BMW of Fort Washington",
+       "city": "Fort Washington",
+       "url": "https://bmwoffortwashington.com/certified/BMW/2025-BMW-i5-78a10dd9ac181588e4b749d9b0cef905.htm",
+       "image": "https://retail.photos.vin/WBY13HG00SCU51722-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG00SCU51722&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-23",
+       "cuts": 2,
+       "delta": -1510,
+       "days_tracked": 5,
+       "series": [
+        [
+         "2026-08-23",
+         53986
+        ],
+        [
+         "2026-08-24",
+         53986
+        ],
+        [
+         "2026-08-26",
+         52966
+        ],
+        [
+         "2026-08-28",
+         52966
+        ],
+        [
+         "2026-08-30",
+         52476
+        ]
+       ],
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK07RCR14051",
@@ -5646,7 +5717,7 @@
        "trim": "M60",
        "trim_id": "bmw-i5-m60",
        "trim_label": "M60",
-       "state": "PA",
+       "state": "NJ",
        "local": false,
        "lat": 40.43006,
        "lon": -74.51813,
@@ -5655,9 +5726,9 @@
        "miles": 31810,
        "price": 52825,
        "adj": 53280,
-       "msrp": null,
-       "dealer": "quakertown mitsubishi",
-       "city": "Quakertown",
+       "msrp": 84100,
+       "dealer": "Auto Hub",
+       "city": "North Brunswick",
        "url": "https://quakertownmitsubishi.com/used/BMW/2024-BMW-i5-caee8083ac184b0aa8ca50254f7f5dcd.htm",
        "image": "https://retail.photos.vin/WBY43FK08RCR59679-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK08RCR59679&partner=FRD_2",
@@ -5698,7 +5769,7 @@
          52825
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK06SCU73471",
@@ -5718,7 +5789,7 @@
        "msrp": 67100,
        "dealer": "Tom Bush BMW Jacksonville",
        "city": "Jacksonville",
-       "url": "https://www.tombushbmw.com/used-Jacksonville-2025-BMW-i5-eDrive40-WBY33FK06SCU73471",
+       "url": "https://www.tombushbmwop.com/used-Jacksonville-2025-BMW-i5-eDrive40-WBY33FK06SCU73471",
        "image": "https://retail.photos.vin/WBY33FK06SCU73471-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK06SCU73471&partner=FRD_2",
        "color": "Gray",
@@ -5770,68 +5841,7 @@
          52876
         ]
        ],
-       "stale_pct": 0.42
-      },
-      {
-       "vin": "WBY13HG00SCU51722",
-       "year": 2025,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i5-xdrive40",
-       "trim_label": "xDrive40",
-       "state": "PA",
-       "local": false,
-       "lat": 40.13429,
-       "lon": -75.20732,
-       "distance": 650,
-       "ship": 422,
-       "miles": 2590,
-       "price": 52966,
-       "adj": 53388,
-       "msrp": null,
-       "dealer": "bmw of fort washington",
-       "city": "Fort Washington",
-       "url": "https://bmwoffortwashington.com/certified/BMW/2025-BMW-i5-78a10dd9ac181588e4b749d9b0cef905.htm",
-       "image": "https://retail.photos.vin/WBY13HG00SCU51722-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG00SCU51722&partner=FRD_2",
-       "color": "Oxide Gray Metallic",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-23",
-       "cuts": 1,
-       "delta": -1020,
-       "days_tracked": 5,
-       "series": [
-        [
-         "2026-08-23",
-         53986
-        ],
-        [
-         "2026-08-24",
-         53986
-        ],
-        [
-         "2026-08-26",
-         52966
-        ],
-        [
-         "2026-08-28",
-         52966
-        ],
-        [
-         "2026-08-30",
-         52966
-        ]
-       ],
-       "stale_pct": 0.49
+       "stale_pct": 0.4
       },
       {
        "vin": "WBY13HG03SCT44406",
@@ -5891,7 +5901,64 @@
          53052
         ]
        ],
-       "stale_pct": 0.34
+       "stale_pct": 0.32
+      },
+      {
+       "vin": "WBY43FK02RCP56898",
+       "year": 2024,
+       "trim": "M60",
+       "trim_id": "bmw-i5-m60",
+       "trim_label": "M60",
+       "state": "CA",
+       "local": false,
+       "lat": 33.97422,
+       "lon": -118.24868,
+       "distance": 1750,
+       "ship": 1138,
+       "miles": 48807,
+       "price": 53929,
+       "adj": 55067,
+       "msrp": 84100,
+       "dealer": "BMW of Downtown LA",
+       "city": "Los Angeles",
+       "url": "https://www.autolist.com/bmw-i5#vin=WBY43FK02RCP56898",
+       "image": "https://retail.photos.vin/WBY43FK02RCP56898-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK02RCP56898&partner=FRD_2",
+       "color": "Black Sapphire Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Lease",
+       "flags": [
+        "1-owner",
+        "1 accident",
+        "ex-lease"
+       ],
+       "listed_since": "2026-08-14",
+       "days_listed": 16,
+       "first_seen": "2026-08-23",
+       "cuts": 2,
+       "delta": -992,
+       "days_tracked": 4,
+       "series": [
+        [
+         "2026-08-23",
+         54921
+        ],
+        [
+         "2026-08-26",
+         54521
+        ],
+        [
+         "2026-08-28",
+         54521
+        ],
+        [
+         "2026-08-30",
+         53929
+        ]
+       ],
+       "stale_pct": 0.38
       },
       {
        "vin": "WBY13HG08SCS39361",
@@ -5908,17 +5975,17 @@
        "miles": 30090,
        "price": 53987,
        "adj": 54361,
-       "msrp": null,
-       "dealer": "jim mckay chevrolet",
+       "msrp": 70100,
+       "dealer": "Jim McKay Chevrolet",
        "city": "Fairfax",
        "url": "https://www.jimmckaychevrolet.com/used-Fairfax-2025-BMW-i5-xDrive40-WBY13HG08SCS39361",
        "image": "https://retail.photos.vin/WBY13HG08SCS39361-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG08SCS39361&partner=FRD_2",
-       "color": "Brooklyn Grey M",
+       "color": "Brooklyn Grey Metallic",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Personal Use",
+       "usage": "Corporate Fleet",
        "flags": [
         "1-owner",
         "no accidents"
@@ -5951,7 +6018,7 @@
          53987
         ]
        ],
-       "stale_pct": 0.42
+       "stale_pct": 0.4
       },
       {
        "vin": "WBY43FK03RCP52259",
@@ -6069,7 +6136,7 @@
          54195
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK05RCS22435",
@@ -6208,64 +6275,7 @@
          54459
         ]
        ],
-       "stale_pct": 0.49
-      },
-      {
-       "vin": "WBY43FK02RCP56898",
-       "year": 2024,
-       "trim": "M60",
-       "trim_id": "bmw-i5-m60",
-       "trim_label": "M60",
-       "state": "CA",
-       "local": false,
-       "lat": 33.97422,
-       "lon": -118.24868,
-       "distance": 1750,
-       "ship": 1138,
-       "miles": 48807,
-       "price": 54521,
-       "adj": 55659,
-       "msrp": 84100,
-       "dealer": "BMW of Downtown LA",
-       "city": "Los Angeles",
-       "url": "https://www.autolist.com/bmw-i5#vin=WBY43FK02RCP56898",
-       "image": "https://retail.photos.vin/WBY43FK02RCP56898-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK02RCP56898&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Lease",
-       "flags": [
-        "1-owner",
-        "1 accident",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-14",
-       "days_listed": 16,
-       "first_seen": "2026-08-23",
-       "cuts": 1,
-       "delta": -400,
-       "days_tracked": 4,
-       "series": [
-        [
-         "2026-08-23",
-         54921
-        ],
-        [
-         "2026-08-26",
-         54521
-        ],
-        [
-         "2026-08-28",
-         54521
-        ],
-        [
-         "2026-08-30",
-         54521
-        ]
-       ],
-       "stale_pct": 0.4
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG08SCS30644",
@@ -6325,7 +6335,7 @@
          54837
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG06SCS47605",
@@ -6342,13 +6352,13 @@
        "miles": 11728,
        "price": 54893,
        "adj": 55332,
-       "msrp": null,
-       "dealer": "bmw of newton",
+       "msrp": 70100,
+       "dealer": "BMW of Newton",
        "city": "Newton",
        "url": "https://bmwnewton.com/inventory/Used-2025-BMW-i5-xDrive40-WBY13HG06SCS47605",
        "image": "https://retail.photos.vin/WBY13HG06SCS47605-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG06SCS47605&partner=FRD_2",
-       "color": "Phytonic Blue Metallic",
+       "color": "Blue",
        "cpo": false,
        "owners": 1,
        "accidents": 1,
@@ -6385,7 +6395,7 @@
          54893
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG04SCT78578",
@@ -6446,80 +6456,7 @@
          54990
         ]
        ],
-       "stale_pct": 0.43
-      },
-      {
-       "vin": "WBY33FK05RCP99465",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "state": "VA",
-       "local": false,
-       "lat": 38.87331,
-       "lon": -77.23661,
-       "distance": 575,
-       "ship": 374,
-       "miles": 16768,
-       "price": 54999,
-       "adj": 55373,
-       "msrp": null,
-       "dealer": "bmw of fairfax",
-       "city": "Fairfax",
-       "url": "https://bmwoffairfax.com/certified/BMW/2024-BMW-i5-fairfax-0344e940ac1829bdcb8ca51553583efa.htm",
-       "image": "https://retail.photos.vin/WBY33FK05RCP99465-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK05RCP99465&partner=FRD_2",
-       "color": "Brooklyn Grey Metallic",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-15",
-       "days_listed": 15,
-       "first_seen": "2026-08-23",
-       "cuts": 2,
-       "delta": 0,
-       "days_tracked": 8,
-       "series": [
-        [
-         "2026-08-23",
-         54999
-        ],
-        [
-         "2026-08-24",
-         55849
-        ],
-        [
-         "2026-08-25",
-         54999
-        ],
-        [
-         "2026-08-26",
-         55849
-        ],
-        [
-         "2026-08-27",
-         55849
-        ],
-        [
-         "2026-08-28",
-         54999
-        ],
-        [
-         "2026-08-29",
-         54999
-        ],
-        [
-         "2026-08-30",
-         54999
-        ]
-       ],
-       "stale_pct": 0.34
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY13HG02SCU85189",
@@ -6623,7 +6560,7 @@
          55215
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK00RCR21850",
@@ -6683,7 +6620,7 @@
          55337
         ]
        ],
-       "stale_pct": 0.89
+       "stale_pct": 0.88
       },
       {
        "vin": "WBY33FK04SCU69872",
@@ -6697,7 +6634,7 @@
        "lon": -111.97106,
        "distance": 1450,
        "ship": 942,
-       "miles": 11294,
+       "miles": 11323,
        "price": 55580,
        "adj": 56522,
        "msrp": 67100,
@@ -6752,9 +6689,9 @@
        "miles": 33576,
        "price": 55784,
        "adj": 56174,
-       "msrp": null,
-       "dealer": "bmw of rockville",
-       "city": "Rockville",
+       "msrp": 84100,
+       "dealer": "BMW of Towson",
+       "city": "Towson",
        "url": "https://bmwrockville.com/used/BMW/2024-BMW-i5-01cb9442ac1807716d188b7f82bd9867.htm",
        "image": "https://retail.photos.vin/WBY43FK01RCR02403-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK01RCR02403&partner=FRD_2",
@@ -6795,7 +6732,79 @@
          55784
         ]
        ],
-       "stale_pct": 0.34
+       "stale_pct": 0.32
+      },
+      {
+       "vin": "WBY33FK05RCP99465",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "state": "VA",
+       "local": false,
+       "lat": 38.87331,
+       "lon": -77.23661,
+       "distance": 575,
+       "ship": 374,
+       "miles": 16768,
+       "price": 55849,
+       "adj": 56223,
+       "msrp": 66800,
+       "dealer": "BMW of Fairfax",
+       "city": "Fairfax",
+       "url": "https://bmwoffairfax.com/certified/BMW/2024-BMW-i5-fairfax-0344e940ac1829bdcb8ca51553583efa.htm",
+       "image": "https://retail.photos.vin/WBY33FK05RCP99465-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33FK05RCP99465&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-15",
+       "days_listed": 15,
+       "first_seen": "2026-08-23",
+       "cuts": 2,
+       "delta": 850,
+       "days_tracked": 8,
+       "series": [
+        [
+         "2026-08-23",
+         54999
+        ],
+        [
+         "2026-08-24",
+         55849
+        ],
+        [
+         "2026-08-25",
+         54999
+        ],
+        [
+         "2026-08-26",
+         55849
+        ],
+        [
+         "2026-08-27",
+         55849
+        ],
+        [
+         "2026-08-28",
+         54999
+        ],
+        [
+         "2026-08-29",
+         54999
+        ],
+        [
+         "2026-08-30",
+         55849
+        ]
+       ],
+       "stale_pct": 0.32
       },
       {
        "vin": "WBY43FK07RCN81077",
@@ -6974,7 +6983,7 @@
          55991
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG08SCT19677",
@@ -7036,7 +7045,7 @@
        "price": 56085,
        "adj": 57223,
        "msrp": 84100,
-       "dealer": "Audi Bakersfield",
+       "dealer": "Volkswagen Bakersfield",
        "city": "Bakersfield",
        "url": "https://www.carfax.com/vehicle/WBY43FK05RCR42158",
        "image": "https://retail.photos.vin/WBY43FK05RCR42158-1.jpg",
@@ -7079,7 +7088,7 @@
          56085
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG07SCS61030",
@@ -7131,7 +7140,7 @@
          56297
         ]
        ],
-       "stale_pct": 0.34
+       "stale_pct": 0.32
       },
       {
        "vin": "WBY13HG06SCT75505",
@@ -7191,7 +7200,7 @@
          56309
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.42
       },
       {
        "vin": "WBY13HG05SCS15079",
@@ -7251,7 +7260,7 @@
          56668
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK03RCR97028",
@@ -7327,20 +7336,20 @@
        "miles": 13647,
        "price": 56985,
        "adj": 58106,
-       "msrp": null,
-       "dealer": "california motors direct montclair",
-       "city": "Montclair",
+       "msrp": 84100,
+       "dealer": "California Motors Direct Santa Ana",
+       "city": "Santa Ana",
        "url": "https://www.iemotorsdirect.com/pre-owned-cars/detail/x/1565352",
        "image": "https://retail.photos.vin/WBY43FK05RCR34416-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK05RCR34416&partner=FRD_2",
        "color": "Black Sapphire Metallic",
        "cpo": false,
        "owners": 2,
-       "accidents": 1,
+       "accidents": 0,
        "usage": "Personal Use",
        "flags": [
         "2 owners",
-        "1 accident"
+        "no accidents"
        ],
        "listed_since": "2026-08-13",
        "days_listed": 17,
@@ -7370,7 +7379,7 @@
          56985
         ]
        ],
-       "stale_pct": 0.41
+       "stale_pct": 0.4
       },
       {
        "vin": "WBY43FK09RCR05226",
@@ -7418,7 +7427,7 @@
          57395
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK01RCR47213",
@@ -7429,7 +7438,7 @@
        "state": "OR",
        "local": false,
        "lat": 45.51971,
-       "lon": -122.40767,
+       "lon": -122.40768,
        "distance": 1750,
        "ship": 1138,
        "miles": 9081,
@@ -7478,7 +7487,7 @@
          57490
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK06RCP07073",
@@ -7538,7 +7547,51 @@
          57500
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
+      },
+      {
+       "vin": "WBY43FK03RCP36451",
+       "year": 2024,
+       "trim": "M60",
+       "trim_id": "bmw-i5-m60",
+       "trim_label": "M60",
+       "state": "CT",
+       "local": false,
+       "lat": 41.02311,
+       "lon": -73.63861,
+       "distance": 725,
+       "ship": 471,
+       "miles": 28131,
+       "price": 57702,
+       "adj": 58173,
+       "msrp": 84100,
+       "dealer": "BMW of Greenwich - Mamaroneck",
+       "city": "Greenwich",
+       "url": "https://www.carfax.com/vehicle/WBY43FK03RCP36451",
+       "image": "https://retail.photos.vin/WBY43FK03RCP36451-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK03RCP36451&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         57702
+        ]
+       ],
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK04RCR90945",
@@ -7598,7 +7651,7 @@
          57885
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK03RCR76941",
@@ -7644,6 +7697,62 @@
         ]
        ],
        "stale_pct": 0.0
+      },
+      {
+       "vin": "WBY43FK05RCP78684",
+       "year": 2024,
+       "trim": "M60",
+       "trim_id": "bmw-i5-m60",
+       "trim_label": "M60",
+       "state": "FL",
+       "local": false,
+       "lat": 26.02842,
+       "lon": -80.34584,
+       "distance": 1175,
+       "ship": 764,
+       "miles": 28964,
+       "price": 58293,
+       "adj": 59057,
+       "msrp": 84100,
+       "dealer": "BMW of Pembroke Pines",
+       "city": "Pembroke Pines",
+       "url": "https://www.autolist.com/bmw-i5#vin=WBY43FK05RCP78684",
+       "image": "https://retail.photos.vin/WBY43FK05RCP78684-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK05RCP78684&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ],
+       "listed_since": "2026-05-29",
+       "days_listed": 93,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 4,
+       "series": [
+        [
+         "2026-08-23",
+         58293
+        ],
+        [
+         "2026-08-24",
+         58293
+        ],
+        [
+         "2026-08-28",
+         58293
+        ],
+        [
+         "2026-08-30",
+         58293
+        ]
+       ],
+       "stale_pct": 0.97
       },
       {
        "vin": "WBY43FK01RCP74017",
@@ -7700,7 +7809,7 @@
          59999
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK02RCP34965",
@@ -7757,7 +7866,7 @@
          60866
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK07RCP40096",
@@ -7817,7 +7926,7 @@
          60954
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY13HG09SCU80068",
@@ -7873,7 +7982,7 @@
          60990
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK09RCP36406",
@@ -7990,7 +8099,7 @@
          61980
         ]
        ],
-       "stale_pct": 0.94
+       "stale_pct": 0.93
       },
       {
        "vin": "WBY43FK09RCP11490",
@@ -8062,28 +8171,29 @@
        "distance": 25,
        "ship": 0,
        "miles": 17988,
-       "price": 63352,
-       "adj": 63352,
+       "price": 62975,
+       "adj": 62975,
        "msrp": 84100,
        "dealer": "Star Auto Works",
        "city": "Downers Grove",
        "url": "https://www.carfax.com/vehicle/WBY43FK07RCR00896",
        "image": "https://retail.photos.vin/WBY43FK07RCR00896-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK07RCR00896&partner=FRD_2",
-       "color": "White",
+       "color": "Alpine White",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Personal Use",
+       "usage": "Lease",
        "flags": [
         "1-owner",
-        "no accidents"
+        "no accidents",
+        "ex-lease"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
        "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
+       "cuts": 1,
+       "delta": -377,
        "days_tracked": 5,
        "series": [
         [
@@ -8104,55 +8214,10 @@
         ],
         [
          "2026-08-30",
-         63352
+         62975
         ]
        ],
-       "stale_pct": 0.49
-      },
-      {
-       "vin": "WBY13HG01SCT22551",
-       "year": 2025,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i5-cpo",
-       "trim_label": "CPO under 30k mi",
-       "state": "CA",
-       "local": false,
-       "lat": 33.63157,
-       "lon": -117.72619,
-       "distance": 1725,
-       "ship": 1121,
-       "miles": 9164,
-       "price": 64888,
-       "adj": 66009,
-       "msrp": null,
-       "dealer": "irvine bmw",
-       "city": "Irvine",
-       "url": "https://irvinebmw.com/certified/BMW/2025-BMW-i5-d8e7a6a1ac18490df7541314194346f6.htm",
-       "image": "https://retail.photos.vin/WBY13HG01SCT22551-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG01SCT22551&partner=FRD_2",
-       "color": "Mineral White Metallic",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         64888
-        ]
-       ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK07RCP55178",
@@ -8201,51 +8266,6 @@
         ]
        ],
        "stale_pct": 0.08
-      },
-      {
-       "vin": "WBY13HG02SCU72040",
-       "year": 2025,
-       "trim": "xDrive40",
-       "trim_id": "bmw-i5-cpo",
-       "trim_label": "CPO under 30k mi",
-       "state": "CA",
-       "local": false,
-       "lat": 38.40289,
-       "lon": -121.38928,
-       "distance": 1800,
-       "ship": 1170,
-       "miles": 7925,
-       "price": 64990,
-       "adj": 66160,
-       "msrp": null,
-       "dealer": "niello acura",
-       "city": "Roseville",
-       "url": "https://niello.com/certified/BMW/2025-BMW-i5-06a2075bac180936a0a72ed8f3f76337.htm",
-       "image": "https://retail.photos.vin/WBY13HG02SCU72040-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY13HG02SCU72040&partner=FRD_2",
-       "color": "Oxide Grey Metallic",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Corporate Use",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-16",
-       "days_listed": 14,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         64990
-        ]
-       ],
-       "stale_pct": 0.31
       },
       {
        "vin": "WBY43FK08RCS08565",
@@ -8298,7 +8318,7 @@
          65000
         ]
        ],
-       "stale_pct": 0.34
+       "stale_pct": 0.32
       },
       {
        "vin": "WBY43FK04RCR40756",
@@ -8358,7 +8378,59 @@
          65189
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
+      },
+      {
+       "vin": "WBY43FK02RCR12518",
+       "year": 2024,
+       "trim": "M60",
+       "trim_id": "bmw-i5-m60",
+       "trim_label": "M60",
+       "state": "WI",
+       "local": true,
+       "lat": 43.04035,
+       "lon": -89.38354,
+       "distance": 125,
+       "ship": 0,
+       "miles": 23454,
+       "price": 65398,
+       "adj": 65398,
+       "msrp": 84100,
+       "dealer": "Zimbrick BMW",
+       "city": "Madison",
+       "url": "https://www.bmwofmadison.com/used-Madison-2024-BMW-i5-M60-WBY43FK02RCR12518",
+       "image": "https://retail.photos.vin/WBY43FK02RCR12518-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK02RCR12518&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 3,
+       "series": [
+        [
+         "2026-08-23",
+         65398
+        ],
+        [
+         "2026-08-28",
+         65398
+        ],
+        [
+         "2026-08-30",
+         65398
+        ]
+       ],
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK08SCU82502",
@@ -8417,7 +8489,59 @@
          66750
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
+      },
+      {
+       "vin": "WBY43FK00RCR87752",
+       "year": 2024,
+       "trim": "M60",
+       "trim_id": "bmw-i5-m60",
+       "trim_label": "M60",
+       "state": "WI",
+       "local": true,
+       "lat": 43.04035,
+       "lon": -89.38354,
+       "distance": 125,
+       "ship": 0,
+       "miles": 15931,
+       "price": 67398,
+       "adj": 67398,
+       "msrp": 84100,
+       "dealer": "Zimbrick BMW",
+       "city": "Madison",
+       "url": "https://www.bmwofmadison.com/used-Madison-2024-BMW-i5-M60-WBY43FK00RCR87752",
+       "image": "https://retail.photos.vin/WBY43FK00RCR87752-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY43FK00RCR87752&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 1,
+       "usage": "Multiple Use",
+       "flags": [
+        "2 owners",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 3,
+       "series": [
+        [
+         "2026-08-23",
+         67398
+        ],
+        [
+         "2026-08-28",
+         67398
+        ],
+        [
+         "2026-08-30",
+         67398
+        ]
+       ],
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY33FK06RCR39314",
@@ -8488,7 +8612,7 @@
          74709
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.48
       },
       {
        "vin": "WBY43FK08SCW08616",
@@ -8499,7 +8623,7 @@
        "state": "WI",
        "local": true,
        "lat": 43.12589,
-       "lon": -87.93425,
+       "lon": -87.93426,
        "distance": 100,
        "ship": 0,
        "miles": 1558,
@@ -8658,24 +8782,24 @@
       },
       {
        "date": "2026-08-30",
-       "n": 134,
-       "n_local": 18,
+       "n": 136,
+       "n_local": 20,
        "min_price": 36479,
        "min_adj": 37129,
-       "median_adj": 49511,
-       "median_price": 48999
+       "median_adj": 49593,
+       "median_price": 49073
       }
      ],
      "daily_by_trim": {
       "bmw-i5-cpo": [
        {
         "date": "2026-08-30",
-        "n": 7,
+        "n": 1,
         "n_local": 0,
-        "min_price": 45998,
-        "min_adj": 47136,
-        "median_adj": 53878,
-        "median_price": 53456
+        "min_price": 51588,
+        "min_adj": 52579,
+        "median_adj": 52579,
+        "median_price": 51588
        }
       ],
       "bmw-i5-edrive40": [
@@ -8748,8 +8872,8 @@
         "n_local": 5,
         "min_price": 36479,
         "min_adj": 37129,
-        "median_adj": 44485,
-        "median_price": 43723
+        "median_adj": 44646,
+        "median_price": 43702
        }
       ],
       "bmw-i5-xdrive40": [
@@ -8838,16 +8962,66 @@
        },
        {
         "date": "2026-08-30",
-        "n": 30,
-        "n_local": 10,
+        "n": 34,
+        "n_local": 12,
         "min_price": 46995,
         "min_adj": 47547,
-        "median_adj": 58367,
-        "median_price": 57495
+        "median_adj": 58825,
+        "median_price": 57793
        }
       ]
      },
      "gone": [
+      {
+       "likely": "out of window",
+       "vin": "WBY33FK02RCS84701",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i5-edrive40",
+       "trim_label": "eDrive40",
+       "state": "AR",
+       "local": false,
+       "distance": 525,
+       "ship": 350,
+       "miles": 23043,
+       "last_price": 43631,
+       "adj": 43981,
+       "city": "Bentonville",
+       "dealer": "BMW Northwest Arkansas",
+       "url": "https://www.carfax.com/vehicle/WBY33FK02RCS84701",
+       "last_seen": "2026-08-29",
+       "listed_since": "2026-08-09",
+       "prev_fetch_day": "2026-08-29",
+       "first_seen": "2026-08-25",
+       "days_tracked": 4,
+       "cuts": 1,
+       "delta": -500,
+       "accidents": 0,
+       "usage": "Rental Use",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         44131
+        ],
+        [
+         "2026-08-26",
+         43631
+        ],
+        [
+         "2026-08-27",
+         43631
+        ],
+        [
+         "2026-08-29",
+         43631
+        ]
+       ],
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ]
+      },
       {
        "likely": "out of window",
        "vin": "WBY33FK05SCT64421",
@@ -9070,60 +9244,6 @@
         [
          "2026-08-28",
          43997
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WBY33FK0XRCP37866",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i5-edrive40",
-       "trim_label": "eDrive40",
-       "state": "CA",
-       "local": false,
-       "distance": 1850,
-       "ship": 1202,
-       "miles": 21404,
-       "last_price": 44079,
-       "adj": 45281,
-       "city": "Santa Clara",
-       "dealer": "Stevens Creek BMW",
-       "url": "https://www.carfax.com/vehicle/WBY33FK0XRCP37866",
-       "last_seen": "2026-08-28",
-       "listed_since": "2026-08-11",
-       "prev_fetch_day": "2026-08-29",
-       "first_seen": "2026-08-23",
-       "days_tracked": 5,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "cpo": false,
-       "series": [
-        [
-         "2026-08-23",
-         44079
-        ],
-        [
-         "2026-08-24",
-         44079
-        ],
-        [
-         "2026-08-25",
-         44079
-        ],
-        [
-         "2026-08-26",
-         44079
-        ],
-        [
-         "2026-08-28",
-         44079
         ]
        ],
        "flags": [
@@ -9410,53 +9530,6 @@
       },
       {
        "likely": "out of window",
-       "vin": "WBY43FK05RCP78684",
-       "year": 2024,
-       "trim": "M60",
-       "trim_id": "bmw-i5-m60",
-       "trim_label": "M60",
-       "state": "FL",
-       "local": false,
-       "distance": 1175,
-       "ship": 764,
-       "miles": 28941,
-       "last_price": 58293,
-       "adj": 59057,
-       "city": "Pembroke Pines",
-       "dealer": "Lauderdale BMW of Pembroke Pines",
-       "url": "https://www.autolist.com/bmw-i5#vin=WBY43FK05RCP78684",
-       "last_seen": "2026-08-28",
-       "listed_since": "2026-05-29",
-       "prev_fetch_day": "2026-08-28",
-       "first_seen": "2026-08-23",
-       "days_tracked": 3,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Lease",
-       "cpo": false,
-       "series": [
-        [
-         "2026-08-23",
-         58293
-        ],
-        [
-         "2026-08-24",
-         58293
-        ],
-        [
-         "2026-08-28",
-         58293
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "no accidents",
-        "ex-lease"
-       ]
-      },
-      {
-       "likely": "out of window",
        "vin": "WBY43FK08RCR09560",
        "year": 2024,
        "trim": "M60",
@@ -9647,90 +9720,6 @@
         "CPO",
         "1-owner",
         "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WBY43FK02RCR12518",
-       "year": 2024,
-       "trim": "M60",
-       "trim_id": "bmw-i5-m60",
-       "trim_label": "M60",
-       "state": "WI",
-       "local": true,
-       "distance": 125,
-       "ship": 0,
-       "miles": 23454,
-       "last_price": 65398,
-       "adj": 65398,
-       "city": "Madison",
-       "dealer": "Zimbrick BMW",
-       "url": "https://www.bmwofmadison.com/used-Madison-2024-BMW-i5-M60-WBY43FK02RCR12518",
-       "last_seen": "2026-08-28",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-28",
-       "first_seen": "2026-08-23",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "cpo": false,
-       "series": [
-        [
-         "2026-08-23",
-         65398
-        ],
-        [
-         "2026-08-28",
-         65398
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WBY43FK00RCR87752",
-       "year": 2024,
-       "trim": "M60",
-       "trim_id": "bmw-i5-m60",
-       "trim_label": "M60",
-       "state": "WI",
-       "local": true,
-       "distance": 125,
-       "ship": 0,
-       "miles": 15920,
-       "last_price": 67398,
-       "adj": 67398,
-       "city": "Madison",
-       "dealer": "Zimbrick BMW",
-       "url": "https://www.bmwofmadison.com/used-Madison-2024-BMW-i5-M60-WBY43FK00RCR87752",
-       "last_seen": "2026-08-28",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-28",
-       "first_seen": "2026-08-23",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 1,
-       "usage": "Multiple Use",
-       "cpo": false,
-       "series": [
-        [
-         "2026-08-23",
-         67398
-        ],
-        [
-         "2026-08-28",
-         67398
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "1 accident"
        ]
       },
       {
@@ -10512,10 +10501,10 @@
      ],
      "market": {
       "median_days_listed": 21,
-      "tracked_2d": 127,
+      "tracked_2d": 130,
       "cut_share": 0.58,
       "median_cut": 600,
-      "n_sold": 32,
+      "n_sold": 29,
       "median_days_to_sale": 15
      }
     },
@@ -14205,12 +14194,11 @@
        "color": "Blue",
        "cpo": false,
        "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
+       "accidents": 1,
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "1 accident"
        ],
        "listed_since": "2026-08-29",
        "days_listed": 1,
@@ -14224,7 +14212,7 @@
          25488
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW05PFP89089",
@@ -14289,7 +14277,7 @@
          26485
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.38
       },
       {
        "vin": "WBY73AW0XPFN74789",
@@ -14353,7 +14341,7 @@
          26597
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW01RFR51366",
@@ -14376,15 +14364,14 @@
        "url": "https://www.carfax.com/vehicle/WBY73AW01RFR51366",
        "image": "https://retail.photos.vin/WBY73AW01RFR51366-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW01RFR51366&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "color": "Black",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "no accidents"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -14418,7 +14405,7 @@
          26775
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW03NFN01471",
@@ -14428,25 +14415,28 @@
        "trim_label": "eDrive40",
        "state": "CA",
        "local": false,
-       "lat": 33.5314,
-       "lon": -117.171,
+       "lat": 33.53143,
+       "lon": -117.17068,
        "distance": 1700,
        "ship": 1105,
        "miles": 65706,
        "price": 27080,
        "adj": 28185,
-       "msrp": null,
-       "dealer": "temecula nissan",
+       "msrp": 55400,
+       "dealer": "Temecula Nissan",
        "city": "Murrieta",
        "url": "https://temeculanissan.com/inventory/Used-2022-BMW-i4-eDrive40-WBY73AW03NFN01471-1750",
        "image": "https://retail.photos.vin/WBY73AW03NFN01471-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW03NFN01471&partner=FRD_2",
-       "color": "Jet Black",
+       "color": "Black",
        "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
        "listed_since": "2026-08-29",
        "days_listed": 1,
        "first_seen": "2026-08-30",
@@ -14459,7 +14449,7 @@
          27080
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW03PFR26787",
@@ -14565,7 +14555,7 @@
          27960
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW04NFN11717",
@@ -14723,7 +14713,7 @@
          28245
         ]
        ],
-       "stale_pct": 0.42
+       "stale_pct": 0.43
       },
       {
        "vin": "WBY73AW06NFN13310",
@@ -14895,7 +14885,7 @@
          28599
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW00PFR09901",
@@ -14959,7 +14949,7 @@
          28645
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.41
       },
       {
        "vin": "WBY73AW0XRFS55251",
@@ -15023,7 +15013,7 @@
          28788
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW0XPFR35065",
@@ -15087,7 +15077,7 @@
          28862
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.36
       },
       {
        "vin": "WBY73AW06PFP89165",
@@ -15132,7 +15122,7 @@
          28890
         ]
        ],
-       "stale_pct": 0.86
+       "stale_pct": 0.87
       },
       {
        "vin": "WBY73AW06PFR29778",
@@ -15178,6 +15168,66 @@
         ]
        ],
        "stale_pct": 0.91
+      },
+      {
+       "vin": "WBY73AW09PFP98457",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "PA",
+       "local": false,
+       "lat": 40.18934,
+       "lon": -75.13483,
+       "distance": 650,
+       "ship": 422,
+       "miles": 59460,
+       "price": 28999,
+       "adj": 29421,
+       "msrp": 55900,
+       "dealer": "CarsIndex",
+       "city": "Horsham",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW09PFP98457",
+       "image": "https://retail.photos.vin/WBY73AW09PFP98457-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW09PFP98457&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-11",
+       "days_listed": 19,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 5,
+       "series": [
+        [
+         "2026-08-23",
+         28999
+        ],
+        [
+         "2026-08-24",
+         28999
+        ],
+        [
+         "2026-08-25",
+         28999
+        ],
+        [
+         "2026-08-27",
+         28999
+        ],
+        [
+         "2026-08-30",
+         28999
+        ]
+       ],
+       "stale_pct": 0.43
       },
       {
        "vin": "WBY73AW01PFR46519",
@@ -15240,66 +15290,6 @@
         ]
        ],
        "stale_pct": 0.32
-      },
-      {
-       "vin": "WBY73AW09PFP98457",
-       "year": 2023,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "PA",
-       "local": false,
-       "lat": 40.18934,
-       "lon": -75.13483,
-       "distance": 650,
-       "ship": 422,
-       "miles": 59460,
-       "price": 28999,
-       "adj": 29421,
-       "msrp": 55900,
-       "dealer": "CarsIndex",
-       "city": "Horsham",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW09PFP98457",
-       "image": "https://retail.photos.vin/WBY73AW09PFP98457-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW09PFP98457&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-11",
-       "days_listed": 19,
-       "first_seen": "2026-08-23",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 5,
-       "series": [
-        [
-         "2026-08-23",
-         28999
-        ],
-        [
-         "2026-08-24",
-         28999
-        ],
-        [
-         "2026-08-25",
-         28999
-        ],
-        [
-         "2026-08-27",
-         28999
-        ],
-        [
-         "2026-08-30",
-         28999
-        ]
-       ],
-       "stale_pct": 0.42
       },
       {
        "vin": "WBY73AW05PFR08582",
@@ -15433,7 +15423,7 @@
          29601
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW04PFR06810",
@@ -15608,7 +15598,51 @@
          29893
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.41
+      },
+      {
+       "vin": "WBY73AW0XPFP84910",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "GA",
+       "local": false,
+       "lat": 33.96098,
+       "lon": -84.12101,
+       "distance": 575,
+       "ship": 374,
+       "miles": 33660,
+       "price": 29990,
+       "adj": 30364,
+       "msrp": 55900,
+       "dealer": "Autoplex Atlanta",
+       "city": "Duluth",
+       "url": "https://www.grandinfiniti.com/used-Macon-2023-BMW-i4-eDrive40-WBY73AW0XPFP84910",
+       "image": "https://retail.photos.vin/WBY73AW0XPFP84910-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW0XPFP84910&partner=FRD_2",
+       "color": "Green",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         29990
+        ]
+       ],
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW01PFN99161",
@@ -15697,51 +15731,7 @@
          29990
         ]
        ],
-       "stale_pct": 0.26
-      },
-      {
-       "vin": "WBY73AW0XPFP84910",
-       "year": 2023,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "GA",
-       "local": false,
-       "lat": 33.96098,
-       "lon": -84.12101,
-       "distance": 575,
-       "ship": 374,
-       "miles": 33660,
-       "price": 29990,
-       "adj": 30364,
-       "msrp": 55900,
-       "dealer": "Autoplex Atlanta",
-       "city": "Duluth",
-       "url": "https://www.grandinfiniti.com/used-Macon-2023-BMW-i4-eDrive40-WBY73AW0XPFP84910",
-       "image": "https://retail.photos.vin/WBY73AW0XPFP84910-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW0XPFP84910&partner=FRD_2",
-       "color": "Green",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         29990
-        ]
-       ],
-       "stale_pct": 0.45
+       "stale_pct": 0.27
       },
       {
        "vin": "WBY73AW05PFR30033",
@@ -15786,7 +15776,7 @@
          29995
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW04PFR35658",
@@ -15876,7 +15866,51 @@
          29999
         ]
        ],
-       "stale_pct": 0.26
+       "stale_pct": 0.27
+      },
+      {
+       "vin": "WBY73AW06PFN77608",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "CT",
+       "local": false,
+       "lat": 41.41479,
+       "lon": -73.41087,
+       "distance": 725,
+       "ship": 471,
+       "miles": 28775,
+       "price": 30000,
+       "adj": 30471,
+       "msrp": 55900,
+       "dealer": "Volvo Cars of Danbury",
+       "city": "Danbury",
+       "url": "https://volvocarshudsonvalley.com/wholesale-used/BMW/2023-BMW-i4-for-sale-in-Wappingers-Falls-NY-1675ca5aac1818e1f2926374f5952483.htm",
+       "image": "https://retail.photos.vin/WBY73AW06PFN77608-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW06PFN77608&partner=FRD_2",
+       "color": "Blue",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Vehicle Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         30000
+        ]
+       ],
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW05PFP66105",
@@ -15920,7 +15954,89 @@
          30000
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
+      },
+      {
+       "vin": "WBY73AW00PFN50887",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "CA",
+       "local": false,
+       "lat": 33.72059,
+       "lon": -117.98926,
+       "distance": 1750,
+       "ship": 1138,
+       "miles": 48019,
+       "price": 30111,
+       "adj": 31249,
+       "msrp": 55900,
+       "dealer": "Huntington Beach Chrysler Dodge Jeep Ram",
+       "city": "Huntington Beach",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW00PFN50887",
+       "image": "https://retail.photos.vin/WBY73AW00PFN50887-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW00PFN50887&partner=FRD_2",
+       "color": "Orange",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-02",
+       "days_listed": 28,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         30111
+        ]
+       ],
+       "stale_pct": 0.8
+      },
+      {
+       "vin": "WBY73AW04PFR29794",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "CA",
+       "local": false,
+       "lat": 33.907,
+       "lon": -118.0839,
+       "distance": 1750,
+       "ship": 1138,
+       "miles": 47728,
+       "price": 30117,
+       "adj": 31255,
+       "msrp": 55900,
+       "dealer": "McKenna Pre-Owned Center",
+       "city": "Norwalk",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW04PFR29794",
+       "image": "https://retail.photos.vin/WBY73AW04PFR29794-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW04PFR29794&partner=FRD_2",
+       "color": "Red",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-07-25",
+       "days_listed": 36,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         30117
+        ]
+       ],
+       "stale_pct": 0.84
       },
       {
        "vin": "WBY73AW09PFN54338",
@@ -15931,7 +16047,7 @@
        "state": "MI",
        "local": false,
        "lat": 42.4972,
-       "lon": -83.29659,
+       "lon": -83.29658,
        "distance": 225,
        "ship": 350,
        "miles": 55187,
@@ -15976,7 +16092,7 @@
          31206
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW04PFN40135",
@@ -15993,13 +16109,13 @@
        "miles": 99817,
        "price": 31776,
        "adj": 32198,
-       "msrp": null,
-       "dealer": "nextgear motors",
+       "msrp": 67300,
+       "dealer": "NextGear Motors",
        "city": "Raleigh",
        "url": "https://nextgearmotors.com/used/BMW/2023-BMW-i4-2a372344ac185cc92880da077a5a2b24.htm",
        "image": "https://retail.photos.vin/WBY33AW04PFN40135-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW04PFN40135&partner=FRD_2",
-       "color": "Alpine White",
+       "color": "White",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
@@ -16040,7 +16156,7 @@
          31776
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW05PFR44479",
@@ -16081,52 +16197,7 @@
          32085
         ]
        ],
-       "stale_pct": 0.03
-      },
-      {
-       "vin": "WBY73AW0XPFN75635",
-       "year": 2023,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "GA",
-       "local": false,
-       "lat": 34.00959,
-       "lon": -84.5785,
-       "distance": 575,
-       "ship": 374,
-       "miles": 5528,
-       "price": 32460,
-       "adj": 32834,
-       "msrp": 55900,
-       "dealer": "ALM Kennesaw",
-       "city": "Kennesaw",
-       "url": "https://www.carfax.com/vehicle/WBY73AW0XPFN75635",
-       "image": "https://retail.photos.vin/WBY73AW0XPFN75635-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW0XPFN75635&partner=FRD_2",
-       "color": "Alpine White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
-       "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-29",
-       "days_listed": 1,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         32460
-        ]
-       ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW07PFR08003",
@@ -16213,12 +16284,11 @@
        "cpo": true,
        "owners": 1,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "CPO",
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "no accidents"
        ],
        "listed_since": "2026-08-30",
        "days_listed": 0,
@@ -16296,7 +16366,7 @@
          32985
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW04PFP15727",
@@ -16356,7 +16426,7 @@
          32990
         ]
        ],
-       "stale_pct": 0.42
+       "stale_pct": 0.43
       },
       {
        "vin": "WBY73AW01PFR01841",
@@ -16415,20 +16485,19 @@
        "price": 33195,
        "adj": 33959,
        "msrp": 65900,
-       "dealer": "Florida Fine Cars",
+       "dealer": "Florida Fine Car - Miami",
        "city": "Miami",
        "url": "https://www.carfax.com/vehicle/WBY33AW07NFM17586",
        "image": "https://retail.photos.vin/WBY33AW07NFM17586-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW07NFM17586&partner=FRD_2",
-       "color": "San Remo Green Metallic",
+       "color": "Green",
        "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Lease",
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Corporate Use",
        "flags": [
-        "2 owners",
-        "no accidents",
-        "ex-lease"
+        "1-owner",
+        "1 accident"
        ],
        "listed_since": "2026-08-13",
        "days_listed": 17,
@@ -16462,7 +16531,7 @@
          33195
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.4
       },
       {
        "vin": "WBY33AW04NFN23753",
@@ -16527,40 +16596,40 @@
          33495
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
-       "vin": "WBY73AW07PFN85944",
+       "vin": "WBY73AW0XPFN75635",
        "year": 2023,
        "trim": "eDrive40",
        "trim_id": "bmw-i4-edrive40",
        "trim_label": "eDrive40",
-       "state": "HI",
+       "state": "GA",
        "local": false,
-       "lat": 21.33612,
-       "lon": -157.913,
-       "distance": 4250,
-       "ship": 2762,
-       "miles": 8884,
-       "price": 33724,
-       "adj": 36486,
+       "lat": 34.00959,
+       "lon": -84.5785,
+       "distance": 575,
+       "ship": 374,
+       "miles": 5528,
+       "price": 33704,
+       "adj": 34078,
        "msrp": 55900,
-       "dealer": "Driveway",
-       "city": "Honolulu",
-       "url": "https://www.carfax.com/vehicle/WBY73AW07PFN85944",
-       "image": "https://retail.photos.vin/WBY73AW07PFN85944-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW07PFN85944&partner=FRD_2",
-       "color": "Sunset Orange Metallic",
+       "dealer": "ALM Kennesaw",
+       "city": "Kennesaw",
+       "url": "https://www.carfax.com/vehicle/WBY73AW0XPFN75635",
+       "image": "https://retail.photos.vin/WBY73AW0XPFN75635-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW0XPFN75635&partner=FRD_2",
+       "color": "White",
        "cpo": false,
        "owners": 1,
-       "accidents": 0,
-       "usage": "Corporate Fleet",
+       "accidents": 1,
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents"
+        "1 accident"
        ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
+       "listed_since": "2026-08-29",
+       "days_listed": 1,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -16568,10 +16637,10 @@
        "series": [
         [
          "2026-08-30",
-         33724
+         33704
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW02PFP79961",
@@ -16624,7 +16693,51 @@
          33750
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.38
+      },
+      {
+       "vin": "WBY73AW04PFR45977",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "CA",
+       "local": false,
+       "lat": 34.14948,
+       "lon": -118.66152,
+       "distance": 1750,
+       "ship": 1138,
+       "miles": 24107,
+       "price": 33911,
+       "adj": 35049,
+       "msrp": 55900,
+       "dealer": "Bob Smith MINI",
+       "city": "Calabasas",
+       "url": "https://bobsmithmini.com/inventory/Used-2023-BMW-i4-eDrive40_Gran_Coupe-WBY73AW04PFR45977",
+       "image": "https://retail.photos.vin/WBY73AW04PFR45977-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW04PFR45977&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-30",
+       "days_listed": 0,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         33911
+        ]
+       ],
+       "stale_pct": 0.0
       },
       {
        "vin": "WBY73AW08PFR12688",
@@ -16642,7 +16755,7 @@
        "price": 34397,
        "adj": 34397,
        "msrp": 55900,
-       "dealer": "North Coast Mitsubishi - West Cleveland",
+       "dealer": "North Coast Mitsubishi Cleveland West",
        "city": "Cleveland",
        "url": "https://www.carfax.com/vehicle/WBY73AW08PFR12688",
        "image": "https://retail.photos.vin/WBY73AW08PFR12688-1.jpg",
@@ -16651,11 +16764,10 @@
        "cpo": false,
        "owners": 1,
        "accidents": 1,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "1 accident",
-        "ex-lease"
+        "1 accident"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -16689,7 +16801,7 @@
          34397
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW03PFR27535",
@@ -16753,38 +16865,37 @@
        "stale_pct": 0.99
       },
       {
-       "vin": "WBY73AW01PFR09177",
+       "vin": "WBY73AW07PFN85944",
        "year": 2023,
        "trim": "eDrive40",
        "trim_id": "bmw-i4-edrive40",
        "trim_label": "eDrive40",
-       "state": "CA",
+       "state": "HI",
        "local": false,
-       "lat": 33.63157,
-       "lon": -117.72619,
-       "distance": 1725,
-       "ship": 1121,
-       "miles": 30350,
-       "price": 34888,
-       "adj": 36009,
-       "msrp": null,
-       "dealer": "irvine bmw",
-       "city": "Irvine",
-       "url": "https://irvinebmw.com/certified/BMW/2023-BMW-i4-4be35f55ac180b7620d871ae8ea559af.htm",
-       "image": "https://retail.photos.vin/WBY73AW01PFR09177-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW01PFR09177&partner=FRD_2",
-       "color": "Mineral White Metallic",
-       "cpo": true,
+       "lat": 21.33612,
+       "lon": -157.913,
+       "distance": 4250,
+       "ship": 2762,
+       "miles": 8884,
+       "price": 34699,
+       "adj": 37461,
+       "msrp": 55900,
+       "dealer": "Acura of Honolulu",
+       "city": "Honolulu",
+       "url": "https://www.carfax.com/vehicle/WBY73AW07PFN85944",
+       "image": "https://retail.photos.vin/WBY73AW07PFN85944-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW07PFN85944&partner=FRD_2",
+       "color": "Orange",
+       "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Personal Use",
+       "usage": "Corporate Use",
        "flags": [
-        "CPO",
         "1-owner",
         "no accidents"
        ],
-       "listed_since": "2026-08-29",
-       "days_listed": 1,
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -16792,10 +16903,10 @@
        "series": [
         [
          "2026-08-30",
-         34888
+         34699
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW01PFR18008",
@@ -16860,7 +16971,51 @@
          34900
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
+      },
+      {
+       "vin": "WBY73AW01PFR09177",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "CA",
+       "local": false,
+       "lat": 33.63157,
+       "lon": -117.7262,
+       "distance": 1725,
+       "ship": 1121,
+       "miles": 30350,
+       "price": 34973,
+       "adj": 36094,
+       "msrp": 55900,
+       "dealer": "Irvine BMW",
+       "city": "Irvine",
+       "url": "https://irvinebmw.com/certified/BMW/2023-BMW-i4-4be35f55ac180b7620d871ae8ea559af.htm",
+       "image": "https://retail.photos.vin/WBY73AW01PFR09177-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW01PFR09177&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-29",
+       "days_listed": 1,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         34973
+        ]
+       ],
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW01PFR29672",
@@ -16887,12 +17042,11 @@
        "cpo": true,
        "owners": 1,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "CPO",
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "no accidents"
        ],
        "listed_since": "2026-08-29",
        "days_listed": 1,
@@ -16906,7 +17060,7 @@
          34980
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW09RFR53978",
@@ -16958,7 +17112,67 @@
          34990
         ]
        ],
-       "stale_pct": 0.23
+       "stale_pct": 0.24
+      },
+      {
+       "vin": "WBY73AW00RFT38526",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "IL",
+       "local": true,
+       "lat": 42.2742,
+       "lon": -87.95353,
+       "distance": 25,
+       "ship": 0,
+       "miles": 13025,
+       "price": 35171,
+       "adj": 35171,
+       "msrp": 57300,
+       "dealer": "Happy Hyundai Of Libertyville",
+       "city": "Libertyville",
+       "url": "https://www.carfax.com/vehicle/WBY73AW00RFT38526",
+       "image": "https://retail.photos.vin/WBY73AW00RFT38526-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW00RFT38526&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-23",
+       "days_listed": 7,
+       "first_seen": "2026-08-24",
+       "cuts": 1,
+       "delta": -196,
+       "days_tracked": 5,
+       "series": [
+        [
+         "2026-08-24",
+         35367
+        ],
+        [
+         "2026-08-25",
+         35367
+        ],
+        [
+         "2026-08-27",
+         35367
+        ],
+        [
+         "2026-08-29",
+         35367
+        ],
+        [
+         "2026-08-30",
+         35171
+        ]
+       ],
+       "stale_pct": 0.22
       },
       {
        "vin": "WBY73AW01PFN77600",
@@ -16984,11 +17198,11 @@
        "color": "Sunset Orange Metallic",
        "cpo": false,
        "owners": 1,
-       "accidents": 0,
+       "accidents": 1,
        "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents"
+        "1 accident"
        ],
        "listed_since": "2026-08-29",
        "days_listed": 1,
@@ -17002,7 +17216,7 @@
          35220
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW07PFP99767",
@@ -17059,7 +17273,7 @@
          35291
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.36
       },
       {
        "vin": "WBY73AW06PFR35032",
@@ -17120,66 +17334,6 @@
         ]
        ],
        "stale_pct": 0.21
-      },
-      {
-       "vin": "WBY73AW00RFT38526",
-       "year": 2024,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "IL",
-       "local": true,
-       "lat": 42.2742,
-       "lon": -87.95353,
-       "distance": 25,
-       "ship": 0,
-       "miles": 13025,
-       "price": 35367,
-       "adj": 35367,
-       "msrp": 57300,
-       "dealer": "Libertyville Happy Hyundai",
-       "city": "Libertyville",
-       "url": "https://www.carfax.com/vehicle/WBY73AW00RFT38526",
-       "image": "https://retail.photos.vin/WBY73AW00RFT38526-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW00RFT38526&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Rental Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-23",
-       "days_listed": 7,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 5,
-       "series": [
-        [
-         "2026-08-24",
-         35367
-        ],
-        [
-         "2026-08-25",
-         35367
-        ],
-        [
-         "2026-08-27",
-         35367
-        ],
-        [
-         "2026-08-29",
-         35367
-        ],
-        [
-         "2026-08-30",
-         35367
-        ]
-       ],
-       "stale_pct": 0.23
       },
       {
        "vin": "WBY33AW07PFN43448",
@@ -17243,7 +17397,7 @@
          35500
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW0XPFP55021",
@@ -17308,7 +17462,7 @@
          35588
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW06PFN78256",
@@ -17352,7 +17506,7 @@
          35590
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.4
       },
       {
        "vin": "WBY33AW0XPFP04746",
@@ -17416,7 +17570,7 @@
          35690
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW07RFR61186",
@@ -17521,7 +17675,7 @@
          36714
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY33AW05PFR21024",
@@ -17629,7 +17783,7 @@
          36990
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW08PFP10013",
@@ -17690,7 +17844,7 @@
          37113
         ]
        ],
-       "stale_pct": 0.91
+       "stale_pct": 0.92
       },
       {
        "vin": "WBY73AW04PFR22666",
@@ -17707,13 +17861,13 @@
        "miles": 18114,
        "price": 37293,
        "adj": 37293,
-       "msrp": null,
-       "dealer": "lexus of dayton",
+       "msrp": 55900,
+       "dealer": "Lexus of Dayton",
        "city": "Dayton",
        "url": "https://lexusofdayton.com/inventory/Used-2023-BMW-i4-eDrive40-WBY73AW04PFR22666",
        "image": "https://retail.photos.vin/WBY73AW04PFR22666-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW04PFR22666&partner=FRD_2",
-       "color": "Gray Metallic",
+       "color": "Gray",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
@@ -17754,7 +17908,7 @@
          37293
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.41
       },
       {
        "vin": "WBY73AW00RFR51049",
@@ -17815,7 +17969,7 @@
          37671
         ]
        ],
-       "stale_pct": 0.28
+       "stale_pct": 0.29
       },
       {
        "vin": "WBY73AW03PFR43489",
@@ -17859,7 +18013,7 @@
          37748
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW03PFR31326",
@@ -17923,7 +18077,7 @@
          37987
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW05PFR24622",
@@ -17948,11 +18102,14 @@
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW05PFR24622&partner=FRD_2",
        "color": "Brooklyn Grey Metallic",
        "cpo": true,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Lease Use",
        "flags": [
-        "CPO"
+        "CPO",
+        "1-owner",
+        "no accidents",
+        "ex-lease"
        ],
        "listed_since": "2026-08-30",
        "days_listed": 0,
@@ -18019,7 +18176,7 @@
          38418
         ]
        ],
-       "stale_pct": 0.28
+       "stale_pct": 0.29
       },
       {
        "vin": "WBY33AW08PFN81710",
@@ -18083,7 +18240,7 @@
          38490
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW00RFS87447",
@@ -18168,7 +18325,7 @@
          38510
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW05PFR27200",
@@ -18212,7 +18369,7 @@
          38585
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW06PFR29859",
@@ -18222,26 +18379,27 @@
        "trim_label": "eDrive40",
        "state": "TX",
        "local": false,
-       "lat": 32.7591,
-       "lon": -97.3582,
+       "lat": 32.7597,
+       "lon": -97.35835,
        "distance": 825,
        "ship": 536,
-       "miles": 12753,
+       "miles": 12760,
        "price": 38645,
        "adj": 39181,
        "msrp": 55900,
-       "dealer": "Autobahn BMW",
-       "city": "Ft Worth",
+       "dealer": "Autobahn BMW MINI Fort Worth",
+       "city": "Fort Worth",
        "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW06PFR29859",
        "image": "https://retail.photos.vin/WBY73AW06PFR29859-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW06PFR29859&partner=FRD_2",
        "color": "White",
-       "cpo": true,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
        "flags": [
-        "CPO"
+        "1-owner",
+        "1 accident"
        ],
        "listed_since": "2026-08-29",
        "days_listed": 1,
@@ -18255,7 +18413,7 @@
          38645
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY33AW08PFP09539",
@@ -18319,48 +18477,7 @@
          38745
         ]
        ],
-       "stale_pct": 0.26
-      },
-      {
-       "vin": "WBY73AW09RFS80240",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "",
-       "local": false,
-       "lat": null,
-       "lon": null,
-       "distance": null,
-       "ship": 1100,
-       "miles": 16702,
-       "price": 38990,
-       "adj": 40090,
-       "msrp": 57300,
-       "dealer": "Carvana",
-       "city": "",
-       "url": "https://www.carvana.com/vehicle/4674681",
-       "image": "https://retail.photos.vin/WBY73AW09RFS80240-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?partner=CVN_0&vin=WBY73AW09RFS80240",
-       "color": "Gray",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-29",
-       "days_listed": 1,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         38990
-        ]
-       ],
-       "stale_pct": 0.03
+       "stale_pct": 0.27
       },
       {
        "vin": "WBY73AW04PFP60277",
@@ -18420,7 +18537,7 @@
          39000
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD03SFU00254",
@@ -18438,20 +18555,19 @@
        "price": 39417,
        "adj": 39767,
        "msrp": 57900,
-       "dealer": "Auto Connection Used Trucks & Cars",
+       "dealer": "Auto Connection",
        "city": "Junction City",
        "url": "https://www.carfax.com/vehicle/WBY23HD03SFU00254",
        "image": "https://retail.photos.vin/WBY23HD03SFU00254-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD03SFU00254&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "color": "Black",
        "cpo": false,
-       "owners": 1,
+       "owners": 2,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Multiple Use",
        "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
+        "2 owners",
+        "no accidents"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -18469,7 +18585,7 @@
          39417
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW01RFR51142",
@@ -18513,7 +18629,7 @@
          39644
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY33AW08NFN17003",
@@ -18577,7 +18693,7 @@
          39816
         ]
        ],
-       "stale_pct": 0.23
+       "stale_pct": 0.24
       },
       {
        "vin": "WBY23HD01SFU17683",
@@ -18675,7 +18791,7 @@
          39995
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW01PFR00087",
@@ -18781,7 +18897,7 @@
          39998
         ]
        ],
-       "stale_pct": 0.89
+       "stale_pct": 0.9
       },
       {
        "vin": "WBY73AW05PFR28850",
@@ -18825,7 +18941,51 @@
          39999
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
+      },
+      {
+       "vin": "WBY73AW07PFR10902",
+       "year": 2023,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "WA",
+       "local": false,
+       "lat": 47.59379,
+       "lon": -122.32431,
+       "distance": 1725,
+       "ship": 1121,
+       "miles": 26692,
+       "price": 39999,
+       "adj": 41120,
+       "msrp": 55900,
+       "dealer": "BMW Seattle",
+       "city": "Seattle",
+       "url": "https://www.carfax.com/vehicle/WBY73AW07PFR10902",
+       "image": "https://retail.photos.vin/WBY73AW07PFR10902-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW07PFR10902&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-30",
+       "days_listed": 0,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         39999
+        ]
+       ],
+       "stale_pct": 0.0
       },
       {
        "vin": "WBY33AW03PFN68119",
@@ -19028,7 +19188,7 @@
          40418
         ]
        ],
-       "stale_pct": 0.28
+       "stale_pct": 0.29
       },
       {
        "vin": "WBY33AW08PFN41479",
@@ -19092,7 +19252,7 @@
          40489
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW05PFN81549",
@@ -19204,7 +19364,7 @@
        "lon": -80.09837,
        "distance": 1125,
        "ship": 731,
-       "miles": 29539,
+       "miles": 29554,
        "price": 40698,
        "adj": 41429,
        "msrp": 67300,
@@ -19213,16 +19373,14 @@
        "url": "https://www.carfax.com/vehicle/WBY33AW00PFP00303",
        "image": "https://retail.photos.vin/WBY33AW00PFP00303-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW00PFP00303&partner=FRD_2",
-       "color": "Alpine White",
-       "cpo": true,
+       "color": "White",
+       "cpo": false,
        "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
+       "accidents": 1,
+       "usage": "Personal Use",
        "flags": [
-        "CPO",
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "1 accident"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -19252,7 +19410,60 @@
          40698
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
+      },
+      {
+       "vin": "WBY33AW03PFP49947",
+       "year": 2023,
+       "trim": "M50",
+       "trim_id": "bmw-i4-m50",
+       "trim_label": "M50",
+       "state": "GA",
+       "local": false,
+       "lat": 33.98041,
+       "lon": -84.55517,
+       "distance": 575,
+       "ship": 374,
+       "miles": 1483,
+       "price": 40898,
+       "adj": 41272,
+       "msrp": 67300,
+       "dealer": "\t Drive A Dream",
+       "city": "Marietta",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW03PFP49947",
+       "image": "https://retail.photos.vin/WBY33AW03PFP49947-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW03PFP49947&partner=FRD_2",
+       "color": "Brown",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-16",
+       "days_listed": 14,
+       "first_seen": "2026-08-23",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 4,
+       "series": [
+        [
+         "2026-08-23",
+         40898
+        ],
+        [
+         "2026-08-24",
+         40898
+        ],
+        [
+         "2026-08-25",
+         40898
+        ],
+        [
+         "2026-08-30",
+         40898
+        ]
+       ],
+       "stale_pct": 0.35
       },
       {
        "vin": "WBY73AW03RFS90309",
@@ -19305,7 +19516,7 @@
          40990
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.38
       },
       {
        "vin": "WBY73AW06RFR70222",
@@ -19320,21 +19531,20 @@
        "distance": 1750,
        "ship": 1138,
        "miles": 7915,
-       "price": 40999,
-       "adj": 42137,
-       "msrp": null,
-       "dealer": "bmw mini of monrovia",
-       "city": "Monrovia",
+       "price": 41079,
+       "adj": 42217,
+       "msrp": 57300,
+       "dealer": "Beverly Hills BMW",
+       "city": "Los Angeles",
        "url": "https://bmwofmonrovia.net/certified/BMW/2024-BMW-i4-near-Los-Angeles-0afe8becac185c84b00d9f0c504f5bf5.htm",
        "image": "https://retail.photos.vin/WBY73AW06RFR70222-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW06RFR70222&partner=FRD_2",
-       "color": "Alpine White",
-       "cpo": true,
+       "color": "White",
+       "cpo": false,
        "owners": 1,
        "accidents": 0,
        "usage": "Personal Use",
        "flags": [
-        "CPO",
         "1-owner",
         "no accidents"
        ],
@@ -19347,10 +19557,54 @@
        "series": [
         [
          "2026-08-30",
-         40999
+         41079
         ]
        ],
        "stale_pct": 0.34
+      },
+      {
+       "vin": "WBY23HD08SFT93950",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "MO",
+       "local": false,
+       "lat": 38.59359,
+       "lon": -90.5173,
+       "distance": 275,
+       "ship": 350,
+       "miles": 13181,
+       "price": 41369,
+       "adj": 41719,
+       "msrp": 57900,
+       "dealer": "BMW of West St. Louis",
+       "city": "Manchester",
+       "url": "https://www.carfax.com/vehicle/WBY23HD08SFT93950",
+       "image": "https://retail.photos.vin/WBY23HD08SFT93950-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD08SFT93950&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "flags": [
+        "2 owners",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         41369
+        ]
+       ],
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW00PFP75262",
@@ -19404,7 +19658,7 @@
          41550
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD08SFU40913",
@@ -19424,18 +19678,17 @@
        "msrp": 57900,
        "dealer": "Valencia BMW",
        "city": "Valencia",
-       "url": "https://www.carfax.com/vehicle/WBY23HD08SFU40913",
+       "url": "https://www.autonationchevroletvalencia.com/used-Valencia-2025-BMW-i4-Gran+Coupe-WBY23HD08SFU40913",
        "image": "https://retail.photos.vin/WBY23HD08SFU40913-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD08SFU40913&partner=FRD_2",
        "color": "Alpine White",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "no accidents"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -19449,7 +19702,7 @@
          41655
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD08SFU13789",
@@ -19472,15 +19725,14 @@
        "url": "https://www.carfax.com/vehicle/WBY23HD08SFU13789",
        "image": "https://retail.photos.vin/WBY23HD08SFU13789-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD08SFU13789&partner=FRD_2",
-       "color": "Black Sapphire Metallic",
+       "color": "Black",
        "cpo": false,
        "owners": 1,
        "accidents": 1,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "1 accident",
-        "ex-lease"
+        "1 accident"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -19494,7 +19746,7 @@
          41800
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW03PFN62918",
@@ -19598,7 +19850,7 @@
        "state": "CA",
        "local": false,
        "lat": 37.95137,
-       "lon": -122.49469,
+       "lon": -122.4947,
        "distance": 1850,
        "ship": 1202,
        "miles": 8218,
@@ -19631,7 +19883,7 @@
          41985
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY23HD0XSFU31257",
@@ -19676,7 +19928,7 @@
          41990
         ]
        ],
-       "stale_pct": 0.23
+       "stale_pct": 0.24
       },
       {
        "vin": "WBY73AW08RFS94985",
@@ -19769,7 +20021,7 @@
          42293
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW0XPFP04827",
@@ -19833,7 +20085,7 @@
          42333
         ]
        ],
-       "stale_pct": 0.95
+       "stale_pct": 0.96
       },
       {
        "vin": "WBY23HD09SFT87607",
@@ -19882,7 +20134,7 @@
          42450
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY73AW06RFS96847",
@@ -19927,7 +20179,51 @@
          42925
         ]
        ],
-       "stale_pct": 0.28
+       "stale_pct": 0.29
+      },
+      {
+       "vin": "WBY23HD07SFU23052",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "CA",
+       "local": false,
+       "lat": 33.54487,
+       "lon": -117.67538,
+       "distance": 1725,
+       "ship": 1121,
+       "miles": 4699,
+       "price": 42945,
+       "adj": 44066,
+       "msrp": 57900,
+       "dealer": "Mercedes-Benz of Laguna Niguel",
+       "city": "Laguna Niguel",
+       "url": "https://www.carfax.com/vehicle/WBY23HD07SFU23052",
+       "image": "https://retail.photos.vin/WBY23HD07SFU23052-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD07SFU23052&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         42945
+        ]
+       ],
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD01SFU20714",
@@ -19972,52 +20268,7 @@
          42970
         ]
        ],
-       "stale_pct": 0.45
-      },
-      {
-       "vin": "WBY23HD07SFU23052",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "CA",
-       "local": false,
-       "lat": 33.54487,
-       "lon": -117.67538,
-       "distance": 1725,
-       "ship": 1121,
-       "miles": 4699,
-       "price": 42982,
-       "adj": 44103,
-       "msrp": 57900,
-       "dealer": "Mercedes-Benz of Laguna Niguel",
-       "city": "Laguna Niguel",
-       "url": "https://www.carfax.com/vehicle/WBY23HD07SFU23052",
-       "image": "https://retail.photos.vin/WBY23HD07SFU23052-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD07SFU23052&partner=FRD_2",
-       "color": "Alpine White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
-       "flags": [
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         42982
-        ]
-       ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW08PFP96178",
@@ -20082,7 +20333,51 @@
          42989
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
+      },
+      {
+       "vin": "WBY73AW01RFR50606",
+       "year": 2024,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "WA",
+       "local": false,
+       "lat": 47.59379,
+       "lon": -122.32431,
+       "distance": 1725,
+       "ship": 1121,
+       "miles": 9606,
+       "price": 42999,
+       "adj": 44120,
+       "msrp": 57300,
+       "dealer": "BMW Seattle",
+       "city": "Seattle",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY73AW01RFR50606",
+       "image": "https://retail.photos.vin/WBY73AW01RFR50606-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY73AW01RFR50606&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-23",
+       "days_listed": 7,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         42999
+        ]
+       ],
+       "stale_pct": 0.22
       },
       {
        "vin": "WBY23HD03SFU15062",
@@ -20133,7 +20428,7 @@
        "trim_label": "eDrive40",
        "state": "CA",
        "local": false,
-       "lat": 34.07982,
+       "lat": 34.07983,
        "lon": -117.72594,
        "distance": 1725,
        "ship": 1121,
@@ -20167,51 +20462,7 @@
          43295
         ]
        ],
-       "stale_pct": 0.03
-      },
-      {
-       "vin": "WBY23HD08SFT93950",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "MO",
-       "local": false,
-       "lat": 38.59359,
-       "lon": -90.5173,
-       "distance": 275,
-       "ship": 350,
-       "miles": 13181,
-       "price": 43358,
-       "adj": 43708,
-       "msrp": 57900,
-       "dealer": "BMW of West St. Louis",
-       "city": "Manchester",
-       "url": "https://www.carfax.com/vehicle/WBY23HD08SFT93950",
-       "image": "https://retail.photos.vin/WBY23HD08SFT93950-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD08SFT93950&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         43358
-        ]
-       ],
-       "stale_pct": 0.45
+       "stale_pct": 0.04
       },
       {
        "vin": "WBY73AW06RFR77221",
@@ -20255,7 +20506,7 @@
          43698
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW00PFP26674",
@@ -20319,7 +20570,7 @@
          43887
         ]
        ],
-       "stale_pct": 0.93
+       "stale_pct": 0.94
       },
       {
        "vin": "WBY33AW03PFP89901",
@@ -20379,7 +20630,7 @@
          43980
         ]
        ],
-       "stale_pct": 0.8
+       "stale_pct": 0.79
       },
       {
        "vin": "WBY23HD06SFU53885",
@@ -20393,7 +20644,7 @@
        "lon": -96.78322,
        "distance": 800,
        "ship": 520,
-       "miles": 6126,
+       "miles": 6128,
        "price": 44373,
        "adj": 44893,
        "msrp": 57900,
@@ -20487,7 +20738,7 @@
          44388
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW01PFN79734",
@@ -20565,13 +20816,13 @@
        "miles": 9321,
        "price": 44618,
        "adj": 45040,
-       "msrp": null,
-       "dealer": "jim hudson ford",
-       "city": "Lexington",
+       "msrp": 57900,
+       "dealer": "Audi Columbia",
+       "city": "Columbia",
        "url": "https://www.jimhudsonfordlexington.com/used-Lexington-2025-BMW-i4-eDrive40-WBY23HD00SFV73309",
        "image": "https://retail.photos.vin/WBY23HD00SFV73309-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD00SFV73309&partner=FRD_2",
-       "color": "Cape York Green Metallic",
+       "color": "Green",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
@@ -20592,7 +20843,7 @@
          44618
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD05SFU01227",
@@ -20636,7 +20887,7 @@
          44750
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW08PFN77060",
@@ -20680,7 +20931,7 @@
          44975
         ]
        ],
-       "stale_pct": 0.23
+       "stale_pct": 0.24
       },
       {
        "vin": "WBY33AW01RFS12495",
@@ -20690,25 +20941,28 @@
        "trim_label": "M50",
        "state": "IN",
        "local": true,
-       "lat": 40.2803,
-       "lon": -85.8391,
+       "lat": 40.04452,
+       "lon": -86.18488,
        "distance": 150,
        "ship": 0,
        "miles": 38753,
        "price": 44990,
        "adj": 44990,
-       "msrp": null,
-       "dealer": "unlimited motors",
-       "city": "Elwood",
+       "msrp": 69700,
+       "dealer": "Unlimited Motors",
+       "city": "Westfield",
        "url": "https://www.indysunlimitedmotors.com/pre-owned-cars/detail/x/1575360",
        "image": "https://retail.photos.vin/WBY33AW01RFS12495-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY33AW01RFS12495&partner=FRD_2",
-       "color": "Gray Metallic",
+       "color": "Gray",
        "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
        "listed_since": "2026-08-30",
        "days_listed": 0,
        "first_seen": "2026-08-30",
@@ -20785,7 +21039,7 @@
          45000
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD08SFV76524",
@@ -20830,6 +21084,50 @@
         ]
        ],
        "stale_pct": 0.32
+      },
+      {
+       "vin": "WBY23HD00SFV69969",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "FL",
+       "local": false,
+       "lat": 25.61927,
+       "lon": -80.34514,
+       "distance": 1200,
+       "ship": 780,
+       "miles": 7223,
+       "price": 45250,
+       "adj": 46030,
+       "msrp": 57900,
+       "dealer": "BMW of Miami South and Mini of Miami South",
+       "city": "Miami",
+       "url": "https://www.carfax.com/vehicle/WBY23HD00SFV69969",
+       "image": "https://retail.photos.vin/WBY23HD00SFV69969-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD00SFV69969&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         45250
+        ]
+       ],
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW09PFP87487",
@@ -20894,7 +21192,7 @@
          45333
         ]
        ],
-       "stale_pct": 0.84
+       "stale_pct": 0.85
       },
       {
        "vin": "WBY23HD06SFV54361",
@@ -20921,12 +21219,11 @@
        "cpo": true,
        "owners": 1,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "CPO",
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "no accidents"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -20940,7 +21237,7 @@
          45790
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD00SFU26178",
@@ -20984,7 +21281,7 @@
          45790
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW07PFP47909",
@@ -21198,7 +21495,7 @@
          46298
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33AW02RFR93561",
@@ -21249,6 +21546,50 @@
        "stale_pct": 0.15
       },
       {
+       "vin": "WBY23HD01SFV02782",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "FL",
+       "local": false,
+       "lat": 26.27387,
+       "lon": -80.15751,
+       "distance": 1150,
+       "ship": 748,
+       "miles": 6949,
+       "price": 46697,
+       "adj": 47445,
+       "msrp": 57900,
+       "dealer": "hgreglux.com",
+       "city": "Pompano Beach",
+       "url": "https://www.carfax.com/vehicle/WBY23HD01SFV02782",
+       "image": "https://retail.photos.vin/WBY23HD01SFV02782-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD01SFV02782&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-09",
+       "days_listed": 21,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         46697
+        ]
+       ],
+       "stale_pct": 0.46
+      },
+      {
        "vin": "WBY23HD03SFU92367",
        "year": 2025,
        "trim": "eDrive40",
@@ -21294,50 +21635,6 @@
        "stale_pct": 0.97
       },
       {
-       "vin": "WBY23HD08SFU42192",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "FL",
-       "local": false,
-       "lat": 28.0543,
-       "lon": -82.45663,
-       "distance": 1000,
-       "ship": 650,
-       "miles": 7282,
-       "price": 46858,
-       "adj": 47508,
-       "msrp": 57900,
-       "dealer": "BMW of Tampa",
-       "city": "Tampa",
-       "url": "https://www.carfax.com/vehicle/WBY23HD08SFU42192",
-       "image": "https://retail.photos.vin/WBY23HD08SFU42192-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD08SFU42192&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         46858
-        ]
-       ],
-       "stale_pct": 0.45
-      },
-      {
        "vin": "WBY23HD02SFU16994",
        "year": 2025,
        "trim": "eDrive40",
@@ -21355,18 +21652,17 @@
        "msrp": 57900,
        "dealer": "BMW of Delray Beach",
        "city": "Delray Beach",
-       "url": "https://autonationhondamiamilakes.com/used/BMW/2025-BMW-i4-ddd45182ac18326561807f7612599de3.htm",
+       "url": "https://www.autonationchevroletcoralgables.com/used-South+Miami-2025-BMW-i4-Gran+Coupe-WBY23HD02SFU16994",
        "image": "https://retail.photos.vin/WBY23HD02SFU16994-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD02SFU16994&partner=FRD_2",
        "color": "Cape York Green Metallic",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
-       "usage": "Lease",
+       "usage": "Personal Use",
        "flags": [
         "1-owner",
-        "no accidents",
-        "ex-lease"
+        "no accidents"
        ],
        "listed_since": "2026-08-09",
        "days_listed": 21,
@@ -21380,7 +21676,7 @@
          46981
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD05SFT66303",
@@ -21424,7 +21720,7 @@
          46990
         ]
        ],
-       "stale_pct": 0.42
+       "stale_pct": 0.43
       },
       {
        "vin": "WBY23HD02SFU00391",
@@ -21468,142 +21764,6 @@
         ]
        ],
        "stale_pct": 0.96
-      },
-      {
-       "vin": "WBY23HD01SFV02782",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "FL",
-       "local": false,
-       "lat": 26.27387,
-       "lon": -80.15751,
-       "distance": 1150,
-       "ship": 748,
-       "miles": 6949,
-       "price": 47196,
-       "adj": 47944,
-       "msrp": 57900,
-       "dealer": "hgreglux.com",
-       "city": "Pompano Beach",
-       "url": "https://www.carfax.com/vehicle/WBY23HD01SFV02782",
-       "image": "https://retail.photos.vin/WBY23HD01SFV02782-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD01SFV02782&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         47196
-        ]
-       ],
-       "stale_pct": 0.45
-      },
-      {
-       "vin": "WBY23HD00SFV69969",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "FL",
-       "local": false,
-       "lat": 25.61927,
-       "lon": -80.34514,
-       "distance": 1200,
-       "ship": 780,
-       "miles": 7223,
-       "price": 47335,
-       "adj": 48115,
-       "msrp": 57900,
-       "dealer": "BMW of South Miami",
-       "city": "Miami",
-       "url": "https://www.carfax.com/vehicle/WBY23HD00SFV69969",
-       "image": "https://retail.photos.vin/WBY23HD00SFV69969-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD00SFV69969&partner=FRD_2",
-       "color": "Jet Black",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         47335
-        ]
-       ],
-       "stale_pct": 0.45
-      },
-      {
-       "vin": "WBY23HD01SFU38131",
-       "year": 2025,
-       "trim": "eDrive40",
-       "trim_id": "bmw-i4-edrive40",
-       "trim_label": "eDrive40",
-       "state": "AZ",
-       "local": false,
-       "lat": 33.65928,
-       "lon": -112.23375,
-       "distance": 1450,
-       "ship": 942,
-       "miles": 2254,
-       "price": 47423,
-       "adj": 48365,
-       "msrp": 57900,
-       "dealer": "Arrowhead BMW",
-       "city": "Glendale",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY23HD01SFU38131",
-       "image": "https://retail.photos.vin/WBY23HD01SFU38131-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD01SFU38131&partner=FRD_2",
-       "color": "Mineral White Metallic",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Lease",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents",
-        "ex-lease"
-       ],
-       "listed_since": "2026-08-18",
-       "days_listed": 12,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         47423
-        ]
-       ],
-       "stale_pct": 0.32
       },
       {
        "vin": "WBY33AW02PFP38812",
@@ -21667,7 +21827,51 @@
          47998
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
+      },
+      {
+       "vin": "WBY23HD01SFU38131",
+       "year": 2025,
+       "trim": "eDrive40",
+       "trim_id": "bmw-i4-edrive40",
+       "trim_label": "eDrive40",
+       "state": "AZ",
+       "local": false,
+       "lat": 33.65928,
+       "lon": -112.23375,
+       "distance": 1450,
+       "ship": 942,
+       "miles": 2254,
+       "price": 48072,
+       "adj": 49014,
+       "msrp": 57900,
+       "dealer": "Arrowhead BMW",
+       "city": "Glendale",
+       "url": "https://www.autolist.com/bmw-i4#vin=WBY23HD01SFU38131",
+       "image": "https://retail.photos.vin/WBY23HD01SFU38131-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WBY23HD01SFU38131&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-18",
+       "days_listed": 12,
+       "first_seen": "2026-08-30",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-30",
+         48072
+        ]
+       ],
+       "stale_pct": 0.32
       },
       {
        "vin": "WBY23HD0XSFV68134",
@@ -21711,7 +21915,7 @@
          48800
         ]
        ],
-       "stale_pct": 0.23
+       "stale_pct": 0.24
       },
       {
        "vin": "WBY23HD02SFV76888",
@@ -21756,7 +21960,7 @@
          49169
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY23HD08SFV70979",
@@ -21800,7 +22004,7 @@
          49214
         ]
        ],
-       "stale_pct": 0.85
+       "stale_pct": 0.86
       },
       {
        "vin": "WBY33AW04PFR01024",
@@ -21856,7 +22060,7 @@
          49914
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.36
       },
       {
        "vin": "WBY33AW09RFR51484",
@@ -21959,12 +22163,12 @@
       },
       {
        "date": "2026-08-30",
-       "n": 151,
+       "n": 156,
        "n_local": 39,
        "min_price": 25000,
        "min_adj": 25536,
-       "median_adj": 39000,
-       "median_price": 38510
+       "median_adj": 38947,
+       "median_price": 38500
       }
      ],
      "daily_by_trim": {
@@ -22016,12 +22220,12 @@
        },
        {
         "date": "2026-08-30",
-        "n": 115,
+        "n": 119,
         "n_local": 23,
         "min_price": 25000,
         "min_adj": 25536,
-        "median_adj": 37340,
-        "median_price": 36990
+        "median_adj": 37293,
+        "median_price": 35590
        }
       ],
       "bmw-i4-m50": [
@@ -22072,12 +22276,12 @@
        },
        {
         "date": "2026-08-30",
-        "n": 36,
+        "n": 37,
         "n_local": 16,
         "min_price": 31776,
         "min_adj": 32198,
-        "median_adj": 41314,
-        "median_price": 40599
+        "median_adj": 41272,
+        "median_price": 40698
        }
       ]
      },
@@ -22801,49 +23005,6 @@
       },
       {
        "likely": "delisted",
-       "vin": "WBY33AW03PFP49947",
-       "year": 2023,
-       "trim": "M50",
-       "trim_id": "bmw-i4-m50",
-       "trim_label": "M50",
-       "state": "GA",
-       "local": false,
-       "distance": 575,
-       "ship": 374,
-       "miles": 1483,
-       "last_price": 40898,
-       "adj": 41272,
-       "city": "Marietta",
-       "dealer": "\t Drive A Dream",
-       "url": "https://www.autolist.com/bmw-i4#vin=WBY33AW03PFP49947",
-       "last_seen": "2026-08-25",
-       "listed_since": "2026-08-16",
-       "prev_fetch_day": "2026-08-29",
-       "first_seen": "2026-08-23",
-       "days_tracked": 3,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "cpo": false,
-       "series": [
-        [
-         "2026-08-23",
-         40898
-        ],
-        [
-         "2026-08-24",
-         40898
-        ],
-        [
-         "2026-08-25",
-         40898
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "delisted",
        "vin": "WBY73AW02NFN17922",
        "year": 2022,
        "trim": "eDrive40",
@@ -23273,10 +23434,10 @@
      ],
      "market": {
       "median_days_listed": 21,
-      "tracked_2d": 77,
+      "tracked_2d": 78,
       "cut_share": 0.51,
       "median_cut": 408,
-      "n_sold": 25,
+      "n_sold": 24,
       "median_days_to_sale": 16
      }
     }
@@ -26959,13 +27120,13 @@
        "miles": 13119,
        "price": 44598,
        "adj": 45540,
-       "msrp": null,
-       "dealer": "lunde s peoria volkswagen",
+       "msrp": 65900,
+       "dealer": "Lunde's Peoria Volkswagen",
        "city": "Peoria",
        "url": "https://www.peoriavw.com/used-Peoria-2025-Audi-A6+e+tron-Premium-WAU7CAGH8SA026296",
        "image": "https://retail.photos.vin/WAU7CAGH8SA026296-1.jpg",
        "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WAU7CAGH8SA026296&partner=FRD_2",
-       "color": "Magnet Gray",
+       "color": "Gray",
        "cpo": false,
        "owners": 1,
        "accidents": 0,
@@ -27306,7 +27467,7 @@
        "state": "MO",
        "local": false,
        "lat": 38.79983,
-       "lon": -90.59997,
+       "lon": -90.59998,
        "distance": 275,
        "ship": 350,
        "miles": 3614,
