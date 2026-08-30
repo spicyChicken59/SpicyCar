@@ -257,9 +257,9 @@
   const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
-  const tok = (name) => getComputedStyle(root).getPropertyValue('--sc-' + name).trim();
-  // Only where a colour must be painted as an attribute: legend keys, tooltip keys, marker fills. Everything else is classed.
-  const chartColors = () => ({ emphasis: tok('chart-emphasis'), context: tok('chart-context') });
+  // No draw-time colour resolution: every painted colour is a var() reference
+  // (SC.toneRef or a literal), so it re-resolves in CSS on a theme flip and
+  // costs no getComputedStyle mid-update.
   // The where filter and hidden chart lines survive a return visit; everything else is per-session.
   function loadPrefs() {
     try {
@@ -289,7 +289,6 @@
   // The resolved value, for the few marks the sheet leaves uncoloured and that
   // therefore take a plain attribute. currentColor, not '', if the sheet is late:
   // an empty fill paints nothing, while inheriting keeps every dot visible.
-  function brandColor(bk) { return SC.tone(brandTone(bk)) || 'currentColor'; }
   function modelDash(bk, mk) {
     const models = Object.keys((((S.site || {}).brands || {})[bk] || {}).models || {});
     return DASHES[Math.max(0, models.indexOf(mk)) % DASHES.length];
@@ -300,10 +299,14 @@
     : (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
   const moneyK = (n) => (n === null || n === undefined) ? '—' : '$' + (n % 1000 === 0 ? (n / 1000) : (Math.round(n / 100) / 10).toFixed(1)) + 'K';
   const num = (n) => (n === null || n === undefined) ? '—' : Math.round(n).toLocaleString('en-US');
+  // Memoized: toLocaleDateString builds an Intl formatter per call, and the
+  // overview table asks for the same handful of dates hundreds of times.
+  const FMTC = new Map();
   const fmtDate = (iso) => {
     if (!iso) return '—';
-    const d = new Date(iso + 'T00:00:00Z');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    let v = FMTC.get(iso);
+    if (!v) { v = new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }); FMTC.set(iso, v); }
+    return v;
   };
   const fmtDateLong = (iso) => {
     if (!iso) return '—';
@@ -356,12 +359,15 @@
   const placeCell = (x) => [x.city, x.state].filter(Boolean).join(', ') || '—';
   const homeName = () => (((S.site || {}).buyer || {}).label) || 'home';
   // buyer.shortlist: the specific cars being decided on, by VIN.
+  let SHORTC = null;   // the shortlist never changes after boot; onShortlist runs once per row and dot
   function shortlistMap() {
+    if (SHORTC) return SHORTC;
     const m = {};
     for (const s of (((S.site || {}).buyer || {}).shortlist) || []) {
       const vin = String((typeof s === 'string' ? s : s.vin) || '').toUpperCase();
       if (vin) m[vin] = (typeof s === 'string' ? '' : (s.note || ''));
     }
+    if (S.site) SHORTC = m;
     return m;
   }
   const onShortlist = (x) => String(x.vin || '').toUpperCase() in shortlistMap();
@@ -482,7 +488,6 @@
     const dates = [...new Set(series.flatMap((s) => s.points.map((p) => p.date)))].sort();
     const vals = series.flatMap((s) => s.points.map((p) => p.value));
     if (!dates.length) { host.appendChild(el('p', { class: 'sc-empty' }, opts.empty || 'History starts with the next tracker run.')); return; }
-    const C = chartColors();
     const W = Math.max(320, host.clientWidth || 720), H = opts.height || 250;
     const m = { t: 18, r: opts.named ? 190 : 84, b: 34, l: 56 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
@@ -712,7 +717,7 @@
           tip.appendChild(img);
         }
         tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${c.m.label} · ${c.x.year || ''}`));
-        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + brandColor(c.bk) }),
+        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + SC.toneRef(brandTone(c.bk)) }),
           el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
         const extras = [];
         if (picked.has(c.x.vin)) extras.push('spicy pick');
@@ -762,13 +767,14 @@
         // their on-screen spread constant instead of exploding it under zoom
         const spread = { 'data-px': px.toFixed(1), 'data-py': py.toFixed(1), 'data-di': i };
         const isShort = onShortlist(c.x);
-        const hue = isShort ? tok('accent') : brandColor(c.bk);
+        // a var() reference, not a resolved hex — the map is built once per
+        // view, so a draw-time colour would sit stale after a theme flip
+        const hueRef = isShort ? 'var(--sc-accent)' : SC.toneRef(brandTone(c.bk));
         const dot = svgEl('circle', {
           class: 'sc-dot sc-dot--link is-off ' + (c.x.local ? 'is-filled' : 'is-hollow'),
           cx, cy,
           r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke', ...spread,
-          fill: c.x.local ? hue : 'none',
-          stroke: c.x.local ? null : hue,
+          style: c.x.local ? 'fill:' + hueRef : 'stroke:' + hueRef,
         });
         dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
         dot.addEventListener('click', () => {
@@ -884,10 +890,10 @@
       ctl.VIEW.animateTo(mapFitTarget(ctl.states, visible));
     }
     const lg = $('map-legend'); lg.textContent = '';
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + chartColors().context }), 'filled — drivable'));
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + chartColors().context }), 'hollow — shipping added'));
-    if (ctl.picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
-    if (anyShort) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-chart-context)' }), 'filled — drivable'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid var(--sc-chart-context)' }), 'hollow — shipping added'));
+    if (ctl.picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid var(--sc-accent)' }), 'spicy pick'));
+    if (anyShort) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-accent)' }), 'shortlist'));
     const noPointer = window.matchMedia('(hover: none)').matches;
     const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
     $('map-hint').textContent = `${onMap} cars under the current filters`
@@ -916,7 +922,7 @@
     if (pts.length < 3) { card.hidden = true; return; }
     card.hidden = false;            // unhide before measuring, or clientWidth is 0 on a direct load
     const host = $('scatter'); host.textContent = '';
-    const color = brandColor(S.brand);
+    const color = SC.toneRef(brandTone(S.brand));   // a live var() reference — re-resolves on a theme flip
     const W = Math.max(320, host.clientWidth || 720), H = 300;
     const m = { t: 16, r: 60, b: 40, l: 56 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
@@ -1025,12 +1031,12 @@
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
       const isShort = onShortlist(x);
-      const hue = isShort ? tok('accent') : color;      // shortlisted cars wear the accent outright
+      const hue = isShort ? 'var(--sc-accent)' : color;      // shortlisted cars wear the accent outright
       const yr = String(x.year || '');
       if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'sc-dot-ring', cx, cy, r: 7.5, 'data-year': yr }));
       const u = safeUrl(x.url);
       const dot = svgEl('circle', { class: 'sc-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' sc-dot--link' : ''),
-        cx, cy, r: 4, 'data-year': yr, fill: x.local ? hue : 'none', stroke: x.local ? null : hue });
+        cx, cy, r: 4, 'data-year': yr, style: x.local ? 'fill:' + hue : 'stroke:' + hue });
       dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
       dot.addEventListener('click', () => {
         if (lastPtr === 'touch' && armed !== dot) {
@@ -1074,14 +1080,14 @@
     const lg = $('scatter-legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + color }), 'drivable'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + color }), 'shipping added'));
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
-    if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
-    if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed ' + tok('border-strong') }), 'typical value by year'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid var(--sc-accent)' }), 'spicy pick'));
+    if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-accent)' }), 'shortlist'));
+    if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed var(--sc-border-strong)' }), 'typical value by year'));
     // one chip per model year — hover to preview, press to hold (the touch path)
     const setChips = () => { for (const b of lg.querySelectorAll('.sc-legend__chip--select')) b.setAttribute('aria-pressed', String(b.dataset.y === stuckYear)); };
     for (const c of cohorts) {
       const sample = svgEl('svg', { width: 20, height: 10, viewBox: '0 0 20 10', 'aria-hidden': 'true' },
-        svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, stroke: tok('border-strong'), 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
+        svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, style: 'stroke:var(--sc-border-strong)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
       const chip = el('button', { class: 'sc-legend__chip sc-legend__chip--select', type: 'button', 'aria-pressed': 'false',
         'data-fkey': 'ychip:' + c.year,
         title: `Highlight the ${c.year} cars`,
@@ -1257,9 +1263,9 @@
     S.brand = id;
     if (id !== 'all') S.model = Object.keys(S.site.brands[id].models)[0];
     S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
-    syncUrl(); buildFilters(); rerender('nav');
+    syncUrl(); rerender('nav');
   }
-  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); rerender('nav'); window.scrollTo(0, 0); }
+  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); window.scrollTo(0, 0); }
   function segment(host, ids, current, labelOf, caseClass, onPick, fkey) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
@@ -1365,13 +1371,22 @@
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
   // the rest of the country. Front page: across every model; model view: within it.
+  // A pick card is a pure function of the ordered VINs it shows, so when a
+  // filter change leaves the pick sets untouched (a clean toggle never can
+  // change them — accident cars were never pick-eligible) the eight photo
+  // cards are kept instead of being rebuilt and their images re-fetched.
+  let PICKS_KEY = null;
   function renderPicks(scored, perModel) {
-    const host = $('takeaway'); host.textContent = '';
     // The shopped models lead the display as well as holding reserved seats.
     const byRole = (a, b) => (Number(!!b.shopping) - Number(!!a.shopping)) || (b.pct - a.pct);
     const sets = pickSets(scored, perModel);
     const local = sets.local.slice().sort(byRole);
     const far = sets.far.slice().sort(byRole);
+    const key = (S.brand === 'all' ? 'ov' : 'm|' + S.brand + '/' + S.model) + '|' + (perModel || '')
+      + '|' + local.map((p) => p.x.vin).join(',') + '|' + far.map((p) => p.x.vin).join(',');
+    if (key === PICKS_KEY) return;
+    PICKS_KEY = key;
+    const host = $('takeaway'); host.textContent = '';
     if (!local.length && !far.length) { host.hidden = true; return; }
     const cheapest = (picks) => picks.reduce((a, p) => (a == null || p.x.price < a ? p.x.price : a), null);
     const group = (label, picks, empty, collapse) => {
@@ -1494,7 +1509,7 @@
     ]);
     segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand, 'tab-brand');
     segment($('tabs'), modelIds, S.model, (id) => brand.models[id].label || id, true,
-      (id) => { S.model = id; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); rerender('nav'); }, 'tab-model');
+      (id) => { S.model = id; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); }, 'tab-model');
   }
 
   function renderKpis(rows) {
@@ -1572,10 +1587,9 @@
       ? `Lowest and median asking price on the market each day — ${scope}.`
       : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
       + ` ${spanText()}.`;
-    const C = chartColors();
     const lg = $('legend'); lg.textContent = '';
-    lg.appendChild(el('span', null, el('i', { style: 'background:' + C.emphasis }), 'Lowest asking'));
-    lg.appendChild(el('span', null, el('i', { style: 'background:' + C.context }), 'Median asking'));
+    lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-emphasis)' }), 'Lowest asking'));
+    lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-context)' }), 'Median asking'));
     const byDate = {}; for (const d of daily) byDate[d.date] = d;
     lineChart($('chart'), [
       { label: 'median asking', emphasis: false, points: daily.filter((d) => d.median_price != null).map((d) => ({ date: d.date, value: d.median_price })) },
@@ -2005,6 +2019,7 @@
   }
 
   function render() {
+    PICKS_KEY = null;   // a full render never skips the picks — kills any overview↔model carry-over
     if (S.brand === 'all') { renderOverview(); return; }
     $('overview-card').hidden = true;
     renderHeader();
@@ -2113,18 +2128,27 @@
     const k = a.getAttribute && a.getAttribute('data-fkey');
     return k ? { fkey: k } : null;
   }
-  function restoreFocus(f) {
+  function restoreFocus(f, nav) {
     if (!f) return;
-    if (document.activeElement && document.activeElement !== document.body) return;   // the node survived
-    let n = f.id ? $(f.id) : document.querySelector('[data-fkey="' + CSS.escape(f.fkey) + '"]');
+    // A node inside a card that render() merely HID (view switches hide the
+    // overview/list/gone/scatter/notes cards rather than emptying them) still
+    // matches the selector but cannot take focus — focus() would silently
+    // no-op and strand the keyboard user on <body>.
+    const live = (x) => !!x && !x.closest('[hidden]');
+    if (document.activeElement && document.activeElement !== document.body && live(document.activeElement)) return;   // the node survived
+    let n = null;
+    if (f.id) { n = $(f.id); if (!live(n)) n = null; }
+    else for (const c of document.querySelectorAll('[data-fkey="' + CSS.escape(f.fkey) + '"]')) { if (live(c)) { n = c; break; } }
     if (!n && f.fkey && f.fkey.indexOf('more:') === 0) {
       // the show-all button removes itself when pressed — land on the list it revealed
       const gone = f.fkey === 'more:gone';
       n = $(narrow() ? (gone ? 'gone-cards' : 'list-cards') : (gone ? 'gone-scroll' : 'list-scroll'));
-      if (n) n.setAttribute('tabindex', '-1');
+      if (!live(n)) n = null;
+      else n.setAttribute('tabindex', '-1');
     }
-    if (!n && f.fkey && (f.fkey.indexOf('open:') === 0 || f.fkey.indexOf('sl:') === 0 || f.fkey.indexOf('tab-') === 0)) {
-      // navigation took the focused link away with the old view — land on the new heading
+    if (!n && (nav || (f.fkey && (f.fkey.indexOf('open:') === 0 || f.fkey.indexOf('sl:') === 0
+        || f.fkey.indexOf('tab-') === 0 || f.fkey.indexOf('notice:') === 0)))) {
+      // the view switched (or the control left with the old one) — land on the new heading
       n = $('h1');
       if (n) n.setAttribute('tabindex', '-1');
     }
@@ -2151,10 +2175,12 @@
       case 'showGone': renderGone(); break;
       case 'hide': renderOverviewChart(overviewRows()); updateMapVisibility(); break;
       case 'range': overview ? renderOverviewChart(overviewRows()) : renderChart(); break;
-      case 'nav': render(); break;
+      // buildFilters runs INSIDE the nav scope — after rememberFocus — so a
+      // where-chip holding focus is captured before the chips are rebuilt
+      case 'nav': buildFilters(); render(); break;
       default: render(); break;
     }
-    restoreFocus(fk);
+    restoreFocus(fk, scope === 'nav');
     if (anchorScope) requestAnimationFrame(() => {
       if (anchored && !bar.hidden) {
         const after = bar.getBoundingClientRect().top;
@@ -2245,7 +2271,7 @@
       annotateValue(site);
       loadPrefs();
       applyUrl();
-      window.addEventListener('popstate', () => { applyUrl(); buildFilters(); rerender('nav'); });
+      window.addEventListener('popstate', () => { applyUrl(); rerender('nav'); });
       buildFilters();
       render();
     })
