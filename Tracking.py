@@ -1339,6 +1339,12 @@ def build_outputs(today_rows, all_rows, hist):
     site = {
         "app": APP,
         "generated": TODAY,
+        # The DATA day: the newest snapshot anywhere in the record. generated
+        # is the day this file was BUILT — an offline rebuild
+        # (tools/rebuild_outputs.py) stamps it with no fetch — so the pages
+        # date the numbers by data_through, never by generated.
+        "data_through": max((r["snapshot_date"] for r in all_rows),
+                            default=None),
         "buyer": {
             "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
             "states": STATES,

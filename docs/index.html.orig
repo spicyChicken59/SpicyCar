@@ -1481,7 +1481,7 @@
   // once months of history accumulate.
   function rangeDaily(daily) {
     if (S.range === 'all' || !Array.isArray(daily) || !daily.length) return daily || [];
-    const end = Date.parse((dataThrough() || daily[daily.length - 1].date) + 'T00:00:00Z');
+    const end = Date.parse((S.site.generated || daily[daily.length - 1].date) + 'T00:00:00Z');
     const cut = end - (+S.range) * 86400000;
     return daily.filter((d) => Date.parse(d.date + 'T00:00:00Z') >= cut);
   }
@@ -1494,11 +1494,8 @@
     const sorted = [...dates].sort();
     return Math.round((Date.parse(sorted[sorted.length - 1] + 'T00:00:00Z') - Date.parse(sorted[0] + 'T00:00:00Z')) / 86400000) + 1;
   }
-  function spanText(daily) {
-    // Given the chart's own daily rows, describe exactly what is plotted;
-    // without them (the overview), describe the whole record.
-    const dates = daily ? [...new Set(daily.map((d) => d.date))].sort()
-      : [...new Set(allModels().flatMap(({ m }) => (m.daily || []).map((d) => d.date)))].sort();
+  function spanText() {
+    const dates = [...new Set(allModels().flatMap(({ m }) => (m.daily || []).map((d) => d.date)))].sort();
     if (!dates.length) return '';
     const n = dates.length;
     return n === 1 ? `One snapshot day (${fmtDate(dates[0])})`
@@ -1516,17 +1513,8 @@
   // Lowest asking per day. Days written before min_price existed are skipped; a model with none gets its latest snapshot as one point.
   function askingSeries(m, daily) {
     const pts = (daily || []).filter((d) => d.min_price !== null && d.min_price !== undefined).map((d) => ({ date: d.date, value: d.min_price }));
-    if (!pts.length) { const b = lowestBy((m.listings || []), 'price'); if (b) pts.push({ date: m.as_of || dataThrough(), value: b.price }); }
+    if (!pts.length) { const b = lowestBy((m.listings || []), 'price'); if (b) pts.push({ date: m.as_of || S.site.generated, value: b.price }); }
     return pts;
-  }
-  // The DATA day: the newest snapshot date anywhere in the file. site.generated
-  // is the day the file was BUILT (an offline rebuild stamps it with no fetch),
-  // so every "when is this from" line derives from the data itself instead.
-  function dataThrough() {
-    if (S.site.data_through) return S.site.data_through;
-    let mx = '';
-    for (const { m } of allModels()) for (const d of (m.daily || [])) if (d.date > mx) mx = d.date;
-    return mx || S.site.generated || null;
   }
   function allModels() {
     const out = [];
@@ -1876,7 +1864,7 @@
   function renderHeader() {
     const t = model(), site = S.site, brand = site.brands[S.brand];
     const brandIds = Object.keys(site.brands), modelIds = Object.keys(brand.models);
-    $('mast-right').textContent = 'Data through ' + (dataThrough() || '—');
+    $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
     const trim = S.trim === 'all' ? null : (t.trims || {})[S.trim];
     updateEyebrow();
     $('h1').textContent = trim ? `${t.label} ${trim.label}` : (t.label || S.model);
@@ -1885,9 +1873,10 @@
     $('dek').textContent = [note, `Asking prices as listed; shipping stated per car.`].filter(Boolean).join(' ');
     const daily = dailyFor(t), nDays = daily.length || 1, nTrims = Object.keys(t.trims || {}).length;
     const p = t.params || {}, minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
+    const stale = t.as_of && site.generated && t.as_of !== site.generated;
     const unfetched = !t.as_of && t.next_due;
     metaRow([
-      unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}` : `Data through ${fmtDateLong(t.as_of || dataThrough())}`,
+      unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}` : (stale ? `As of ${fmtDateLong(t.as_of)}` : `Updated ${fmtDateLong(site.generated)}`),
       t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
       `${nDays} snapshot day${nDays === 1 ? '' : 's'}`,
       nTrims > 1 && !trim ? `${nTrims} trims` : null,
@@ -2010,7 +1999,7 @@
     $('chart-hint').textContent = (daily.length >= 2
       ? `Lowest and median asking price on the market each day — ${scope}.`
       : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
-      + ` ${spanText(daily)}.`;
+      + ` ${spanText()}.`;
     const lg = $('legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-emphasis)' }), 'Lowest asking'));
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-context)' }), 'Median asking'));
@@ -2243,7 +2232,7 @@
     const site = S.site;
     const rows = overviewRows();
     for (const id of ['list-card', 'gone-card', 'scatter-card']) $(id).hidden = true;
-    $('mast-right').textContent = 'Data through ' + (dataThrough() || '—');
+    $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
     updateEyebrow();
     $('h1').textContent = 'The watchlist';
     document.title = `The watchlist — ${site.app || 'SpicyCar'}`;
@@ -2251,7 +2240,7 @@
     // it here cost the phone fold and said nothing a buyer can act on.
     $('dek').textContent = `${rows.length} electric cars, priced every day for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
-    metaRow([`Data through ${fmtDateLong(dataThrough())}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
+    metaRow([`Updated ${fmtDateLong(site.generated)}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
     segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand, 'tab-brand');
     $('tabs').hidden = true;
     renderShortlist(true);
@@ -2380,7 +2369,7 @@
       ...(slimOverview ? [] : [el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'Drivable')]),
       el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, 'Lowest drivable asking'),
       ...(slimOverview ? [] : [el('th', { class: 'sc-num' }, 'Median asking')]),
-      el('th', null, 'Trend'), el('th', null, 'Data through'))));
+      el('th', null, 'Trend'), el('th', null, 'Data'))));
     const obody = el('tbody');
     for (const r of rows) {
       const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, true, r.photos), el('div', { class: 'sc-media__body' },
@@ -2423,9 +2412,7 @@
   function footLine() {
     const site = S.site;
     const n = Object.values(site.brands).reduce((a, b) => a + Object.values(b.models).reduce((c, m) => c + Object.keys(m.trims || {}).length, 0), 0);
-    const dt = dataThrough();
-    $('foot-left').textContent = `Source: auto.dev listings API · ${n} trim${n === 1 ? '' : 's'} tracked · data through ${dt || '—'}`
-      + (site.generated && dt && site.generated !== dt ? ` · rebuilt ${site.generated}` : '') + ` · runs daily 11:00 UTC`;
+    $('foot-left').textContent = `Source: auto.dev listings API · ${n} trim${n === 1 ? '' : 's'} tracked · snapshot ${site.generated || '—'} · runs daily 11:00 UTC`;
   }
 
   // The page is ordered around the decision, not around how it was built: what
