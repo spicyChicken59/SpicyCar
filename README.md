@@ -47,8 +47,9 @@ Two things are configured, separately:
   Chicago shopping the i5 and the iX — drawn by a CPO financing promo (2.99% APR on certified
   EVs, 2.49% on the iX). The shape is built for more.
 - **watchlist** — what to track: brands → models → trims. The shopped i5 and iX each carry a
-  nationwide CPO watch (every certified 2024+ car under 30,000 miles, fetched lowest-mileage
-  first, national query only) beside their ordinary trim targets; the i4 stays as the price
+  nationwide CPO watch (every certified 2024+ eDrive/xDrive under 30,000 miles — the M trims are
+  not the shopping pool — fetched lowest-mileage first, national query only) beside their
+  ordinary trim targets; the i4 stays as the price
   benchmark for the same drivetrain; comparison models from Hyundai, Kia, Audi and Lucid run
   every third day. `buyer.shopping` names the targets that lead the report in full; everything
   else gets one line.
