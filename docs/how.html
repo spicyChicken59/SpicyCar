@@ -13,15 +13,15 @@
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/how.html">
 <meta name="twitter:card" content="summary_large_image">
-<!-- SpicyChicken Design System v2.3.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/apple-touch-icon.png">
+<!-- SpicyChicken Design System v2.4.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc.css">
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc-theme.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc.css">
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-theme.js"></script>
 <style>
   /* The readability pass lives in the design system since v2.2.0; the one
      override left is the eyebrow's case (state codes must read as IL). */
@@ -46,29 +46,16 @@
   .dg-bar-ship { fill: var(--sc-accent-fill); stroke: var(--sc-accent); }
   .dg-figure { font: 700 13.5px var(--sc-font-body); fill: var(--sc-heading); }
 
-  /* Bridge: sc.css v2.3.0 keys its 44px touch-target block to
-     (max-width: 720px), so a landscape phone (844px wide) and every tablet
-     miss it — 24px theme toggle, 27px nav link, 13px footer links under a
-     finger. Until the sheet moves that block to (pointer: coarse) — the
-     .sc-map__btn precedent — mirror exactly its target-sizing rules for
-     coarse pointers above the sheet's own gate. min-width: 721px means the
-     two blocks can never both apply, so nothing stacks. Delete this whole
-     block when the design-system pin moves past v2.3.x. */
-  @media (pointer: coarse) and (min-width: 721px) {
-    .sc-theme-toggle button { min-height: 44px; padding-inline: 14px; }
-    .sc-masthead .sc-nav a { display: inline-flex; align-items: center; min-height: 44px; }
-    .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
-    .sc-foot a { display: inline-block; padding: 10px 2px; }
-  }
-
-  /* Bridge, dense surfaces — the TOC's 21px-tall rows under a finger.
-     Real growth keyed to (pointer: coarse) like the masthead bridge above,
+  /* Bridge, dense surfaces — the TOC's 21px-tall rows under a finger. (The
+     masthead, theme toggle and footer are sc.css v2.4.0's own 44px block,
+     keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
+     Real growth keyed to (pointer: coarse) like the sheet's own block,
      because a shiftless halo cannot get there: TOC rows sit 6px apart, so
      symmetric growth tops out at ±3px — 27px effective, short of every
      guideline. A prose page's nav can afford the height (measured 129px →
      244px at 390px wide; the 6px wrap gap stays as the separator between
      the now-touching 44px rows). Promotion candidate for design-system
-     v2.4.x. Delete when the pin moves past a release that carries it. */
+     v2.5.x. Delete when the pin moves past a release that carries it. */
   @media (pointer: coarse) {
     .sc-toc a { display: inline-flex; align-items: center; min-height: 44px; }
   }
@@ -79,7 +66,7 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-mark-color-dark.svg" alt="">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-color-dark.svg" alt="">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
   </a>
   <div class="sc-masthead__right">
@@ -270,7 +257,7 @@
 <footer class="sc-foot">
   <span>Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
-    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
+    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
   </a>
 </footer>
 </body>

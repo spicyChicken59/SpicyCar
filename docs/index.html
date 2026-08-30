@@ -13,19 +13,19 @@
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
-<!-- SpicyChicken Design System v2.3.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/apple-touch-icon.png">
+<!-- SpicyChicken Design System v2.4.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc.css">
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc-theme.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc-charts.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc-map.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc.css">
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-theme.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-charts.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-map.js"></script>
 <style>
-  /* Page-specific only. Everything generic now lives in sc.css v2.3.0 — the
+  /* Page-specific only. Everything generic now lives in sc.css v2.4.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
      frame's photo loader and the 44px touch targets were all promoted out of
      this file and are no longer maintained here. */
@@ -117,22 +117,9 @@
     #list-table .col-price { max-width: 176px; white-space: normal; }   /* the long price notes wrap instead of holding the column at 204px */
   }
 
-  /* Bridge: sc.css v2.3.0 keys its 44px touch-target block to
-     (max-width: 720px), so a landscape phone (844px wide) and every tablet
-     miss it — 24px theme toggle, 27px nav link, 13px footer links under a
-     finger. Until the sheet moves that block to (pointer: coarse) — the
-     .sc-map__btn precedent — mirror exactly its target-sizing rules for
-     coarse pointers above the sheet's own gate. min-width: 721px means the
-     two blocks can never both apply, so nothing stacks. Delete this whole
-     block when the design-system pin moves past v2.3.x. */
-  @media (pointer: coarse) and (min-width: 721px) {
-    .sc-theme-toggle button { min-height: 44px; padding-inline: 14px; }
-    .sc-masthead .sc-nav a { display: inline-flex; align-items: center; min-height: 44px; }
-    .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
-    .sc-foot a { display: inline-block; padding: 10px 2px; }
-  }
-
-  /* Bridge, dense surfaces — touch targets below the masthead block above.
+  /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
+     masthead, theme toggle and footer are sc.css v2.4.0's own 44px block,
+     keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
      Two mechanisms, split by whether layout may move:
 
      1) Halos, keyed to (any-pointer: coarse) — the #map/#scatter .dot-hit
@@ -160,8 +147,8 @@
         (measured over every view) where two quiet links sit closer than
         2×8px — 16px of margin there makes room, one card grows ~14px.
 
-     2) Real growth, keyed to (pointer: coarse) like the masthead bridge —
-        layout only moves for a touch-first device. The 15px checkbox inside
+     2) Real growth, keyed to (pointer: coarse) like the sheet's own 44px
+        block — layout only moves for a touch-first device. The 15px checkbox inside
         a 24px label cannot reach 44px shiftlessly: the two labels sit 10px
         apart on a phone, so ±10px halos would overlap each other by 10px.
         min-height grows the label row for real (filter panel +40px on a
@@ -169,7 +156,7 @@
         sticky bar +20px on a tablet) and the input grows to 20px so the
         visible box matches the bigger target.
 
-     Promotion candidates for design-system v2.4.x (same shapes; upstream
+     Promotion candidates for design-system v2.5.x (same shapes; upstream
      .sc-details needs no :not() — .picks-group is this page's class).
      Delete when the pin moves past a release that carries them. */
   @media (any-pointer: coarse) {
@@ -219,7 +206,7 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
   </a>
   <div class="sc-masthead__right">
@@ -392,7 +379,7 @@
 <footer class="sc-foot">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
-    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
+    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
   </a>
 </footer>
 
@@ -489,7 +476,7 @@
   };
   const isLocal = (x) => !!x.local;
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
-  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/';
+  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
   const markImg = () => el('img', { class: 'sc-mark', 'data-mark': 'color', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '', width: 22, height: 26 });
   // the faint chick that stands in when a dealer sent no photo
