@@ -93,7 +93,8 @@
 
   /* The 721–1000px band: the tables drop their least-load-bearing columns
      (see bandOf() and the renderers), and the columns that stay get band
-     widths so what remains actually fits the viewport. */
+     widths. A little overflow can remain at the band bottoms (~50px at
+     721px) — the sticky first column and the clip fade carry it honestly. */
   @media (min-width: 721px) and (max-width: 1000px) {
     .col-model { min-width: 220px; }        /* the small thumb replaces the 120px one here */
     #list-table .col-price { max-width: 176px; white-space: normal; }   /* the long price notes wrap instead of holding the column at 204px */
@@ -2795,15 +2796,24 @@
         // band re-renders nothing, so re-derive it here or it lies both ways.
         markClipped($('list-scroll')); markClipped($('gone-scroll'));
         markClipped(document.querySelector('#overview-table')?.closest('.sc-table-scroll'));
+        // Track the band UNCONDITIONALLY, before the overview early-return —
+        // otherwise an overview-side resize leaves wasBand stale, and the next
+        // crossing back after navigating into a model view is silently skipped
+        // (a compact table stuck on a desktop; phone cards stuck at 1280px).
+        const bandChanged = bandOf() !== wasBand;
+        wasBand = bandOf();
         if (S.brand === 'all') { render(); return; }
         renderChart();
         renderScatter(filtered());
-        if (bandOf() !== wasBand) {   // any band edge: 720 (cards), 900, 1000 — the tables' column sets are band functions now
-          wasBand = bandOf();
+        if (bandChanged) {   // any band edge: 720 (cards), 900, 1000 — the tables' column sets are band functions now
+          // the rebuild destroys a focused sort header; the fkey machinery
+          // brings it back, exactly as it does for every other rebuild path
+          const fk = rememberFocus();
           const rows = filtered(), t = model();
           renderList(rows);
           renderGone();                // its column set follows the band too
           renderPicks(scoredFrom(rows, t.label, !!t.shopping));   // the picks' phone collapse follows the breakpoint too
+          restoreFocus(fk, false);
         }
       });
     });
