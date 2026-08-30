@@ -45,6 +45,21 @@
   .dg-bar-ask { fill: var(--sc-brand-fill); stroke: var(--sc-brand-line); }
   .dg-bar-ship { fill: var(--sc-accent-fill); stroke: var(--sc-accent); }
   .dg-figure { font: 700 13.5px var(--sc-font-body); fill: var(--sc-heading); }
+
+  /* Bridge: sc.css v2.3.0 keys its 44px touch-target block to
+     (max-width: 720px), so a landscape phone (844px wide) and every tablet
+     miss it — 24px theme toggle, 27px nav link, 13px footer links under a
+     finger. Until the sheet moves that block to (pointer: coarse) — the
+     .sc-map__btn precedent — mirror exactly its target-sizing rules for
+     coarse pointers above the sheet's own gate. min-width: 721px means the
+     two blocks can never both apply, so nothing stacks. Delete this whole
+     block when the design-system pin moves past v2.3.x. */
+  @media (pointer: coarse) and (min-width: 721px) {
+    .sc-theme-toggle button { min-height: 44px; padding-inline: 14px; }
+    .sc-masthead .sc-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+    .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
+    .sc-foot a { display: inline-block; padding: 10px 2px; }
+  }
 </style>
 </head>
 <body>
