@@ -51,6 +51,11 @@
      zoom loop never visits these nodes; zoomed in they grow with the map,
      and the 13px nearest-car cap in the tap handler keeps precision honest. */
   #map .sc-dot-hit { fill: none; stroke: none; pointer-events: all; cursor: pointer; }
+  /* The scatter wears the same halos on coarse pointers. Its svg rebuilds
+     wholesale on every filter change, so these need no is-off syncing —
+     they die with the rebuild. Sized once per build, in user units, to
+     ~25px on screen at the card's rendered width. */
+  #scatter .sc-dot-hit { fill: none; stroke: none; pointer-events: all; cursor: pointer; }
   /* The gaps between the zoom buttons must not eat a tap meant for a dot */
   #map .sc-map__btns { pointer-events: none; }
   #map .sc-map__btns .sc-map__btn { pointer-events: auto; }
@@ -1205,10 +1210,55 @@
       tip.classList.add('is-on');
       TIP.place({ clientX, clientY });
     };
-    svg.addEventListener('pointerdown', (e) => {
-      if (!(e.target.classList && e.target.classList.contains('sc-dot'))) hideTip();
-    });
     const kOrder = [];
+    // The map's coarse-pointer kit, minus the zoom bookkeeping: an invisible
+    // halo per dot so a thumb never lands in a dead 2px gap, and one delegated
+    // press/tap/click pipeline that resolves the NEAREST dot within 13px of
+    // the finger — on a scatter that clusters at similar price/miles,
+    // topmost-wins would hand a whole cluster to one arbitrary car.
+    const COARSE = window.matchMedia('(pointer: coarse)').matches;
+    const halos = [];
+    const nearestPt = (x, y) => {
+      let best = null, bd = 13 * 13;
+      for (const k of kOrder) {
+        const r = k.dot.getBoundingClientRect();
+        const dx = r.left + r.width / 2 - x, dy = r.top + r.height / 2 - y;
+        const d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = k; }
+      }
+      return best;
+    };
+    svg.addEventListener('pointerdown', (e) => {
+      lastPtr = e.pointerType || 'mouse';
+      const cl = e.target.classList;
+      if (!(cl && (cl.contains('sc-dot') || cl.contains('sc-dot-hit')))) hideTip();
+    });
+    svg.addEventListener('click', (e) => {
+      const cl = e.target.classList;
+      if (!cl || !(cl.contains('sc-dot') || cl.contains('sc-dot-hit'))) return;
+      const k = nearestPt(e.clientX, e.clientY);
+      if (!k) { hideTip(); return; }   // a tap on halo-covered emptiness dismisses, like background
+      if (lastPtr === 'touch' && armed !== k.dot) {   // first tap previews
+        armed = k.dot;
+        const r = k.dot.getBoundingClientRect();
+        fillTip(k.x, r.left + r.width / 2, r.top, true);
+        return;
+      }
+      const u = safeUrl(k.x.url);
+      if (u) window.open(u, '_blank', 'noopener');
+    });
+    // a mouse paired with a touch-primary device hovers the halos; give it
+    // the same nearest-car tooltip instead of nothing
+    svg.addEventListener('pointerover', (e) => {
+      if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+      const k = nearestPt(e.clientX, e.clientY);
+      if (k) fillTip(k.x, e.clientX, e.clientY, false);
+    });
+    svg.addEventListener('pointerout', (e) => {
+      if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+      const rt = e.relatedTarget;
+      if (!(rt && rt.classList && (rt.classList.contains('sc-dot-hit') || rt.classList.contains('sc-dot')))) hideTip();
+    });
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
       const isShort = onShortlist(x);
@@ -1218,25 +1268,30 @@
       const u = safeUrl(x.url);
       const dot = svgEl('circle', { class: 'sc-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' sc-dot--link' : ''),
         cx, cy, r: 4, 'data-year': yr, style: x.local ? 'fill:' + hue : 'stroke:' + hue });
-      dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
-      dot.addEventListener('click', () => {
-        if (lastPtr === 'touch' && armed !== dot) {
-          armed = dot;
-          const r = dot.getBoundingClientRect();
-          fillTip(x, r.left + r.width / 2, r.top, true);
-          return;
-        }
-        if (u) window.open(u, '_blank', 'noopener');
-      });
+      // presses and clicks ride the delegated pipeline above; hover stays
+      // per-dot (a fine pointer only ever reaches the bare dots)
       dot.addEventListener('pointerenter', (e) => {
         if (e.pointerType === 'touch') return;
         fillTip(x, e.clientX, e.clientY, false);
       });
       dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
       svg.appendChild(dot);
+      // The halo: a listener-less tap catcher, invisible, no data-year — the
+      // year highlight's opacity sweep never touches it (nothing to dim), and
+      // the nearest-dot cap above does the actual disambiguation.
+      if (COARSE) halos.push(svgEl('circle', { class: 'sc-dot-hit', cx, cy, r: 1 }));
       kOrder.push({ x, dot });
     }
     host.appendChild(svg);
+    // halos sized to ~12.5px screen radius in user units — measured from the
+    // rendered width, so the fixed viewBox scale never skews the target —
+    // and appended ABOVE every dot: what a thumb lands on is always inside
+    // some halo, never a dead gap between dots
+    if (halos.length) {
+      const hw = svg.getBoundingClientRect().width || W;
+      const hr = (12.5 * W / hw).toFixed(1);
+      for (const n of halos) { n.setAttribute('r', hr); svg.appendChild(n); }
+    }
     host.appendChild(tip);
     // keyboard: arrows step through the cars by mileage (the same order the
     // x-axis reads), Enter opens the listing, Escape clears — the trend
