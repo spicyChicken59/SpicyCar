@@ -696,10 +696,14 @@
       if (!states) { card.hidden = true; MAP_CTL = { key, empty: true }; return; }
       if (MAP_CTL && MAP_CTL.VIEW) MAP_CTL.VIEW.destroy();   // cancel any in-flight animation on the old svg
       const buyer = S.site.buyer || {};
-      // Phones and tablets get invisible hit halos over the dots (~25px
-      // targets); a precise pointer keeps the bare dots, so hover can never
-      // fire from 12px away on a desktop.
-      const COARSE = window.matchMedia('(pointer: coarse)').matches;
+      // Any device with a coarse pointer gets invisible hit halos over the
+      // dots (~25px targets) — any-pointer, not pointer, so a touch-laptop's
+      // finger is covered even though its PRIMARY pointer is the trackpad.
+      // A pure desktop (no coarse pointer at all) keeps the bare dots, so
+      // hover can never fire from 12px away there; on a hybrid the mouse
+      // hovers the halos instead, and the delegated pointerover below gives
+      // it the same nearest-car(≤13px) tooltip the bare dots would.
+      const COARSE = window.matchMedia('(any-pointer: coarse)').matches;
       const halos = [];   // every halo, for one-shot r sizing once the card is measurable
       // Which cars are elevated (picks ringed in the accent, shortlisted VINs
       // drawn in it outright) is filter-dependent, so it belongs to
@@ -724,6 +728,13 @@
         anchorEl = svgEl('circle', { class: 'sc-map__anchor', cx: ax, cy: ay, r: 4.5, 'data-br': 4.5, 'vector-effect': 'non-scaling-stroke' });
         svg.appendChild(anchorEl);
       }
+      // On the nav path restoreFocus runs synchronously, BEFORE this .then —
+      // it can re-land focus on the OLD map's zoom buttons, which the wipe
+      // below then destroys, dumping the keyboard user on <body>. Remember a
+      // map:* focus here and re-land it on the new buttons once they exist.
+      const focusA = document.activeElement;
+      const focusFk = focusA && focusA.getAttribute && focusA.getAttribute('data-fkey');
+      const wantFocus = focusFk && focusFk.indexOf('map:') === 0 ? focusFk : null;
       const host = $('map'); host.textContent = '';
       const TIP = SC.tooltip(host, { live: false, flip: 0.55, offsetX: 14, offsetY: -40 });
       const tip = TIP.node;
@@ -919,9 +930,13 @@
         el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Reset view', 'data-fkey': 'map:reset',
           onclick: () => VIEW.reset(mapFitTarget(states, (MAP_CTL && MAP_CTL.visible) || [])) }, '⤢'));
       host.appendChild(btns);
+      if (wantFocus) {
+        const b = btns.querySelector('[data-fkey="' + wantFocus + '"]');
+        if (b) b.focus({ preventScroll: true });
+      }
 
       MAP_CTL = { key, mode, entries, picked, visible: [], VIEW, svg, hideTip, states,
-                  halos, hitR: null, kOrder: [], kIdx: -1, kBig: null };
+                  halos, hitR: null, haloW: 0, haloVW: 0, twinKey: null, kOrder: [], kIdx: -1, kBig: null };
       // Keyboard: arrows step the VISIBLE dots west→east (the order the map
       // reads), Enter opens the car, Escape clears, blur clears — the
       // scatter's contract, adapted to a surface that zooms. kOrder lives on
@@ -1020,15 +1035,12 @@
     const card = $('map-card');
     if (!visible.length) { card.hidden = true; return; }
     card.hidden = false;
-    // One-shot halo sizing: ~12.5px screen radius at the full-US view, in
-    // user units, measured once the card can be laid out. (Circles built
-    // with vector-effect in a detached tree never acquire a stroke hit
+    // Halo sizing: ~12.5px screen radius at the full-US view, in user units,
+    // measured once the card can be laid out — and re-measured after a
+    // rotation, which roughly doubles or halves the svg's width. (Circles
+    // built with vector-effect in a detached tree never acquire a stroke hit
     // region in Chromium, so the halos are pure geometry instead.)
-    if (ctl.hitR == null && ctl.halos && ctl.halos.length) {
-      const w = ctl.svg.getBoundingClientRect().width || 720;
-      ctl.hitR = (12.5 * MAP_FULL.w / w).toFixed(1);
-      for (const n of ctl.halos) n.setAttribute('r', ctl.hitR);
-    }
+    sizeMapHalos();
     // Refit when the Where selection (or what the map is of) changes; the other
     // filters hide dots without moving the frame — exactly the old behavior.
     const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
@@ -1052,6 +1064,25 @@
     renderMapTwin(ctl, visible, onMap, offMap);
   }
 
+  // The halos' user-unit radius is a function of the svg's on-screen width,
+  // so a rotation invalidates it: 390→844 leaves ~29px halos (gross overlap),
+  // 844→390 shrinks them to ~5px (untappable). Cheap by design: the layout
+  // read only happens when the viewport width moved since the last sizing
+  // (rotation, window resize) — never on the filter path — and the halos are
+  // only re-set when the svg's width moved >10%.
+  function sizeMapHalos() {
+    const ctl = MAP_CTL;
+    if (!ctl || ctl.empty || !ctl.halos || !ctl.halos.length) return;
+    if (ctl.hitR != null && window.innerWidth === ctl.haloVW) return;   // nothing moved — skip the measure
+    const w = ctl.svg.getBoundingClientRect().width;
+    if (!w) return;   // the card is hidden or not laid out yet — retry on the next pass
+    ctl.haloVW = window.innerWidth;
+    if (ctl.hitR != null && Math.abs(w - ctl.haloW) <= ctl.haloW * 0.1) { ctl.haloW = w; return; }
+    ctl.haloW = w;
+    ctl.hitR = (12.5 * MAP_FULL.w / w).toFixed(1);
+    for (const n of ctl.halos) n.setAttribute('r', ctl.hitR);
+  }
+
   // The map's accessible twin: what the map SAYS, in words — the visible cars
   // grouped by state, with the filled/hollow encoding spelled out as drivable
   // vs shipping counts. Rebuilt inside every visibility pass so a screen
@@ -1060,7 +1091,6 @@
   // announce through the filter-count line, not by re-reading a table.
   function renderMapTwin(ctl, visible, onMap, offMap) {
     const mount = $('map-twin'); if (!mount) return;
-    mount.textContent = '';
     const byState = new Map();
     for (const { x } of visible) {
       const ab = (x.state || '').toUpperCase() || '??';
@@ -1082,12 +1112,18 @@
         if (withPicks) r.push(g.picks ? num(g.picks) : '0');
         return r;
       });
-    SC.tableTwin(mount, {
-      caption: `The market on the map: ${onMap} cars under the current filters`
-        + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
-        + ', grouped by state. Drivable cars need no shipping.',
-      head, rows, details: false,
-    });
+    const caption = `The market on the map: ${onMap} cars under the current filters`
+      + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
+      + ', grouped by state. Drivable cars need no shipping.';
+    // The twin says the same words whenever a pass leaves the visible set (and
+    // the picks) unchanged — a resize re-render, a filter that only touched
+    // unmapped cars. Skip the teardown+rebuild then (the PICKS_KEY pattern);
+    // the key lives on ctl, so a map rebuild naturally starts fresh.
+    const key = caption + '\n' + head.join('|') + '\n' + rows.map((r) => r.join('|')).join('\n');
+    if (key === ctl.twinKey) return;
+    ctl.twinKey = key;
+    mount.textContent = '';
+    SC.tableTwin(mount, { caption, head, rows, details: false });
   }
 
   // ---------- price-vs-miles scatter (model view) ----------
@@ -1216,7 +1252,9 @@
     // press/tap/click pipeline that resolves the NEAREST dot within 13px of
     // the finger — on a scatter that clusters at similar price/miles,
     // topmost-wins would hand a whole cluster to one arbitrary car.
-    const COARSE = window.matchMedia('(pointer: coarse)').matches;
+    // any-pointer, matching the map: a touch-laptop's finger gets the halos
+    // even though its primary pointer is fine.
+    const COARSE = window.matchMedia('(any-pointer: coarse)').matches;
     const halos = [];
     const nearestPt = (x, y) => {
       let best = null, bd = 13 * 13;
@@ -2484,6 +2522,10 @@
         if (!S.site || window.innerWidth === lastW) return;
         lastW = window.innerWidth;
         placeToggle();
+        // The map is deliberately NOT rebuilt on resize, and the model view
+        // below never reaches updateMapVisibility — so the halos' user-unit
+        // radius must be re-derived here or a rotation leaves it ~2× off.
+        sizeMapHalos();
         if (S.brand === 'all') { render(); return; }
         renderChart();
         renderScatter(filtered());
