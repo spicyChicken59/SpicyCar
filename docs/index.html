@@ -155,8 +155,9 @@
         <p class="sc-hint" id="map-hint"></p>
       </div>
     </div>
-    <div class="sc-legend" id="map-legend"></div>
+    <div class="sc-legend" id="map-legend" aria-hidden="true"></div>
     <div class="sc-map" id="map"></div>
+    <div class="sc-sr-only" id="map-twin"></div>
   </section>
 
   <section class="sc-card" id="notes-card" hidden>
@@ -601,6 +602,7 @@
   const albers48 = SC.geo.albersUsa48;
   const decodeStates = (topo) => SC.geo.decodeTopology(topo, 'states');
   const STATE_ABBR = SC.geo.STATE_ABBR;
+  const STATE_NAME = (() => { const o = {}; for (const [n, a] of Object.entries(STATE_ABBR)) o[a] = n; return o; })();
   function fetchMap() {
     if (MAP_STATES) return Promise.resolve(MAP_STATES);
     MAP_PROMISE = MAP_PROMISE || fetch(MAP_URL).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -902,6 +904,45 @@
       + (noPointer
           ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
           : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
+    renderMapTwin(ctl, visible, onMap, offMap);
+  }
+
+  // The map's accessible twin: what the map SAYS, in words — the visible cars
+  // grouped by state, with the filled/hollow encoding spelled out as drivable
+  // vs shipping counts. Rebuilt inside every visibility pass so a screen
+  // reader always reads the same cars, and the caption the same counts, as
+  // the dots and the hint. Deliberately NOT a live region: filter changes
+  // announce through the filter-count line, not by re-reading a table.
+  function renderMapTwin(ctl, visible, onMap, offMap) {
+    const mount = $('map-twin'); if (!mount) return;
+    mount.textContent = '';
+    const byState = new Map();
+    for (const { x } of visible) {
+      const ab = (x.state || '').toUpperCase() || '??';
+      let g = byState.get(ab);
+      if (!g) byState.set(ab, g = { n: 0, local: 0, min: null, picks: 0 });
+      g.n++;
+      if (x.local) g.local++;
+      if (x.price != null && (g.min == null || x.price < g.min)) g.min = x.price;
+      if (ctl.picked.has(x.vin)) g.picks++;
+    }
+    const withPicks = ctl.picked.size > 0;
+    const head = ['State', 'Cars', 'Drivable', 'Shipping added', 'Cheapest'];
+    if (withPicks) head.push('Spicy picks');
+    const rows = [...byState.entries()]
+      .sort((a, b) => (b[1].n - a[1].n) || (a[0] < b[0] ? -1 : 1))
+      .map(([ab, g]) => {
+        const r = [STATE_NAME[ab] || (ab === '??' ? 'State n/a' : ab),
+          num(g.n), num(g.local), num(g.n - g.local), g.min != null ? money(g.min) : '—'];
+        if (withPicks) r.push(g.picks ? num(g.picks) : '0');
+        return r;
+      });
+    SC.tableTwin(mount, {
+      caption: `The market on the map: ${onMap} cars under the current filters`
+        + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
+        + ', grouped by state. Drivable cars need no shipping.',
+      head, rows, details: false,
+    });
   }
 
   // ---------- price-vs-miles scatter (model view) ----------
