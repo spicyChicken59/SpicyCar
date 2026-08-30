@@ -87,8 +87,16 @@
   .picks-head .sc-hint { margin: 0; max-width: 78ch; }
   details.picks-group > summary { font: 600 13px/1.5 var(--sc-font-mono); cursor: pointer; padding: 6px 0; }
 
+  @media (min-width: 601px) and (max-width: 1000px) {
+    #kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* 2x2, not three columns for four tiles — 601px is below the width where auto-fit first fits three, so a 3+1 orphan row can never appear */
+  }
+
+  /* The 721–1000px band: the tables drop their least-load-bearing columns
+     (see bandOf() and the renderers), and the columns that stay get band
+     widths so what remains actually fits the viewport. */
   @media (min-width: 721px) and (max-width: 1000px) {
-    #kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }   /* 2x2, not three columns for four tiles */
+    .col-model { min-width: 220px; }        /* the small thumb replaces the 120px one here */
+    #list-table .col-price { max-width: 176px; white-space: normal; }   /* the long price notes wrap instead of holding the column at 204px */
   }
 
   /* Bridge: sc.css v2.3.0 keys its 44px touch-target block to
@@ -1697,6 +1705,23 @@
     parts.forEach((p, i) => { if (i) f.appendChild(document.createTextNode(' · ')); f.appendChild(p); });
     return f;
   }
+  // The compact-band twin of flagsCell: the History column is gone below 901px,
+  // so its facts ride the sticky Vehicle cell — the accident count keeps its
+  // danger chip (it changes the decision), the rest compresses to words.
+  function flagsNote(x) {
+    const words = [];
+    if (x.cpo) words.push('cpo');
+    if (isRental(x)) words.push(/rental/i.test(x.usage) ? 'rental' : (/multiple/i.test(x.usage) ? 'multi-use' : 'fleet'));
+    if (x.owners === 1) words.push('1-owner');
+    else if (x.owners > 1) words.push(`${x.owners} owners`);
+    if (x.accidents === 0) words.push('no accidents');
+    if ((x.usage || '').toLowerCase().includes('lease')) words.push('ex-lease');
+    if (!words.length && !(x.accidents > 0)) return null;
+    return el('div', { class: 'sc-note' },
+      x.accidents > 0 ? el('span', { class: 'sc-chip sc-chip--danger' }, `${x.accidents} accident${x.accidents > 1 ? 's' : ''}`) : null,
+      x.accidents > 0 && words.length ? ' ' : null,
+      words.join(' · ') || null);
+  }
   function quietLinks(x, inline) {
     const links = el(inline ? 'span' : 'div', { class: 'sc-media__links' + (inline ? ' sc-right' : '') });
     if (safeUrl(x.url)) links.appendChild(el('a', { class: 'sc-link--quiet', 'data-fkey': 'lst:' + (x.vin || '') + ':url', href: safeUrl(x.url), target: '_blank', rel: 'noopener' }, 'Listing ↗'));
@@ -1721,6 +1746,13 @@
   const isNew = (x) => x.days_tracked === 1 && trackedDays() >= 2;
   const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Outside your states — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
+  // The 721–1000px band gets neither the phone cards nor room for the full
+  // desktop column set (the eight columns run 1105px; a 721px viewport shows
+  // 615px of them). The tables shed their least load-bearing columns per
+  // band, so bandOf() is part of the rendered output the same way narrow() is.
+  const bandOf = () => narrow() ? 'phone'
+    : window.matchMedia('(max-width: 900px)').matches ? 'compact'
+    : window.matchMedia('(max-width: 1000px)').matches ? 'mid' : 'full';
   // Mark a scroller that actually has more to the right, so the fade only
   // appears when something is hidden.
   function markClipped(el2) {
@@ -2032,13 +2064,14 @@
     table.appendChild(body); tb.appendChild(table);
   }
 
-  function vehicleCell(x) {
+  function vehicleCell(x, compact) {
     const trim = (x.trim || '').length > 22 ? (x.trim || '').slice(0, 22) + '…' : (x.trim || '');
     const title = [`${x.year || ''} ${trim}`.trim(), x.color].filter(Boolean).join(' · ');
-    return el('div', { class: 'sc-media' }, thumbFor(x), el('div', { class: 'sc-media__body' },
+    return el('div', { class: 'sc-media' }, compact ? null : thumbFor(x), el('div', { class: 'sc-media__body' },
       el('div', { class: 'sc-media__title' }, title,
         onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null),
       el('div', { class: 'sc-media__code' }, x.vin),
+      compact ? flagsNote(x) : null,   // the History column is gone in this band — its facts stay pinned here
       (x.url || x.carfax) ? quietLinks(x) : null));
   }
 
@@ -2109,10 +2142,22 @@
     // row and moves into the shipping cell beside it, so the landed total — the
     // number this whole site is about — is still on every row.
     const dropLanded = true;
+    // The 721–1000px band can't hold the full 1105px column set (a 721px
+    // viewport shows 615px of it), so columns shed by information value:
+    // Trend goes first (its 80px sparkline is already squeezed below
+    // legibility by svg{max-width:100%}, and the chart card shows the same
+    // series), then Listed folds into the Location cell as a note, and below
+    // 901px History folds into the sticky Vehicle cell (flagsNote) and the
+    // photo yields its 56px so the sticky column stops eating the viewport.
+    const band = bandOf();               // narrow() already returned above, so 'compact' | 'mid' | 'full'
+    const bandSlim = band !== 'full';
+    const bandCompact = band === 'compact';
     const cols = [
       ['Vehicle', null], ['Asking', 'price'], ['Miles', 'miles'], ['Shipping', null],
       ...(dropLanded ? [] : [['Asking + shipping', 'landed']]),
-      ['Location', null], ['History', null], ['Listed', 'days_listed'], ['Trend', null],
+      ['Location', null],
+      ...(bandCompact ? [] : [['History', null]]),
+      ...(bandSlim ? [] : [['Listed', 'days_listed'], ['Trend', null]]),
     ];
     const tr = el('tr');
     for (const [label, key] of cols) {
@@ -2128,7 +2173,7 @@
     if (!rows.length) body.appendChild(el('tr', { class: 'sc-empty' }, el('td', { colspan: cols.length }, 'Nothing matches these filters.')));
     let lastMsrp = null;
     for (const x of shown) {
-      const price = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
+      const price = el('td', { class: 'sc-num col-price' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
         // Sorted by the latest snapshot's cut, the number the sort ran on must
         // be visible — the movement badge shows the LIFETIME change, which can
         // read non-monotonic (or "cut, then back up") against this ordering.
@@ -2146,17 +2191,23 @@
       const total = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(landed(x))));
       const loc = el('td', { class: 'loc sc-nowrap' }, placeCell(x), el('br'), scopeChip(x),
         x.distance != null ? el('span', { class: 'sc-note' }, `~${num(x.distance)} mi from ${homeName()}`) : null,
-        x.dealer ? el('span', { class: 'sc-note sc-truncate dealer', title: x.dealer }, x.dealer) : null);
-      const listed = el('td', { class: 'sc-nowrap col-listed' },
+        x.dealer ? el('span', { class: 'sc-note sc-truncate dealer', title: x.dealer }, x.dealer) : null,
+        // the Listed column's facts, when the band dropped that column
+        bandSlim ? el('span', { class: 'sc-note' },
+          (x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : ''))
+          + (x.days_tracked ? ` · tracked ${x.days_tracked}d` : '')) : null,
+        bandSlim && x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null);
+      const listed = bandSlim ? null : el('td', { class: 'sc-nowrap col-listed' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
         x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
         x.days_tracked ? el('span', { class: 'sc-note' }, `tracked ${x.days_tracked}d`) : null);
-      const trend = el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
-      trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');
+      const trend = bandSlim ? null : el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
+      if (trend) trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');
       body.appendChild(el('tr', null,
-        el('td', { class: 'col-vehicle' }, vehicleCell(x)), price,
+        el('td', { class: 'col-vehicle' }, vehicleCell(x, bandCompact)), price,
         el('td', { class: 'sc-num' }, x.miles != null ? num(x.miles) : '—'),
-        shipping, ...(dropLanded ? [] : [total]), loc, el('td', null, flagsCell(x)), listed, trend));
+        shipping, ...(dropLanded ? [] : [total]), loc,
+        bandCompact ? null : el('td', null, flagsCell(x)), listed, trend));
     }
     table.appendChild(body);
     markClipped(scroll);
@@ -2210,18 +2261,29 @@
       return;
     }
     goneScroll.hidden = false; goneCards.hidden = true;
-    table.appendChild(el('thead', null, el('tr', null, el('th', null, 'Vehicle'), el('th', { class: 'sc-num' }, 'Last asking'), el('th', { class: 'sc-num' }, 'Miles'), el('th', { class: 'sc-num' }, 'Shipping'), el('th', null, 'Location'), el('th', null, 'Last seen'), el('th', null, 'Tracked'))));
+    // The same band ladder as the listings table: 'mid' folds Tracked into
+    // the Last seen cell; 'compact' folds Last seen into the sticky Vehicle
+    // cell too, so what remains fits a 721px viewport.
+    const gBand = bandOf();
+    const gSlim = gBand !== 'full';
+    const gCompact = gBand === 'compact';
+    table.appendChild(el('thead', null, el('tr', null, el('th', null, 'Vehicle'), el('th', { class: 'sc-num' }, 'Last asking'), el('th', { class: 'sc-num' }, 'Miles'), el('th', { class: 'sc-num' }, 'Shipping'), el('th', null, 'Location'),
+      gCompact ? null : el('th', null, 'Last seen'), gSlim ? null : el('th', null, 'Tracked'))));
     const body = el('tbody');
     for (const g of shownG) {
       const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
+      const likely = g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above today\'s cut-off' : 'not checked that day') : null;
       body.appendChild(el('tr', null,
-        el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin)))),
+        el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
+          gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · tracked ${g.days_tracked || 0}d${drop}`) : null,
+          gCompact ? likely : null))),
         el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(g.last_price)), (g.flags || []).length ? el('span', { class: 'sc-note' }, g.flags.join(' · ')) : null),
         el('td', { class: 'sc-num' }, g.miles != null ? num(g.miles) : '—'),
         el('td', { class: 'sc-num' }, g.local ? el('span', { class: 'sc-note' }, 'none') : (g.ship ? money(g.ship) : '—')),
         el('td', { class: 'loc sc-nowrap' }, placeCell(g), el('br'), scopeChip(g)),
-        el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above today\'s cut-off' : 'not checked that day') : null),
-        el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
+        gCompact ? null : el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), likely,
+          gSlim ? el('span', { class: 'sc-note' }, `tracked ${g.days_tracked || 0}d${drop}`) : null),
+        gSlim ? null : el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
     table.appendChild(body);
     markClipped(goneScroll);
@@ -2387,26 +2449,38 @@
     $('overview-hint').textContent = 'One row per model under the current filters — shopping first, then by lowest asking. Click a row to open its listings, chart and history.';
     const ot = $('overview-table'); ot.textContent = '';
     const slimOverview = narrow();   // the model cell already states cars and drivable
+    // The 721–1000px band: the full nine-column set runs 1229px — half of it
+    // hidden at 721px. Cars and Drivable duplicate the model cell's sub-line,
+    // the Trend sparkline is squeezed illegible at these widths (the chart
+    // card above shows the same series), and Data through folds into the
+    // model cell; 'compact' (≤900px) sheds Median asking too. The band also
+    // swaps the 120px thumb for the 56px one (see .col-model in the band CSS).
+    const oBand = bandOf();
+    const oSlim = slimOverview || oBand !== 'full';       // phone slims at least this far
+    const oBandSlim = !slimOverview && oBand !== 'full';  // band-only drops (phone keeps its own set)
+    const oCompact = oBand === 'compact';
     ot.appendChild(el('thead', null, el('tr', null, el('th', null, 'Model'),
-      ...(slimOverview ? [] : [el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'Drivable')]),
+      ...(oSlim ? [] : [el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'Drivable')]),
       el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, 'Lowest drivable asking'),
-      ...(slimOverview ? [] : [el('th', { class: 'sc-num' }, 'Median asking')]),
-      el('th', null, 'Trend'), el('th', null, 'Data through'))));
+      ...(slimOverview || oCompact ? [] : [el('th', { class: 'sc-num' }, 'Median asking')]),
+      oBandSlim ? null : el('th', null, 'Trend'), oBandSlim ? null : el('th', null, 'Data through'))));
     const obody = el('tbody');
     for (const r of rows) {
-      const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, true, r.photos), el('div', { class: 'sc-media__body' },
+      const dataTxt = r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—');
+      const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, !oBandSlim, r.photos), el('div', { class: 'sc-media__body' },
         el('div', { class: 'sc-media__title' }, r.label),
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),
+        oBandSlim ? el('div', { class: 'sc-note' }, `data through ${dataTxt}`) : null,
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'open:' + r.bk + '/' + r.mk, onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
-      const data = el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—')));
-      const trend = el('td', null, spark(r.trend, 80, 26, false, brandTone(r.bk)));
+      const data = oBandSlim ? null : el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, dataTxt));
+      const trend = oBandSlim ? null : el('td', null, spark(r.trend, 80, 26, false, brandTone(r.bk)));
       obody.appendChild(el('tr', { class: 'is-clickable', title: 'Open ' + r.label,
         onclick: (e) => { if (e.target.closest('a, button')) return; goTo(r.bk, r.mk); } },
         modelCell,
-        ...(slimOverview ? [] : [el('td', { class: 'sc-num' }, num(r.n)), el('td', { class: 'sc-num' }, num(r.n_local))]),
+        ...(oSlim ? [] : [el('td', { class: 'sc-num' }, num(r.n)), el('td', { class: 'sc-num' }, num(r.n_local))]),
         bestCell(r.best, r.as_of ? 'none under these filters' : 'not fetched yet'), bestCell(r.bestLocal, r.as_of ? 'none drivable' : 'not fetched yet'),
-        ...(slimOverview ? [] : [el('td', { class: 'sc-num' }, r.median != null ? money(r.median) : '—')]),
+        ...(slimOverview || oCompact ? [] : [el('td', { class: 'sc-num' }, r.median != null ? money(r.median) : '—')]),
         trend, data));
     }
     ot.appendChild(obody);
@@ -2705,7 +2779,7 @@
       if (toggleSep && toggleSep.classList.contains('sc-sep')) toggleSep.hidden = wantFoot;
     }
     placeToggle();
-    let raf = null, wasNarrow = narrow(), lastW = window.innerWidth;
+    let raf = null, wasBand = bandOf(), lastW = window.innerWidth;
     window.addEventListener('resize', () => {
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
@@ -2717,13 +2791,18 @@
         // radius must be re-derived here or a rotation leaves it ~2× off.
         // Forced: this handler has already established the width changed.
         sizeMapHalos(true);
+        // The clipped-edge fade is set at render time; a width change inside a
+        // band re-renders nothing, so re-derive it here or it lies both ways.
+        markClipped($('list-scroll')); markClipped($('gone-scroll'));
+        markClipped(document.querySelector('#overview-table')?.closest('.sc-table-scroll'));
         if (S.brand === 'all') { render(); return; }
         renderChart();
         renderScatter(filtered());
-        if (narrow() !== wasNarrow) {
-          wasNarrow = narrow();
+        if (bandOf() !== wasBand) {   // any band edge: 720 (cards), 900, 1000 — the tables' column sets are band functions now
+          wasBand = bandOf();
           const rows = filtered(), t = model();
           renderList(rows);
+          renderGone();                // its column set follows the band too
           renderPicks(scoredFrom(rows, t.label, !!t.shopping));   // the picks' phone collapse follows the breakpoint too
         }
       });
