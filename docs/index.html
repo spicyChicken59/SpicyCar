@@ -1642,18 +1642,28 @@
     history[replace ? 'replaceState' : 'pushState'](null, '', location.pathname + (q.toString() ? '?' + q : ''));
   }
   // ?brand=bmw opens a brand; ?m=i5 names its model; ?model=bmw-i5-edrive40 opens the model that trim belongs to.
+  // A link that names something the watchlist no longer has (a removed car, a
+  // typo) is never honored with a different car: land on the neutral overview,
+  // remember what was asked (urlMiss — the first notice pass says so), and
+  // clean the address bar so the dead link is not re-shared.
+  let urlMiss = null;   // { asked, kind: 'car'|'brand' } — one-shot, consumed by renderEmptyNotice
   function applyUrl() {
     const q = new URLSearchParams(location.search);
-    const wantBrand = q.get('brand'), wantModel = q.get('model'), wantM = q.get('m');
-    S.brand = 'all'; S.model = null;
+    const lc = (k) => { const v = q.get(k); return v ? v.toLowerCase() : v; };   // keys are lowercase slugs; casing alone must not fake a miss
+    const wantBrand = lc('brand'), wantModel = lc('model'), wantM = lc('m');
+    S.brand = 'all'; S.model = null; urlMiss = null;
     if (wantModel) {
       for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if ((m.trims || {})[wantModel]) { S.brand = bk; S.model = mk; }
+      if (!S.model) urlMiss = { asked: wantModel, kind: 'car' };
     } else if (wantBrand && S.site.brands[wantBrand]) {
       const models = S.site.brands[wantBrand].models || {};
-      S.brand = wantBrand;
-      S.model = (wantM && models[wantM]) ? wantM : Object.keys(models)[0];
+      if (wantM && !models[wantM]) urlMiss = { asked: wantBrand + ' ' + wantM, kind: 'car' };
+      else { S.brand = wantBrand; S.model = wantM || Object.keys(models)[0]; }
+    } else if (wantBrand) {
+      urlMiss = { asked: wantBrand, kind: 'brand' };
     }
     S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
+    if (urlMiss) syncUrl(true);   // the dead URL must not stay in the address bar to be copied onward
   }
   function pickBrand(id) {
     S.brand = id;
@@ -2536,6 +2546,19 @@
   function renderEmptyNotice(shown, total) {
     const n = $('notice');
     n.textContent = '';
+    // A link asked for something the watchlist no longer has (applyUrl caught
+    // it): say so once, then the flag is spent — the next render pass, filter
+    // change or navigation returns this slot to the empty-filters notice.
+    if (urlMiss) {
+      const miss = urlMiss; urlMiss = null;
+      n.appendChild(el('div', { class: 'sc-notice' },
+        el('div', { class: 'sc-eyebrow' }, miss.kind === 'brand' ? 'that brand is not tracked' : 'that car is no longer tracked'),
+        el('p', null, 'The link asked for “' + miss.asked + '”, ' + (miss.kind === 'brand'
+          ? 'which is not a brand on this watchlist'
+          : 'which is not on the watchlist any more') + ' — showing the whole watchlist instead.')));
+      n.hidden = false;
+      return;
+    }
     if (shown > 0 || !total) { n.hidden = true; return; }
     n.appendChild(el('div', { class: 'sc-notice' },
       el('div', { class: 'sc-eyebrow' }, 'nothing matches these filters'),
