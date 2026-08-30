@@ -175,13 +175,80 @@ await open('?models=bmw-i5,bmw-not-a-car');
 ok('a half-dead link still opens', (await page.locator('#overview-table tbody tr').count()) === 1);
 ok('and names what went missing', /bmw-not-a-car/.test(await page.textContent('#notice')));
 
+// --- the things two audits found, so they cannot come back -----------------
+// The marked winner is the one number that survives a comparison, and it is
+// only markable when every column's best car was judged against its own trim
+// AND year. The iX is the case that proved it: its 2024 cohort is six M60s and
+// one xDrive50, so the xDrive column's top car scored 24% under a mostly-M60
+// median while sitting 18% ABOVE a typical xDrive.
+await open('?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m');
+ok('no winner is marked on a fallen-back cohort', (await page.locator('#compare-table td.is-best').count()) === 0);
+
+// One shared record handed every Audi row a "new" chip while the compare card
+// beside it said the Audi had no previous snapshot to be new against.
+await open('?models=audi-a6-etron,bmw-i5');
+const newByModel = await page.evaluate(() => {
+  const out = {};
+  for (const tr of document.querySelectorAll('#list-table tbody tr')) {
+    const k = ((tr.querySelector('.sc-eyebrow') || {}).textContent || '?').trim();
+    out[k] = out[k] || { rows: 0, fresh: 0 };
+    out[k].rows++;
+    if (tr.querySelector('.sc-chip--spice')) out[k].fresh++;
+  }
+  return out;
+});
+ok('a model with one snapshot day has no "new" cars',
+  Object.values(newByModel).every((v) => v.fresh < v.rows), JSON.stringify(newByModel));
+
+// The line whose job is to say what the filters are doing measured the
+// selection against itself and printed "showing all 169 cars" over 503.
+await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+await open('?models=bmw-i5,kia-ev9');
+const count = await page.textContent('#filter-count');
+ok('the count measures against the whole watchlist', / of \d+ cars/.test(count) && /\+/.test(count), count);
+
+// The count on a chip turned muted-grey-on-cobalt the moment it was pressed.
+const chipCR = await page.evaluate(() => {
+  const n = document.querySelector('#f-model button[aria-pressed="true"] .chip-n');
+  if (!n) return null;
+  const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).slice(0, 3).map(Number)
+    .map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const [a, b] = [lum(getComputedStyle(n).color), lum(getComputedStyle(n.closest('button')).backgroundColor)].sort((x, y) => y - x);
+  return (a + 0.05) / (b + 0.05);
+});
+ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.toFixed(2) + ':1' : 'no pressed chip');
+
+// "Only this →" takes its own card off the page; the keyboard must land
+// somewhere, not on <body>.
+await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-xdrive40');
+await page.evaluate(() => document.querySelector('[data-fkey^="cmp:"]').focus());
+await page.keyboard.press('Enter');
+await page.waitForTimeout(400);
+ok('narrowing to one column keeps the keyboard somewhere',
+  (await page.evaluate(() => document.activeElement.tagName)) !== 'BODY');
+
 // --- the phone -------------------------------------------------------------
 await page.setViewportSize({ width: 390, height: 844 });
 await open('?models=bmw-i5,bmw-ix');
 ok('the comparison survives a phone', await page.locator('#compare-card').isVisible());
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 ok('and does not scroll the page sideways', overflow <= 1, `${overflow}px of overflow`);
+// Every figure on screen at once: capped and wrapped, two columns come to 344px
+// inside a 348px window. Uncapped they ran to 687px and the reader met ten
+// labels beside blank space.
+const offscreen = await page.evaluate(() => {
+  const right = document.querySelector('#compare-table').closest('.sc-table-scroll').getBoundingClientRect().right;
+  return [...document.querySelectorAll('#compare-table tbody .sc-figure')].filter((f) => f.getBoundingClientRect().left >= right - 2).length;
+});
+ok('and every figure in it is on screen', offscreen === 0, `${offscreen} off the edge`);
 await shot('compare-phone');
+
+// The scope chip names every selection, and sc-chip does not wrap: seven models
+// pushed the document 289px wider than the phone.
+await open('?models=bmw-i5,bmw-ix,bmw-i4,hyundai-ioniq5,kia-ev9,audi-a6-etron,lucid-air');
+const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+ok('nor does selecting every model', wide <= 1, `${wide}px of overflow`);
 
 await browser.close();
 server.close();
