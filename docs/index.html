@@ -45,17 +45,20 @@
   /* A filter change hides dots instead of rebuilding the map */
   #map .is-off { display: none; }
   /* Touch hit halo — one invisible circle per dot, built only on coarse
-     pointers. Pure geometry: r is set once, in user units sized to ~25px at
-     the full-US view (fill:none paints nothing; pointer-events restores the
-     disc, the same trick sc.css uses for hollow dots). No data-br, so the
-     zoom loop never visits these nodes; zoomed in they grow with the map,
-     and the 13px nearest-car cap in the tap handler keeps precision honest. */
-  #map .sc-dot-hit { fill: none; stroke: none; pointer-events: all; cursor: pointer; }
+     pointers. Pure geometry: r rides user units, sized to ~25px on screen
+     and re-derived when the viewport width changes (fill:none paints
+     nothing; pointer-events restores the disc, the same trick sc.css uses
+     for hollow dots). No data-br, so the zoom loop never visits these
+     nodes; zoomed in they grow with the map, and the 13px nearest-car cap
+     in the tap handler keeps precision honest. No cursor either — a huge
+     zoomed halo's outer ring dismisses rather than opens, so it must not
+     advertise a pointer. */
+  #map .sc-dot-hit { fill: none; stroke: none; pointer-events: all; }
   /* The scatter wears the same halos on coarse pointers. Its svg rebuilds
      wholesale on every filter change, so these need no is-off syncing —
      they die with the rebuild. Sized once per build, in user units, to
      ~25px on screen at the card's rendered width. */
-  #scatter .sc-dot-hit { fill: none; stroke: none; pointer-events: all; cursor: pointer; }
+  #scatter .sc-dot-hit { fill: none; stroke: none; pointer-events: all; }
   /* The gaps between the zoom buttons must not eat a tap meant for a dot */
   #map .sc-map__btns { pointer-events: none; }
   #map .sc-map__btns .sc-map__btn { pointer-events: auto; }
@@ -704,7 +707,7 @@
       // hovers the halos instead, and the delegated pointerover below gives
       // it the same nearest-car(≤13px) tooltip the bare dots would.
       const COARSE = window.matchMedia('(any-pointer: coarse)').matches;
-      const halos = [];   // every halo, for one-shot r sizing once the card is measurable
+      const halos = [];   // every halo — sizeMapHalos() derives r from the rendered width, and again when it changes
       // Which cars are elevated (picks ringed in the accent, shortlisted VINs
       // drawn in it outright) is filter-dependent, so it belongs to
       // updateMapVisibility — this set is refreshed IN PLACE there, keeping
@@ -867,7 +870,16 @@
         const cl = e.target.classList;
         if (!cl || !(cl.contains('sc-dot') || cl.contains('sc-dot-hit') || cl.contains('sc-map__anchor'))) return;
         if (VIEW.dragDistance() > 4) return;             // that was a pan, not a click
-        const en = nearestEntry(e.clientX, e.clientY);
+        // A precise pointer that clicked a painted mark means THAT mark — the
+        // hovered dot and the opened car must be the same car even when two
+        // dots overlap. Nearest-centre is for taps and halos, where the
+        // finger never singled out a specific dot.
+        let en = null;
+        if (lastPtr !== 'touch') {
+          if (cl.contains('sc-map__anchor')) en = { anchor: true };
+          else if (cl.contains('sc-dot')) en = entries.find((x) => x.dot === e.target) || null;
+        }
+        if (!en) en = nearestEntry(e.clientX, e.clientY);
         if (!en) { hideTip(); return; }   // a tap on halo-covered emptiness dismisses, like background
         if (en.anchor) {
           if (showAnchorTip) { const r = anchorEl.getBoundingClientRect(); showAnchorTip(r.left + r.width / 2, r.top); }
@@ -1112,9 +1124,11 @@
         if (withPicks) r.push(g.picks ? num(g.picks) : '0');
         return r;
       });
-    const caption = `The market on the map: ${onMap} cars under the current filters`
-      + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
-      + ', grouped by state. Drivable cars need no shipping.';
+    // The caption owns the same total the rows sum to — beyond-lower-48 cars
+    // have state rows here even though the drawing cannot place them.
+    const caption = `The market on the map: ${onMap + offMap} cars under the current filters, grouped by state`
+      + (offMap ? ` — ${onMap} drawn on the map, ${offMap} beyond the lower 48` : '')
+      + '. Drivable cars need no shipping.';
     // The twin says the same words whenever a pass leaves the visible set (and
     // the picks) unchanged — a resize re-render, a filter that only touched
     // unmapped cars. Skip the teardown+rebuild then (the PICKS_KEY pattern);
@@ -1274,7 +1288,11 @@
     svg.addEventListener('click', (e) => {
       const cl = e.target.classList;
       if (!cl || !(cl.contains('sc-dot') || cl.contains('sc-dot-hit'))) return;
-      const k = nearestPt(e.clientX, e.clientY);
+      // Same rule as the map: a precise pointer that clicked a painted dot
+      // opens that dot, never an overlapping neighbour with a nearer centre.
+      let k = null;
+      if (lastPtr !== 'touch' && cl.contains('sc-dot')) k = kOrder.find((q) => q.dot === e.target) || null;
+      if (!k) k = nearestPt(e.clientX, e.clientY);
       if (!k) { hideTip(); return; }   // a tap on halo-covered emptiness dismisses, like background
       if (lastPtr === 'touch' && armed !== k.dot) {   // first tap previews
         armed = k.dot;
