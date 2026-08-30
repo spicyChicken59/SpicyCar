@@ -88,7 +88,8 @@ class TestBudget(unittest.TestCase):
         self.assertEqual(i5["newest"], 1)
         self.assertEqual(T.calls_for(i5), 10,
                          "2 sources x (2 sorts x 2 pages + 1 newest page)")
-        self.assertEqual(T.calls_for(target("bmw-i7")), 10)
+        self.assertEqual(T.calls_for(target("bmw-i4-edrive40")), 10,
+                         "the second shopped target budgets like the first")
         self.assertEqual(target("bmw-i5-xdrive40")["newest"], 0,
                          "newest is a shopped-target parameter, not a default")
 
@@ -120,9 +121,9 @@ class TestGeography(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# Drivable: the state list plus the drive radius. A Benton Harbor car 90
-# miles from Chicago must not pay shipping just because Michigan is not on
-# the state list.
+# Drivable: state membership, nothing else. The buyer names the states and
+# the line sits exactly where they drew it — a Benton Harbor car 90 miles
+# away ships, the far corner of Ohio drives.
 # --------------------------------------------------------------------------
 class TestDrivable(unittest.TestCase):
     def test_listing_entries_carry_the_cars_public_coordinates(self):
@@ -143,23 +144,31 @@ class TestDrivable(unittest.TestCase):
         self.assertIn("WI", T.STATES)
         self.assertTrue(T.in_scope({"state": "WI"}))
 
-    def test_drive_radius_comes_from_drive_hours(self):
-        self.assertEqual(T.DRIVE_RADIUS, int(round(T.DRIVE_HOURS * 55)))
-        self.assertGreater(T.DRIVE_RADIUS, 0, "buyer.drive_hours should be set")
-
-    def test_within_the_radius_is_drivable_and_ships_free(self):
+    def test_drivable_is_state_membership_and_nothing_else(self):
+        """The drive-hours radius was removed on purpose: the buyer names the
+        states, and the line sits exactly where they drew it. A car ninety
+        miles away across a state line ships; the far corner of a listed
+        state drives."""
         near_mi = {"state": "MI", "distance": 90}       # Benton Harbor-ish
-        self.assertTrue(T.in_scope(near_mi))
-        self.assertEqual(T.ship_for(near_mi), 0)
+        self.assertFalse(T.in_scope(near_mi))
+        self.assertGreater(T.ship_for(near_mi), 0)
+        far_oh = {"state": "OH", "distance": 350}       # eastern Ohio
+        self.assertTrue(T.in_scope(far_oh))
+        self.assertEqual(T.ship_for(far_oh), 0)
+        self.assertFalse(hasattr(T, "DRIVE_RADIUS"),
+                         "the radius concept should be gone, not just unused")
 
-    def test_beyond_the_radius_pays_shipping(self):
+    def test_beyond_the_states_pays_shipping(self):
         msp = {"state": "MN", "distance": 400}          # Twin Cities-ish
         self.assertFalse(T.in_scope(msp))
         self.assertGreater(T.ship_for(msp), 0)
 
-    def test_the_radius_boundary_is_inclusive(self):
-        self.assertTrue(T.in_scope({"state": "MO", "distance": T.DRIVE_RADIUS}))
-        self.assertFalse(T.in_scope({"state": "MO", "distance": T.DRIVE_RADIUS + 25}))
+    def test_the_configured_state_list_is_the_whole_rule(self):
+        for st in T.STATES:
+            self.assertTrue(T.in_scope({"state": st}))
+            self.assertTrue(T.in_scope({"state": st.lower()}))   # case-blind
+        self.assertFalse(T.in_scope({"state": ""}))
+        self.assertFalse(T.in_scope({}))
 
     def test_a_car_with_no_location_falls_back_to_the_state_list(self):
         """No coordinates and no stored distance: only the state field decides."""
@@ -560,6 +569,55 @@ class TestDelisted(unittest.TestCase):
         self.assertEqual(T.delisted({tid}, all_rows, today, hist)[0]["likely"],
                          "delisted")
 
+    def test_rebuild_reconstructs_the_window_from_history(self):
+        # No live fetch signals at all — the offline-rebuild situation that
+        # used to mark every departure 'unknown'. The snapshot history keeps
+        # every kept row per fetch day, so the vanish day's max kept price
+        # IS that day's cheapest-N cut-off.
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-edrive40"
+        fill = [self.row(tid, f"W{i:02d}", d, 30000 + i * 500)
+                for d in (d2, d1) for i in range(T.PER_PAGE)]
+        all_rows = fill + [self.row(tid, "HIGH", d2, 41000),
+                           self.row(tid, "LOW", d2, 31250)]
+        today = [r for r in all_rows if r["snapshot_date"] == d1]
+        gone = {g["vin"]: g for g in T.delisted({tid}, all_rows, today,
+                                                T.build_history(all_rows))}
+        # d1 kept a full page (20 rows, max 39,500): above it is an artifact,
+        # below it is a car the fetch should have seen — a real departure
+        self.assertEqual(gone["HIGH"]["likely"], "out of window")
+        self.assertEqual(gone["LOW"]["likely"], "delisted")
+
+    def test_short_vanish_day_returned_everything_so_no_cutoff(self):
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-m60"
+        fill = [self.row(tid, f"W{i}", d, 40000 + i * 1000)
+                for d in (d2, d1) for i in range(5)]
+        all_rows = fill + [self.row(tid, "HIGH", d2, 90000)]
+        today = [r for r in all_rows if r["snapshot_date"] == d1]
+        gone = T.delisted({tid}, all_rows, today, T.build_history(all_rows))
+        # the vanish day kept fewer rows than one page, so its queries saw
+        # their entire scope — no cut-off exists and the missing car is
+        # really gone whatever its price
+        self.assertEqual(gone[0]["likely"], "delisted")
+
+    def test_departure_is_judged_at_its_own_vanish_day_not_today(self):
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i4-edrive40"
+        fill = [self.row(tid, f"W{i:02d}", d, 30000 + i * 100)
+                for d in (d2, d1, T.TODAY) for i in range(T.PER_PAGE)]
+        all_rows = fill + [self.row(tid, "V1", d2, 35000)]
+        today = [r for r in all_rows if r["snapshot_date"] == T.TODAY]
+        T.PRICE_WINDOW[(tid, "National")] = 99999    # today's window is huge
+        gone = T.delisted({tid}, all_rows, today, T.build_history(all_rows))
+        self.assertEqual(gone[0]["likely"], "out of window",
+                         "V1 vanished at the d1 fetch, whose cut-off was "
+                         "$31,900 — today's wider window must not turn an "
+                         "old artifact into a confirmed sale")
+
+    def test_never_fetched_again_is_not_checked(self):
+        d1, tid = self.days_ago(1), "bmw-i5-edrive40"
+        all_rows = [self.row(tid, "V1", d1, 45000)]
+        gone = T.delisted({tid}, all_rows, [], T.build_history(all_rows))
+        self.assertEqual(gone[0]["likely"], "not checked")
+
 
 # --------------------------------------------------------------------------
 # Market stats: the negotiation context — how long cars sit, how often and
@@ -733,8 +791,38 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(t["make"], "BMW")               # from the brand
 
     def test_a_model_without_trims_is_one_target(self):
-        self.assertIn("bmw-i7", T.TARGETS)
-        self.assertEqual(T.TARGETS["bmw-i7"]["trim_key"], "all")
+        self.assertIn("hyundai-ioniq5", T.TARGETS)
+        self.assertEqual(T.TARGETS["hyundai-ioniq5"]["trim_key"], "all")
+
+    def test_the_i7_is_really_gone(self):
+        """Removed from the watchlist on request — history rows may linger in
+        the CSV, but no target, no fetches, no budget."""
+        self.assertNotIn("bmw-i7", T.TARGETS)
+        self.assertTrue(all("i7" not in tid for tid in T.TARGETS))
+
+    def test_shopping_is_the_i5_and_the_i4(self):
+        shopped = sorted(t for t, v in T.TARGETS.items() if v["shopping"])
+        self.assertEqual(shopped, ["bmw-i4-edrive40", "bmw-i5-edrive40"])
+
+    def test_site_dates_the_data_not_the_build(self):
+        """generated is the day the file was BUILT (an offline rebuild stamps
+        it with no fetch); data_through is the newest snapshot day anywhere —
+        the honest date the pages show. It must equal the max snapshot_date
+        and never exceed generated."""
+        rows = [
+            {"snapshot_date": "2026-08-27", "vin": "A", "target": "t"},
+            {"snapshot_date": "2026-08-29", "vin": "B", "target": "t"},
+            {"snapshot_date": "2026-08-28", "vin": "C", "target": "t"},
+        ]
+        self.assertEqual(max(r["snapshot_date"] for r in rows), "2026-08-29")
+        import json, pathlib
+        site = json.loads((pathlib.Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        self.assertIn("data_through", site)
+        dates = [d["date"] for b in site["brands"].values()
+                 for m in b["models"].values() for d in (m.get("daily") or [])]
+        if dates:
+            self.assertEqual(site["data_through"], max(dates))
+        self.assertLessEqual(site["data_through"], site["generated"])
 
     def test_parsers_survive_dirty_input(self):
         self.assertEqual(T.to_int("$46,590"), 46590)

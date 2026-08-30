@@ -15,11 +15,11 @@ spreads the comparison brands across days so the whole watchlist fits the
 API plan; buyer.shopping names the targets that lead the report in full,
 while the rest get one line each. A listing is
 "drivable" — no shipping — when its own state field is one of the buyer's
-states (no coordinates involved, so listings the API could not geocode
-still land in the right bucket), or when it sits within drive_hours of
-home. search_states widens the query net to neighbouring states that are
-partially inside that radius. Coordinates otherwise price shipping, from
-the distance to home.
+states, and nothing else: no coordinates involved, so listings the API
+could not geocode still land in the right bucket, and the buyer decides
+scope by naming states rather than by a radius. search_states widens the
+query net to neighbouring states worth watching from beyond. Coordinates
+price shipping, from the distance to home.
 """
 
 import csv
@@ -48,7 +48,7 @@ CFG = json.loads(Path("targets.json").read_text())
 BUYER = CFG.get("buyer", {})
 STATES = [str(s).strip().upper() for s in BUYER.get("states", [])]
 # The query net: the buyer's states plus neighbours partially within the
-# drive radius (search_states). One comma list, so the extras cost nothing.
+# watching from beyond (search_states). One comma list, so the extras cost nothing.
 SEARCH_STATES = STATES + [s for s in
                           (str(x).strip().upper() for x in BUYER.get("search_states", []))
                           if s and s not in STATES]
@@ -362,17 +362,6 @@ if not coords_ok(*HOME):
               "flat ship_cost applies")
 HOME_NAME = str(BUYER.get("label") or "home")
 
-# "Drivable" reaches beyond the state list: anything within drive_hours of
-# home costs nothing to ship either. Straight-line miles understate road
-# miles, so an hour of driving counts as 55 straight-line miles (~65 mph on
-# the interstate, less the winding of real roads).
-DRIVE_HOURS = to_float(BUYER.get("drive_hours")) or 0
-DRIVE_RADIUS = int(round(DRIVE_HOURS * 55))
-if DRIVE_RADIUS and not coords_ok(*HOME):
-    print("  ! drive_hours is set but home is unknown — "
-          "drivable falls back to the state list alone")
-
-
 def dist_home(lat, lon):
     """Miles from the buyer's anchor, or None. Rounded to 25: distances are
     estimates for judging a drive, and in legacy home-zip mode coarseness at
@@ -391,24 +380,16 @@ def row_distance(r):
 
 
 def in_scope(r):
-    """Drivable, so no shipping: in one of the buyer's states, or within the
-    drive radius of home. State is checked first — listings the API could
-    not geocode still land in the right bucket."""
-    if str(r.get("state", "")).strip().upper() in STATES:
-        return True
-    if DRIVE_RADIUS:
-        d = row_distance(r)
-        return d is not None and d <= DRIVE_RADIUS
-    return False
+    """Drivable, so no shipping: the listing's own state is one of the
+    buyer's states. Nothing else — no radius, no coordinates — so scope is
+    exactly what the buyer configured, and listings the API could not
+    geocode still land in the right bucket."""
+    return str(r.get("state", "")).strip().upper() in STATES
 
 
 def scope_label():
     """The one phrase that says what "drivable" means for this buyer."""
-    states = "/".join(STATES)
-    if DRIVE_RADIUS:
-        drive = f"a {DRIVE_HOURS:g}h drive of {HOME_NAME}"
-        return f"{states} or {drive}" if states else drive
-    return states or "your states"
+    return "/".join(STATES) or "your states"
 
 
 def ship_for(r):
@@ -720,7 +701,8 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
                 "delisted": "**GONE — likely sold or pulled**",
                 "out of window": "missing today — priced above the fetch "
                                  "cut-off, probably still for sale",
-                "unknown": "not checked today (its trim was not due)",
+                "not checked": "missing — not checked since it was last "
+                               "seen, so nothing is known yet",
             }.get(g["likely"], "missing today")
             line = (f"- {verdict} · last seen {g['last_seen']} at "
                     f"{money(g['last_price'])} · {g.get('trim_label') or ''} · "
@@ -1117,18 +1099,34 @@ def daily_stats(rows):
 
 def delisted(tids, all_rows, today_rows, hist):
     """Vehicles seen before but not today. Because each query only returns
-    the cheapest N, a car priced above today's window for its trim may simply
-    have been pushed out rather than sold — that is flagged, not hidden. When
-    a query came back short it returned its scope's whole market, so absence
-    there is a real delisting whatever the price. Each entry carries its own
-    trim's previous fetch day, because trims of one model can run on
-    different cadences and the model's yesterday is not every trim's."""
+    the cheapest N, a car priced above the fetch window for its trim may
+    simply have been pushed out rather than sold — that is flagged, not
+    hidden. When a query came back short it returned its scope's whole
+    market, so absence there is a real delisting whatever the price.
+
+    Each departure is judged at the day it VANISHED — the trim's first fetch
+    day after the car was last seen — against that day's window, never
+    today's. The snapshot CSV keeps every kept row of every fetch day, so
+    that window is reconstructed from history: the day's max kept price IS
+    the cheapest-N cut-off, and a day with fewer kept rows than one page
+    returned its scope's entire market, so no cut-off applies. When the
+    vanish day is today's live fetch, the run's own per-source window
+    (PRICE_WINDOW / EXHAUSTED) is used instead — it is exact.
+
+    Each entry carries its own trim's previous fetch day, because trims of
+    one model can run on different cadences and the model's yesterday is
+    not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
-    window_max = PRICE_WINDOW
     days_by_tid = defaultdict(set)
+    win_max, win_n = {}, Counter()      # (target, fetch day) -> window
     for r in all_rows:
         if r["target"] in tids:
-            days_by_tid[r["target"]].add(r["snapshot_date"])
+            d = r["snapshot_date"]
+            days_by_tid[r["target"]].add(d)
+            win_n[(r["target"], d)] += 1
+            p = to_int(r["price"])
+            if p is not None and p > win_max.get((r["target"], d), 0):
+                win_max[(r["target"], d)] = p
     by_key = defaultdict(list)
     for r in all_rows:
         if r["target"] in tids and (r["target"], r["vin"]) not in today_vins:
@@ -1147,19 +1145,33 @@ def delisted(tids, all_rows, today_rows, hist):
         last_price = to_int(r["price"])
         tdays = sorted(days_by_tid[tid])
         prev_fetch = tdays[-2] if len(tdays) >= 2 else None
+        # the day the car disappeared: its trim's first fetch after last_seen
+        van_day = next((d for d in tdays if d > last_day), None)
         # a car in a queried state comes back through either query, so it is
         # only out of window when it is above both cut-offs
         keys = (["States", "National"] if r["state"] in SEARCH_STATES
                 else ["National"])
-        cutoffs = [c for c in (window_max.get((tid, k)) for k in keys)
-                   if c is not None]
-        cutoff = max(cutoffs) if cutoffs else None
-        if any((tid, k) in EXHAUSTED for k in keys):
+        if van_day == TODAY and any((tid, k) in PRICE_WINDOW
+                                    or (tid, k) in EXHAUSTED for k in keys):
+            # live run, vanished at today's fetch: use its exact window
+            cutoffs = [c for c in (PRICE_WINDOW.get((tid, k)) for k in keys)
+                       if c is not None]
+            cutoff = max(cutoffs) if cutoffs else None
+            exhausted = any((tid, k) in EXHAUSTED for k in keys)
+        else:
+            # older departure, or an offline rebuild: reconstruct the vanish
+            # day's window from the snapshots themselves
+            cutoff = win_max.get((tid, van_day))
+            exhausted = (van_day is not None
+                         and win_n[(tid, van_day)] < PER_PAGE)
+        if van_day is None:
+            likely = "not checked"      # not fetched again since last seen
+        elif exhausted:
             likely = "delisted"         # a query that saw everything missed it
-        elif cutoff is None:
-            likely = "unknown"          # nothing fetched for this trim today
-        elif last_price is not None and last_price > cutoff:
-            likely = "out of window"    # pricier than today's cheapest-N cut-off
+        elif cutoff is None or last_price is None:
+            likely = "not checked"      # no window to judge the absence by
+        elif last_price > cutoff:
+            likely = "out of window"    # pricier than that day's cheapest-N cut-off
         else:
             likely = "delisted"
         out.append({
@@ -1251,7 +1263,7 @@ def brief_lines(m_entry, listings, prev_day):
         b = local[0]
         out.append(f"- Lowest drivable **{money(b['price'])}** "
                    f"({place(b)}) · no shipping")
-    elif STATES or DRIVE_RADIUS:
+    elif STATES:
         out.append(f"- Nothing drivable ({scope_label()})")
     movers = sum(1 for x in listings if len(x["series"]) >= 2
                  and x["series"][-1][1] != x["series"][-2][1])
@@ -1302,24 +1314,21 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
                        f"{g['city']}, {g['state']} · tracked "
                        f"{g['days_tracked']}d `{g['vin']}`")
         sec.append("")
-    if (STATES or DRIVE_RADIUS) and not any(x["local"] for x in tl):
+    if STATES and not any(x["local"] for x in tl):
         sec += [f"_Nothing drivable ({scope_label()})._", ""]
-    # the buyer's states in their configured order, then any state a car is
-    # drivable from only because of the drive radius
-    local_states = ([st for st in STATES if any(
+    # the buyer's states, in their configured order
+    local_states = [st for st in STATES if any(
         x["local"] and x["state"] == st for x in tl)]
-        + sorted({x["state"] for x in tl if x["local"]} - set(STATES)))
     for st in local_states:
         in_st = [x for x in tl if x["local"] and x["state"] == st]
-        sec.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**"
-                   + ("" if st in STATES else " — within the drive radius"))
+        sec.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**")
         for x in in_st:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
                                summarize((t["id"], x["vin"]), hist), x))
         sec.append("")
     best5 = [x for x in tl if x["price"] is not None and not x["local"]][:5]
     if best5:
-        sec.append("**Cheapest beyond driving range (shipping stated)**")
+        sec.append("**Cheapest beyond your states (shipping stated)**")
         for x in best5:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
                                summarize((t["id"], x["vin"]), hist), x))
@@ -1361,13 +1370,17 @@ def build_outputs(today_rows, all_rows, hist):
     site = {
         "app": APP,
         "generated": TODAY,
+        # The DATA day: the newest snapshot anywhere in the record. generated
+        # is the day this file was BUILT — an offline rebuild
+        # (tools/rebuild_outputs.py) stamps it with no fetch — so the pages
+        # date the numbers by data_through, never by generated.
+        "data_through": max((r["snapshot_date"] for r in all_rows),
+                            default=None),
         "buyer": {
             "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
             "states": STATES,
             "state_names": {s: STATE_NAMES.get(s, s) for s in STATES},
             "search_states": SEARCH_STATES,
-            "drive_hours": DRIVE_HOURS or None,
-            "drive_radius_miles": DRIVE_RADIUS or None,
             # the anchor is published ONLY when it came from the public
             # buyer.anchor config — never coordinates a legacy home zip resolved to
             "anchor": ([HOME[0], HOME[1]]
@@ -1511,7 +1524,7 @@ def build_outputs(today_rows, all_rows, hist):
             if local_picks or ship_picks:
                 sec += [f"**Spicy picks** — {picks_rule()}", ""]
                 if local_picks:
-                    sec += [f"_Within driving range ({scope_label()}):_", ""]
+                    sec += [f"_Drivable ({scope_label()}):_", ""]
                     sec += [fmt_pick(p) for p in local_picks] + [""]
                 else:
                     sec += [f"_Nothing drivable qualifies yet ({scope_label()})._", ""]
@@ -1520,11 +1533,8 @@ def build_outputs(today_rows, all_rows, hist):
                     sec += [fmt_pick(p) for p in ship_picks] + [""]
             counts = Counter(x["state"] for x in listings if x["local"])
             n_out = sum(1 for x in listings if not x["local"])
-            radius_states = sorted(set(counts) - set(STATES))
             summary = " · ".join([f"{st} {counts.get(st, 0)}" for st in STATES]
-                                 + [f"{st} {counts[st]} (drive radius)"
-                                    for st in radius_states]
-                                 + [f"beyond driving range {n_out}"])
+                                 + [f"beyond {n_out}"])
             mline = market_line(m_entry["market"])
             sec += [f"_{len(listings)} vehicles across {len(trims)} "
                     f"trim{'s' if len(trims) != 1 else ''} · {summary}_"
@@ -1550,7 +1560,7 @@ def build_outputs(today_rows, all_rows, hist):
         report += ["## Spicy picks across the watchlist", "",
                    f"_{picks_rule()}. Asking prices shown._", ""]
         if top_local:
-            report += [f"### Within driving range — {scope_label()}", ""]
+            report += [f"### Drivable — {scope_label()}", ""]
             report += [fmt_pick(p) for p in top_local] + [""]
         else:
             report += [f"_Nothing drivable qualifies yet ({scope_label()})._", ""]

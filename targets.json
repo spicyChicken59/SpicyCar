@@ -7,9 +7,8 @@
     "label": "Chicago",
     "anchor": [41.8781, -87.6298],
     "states": ["IL", "OH", "IN", "WI"],
-    "drive_hours": 5,
     "search_states": ["MI", "IA", "MO", "KY"],
-    "shopping": ["bmw-i5-edrive40", "bmw-i7"],
+    "shopping": ["bmw-i5-edrive40", "bmw-i4-edrive40"],
     "shortlist": [],
     "ship_per_mile": 0.65,
     "ship_min": 350,
@@ -59,21 +58,6 @@
             "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
           }
         },
-        "i7": {
-          "label": "BMW i7",
-          "model": "i7",
-          "years": ["2023", "2024", "2025", "2026"],
-          "min_price": 30000,
-          "depth": "full",
-          "pages": 2,
-          "newest": 1,
-          "note": "Shopping alongside the i5. Every trim: eDrive50, xDrive60, M70.",
-          "notes": {
-            "good": ["The quietest, most comfortable EV in its class — a 7-Series first, an EV second", "Around 300 miles for the eDrive50 and xDrive60; the M70 trades some range for speed", "Six-figure cars now sell used in the $50k–70k range; many carry the rear theater screen and Executive Lounge seats"],
-            "bad": ["Nearly 6,000 lb: big tires, big brakes and air suspension all cost real money to maintain", "Fast charging peaks near 195 kW and tapers, so it charges slower than the price suggests", "Options vary enormously — two i7s at the same price can be very different cars"],
-            "watch": ["Confirm the software is current and all campaigns are done; 2023 cars had electronics glitches", "Check the air suspension cycles properly and the tires (21–22 in) have life left — a set is expensive", "Decide whether you want the theater screen and lounge rear seats before you shop; they are not on every car", "Check the trim: eDrive50 (rear-drive, from 2024) vs xDrive60 (all-wheel) vs M70"]
-          }
-        },
         "ix": {
           "label": "BMW iX",
           "model": "iX",
@@ -102,7 +86,7 @@
           },
           "trims": {
             "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"], "active": false },
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40" },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "Shopping alongside the i5 — the cheaper way into the same drivetrain." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"], "active": false },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }
