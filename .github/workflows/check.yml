@@ -1,12 +1,17 @@
 name: check
 
 # Runs on every push and pull request, before the daily tracker ever fires.
-# Two guards:
+# Three guards:
 #   - the budget: a config edit that would overspend the free API plan fails
 #     here, not on the invoice
 #   - the design system: the pages are linted against the exact sc.css they
 #     pin — namespace squats, unknown sc- classes and raw colour fail; the
 #     policy lives in tools/consumer_lint_ci.mjs
+#   - the dashboard itself: it is opened in a real browser and asked whether it
+#     still works. Until this existed, none of docs/index.html could fail a
+#     build — the Python suite is a Tracking.py suite and the linter reads the
+#     CSS namespace, not the behaviour, so a typo in the render path shipped
+#     green and the reader found it.
 
 on:
   push:
@@ -61,3 +66,35 @@ jobs:
           node tools/consumer_lint_ci.mjs /tmp/design-system docs/index.html docs/how.html | tee /tmp/lint.txt
           # the author is looking at this PR right now — put the verdict where they are
           { echo '### consumer-lint'; echo '```'; cat /tmp/lint.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # The same checkout the linter takes, at the ref the pages pin: the smoke
+      # test answers every cdn.jsdelivr.net request from it, so opening the
+      # dashboard reaches nothing off this runner and cannot fail on someone
+      # else's CDN having a bad morning.
+      - name: The design system the pages pin
+        run: |
+          PIN=$(grep -oEm1 'design-system@[^/"]+' docs/index.html | cut -d@ -f2)
+          git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/design-system \
+            || { git clone https://github.com/spicyChicken59/design-system /tmp/design-system \
+                 && git -C /tmp/design-system checkout "$PIN"; }
+      - name: Open the dashboard and ask whether it works
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+          set -o pipefail
+          node tools/dashboard_smoke.mjs /tmp/design-system --shots /tmp/shots | tee /tmp/smoke.txt
+          { echo '### dashboard'; echo '```'; cat /tmp/smoke.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      # what the checks were looking at, when one of them disagrees
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-screenshots
+          path: /tmp/shots
+          if-no-files-found: ignore

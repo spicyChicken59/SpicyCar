@@ -973,5 +973,97 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(T.first({"a": "", "b": "x"}, ["a", "b"]), "x")
 
 
+class TestDashboardContract(unittest.TestCase):
+    """What docs/index.html is allowed to assume about docs/data.json.
+
+    The dashboard is 3,700 lines that no test in this file has ever run, and
+    the multi-select comparison leans on four properties of the payload that
+    nothing on the Python side promises in writing. Each one, if it quietly
+    stopped holding, would not crash the page — it would make it show a
+    slightly wrong number, which is the failure this repo cares about most.
+
+    These read the committed docs/data.json, the same file the pages fetch.
+    """
+
+    @staticmethod
+    def _models():
+        site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        return site, [(bk, mk, m) for bk, b in site["brands"].items()
+                      for mk, m in b["models"].items()]
+
+    def test_listings_are_one_row_per_vin(self):
+        """pick_display_rows collapses a VIN two targets both matched into one
+        row. Every count, median and pooled ranking on the dashboard takes that
+        as given — a duplicate would be counted twice by all of them."""
+        _, models = self._models()
+        for bk, mk, m in models:
+            vins = [x["vin"] for x in m["listings"]]
+            self.assertEqual(len(vins), len(set(vins)),
+                             f"{bk}/{mk}: listings must be one row per VIN")
+
+    def test_departures_all_carry_their_price_history(self):
+        """The scoped and pooled charts rebuild each day from every car's own
+        series, departures included — that second half is what stops a day
+        looking more expensive than it was because the cheap car sold on it. A
+        gone row with no series silently drops the page back to the national
+        line (docs/index.html scopedDaily)."""
+        _, models = self._models()
+        for bk, mk, m in models:
+            for g in (m.get("gone") or []):
+                self.assertTrue(g.get("series"),
+                                f"{bk}/{mk} {g.get('vin')}: a departure without its series")
+
+    def test_every_row_names_a_trim_the_config_still_has(self):
+        """The trim chips are built from m.trims and filter on x.trim_id. A row
+        pointing at a trim that is not there is a car no chip can ever show."""
+        _, models = self._models()
+        for bk, mk, m in models:
+            trims = set(m.get("trims") or {})
+            for x in m["listings"] + (m.get("gone") or []):
+                self.assertIn(x.get("trim_id"), trims,
+                              f"{bk}/{mk}: {x.get('vin')} claims an unknown trim")
+            for tid in (m.get("daily_by_trim") or {}):
+                self.assertIn(tid, trims, f"{bk}/{mk}: daily_by_trim has no trim {tid}")
+
+    def test_the_record_can_be_rebuilt_from_the_cars_themselves(self):
+        """Every day in m.daily must be a day some car's series covers. This is
+        the precondition for the rebuild that a filtered or multi-trim scope
+        runs: a day the cars cannot account for is a day the chart would drop
+        without saying so."""
+        _, models = self._models()
+        for bk, mk, m in models:
+            days = {d["date"] for d in (m.get("daily") or [])}
+            seen = {p[0] for x in m["listings"] + (m.get("gone") or [])
+                    for p in (x.get("series") or [])}
+            self.assertEqual(days - seen, set(),
+                             f"{bk}/{mk}: a snapshot day no car's history covers")
+
+    def test_the_trim_rows_cover_the_model_row(self):
+        """The per-trim series are per FETCH TARGET, and targets overlap: the
+        nationwide CPO watch and the ordinary trim both see the same certified
+        car. So a day's per-trim counts SUM TO AT LEAST the model's own count,
+        and on 2026-08-30 the i5's four trims totalled 137 against a model row
+        of 136 — which is why the dashboard rebuilds a pooled trim scope
+        VIN-uniquely from the cars instead of adding these up (and why it never
+        merges their medians, which have no combination at all).
+
+        Failing the other way — the trims totalling LESS than the model — would
+        mean a car in the record belongs to no trim, and no chip could show it.
+        """
+        _, models = self._models()
+        for bk, mk, m in models:
+            by_day = {}
+            for series in (m.get("daily_by_trim") or {}).values():
+                for d in series:
+                    by_day.setdefault(d["date"], []).append(d.get("n") or 0)
+            for d in (m.get("daily") or []):
+                parts = by_day.get(d["date"])
+                if parts is None:
+                    continue
+                self.assertGreaterEqual(
+                    sum(parts), d.get("n") or 0,
+                    f"{bk}/{mk} {d['date']}: the trim rows do not cover the model row")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

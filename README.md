@@ -94,7 +94,7 @@ belong to the market. Keeping them apart is what makes the second buyer an addit
 **Nothing to operate.** A scheduled Action (with a concurrency guard, and a rebase-and-retry push
 so a busy `main` can never cost a day's snapshot), a CSV rewritten in place each run (so a same-day
 re-run replaces rather than duplicates), a static dashboard that reads one JSON file, and the
-SpicyChicken design system pinned at v2.1.0 via jsDelivr.
+SpicyChicken design system pinned at v2.4.0 via jsDelivr.
 
 ## Architecture
 
@@ -131,12 +131,18 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   **market-over-time chart** —
   colour is the brand, the dash is the model, the shopped models are drawn heavier, an
   interactive legend hides, shows and highlights any line, and 30d / 90d / All chips set a
-  remembered time window with the price scale fitted to it. A **multi-select Where filter** (each
-  state plus "beyond" — press any mix, remembered between visits) narrows every tile,
-  pick and table. **Spicy picks** come in two lists — the best values in the buyer's states and the
+  remembered time window with the price scale fitted to it. Three **multi-select filters** work the
+  same way — press any mix, none pressed means all of them: **Where** (each state plus "beyond",
+  remembered between visits), **Models** on the watchlist, and **Trim** on a model page. Press two
+  and the page becomes a **comparison**: a side-by-side card with a column each, one chart line per
+  thing picked instead of one merged line, and — comparing models — every car pooled into one
+  ranking with the model named on each row. The comparison is in the address bar
+  (`?models=bmw-i5,bmw-ix`), so it is a link you can send. **Spicy picks** come in two lists — the
+  best values in the buyer's states and the
   best worth shipping — ranked by value but shown at asking price. Rows click through to each
   model; on every model, its own picks, a hand-written *know the model* card, a **price-vs-miles
-  scatter** (picks ringed, a dashed typical-value line per model year), trim/year/mileage
+  scatter** (picks ringed, a dashed typical-value line per model year, dots coloured by trim),
+  trim/year/mileage
   filters plus hide-accidents and hide-rentals; sort by asking, asking + shipping, or best value
   vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
   and a price sparkline — the top thirty shown, one press for all; and the "gone" list, twelve
@@ -154,6 +160,18 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 
 Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, serve the folder
 (`python -m http.server` inside `docs/`) — it fetches `data.json`, which browsers block on `file://`.
+
+Three checks run on every push, and all three run locally:
+
+```
+python -m unittest discover -s tests -t .                     # the tracker, and what the dashboard may assume of its data
+node tools/consumer_lint_ci.mjs <design-system> docs/*.html    # the pages against the exact sc.css they pin
+node tools/dashboard_smoke.mjs <design-system>                 # the dashboard, opened in a real browser and asked if it works
+```
+
+The last one needs `playwright` and its Chromium (`npm i --no-save playwright && npx playwright install
+chromium`); without them it says so and passes, since a machine with no browser is not a broken
+dashboard. It reaches nothing off the machine — the design-system checkout answers every CDN request.
 
 ## Configuration
 
@@ -200,6 +218,8 @@ any change — it shows today, the worst day in the next two weeks, and the mont
 ## Roadmap
 
 - Drill below state: county or metro.
+- ~~Compare two cars at once, not one at a time.~~ Shipped: press two model or two trim chips
+  and the page becomes a comparison — a side-by-side card, a line each, and one pooled table.
 - ~~Distance-based "drivable" instead of state lines.~~ Tried, then removed on purpose: states are the buyer's own answer to "will I go get it?", and a straight-line radius makes road claims it cannot keep.
 - A second buyer profile — the config is already shaped for it.
 - Alerts worth waking for: email only when a new spicy pick appears or a watched VIN is cut.
