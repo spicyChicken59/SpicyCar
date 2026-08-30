@@ -13,10 +13,20 @@
 //   warn   OVERRIDE  sometimes right — but each one deserves eyes, not a gate
 //   info   CANDIDATE the loop's raw material: rules worth promoting upstream
 //
+// Candidates already adjudicated live in tools/promotion-verdicts.json and are
+// reported separately, so the same question is not re-opened every release —
+// only genuinely OPEN candidates are counted. Deleting a verdict puts its rule
+// back on the agenda; the weekly digest workflow raises whatever is open.
+//
+// It also warns when the pinned release is behind the newest design-system tag.
+// A stale pin is never a build failure: it is not a correctness bug, and failing
+// here would block PRs that have nothing to do with the design system.
+//
 // It also fails if the pages disagree about WHICH design-system ref they pin.
 // CI checks out the design system at that ref before running this, so the
 // pages are always linted against the sheet they actually load.
-import { readFileSync } from 'node:fs';
+import { readFileSync, appendFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
@@ -28,6 +38,16 @@ if (!dsRoot || !pages.length) {
 
 const { analyse } = await import(pathToFileURL(resolve(dsRoot, 'build/consumer-lint.mjs')).href);
 
+// --- decided candidates ----------------------------------------------------
+const DECIDED = new Map();   // selector -> { key, verdict, why }
+try {
+  const led = JSON.parse(readFileSync(new URL('./promotion-verdicts.json', import.meta.url), 'utf8'));
+  for (const [key, v] of Object.entries(led.verdicts || {}))
+    for (const sel of v.selectors || []) DECIDED.set(sel, { key, verdict: v.verdict, why: v.why });
+} catch (e) {
+  console.log(`  note  no promotion-verdicts.json (${e.code || 'unreadable'}) — every candidate counts as open`);
+}
+
 // --- every page must pin the same design-system ref ------------------------
 const refs = new Set();
 const bodies = new Map();
@@ -37,6 +57,7 @@ for (const p of pages) {
   for (const m of html.matchAll(/design-system@([^/"'\s]+)\//g)) refs.add(m[1]);
 }
 let hard = 0;
+const openCandidates = [];
 if (refs.size > 1) {
   console.error(`FAIL  the pages pin different design-system refs: ${[...refs].join(' vs ')}`);
   console.error('      (updated one page and forgot the other — they must move together)');
@@ -62,10 +83,62 @@ for (const p of pages) {
   hard += show(name, 'UNKNOWN ', unknown, true);
   hard += show(name, 'HYGIENE ', hygiene, true);
   show(name, 'OVERRIDE', override, false);
-  if (promote.length) console.log(`\n  info  ${name} — ${new Set(promote).size} promotion candidate(s): rules with no page identity, tokens only. Worth a look next release.`);
+  const cand = [...new Set(promote)];
+  const open = cand.filter((sel) => !DECIDED.has(sel));
+  const decided = cand.filter((sel) => DECIDED.has(sel));
+  openCandidates.push(...open.map((sel) => ({ page: name, sel })));
+  if (decided.length) {
+    const byVerdict = {};
+    for (const sel of decided) (byVerdict[DECIDED.get(sel).verdict] ||= []).push(sel);
+    console.log(`\n  note  ${name} — ${decided.length} candidate(s) already decided: `
+      + Object.entries(byVerdict).map(([v, l]) => `${l.length} ${v}`).join(', '));
+  }
+  if (open.length) {
+    console.log(`\n  info  ${name} — ${open.length} OPEN promotion candidate(s): no page identity, tokens only.`);
+    for (const sel of open) console.log('        - ' + sel);
+    console.log('        Record a verdict in tools/promotion-verdicts.json to settle these.');
+  }
   if (!squat.length && !unknown.length && !hygiene.length)
     console.log(`  ok    ${name} — no squats, no unknown classes, no raw colour`);
 }
 
+// --- is the pinned release still the newest one? ---------------------------
+// Warn only. Both previous pin bumps happened because a person noticed; this is
+// the check that notices instead. The design system is public, so listing its
+// tags needs no credential.
+const pinned = [...refs][0];
+if (pinned && /^v\d+\.\d+\.\d+$/.test(pinned)) {
+  try {
+    const out = execFileSync('git', ['ls-remote', '--tags', '--refs',
+      'https://github.com/spicyChicken59/design-system'], { encoding: 'utf8', timeout: 20000 });
+    const key = (t) => t.slice(1).split('.').map(Number);
+    const newer = (a, b) => {           // a > b ?
+      const [x, y] = [key(a), key(b)];
+      for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+      return false;
+    };
+    const tags = [...out.matchAll(/refs\/tags\/(v\d+\.\d+\.\d+)$/gm)].map((m) => m[1]);
+    const latest = tags.reduce((a, t) => (!a || newer(t, a) ? t : a), null);
+    if (latest && newer(latest, pinned)) {
+      console.log(`\n  note  the pages pin ${pinned}, but ${latest} is released.`);
+      console.log('        Bump every pin in ONE commit (this linter fails a split pin),');
+      console.log('        and delete any bridge whose comment says the new release carries it.');
+    } else if (latest) {
+      console.log(`\n  ok    pin ${pinned} is the newest design-system release`);
+    }
+  } catch (e) {
+    console.log(`  note  could not list design-system tags (${e.code || 'offline'}) — pin freshness unchecked`);
+  }
+}
+
+if (openCandidates.length) {
+  console.log(`\n  info  ${openCandidates.length} open promotion candidate(s) across all pages — `
+    + 'the loop\'s raw material for the next release.');
+}
 console.log(hard ? `\nconsumer-lint policy: ${hard} blocking finding(s)` : '\nconsumer-lint policy: clean');
+if (process.env.GITHUB_OUTPUT) {   // the weekly digest reads these
+  const kv = `open_candidates=${openCandidates.length}\n`
+    + `open_list=${openCandidates.map((c) => c.page + ' ' + c.sel).join('; ')}\n`;
+  try { appendFileSync(process.env.GITHUB_OUTPUT, kv); } catch (e) { /* best effort */ }
+}
 process.exit(hard ? 1 : 0);

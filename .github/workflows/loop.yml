@@ -1,0 +1,84 @@
+name: design-system loop
+
+# The consumer linter has always found promotion candidates and stale pins.
+# Nothing ever told anyone. This is the half that tells someone: once a week it
+# runs the same policy CI runs, and if anything is OPEN — a candidate with no
+# recorded verdict, or a pin behind the newest release — it keeps ONE issue up
+# to date saying so. Nothing open means no issue and no noise.
+#
+# It never fails and never edits code. The loop's decisions stay human; only the
+# remembering is automated.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"      # Monday morning UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Run the consumer policy against the pinned sheet
+        id: lint
+        run: |
+          PIN=$(grep -oEm1 'design-system@[^/"]+' docs/index.html | cut -d@ -f2)
+          git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/ds \
+            || { git clone https://github.com/spicyChicken59/design-system /tmp/ds && git -C /tmp/ds checkout "$PIN"; }
+          # tee so the report is both the log and the issue body
+          node tools/consumer_lint_ci.mjs /tmp/ds docs/index.html docs/how.html | tee /tmp/report.txt
+        continue-on-error: true      # a blocking finding is check.yml's job to fail, not this one
+
+      - name: Open or update the digest issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('/tmp/report.txt', 'utf8');
+            const open = Number((process.env.OPEN_CANDIDATES || '0'));
+            const stale = /but v\d+\.\d+\.\d+ is released/.test(report);
+            const TITLE = 'Design-system loop: open promotion candidates and pin status';
+            const marker = '<!-- design-system-loop-digest -->';
+
+            const found = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:body "${marker}"`,
+            });
+            const existing = found.data.items[0];
+
+            if (!open && !stale) {
+              if (existing) {
+                await github.rest.issues.createComment({ ...context.repo, issue_number: existing.number,
+                  body: `${marker}\nNothing open as of ${new Date().toISOString().slice(0,10)} — every candidate has a recorded verdict and the pin is current. Closing.` });
+                await github.rest.issues.update({ ...context.repo, issue_number: existing.number, state: 'closed' });
+              }
+              core.info('Nothing open — no issue needed.');
+              return;
+            }
+
+            const body = [
+              marker,
+              stale ? '## The pin is behind\n\nA newer design-system release exists. Bump every pin in **one** commit — the linter fails a split pin — and delete any bridge whose comment says the new release carries it.\n' : '',
+              open ? `## ${open} open promotion candidate(s)\n\nRules with no page identity that use only semantic tokens. The linter is asking, not asserting: the test is not *could* another project use it, but **would another project be wrong to write it differently**.\n\nSettle each one in \`tools/promotion-verdicts.json\` — promote it, or record why not and what would reopen the question.\n` : '',
+              '## Full report\n',
+              '```', report.trim(), '```',
+              '',
+              `_Weekly digest · ${new Date().toISOString().slice(0,10)} · [PROMOTING.md](https://github.com/spicyChicken59/design-system/blob/main/.claude/skills/spicychicken-design-system/PROMOTING.md)_`,
+            ].filter(Boolean).join('\n');
+
+            if (existing) {
+              await github.rest.issues.update({ ...context.repo, issue_number: existing.number, body });
+              core.info(`Updated issue #${existing.number}`);
+            } else {
+              const made = await github.rest.issues.create({ ...context.repo, title: TITLE, body });
+              core.info(`Opened issue #${made.data.number}`);
+            }
+        env:
+          OPEN_CANDIDATES: ${{ steps.lint.outputs.open_candidates }}
