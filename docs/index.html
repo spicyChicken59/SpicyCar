@@ -1519,7 +1519,7 @@
     const opts = ['30', '90', 'all'].filter((id) => id === 'all' || spanDays() > +id);
     if (opts.length < 2) { host.hidden = true; host.textContent = ''; return; }
     if (!opts.includes(S.range)) S.range = opts[0];
-    segment(host, opts, S.range, (id) => (id === 'all' ? 'All' : id + 'd'), false,
+    segment(host, opts, S.range, (id) => (id === 'all' ? 'all' : id + 'd'), false,   // lowercase like every other tab — this chip only renders once the record spans 30 days
       (id) => { S.range = id; savePrefs(); rerender('range'); }, 'range');
   }
   // Lowest asking per day. Days written before min_price existed are skipped; a model with none gets its latest snapshot as one point.
