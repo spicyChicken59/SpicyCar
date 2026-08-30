@@ -1,8 +1,12 @@
 name: check
 
 # Runs on every push and pull request, before the daily tracker ever fires.
-# The point is the budget guard: a config edit that would overspend the free
-# API plan fails here, not on the invoice.
+# Two guards:
+#   - the budget: a config edit that would overspend the free API plan fails
+#     here, not on the invoice
+#   - the design system: the pages are linted against the exact sc.css they
+#     pin — namespace squats, unknown sc- classes and raw colour fail; the
+#     policy lives in tools/consumer_lint_ci.mjs
 
 on:
   push:
@@ -38,3 +42,19 @@ jobs:
                 f'avg {avg:.1f}/day = {avg*30.5:,.0f}/month of {T.MONTHLY:,} '
                 f'({avg*30.5/T.MONTHLY:.0%} of plan)')
           "
+
+  consumer-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Lint the pages against the design system they pin
+        run: |
+          PIN=$(grep -oEm1 'design-system@[^/"]+' docs/index.html | cut -d@ -f2)
+          echo "pages pin design-system@$PIN"
+          git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/design-system \
+            || { git clone https://github.com/spicyChicken59/design-system /tmp/design-system \
+                 && git -C /tmp/design-system checkout "$PIN"; }
+          node tools/consumer_lint_ci.mjs /tmp/design-system docs/index.html docs/how.html
