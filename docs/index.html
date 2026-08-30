@@ -1661,9 +1661,17 @@
       else { S.brand = wantBrand; S.model = wantM || Object.keys(models)[0]; }
     } else if (wantBrand) {
       urlMiss = { asked: wantBrand, kind: 'brand' };
+    } else if (wantM) {
+      // ?m= without a brand was never a published shape, but the ask is
+      // legible: honor it if exactly the model exists anywhere, else say so
+      for (const [bk, b] of Object.entries(S.site.brands)) if ((b.models || {})[wantM]) { S.brand = bk; S.model = wantM; }
+      if (!S.model) urlMiss = { asked: wantM, kind: 'car' };
     }
     S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
-    if (urlMiss) syncUrl(true);   // the dead URL must not stay in the address bar to be copied onward
+    // Always canonicalize (replace, so history stays sane): a miss must not
+    // leave the dead URL to be copied onward, and a hit must not keep stray
+    // contradictions (?model=…&brand=tesla) or casing variants alive either.
+    syncUrl(true);
   }
   function pickBrand(id) {
     S.brand = id;
