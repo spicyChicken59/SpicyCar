@@ -13,17 +13,17 @@
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
-<!-- SpicyChicken Design System v2.3.0, pinned by commit (4ab0e57) — swap to @v2.3.0 once the tag is pushed · DESIGN_SYSTEM.md §11 -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/assets/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/assets/sc-avatar-tile.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/assets/apple-touch-icon.png">
+<!-- SpicyChicken Design System v2.3.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/sc.css">
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/sc-theme.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/sc-charts.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/sc-map.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc.css">
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc-theme.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc-charts.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/sc-map.js"></script>
 <style>
   /* Page-specific only. Everything generic now lives in sc.css v2.3.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
@@ -69,7 +69,7 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
   </a>
   <div class="sc-masthead__right">
@@ -240,7 +240,7 @@
 <footer class="sc-foot">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
-    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/assets/sc-lockup-cream.svg" alt="SpicyChicken">
+    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
   </a>
 </footer>
 
@@ -334,7 +334,7 @@
   };
   const isLocal = (x) => !!x.local;
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
-  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@4ab0e5765875510126606c4f9b7312323611d058/assets/';
+  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.3.0/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
   const markImg = () => el('img', { class: 'sc-mark', 'data-mark': 'color', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '', width: 22, height: 26 });
   // the faint chick that stands in when a dealer sent no photo
