@@ -277,6 +277,7 @@
       </label>
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
+      <label class="sc-check" title="Certified pre-owned only — the cars the promo financing applies to"><input type="checkbox" id="f-cpo"> CPO only</label>
     </div>
   </section>
 
@@ -391,7 +392,7 @@
   // The front page is the overview of every model (brand 'all'); a model view is a brand + model.
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) hidden from the market chart via the legend.
-  const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
+  const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -1549,7 +1550,7 @@
   // is precomputed per trim, so a trim-only view already has an exact,
   // complete series and does not need rebuilding.
   function sharedActive() {
-    return !!(S.where.size || S.year !== 'all' || S.miles || S.clean || S.rental);
+    return !!(S.where.size || S.year !== 'all' || S.miles || S.clean || S.rental || S.cpo);
   }
   function scopedDaily(m) {
     // Nothing narrowed: hand back the precomputed series. It is the same
@@ -1743,6 +1744,7 @@
     if (S.year !== 'all' && String(x.year) !== S.year) return false;
     if (S.miles && !(x.miles !== null && x.miles !== undefined && x.miles < S.miles)) return false;
     if (S.clean && x.accidents > 0) return false;
+    if (S.cpo && !x.cpo) return false;
     if (S.rental && isRental(x)) return false;
     return true;
   }
@@ -1979,7 +1981,7 @@
     const daily = m.daily || [];
     const title = `${m.label || ''} · ${x.year || ''} ${x.trim_label || x.trim || ''}`.trim();
     const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — likely sold or pulled'
-      : (x.likely === 'out of window' ? 'missing — priced above the fetch cut-off, probably still for sale' : 'not checked recently')) : null;
+      : (x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale' : 'not checked recently')) : null;
     const price = gone ? x.last_price : x.price;
     const media = el('div', { class: 'sc-photo-card__media' }, thumbFor(gone ? null : x, true),
       el('div', { class: 'sc-photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
@@ -2051,15 +2053,21 @@
     document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
     const note = trim ? (trim.note || '') : (t.note || '');
     $('dek').textContent = [note, `Asking prices as listed; shipping stated per car.`].filter(Boolean).join(' ');
-    const daily = dailyFor(t), nDays = daily.length || 1, nTrims = Object.keys(t.trims || {}).length;
+    const daily = dailyFor(t), nDays = daily.length, nTrims = Object.keys(t.trims || {}).length;
     const p = t.params || {}, minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
     const unfetched = !t.as_of && t.next_due;
     metaRow([
       unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}` : `Data through ${fmtDateLong(t.as_of || dataThrough())}`,
       t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
-      unfetched ? null : `${nDays} snapshot day${nDays === 1 ? '' : 's'}`,   // a never-fetched model has no snapshot days to claim
+      // the day count is the SELECTED VIEW's, so a brand-new trim on a
+      // fetched model (a CPO watch before its first run) says so instead of
+      // claiming a day it does not have; a never-fetched model claims nothing
+      unfetched ? null : nDays ? `${nDays} snapshot day${nDays === 1 ? '' : 's'}` : 'first fetch pending for this view',
       nTrims > 1 && !trim ? `${nTrims} trims` : null,
-      trim && trim.depth ? (trim.depth === 'full' ? 'Deep fetch' : 'Light fetch — cheapest 20 per query') : null,
+      // A CPO watch names its own window instead of the generic depth label —
+      // "Deep fetch" describes a cheapest-N sweep, which is not what it does.
+      trim && trim.cpo_only ? `Certified cars under ${num(trim.max_miles)} mi, nationwide, lowest-mileage first`
+        : trim && trim.depth ? (trim.depth === 'full' ? 'Deep fetch' : 'Light fetch — cheapest 20 per query') : null,
       minPrice ? `Listings under ${money(minPrice)} ignored` : null,
     ]);
     segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand, 'tab-brand');
@@ -2398,7 +2406,7 @@
       el('span', null, `last seen ${fmtDate(g.last_seen)}`),
       el('span', null, `tracked ${g.days_tracked || 0}d${drop}`),
       g.likely && g.likely !== 'delisted'
-        ? el('span', null, g.likely === 'out of window' ? 'priced above that day\'s cut-off' : 'not checked that day') : null,
+        ? el('span', null, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null,
       (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
     return el('div', { class: 'sc-media sc-media--card' },
       el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), aside,
@@ -2457,7 +2465,7 @@
     const body = el('tbody');
     for (const g of shownG) {
       const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
-      const likely = g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above that day\'s cut-off' : 'not checked that day') : null;
+      const likely = g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null;
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
           gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · tracked ${g.days_tracked || 0}d${drop}`) : null,
@@ -2778,7 +2786,7 @@
       el('p', null, `All ${num(total)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
         el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
-          S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.trim = 'all';
+          S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false; S.trim = 'all';
           // trim is among the resets, and trim reaches the header, chart and gone table
           savePrefs(); buildFilters(); rerender(S.brand === 'all' ? 'rows' : 'trim');
         } }, 'Clear the filters'), '.')));
@@ -2893,6 +2901,7 @@
     $('f-sort').value = S.sort;
     $('f-clean').checked = S.clean;
     $('f-rental').checked = S.rental;
+    $('f-cpo').checked = S.cpo;
     $('filters-card').hidden = false;
     filterCount();
   }
@@ -2905,6 +2914,7 @@
     if (S.year !== 'all') bits.push(S.year);
     if (S.miles) bits.push(`under ${num(S.miles)} mi`);
     if (S.clean) bits.push('no accidents');
+    if (S.cpo) bits.push('CPO only');
     if (S.rental) bits.push('no rentals');
     return bits;
   }
@@ -3016,6 +3026,7 @@
     $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender('sort'); });
     $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender('rows'); });
     $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender('rows'); });
+    $('f-cpo').addEventListener('change', (e) => { S.cpo = e.target.checked; rerender('rows'); });
     // The phone bar: one 44px row that expands on tap, so the controls are one
     // press away instead of five screens down. Setting several filters in a
     // row is normal, so a CHANGE never closes it; scrolling away to read the

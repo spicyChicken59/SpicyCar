@@ -6,10 +6,11 @@
 
 [![SpicyCar daily](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml)
 
-**A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i4 eDrive40s being
-shopped — their siblings and rivals follow on their own cadence — prices each car as what it would
-actually cost to land in a specific buyer's driveway, and publishes the result as a report, an
-email, and a dashboard.
+**A used-car purchase analyzer.** Every day it snapshots the BMW i5 and iX being shopped —
+including a nationwide watch on every certified (CPO) example under 30,000 miles, where a
+2.99% APR promo (2.49% on the iX) makes the financing the story — their siblings and rivals
+follow on their own cadence. Each car is priced as what it would actually cost to land in a
+specific buyer's driveway, and the result is published as a report, an email, and a dashboard.
 
 It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
 CSV in the repository is the ledger.
@@ -43,12 +44,14 @@ Two things are configured, separately:
 
 - **buyer** — who is purchasing: a public home anchor, the states they will drive to for a car,
   and how they value miles and shipping. One buyer today; the first real use is a buyer near
-  Chicago shopping the i5 and i4 eDrive40s. The shape is built for more.
-- **watchlist** — what to track: brands → models → trims. The BMW i5 and i4 being shopped get the
-  deepest fetches; the iX runs every other day; comparison models from Hyundai,
-  Kia, Audi, Lucid and Chevrolet run every third day, so the ones they want can be judged against
-  their siblings and their rivals. `buyer.shopping` names the targets that lead the report in
-  full; everything else gets one line.
+  Chicago shopping the i5 and the iX — drawn by a CPO financing promo (2.99% APR on certified
+  EVs, 2.49% on the iX). The shape is built for more.
+- **watchlist** — what to track: brands → models → trims. The shopped i5 and iX each carry a
+  nationwide CPO watch (every certified 2024+ car under 30,000 miles, fetched lowest-mileage
+  first, national query only) beside their ordinary trim targets; the i4 stays as the price
+  benchmark for the same drivetrain; comparison models from Hyundai, Kia, Audi and Lucid run
+  every third day. `buyer.shopping` names the targets that lead the report in full; everything
+  else gets one line.
 
 ## Design decisions
 

@@ -79,7 +79,8 @@ LEGACY_IDS = CFG.get("legacy_ids", {})
 BUDGET = CFG.get("budget_per_day", 40)          # cap on any single day
 MONTHLY = CFG.get("budget_per_month", 1000)     # the API plan; checked on the average
 PER_PAGE = 20                       # the free plan clamps limit to 20
-PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years", "newest"]
+PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years",
+              "newest", "max_miles", "cpo_only", "national_only"]
 # The price/miles sorts sample the settled bottom of the market; a fresh,
 # well-priced car can list and sell before it ever ranks there. Targets with
 # newest > 0 also fetch that many newest-first pages per source, so a new
@@ -174,9 +175,18 @@ def sorts_pages(t):
     return [t["sorts"][0]], 1
 
 
+def sources_for(t):
+    """A national_only target asks the country one question; the States
+    query would only re-fetch a subset of the same national answer, so it
+    is skipped — which is what makes the nationwide CPO watches affordable."""
+    if t.get("national_only"):
+        return [("National", None)]
+    return SOURCES
+
+
 def calls_for(t):
     sorts, pages = sorts_pages(t)
-    return len(SOURCES) * (len(sorts) * pages + t["newest"])
+    return len(sources_for(t)) * (len(sorts) * pages + t["newest"])
 
 
 def due_on(t, ordinal):
@@ -699,7 +709,7 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
             obj = g
             verdict = {
                 "delisted": "**GONE — likely sold or pulled**",
-                "out of window": "missing today — priced above the fetch "
+                "out of window": "missing today — beyond the day's fetch "
                                  "cut-off, probably still for sale",
                 "not checked": "missing — not checked since it was last "
                                "seen, so nothing is known yet",
@@ -764,6 +774,15 @@ def picks_rule():
 # --------------------------------------------------------------------------
 CALLS = 0
 PRICE_WINDOW = {}      # (target id, source) -> highest price its price.asc query returned today
+MILES_WINDOW = {}      # (target id, source) -> highest mileage its miles.asc query returned today
+
+
+def window_dim(t):
+    """Which axis a target's fetch window lives on. A cheapest-N fetch is
+    bounded in dollars; the CPO watches sort by miles.asc only, so their
+    window is bounded in miles — judging their departures by a price
+    cut-off would compare against a number that never gated anything."""
+    return "price" if "price.asc" in (t.get("sorts") or []) else "miles"
 EXHAUSTED = set()      # (target id, source): a query came back short, so it returned
                        # that scope's ENTIRE result set — no cheapest-N cut-off applies
 FAILED_FETCHES = 0     # requests that still failed after the retry
@@ -881,6 +900,20 @@ def normalize(rec, t, dropped):
         return None
     miles = to_int(first(rec, ["retailListing.miles", "retailListing.mileage",
                                "vehicle.mileage", "mileage", "miles"], None))
+    # The CPO watch targets: both filters run here, after the fetch, because
+    # they are guaranteed correct here — the API's filter surface for these
+    # fields is unverified, and a silently-ignored query param would fetch
+    # the wrong market while looking healthy. The miles.asc sort those
+    # targets use makes the post-filter efficient: every page is spent on
+    # the low-mileage end where the answer lives.
+    if t.get("cpo_only") and not dig(rec, "retailListing.cpo"):
+        dropped["not certified"] += 1
+        return None
+    mm = to_int(t.get("max_miles"))
+    if mm is not None and (miles is None or miles >= mm):
+        # unknown mileage cannot prove "under the cap", so it is out too
+        dropped["at/over max_miles"] += 1
+        return None
     loc = rec.get("location")
     lat = lon = None
     if isinstance(loc, list) and len(loc) == 2:
@@ -1107,24 +1140,33 @@ def delisted(tids, all_rows, today_rows, hist):
     Each departure is judged at the day it VANISHED — the trim's first fetch
     day after the car was last seen — against that day's window, never
     today's. The snapshot CSV keeps every kept row of every fetch day, so
-    that window is reconstructed from history: the day's max kept price IS
-    the cheapest-N cut-off, and a day with fewer kept rows than one page
-    returned its scope's entire market, so no cut-off applies. When the
-    vanish day is today's live fetch, the run's own per-source window
-    (PRICE_WINDOW / EXHAUSTED) is used instead — it is exact.
+    that window is reconstructed from history: the day's max kept value on
+    the target's own window axis (price for a cheapest-N fetch, MILES for
+    the miles-sorted CPO watches — see window_dim) IS that day's cut-off,
+    and a day with fewer kept rows than one page returned its scope's
+    entire market, so no cut-off applies. When the vanish day is today's
+    live fetch, the run's own per-source window (PRICE_WINDOW /
+    MILES_WINDOW / EXHAUSTED) is used instead — it is exact.
+
+    One reading note for the CPO watches: their market is "certified cars
+    under the mileage cap", so a car that merely loses its CPO badge or
+    rolls past the cap departs THAT market for real, even though it may
+    still be listed — 'delisted' means gone from the tracked market, which
+    is the market the promo financing applies to.
 
     Each entry carries its own trim's previous fetch day, because trims of
     one model can run on different cadences and the model's yesterday is
     not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
     days_by_tid = defaultdict(set)
-    win_max, win_n = {}, Counter()      # (target, fetch day) -> window
+    win_max, win_n = {}, Counter()      # (target, fetch day) -> window, on the target's own axis
     for r in all_rows:
         if r["target"] in tids:
             d = r["snapshot_date"]
             days_by_tid[r["target"]].add(d)
             win_n[(r["target"], d)] += 1
-            p = to_int(r["price"])
+            dim = window_dim(TARGETS[r["target"]])
+            p = to_int(r["price"] if dim == "price" else r["miles"])
             if p is not None and p > win_max.get((r["target"], d), 0):
                 win_max[(r["target"], d)] = p
     by_key = defaultdict(list)
@@ -1151,10 +1193,14 @@ def delisted(tids, all_rows, today_rows, hist):
         # only out of window when it is above both cut-offs
         keys = (["States", "National"] if r["state"] in SEARCH_STATES
                 else ["National"])
-        if van_day == TODAY and any((tid, k) in PRICE_WINDOW
+        # judge the absence on the axis the target's window actually lives on
+        dim = window_dim(t)
+        live_win = PRICE_WINDOW if dim == "price" else MILES_WINDOW
+        last_val = last_price if dim == "price" else to_int(r["miles"])
+        if van_day == TODAY and any((tid, k) in live_win
                                     or (tid, k) in EXHAUSTED for k in keys):
             # live run, vanished at today's fetch: use its exact window
-            cutoffs = [c for c in (PRICE_WINDOW.get((tid, k)) for k in keys)
+            cutoffs = [c for c in (live_win.get((tid, k)) for k in keys)
                        if c is not None]
             cutoff = max(cutoffs) if cutoffs else None
             exhausted = any((tid, k) in EXHAUSTED for k in keys)
@@ -1168,10 +1214,10 @@ def delisted(tids, all_rows, today_rows, hist):
             likely = "not checked"      # not fetched again since last seen
         elif exhausted:
             likely = "delisted"         # a query that saw everything missed it
-        elif cutoff is None or last_price is None:
+        elif cutoff is None or last_val is None:
             likely = "not checked"      # no window to judge the absence by
-        elif last_price > cutoff:
-            likely = "out of window"    # pricier than that day's cheapest-N cut-off
+        elif last_val > cutoff:
+            likely = "out of window"    # beyond that day's fetch cut-off (price or miles)
         else:
             likely = "delisted"
         out.append({
@@ -1199,6 +1245,7 @@ def delisted(tids, all_rows, today_rows, hist):
             # a live one.
             "accidents": to_int(r.get("accidents")),
             "usage": r.get("usage", ""),
+            "cpo": is_cpo(r),
             "series": s.get("series", []),
             "flags": flags(r),
         })
@@ -1461,6 +1508,8 @@ def build_outputs(today_rows, all_rows, hist):
                                     "shopping": t["shopping"],
                                     "years": [str(y) for y in t["years"]],
                                     "min_price": t.get("min_price"),
+                                    "max_miles": t.get("max_miles"),
+                                    "cpo_only": bool(t.get("cpo_only")),
                                     "market_total": TOTALS.get((t["id"], "National"))}
                           for t in trims},
                 "listings": [],
@@ -1640,7 +1689,7 @@ def main():
             continue
         raw_n = 0
         sorts, pages = sorts_pages(t)
-        for source_name, source in SOURCES:
+        for source_name, source in sources_for(t):
             for si, sort in enumerate(sorts):
                 if si and (tid, source_name) in EXHAUSTED:
                     break   # the first sort already returned this scope's
@@ -1659,6 +1708,10 @@ def main():
                             wk = (tid, source_name)
                             PRICE_WINDOW[wk] = max(PRICE_WINDOW.get(wk, 0),
                                                    n["price"])
+                        elif sort == "miles.asc" and n["miles"] != "":
+                            wk = (tid, source_name)
+                            MILES_WINDOW[wk] = max(MILES_WINDOW.get(wk, 0),
+                                                   n["miles"])
                         key = (tid, n["vin"])
                         cur = rows.get(key)
                         if cur is None or n["price"] < to_int(cur["price"]):
