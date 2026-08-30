@@ -44,6 +44,24 @@
   #overview-table tr.is-clickable { cursor: pointer; }
   /* A filter change hides dots instead of rebuilding the map */
   #map .is-off { display: none; }
+  /* Touch hit halo — one invisible circle per dot, built only on coarse
+     pointers. Pure geometry: r is set once, in user units sized to ~25px at
+     the full-US view (fill:none paints nothing; pointer-events restores the
+     disc, the same trick sc.css uses for hollow dots). No data-br, so the
+     zoom loop never visits these nodes; zoomed in they grow with the map,
+     and the 13px nearest-car cap in the tap handler keeps precision honest. */
+  #map .sc-dot-hit { fill: none; stroke: none; pointer-events: all; cursor: pointer; }
+  /* The gaps between the zoom buttons must not eat a tap meant for a dot */
+  #map .sc-map__btns { pointer-events: none; }
+  #map .sc-map__btns .sc-map__btn { pointer-events: auto; }
+  /* On coarse pointers the 3-button column is 144px tall over a ~224px-tall
+     drawing and sits on New England (49 dots occluded at the default fit);
+     a bottom-left row sits on the Alaska inset and the Gulf, where dots
+     never land (0 occluded). Desktop keeps the top-right column — measured
+     0 occluded there at the default fit. */
+  @media (pointer: coarse) {
+    #map .sc-map__btns { top: auto; right: auto; bottom: 10px; left: 10px; flex-direction: row; }
+  }
   #notes-grid ul { margin: 0; padding-left: 18px; }
   #notes-grid li { margin-top: 6px; font-size: 14px; }
   .chart-head__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -156,7 +174,7 @@
       </div>
     </div>
     <div class="sc-legend" id="map-legend" aria-hidden="true"></div>
-    <div class="sc-map" id="map"></div>
+    <div class="sc-map" id="map" role="group" tabindex="0" aria-label="Map of the cars for sale. Use left and right arrow keys to step through cars west to east, Enter to open, Escape to clear."></div>
     <div class="sc-sr-only" id="map-twin"></div>
   </section>
 
@@ -673,6 +691,11 @@
       if (!states) { card.hidden = true; MAP_CTL = { key, empty: true }; return; }
       if (MAP_CTL && MAP_CTL.VIEW) MAP_CTL.VIEW.destroy();   // cancel any in-flight animation on the old svg
       const buyer = S.site.buyer || {};
+      // Phones and tablets get invisible hit halos over the dots (~25px
+      // targets); a precise pointer keeps the bare dots, so hover can never
+      // fire from 12px away on a desktop.
+      const COARSE = window.matchMedia('(pointer: coarse)').matches;
+      const halos = [];   // every halo, for one-shot r sizing once the card is measurable
       // Which cars are elevated (picks ringed in the accent, shortlisted VINs
       // drawn in it outright) is filter-dependent, so it belongs to
       // updateMapVisibility — this set is refreshed IN PLACE there, keeping
@@ -702,8 +725,26 @@
       // Interaction guards: a pan that ends on a dot must not fire its click,
       // and on touch — where hover isn't real — the first tap previews the car
       // (tooltip with an Open link) and only a second tap opens it.
-      let lastPtr = 'mouse', armed = null;
+      let lastPtr = 'mouse', armed = null, showAnchorTip = null;
       const hideTip = () => { TIP.hide(); armed = null; };
+      // A tap resolves to the NEAREST visible car within 13px of the finger,
+      // not to whichever transparent halo happens to be stacked on top — on a
+      // dense map the halos overlap, and topmost-wins would hand most of a
+      // metro to one arbitrary car. Nearest-centre keeps co-located spiral
+      // dots individually targetable to exactly the extent they are visually
+      // distinct. The anchor competes as a candidate on equal terms.
+      const nearestEntry = (x, y) => {
+        let best = null, bd = 13 * 13;
+        const test = (node, en) => {
+          const r = node.getBoundingClientRect();
+          const dx = r.left + r.width / 2 - x, dy = r.top + r.height / 2 - y;
+          const d = dx * dx + dy * dy;
+          if (d < bd) { bd = d; best = en; }
+        };
+        for (const en of entries) if (en.dot && !en.dot.classList.contains('is-off')) test(en.dot, en);
+        if (anchorEl) test(anchorEl, { anchor: true });
+        return best;
+      };
       const clampTip = () => TIP.clamp();
       const openCar = (c) => {
         if (mode === 'model') { const u = safeUrl(c.x.url); if (u) window.open(u, '_blank', 'noopener'); else goTo(c.bk, c.mk); }
@@ -739,7 +780,7 @@
         TIP.place({ clientX, clientY });
       };
       if (anchorEl) {
-        const showAnchorTip = (clientX, clientY) => {
+        showAnchorTip = (clientX, clientY) => {
           tip.textContent = '';
           tip.classList.remove('sc-tooltip--tap');
           tip.appendChild(el('div', { class: 'sc-tooltip__date' }, homeName()));
@@ -750,11 +791,14 @@
         };
         anchorEl.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') showAnchorTip(e.clientX, e.clientY); });
         anchorEl.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
-        anchorEl.addEventListener('click', () => {
-          if (VIEW.dragDistance() > 4) return;
-          const r = anchorEl.getBoundingClientRect();
-          showAnchorTip(r.left + r.width / 2, r.top);
-        });
+        // clicks and taps reach the anchor through the delegated handler below
+        if (COARSE) {   // the anchor's halo, so home is tappable too
+          const ahit = svgEl('circle', { class: 'sc-dot-hit', cx: anchorEl.getAttribute('cx'),
+            cy: anchorEl.getAttribute('cy'), r: 1 });
+          ahit.style.cursor = 'help';
+          svg.appendChild(ahit);
+          halos.push(ahit);
+        }
       }
       const entries = [];   // one per car with coordinates; dot stays null beyond the lower 48
       const seen = {};
@@ -778,25 +822,62 @@
           r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke', ...spread,
           style: c.x.local ? 'fill:' + hueRef : 'stroke:' + hueRef,
         });
-        dot.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
-        dot.addEventListener('click', () => {
-          if (VIEW.dragDistance() > 4) return;           // that was a pan, not a click
-          if (lastPtr === 'touch' && armed !== dot) {    // first tap previews
-            armed = dot;
-            const r = dot.getBoundingClientRect();
-            fillTip(c, r.left + r.width / 2, r.top, true);
-            return;
-          }
-          openCar(c);
-        });
+        // hover stays per-dot (desktop only reaches the bare dots); clicks and
+        // taps are handled once, on the svg, through nearest-car resolution
         dot.addEventListener('pointerenter', (e) => {
           if (e.pointerType === 'touch') return;
           fillTip(c, e.clientX, e.clientY, false);
         });
         dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
+        // The halo: a listener-less tap catcher, invisible and STATIC — no
+        // data-br and no data-di, so neither zoom loop ever visits it. Its
+        // fixed user-unit radius covers its dot at every zoom (the spiral
+        // drift is always far smaller than the halo), and the nearest-car
+        // cap below does the actual disambiguation. r is sized once, below.
+        let hit = null;
+        if (COARSE) {
+          hit = svgEl('circle', { class: 'sc-dot-hit is-off', cx, cy, r: 1 });
+          halos.push(hit);
+        }
         svg.appendChild(dot);
-        entries.push({ c, dot, ring: null, cx, cy, spread });
+        entries.push({ c, dot, hit, ring: null, cx, cy, spread });
       }
+      // halos paint nothing but sit ABOVE every dot, so what a thumb lands on
+      // is always inside some halo — never a dead 2px gap between dots
+      for (const e of entries) if (e.hit) svg.appendChild(e.hit);
+      // one press/tap/click pipeline for dots, halos and the anchor
+      svg.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
+      svg.addEventListener('click', (e) => {
+        const cl = e.target.classList;
+        if (!cl || !(cl.contains('sc-dot') || cl.contains('sc-dot-hit') || cl.contains('sc-map__anchor'))) return;
+        if (VIEW.dragDistance() > 4) return;             // that was a pan, not a click
+        const en = nearestEntry(e.clientX, e.clientY);
+        if (!en) { hideTip(); return; }   // a tap on halo-covered emptiness dismisses, like background
+        if (en.anchor) {
+          if (showAnchorTip) { const r = anchorEl.getBoundingClientRect(); showAnchorTip(r.left + r.width / 2, r.top); }
+          return;
+        }
+        if (lastPtr === 'touch' && armed !== en) {       // first tap previews
+          armed = en;
+          const r = en.dot.getBoundingClientRect();
+          fillTip(en.c, r.left + r.width / 2, r.top, true);
+          return;
+        }
+        openCar(en.c);
+      });
+      // a mouse paired with a touch-primary device hovers the halos; give it
+      // the same nearest-car tooltip instead of nothing
+      svg.addEventListener('pointerover', (e) => {
+        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+        const en = nearestEntry(e.clientX, e.clientY);
+        if (en && !en.anchor) fillTip(en.c, e.clientX, e.clientY, false);
+        else if (en && en.anchor && showAnchorTip) showAnchorTip(e.clientX, e.clientY);
+      });
+      svg.addEventListener('pointerout', (e) => {
+        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('sc-dot-hit')) return;
+        const rt = e.relatedTarget;
+        if (!(rt && rt.classList && (rt.classList.contains('sc-dot-hit') || rt.classList.contains('sc-dot')))) hideTip();
+      });
       host.appendChild(svg);
       host.appendChild(tip);
 
@@ -821,7 +902,7 @@
           clearTimeout(hintTimer);
           hintTimer = setTimeout(() => scrollHint.classList.remove('is-on'), 1200);
         },
-        isPointNode: (n) => n.classList && n.classList.contains('sc-dot'),
+        isPointNode: (n) => n.classList && (n.classList.contains('sc-dot') || n.classList.contains('sc-dot-hit')),
         onPressBackground: hideTip,
         onDragStart: hideTip,
       });
@@ -834,7 +915,43 @@
           onclick: () => VIEW.reset(mapFitTarget(states, (MAP_CTL && MAP_CTL.visible) || [])) }, '⤢'));
       host.appendChild(btns);
 
-      MAP_CTL = { key, mode, entries, picked, visible: [], VIEW, svg, hideTip, states };
+      MAP_CTL = { key, mode, entries, picked, visible: [], VIEW, svg, hideTip, states,
+                  halos, hitR: null, kOrder: [], kIdx: -1, kBig: null };
+      // Keyboard: arrows step the VISIBLE dots west→east (the order the map
+      // reads), Enter opens the car, Escape clears, blur clears — the
+      // scatter's contract, adapted to a surface that zooms. kOrder lives on
+      // MAP_CTL and is rebuilt by updateMapVisibility, so the arrows can
+      // never land on a dot a filter just hid. The enlargement rides
+      // data-br — the engine's own non-scaling contract — so it survives
+      // every zoom apply; r is set too so it shows without waiting for one.
+      const kbSize = (en, br) => {
+        en.dot.setAttribute('data-br', br);
+        en.dot.setAttribute('r', (br * Math.max(VIEW.get().w / MAP_FULL.w, 0.12)).toFixed(2));
+      };
+      const kbFocus = (i) => {
+        const ctl = MAP_CTL; if (!ctl || ctl.empty) return;
+        if (ctl.kBig) { kbSize(ctl.kBig, 3.2); ctl.kBig = null; }
+        if (i < 0 || i >= ctl.kOrder.length) { ctl.kIdx = -1; hideTip(); return; }
+        ctl.kIdx = i;
+        const en = ctl.kOrder[i]; ctl.kBig = en;
+        kbSize(en, 6);
+        // a dot outside the zoomed frame gets the frame brought to it, so the
+        // tooltip is never anchored to something off-screen
+        const v = VIEW.get(), px = +en.spread['data-px'], py = +en.spread['data-py'];
+        if (px < v.x || px > v.x + v.w || py < v.y || py > v.y + v.h)
+          VIEW.set({ w: v.w, h: v.h, x: px - v.w / 2, y: py - v.h / 2 });
+        const r = en.dot.getBoundingClientRect();
+        fillTip(en.c, r.left + r.width / 2, r.top, false);
+      };
+      host.onkeydown = (e) => {
+        if (e.target !== host) return;   // the zoom buttons live inside the host — their keys are their own
+        const ctl = MAP_CTL; if (!ctl || ctl.empty || !ctl.kOrder.length) return;
+        if (e.key === 'ArrowRight') { kbFocus(ctl.kIdx < 0 ? 0 : Math.min(ctl.kOrder.length - 1, ctl.kIdx + 1)); e.preventDefault(); }
+        else if (e.key === 'ArrowLeft') { kbFocus(ctl.kIdx < 0 ? ctl.kOrder.length - 1 : Math.max(0, ctl.kIdx - 1)); e.preventDefault(); }
+        else if (e.key === 'Enter' && ctl.kIdx >= 0) openCar(ctl.kOrder[ctl.kIdx].c);
+        else if (e.key === 'Escape') kbFocus(-1);
+      };
+      host.onblur = () => kbFocus(-1);
       // Dot visibility, rings, legend, hint, the card and the fit all come from
       // the CURRENT S — so a filter change that landed while the topojson was
       // still downloading is applied here rather than lost.
@@ -862,13 +979,14 @@
     ctl.picked.clear();
     for (const p of [...sets.local, ...sets.far]) ctl.picked.add(p.x.vin);
     let onMap = 0, offMap = 0, anyShort = false, addedRing = false;
-    const visible = [];
+    const visible = [], kOrder = [];
     for (const e of ctl.entries) {
       const vis = entryVisible(e);
       if (vis) { visible.push({ x: e.c.x }); if (onShortlist(e.c.x)) anyShort = true; }
       if (!e.dot) { if (vis) offMap++; continue; }
       e.dot.classList.toggle('is-off', !vis);
-      if (vis) onMap++;
+      if (e.hit) e.hit.classList.toggle('is-off', !vis);
+      if (vis) { onMap++; kOrder.push(e); }
       const wantRing = vis && (ctl.picked.has(e.c.x.vin) || onShortlist(e.c.x));
       if (wantRing && !e.ring) {
         e.ring = svgEl('circle', { class: 'sc-dot-ring',
@@ -879,11 +997,33 @@
       if (e.ring) e.ring.classList.toggle('is-off', !wantRing);
     }
     ctl.visible = visible;
+    // Keyboard order, rebuilt against what is actually shown: west→east by
+    // projected x (ties north→south) — the order the map reads. The focused
+    // car keeps its place if it survived the filter; if it was just hidden,
+    // its enlargement is undone and stepping restarts fresh.
+    kOrder.sort((a, b) => (+a.spread['data-px'] - +b.spread['data-px']) || (+a.spread['data-py'] - +b.spread['data-py']));
+    const kPrev = ctl.kIdx >= 0 && ctl.kOrder ? ctl.kOrder[ctl.kIdx] : null;
+    ctl.kOrder = kOrder;
+    ctl.kIdx = kPrev ? kOrder.indexOf(kPrev) : -1;
+    if (ctl.kIdx < 0 && ctl.kBig) {
+      ctl.kBig.dot.setAttribute('data-br', 3.2);
+      ctl.kBig.dot.setAttribute('r', (3.2 * Math.max(ctl.VIEW.get().w / MAP_FULL.w, 0.12)).toFixed(2));
+      ctl.kBig = null;
+    }
     if (addedRing) ctl.VIEW.set(ctl.VIEW.get());   // a fresh ring picks up the current zoom's non-scaling radius
     ctl.hideTip();   // the tooltip may be anchored to a dot that just went off
     const card = $('map-card');
     if (!visible.length) { card.hidden = true; return; }
     card.hidden = false;
+    // One-shot halo sizing: ~12.5px screen radius at the full-US view, in
+    // user units, measured once the card can be laid out. (Circles built
+    // with vector-effect in a detached tree never acquire a stroke hit
+    // region in Chromium, so the halos are pure geometry instead.)
+    if (ctl.hitR == null && ctl.halos && ctl.halos.length) {
+      const w = ctl.svg.getBoundingClientRect().width || 720;
+      ctl.hitR = (12.5 * MAP_FULL.w / w).toFixed(1);
+      for (const n of ctl.halos) n.setAttribute('r', ctl.hitR);
+    }
     // Refit when the Where selection (or what the map is of) changes; the other
     // filters hide dots without moving the frame — exactly the old behavior.
     const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
