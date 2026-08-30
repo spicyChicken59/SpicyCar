@@ -94,7 +94,7 @@
      "trims": {
       "bmw-i5-cpo": {
        "label": "CPO under 30k mi",
-       "note": "Every certified car under 30,000 miles, nationwide \u2014 the 2.99% APR CPO promo is the reason to watch these.",
+       "note": "Every certified eDrive40 and xDrive40 under 30,000 miles, nationwide \u2014 the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call.",
        "depth": "full",
        "cadence": 2,
        "shopping": true,
@@ -10278,7 +10278,7 @@
      "trims": {
       "bmw-ix-cpo": {
        "label": "CPO under 30k mi",
-       "note": "Every certified car under 30,000 miles, nationwide \u2014 2.49% APR CPO promo financing, the best rate offered.",
+       "note": "Every certified xDrive under 30,000 miles, nationwide \u2014 2.49% APR CPO promo financing, the best rate offered. M60 and M70 excluded on purpose: not the shopping pool.",
        "depth": "full",
        "cadence": 2,
        "shopping": true,

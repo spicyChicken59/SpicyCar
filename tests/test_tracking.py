@@ -288,12 +288,28 @@ class TestNormalize(unittest.TestCase):
     # ---- the CPO watch's post-fetch filters. They live in normalize, not in
     # the query, because the API's filter surface for cpo and mileage is
     # unverified — a silently-ignored param would track the wrong market.
+    # The clean fixture is an M60; the watch shops eDrive40/xDrive40 only,
+    # so the helper re-trims it and the M-exclusion gets its own test below.
     def cpo_norm(self, mutate):
         import copy
         rec = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
                              if not k.startswith("_")})
+        rec["vehicle"]["trim"] = "eDrive40"
+        rec["vehicle"]["series"] = "eDrive40 4dr Sedan (electric DD)"
         mutate(rec)
         return T.normalize(rec, target("bmw-i5-cpo"), self.dropped)
+
+    def test_cpo_watch_excludes_the_m_trims(self):
+        # 'edrive and xdrive is sufficient': an M60 — the clean fixture as
+        # shipped, certified or not — is not in the promo shopping pool
+        import copy
+        rec = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                             if not k.startswith("_")})
+        rec["retailListing"]["cpo"] = True
+        self.assertIsNone(T.normalize(rec, target("bmw-i5-cpo"), self.dropped))
+        self.assertEqual(self.dropped["trim mismatch"], 1)
+        self.assertNotIn("m60", target("bmw-ix-cpo")["trim_query"].lower())
+        self.assertNotIn("m70", target("bmw-ix-cpo")["trim_query"].lower())
 
     def test_cpo_watch_drops_the_uncertified(self):
         # the clean fixture is cpo: false as shipped
@@ -911,7 +927,7 @@ class TestConfig(unittest.TestCase):
         for tid in ("bmw-i5-cpo", "bmw-ix-cpo"):
             t = T.TARGETS[tid]
             self.assertEqual(T.sources_for(t), [("National", None)])
-            self.assertEqual(T.calls_for(t), 3)     # 1 source x 1 sort x 3 pages
+            self.assertEqual(T.calls_for(t), 2)     # 1 source x 1 sort x 2 pages
             self.assertEqual(T.window_dim(t), "miles")
         self.assertNotEqual(T.TARGETS["bmw-i5-cpo"]["offset"],
                             T.TARGETS["bmw-ix-cpo"]["offset"],
