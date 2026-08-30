@@ -11,12 +11,19 @@
 //   fail   UNKNOWN   markup using an sc- class the sheet does not define
 //   fail   HYGIENE   raw colour or a primitive where a token belongs
 //   warn   OVERRIDE  sometimes right — but each one deserves eyes, not a gate
-//   info   CANDIDATE the loop's raw material: rules worth promoting upstream
+//   fail   CANDIDATE a generic-looking rule with no recorded decision
 //
-// Candidates already adjudicated live in tools/promotion-verdicts.json and are
-// reported separately, so the same question is not re-opened every release —
-// only genuinely OPEN candidates are counted. Deleting a verdict puts its rule
-// back on the agenda; the weekly digest workflow raises whatever is open.
+// That last one is the loop's ratchet. Every enhancement that adds a rule with
+// no page identity and only semantic tokens has to answer one question before
+// it merges: does this belong upstream? Answer it either way — promote it, or
+// record a verdict in tools/promotion-verdicts.json saying why not and what
+// would reopen it. What you cannot do is not decide, because that is how a
+// design system quietly forks into a pile of page CSS nobody folds back.
+//
+// The bar is deliberately low (a five-line JSON entry) and the question is
+// asked once: a recorded selector never blocks again, and deleting its entry
+// puts it back on the agenda. The weekly digest catches anything that drifts
+// open afterwards.
 //
 // It also warns when the pinned release is behind the newest design-system tag.
 // A stale pin is never a build failure: it is not a correctness bug, and failing
@@ -94,9 +101,17 @@ for (const p of pages) {
       + Object.entries(byVerdict).map(([v, l]) => `${l.length} ${v}`).join(', '));
   }
   if (open.length) {
-    console.log(`\n  info  ${name} — ${open.length} OPEN promotion candidate(s): no page identity, tokens only.`);
+    hard += open.length;
+    console.log(`\n  FAIL  CANDIDATE  ${name} — ${open.length} undecided`);
+    console.log('        Generic-looking rules with no recorded decision. The test is not');
+    console.log('        "could another project use it" — almost anything passes that — but');
+    console.log('        "would another project be WRONG to write it differently".');
     for (const sel of open) console.log('        - ' + sel);
-    console.log('        Record a verdict in tools/promotion-verdicts.json to settle these.');
+    console.log('        Resolve by promoting them upstream, or add to tools/promotion-verdicts.json:');
+    console.log(`          "${open[0].replace(/^\./, '').replace(/[^a-z0-9-]/gi, '-')}": {`);
+    console.log(`            "selectors": [${open.map((s2) => JSON.stringify(s2)).join(', ')}],`);
+    console.log(`            "page": "${name}", "verdict": "not promoted",`);
+    console.log('            "why": "…", "reopen_when": "…" }');
   }
   if (!squat.length && !unknown.length && !hygiene.length)
     console.log(`  ok    ${name} — no squats, no unknown classes, no raw colour`);
@@ -132,8 +147,8 @@ if (pinned && /^v\d+\.\d+\.\d+$/.test(pinned)) {
 }
 
 if (openCandidates.length) {
-  console.log(`\n  info  ${openCandidates.length} open promotion candidate(s) across all pages — `
-    + 'the loop\'s raw material for the next release.');
+  console.log(`\n  ${openCandidates.length} undecided promotion candidate(s) across all pages.`);
+  console.log('  Every one is a question the design system is owed an answer to.');
 }
 console.log(hard ? `\nconsumer-lint policy: ${hard} blocking finding(s)` : '\nconsumer-lint policy: clean');
 if (process.env.GITHUB_OUTPUT) {   // the weekly digest reads these

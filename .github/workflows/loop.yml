@@ -35,6 +35,7 @@ jobs:
             || { git clone https://github.com/spicyChicken59/design-system /tmp/ds && git -C /tmp/ds checkout "$PIN"; }
           # tee so the report is both the log and the issue body
           node tools/consumer_lint_ci.mjs /tmp/ds docs/index.html docs/how.html | tee /tmp/report.txt
+          { echo '### design-system loop'; echo '```'; cat /tmp/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
         continue-on-error: true      # a blocking finding is check.yml's job to fail, not this one
 
       - name: Open or update the digest issue
@@ -47,11 +48,17 @@ jobs:
             const stale = /but v\d+\.\d+\.\d+ is released/.test(report);
             const TITLE = 'Design-system loop: open promotion candidates and pin status';
             const marker = '<!-- design-system-loop-digest -->';
+            const LABEL = 'design-system-loop';
 
-            const found = await github.rest.search.issuesAndPullRequests({
-              q: `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:body "${marker}"`,
-            });
-            const existing = found.data.items[0];
+            // Find our own issue by LABEL, not by search: the search index is
+            // eventually consistent, so a freshly opened issue can be invisible
+            // to the next run and we would open a second one every week.
+            await github.rest.issues.createLabel({ ...context.repo, name: LABEL,
+              color: '1F6FEB', description: 'Weekly design-system promotion digest' })
+              .catch((e) => { if (e.status !== 422) throw e; });   // 422 = already exists
+            const mine = await github.rest.issues.listForRepo({ ...context.repo,
+              state: 'open', labels: LABEL, per_page: 1 });
+            const existing = mine.data[0];
 
             if (!open && !stale) {
               if (existing) {
@@ -77,7 +84,7 @@ jobs:
               await github.rest.issues.update({ ...context.repo, issue_number: existing.number, body });
               core.info(`Updated issue #${existing.number}`);
             } else {
-              const made = await github.rest.issues.create({ ...context.repo, title: TITLE, body });
+              const made = await github.rest.issues.create({ ...context.repo, title: TITLE, body, labels: [LABEL] });
               core.info(`Opened issue #${made.data.number}`);
             }
         env:
