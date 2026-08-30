@@ -42,6 +42,8 @@
   #list-table tbody td { padding-top: 8px; padding-bottom: 8px; }
   #list-table .sc-media__code { margin-top: 1px; }
   #overview-table tr.is-clickable { cursor: pointer; }
+  /* A filter change hides dots instead of rebuilding the map */
+  #map .is-off { display: none; }
   #notes-grid ul { margin: 0; padding-left: 18px; }
   #notes-grid li { margin-top: 6px; font-size: 14px; }
   .chart-head__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -634,39 +636,42 @@
     // SC.geo.fitBoxes now — what stays here is only which boxes to fit
     return SC.geo.fitBoxes(boxes);
   }
-  function renderMap(mode, rowsForModel) {
+  // The map is built ONCE per view identity (the overview, or one brand/model)
+  // from the superset of cars with coordinates. Every filter, the trim picker
+  // and the overview's hidden-models set then act by toggling a class on dots
+  // that already exist — a chip press no longer rebuilds the SVG, re-creates
+  // the view engine, or interrupts the reader's zoom. Only switching what the
+  // map is OF rebuilds it.
+  let MAP_CTL = null;   // { key, mode, entries, picked, visible, VIEW, svg, hideTip, states } — or { key, empty: true }
+  const mapKey = () => (S.brand === 'all' ? 'overview' : 'model|' + S.brand + '/' + S.model);
+  function buildMap() {
     const card = $('map-card');
-    if (!mode) { card.hidden = true; return; }
+    const mode = S.brand === 'all' ? 'overview' : 'model';
+    const key = mapKey();
     const cars = [];
     if (mode === 'overview') {
-      for (const { bk, mk, m } of allModels()) {
-        if (S.hidden.has(bk + '/' + mk)) continue;
-        for (const x of applyShared(m.listings || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk, mk, m });
-      }
+      for (const { bk, mk, m } of allModels())
+        for (const x of (m.listings || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk, mk, m });
     } else {
       const m = model();
-      for (const x of (rowsForModel || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk: S.brand, mk: S.model, m });
+      for (const x of (m.listings || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk: S.brand, mk: S.model, m });
     }
-    if (!cars.length) { card.hidden = true; return; }
+    // VIN order, so dot z-order and the collocation spirals never depend on the
+    // table's sort — a scoped update and a full render draw the identical map
+    cars.sort((a, b) => ((a.x.vin || '') < (b.x.vin || '') ? -1 : 1));
+    if (!cars.length) { card.hidden = true; MAP_CTL = { key, empty: true }; return; }
     const token = ++MAP_RENDER;
     fetchMap().then((states) => {
       if (token !== MAP_RENDER) return;
-      if (!states) { card.hidden = true; return; }
+      if (!states) { card.hidden = true; MAP_CTL = { key, empty: true }; return; }
+      if (MAP_CTL && MAP_CTL.VIEW) MAP_CTL.VIEW.destroy();   // cancel any in-flight animation on the old svg
       const buyer = S.site.buyer || {};
-      // The cars the system elevates, marked on the map: spicy picks ringed in
-      // the accent (the scatter's encoding), shortlisted VINs drawn in the
-      // accent outright. Same pick sets as the cards above the map.
-      const P = pickParams();
-      const scored = mode === 'model'
-        ? scoredFrom(rowsForModel || [], model().label || '', !!model().shopping)
-        : allModels().flatMap(({ m }) => scoredFrom(applyShared(m.listings || []), m.label || '', !!m.shopping));
-      const perM = mode === 'model' ? undefined : P.per_model;
-      const sets = pickSets(scored, perM);
-      const picked = new Set([...sets.local, ...sets.far].map((p) => p.x.vin));
-      const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
-      let view = S.mapView || MAP_FULL;
-      let animateTo = null;
-      if (fitKey !== MAP_FIT_KEY) { MAP_FIT_KEY = fitKey; animateTo = mapFitTarget(states, cars); }
+      // Which cars are elevated (picks ringed in the accent, shortlisted VINs
+      // drawn in it outright) is filter-dependent, so it belongs to
+      // updateMapVisibility — this set is refreshed IN PLACE there, keeping
+      // the tooltip closures below truthful without a rebuild.
+      const picked = new Set();
+      const view = S.mapView || MAP_FULL;
 
       const svg = svgEl('svg', { viewBox: `${view.x} ${view.y} ${view.w} ${view.h}`, 'aria-hidden': 'true' });
       for (const st of states) svg.appendChild(svgEl('path', { class: 'sc-map__state', d: st.d, 'vector-effect': 'non-scaling-stroke' }));
@@ -744,24 +749,22 @@
           showAnchorTip(r.left + r.width / 2, r.top);
         });
       }
-      let offMap = 0;
+      const entries = [];   // one per car with coordinates; dot stays null beyond the lower 48
       const seen = {};
       for (const c of cars) {
         const [px, py] = albers48(c.x.lon, c.x.lat);
-        if (!(px >= -8 && px <= 983 && py >= -8 && py <= 618)) { offMap++; continue; }
-        const key = (px | 0) + ',' + (py | 0);
-        const i = seen[key] = (seen[key] || 0) + 1;
+        if (!(px >= -8 && px <= 983 && py >= -8 && py <= 618)) { entries.push({ c, dot: null, ring: null }); continue; }
+        const kk = (px | 0) + ',' + (py | 0);
+        const i = seen[kk] = (seen[kk] || 0) + 1;
         const a = i * 2.39996, r = i > 1 ? 2.4 * Math.sqrt(i) : 0;
         const cx = (px + r * Math.cos(a)).toFixed(1), cy = (py + r * Math.sin(a)).toFixed(1);
         // co-located cars carry their spiral index so the view engine can keep
         // their on-screen spread constant instead of exploding it under zoom
         const spread = { 'data-px': px.toFixed(1), 'data-py': py.toFixed(1), 'data-di': i };
-        const isPick = picked.has(c.x.vin), isShort = onShortlist(c.x);
+        const isShort = onShortlist(c.x);
         const hue = isShort ? tok('accent') : brandColor(c.bk);
-        if (isPick || isShort) svg.appendChild(svgEl('circle', { class: 'sc-dot-ring',
-          cx, cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke', ...spread }));
         const dot = svgEl('circle', {
-          class: 'sc-dot sc-dot--link ' + (c.x.local ? 'is-filled' : 'is-hollow'),
+          class: 'sc-dot sc-dot--link is-off ' + (c.x.local ? 'is-filled' : 'is-hollow'),
           cx, cy,
           r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke', ...spread,
           fill: c.x.local ? hue : 'none',
@@ -784,6 +787,7 @@
         });
         dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
         svg.appendChild(dot);
+        entries.push({ c, dot, ring: null, cx, cy, spread });
       }
       host.appendChild(svg);
       host.appendChild(tip);
@@ -813,34 +817,85 @@
         onPressBackground: hideTip,
         onDragStart: hideTip,
       });
-      const applyView = (v) => VIEW.set(v);
-      const animate = (from, to) => VIEW.animateTo(to);
-      // buttons: zoom in, zoom out, and back to the selection's own view
+      // buttons: zoom in, zoom out, and back to the selection's own view —
+      // reset reads the CURRENT visible set, not the one this build saw
       const btns = el('div', { class: 'sc-map__btns' },
-        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom in', onclick: () => VIEW.zoomBy(0.67) }, '+'),
-        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom out', onclick: () => VIEW.zoomBy(1.5) }, '−'),
-        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Reset view', onclick: () => VIEW.reset(mapFitTarget(states, cars)) }, '⤢'));
+        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom in', 'data-fkey': 'map:in', onclick: () => VIEW.zoomBy(0.67) }, '+'),
+        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom out', 'data-fkey': 'map:out', onclick: () => VIEW.zoomBy(1.5) }, '−'),
+        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Reset view', 'data-fkey': 'map:reset',
+          onclick: () => VIEW.reset(mapFitTarget(states, (MAP_CTL && MAP_CTL.visible) || [])) }, '⤢'));
       host.appendChild(btns);
 
-      // Re-read the view at apply time. `view` was captured before this render
-      // built its SVG; if the reader zoomed or panned in that window, applying
-      // the captured value would silently throw their view away.
-      if (animateTo) VIEW.animateTo(animateTo);
-
-      const lg = $('map-legend'); lg.textContent = '';
-      lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + chartColors().context }), 'filled — drivable'));
-      lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + chartColors().context }), 'hollow — shipping added'));
-      if (picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
-      if (cars.some((c) => onShortlist(c.x))) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
-      const noPointer = window.matchMedia('(hover: none)').matches;
-      $('map-hint').textContent = `${cars.length - offMap} cars under the current filters`
-        + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
-        + (mode === 'model' ? ' — tap a dot for the car' : ', colored by brand — tap a dot for the car')
-        + (noPointer
-            ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
-            : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
-      card.hidden = false;
+      MAP_CTL = { key, mode, entries, picked, visible: [], VIEW, svg, hideTip, states };
+      // Dot visibility, rings, legend, hint, the card and the fit all come from
+      // the CURRENT S — so a filter change that landed while the topojson was
+      // still downloading is applied here rather than lost.
+      updateMapVisibility();
     });
+  }
+
+  // The scoped path: which of the built dots show, which wear rings, and the
+  // counts and legend that describe them. Runs on every filter change; falls
+  // through to buildMap only when the map is OF something else now.
+  function updateMapVisibility() {
+    if (!MAP_CTL || MAP_CTL.key !== mapKey()) { buildMap(); return; }
+    if (MAP_CTL.empty) return;
+    const ctl = MAP_CTL, mode = ctl.mode;
+    const inTrim = (x) => mode !== 'model' || S.trim === 'all' || x.trim_id === S.trim;
+    const entryVisible = (e) => (mode === 'model'
+      ? inTrim(e.c.x) && passesShared(e.c.x)
+      : !S.hidden.has(e.c.bk + '/' + e.c.mk) && passesShared(e.c.x));
+    // the same pick sets as the cards above the map
+    const P = pickParams();
+    const scored = mode === 'model'
+      ? scoredFrom(applyShared(trimRows(model().listings || [])), model().label || '', !!model().shopping)
+      : allModels().flatMap(({ m }) => scoredFrom(applyShared(m.listings || []), m.label || '', !!m.shopping));
+    const sets = pickSets(scored, mode === 'model' ? undefined : P.per_model);
+    ctl.picked.clear();
+    for (const p of [...sets.local, ...sets.far]) ctl.picked.add(p.x.vin);
+    let onMap = 0, offMap = 0, anyShort = false, addedRing = false;
+    const visible = [];
+    for (const e of ctl.entries) {
+      const vis = entryVisible(e);
+      if (vis) { visible.push({ x: e.c.x }); if (onShortlist(e.c.x)) anyShort = true; }
+      if (!e.dot) { if (vis) offMap++; continue; }
+      e.dot.classList.toggle('is-off', !vis);
+      if (vis) onMap++;
+      const wantRing = vis && (ctl.picked.has(e.c.x.vin) || onShortlist(e.c.x));
+      if (wantRing && !e.ring) {
+        e.ring = svgEl('circle', { class: 'sc-dot-ring',
+          cx: e.cx, cy: e.cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke', ...e.spread });
+        ctl.svg.insertBefore(e.ring, e.dot);
+        addedRing = true;
+      }
+      if (e.ring) e.ring.classList.toggle('is-off', !wantRing);
+    }
+    ctl.visible = visible;
+    if (addedRing) ctl.VIEW.set(ctl.VIEW.get());   // a fresh ring picks up the current zoom's non-scaling radius
+    ctl.hideTip();   // the tooltip may be anchored to a dot that just went off
+    const card = $('map-card');
+    if (!visible.length) { card.hidden = true; return; }
+    card.hidden = false;
+    // Refit when the Where selection (or what the map is of) changes; the other
+    // filters hide dots without moving the frame — exactly the old behavior.
+    const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
+    if (fitKey !== MAP_FIT_KEY) {
+      MAP_FIT_KEY = fitKey;
+      ctl.VIEW.animateTo(mapFitTarget(ctl.states, visible));
+    }
+    const lg = $('map-legend'); lg.textContent = '';
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + chartColors().context }), 'filled — drivable'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + chartColors().context }), 'hollow — shipping added'));
+    if (ctl.picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid ' + tok('accent') }), 'spicy pick'));
+    if (anyShort) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + tok('accent') }), 'shortlist'));
+    const noPointer = window.matchMedia('(hover: none)').matches;
+    const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+    $('map-hint').textContent = `${onMap} cars under the current filters`
+      + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
+      + (mode === 'model' ? ' — tap a dot for the car' : ', colored by brand — tap a dot for the car')
+      + (noPointer
+          ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
+          : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
   }
 
   // ---------- price-vs-miles scatter (model view) ----------
@@ -854,7 +909,10 @@
   function renderScatter(rows) {
     const card = $('scatter-card');
     const t = model();
-    const pts = rows.filter((x) => hasPrice(x) && x.miles != null);
+    // VIN order, so dot z-order never depends on the table's sort — a scoped
+    // update and a full render draw the identical scatter
+    const pts = rows.filter((x) => hasPrice(x) && x.miles != null)
+      .slice().sort((a, b) => ((a.vin || '') < (b.vin || '') ? -1 : 1));
     if (pts.length < 3) { card.hidden = true; return; }
     card.hidden = false;            // unhide before measuring, or clientWidth is 0 on a direct load
     const host = $('scatter'); host.textContent = '';
@@ -1025,6 +1083,7 @@
       const sample = svgEl('svg', { width: 20, height: 10, viewBox: '0 0 20 10', 'aria-hidden': 'true' },
         svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, stroke: tok('border-strong'), 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
       const chip = el('button', { class: 'sc-legend__chip sc-legend__chip--select', type: 'button', 'aria-pressed': 'false',
+        'data-fkey': 'ychip:' + c.year,
         title: `Highlight the ${c.year} cars`,
         onclick: () => { stuckYear = stuckYear === c.year ? null : c.year; highlightYear(stuckYear); setChips(); },
         onmouseenter: () => highlightYear(c.year),
@@ -1075,7 +1134,7 @@
     if (opts.length < 2) { host.hidden = true; host.textContent = ''; return; }
     if (!opts.includes(S.range)) S.range = opts[0];
     segment(host, opts, S.range, (id) => (id === 'all' ? 'All' : id + 'd'), false,
-      (id) => { S.range = id; savePrefs(); rerender(); });
+      (id) => { S.range = id; savePrefs(); rerender('range'); }, 'range');
   }
   // Lowest asking per day. Days written before min_price existed are skipped; a model with none gets its latest snapshot as one point.
   function askingSeries(m, daily) {
@@ -1159,14 +1218,17 @@
     if (S.where.has('beyond') && !x.local) return true;
     return false;
   }
-  function applyShared(rows) {   // the filters that make sense across models
-    if (S.where.size) rows = rows.filter(matchWhere);
-    if (S.year !== 'all') rows = rows.filter((x) => String(x.year) === S.year);
-    if (S.miles) rows = rows.filter((x) => x.miles !== null && x.miles !== undefined && x.miles < S.miles);
-    if (S.clean) rows = rows.filter((x) => !(x.accidents > 0));
-    if (S.rental) rows = rows.filter((x) => !isRental(x));
-    return rows;
+  // One car against the shared filters — the single predicate the tables, the
+  // counts and the map's dot visibility all run, so they cannot drift apart.
+  function passesShared(x) {
+    if (!matchWhere(x)) return false;
+    if (S.year !== 'all' && String(x.year) !== S.year) return false;
+    if (S.miles && !(x.miles !== null && x.miles !== undefined && x.miles < S.miles)) return false;
+    if (S.clean && x.accidents > 0) return false;
+    if (S.rental && isRental(x)) return false;
+    return true;
   }
+  function applyShared(rows) { return rows.filter(passesShared); }   // the filters that make sense across models
   const SORT_DESC = { days_listed: true, newest: true };
 
   // ---------- navigation ----------
@@ -1195,14 +1257,14 @@
     S.brand = id;
     if (id !== 'all') S.model = Object.keys(S.site.brands[id].models)[0];
     S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
-    syncUrl(); buildFilters(); render();
+    syncUrl(); buildFilters(); rerender('nav');
   }
-  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); render(); window.scrollTo(0, 0); }
-  function segment(host, ids, current, labelOf, caseClass, onPick) {
+  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); rerender('nav'); window.scrollTo(0, 0); }
+  function segment(host, ids, current, labelOf, caseClass, onPick, fkey) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
     host.hidden = false;
-    for (const id of ids) host.appendChild(el('button', { class: 'sc-tab' + (caseClass ? ' sc-tab--case' : ''), type: 'button', 'aria-pressed': id === current ? 'true' : 'false', onclick: () => onPick(id) }, labelOf(id)));
+    for (const id of ids) host.appendChild(el('button', { class: 'sc-tab' + (caseClass ? ' sc-tab--case' : ''), type: 'button', 'aria-pressed': id === current ? 'true' : 'false', 'data-fkey': fkey ? fkey + ':' + id : null, onclick: () => onPick(id) }, labelOf(id)));
   }
   function metaRow(bits) {
     const meta = $('meta'); meta.textContent = '';
@@ -1244,8 +1306,8 @@
   }
   function quietLinks(x, inline) {
     const links = el(inline ? 'span' : 'div', { class: 'sc-media__links' + (inline ? ' sc-right' : '') });
-    if (safeUrl(x.url)) links.appendChild(el('a', { class: 'sc-link--quiet', href: safeUrl(x.url), target: '_blank', rel: 'noopener' }, 'Listing ↗'));
-    if (safeUrl(x.carfax)) links.appendChild(el('a', { class: 'sc-link--quiet', href: safeUrl(x.carfax), target: '_blank', rel: 'noopener' }, 'Carfax ↗'));
+    if (safeUrl(x.url)) links.appendChild(el('a', { class: 'sc-link--quiet', 'data-fkey': 'lst:' + (x.vin || '') + ':url', href: safeUrl(x.url), target: '_blank', rel: 'noopener' }, 'Listing ↗'));
+    if (safeUrl(x.carfax)) links.appendChild(el('a', { class: 'sc-link--quiet', 'data-fkey': 'lst:' + (x.vin || '') + ':carfax', href: safeUrl(x.carfax), target: '_blank', rel: 'noopener' }, 'Carfax ↗'));
     return links;
   }
   // Price movement, by the NET change since first seen: down is good (▼), up is bad (▲)
@@ -1287,10 +1349,10 @@
       el('span', { class: 'sc-chip sc-photo-card__chip ' + (p.pct >= 0.10 ? 'sc-chip--good' : 'sc-chip--neutral') }, `${pct}% under typical`)];
     // The photograph is the obvious thing to press; make it the link it looks like.
     const media = url
-      ? el('a', { class: 'sc-photo-card__media', href: url, target: '_blank', rel: 'noopener',
+      ? el('a', { class: 'sc-photo-card__media', href: url, target: '_blank', rel: 'noopener', 'data-fkey': 'pick:' + (b.vin || '') + ':media',
                   'aria-label': `Open the listing for this ${p.modelLabel}` }, ...inner)
       : el('div', { class: 'sc-photo-card__media' }, ...inner);
-    const open = url ? el('p', null, el('a', { href: url, target: '_blank', rel: 'noopener' }, 'Open the listing →')) : null;
+    const open = url ? el('p', null, el('a', { href: url, target: '_blank', rel: 'noopener', 'data-fkey': 'pick:' + (b.vin || '') + ':open' }, 'Open the listing →')) : null;
     const cohort = [p.year, p.modelLabel, p.trim].filter(Boolean).join(' ');
     return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
       el('div', { class: 'sc-nowrap' },
@@ -1359,7 +1421,7 @@
       gone ? null : movement(x, daily),
       note ? el('span', { class: 'sc-note' }, `note: ${note}`) : null,
       el('div', { class: 'sc-media__code' }, x.vin),
-      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(bk, mk); } }, 'Open model →'))));
+      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'sl:' + (x.vin || '') + ':open', onclick: (e) => { e.preventDefault(); goTo(bk, mk); } }, 'Open model →'))));
   }
   function renderShortlist(show) {
     const host = $('shortlist'); host.textContent = '';
@@ -1391,18 +1453,29 @@
   }
 
   // ---------- model view ----------
+  // The eyebrow names the current Where picks, so it refreshes with the rows —
+  // the one line of the header that a filter change touches.
+  function updateEyebrow() {
+    const states = (S.site.buyer || {}).states || [];
+    const whereNow = S.where.size ? [...S.where].map(whereLabel) : states;
+    if (S.brand === 'all') {
+      $('eyebrow').textContent = ['Watchlist', whereNow.join(' · ')].filter(Boolean).join(' · ');
+      return;
+    }
+    const t = model(), brand = S.site.brands[S.brand];
+    const trim = S.trim === 'all' ? null : (t.trims || {})[S.trim];
+    const years = trim && trim.years && trim.years.length ? trim.years : (t.years || []);
+    const yearSpan = years.length > 1 ? `${years[0]}–${years[years.length - 1]}` : (years[0] || '');
+    const anyShopping = (((S.site.buyer || {}).shopping || []).length > 0);
+    const role = anyShopping ? (t.shopping ? 'Shopping' : 'Comparison') : null;
+    $('eyebrow').textContent = [brand.label, yearSpan, whereNow.join(' · '), role].filter(Boolean).join(' · ') || 'Analyzer';
+  }
   function renderHeader() {
     const t = model(), site = S.site, brand = site.brands[S.brand];
     const brandIds = Object.keys(site.brands), modelIds = Object.keys(brand.models);
     $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
     const trim = S.trim === 'all' ? null : (t.trims || {})[S.trim];
-    const years = trim && trim.years && trim.years.length ? trim.years : (t.years || []);
-    const yearSpan = years.length > 1 ? `${years[0]}–${years[years.length - 1]}` : (years[0] || '');
-    const buyer = site.buyer || {}, states = buyer.states || [];
-    const anyShopping = ((buyer.shopping || []).length > 0);
-    const role = anyShopping ? (t.shopping ? 'Shopping' : 'Comparison') : null;
-    const whereNow = S.where.size ? [...S.where].map(whereLabel) : states;
-    $('eyebrow').textContent = [brand.label, yearSpan, whereNow.join(' · '), role].filter(Boolean).join(' · ') || 'Analyzer';
+    updateEyebrow();
     $('h1').textContent = trim ? `${t.label} ${trim.label}` : (t.label || S.model);
     document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
     const note = trim ? (trim.note || '') : (t.note || '');
@@ -1419,9 +1492,9 @@
       trim && trim.depth ? (trim.depth === 'full' ? 'Deep fetch' : 'Light fetch — cheapest 20 per query') : null,
       minPrice ? `Listings under ${money(minPrice)} ignored` : null,
     ]);
-    segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand);
+    segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand, 'tab-brand');
     segment($('tabs'), modelIds, S.model, (id) => brand.models[id].label || id, true,
-      (id) => { S.model = id; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); render(); });
+      (id) => { S.model = id; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); buildFilters(); rerender('nav'); }, 'tab-model');
   }
 
   function renderKpis(rows) {
@@ -1470,13 +1543,13 @@
     const showNewest = (e) => {
       e.preventDefault();
       S.sort = 'newest'; $('f-sort').value = 'newest';
-      renderList(filtered());
+      rerender('sort');
       $('list-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
     };
     const sub = daily.length >= 2
       ? (newToday > 0
           ? el('div', { class: 'sc-tile__sub' },
-              el('a', { class: 'sc-link--quiet', href: '#', onclick: showNewest,
+              el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:new', onclick: showNewest,
                         title: 'Sort the listings by newest to the tracker' }, `${newToday} new`),
               ` · ${gone} gone`)
           : el('div', { class: 'sc-tile__sub' }, `${newToday} new · ${gone} gone`))
@@ -1569,8 +1642,8 @@
     const shown = S.showAllList ? rows : rows.slice(0, LIMIT);
     const more = $('list-more'); more.textContent = '';
     more.hidden = shown.length >= rows.length;
-    if (!more.hidden) more.appendChild(el('button', { class: 'sc-btn', type: 'button',
-      onclick: () => { S.showAllList = true; renderList(filtered()); } },
+    if (!more.hidden) more.appendChild(el('button', { class: 'sc-btn', type: 'button', 'data-fkey': 'more:list',
+      onclick: () => { S.showAllList = true; rerender('showList'); } },
       `Show all ${rows.length} cars`));
     // "130 of 130 tracked" read as a stutter; show the middle count only when a filter is narrowing.
     const order = S.sort === 'local' ? 'drivable cars first, then by asking price' : null;
@@ -1602,7 +1675,7 @@
       const attrs = { class: (['Asking', 'Miles', 'Shipping', 'Asking + shipping'].includes(label) ? 'sc-num ' : '') + (key ? 'is-sortable' : '') };
       if (key && S.sort === key) attrs['aria-sort'] = SORT_DESC[key] ? 'descending' : 'ascending';
       const th = el('th', attrs);
-      if (key) th.appendChild(el('button', { class: 'sc-table__sort', type: 'button', title: 'Sort by ' + label.toLowerCase(), onclick: () => { S.sort = key; $('f-sort').value = key; render(); } }, label));
+      if (key) th.appendChild(el('button', { class: 'sc-table__sort', type: 'button', 'data-fkey': 'sort:' + key, title: 'Sort by ' + label.toLowerCase(), onclick: () => { S.sort = key; $('f-sort').value = key; rerender('sort'); } }, label));
       else th.textContent = label;
       tr.appendChild(th);
     }
@@ -1676,8 +1749,8 @@
     const shownG = S.showAllGone ? gone : gone.slice(0, LIMITG);
     const moreG = $('gone-more'); moreG.textContent = '';
     moreG.hidden = shownG.length >= gone.length;
-    if (!moreG.hidden) moreG.appendChild(el('button', { class: 'sc-btn', type: 'button',
-      onclick: () => { S.showAllGone = true; renderGone(); } },
+    if (!moreG.hidden) moreG.appendChild(el('button', { class: 'sc-btn', type: 'button', 'data-fkey': 'more:gone',
+      onclick: () => { S.showAllGone = true; rerender('showGone'); } },
       `Show all ${gone.length} departures`));
     const goneScroll = $('gone-scroll'), goneCards = $('gone-cards');
     goneCards.textContent = '';
@@ -1728,12 +1801,11 @@
     return td;
   }
   function renderOverview() {
-    const site = S.site, buyer = site.buyer || {}, states = buyer.states || [];
+    const site = S.site;
     const rows = overviewRows();
     for (const id of ['list-card', 'gone-card', 'scatter-card']) $(id).hidden = true;
     $('mast-right').textContent = 'Snapshot · ' + (site.generated || '—');
-    const whereNow = S.where.size ? [...S.where].map(whereLabel) : states;
-    $('eyebrow').textContent = ['Watchlist', whereNow.join(' · ')].filter(Boolean).join(' · ');
+    updateEyebrow();
     $('h1').textContent = 'The watchlist';
     document.title = `The watchlist — ${site.app || 'SpicyCar'}`;
     // One sentence of purpose. The shipping formula lives in how.html; repeating
@@ -1741,9 +1813,33 @@
     $('dek').textContent = `${rows.length} electric cars, priced every day for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
     metaRow([`Updated ${fmtDateLong(site.generated)}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
-    segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand);
+    segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand, 'tab-brand');
     $('tabs').hidden = true;
+    renderShortlist(true);
+    $('notes-card').hidden = true;
+    renderOverviewChart(rows);
+    updateRowsOverview();     // tiles, picks, map, table, notice, next — the same path a filter change takes
+    orderSections('overview');
+    footLine();
+  }
 
+  // The overview sections that change when the filtered row set changes —
+  // renderOverview and the scoped filter path both run exactly this.
+  function updateRowsOverview() {
+    const rows = overviewRows();
+    updateEyebrow();
+    renderOverviewKpis(rows);
+    renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label, r.shopping)), pickParams().per_model);
+    updateMapVisibility();
+    renderOverviewTable(rows);
+    renderEmptyNotice(rows.reduce((a, r) => a + r.n, 0),
+                      allModels().reduce((a, { m }) => a + (m.listings || []).length, 0));
+    const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
+    renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car');
+    filterCount();
+  }
+
+  function renderOverviewKpis(rows) {
     // tiles
     const total = rows.reduce((a, r) => a + r.n, 0), localTotal = rows.reduce((a, r) => a + r.n_local, 0);
     const bestRow = rows.filter((r) => r.best).reduce((a, r) => (!a || r.best.price < a.best.price ? r : a), null);
@@ -1759,17 +1855,13 @@
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, shop ? 'Shopping' : 'Watchlist'),
       el('div', { class: 'sc-tile__value sc-tile__value--sm' }, shop ? shops.map((r) => r.label).join(' · ') : `${rows.length} models`),
       el('div', { class: 'sc-tile__sub' }, shop ? shops.map((r) => `${r.label.replace(/^\S+ /, '')} ${r.best ? 'from ' + money(r.best.price) : '—'} · ${r.n_local} drivable`).join(' · ') : 'no target marked as shopping')));
+  }
 
-    // the shortlist first, then our picks across every model, then the map
-    renderShortlist(true);
-    renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label, r.shopping)), pickParams().per_model);
-    renderMap('overview');
-    $('notes-card').hidden = true;
-
-    // the chart: every model's lowest asking price over time — one line per
-    // model, colored by brand, dashed by model within the brand, the shopped
-    // models drawn heavier. The legend is the control: click a chip to hide
-    // or show a model; hover one to pick its line out of the crowd.
+  // the chart: every model's lowest asking price over time — one line per
+  // model, colored by brand, dashed by model within the brand, the shopped
+  // models drawn heavier. The legend is the control: click a chip to hide
+  // or show a model; hover one to pick its line out of the crowd.
+  function renderOverviewChart(rows) {
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'The market over time';
     $('chart-scope').hidden = false;
@@ -1790,8 +1882,9 @@
         svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, style: 'stroke:' + SC.toneRef(brandTone(bk)), 'stroke-width': m.shopping ? 3 : 2,
                         'stroke-dasharray': modelDash(bk, mk) || null, 'stroke-linecap': 'round', opacity: off ? 0.35 : 1 }));
       lg.appendChild(el('button', { class: 'sc-legend__chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
+        'data-fkey': 'legend:' + id,
         title: (off ? 'Show ' : 'Hide ') + m.label + (m.shopping ? ' (shopping)' : ''),
-        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); savePrefs(); rerender(); },
+        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); savePrefs(); rerender('hide'); },
         onmouseenter: () => { if (!off) highlightSeries(id); },
         onmouseleave: () => highlightSeries(null) },
         sample, el('span', null, m.label)));
@@ -1808,8 +1901,10 @@
     const body = el('tbody');
     for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = askingSeries(r.m, rangeDaily(r.m.daily || [])).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
     table.appendChild(body); tb.appendChild(table);
+  }
 
-    // the table: one row per model, with a photo — the row itself is the door in
+  // the table: one row per model, with a photo — the row itself is the door in
+  function renderOverviewTable(rows) {
     $('overview-card').hidden = false;
     $('overview-hint').textContent = 'One row per model under the current filters — shopping first, then by lowest asking. Click a row to open its listings, chart and history.';
     const ot = $('overview-table'); ot.textContent = '';
@@ -1825,7 +1920,7 @@
         el('div', { class: 'sc-media__title' }, r.label),
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
-          el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
+          el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'open:' + r.bk + '/' + r.mk, onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
       const data = el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—')));
       const trend = el('td', null, spark(r.trend, 80, 26, false, brandTone(r.bk)));
       obody.appendChild(el('tr', { class: 'is-clickable', title: 'Open ' + r.label,
@@ -1838,11 +1933,6 @@
     }
     ot.appendChild(obody);
     markClipped(ot.closest('.sc-table-scroll'));
-    renderEmptyNotice(rows.reduce((a, r) => a + r.n, 0),
-                      allModels().reduce((a, { m }) => a + (m.listings || []).length, 0));
-    renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car');
-    orderSections('overview');
-    footLine();
   }
 
   // The page ends on the answer it just computed, not on a third link to the
@@ -1894,10 +1984,11 @@
     n.appendChild(el('div', { class: 'sc-notice' },
       el('div', { class: 'sc-eyebrow' }, 'nothing matches these filters'),
       el('p', null, `All ${num(total)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
-        el('a', { class: 'sc-link--quiet', href: '#', onclick: (e) => {
+        el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
           S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.trim = 'all';
-          savePrefs(); buildFilters(); rerender();
+          // trim is among the resets, and trim reaches the header, chart and gone table
+          savePrefs(); buildFilters(); rerender(S.brand === 'all' ? 'rows' : 'trim');
         } }, 'Clear the filters'), '.')));
     n.hidden = false;
   }
@@ -1916,23 +2007,31 @@
   function render() {
     if (S.brand === 'all') { renderOverview(); return; }
     $('overview-card').hidden = true;
-    const rows = filtered();
     renderHeader();
-    renderKpis(rows);
     renderShortlist(false);      // front page only — model rows carry a chip instead
-    const t = model();
-    renderPicks(scoredFrom(rows, t.label, !!t.shopping));
-    renderNotes(t);
+    renderNotes(model());
     renderChart();
-    renderScatter(rows);
-    renderMap('model', rows);
-    renderList(rows);
+    updateRows(filtered());
     renderGone();
+    orderSections('model');
+    footLine();
+  }
+
+  // Everything that changes when the filtered row set changes — and nothing
+  // that doesn't. The shared path for filter chips, checkboxes and selects;
+  // render() calls it too, so a scoped update and a full render cannot drift.
+  function updateRows(rows) {
+    const t = model();
+    updateEyebrow();
+    renderKpis(rows);
+    renderPicks(scoredFrom(rows, t.label, !!t.shopping));
+    renderScatter(rows);
+    updateMapVisibility();
+    renderList(rows);
     renderEmptyNotice(rows.length, trimRows(t.listings || []).length);
     const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
     renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
-    orderSections('model');
-    footLine();
+    filterCount();
   }
 
   function buildFilters() {
@@ -1955,8 +2054,16 @@
     for (const [key, lab, tip] of opts) {
       const on = S.where.has(key);
       fw.appendChild(el('button', { class: 'sc-tab sc-tab--case', type: 'button', 'aria-pressed': on ? 'true' : 'false',
+        'data-fkey': 'where:' + key,
         title: `${tip} — pick any; none selected means everywhere`,
-        onclick: () => { if (S.where.has(key)) S.where.delete(key); else S.where.add(key); savePrefs(); buildFilters(); rerender(); } }, lab));
+        onclick: (ev) => {
+          // toggle the pressed state in place — the chip is not rebuilt, so it
+          // keeps focus natively and the press costs only the sections that read it
+          const was = S.where.has(key);
+          if (was) S.where.delete(key); else S.where.add(key);
+          ev.currentTarget.setAttribute('aria-pressed', was ? 'false' : 'true');
+          savePrefs(); rerender('rows');
+        } }, lab));
     }
     $('f-sort').parentElement.hidden = overview;   // the overview has its own order: shopping first, then lowest asking
     const fy = $('f-year'); fy.textContent = '';
@@ -1995,29 +2102,73 @@
     $('filter-toggle').textContent = bits.length ? `Filters · ${bits.length}` : 'Filters';
   }
 
-  // A filter change re-renders in place. Restoring raw scrollY was not enough:
-  // sections above the filter bar change height, so the bar itself could jump
-  // hundreds of pixels off screen. Anchor on the bar and put it back where it was.
-  function rerender() {
+  // Focus, across a rebuild. A control that gets rebuilt carries a stable
+  // data-fkey; whatever held focus before an update is re-found by id or by
+  // that key afterwards, so a keyboard user who toggles a chip is still ON
+  // the chip — not dumped to <body> with their next Space scrolling the page.
+  function rememberFocus() {
+    const a = document.activeElement;
+    if (!a || a === document.body) return null;
+    if (a.id) return { id: a.id };
+    const k = a.getAttribute && a.getAttribute('data-fkey');
+    return k ? { fkey: k } : null;
+  }
+  function restoreFocus(f) {
+    if (!f) return;
+    if (document.activeElement && document.activeElement !== document.body) return;   // the node survived
+    let n = f.id ? $(f.id) : document.querySelector('[data-fkey="' + CSS.escape(f.fkey) + '"]');
+    if (!n && f.fkey && f.fkey.indexOf('more:') === 0) {
+      // the show-all button removes itself when pressed — land on the list it revealed
+      const gone = f.fkey === 'more:gone';
+      n = $(narrow() ? (gone ? 'gone-cards' : 'list-cards') : (gone ? 'gone-scroll' : 'list-scroll'));
+      if (n) n.setAttribute('tabindex', '-1');
+    }
+    if (!n && f.fkey && (f.fkey.indexOf('open:') === 0 || f.fkey.indexOf('sl:') === 0 || f.fkey.indexOf('tab-') === 0)) {
+      // navigation took the focused link away with the old view — land on the new heading
+      n = $('h1');
+      if (n) n.setAttribute('tabindex', '-1');
+    }
+    if (n) n.focus({ preventScroll: true });
+  }
+
+  // A state change re-renders ONLY the sections that read it — the scope names
+  // what changed. Scroll anchoring (the filter bar stays put even when the
+  // sections above it change height) applies to the scopes that can move it.
+  function rerender(scope) {
+    scope = scope || 'all';
+    const fk = rememberFocus();
+    const overview = S.brand === 'all';
+    const anchorScope = scope === 'all' || scope === 'trim' || scope === 'rows';
     const bar = $('filters-card');
-    const anchored = bar && !bar.hidden;
+    const anchored = anchorScope && bar && !bar.hidden;
     const before = anchored ? bar.getBoundingClientRect().top : null;
     const y = window.scrollY;
-    render();
-    requestAnimationFrame(() => {
+    switch (scope) {
+      case 'trim': renderHeader(); updateRows(filtered()); renderChart(); renderGone(); break;
+      case 'rows': overview ? updateRowsOverview() : updateRows(filtered()); break;
+      case 'sort':
+      case 'showList': renderList(filtered()); break;
+      case 'showGone': renderGone(); break;
+      case 'hide': renderOverviewChart(overviewRows()); updateMapVisibility(); break;
+      case 'range': overview ? renderOverviewChart(overviewRows()) : renderChart(); break;
+      case 'nav': render(); break;
+      default: render(); break;
+    }
+    restoreFocus(fk);
+    if (anchorScope) requestAnimationFrame(() => {
       if (anchored && !bar.hidden) {
         const after = bar.getBoundingClientRect().top;
         window.scrollTo(0, Math.max(0, window.scrollY + (after - before)));
-      } else window.scrollTo(0, y);
+      } else if (scope === 'all') window.scrollTo(0, y);
     });
   }
   function wireFilters() {
-    $('f-trim').addEventListener('change', (e) => { S.trim = e.target.value; rerender(); });
-    $('f-year').addEventListener('change', (e) => { S.year = e.target.value; rerender(); });
-    $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); rerender(); });
-    $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender(); });
-    $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender(); });
-    $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender(); });
+    $('f-trim').addEventListener('change', (e) => { S.trim = e.target.value; rerender('trim'); });
+    $('f-year').addEventListener('change', (e) => { S.year = e.target.value; rerender('rows'); });
+    $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); rerender('rows'); });
+    $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender('sort'); });
+    $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender('rows'); });
+    $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender('rows'); });
     // The phone bar: one 44px row that expands on tap, so the controls are one
     // press away instead of five screens down.
     $('filter-toggle').addEventListener('click', () => {
@@ -2055,8 +2206,6 @@
         if (narrow() !== wasNarrow) { wasNarrow = narrow(); renderList(filtered()); }
       });
     });
-    // theme changes re-paint the attribute-coloured marks (legend keys, tooltip keys, marker fills)
-    const rerender = () => { if (S.site) setTimeout(render, 0); };
     // A theme flip used to redraw the entire page, because every chart colour
     // had been resolved to a hex at draw time. They ride the --sc-tone channel
     // now and re-resolve in CSS, so the only things left to change are the two
@@ -2096,7 +2245,7 @@
       annotateValue(site);
       loadPrefs();
       applyUrl();
-      window.addEventListener('popstate', () => { applyUrl(); buildFilters(); render(); });
+      window.addEventListener('popstate', () => { applyUrl(); buildFilters(); rerender('nav'); });
       buildFilters();
       render();
     })
