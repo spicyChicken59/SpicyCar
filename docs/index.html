@@ -948,7 +948,7 @@
       }
 
       MAP_CTL = { key, mode, entries, picked, visible: [], VIEW, svg, hideTip, states,
-                  halos, hitR: null, haloW: 0, haloVW: 0, twinKey: null, kOrder: [], kIdx: -1, kBig: null };
+                  halos, hitR: null, haloW: 0, haloStale: false, twinKey: null, kOrder: [], kIdx: -1, kBig: null };
       // Keyboard: arrows step the VISIBLE dots west→east (the order the map
       // reads), Enter opens the car, Escape clears, blur clears — the
       // scatter's contract, adapted to a surface that zooms. kOrder lives on
@@ -1082,13 +1082,18 @@
   // read only happens when the viewport width moved since the last sizing
   // (rotation, window resize) — never on the filter path — and the halos are
   // only re-set when the svg's width moved >10%.
-  function sizeMapHalos() {
+  function sizeMapHalos(force) {
     const ctl = MAP_CTL;
     if (!ctl || ctl.empty || !ctl.halos || !ctl.halos.length) return;
-    if (ctl.hitR != null && window.innerWidth === ctl.haloVW) return;   // nothing moved — skip the measure
+    // The filter path pays ZERO layout reads — even window.innerWidth is a
+    // forced reflow when the pass just dirtied ~500 class toggles, and it
+    // doubled the where-chip cost on phones. It re-measures only on the
+    // first pass after a build, or after the resize handler (which watches
+    // innerWidth on its own cached copy) forces it / marked it stale.
+    if (!force && ctl.hitR != null && !ctl.haloStale) return;
     const w = ctl.svg.getBoundingClientRect().width;
-    if (!w) return;   // the card is hidden or not laid out yet — retry on the next pass
-    ctl.haloVW = window.innerWidth;
+    if (!w) { ctl.haloStale = true; return; }   // hidden or not laid out yet — retry on the next pass
+    ctl.haloStale = false;
     if (ctl.hitR != null && Math.abs(w - ctl.haloW) <= ctl.haloW * 0.1) { ctl.haloW = w; return; }
     ctl.haloW = w;
     ctl.hitR = (12.5 * MAP_FULL.w / w).toFixed(1);
@@ -2543,7 +2548,8 @@
         // The map is deliberately NOT rebuilt on resize, and the model view
         // below never reaches updateMapVisibility — so the halos' user-unit
         // radius must be re-derived here or a rotation leaves it ~2× off.
-        sizeMapHalos();
+        // Forced: this handler has already established the width changed.
+        sizeMapHalos(true);
         if (S.brand === 'all') { render(); return; }
         renderChart();
         renderScatter(filtered());
