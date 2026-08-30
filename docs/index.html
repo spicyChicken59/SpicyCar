@@ -2047,6 +2047,9 @@
     const trim = (x.trim || '').length > 22 ? (x.trim || '').slice(0, 22) + '…' : (x.trim || '');
     const aside = el('div', { class: 'sc-media__aside' }, el('div', { class: 'sc-figure' }, money(x.price)),
       el('span', { class: 'sc-note' }, shipNote(x)), movement(x, daily),
+      // the phone twin of the table's cut-sort note — the sorted number must be visible here too
+      S.sort === 'cut' && lastStep(x) < 0
+        ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
       x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null);
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
