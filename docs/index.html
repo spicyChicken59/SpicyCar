@@ -1383,6 +1383,7 @@
     const local = sets.local.slice().sort(byRole);
     const far = sets.far.slice().sort(byRole);
     const key = (S.brand === 'all' ? 'ov' : 'm|' + S.brand + '/' + S.model) + '|' + (perModel || '')
+      + '|' + (narrow() ? 'n' : 'w')   // the phone collapse is decided at render time, so the breakpoint is part of the output
       + '|' + local.map((p) => p.x.vin).join(',') + '|' + far.map((p) => p.x.vin).join(',');
     if (key === PICKS_KEY) return;
     PICKS_KEY = key;
@@ -2229,7 +2230,12 @@
         if (S.brand === 'all') { render(); return; }
         renderChart();
         renderScatter(filtered());
-        if (narrow() !== wasNarrow) { wasNarrow = narrow(); renderList(filtered()); }
+        if (narrow() !== wasNarrow) {
+          wasNarrow = narrow();
+          const rows = filtered(), t = model();
+          renderList(rows);
+          renderPicks(scoredFrom(rows, t.label, !!t.shopping));   // the picks' phone collapse follows the breakpoint too
+        }
       });
     });
     // A theme flip used to redraw the entire page, because every chart colour
