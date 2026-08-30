@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "Decided promotion candidates, and why. consumer-lint reports every page rule",
+    "that COULD be generic; this file records the ones already adjudicated so the",
+    "same question is not re-opened every release. A verdict is not permanent — it",
+    "names the condition that should reopen it.",
+    "",
+    "Anything NOT listed here is an open question, and the weekly digest raises it.",
+    "Delete an entry to put its rule back on the agenda."
+  ],
+  "verdicts": {
+    "dg-*": {
+      "selectors": [".dg-box", ".dg-box--core", ".dg-title", ".dg-sub", ".dg-side",
+                    ".dg-line", ".dg-head", ".dg-bar-ask", ".dg-bar-ship", ".dg-figure"],
+      "page": "how.html",
+      "verdict": "not promoted",
+      "why": "The SVG explainer vocabulary is genuinely generic — it knows nothing about cars — but it has one consumer, used once. A promoted family must be demonstrated and maintained in the style guide, which is a real cost against a family nobody else has asked for.",
+      "reopen_when": "A second project draws an explainer diagram."
+    },
+    "to-top": {
+      "selectors": [".to-top", ".to-top.is-on", ".to-top:hover"],
+      "page": "index.html",
+      "verdict": "promote next",
+      "why": "Nothing here is page-specific: a fixed back-to-top control shown past two viewports of scroll, visibility-based so it leaves the tab order when hidden. Every long page wants it.",
+      "reopen_when": "Queued for the next release that opens band 4c — carry it with the dense-surface touch targets."
+    },
+    "flags": {
+      "selectors": [".flags"],
+      "page": "index.html",
+      "verdict": "not promoted",
+      "why": "A flex row of chips is already expressible with the system's own layout utilities; promoting a named class for it would grow the sheet without teaching anyone anything new.",
+      "reopen_when": "The shape gains behaviour the utilities cannot express."
+    },
+    "picks-title": {
+      "selectors": [".picks-title"],
+      "page": "index.html",
+      "verdict": "not promoted",
+      "why": "This is the heading inside SpicyCar's own 'spicy picks' idea — the one block the rebuild deliberately kept local. Its name carries page identity even though its declarations do not.",
+      "reopen_when": "Never, while picks remain this app's own concept."
+    }
+  }
+}
