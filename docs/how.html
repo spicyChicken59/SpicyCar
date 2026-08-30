@@ -60,6 +60,18 @@
     .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
     .sc-foot a { display: inline-block; padding: 10px 2px; }
   }
+
+  /* Bridge, dense surfaces — the TOC's 21px-tall rows under a finger.
+     Real growth keyed to (pointer: coarse) like the masthead bridge above,
+     because a shiftless halo cannot get there: TOC rows sit 6px apart, so
+     symmetric growth tops out at ±3px — 27px effective, short of every
+     guideline. A prose page's nav can afford the height (measured 129px →
+     244px at 390px wide; the 6px wrap gap stays as the separator between
+     the now-touching 44px rows). Promotion candidate for design-system
+     v2.4.x. Delete when the pin moves past a release that carries it. */
+  @media (pointer: coarse) {
+    .sc-toc a { display: inline-flex; align-items: center; min-height: 44px; }
+  }
 </style>
 </head>
 <body>

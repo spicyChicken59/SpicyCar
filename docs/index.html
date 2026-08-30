@@ -105,6 +105,61 @@
     .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
     .sc-foot a { display: inline-block; padding: 10px 2px; }
   }
+
+  /* Bridge, dense surfaces — touch targets below the masthead block above.
+     Two mechanisms, split by whether layout may move:
+
+     1) Halos, keyed to (any-pointer: coarse) — the #map/#scatter .sc-dot-hit
+        precedent: they change ZERO layout or pixels, so a hybrid laptop earns
+        them too. An invisible ::before overlay grows the HIT box, never the
+        painted box — padding would repaint .sc-link--quiet's underline 8px
+        low and the pressed legend chip's pill 8px tall. Every size is
+        gap-bound, measured: quiet links ±8px (13px → 29px; the nearest
+        interactive neighbor is 20.7px away and both sides grow, 2×8 < 20.7;
+        the Listing/Carfax pair sits 8px apart HORIZONTALLY, so the halo
+        grows only vertically); legend chips ±8px (25.5px → 41.5px; row
+        pitch leaves 18px, 2×8 < 18); tabs ±3px (31px → 37px; tab rows sit
+        8px apart, 2×3 < 8). summary owns ::before (the → glyph), so it
+        grows by min-height instead — no background, border or underline
+        paints on a summary, so nothing visible moves: the flex-centered
+        label stays put, margin-block refunds the min-height's +20px (the
+        base row is exactly 24px tall), and z-index:3 beats the sticky
+        first-column th (z-index 2 in the sheet), which otherwise steals
+        taps in the grown zone while the table is open (24px → 44px, full
+        row width). .picks-group summaries are excluded: their own padding
+        rule already stands them ≥44px tall, and the -20px margin refund
+        against a taller base row would shrink real layout.
+        One layout concession rides with the halos: the shortlist card
+        stacks Listing/Carfax 5.6px above "Open model →", the single spot
+        (measured over every view) where two quiet links sit closer than
+        2×8px — 16px of margin there makes room, one card grows ~14px.
+
+     2) Real growth, keyed to (pointer: coarse) like the masthead bridge —
+        layout only moves for a touch-first device. The 15px checkbox inside
+        a 24px label cannot reach 44px shiftlessly: the two labels sit 10px
+        apart on a phone, so ±10px halos would overlap each other by 10px.
+        min-height grows the label row for real (filter panel +40px on a
+        phone, where it is closed behind the Filters toggle by default;
+        sticky bar +20px on a tablet) and the input grows to 20px so the
+        visible box matches the bigger target.
+
+     Promotion candidates for design-system v2.4.x (same shapes; upstream
+     .sc-details needs no :not() — .picks-group is this page's class).
+     Delete when the pin moves past a release that carries them. */
+  @media (any-pointer: coarse) {
+    .sc-link--quiet, .sc-legend__chip, .sc-tab { position: relative; }
+    .sc-link--quiet::before, .sc-legend__chip::before, .sc-tab::before {
+      content: ""; position: absolute; left: 0; right: 0; }
+    .sc-link--quiet::before { top: -8px; bottom: -8px; }
+    .sc-legend__chip::before { top: -8px; bottom: -8px; }
+    .sc-tab::before { top: -3px; bottom: -3px; }
+    .sc-details:not(.picks-group) summary { position: relative; z-index: 3; min-height: 44px; margin-block: -10px; }
+    .sc-media__links + .sc-link--quiet { display: inline-block; margin-top: 16px; }
+  }
+  @media (pointer: coarse) {
+    .sc-check { min-height: 44px; }
+    .sc-check input { width: 20px; height: 20px; }
+  }
 </style>
 </head>
 <body>
