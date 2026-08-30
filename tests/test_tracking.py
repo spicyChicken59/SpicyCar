@@ -121,9 +121,9 @@ class TestGeography(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# Drivable: the state list plus the drive radius. A Benton Harbor car 90
-# miles from Chicago must not pay shipping just because Michigan is not on
-# the state list.
+# Drivable: state membership, nothing else. The buyer names the states and
+# the line sits exactly where they drew it — a Benton Harbor car 90 miles
+# away ships, the far corner of Ohio drives.
 # --------------------------------------------------------------------------
 class TestDrivable(unittest.TestCase):
     def test_listing_entries_carry_the_cars_public_coordinates(self):
