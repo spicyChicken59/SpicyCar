@@ -285,6 +285,48 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(row["miles"], 15922)
         self.assertEqual(row["listed_since"], "2026-08-09")
 
+    # ---- the CPO watch's post-fetch filters. They live in normalize, not in
+    # the query, because the API's filter surface for cpo and mileage is
+    # unverified — a silently-ignored param would track the wrong market.
+    def cpo_norm(self, mutate):
+        import copy
+        rec = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                             if not k.startswith("_")})
+        mutate(rec)
+        return T.normalize(rec, target("bmw-i5-cpo"), self.dropped)
+
+    def test_cpo_watch_drops_the_uncertified(self):
+        # the clean fixture is cpo: false as shipped
+        self.assertIsNone(self.cpo_norm(lambda r: None))
+        self.assertEqual(self.dropped["not certified"], 1)
+
+    def test_cpo_watch_drops_at_and_over_the_mileage_cap(self):
+        def certify_at(miles):
+            def m(r):
+                r["retailListing"]["cpo"] = True
+                r["retailListing"]["miles"] = miles
+            return m
+        self.assertIsNone(self.cpo_norm(certify_at(30000)),
+                          "'under 30,000' excludes 30,000 itself")
+        self.assertIsNone(self.cpo_norm(certify_at(45000)))
+        self.assertEqual(self.dropped["at/over max_miles"], 2)
+
+    def test_cpo_watch_drops_unknown_mileage(self):
+        def m(r):
+            r["retailListing"]["cpo"] = True
+            del r["retailListing"]["miles"]
+        self.assertIsNone(self.cpo_norm(m),
+                          "unknown mileage cannot prove 'under the cap'")
+
+    def test_cpo_watch_keeps_a_certified_low_mile_car(self):
+        def m(r):
+            r["retailListing"]["cpo"] = True
+        row = self.cpo_norm(m)
+        self.assertIsNotNone(row)
+        self.assertEqual(row["target"], "bmw-i5-cpo")
+        self.assertEqual(row["cpo"], "1")
+        self.assertEqual(row["miles"], 15922)
+
 
 # --------------------------------------------------------------------------
 # Spicy picks: eligibility, and the within-model scoring that stops a cheap
@@ -526,10 +568,10 @@ class TestDelisted(unittest.TestCase):
         T.EXHAUSTED.update(self._ex)
 
     @staticmethod
-    def row(tid, vin, day, price, state="IL"):
+    def row(tid, vin, day, price, state="IL", miles=10000):
         r = {k: "" for k in T.FIELDS}
         r.update({"target": tid, "vin": vin, "snapshot_date": day,
-                  "price": price, "year": "2024", "miles": 10000,
+                  "price": price, "year": "2024", "miles": miles,
                   "state": state, "city": "Chicago"})
         return r
 
@@ -586,6 +628,32 @@ class TestDelisted(unittest.TestCase):
         # below it is a car the fetch should have seen — a real departure
         self.assertEqual(gone["HIGH"]["likely"], "out of window")
         self.assertEqual(gone["LOW"]["likely"], "delisted")
+
+    def test_miles_window_target_judges_departures_in_miles(self):
+        # The CPO watches fetch miles.asc only, so their window is bounded
+        # in MILES: a departed car with more miles than the vanish day's
+        # deepest kept row may simply sit beyond the pages fetched, while
+        # one with fewer was definitely in view — its absence is real.
+        # Judging these by a price cut-off would compare against a number
+        # that never gated anything.
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-cpo"
+        self.assertEqual(T.window_dim(T.TARGETS[tid]), "miles")
+        # d1's kept rows reach 17,700 miles and fill a page, so the window
+        # neither exhausted nor reached the two departed cars' mileages…
+        fill = [self.row(tid, f"W{i:02d}", d, 45000, miles=12000 + i * 300)
+                for d in (d2, d1) for i in range(T.PER_PAGE)]
+        all_rows = fill + [
+            self.row(tid, "LOWMI", d2, 47000, miles=9000),    # below the window: was in view
+            self.row(tid, "HIGHMI", d2, 39000, miles=25000),  # beyond it: maybe just unfetched
+        ]
+        today = [r for r in all_rows if r["snapshot_date"] == d1]
+        gone = {g["vin"]: g for g in T.delisted({tid}, all_rows, today,
+                                                T.build_history(all_rows))}
+        self.assertEqual(gone["LOWMI"]["likely"], "delisted")
+        self.assertEqual(gone["HIGHMI"]["likely"], "out of window")
+        # note the price ordering would have said the OPPOSITE: HIGHMI was
+        # the cheaper car, LOWMI the pricier one
+        self.assertLess(gone["HIGHMI"]["last_price"], gone["LOWMI"]["last_price"])
 
     def test_departures_carry_the_history_the_scoped_chart_needs(self):
         # The dashboard rebuilds "lowest asking per day" over whatever scope
@@ -826,9 +894,37 @@ class TestConfig(unittest.TestCase):
         self.assertNotIn("bmw-i7", T.TARGETS)
         self.assertTrue(all("i7" not in tid for tid in T.TARGETS))
 
-    def test_shopping_is_the_i5_and_the_i4(self):
+    def test_shopping_is_the_i5_and_the_ix(self):
+        # The CPO financing promo (2.99% on certified EVs, 2.49% on the iX)
+        # moved the shopping list: the two nationwide CPO watches plus the
+        # original eDrive40 hunt. The i4 stays tracked as a benchmark only.
         shopped = sorted(t for t, v in T.TARGETS.items() if v["shopping"])
-        self.assertEqual(shopped, ["bmw-i4-edrive40", "bmw-i5-edrive40"])
+        self.assertEqual(shopped, ["bmw-i5-cpo", "bmw-i5-edrive40",
+                                   "bmw-ix-cpo"])
+
+    def test_cpo_watches_are_affordable_and_staggered(self):
+        # national_only halves each watch's cost (no States query — the
+        # national miles.asc answer already contains the states), and the
+        # two watches take alternating cadence-2 days, so neither the worst
+        # day nor the month blows the budget the way two full-depth
+        # nationwide targets naively would.
+        for tid in ("bmw-i5-cpo", "bmw-ix-cpo"):
+            t = T.TARGETS[tid]
+            self.assertEqual(T.sources_for(t), [("National", None)])
+            self.assertEqual(T.calls_for(t), 3)     # 1 source x 1 sort x 3 pages
+            self.assertEqual(T.window_dim(t), "miles")
+        self.assertNotEqual(T.TARGETS["bmw-i5-cpo"]["offset"],
+                            T.TARGETS["bmw-ix-cpo"]["offset"],
+                            "both watches on the same days doubles the "
+                            "worst-day cost for no coverage gain")
+
+    def test_the_watchlist_reduction(self):
+        # Removed to pay for the CPO watches; the A6 e-tron replaces them.
+        for tid in T.TARGETS:
+            self.assertNotIn("ev6", tid)
+            self.assertNotIn("q4-etron", tid)
+            self.assertNotIn("equinox", tid)
+        self.assertIn("audi-a6-etron", T.TARGETS)
 
     def test_site_dates_the_data_not_the_build(self):
         """generated is the day the file was BUILT (an offline rebuild stamps

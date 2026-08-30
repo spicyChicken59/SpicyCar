@@ -8,7 +8,7 @@
     "anchor": [41.8781, -87.6298],
     "states": ["IL", "OH", "IN", "WI"],
     "search_states": ["MI", "IA", "MO", "KY"],
-    "shopping": ["bmw-i5-edrive40", "bmw-i4-edrive40"],
+    "shopping": ["bmw-i5-cpo", "bmw-i5-edrive40", "bmw-ix-cpo"],
     "shortlist": [],
     "ship_per_mile": 0.65,
     "ship_min": 350,
@@ -47,11 +47,16 @@
           "years": ["2024", "2025"],
           "min_price": 20000,
           "notes": {
-            "good": ["Quiet, refined and built like a 5-Series; the eDrive40 is EPA-rated around 295 miles", "Heavy lease-return supply keeps used prices well under new", "iDrive 8.5 is quick, and most cars carry Driving Assistance packages"],
+            "good": ["CPO promo: 2.99% APR financing on certified i5s — at today's used prices that rate changes the payment maths", "Quiet, refined and built like a 5-Series; the eDrive40 is EPA-rated around 295 miles", "Heavy lease-return supply keeps used prices well under new", "iDrive 8.5 is quick, and most cars carry Driving Assistance packages"],
             "bad": ["Fast charging peaks near 205 kW and tapers early, so road trips are slower than the range suggests", "Over 5,000 lb — expect tire wear and a firm ride on big wheels", "Equipment varies a lot by package; two cars at the same price can be very different"],
             "watch": ["Confirm the software is current — early 2024 cars had bugs fixed over the air", "Check which packages the specific VIN has (Driving Assistance Pro, Premium, heated seats)", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
           },
           "trims": {
+            "cpo":      { "label": "CPO under 30k mi", "trim_query": "", "trim_match": "",
+                          "years": ["2024", "2025"], "cadence": 2,
+                          "depth": "full", "sorts": ["miles.asc"], "pages": 3,
+                          "max_miles": 30000, "cpo_only": true, "national_only": true,
+                          "note": "Every certified car under 30,000 miles, nationwide — the 2.99% APR CPO promo is the reason to watch these." },
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1,
                           "note": "First real buyer, near Chicago. Decide by mid-Sept." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },
@@ -65,11 +70,16 @@
           "min_price": 25000,
           "cadence": 2,
           "notes": {
-            "good": ["One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size", "Depreciation has been brutal — $90k cars now sit in the $40k–60k range", "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"],
+            "good": ["CPO promo: 2.49% APR financing on certified iXs — the best rate in the whole promo, on the deepest-depreciating car in it", "One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size", "Depreciation has been brutal — $90k cars now sit in the $40k–60k range", "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"],
             "bad": ["Divisive looks, and the big grille is a plastic sensor panel that is expensive if damaged", "21–22 in tires and a heavy car: consumables cost real money", "2022 cars had high-voltage battery and software recalls; charging peaks near 195 kW"],
             "watch": ["Confirm the battery recall and software campaigns are done on the VIN", "Know which generation you are looking at: 2022–2025 xDrive50 / M60, or the 2026 xDrive45 / xDrive60 / M70 with bigger batteries", "Check tire life and the windshield (the camera glass is pricey); verify Driving Assistance Pro and the Sport package"]
           },
           "trims": {
+            "cpo":    { "label": "CPO under 30k mi", "trim_query": "", "trim_match": "",
+                        "years": ["2024", "2025", "2026"], "cadence": 2,
+                        "depth": "full", "sorts": ["miles.asc"], "pages": 3,
+                        "max_miles": 30000, "cpo_only": true, "national_only": true,
+                        "note": "Every certified car under 30,000 miles, nationwide — 2.49% APR CPO promo financing, the best rate offered." },
             "xdrive": { "label": "xDrive (45 / 50 / 60)", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive" },
             "m":      { "label": "M (M60 / M70)",         "trim_query": "M60,M70", "trim_match": "", "trim_exclude": "xdrive", "min_price": 35000 }
           }
@@ -86,7 +96,7 @@
           },
           "trims": {
             "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"], "active": false },
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "Shopping alongside the i5 — the cheaper way into the same drivetrain." },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "No longer being shopped — kept as the price benchmark for the same drivetrain in the i5." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"], "active": false },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }
@@ -131,6 +141,7 @@
         "ev6": {
           "label": "Kia EV6",
           "model": "EV6",
+          "active": false,
           "years": ["2022", "2023", "2024", "2025", "2026"],
           "notes": {
             "good": ["Same 800-volt platform as the Ioniq 5 — 18-minute fast charging", "Sportier setup and sharper looks; GT-Line is the sweet spot", "Deep depreciation makes clean examples a bargain"],
@@ -156,9 +167,20 @@
       "make": "Audi",
       "cadence": 3,
       "models": {
+        "a6-etron": {
+          "label": "Audi A6 e-tron",
+          "model": "A6 e-tron,A6 E-Tron,e-tron A6",
+          "years": ["2025", "2026"],
+          "notes": {
+            "good": ["800-volt PPE platform shared with the Q6: 270 kW charging, and the Sportback can exceed 350 miles", "A proper luxury sedan interior in a market full of crossovers", "Early lease returns are starting to land well under sticker"],
+            "bad": ["Brand new: used supply is thin and prices still sit close to new", "First model year — expect software updates and early-build niggles", "The sloping roof costs rear headroom, and there is no Apple CarPlay projection on early software"],
+            "watch": ["Confirm every over-the-air update and campaign has been applied", "Sportback vs. standard body and RWD vs. quattro change range meaningfully — check the exact spec", "Compare against a new one with incentives before paying near-new money"]
+          }
+        },
         "q4-etron": {
           "label": "Audi Q4 e-tron",
           "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4",
+          "active": false,
           "years": ["2022", "2023", "2024", "2025", "2026"],
           "notes": {
             "good": ["Quiet, comfortable and upscale inside for the money", "Steep depreciation — often the cheapest premium-badge EV", "Solid VW-group hardware underneath"],
@@ -211,6 +233,7 @@
         "equinox-ev": {
           "label": "Chevrolet Equinox EV",
           "model": "Equinox EV",
+          "active": false,
           "years": ["2024", "2025", "2026"],
           "notes": {
             "good": ["Around 319 miles front-drive, roomy, and cheap used", "Super Cruise is available on the RS", "Simple, honest EV on GM's Ultium platform"],

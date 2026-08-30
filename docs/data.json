@@ -34,8 +34,9 @@
   ],
   "scope_label": "IL/OH/IN/WI",
   "shopping": [
+   "bmw-i5-cpo",
    "bmw-i5-edrive40",
-   "bmw-i4-edrive40"
+   "bmw-ix-cpo"
   ],
   "picks": {
    "count": 4,
@@ -62,6 +63,7 @@
      "note": "",
      "notes": {
       "good": [
+       "CPO promo: 2.99% APR financing on certified i5s \u2014 at today's used prices that rate changes the payment maths",
        "Quiet, refined and built like a 5-Series; the eDrive40 is EPA-rated around 295 miles",
        "Heavy lease-return supply keeps used prices well under new",
        "iDrive 8.5 is quick, and most cars carry Driving Assistance packages"
@@ -90,6 +92,21 @@
       "min_price": 20000
      },
      "trims": {
+      "bmw-i5-cpo": {
+       "label": "CPO under 30k mi",
+       "note": "Every certified car under 30,000 miles, nationwide \u2014 the 2.99% APR CPO promo is the reason to watch these.",
+       "depth": "full",
+       "cadence": 2,
+       "shopping": true,
+       "years": [
+        "2024",
+        "2025"
+       ],
+       "min_price": 20000,
+       "max_miles": 30000,
+       "cpo_only": true,
+       "market_total": null
+      },
       "bmw-i5-edrive40": {
        "label": "eDrive40",
        "note": "First real buyer, near Chicago. Decide by mid-Sept.",
@@ -101,6 +118,8 @@
         "2025"
        ],
        "min_price": 20000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       },
       "bmw-i5-xdrive40": {
@@ -114,6 +133,8 @@
         "2025"
        ],
        "min_price": 20000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       },
       "bmw-i5-m60": {
@@ -127,6 +148,8 @@
         "2025"
        ],
        "min_price": 30000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       }
      },
@@ -8128,6 +8151,7 @@
       }
      ],
      "daily_by_trim": {
+      "bmw-i5-cpo": [],
       "bmw-i5-edrive40": [
        {
         "date": "2026-08-23",
@@ -8324,6 +8348,7 @@
        "delta": -106,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8378,6 +8403,7 @@
        "delta": -1000,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8436,6 +8462,7 @@
        "delta": -1000,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8490,6 +8517,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8548,6 +8576,7 @@
        "delta": -489,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8606,6 +8635,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": true,
        "series": [
         [
          "2026-08-29",
@@ -8642,6 +8672,7 @@
        "delta": 898,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8700,6 +8731,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8754,6 +8786,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8811,6 +8844,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8864,6 +8898,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -8917,6 +8952,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -8958,6 +8994,7 @@
        "delta": -1000,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9014,6 +9051,7 @@
        "delta": -175,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9060,6 +9098,7 @@
        "delta": 831,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9117,6 +9156,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -9155,6 +9195,7 @@
        "delta": -1000,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9197,6 +9238,7 @@
        "delta": -400,
        "accidents": 1,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9243,6 +9285,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9288,6 +9331,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9330,6 +9374,7 @@
        "delta": -377,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9379,6 +9424,7 @@
        "delta": -377,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": true,
        "series": [
         [
          "2026-08-23",
@@ -9429,6 +9475,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9470,6 +9517,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Multiple Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9511,6 +9559,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": true,
        "series": [
         [
          "2026-08-26",
@@ -9553,6 +9602,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Rental Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -9598,6 +9648,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -9635,6 +9686,7 @@
        "delta": 799,
        "accidents": null,
        "usage": "",
+       "cpo": true,
        "series": [
         [
          "2026-08-23",
@@ -9679,6 +9731,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9724,6 +9777,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9766,6 +9820,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9808,6 +9863,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9849,6 +9905,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9890,6 +9947,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9932,6 +9990,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Corporate Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -9973,6 +10032,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": true,
        "series": [
         [
          "2026-08-24",
@@ -10009,6 +10069,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": true,
        "series": [
         [
          "2026-08-24",
@@ -10045,6 +10106,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -10082,6 +10144,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -10119,6 +10182,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -10153,6 +10217,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -10179,6 +10244,7 @@
      "note": "",
      "notes": {
       "good": [
+       "CPO promo: 2.49% APR financing on certified iXs \u2014 the best rate in the whole promo, on the deepest-depreciating car in it",
        "One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size",
        "Depreciation has been brutal \u2014 $90k cars now sit in the $40k\u201360k range",
        "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"
@@ -10201,15 +10267,31 @@
       "2025",
       "2026"
      ],
-     "shopping": false,
+     "shopping": true,
      "cadence": 2,
      "as_of": "2026-08-30",
-     "fetched_today": true,
-     "next_due": "2026-08-30",
+     "fetched_today": false,
+     "next_due": "2026-08-31",
      "params": {
       "min_price": 25000
      },
      "trims": {
+      "bmw-ix-cpo": {
+       "label": "CPO under 30k mi",
+       "note": "Every certified car under 30,000 miles, nationwide \u2014 2.49% APR CPO promo financing, the best rate offered.",
+       "depth": "full",
+       "cadence": 2,
+       "shopping": true,
+       "years": [
+        "2024",
+        "2025",
+        "2026"
+       ],
+       "min_price": 25000,
+       "max_miles": 30000,
+       "cpo_only": true,
+       "market_total": null
+      },
       "bmw-ix-xdrive": {
        "label": "xDrive (45 / 50 / 60)",
        "note": "",
@@ -10224,6 +10306,8 @@
         "2026"
        ],
        "min_price": 25000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       },
       "bmw-ix-m": {
@@ -10240,6 +10324,8 @@
         "2026"
        ],
        "min_price": 35000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       }
      },
@@ -13011,6 +13097,7 @@
       }
      ],
      "daily_by_trim": {
+      "bmw-ix-cpo": [],
       "bmw-ix-xdrive": [
        {
         "date": "2026-08-26",
@@ -13097,6 +13184,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13135,6 +13223,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Rental Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13176,6 +13265,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13214,6 +13304,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13255,6 +13346,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13296,6 +13388,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13334,6 +13427,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13376,6 +13470,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13417,6 +13512,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Fleet",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13458,6 +13554,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13496,6 +13593,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-28",
@@ -13534,6 +13632,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13572,6 +13671,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Fleet",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13613,6 +13713,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-28",
@@ -13650,6 +13751,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-28",
@@ -13688,6 +13790,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13726,6 +13829,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13767,6 +13871,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13808,6 +13913,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13850,6 +13956,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13892,6 +13999,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13934,6 +14042,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Fleet",
+       "cpo": false,
        "series": [
         [
          "2026-08-26",
@@ -13975,6 +14084,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-28",
@@ -14022,7 +14132,7 @@
       "2024",
       "2025"
      ],
-     "shopping": true,
+     "shopping": false,
      "cadence": 1,
      "as_of": "2026-08-30",
      "fetched_today": true,
@@ -14033,10 +14143,10 @@
      "trims": {
       "bmw-i4-edrive40": {
        "label": "eDrive40",
-       "note": "Shopping alongside the i5 \u2014 the cheaper way into the same drivetrain.",
+       "note": "No longer being shopped \u2014 kept as the price benchmark for the same drivetrain in the i5.",
        "depth": "full",
        "cadence": 1,
-       "shopping": true,
+       "shopping": false,
        "years": [
         "2022",
         "2023",
@@ -14044,6 +14154,8 @@
         "2025"
        ],
        "min_price": 8000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       },
       "bmw-i4-m50": {
@@ -14059,6 +14171,8 @@
         "2025"
        ],
        "min_price": 25000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       }
      },
@@ -22055,6 +22169,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -22104,6 +22219,7 @@
        "delta": 2459,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22157,6 +22273,7 @@
        "delta": -500,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22207,6 +22324,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Use",
+       "cpo": true,
        "series": [
         [
          "2026-08-24",
@@ -22257,6 +22375,7 @@
        "delta": -501,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22306,6 +22425,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -22344,6 +22464,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22385,6 +22506,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22426,6 +22548,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -22464,6 +22587,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-27",
@@ -22501,6 +22625,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22550,6 +22675,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22595,6 +22721,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -22629,6 +22756,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -22666,6 +22794,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22711,6 +22840,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22756,6 +22886,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22798,6 +22929,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Fleet",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22839,6 +22971,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22881,6 +23014,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": true,
        "series": [
         [
          "2026-08-23",
@@ -22921,6 +23055,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22958,6 +23093,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -22995,6 +23131,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Lease",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -23033,6 +23170,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -23070,6 +23208,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Multiple Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -23107,6 +23246,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -23141,6 +23281,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -23178,6 +23319,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-23",
@@ -23254,6 +23396,8 @@
         "2026"
        ],
        "min_price": 8000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       }
      },
@@ -24319,6 +24463,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -24360,6 +24505,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -24401,6 +24547,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -24439,6 +24586,7 @@
        "delta": 1400,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -24469,1727 +24617,6 @@
   "kia": {
    "label": "Kia",
    "models": {
-    "ev6": {
-     "label": "Kia EV6",
-     "note": "",
-     "notes": {
-      "good": [
-       "Same 800-volt platform as the Ioniq 5 \u2014 18-minute fast charging",
-       "Sportier setup and sharper looks; GT-Line is the sweet spot",
-       "Deep depreciation makes clean examples a bargain"
-      ],
-      "bad": [
-       "Shares the Ioniq 5's ICCU problem",
-       "Firmer ride and poor rear visibility",
-       "Cargo space is modest for the size"
-      ],
-      "watch": [
-       "ICCU recall and 12V campaign completed on the VIN",
-       "The 2025 refresh (bigger battery, NACS) is worth seeking if you can",
-       "Check that the charge-port door and DC charging work \u2014 do a fast-charge test if possible"
-      ]
-     },
-     "years": [
-      "2022",
-      "2023",
-      "2024",
-      "2025",
-      "2026"
-     ],
-     "shopping": false,
-     "cadence": 3,
-     "as_of": "2026-08-28",
-     "fetched_today": false,
-     "next_due": "2026-08-31",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "kia-ev6": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 3,
-       "shopping": false,
-       "years": [
-        "2022",
-        "2023",
-        "2024",
-        "2025",
-        "2026"
-       ],
-       "min_price": 8000,
-       "market_total": null
-      }
-     },
-     "listings": [
-      {
-       "vin": "KNDC34LA3N5029938",
-       "year": 2022,
-       "trim": "Light",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "FL",
-       "local": false,
-       "lat": 27.60979,
-       "lon": -80.38361,
-       "distance": 1075,
-       "ship": 699,
-       "miles": 166676,
-       "price": 13901,
-       "adj": 14600,
-       "msrp": 41400,
-       "dealer": "Mullinax Ford of Vero Beach",
-       "city": "Vero Beach",
-       "url": "https://www.carfax.com/vehicle/KNDC34LA3N5029938",
-       "image": "https://retail.photos.vin/KNDC34LA3N5029938-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA3N5029938&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         13901
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC3DLC3N5088652",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "CA",
-       "local": false,
-       "lat": 33.91253,
-       "lon": -117.55953,
-       "distance": 1700,
-       "ship": 1105,
-       "miles": 123704,
-       "price": 15057,
-       "adj": 16162,
-       "msrp": 56400,
-       "dealer": "Premium Autos",
-       "city": "Norco",
-       "url": "https://www.carfax.com/vehicle/KNDC3DLC3N5088652",
-       "image": "https://retail.photos.vin/KNDC3DLC3N5088652-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC3N5088652&partner=FRD_2",
-       "color": "Red",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         15057
-        ],
-        [
-         "2026-08-28",
-         15057
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC34LA4N5037451",
-       "year": 2022,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "TX",
-       "local": false,
-       "lat": 33.01474,
-       "lon": -96.769,
-       "distance": 800,
-       "ship": 520,
-       "miles": 65851,
-       "price": 15888,
-       "adj": 16408,
-       "msrp": null,
-       "dealer": "kian motors",
-       "city": "Plano",
-       "url": "https://kianmotors.com/used/Kia/2022-Kia-EV6-2e819890ac1839e16e6289aaab02d447.htm",
-       "image": "https://retail.photos.vin/KNDC34LA4N5037451-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA4N5037451&partner=FRD_2",
-       "color": "Aurora Black Pearl",
-       "cpo": false,
-       "owners": 3,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "3 owners",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -100,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         15988
-        ],
-        [
-         "2026-08-28",
-         15888
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC34LA0P5129854",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "TN",
-       "local": false,
-       "lat": 35.86114,
-       "lon": -83.61517,
-       "distance": 475,
-       "ship": 350,
-       "miles": 116762,
-       "price": 16500,
-       "adj": 16850,
-       "msrp": 48700,
-       "dealer": "Right Price Auto TN LLC",
-       "city": "Sevierville",
-       "url": "https://www.carfax.com/vehicle/KNDC34LA0P5129854",
-       "image": "https://retail.photos.vin/KNDC34LA0P5129854-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA0P5129854&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Rental Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         16500
-        ],
-        [
-         "2026-08-28",
-         16500
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC34LA3P5118217",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "UT",
-       "local": false,
-       "lat": 40.39953,
-       "lon": -111.85095,
-       "distance": 1250,
-       "ship": 812,
-       "miles": 113105,
-       "price": 17194,
-       "adj": 18006,
-       "msrp": 48700,
-       "dealer": "Action Auto Sales And Finance Inc",
-       "city": "Lehi",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC34LA3P5118217",
-       "image": "https://retail.photos.vin/KNDC34LA3P5118217-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA3P5118217&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-12",
-       "days_listed": 18,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         17194
-        ],
-        [
-         "2026-08-28",
-         17194
-        ]
-       ],
-       "stale_pct": 0.21
-      },
-      {
-       "vin": "KNDC34LA3N5077696",
-       "year": 2022,
-       "trim": "Light",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "NJ",
-       "local": false,
-       "lat": 39.75151,
-       "lon": -75.11267,
-       "distance": 675,
-       "ship": 439,
-       "miles": 54760,
-       "price": 17294,
-       "adj": 17733,
-       "msrp": 41400,
-       "dealer": "Automotive Avenues",
-       "city": "Sewell",
-       "url": "https://www.carfax.com/vehicle/KNDC34LA3N5077696",
-       "image": "https://retail.photos.vin/KNDC34LA3N5077696-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA3N5077696&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-11",
-       "days_listed": 19,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         17294
-        ],
-        [
-         "2026-08-28",
-         17294
-        ]
-       ],
-       "stale_pct": 0.24
-      },
-      {
-       "vin": "KNDC34LA9N5046386",
-       "year": 2022,
-       "trim": "Light",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "CA",
-       "local": false,
-       "lat": 34.92083,
-       "lon": -120.42246,
-       "distance": 1825,
-       "ship": 1186,
-       "miles": 113831,
-       "price": 17483,
-       "adj": 18669,
-       "msrp": 41400,
-       "dealer": "KIA Santa Maria",
-       "city": "Santa Maria",
-       "url": "https://www.carfax.com/vehicle/KNDC34LA9N5046386",
-       "image": "https://retail.photos.vin/KNDC34LA9N5046386-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA9N5046386&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-11",
-       "days_listed": 19,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         17483
-        ],
-        [
-         "2026-08-28",
-         17483
-        ]
-       ],
-       "stale_pct": 0.24
-      },
-      {
-       "vin": "KNDC3DLC4N5052890",
-       "year": 2022,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "MI",
-       "local": false,
-       "lat": 42.46764,
-       "lon": -83.42055,
-       "distance": 225,
-       "ship": 350,
-       "miles": 97532,
-       "price": 17794,
-       "adj": 18144,
-       "msrp": null,
-       "dealer": "suburban mazda of farmington hills",
-       "city": "Farmington",
-       "url": "https://suburbanmazdaoffarmingtonhills.com/used/Kia/2022-Kia-EV6-673966bcac18347aee8c697d01f014be.htm",
-       "image": "https://retail.photos.vin/KNDC3DLC4N5052890-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC4N5052890&partner=FRD_2",
-       "color": "Aurora Black Pearl",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -198,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         17992
-        ],
-        [
-         "2026-08-28",
-         17794
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC3DLC7N5078206",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "CA",
-       "local": false,
-       "lat": 32.59403,
-       "lon": -117.02646,
-       "distance": 1725,
-       "ship": 1121,
-       "miles": 105848,
-       "price": 17874,
-       "adj": 18995,
-       "msrp": 56400,
-       "dealer": "Toyota Chula Vista",
-       "city": "Chula Vista",
-       "url": "https://www.carfax.com/vehicle/KNDC3DLC7N5078206",
-       "image": "https://retail.photos.vin/KNDC3DLC7N5078206-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC7N5078206&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         17874
-        ],
-        [
-         "2026-08-28",
-         17874
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC44LA9N5058678",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "NC",
-       "local": false,
-       "lat": 35.41185,
-       "lon": -79.23171,
-       "distance": 625,
-       "ship": 406,
-       "miles": 90935,
-       "price": 18476,
-       "adj": 18882,
-       "msrp": null,
-       "dealer": "taz autogroup",
-       "city": "Sanford",
-       "url": "https://jtautogroup.com/exotic-used/Kia/2022-Kia-EV6-b84dcac5ac1810998925e011050a8e6d.htm",
-       "image": "https://retail.photos.vin/KNDC44LA9N5058678-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC44LA9N5058678&partner=FRD_2",
-       "color": "Runway Red",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         18476
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC3DLC3N5042366",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "AZ",
-       "local": false,
-       "lat": 33.31301,
-       "lon": -111.68629,
-       "distance": 1425,
-       "ship": 926,
-       "miles": 79059,
-       "price": 18494,
-       "adj": 19420,
-       "msrp": 56400,
-       "dealer": "Karsten & Moore Auto Group LLC",
-       "city": "Mesa",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC3N5042366",
-       "image": "https://retail.photos.vin/KNDC3DLC3N5042366-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC3N5042366&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-08",
-       "days_listed": 22,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         18494
-        ]
-       ],
-       "stale_pct": 0.76
-      },
-      {
-       "vin": "KNDC3DLC3N5060561",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 39.193,
-       "lon": -84.45169,
-       "distance": 250,
-       "ship": 0,
-       "miles": 118872,
-       "price": 18885,
-       "adj": 18885,
-       "msrp": 56400,
-       "dealer": "PureDrive",
-       "city": "Cincinnati",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC3N5060561",
-       "image": "https://retail.photos.vin/KNDC3DLC3N5060561-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC3N5060561&partner=FRD_2",
-       "color": "",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-06-03",
-       "days_listed": 88,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         18885
-        ],
-        [
-         "2026-08-28",
-         18885
-        ]
-       ],
-       "stale_pct": 0.93
-      },
-      {
-       "vin": "KNDC34LA3P5127905",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 39.9173,
-       "lon": -83.11581,
-       "distance": 275,
-       "ship": 0,
-       "miles": 56131,
-       "price": 21443,
-       "adj": 21443,
-       "msrp": 48700,
-       "dealer": "Auto Boutique",
-       "city": "Columbus",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC34LA3P5127905",
-       "image": "https://retail.photos.vin/KNDC34LA3P5127905-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA3P5127905&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 5,
-       "accidents": 1,
-       "usage": "Multiple Use",
-       "flags": [
-        "5 owners",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-07",
-       "days_listed": 23,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         21443
-        ],
-        [
-         "2026-08-28",
-         21443
-        ]
-       ],
-       "stale_pct": 0.79
-      },
-      {
-       "vin": "KNDC3DLC4N5064649",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 41.58647,
-       "lon": -81.4801,
-       "distance": 325,
-       "ship": 0,
-       "miles": 63406,
-       "price": 21445,
-       "adj": 21445,
-       "msrp": 56400,
-       "dealer": "Serpentini Chevrolet of Willoughby Hills",
-       "city": "Willoughby Hills",
-       "url": "https://www.serpentinichevy.com/used-Willoughby+Hills-2022-Kia-EV6-Wind+W+COOLED+SEATS-KNDC3DLC4N5064649",
-       "image": "https://retail.photos.vin/KNDC3DLC4N5064649-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC4N5064649&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 448,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         20997
-        ],
-        [
-         "2026-08-28",
-         21445
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC3DLC7N5043729",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.3868,
-       "lon": -87.96162,
-       "distance": 50,
-       "ship": 0,
-       "miles": 49064,
-       "price": 21976,
-       "adj": 21976,
-       "msrp": 56400,
-       "dealer": "Car Wise Gurnee",
-       "city": "Gurnee",
-       "url": "https://www.carfax.com/vehicle/KNDC3DLC7N5043729",
-       "image": "https://retail.photos.vin/KNDC3DLC7N5043729-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC7N5043729&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         21976
-        ],
-        [
-         "2026-08-28",
-         21976
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC34LA5P5105050",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "KY",
-       "local": false,
-       "lat": 39.23195,
-       "lon": -84.58956,
-       "distance": 250,
-       "ship": 350,
-       "miles": 51818,
-       "price": 22912,
-       "adj": 23262,
-       "msrp": null,
-       "dealer": "jeff wyler florence buick gmc",
-       "city": "Florence",
-       "url": "https://jeffwylerflorencebuickgmc.com/electric-used/Kia/2023-Kia-EV6-1e13be08ac18341f4df4ff9eda57d87c.htm",
-       "image": "https://retail.photos.vin/KNDC34LA5P5105050-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA5P5105050&partner=FRD_2",
-       "color": "Steel Gray",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-21",
-       "days_listed": 9,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         22912
-        ],
-        [
-         "2026-08-28",
-         22912
-        ]
-       ],
-       "stale_pct": 0.03
-      },
-      {
-       "vin": "KNDC4DLC4N5061523",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.3868,
-       "lon": -87.96162,
-       "distance": 50,
-       "ship": 0,
-       "miles": 80949,
-       "price": 23376,
-       "adj": 23376,
-       "msrp": 56400,
-       "dealer": "Car Wise Gurnee",
-       "city": "Gurnee",
-       "url": "https://www.carfax.com/vehicle/KNDC4DLC4N5061523",
-       "image": "https://retail.photos.vin/KNDC4DLC4N5061523-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC4DLC4N5061523&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         23376
-        ],
-        [
-         "2026-08-28",
-         23376
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC3DLC4P5122343",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 39.9173,
-       "lon": -83.11581,
-       "distance": 275,
-       "ship": 0,
-       "miles": 57392,
-       "price": 23443,
-       "adj": 23443,
-       "msrp": 52600,
-       "dealer": "Auto Boutique",
-       "city": "Columbus",
-       "url": "https://www.autoboutiqueohio.com/vehicle-details/used-2023-kia-ev6-wind-kndc3dlc4p5122343",
-       "image": "https://retail.photos.vin/KNDC3DLC4P5122343-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC4P5122343&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-19",
-       "days_listed": 11,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 398,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         23045
-        ],
-        [
-         "2026-08-28",
-         23443
-        ]
-       ],
-       "stale_pct": 0.14
-      },
-      {
-       "vin": "KNDC3DLC3P5137089",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "MO",
-       "local": false,
-       "lat": 37.79162,
-       "lon": -90.44066,
-       "distance": 325,
-       "ship": 350,
-       "miles": 57828,
-       "price": 23537,
-       "adj": 23887,
-       "msrp": 52600,
-       "dealer": "Auffenberg Chevrolet Buick GMC",
-       "city": "Farmington",
-       "url": "https://www.carfax.com/vehicle/KNDC3DLC3P5137089",
-       "image": "https://retail.photos.vin/KNDC3DLC3P5137089-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC3P5137089&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         23537
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC34LA7P5130063",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 41.38149,
-       "lon": -81.53022,
-       "distance": 325,
-       "ship": 0,
-       "miles": 29327,
-       "price": 23621,
-       "adj": 23621,
-       "msrp": 48700,
-       "dealer": "North Coast Mitsubishi of Bedford",
-       "city": "Bedford",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC34LA7P5130063",
-       "image": "https://retail.photos.vin/KNDC34LA7P5130063-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA7P5130063&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-07",
-       "days_listed": 23,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -270,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         23891
-        ],
-        [
-         "2026-08-28",
-         23621
-        ]
-       ],
-       "stale_pct": 0.79
-      },
-      {
-       "vin": "KNDC34LA7R5193845",
-       "year": 2024,
-       "trim": "Light Long Range",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "MO",
-       "local": false,
-       "lat": 38.69618,
-       "lon": -90.40552,
-       "distance": 275,
-       "ship": 350,
-       "miles": 24586,
-       "price": 23674,
-       "adj": 24024,
-       "msrp": 45950,
-       "dealer": "Suntrup Ford Westport",
-       "city": "Saint Louis",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC34LA7R5193845",
-       "image": "https://retail.photos.vin/KNDC34LA7R5193845-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA7R5193845&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-05-08",
-       "days_listed": 114,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         23674
-        ]
-       ],
-       "stale_pct": 0.97
-      },
-      {
-       "vin": "KNDC3DLC8R5188655",
-       "year": 2024,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "KY",
-       "local": false,
-       "lat": 38.63789,
-       "lon": -83.81041,
-       "distance": 300,
-       "ship": 350,
-       "miles": 25137,
-       "price": 23740,
-       "adj": 24090,
-       "msrp": 52600,
-       "dealer": "Tim Short Chrysler Dodge Jeep RAM of Maysville",
-       "city": "Maysville",
-       "url": "https://www.carfax.com/vehicle/KNDC3DLC8R5188655",
-       "image": "https://retail.photos.vin/KNDC3DLC8R5188655-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC8R5188655&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         23740
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC3DLC3N5081488",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 40.1005,
-       "lon": -83.1268,
-       "distance": 275,
-       "ship": 0,
-       "miles": 41764,
-       "price": 24164,
-       "adj": 24164,
-       "msrp": 56400,
-       "dealer": "Coughlin Kia of Dublin",
-       "city": "Dublin",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC3N5081488",
-       "image": "https://retail.photos.vin/KNDC3DLC3N5081488-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC3N5081488&partner=FRD_2",
-       "color": "Brown",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-27",
-       "days_listed": 3,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         24164
-        ]
-       ],
-       "stale_pct": 0.0
-      },
-      {
-       "vin": "KNDC3DLC1N5047890",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 41.16179,
-       "lon": -81.63275,
-       "distance": 325,
-       "ship": 0,
-       "miles": 47257,
-       "price": 24284,
-       "adj": 24284,
-       "msrp": 56400,
-       "dealer": "Montrose Ford Fairlawn",
-       "city": "Akron",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC1N5047890",
-       "image": "https://retail.photos.vin/KNDC3DLC1N5047890-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC1N5047890&partner=FRD_2",
-       "color": "Brown",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-01",
-       "days_listed": 29,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         24284
-        ],
-        [
-         "2026-08-28",
-         24284
-        ]
-       ],
-       "stale_pct": 0.86
-      },
-      {
-       "vin": "KNDC3DLC8P5104069",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.1267,
-       "lon": -88.4302,
-       "distance": 50,
-       "ship": 0,
-       "miles": 18847,
-       "price": 24908,
-       "adj": 24908,
-       "msrp": 52600,
-       "dealer": "Huntley Ford",
-       "city": "Huntley",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC8P5104069",
-       "image": "https://retail.photos.vin/KNDC3DLC8P5104069-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC8P5104069&partner=FRD_2",
-       "color": "Red",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-20",
-       "days_listed": 10,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         24908
-        ],
-        [
-         "2026-08-28",
-         24908
-        ]
-       ],
-       "stale_pct": 0.07
-      },
-      {
-       "vin": "KNDC34LA4R5205370",
-       "year": 2024,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.35096,
-       "lon": -87.87473,
-       "distance": 25,
-       "ship": 0,
-       "miles": 44102,
-       "price": 24981,
-       "adj": 24981,
-       "msrp": 48700,
-       "dealer": "Driven Auto of Waukegan",
-       "city": "Waukegan",
-       "url": "https://www.carfax.com/vehicle/KNDC34LA4R5205370",
-       "image": "https://retail.photos.vin/KNDC34LA4R5205370-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC34LA4R5205370&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         24981
-        ],
-        [
-         "2026-08-28",
-         24981
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "KNDC3DLC8N5062189",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 41.58638,
-       "lon": -83.66864,
-       "distance": 200,
-       "ship": 0,
-       "miles": 35098,
-       "price": 25248,
-       "adj": 25248,
-       "msrp": 56400,
-       "dealer": "PricePro",
-       "city": "Maumee",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC8N5062189",
-       "image": "https://retail.photos.vin/KNDC3DLC8N5062189-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC8N5062189&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-20",
-       "days_listed": 10,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         25248
-        ],
-        [
-         "2026-08-28",
-         25248
-        ]
-       ],
-       "stale_pct": 0.07
-      },
-      {
-       "vin": "KNDC3DLC7R5172057",
-       "year": 2024,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.1267,
-       "lon": -88.4302,
-       "distance": 50,
-       "ship": 0,
-       "miles": 25269,
-       "price": 25295,
-       "adj": 25295,
-       "msrp": 52600,
-       "dealer": "Huntley Ford",
-       "city": "Huntley",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC7R5172057",
-       "image": "https://retail.photos.vin/KNDC3DLC7R5172057-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC7R5172057&partner=FRD_2",
-       "color": "Brown",
-       "cpo": true,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [
-        "CPO"
-       ],
-       "listed_since": "2026-07-23",
-       "days_listed": 38,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -335,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-24",
-         25630
-        ],
-        [
-         "2026-08-28",
-         25295
-        ]
-       ],
-       "stale_pct": 0.9
-      },
-      {
-       "vin": "KNDC3DLC2P5122745",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 39.9173,
-       "lon": -83.11581,
-       "distance": 275,
-       "ship": 0,
-       "miles": 15079,
-       "price": 25398,
-       "adj": 25398,
-       "msrp": 52600,
-       "dealer": "Auto Boutique",
-       "city": "Columbus",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC2P5122745",
-       "image": "https://retail.photos.vin/KNDC3DLC2P5122745-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=KNDC3DLC2P5122745&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Corporate Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-15",
-       "days_listed": 15,
-       "first_seen": "2026-08-28",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-28",
-         25398
-        ]
-       ],
-       "stale_pct": 0.17
-      }
-     ],
-     "daily": [
-      {
-       "date": "2026-08-24",
-       "n": 29,
-       "n_local": 20,
-       "min_price": 15057,
-       "min_adj": 16162,
-       "median_adj": 23045,
-       "median_price": 23045
-      },
-      {
-       "date": "2026-08-28",
-       "n": 29,
-       "n_local": 14,
-       "min_price": 13901,
-       "min_adj": 14600,
-       "median_adj": 21976,
-       "median_price": 21976
-      }
-     ],
-     "daily_by_trim": {
-      "kia-ev6": [
-       {
-        "date": "2026-08-24",
-        "n": 29,
-        "n_local": 20,
-        "min_price": 15057,
-        "min_adj": 16162,
-        "median_adj": 23045,
-        "median_price": 23045
-       },
-       {
-        "date": "2026-08-28",
-        "n": 29,
-        "n_local": 14,
-        "min_price": 13901,
-        "min_adj": 14600,
-        "median_adj": 21976,
-        "median_price": 21976
-       }
-      ]
-     },
-     "gone": [
-      {
-       "likely": "delisted",
-       "vin": "KNDC34LB9N5056506",
-       "year": 2022,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "UT",
-       "local": false,
-       "distance": 1250,
-       "ship": 812,
-       "miles": 89000,
-       "last_price": 15900,
-       "adj": 16712,
-       "city": "Bountiful",
-       "dealer": "A.I. Monroe Auto Sales",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC34LB9N5056506",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-05-30",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         15900
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "delisted",
-       "vin": "KNDC3DLC5P5114798",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "distance": 275,
-       "ship": 0,
-       "miles": 42371,
-       "last_price": 25164,
-       "adj": 25164,
-       "city": "Columbus",
-       "dealer": "Great Lakes Hyundai of Dublin",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC5P5114798",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-07-21",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         25164
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "delisted",
-       "vin": "KNDC3DLC4N5028878",
-       "year": 2022,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 275,
-       "ship": 0,
-       "miles": 25397,
-       "last_price": 25267,
-       "adj": 25267,
-       "city": "Waterloo",
-       "dealer": "Sunset Ford of Waterloo",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC4N5028878",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-07-25",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         25267
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "out of window",
-       "vin": "KNDC3DLC1P5106746",
-       "year": 2023,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 39211,
-       "last_price": 25405,
-       "adj": 25405,
-       "city": "Skokie",
-       "dealer": "Old Orchard Nissan",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC1P5106746",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-05",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         25405
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "out of window",
-       "vin": "KNDC5DLEXP5105607",
-       "year": 2023,
-       "trim": "GT",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 46489,
-       "last_price": 25519,
-       "adj": 25519,
-       "city": "Skokie",
-       "dealer": "Old Orchard Nissan",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC5DLEXP5105607",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-06-05",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         25519
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "out of window",
-       "vin": "KNDC3DLC4N5027150",
-       "year": 2022,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 39313,
-       "last_price": 25656,
-       "adj": 25656,
-       "city": "Lake Forest",
-       "dealer": "Executive Motor Carz",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC3DLC4N5027150",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-02",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         25656
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "out of window",
-       "vin": "KNDC4DLCXP5120335",
-       "year": 2023,
-       "trim": "GT-Line",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 40940,
-       "last_price": 25789,
-       "adj": 25789,
-       "city": "Willowbrook",
-       "dealer": "High Line Auto Sales",
-       "url": "https://www.autolist.com/kia-ev6#vin=KNDC4DLCXP5120335",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-17",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         25789
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "KNDC3DLCXR5172022",
-       "year": 2024,
-       "trim": "Wind",
-       "trim_id": "kia-ev6",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 31981,
-       "last_price": 25877,
-       "adj": 25877,
-       "city": "Palos Hills",
-       "dealer": "Guaranteed Motor Cars",
-       "url": "https://www.guaranteedmotorcarslakevilla.com/pre-owned-cars/detail/x/1548874",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-24",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         25877
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      }
-     ],
-     "market": {
-      "median_days_listed": 21,
-      "tracked_2d": 21,
-      "cut_share": 0.19,
-      "median_cut": 234,
-      "n_sold": 3,
-      "median_days_to_sale": 34
-     }
-    },
     "ev9": {
      "label": "Kia EV9",
      "note": "",
@@ -26218,8 +24645,8 @@
      "shopping": false,
      "cadence": 3,
      "as_of": "2026-08-30",
-     "fetched_today": true,
-     "next_due": "2026-08-30",
+     "fetched_today": false,
+     "next_due": "2026-08-31",
      "params": {
       "min_price": 8000
      },
@@ -26236,6 +24663,8 @@
         "2026"
        ],
        "min_price": 8000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       }
      },
@@ -27923,6 +26352,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -27961,6 +26391,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -27999,6 +26430,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -28037,6 +26469,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -28078,6 +26511,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -28115,6 +26549,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -28149,6 +26584,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -28183,6 +26619,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-25",
@@ -28206,2496 +26643,61 @@
   "audi": {
    "label": "Audi",
    "models": {
-    "q4-etron": {
-     "label": "Audi Q4 e-tron",
+    "a6-etron": {
+     "label": "Audi A6 e-tron",
      "note": "",
      "notes": {
       "good": [
-       "Quiet, comfortable and upscale inside for the money",
-       "Steep depreciation \u2014 often the cheapest premium-badge EV",
-       "Solid VW-group hardware underneath"
+       "800-volt PPE platform shared with the Q6: 270 kW charging, and the Sportback can exceed 350 miles",
+       "A proper luxury sedan interior in a market full of crossovers",
+       "Early lease returns are starting to land well under sticker"
       ],
       "bad": [
-       "Slow DC charging (roughly 125\u2013170 kW) and a 400-volt system",
-       "Infotainment can be sluggish and buggy on early cars",
-       "2022\u20132023 range is only around 240 miles"
+       "Brand new: used supply is thin and prices still sit close to new",
+       "First model year \u2014 expect software updates and early-build niggles",
+       "The sloping roof costs rear headroom, and there is no Apple CarPlay projection on early software"
       ],
       "watch": [
-       "2024 and later got a bigger battery and faster charging \u2014 target those",
-       "Ask for the software update history; several campaigns fixed 12V and charging faults",
-       "Verify heated seats and wheel; option packages vary"
+       "Confirm every over-the-air update and campaign has been applied",
+       "Sportback vs. standard body and RWD vs. quattro change range meaningfully \u2014 check the exact spec",
+       "Compare against a new one with incentives before paying near-new money"
       ]
      },
      "years": [
-      "2022",
-      "2023",
-      "2024",
       "2025",
       "2026"
      ],
      "shopping": false,
      "cadence": 3,
-     "as_of": "2026-08-29",
-     "fetched_today": false,
-     "next_due": "2026-09-01",
+     "as_of": null,
+     "fetched_today": true,
+     "next_due": "2026-08-30",
      "params": {
       "min_price": 8000
      },
      "trims": {
-      "audi-q4-etron": {
+      "audi-a6-etron": {
        "label": "all trims",
        "note": "",
        "depth": "light",
        "cadence": 3,
        "shopping": false,
        "years": [
-        "2022",
-        "2023",
-        "2024",
         "2025",
         "2026"
        ],
        "min_price": 8000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       }
      },
-     "listings": [
-      {
-       "vin": "WA1K2BFZ0PP052888",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OR",
-       "local": false,
-       "lat": 45.20205,
-       "lon": -123.26689,
-       "distance": 1775,
-       "ship": 1154,
-       "miles": 44011,
-       "price": 17962,
-       "adj": 19116,
-       "msrp": 55200,
-       "dealer": "Volkswagen of McMinnville",
-       "city": "Mcminnville",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1K2BFZ0PP052888",
-       "image": "https://retail.photos.vin/WA1K2BFZ0PP052888-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1K2BFZ0PP052888&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-28",
-       "days_listed": 2,
-       "first_seen": "2026-08-29",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-29",
-         17962
-        ]
-       ],
-       "stale_pct": 0.0
-      },
-      {
-       "vin": "WA1L2BFZ0PP005025",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MD",
-       "local": false,
-       "lat": 39.07628,
-       "lon": -77.13872,
-       "distance": 575,
-       "ship": 374,
-       "miles": 80234,
-       "price": 21000,
-       "adj": 21374,
-       "msrp": null,
-       "dealer": "ourisman vw mazda of rockville",
-       "city": "Rockville",
-       "url": "https://rockvillevolkswagen.com/used/Audi/2023-Audi-Q4-e-tron-feb86734ac1812b4badca573a35f56c7.htm",
-       "image": "https://retail.photos.vin/WA1L2BFZ0PP005025-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZ0PP005025&partner=FRD_2",
-       "color": "Black Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         21000
-        ],
-        [
-         "2026-08-26",
-         21000
-        ],
-        [
-         "2026-08-29",
-         21000
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1H2BFZ3NP033792",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OR",
-       "local": false,
-       "lat": 45.51957,
-       "lon": -122.99731,
-       "distance": 1775,
-       "ship": 1154,
-       "miles": 81532,
-       "price": 21030,
-       "adj": 22184,
-       "msrp": 54000,
-       "dealer": "Beaverton Car Company - Hillsboro",
-       "city": "Hillsboro",
-       "url": "https://www.carfax.com/vehicle/WA1H2BFZ3NP033792",
-       "image": "https://retail.photos.vin/WA1H2BFZ3NP033792-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1H2BFZ3NP033792&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         21030
-        ],
-        [
-         "2026-08-26",
-         21030
-        ],
-        [
-         "2026-08-29",
-         21030
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1H2BFZXNP049746",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "GA",
-       "local": false,
-       "lat": 34.1435,
-       "lon": -84.1721,
-       "distance": 575,
-       "ship": 374,
-       "miles": 73165,
-       "price": 21398,
-       "adj": 21772,
-       "msrp": 54000,
-       "dealer": "Forsyth Imports",
-       "city": "Cumming",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1H2BFZXNP049746",
-       "image": "https://retail.photos.vin/WA1H2BFZXNP049746-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1H2BFZXNP049746&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-25",
-       "days_listed": 5,
-       "first_seen": "2026-08-29",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-29",
-         21398
-        ]
-       ],
-       "stale_pct": 0.09
-      },
-      {
-       "vin": "WA142BFZ2NP042711",
-       "year": 2022,
-       "trim": "Prestige",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.35096,
-       "lon": -87.87473,
-       "distance": 25,
-       "ship": 0,
-       "miles": 78057,
-       "price": 21501,
-       "adj": 21501,
-       "msrp": 60300,
-       "dealer": "Driven Auto of Waukegan",
-       "city": "Waukegan",
-       "url": "https://www.carfax.com/vehicle/WA142BFZ2NP042711",
-       "image": "https://retail.photos.vin/WA142BFZ2NP042711-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA142BFZ2NP042711&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         21501
-        ],
-        [
-         "2026-08-26",
-         21501
-        ],
-        [
-         "2026-08-29",
-         21501
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA132BFZ9PP025872",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "CA",
-       "local": false,
-       "lat": 34.14897,
-       "lon": -118.66261,
-       "distance": 1750,
-       "ship": 1138,
-       "miles": 84419,
-       "price": 21651,
-       "adj": 22789,
-       "msrp": 64400,
-       "dealer": "Audi Calabasas",
-       "city": "Calabasas",
-       "url": "https://www.carfax.com/vehicle/WA132BFZ9PP025872",
-       "image": "https://retail.photos.vin/WA132BFZ9PP025872-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA132BFZ9PP025872&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         21651
-        ],
-        [
-         "2026-08-26",
-         21651
-        ],
-        [
-         "2026-08-29",
-         21651
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1L2BFZ3NP047606",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "NY",
-       "local": false,
-       "lat": 40.84568,
-       "lon": -73.26543,
-       "distance": 750,
-       "ship": 488,
-       "miles": 49750,
-       "price": 21695,
-       "adj": 22183,
-       "msrp": 54000,
-       "dealer": "Pristine Mitsubishi",
-       "city": "Commack",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ3NP047606",
-       "image": "https://retail.photos.vin/WA1L2BFZ3NP047606-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZ3NP047606&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         21695
-        ],
-        [
-         "2026-08-26",
-         21695
-        ],
-        [
-         "2026-08-29",
-         21695
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1K2BFZ8PP075948",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OR",
-       "local": false,
-       "lat": 45.20205,
-       "lon": -123.26689,
-       "distance": 1775,
-       "ship": 1154,
-       "miles": 55998,
-       "price": 22210,
-       "adj": 23364,
-       "msrp": 55200,
-       "dealer": "Volkswagen of McMinnville",
-       "city": "Mcminnville",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1K2BFZ8PP075948",
-       "image": "https://retail.photos.vin/WA1K2BFZ8PP075948-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1K2BFZ8PP075948&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-13",
-       "days_listed": 17,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         22210
-        ],
-        [
-         "2026-08-26",
-         22210
-        ],
-        [
-         "2026-08-29",
-         22210
-        ]
-       ],
-       "stale_pct": 0.35
-      },
-      {
-       "vin": "WA1BCBFZ1PP011246",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "TX",
-       "local": false,
-       "lat": 32.82798,
-       "lon": -96.82522,
-       "distance": 800,
-       "ship": 520,
-       "miles": 42689,
-       "price": 22257,
-       "adj": 22777,
-       "msrp": 56000,
-       "dealer": "Clay Cooley Volkswagen of Park Cities",
-       "city": "Dallas",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1BCBFZ1PP011246",
-       "image": "https://retail.photos.vin/WA1BCBFZ1PP011246-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1BCBFZ1PP011246&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-07-29",
-       "days_listed": 32,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         22257
-        ],
-        [
-         "2026-08-26",
-         22257
-        ],
-        [
-         "2026-08-29",
-         22257
-        ]
-       ],
-       "stale_pct": 0.88
-      },
-      {
-       "vin": "WA132BFZ1NP043389",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.05025,
-       "lon": -87.89197,
-       "distance": 25,
-       "ship": 0,
-       "miles": 52656,
-       "price": 22363,
-       "adj": 22363,
-       "msrp": 56800,
-       "dealer": "Jidd Motors Mitsubishi",
-       "city": "Des Plaines",
-       "url": "https://www.carfax.com/vehicle/WA132BFZ1NP043389",
-       "image": "https://retail.photos.vin/WA132BFZ1NP043389-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA132BFZ1NP043389&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -1510,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         23873
-        ],
-        [
-         "2026-08-26",
-         22363
-        ],
-        [
-         "2026-08-29",
-         22363
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1L2BFZXPP063322",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "AZ",
-       "local": false,
-       "lat": 33.50811,
-       "lon": -112.10962,
-       "distance": 1450,
-       "ship": 942,
-       "miles": 19887,
-       "price": 22874,
-       "adj": 23816,
-       "msrp": 61400,
-       "dealer": "Bill Luke Chrysler Jeep Dodge & Ram",
-       "city": "Phoenix",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZXPP063322",
-       "image": "https://retail.photos.vin/WA1L2BFZXPP063322-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZXPP063322&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -300,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         23174
-        ],
-        [
-         "2026-08-26",
-         22874
-        ],
-        [
-         "2026-08-29",
-         22874
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1H2BFZ3NP014904",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "",
-       "local": false,
-       "lat": null,
-       "lon": null,
-       "distance": null,
-       "ship": 1100,
-       "miles": 57951,
-       "price": 22990,
-       "adj": 24090,
-       "msrp": 54000,
-       "dealer": "Carvana",
-       "city": "",
-       "url": "https://www.carvana.com/vehicle/4685959",
-       "image": "https://retail.photos.vin/WA1H2BFZ3NP014904-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?partner=CVN_0&vin=WA1H2BFZ3NP014904",
-       "color": "White",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-27",
-       "days_listed": 3,
-       "first_seen": "2026-08-29",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-29",
-         22990
-        ]
-       ],
-       "stale_pct": 0.06
-      },
-      {
-       "vin": "WA132BFZ9NP015596",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "PA",
-       "local": false,
-       "lat": 40.0448,
-       "lon": -75.42946,
-       "distance": 650,
-       "ship": 422,
-       "miles": 37554,
-       "price": 23014,
-       "adj": 23436,
-       "msrp": 56800,
-       "dealer": "Fred Beans Volkswagen",
-       "city": "Devon",
-       "url": "https://fredbeanshondaabington.com/used/Audi/2022-Audi-Q4-e-tron-Sportback-b915cd05ac1828bf091d87019c8d4d22.htm",
-       "image": "https://retail.photos.vin/WA132BFZ9NP015596-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA132BFZ9NP015596&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -406,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         23420
-        ],
-        [
-         "2026-08-26",
-         23014
-        ],
-        [
-         "2026-08-29",
-         23014
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1J2BFZ0NP050079",
-       "year": 2022,
-       "trim": "Prestige",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "TX",
-       "local": false,
-       "lat": 33.00983,
-       "lon": -96.76955,
-       "distance": 800,
-       "ship": 520,
-       "miles": 46159,
-       "price": 23215,
-       "adj": 23735,
-       "msrp": 57500,
-       "dealer": "Auto Merchants Inc.",
-       "city": "Plano",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1J2BFZ0NP050079",
-       "image": "https://retail.photos.vin/WA1J2BFZ0NP050079-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1J2BFZ0NP050079&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-07-10",
-       "days_listed": 51,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         23215
-        ],
-        [
-         "2026-08-26",
-         23215
-        ],
-        [
-         "2026-08-29",
-         23215
-        ]
-       ],
-       "stale_pct": 0.94
-      },
-      {
-       "vin": "WA1H2BFZ4NP015138",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "AZ",
-       "local": false,
-       "lat": 33.44027,
-       "lon": -111.92054,
-       "distance": 1450,
-       "ship": 942,
-       "miles": 25276,
-       "price": 23286,
-       "adj": 24228,
-       "msrp": 54000,
-       "dealer": "LeSueur Car Company",
-       "city": "Tempe",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1H2BFZ4NP015138",
-       "image": "https://retail.photos.vin/WA1H2BFZ4NP015138-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1H2BFZ4NP015138&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2024-10-17",
-       "days_listed": 682,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         23286
-        ],
-        [
-         "2026-08-26",
-         23286
-        ],
-        [
-         "2026-08-29",
-         23286
-        ]
-       ],
-       "stale_pct": 0.97
-      },
-      {
-       "vin": "WA1BCBFZ4RP003225",
-       "year": 2024,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OR",
-       "local": false,
-       "lat": 45.20205,
-       "lon": -123.26689,
-       "distance": 1775,
-       "ship": 1154,
-       "miles": 26607,
-       "price": 23316,
-       "adj": 24470,
-       "msrp": 54500,
-       "dealer": "Volkswagen of McMinnville",
-       "city": "Mcminnville",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1BCBFZ4RP003225",
-       "image": "https://retail.photos.vin/WA1BCBFZ4RP003225-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1BCBFZ4RP003225&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-28",
-       "days_listed": 2,
-       "first_seen": "2026-08-29",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-29",
-         23316
-        ]
-       ],
-       "stale_pct": 0.0
-      },
-      {
-       "vin": "WA1K2BFZ2PP031623",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "VA",
-       "local": false,
-       "lat": 38.83658,
-       "lon": -77.05995,
-       "distance": 600,
-       "ship": 390,
-       "miles": 47173,
-       "price": 23395,
-       "adj": 23785,
-       "msrp": 55200,
-       "dealer": "Alexandria Volkswagen",
-       "city": "Alexandria",
-       "url": "https://www.carfax.com/vehicle/WA1K2BFZ2PP031623",
-       "image": "https://retail.photos.vin/WA1K2BFZ2PP031623-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1K2BFZ2PP031623&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-15",
-       "days_listed": 15,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         23395
-        ],
-        [
-         "2026-08-26",
-         23395
-        ],
-        [
-         "2026-08-29",
-         23395
-        ]
-       ],
-       "stale_pct": 0.29
-      },
-      {
-       "vin": "WA1G2BFZ4NP042612",
-       "year": 2022,
-       "trim": "50 Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MO",
-       "local": false,
-       "lat": 38.78769,
-       "lon": -90.62521,
-       "distance": 275,
-       "ship": 350,
-       "miles": 30686,
-       "price": 23997,
-       "adj": 24347,
-       "msrp": null,
-       "dealer": "napleton mid rivers chrysler dodge jeep ram fiat",
-       "city": "Saint Peters",
-       "url": "https://napletonsmidriverscdjr.com/used/Audi/2022-Audi-Q4-e-tron-st-peters-mo-62b65161ac1856e2793f1841410685a3.htm",
-       "image": "https://retail.photos.vin/WA1G2BFZ4NP042612-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1G2BFZ4NP042612&partner=FRD_2",
-       "color": "Navarra Blue",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-07-15",
-       "days_listed": 46,
-       "first_seen": "2026-08-26",
-       "cuts": 1,
-       "delta": -500,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         24497
-        ],
-        [
-         "2026-08-29",
-         23997
-        ]
-       ],
-       "stale_pct": 0.91
-      },
-      {
-       "vin": "WA1H2BFZ2NP033105",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.35096,
-       "lon": -87.87473,
-       "distance": 25,
-       "ship": 0,
-       "miles": 20572,
-       "price": 24781,
-       "adj": 24781,
-       "msrp": 54000,
-       "dealer": "Driven Auto of Waukegan",
-       "city": "Waukegan",
-       "url": "https://www.carfax.com/vehicle/WA1H2BFZ2NP033105",
-       "image": "https://retail.photos.vin/WA1H2BFZ2NP033105-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1H2BFZ2NP033105&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -200,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         24981
-        ],
-        [
-         "2026-08-26",
-         24981
-        ],
-        [
-         "2026-08-29",
-         24781
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1H2BFZ8NP043198",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.35096,
-       "lon": -87.87473,
-       "distance": 25,
-       "ship": 0,
-       "miles": 16037,
-       "price": 24781,
-       "adj": 24781,
-       "msrp": 54000,
-       "dealer": "Driven Auto of Waukegan",
-       "city": "Waukegan",
-       "url": "https://www.carfax.com/vehicle/WA1H2BFZ8NP043198",
-       "image": "https://retail.photos.vin/WA1H2BFZ8NP043198-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1H2BFZ8NP043198&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -200,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         24981
-        ],
-        [
-         "2026-08-26",
-         24981
-        ],
-        [
-         "2026-08-29",
-         24781
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1BCBFZ9PP007218",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MO",
-       "local": false,
-       "lat": 38.59148,
-       "lon": -90.58003,
-       "distance": 275,
-       "ship": 350,
-       "miles": 71771,
-       "price": 24882,
-       "adj": 25232,
-       "msrp": 56000,
-       "dealer": "Bommarito Automotive",
-       "city": "Ellisville",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1BCBFZ9PP007218",
-       "image": "https://retail.photos.vin/WA1BCBFZ9PP007218-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1BCBFZ9PP007218&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-12",
-       "days_listed": 18,
-       "first_seen": "2026-08-26",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         24882
-        ],
-        [
-         "2026-08-29",
-         24882
-        ]
-       ],
-       "stale_pct": 0.38
-      },
-      {
-       "vin": "WA1H2BFZ8NP048790",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 39.31825,
-       "lon": -84.3698,
-       "distance": 250,
-       "ship": 0,
-       "miles": 38023,
-       "price": 24998,
-       "adj": 24998,
-       "msrp": 54000,
-       "dealer": "A+ Auto Sales",
-       "city": "West Chester",
-       "url": "https://www.carfax.com/vehicle/WA1H2BFZ8NP048790",
-       "image": "https://retail.photos.vin/WA1H2BFZ8NP048790-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1H2BFZ8NP048790&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-20",
-       "days_listed": 10,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         24998
-        ],
-        [
-         "2026-08-26",
-         24998
-        ],
-        [
-         "2026-08-29",
-         24998
-        ]
-       ],
-       "stale_pct": 0.21
-      },
-      {
-       "vin": "WA1BCBFZ9PP006344",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 39.33111,
-       "lon": -84.52056,
-       "distance": 250,
-       "ship": 0,
-       "miles": 57682,
-       "price": 25105,
-       "adj": 25105,
-       "msrp": 56000,
-       "dealer": "Jeff Wyler Hyundai of Fairfield",
-       "city": "Fairfield",
-       "url": "https://jeffwylerflorencebuickgmc.com/electric-used/Audi/2023-Audi-Q4-e-tron-34e0b935ac180b4132bfb571d0469ced.htm",
-       "image": "https://retail.photos.vin/WA1BCBFZ9PP006344-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1BCBFZ9PP006344&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-25",
-       "days_listed": 5,
-       "first_seen": "2026-08-26",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         25105
-        ],
-        [
-         "2026-08-29",
-         25105
-        ]
-       ],
-       "stale_pct": 0.09
-      },
-      {
-       "vin": "WA1K2BFZ0PP059372",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 41.91044,
-       "lon": -87.66616,
-       "distance": 25,
-       "ship": 0,
-       "miles": 37518,
-       "price": 25414,
-       "adj": 25414,
-       "msrp": 55200,
-       "dealer": "Audi Chicago",
-       "city": "Chicago",
-       "url": "https://www.carfax.com/vehicle/WA1K2BFZ0PP059372",
-       "image": "https://retail.photos.vin/WA1K2BFZ0PP059372-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1K2BFZ0PP059372&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         25414
-        ],
-        [
-         "2026-08-26",
-         25414
-        ],
-        [
-         "2026-08-29",
-         25414
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1L2BFZ7PP080997",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.05025,
-       "lon": -87.89197,
-       "distance": 25,
-       "ship": 0,
-       "miles": 49174,
-       "price": 25873,
-       "adj": 25873,
-       "msrp": 61400,
-       "dealer": "Jidd Motors Mitsubishi",
-       "city": "Des Plaines",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ7PP080997",
-       "image": "https://retail.photos.vin/WA1L2BFZ7PP080997-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZ7PP080997&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-11",
-       "days_listed": 19,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         25873
-        ],
-        [
-         "2026-08-26",
-         25873
-        ],
-        [
-         "2026-08-29",
-         25873
-        ]
-       ],
-       "stale_pct": 0.44
-      },
-      {
-       "vin": "WA1J2BFZ1NP050687",
-       "year": 2022,
-       "trim": "Prestige",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 41.90389,
-       "lon": -87.6599,
-       "distance": 25,
-       "ship": 0,
-       "miles": 20797,
-       "price": 26488,
-       "adj": 26488,
-       "msrp": 57500,
-       "dealer": "McGrath Lexus of Chicago",
-       "city": "Chicago",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1J2BFZ1NP050687",
-       "image": "https://retail.photos.vin/WA1J2BFZ1NP050687-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1J2BFZ1NP050687&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-22",
-       "days_listed": 8,
-       "first_seen": "2026-08-26",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         26488
-        ],
-        [
-         "2026-08-29",
-         26488
-        ]
-       ],
-       "stale_pct": 0.18
-      },
-      {
-       "vin": "WA1L2BFZ2NP051761",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 41.90544,
-       "lon": -87.65965,
-       "distance": 25,
-       "ship": 0,
-       "miles": 33256,
-       "price": 26565,
-       "adj": 26565,
-       "msrp": 54000,
-       "dealer": "McGrath Acura of Downtown Chicago",
-       "city": "Chicago",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1L2BFZ2NP051761",
-       "image": "https://retail.photos.vin/WA1L2BFZ2NP051761-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZ2NP051761&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-25",
-       "days_listed": 5,
-       "first_seen": "2026-08-26",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         26565
-        ],
-        [
-         "2026-08-29",
-         26565
-        ]
-       ],
-       "stale_pct": 0.09
-      },
-      {
-       "vin": "WA122BFZ4PP051775",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MO",
-       "local": false,
-       "lat": 38.59148,
-       "lon": -90.58003,
-       "distance": 275,
-       "ship": 350,
-       "miles": 49574,
-       "price": 27000,
-       "adj": 27350,
-       "msrp": 58200,
-       "dealer": "Bommarito Automotive",
-       "city": "Ellisville",
-       "url": "https://www.autolist.com/audi-q4+e+tron+sportback#vin=WA122BFZ4PP051775",
-       "image": "https://retail.photos.vin/WA122BFZ4PP051775-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA122BFZ4PP051775&partner=FRD_2",
-       "color": "Blue",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-15",
-       "days_listed": 15,
-       "first_seen": "2026-08-26",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         27000
-        ],
-        [
-         "2026-08-29",
-         27000
-        ]
-       ],
-       "stale_pct": 0.29
-      },
-      {
-       "vin": "WA132BFZ5RP021949",
-       "year": 2024,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 41.82938,
-       "lon": -87.7871,
-       "distance": 25,
-       "ship": 0,
-       "miles": 47046,
-       "price": 27064,
-       "adj": 27064,
-       "msrp": 62900,
-       "dealer": "iDrive Motor Sports Inc",
-       "city": "Berwyn",
-       "url": "https://www.idrivechicago.com/viewdetails/used/wa132bfz5rp021949/2024-audi-q4-e-tron-sportback-sport-utility?type=finance",
-       "image": "https://retail.photos.vin/WA132BFZ5RP021949-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA132BFZ5RP021949&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         27064
-        ],
-        [
-         "2026-08-26",
-         27064
-        ],
-        [
-         "2026-08-29",
-         27064
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1L2BFZ2PP063458",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "lat": 41.38149,
-       "lon": -81.53022,
-       "distance": 325,
-       "ship": 0,
-       "miles": 29410,
-       "price": 27221,
-       "adj": 27221,
-       "msrp": 61400,
-       "dealer": "North Coast Mitsubishi of Bedford",
-       "city": "Bedford",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1L2BFZ2PP063458",
-       "image": "https://retail.photos.vin/WA1L2BFZ2PP063458-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZ2PP063458&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-12",
-       "days_listed": 18,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -470,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         27691
-        ],
-        [
-         "2026-08-26",
-         27691
-        ],
-        [
-         "2026-08-29",
-         27221
-        ]
-       ],
-       "stale_pct": 0.38
-      },
-      {
-       "vin": "WA1J2BFZ7NP031772",
-       "year": 2022,
-       "trim": "Prestige",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 41.78464,
-       "lon": -87.86884,
-       "distance": 25,
-       "ship": 0,
-       "miles": 32803,
-       "price": 27263,
-       "adj": 27263,
-       "msrp": 57500,
-       "dealer": "Countryside Mitsubishi",
-       "city": "Countryside",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1J2BFZ7NP031772",
-       "image": "https://retail.photos.vin/WA1J2BFZ7NP031772-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1J2BFZ7NP031772&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-18",
-       "days_listed": 12,
-       "first_seen": "2026-08-26",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         27263
-        ],
-        [
-         "2026-08-29",
-         27263
-        ]
-       ],
-       "stale_pct": 0.24
-      },
-      {
-       "vin": "WA1L2BFZ8PP050021",
-       "year": 2023,
-       "trim": "50 Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MO",
-       "local": false,
-       "lat": 38.7802,
-       "lon": -90.6228,
-       "distance": 275,
-       "ship": 350,
-       "miles": 27208,
-       "price": 27497,
-       "adj": 27847,
-       "msrp": null,
-       "dealer": "napleton mid rivers chrysler dodge jeep ram fiat",
-       "city": "Saint Peters",
-       "url": "https://napletonsmidriverscdjr.com/used/Audi/2023-Audi-Q4-e-tron-st-peters-mo-1160891aac185184d8a067b12560aeab.htm",
-       "image": "https://retail.photos.vin/WA1L2BFZ8PP050021-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZ8PP050021&partner=FRD_2",
-       "color": "Navarra Blue",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-18",
-       "days_listed": 12,
-       "first_seen": "2026-08-29",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-29",
-         27497
-        ]
-       ],
-       "stale_pct": 0.24
-      },
-      {
-       "vin": "WA1M2BFZ9PP033409",
-       "year": 2023,
-       "trim": "Prestige",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MO",
-       "local": false,
-       "lat": 38.67504,
-       "lon": -90.65846,
-       "distance": 275,
-       "ship": 350,
-       "miles": 22511,
-       "price": 28117,
-       "adj": 28467,
-       "msrp": 62900,
-       "dealer": "EchoPark Automotive St. Louis",
-       "city": "Chesterfield",
-       "url": "https://www.carfax.com/vehicle/WA1M2BFZ9PP033409",
-       "image": "https://retail.photos.vin/WA1M2BFZ9PP033409-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1M2BFZ9PP033409&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-26",
-       "cuts": 1,
-       "delta": -500,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-26",
-         28617
-        ],
-        [
-         "2026-08-29",
-         28117
-        ]
-       ],
-       "stale_pct": 0.47
-      },
-      {
-       "vin": "WA1L2BFZ7PP063715",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "lat": 42.22552,
-       "lon": -88.30069,
-       "distance": 50,
-       "ship": 0,
-       "miles": 42967,
-       "price": 28368,
-       "adj": 28368,
-       "msrp": 61400,
-       "dealer": "Fox Valley Volkswagen Crystal Lake",
-       "city": "Crystal Lake",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ7PP063715",
-       "image": "https://retail.photos.vin/WA1L2BFZ7PP063715-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=WA1L2BFZ7PP063715&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-24",
-       "cuts": 1,
-       "delta": -500,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-24",
-         28868
-        ],
-        [
-         "2026-08-26",
-         28868
-        ],
-        [
-         "2026-08-29",
-         28368
-        ]
-       ],
-       "stale_pct": 0.47
-      }
-     ],
-     "daily": [
-      {
-       "date": "2026-08-24",
-       "n": 38,
-       "n_local": 20,
-       "min_price": 21000,
-       "min_adj": 21374,
-       "median_adj": 24981,
-       "median_price": 24317
-      },
-      {
-       "date": "2026-08-26",
-       "n": 33,
-       "n_local": 15,
-       "min_price": 21000,
-       "min_adj": 21374,
-       "median_adj": 24847,
-       "median_price": 24497
-      },
-      {
-       "date": "2026-08-29",
-       "n": 34,
-       "n_local": 14,
-       "min_price": 17962,
-       "min_adj": 19116,
-       "median_adj": 24408,
-       "median_price": 23696
-      }
-     ],
+     "listings": [],
+     "daily": [],
      "daily_by_trim": {
-      "audi-q4-etron": [
-       {
-        "date": "2026-08-24",
-        "n": 38,
-        "n_local": 20,
-        "min_price": 21000,
-        "min_adj": 21374,
-        "median_adj": 24981,
-        "median_price": 24317
-       },
-       {
-        "date": "2026-08-26",
-        "n": 33,
-        "n_local": 15,
-        "min_price": 21000,
-        "min_adj": 21374,
-        "median_adj": 24847,
-        "median_price": 24497
-       },
-       {
-        "date": "2026-08-29",
-        "n": 34,
-        "n_local": 14,
-        "min_price": 17962,
-        "min_adj": 19116,
-        "median_adj": 24408,
-        "median_price": 23696
-       }
-      ]
+      "audi-a6-etron": []
      },
-     "gone": [
-      {
-       "likely": "delisted",
-       "vin": "WA1K2BFZ1PP052916",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "CA",
-       "local": false,
-       "distance": 1750,
-       "ship": 1138,
-       "miles": 29425,
-       "last_price": 23575,
-       "adj": 24713,
-       "city": "Beverly Hills",
-       "dealer": "Audi Beverly Hills",
-       "url": "https://www.carfax.com/vehicle/WA1K2BFZ1PP052916",
-       "last_seen": "2026-08-26",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-26",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-26",
-         23575
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1K2BFZ4PP030991",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "NJ",
-       "local": false,
-       "distance": 675,
-       "ship": 439,
-       "miles": 21343,
-       "last_price": 23798,
-       "adj": 24237,
-       "city": "Maple Shade",
-       "dealer": "Carvision of Maple Shade",
-       "url": "https://www.carfax.com/vehicle/WA1K2BFZ4PP030991",
-       "last_seen": "2026-08-26",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         23798
-        ],
-        [
-         "2026-08-26",
-         23798
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1G2BFZ3NP049051",
-       "year": 2022,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MD",
-       "local": false,
-       "distance": 575,
-       "ship": 374,
-       "miles": 44722,
-       "last_price": 23798,
-       "adj": 24172,
-       "city": "Rockville",
-       "dealer": "Rockville Audi",
-       "url": "https://www.carfax.com/vehicle/WA1G2BFZ3NP049051",
-       "last_seen": "2026-08-26",
-       "listed_since": "2026-08-25",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-26",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-26",
-         23798
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1L2BFZ3PP046846",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 16261,
-       "last_price": 28923,
-       "adj": 28923,
-       "city": "Chicago",
-       "dealer": "Audi Chicago",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ3PP046846",
-       "last_seen": "2026-08-26",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 2,
-       "cuts": 1,
-       "delta": -1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         28924
-        ],
-        [
-         "2026-08-26",
-         28923
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1K2BFZ1PP031788",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "CA",
-       "local": false,
-       "distance": 1850,
-       "ship": 1202,
-       "miles": 35593,
-       "last_price": 22018,
-       "adj": 23220,
-       "city": "Palo Alto",
-       "dealer": "Audi Palo Alto",
-       "url": "https://www.lexusfremont.com/used-Fremont-2023-Audi-Q4+e+tron-Premium-WA1K2BFZ1PP031788",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-20",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         22018
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1H2BFZ1NP016070",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "TX",
-       "local": false,
-       "distance": 800,
-       "ship": 520,
-       "miles": 26384,
-       "last_price": 23625,
-       "adj": 24145,
-       "city": "Plano",
-       "dealer": "Auto Merchants Inc.",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1H2BFZ1NP016070",
-       "last_seen": "2026-08-24",
-       "listed_since": "2025-11-14",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         23625
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1K2BFZ2PP054254",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "NY",
-       "local": false,
-       "distance": 750,
-       "ship": 488,
-       "miles": 35047,
-       "last_price": 23995,
-       "adj": 24483,
-       "city": "Commack",
-       "dealer": "Pristine Mitsubishi",
-       "url": "https://www.carfax.com/vehicle/WA1K2BFZ2PP054254",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-20",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         23995
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1ACBFZ9PP032826",
-       "year": 2023,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "CA",
-       "local": false,
-       "distance": 1750,
-       "ship": 1138,
-       "miles": 40697,
-       "last_price": 24083,
-       "adj": 25221,
-       "city": "Sherman Oaks",
-       "dealer": "Audi Van Nuys",
-       "url": "https://www.carfax.com/vehicle/WA1ACBFZ9PP032826",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         24083
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1H2BFZ6NP015013",
-       "year": 2022,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "AZ",
-       "local": false,
-       "distance": 1450,
-       "ship": 942,
-       "miles": 23678,
-       "last_price": 24286,
-       "adj": 25228,
-       "city": "Tempe",
-       "dealer": "LeSueur Car Company",
-       "url": "https://www.autolist.com/audi-q4+e+tron#vin=WA1H2BFZ6NP015013",
-       "last_seen": "2026-08-24",
-       "listed_since": "2025-02-25",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-24",
-         24286
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "delisted",
-       "vin": "WA1LUBFZ7RP052940",
-       "year": 2024,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "MN",
-       "local": false,
-       "distance": 350,
-       "ship": 350,
-       "miles": 89132,
-       "last_price": 24348,
-       "adj": 24698,
-       "city": "Minneapolis",
-       "dealer": "Brookdale Volkswagen",
-       "url": "https://www.carfax.com/vehicle/WA1LUBFZ7RP052940",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         24348
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA132BFZ2PP052511",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 50,
-       "ship": 0,
-       "miles": 26658,
-       "last_price": 29368,
-       "adj": 29368,
-       "city": "Crystal Lake",
-       "dealer": "Fox Valley Volkswagen Crystal Lake",
-       "url": "https://www.carfax.com/vehicle/WA132BFZ2PP052511",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 1,
-       "usage": "Corporate Use",
-       "series": [
-        [
-         "2026-08-24",
-         29368
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1L2BFZ2PP049270",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 23772,
-       "last_price": 29375,
-       "adj": 29375,
-       "city": "Chicago",
-       "dealer": "Audi Chicago",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ2PP049270",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         29375
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1BCBFZ7PP061620",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "distance": 225,
-       "ship": 0,
-       "miles": 13333,
-       "last_price": 29396,
-       "adj": 29396,
-       "city": "Dayton",
-       "dealer": "Lexus of Dayton",
-       "url": "https://lexusofdayton.com/inventory/Used-2023-Audi-Q4_e-tron-Premium_Plus-WA1BCBFZ7PP061620",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         29396
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1L2BFZ2PP001364",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "distance": 300,
-       "ship": 0,
-       "miles": 36345,
-       "last_price": 29590,
-       "adj": 29590,
-       "city": "Cleveland",
-       "dealer": "Carvana",
-       "url": "https://www.carvana.com/vehicle/4606650",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-11",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Corporate Fleet",
-       "series": [
-        [
-         "2026-08-24",
-         29590
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1L2BFZ9RP013546",
-       "year": 2024,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "OH",
-       "local": true,
-       "distance": 300,
-       "ship": 0,
-       "miles": 14299,
-       "last_price": 29697,
-       "adj": 29697,
-       "city": "Cleveland",
-       "dealer": "North Coast Mitsubishi Cleveland West",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ9RP013546",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         29697
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1L2BFZ3PP054543",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 35269,
-       "last_price": 29865,
-       "adj": 29865,
-       "city": "Hoffman Estates",
-       "dealer": "Audi Hoffman Estates",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ3PP054543",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-12",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         29865
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1L2BFZ6PP002050",
-       "year": 2023,
-       "trim": "Premium Plus",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 5674,
-       "last_price": 29981,
-       "adj": 29981,
-       "city": "Waukegan",
-       "dealer": "Driven Auto of Waukegan",
-       "url": "https://www.carfax.com/vehicle/WA1L2BFZ6PP002050",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         29981
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1K2BFZ3RP014798",
-       "year": 2024,
-       "trim": "Premium",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 21365,
-       "last_price": 30064,
-       "adj": 30064,
-       "city": "Berwyn",
-       "dealer": "iDrive Motor Sports Inc",
-       "url": "https://www.idrivechicago.com/viewdetails/used/wa1k2bfz3rp014798/2024-audi-q4-e-tron-sport-utility?type=finance",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         30064
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "WA1M2BFZXPP045312",
-       "year": 2023,
-       "trim": "Prestige",
-       "trim_id": "audi-q4-etron",
-       "trim_label": "all trims",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 29561,
-       "last_price": 30132,
-       "adj": 30132,
-       "city": "Westmont",
-       "dealer": "Audi Westmont",
-       "url": "https://www.carfax.com/vehicle/WA1M2BFZXPP045312",
-       "last_seen": "2026-08-24",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-26",
-       "first_seen": "2026-08-24",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-24",
-         30132
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      }
-     ],
-     "market": {
-      "median_days_listed": 21,
-      "tracked_2d": 29,
-      "cut_share": 0.31,
-      "median_cut": 470,
-      "n_sold": 9,
-      "median_days_to_sale": 15
-     }
+     "gone": []
     }
    }
   },
@@ -30733,7 +26735,7 @@
      "cadence": 3,
      "as_of": "2026-08-28",
      "fetched_today": false,
-     "next_due": "2026-08-31",
+     "next_due": "2026-09-01",
      "params": {
       "min_price": 30000
      },
@@ -30752,6 +26754,8 @@
         "2026"
        ],
        "min_price": 30000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       },
       "lucid-air-grand-touring": {
@@ -30768,6 +26772,8 @@
         "2026"
        ],
        "min_price": 30000,
+       "max_miles": null,
+       "cpo_only": false,
        "market_total": null
       }
      },
@@ -33837,6 +29843,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -33874,6 +29881,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -33911,6 +29919,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -33948,6 +29957,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -33985,6 +29995,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34022,6 +30033,7 @@
        "delta": 0,
        "accidents": 1,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34059,6 +30071,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34096,6 +30109,7 @@
        "delta": 0,
        "accidents": null,
        "usage": "",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34130,6 +30144,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34167,6 +30182,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Corporate Fleet",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34204,6 +30220,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34241,6 +30258,7 @@
        "delta": 0,
        "accidents": 0,
        "usage": "Personal Use",
+       "cpo": false,
        "series": [
         [
          "2026-08-24",
@@ -34260,2093 +30278,6 @@
       "median_cut": 409,
       "n_sold": 8,
       "median_days_to_sale": 15
-     }
-    }
-   }
-  },
-  "chevrolet": {
-   "label": "Chevrolet",
-   "models": {
-    "equinox-ev": {
-     "label": "Chevrolet Equinox EV",
-     "note": "",
-     "notes": {
-      "good": [
-       "Around 319 miles front-drive, roomy, and cheap used",
-       "Super Cruise is available on the RS",
-       "Simple, honest EV on GM's Ultium platform"
-      ],
-      "bad": [
-       "No Apple CarPlay or Android Auto \u2014 Google built-in only",
-       "DC charging around 150 kW",
-       "Early software glitches and plain interior plastics"
-      ],
-      "watch": [
-       "Check GM's software recall campaigns are done",
-       "Super Cruise may need a subscription after the trial",
-       "Confirm front-drive vs all-wheel-drive on the specific car"
-      ]
-     },
-     "years": [
-      "2024",
-      "2025",
-      "2026"
-     ],
-     "shopping": false,
-     "cadence": 3,
-     "as_of": "2026-08-30",
-     "fetched_today": true,
-     "next_due": "2026-08-30",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "chevrolet-equinox-ev-rs": {
-       "label": "RS",
-       "note": "",
-       "depth": "light",
-       "cadence": 3,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026"
-       ],
-       "min_price": 8000,
-       "market_total": null
-      }
-     },
-     "listings": [
-      {
-       "vin": "3GN7DSRP1RS253520",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IN",
-       "local": true,
-       "lat": 40.02918,
-       "lon": -85.99841,
-       "distance": 150,
-       "ship": 0,
-       "miles": 10234,
-       "price": 10524,
-       "adj": 10524,
-       "msrp": null,
-       "dealer": "hare chevrolet",
-       "city": "Noblesville",
-       "url": "https://www.harechevy.com/used-Indianapolis-2024-Chevrolet-Equinox+EV-2RS-3GN7DSRP1RS253520",
-       "image": "https://retail.photos.vin/3GN7DSRP1RS253520-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP1RS253520&partner=FRD_2",
-       "color": "Riptide Blue Metallic",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -15946,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-25",
-         26470
-        ],
-        [
-         "2026-08-30",
-         10524
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DSRPXTS118222",
-       "year": 2026,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OK",
-       "local": false,
-       "lat": 35.61339,
-       "lon": -97.49469,
-       "distance": 675,
-       "ship": 439,
-       "miles": 4182,
-       "price": 15840,
-       "adj": 16279,
-       "msrp": null,
-       "dealer": "edmond hyundai",
-       "city": "Edmond",
-       "url": "https://www.edmondhyundai.com/used-Edmond-2026-Chevrolet-Equinox+EV-RS-3GN7DSRPXTS118222",
-       "image": "https://retail.photos.vin/3GN7DSRPXTS118222-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRPXTS118222&partner=FRD_2",
-       "color": "Radiant Red Tintcoat",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         15840
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DNRP1RS232152",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "NC",
-       "local": false,
-       "lat": 35.9003,
-       "lon": -78.76218,
-       "distance": 625,
-       "ship": 406,
-       "miles": 95465,
-       "price": 19600,
-       "adj": 20006,
-       "msrp": null,
-       "dealer": "westgate dodge ram wake forest",
-       "city": "Wake Forest",
-       "url": "https://westgatedodgeram.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-f75ca788ac1846fa1e332511bc9d94b5.htm",
-       "image": "https://retail.photos.vin/3GN7DNRP1RS232152-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP1RS232152&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 1,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-13",
-       "days_listed": 17,
-       "first_seen": "2026-08-25",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         19600
-        ],
-        [
-         "2026-08-27",
-         19600
-        ],
-        [
-         "2026-08-30",
-         19600
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "3GN7DSRP0SS156413",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MO",
-       "local": false,
-       "lat": 39.78521,
-       "lon": -94.80444,
-       "distance": 400,
-       "ship": 350,
-       "miles": 36271,
-       "price": 21599,
-       "adj": 21949,
-       "msrp": 43400,
-       "dealer": "Victory GMC",
-       "city": "Saint Joseph",
-       "url": "https://www.carfax.com/vehicle/3GN7DSRP0SS156413",
-       "image": "https://retail.photos.vin/3GN7DSRP0SS156413-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP0SS156413&partner=FRD_2",
-       "color": "Gray",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -396,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         21995
-        ],
-        [
-         "2026-08-27",
-         21599
-        ],
-        [
-         "2026-08-30",
-         21599
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DSRP3RS263921",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "UT",
-       "local": false,
-       "lat": 40.34935,
-       "lon": -111.72754,
-       "distance": 1250,
-       "ship": 812,
-       "miles": 10610,
-       "price": 21750,
-       "adj": 22562,
-       "msrp": null,
-       "dealer": "nexgen motors",
-       "city": "Lindon",
-       "url": "https://drivenexgen.com/inventory/2024-chevrolet-equinox-ev-rs-3GN7DSRP3RS263921",
-       "image": "https://retail.photos.vin/3GN7DSRP3RS263921-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP3RS263921&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -695,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         22445
-        ],
-        [
-         "2026-08-27",
-         21750
-        ],
-        [
-         "2026-08-30",
-         21750
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DNRP4RS217354",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MD",
-       "local": false,
-       "lat": 38.83153,
-       "lon": -76.9347,
-       "distance": 600,
-       "ship": 390,
-       "miles": 38732,
-       "price": 23000,
-       "adj": 23390,
-       "msrp": null,
-       "dealer": "ourisman chevrolet of marlow heights",
-       "city": "Temple Hills",
-       "url": "https://ourismanchevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-marlow-heights-md-4798d841ac1813cdd93b4713fdaa6182.htm",
-       "image": "https://retail.photos.vin/3GN7DNRP4RS217354-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP4RS217354&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         23000
-        ],
-        [
-         "2026-08-27",
-         23000
-        ],
-        [
-         "2026-08-30",
-         23000
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DNRP8RS239549",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "CA",
-       "local": false,
-       "lat": 34.1351,
-       "lon": -117.304,
-       "distance": 1700,
-       "ship": 1105,
-       "miles": 54786,
-       "price": 23514,
-       "adj": 24619,
-       "msrp": null,
-       "dealer": "diamond ford",
-       "city": "Lancaster",
-       "url": "https://www.diamondfordav.com/used-Lancaster-2024-Chevrolet-Equinox+EV-RS-3GN7DNRP8RS239549",
-       "image": "https://retail.photos.vin/3GN7DNRP8RS239549-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP8RS239549&partner=FRD_2",
-       "color": "Sterling Gray Metallic",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-04",
-       "days_listed": 26,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -800,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         24314
-        ],
-        [
-         "2026-08-27",
-         24314
-        ],
-        [
-         "2026-08-30",
-         23514
-        ]
-       ],
-       "stale_pct": 0.86
-      },
-      {
-       "vin": "3GN7DNRP8RS201867",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "AL",
-       "local": false,
-       "lat": 34.4368,
-       "lon": -85.7124,
-       "distance": 525,
-       "ship": 350,
-       "miles": 18932,
-       "price": 24297,
-       "adj": 24647,
-       "msrp": null,
-       "dealer": "donohoo chevrolet",
-       "city": "Fort Payne",
-       "url": "https://www.donohoochevrolet.com/used-Fort+Payne-2024-Chevrolet-Equinox+EV-RS-3GN7DNRP8RS201867",
-       "image": "https://retail.photos.vin/3GN7DNRP8RS201867-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP8RS201867&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-29",
-       "days_listed": 1,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         24297
-        ]
-       ],
-       "stale_pct": 0.0
-      },
-      {
-       "vin": "3GN7DSRP1RS270365",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IN",
-       "local": true,
-       "lat": 39.97091,
-       "lon": -86.00516,
-       "distance": 150,
-       "ship": 0,
-       "miles": 36023,
-       "price": 24385,
-       "adj": 24385,
-       "msrp": null,
-       "dealer": "lockhart cadillac greenwood",
-       "city": "Greenwood",
-       "url": "https://greenwoodcadillac.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-6faf6e64ac185005b9496b418c9b062d.htm",
-       "image": "https://retail.photos.vin/3GN7DSRP1RS270365-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP1RS270365&partner=FRD_2",
-       "color": "Sterling Gray Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -900,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         25285
-        ],
-        [
-         "2026-08-27",
-         24385
-        ],
-        [
-         "2026-08-30",
-         24385
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DRRP6RS279247",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "NC",
-       "local": false,
-       "lat": 35.8244,
-       "lon": -78.4366,
-       "distance": 650,
-       "ship": 422,
-       "miles": 37848,
-       "price": 24480,
-       "adj": 24902,
-       "msrp": null,
-       "dealer": "leith toyota",
-       "city": "Raleigh",
-       "url": "https://leithtoyota.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-2196a6bcac18461266c5431879aaafdf.htm",
-       "image": "https://retail.photos.vin/3GN7DRRP6RS279247-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP6RS279247&partner=FRD_2",
-       "color": "Radiant Red Tintcoat",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -189,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         24669
-        ],
-        [
-         "2026-08-27",
-         24669
-        ],
-        [
-         "2026-08-30",
-         24480
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DSRP6RS278624",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IN",
-       "local": true,
-       "lat": 39.97787,
-       "lon": -86.00632,
-       "distance": 150,
-       "ship": 0,
-       "miles": 29829,
-       "price": 24599,
-       "adj": 24599,
-       "msrp": 43400,
-       "dealer": "Andy Mohr Buick GMC",
-       "city": "Fishers",
-       "url": "https://www.andymohrgmcbuick.com/used-Fishers-2024-Chevrolet-Equinox+EV-2RS-3GN7DSRP6RS278624",
-       "image": "https://retail.photos.vin/3GN7DSRP6RS278624-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP6RS278624&partner=FRD_2",
-       "color": "Iridescent Pearl Tricoat",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         24599
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DSRP0SS170084",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "AZ",
-       "local": false,
-       "lat": 33.63832,
-       "lon": -112.23262,
-       "distance": 1450,
-       "ship": 942,
-       "miles": 39915,
-       "price": 24898,
-       "adj": 25840,
-       "msrp": 43400,
-       "dealer": "Arrowhead Cadillac",
-       "city": "Glendale",
-       "url": "https://www.berkshirehathawayautomotive.com/catcher.esl?vin=3GN7DSRP0SS170084&atc_ownerid=autolist&utm_source=autolist&utm_medium=referral&utm_campaign=vdp_deep_link",
-       "image": "https://retail.photos.vin/3GN7DSRP0SS170084-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP0SS170084&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-13",
-       "days_listed": 17,
-       "first_seen": "2026-08-25",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         24898
-        ],
-        [
-         "2026-08-27",
-         24898
-        ],
-        [
-         "2026-08-30",
-         24898
-        ]
-       ],
-       "stale_pct": 0.31
-      },
-      {
-       "vin": "3GN7DSRP2SS146269",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "VA",
-       "local": false,
-       "lat": 37.14599,
-       "lon": -76.52496,
-       "distance": 675,
-       "ship": 439,
-       "miles": 51752,
-       "price": 24914,
-       "adj": 25353,
-       "msrp": 43400,
-       "dealer": "Southern Hyundai Newport News",
-       "city": "Newport News",
-       "url": "https://www.carfax.com/vehicle/3GN7DSRP2SS146269",
-       "image": "https://retail.photos.vin/3GN7DSRP2SS146269-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP2SS146269&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 2,
-       "delta": -735,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         25649
-        ],
-        [
-         "2026-08-27",
-         25279
-        ],
-        [
-         "2026-08-30",
-         24914
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DNRP7RS233712",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "CA",
-       "local": false,
-       "lat": 34.1351,
-       "lon": -117.304,
-       "distance": 1700,
-       "ship": 1105,
-       "miles": 21322,
-       "price": 24914,
-       "adj": 26019,
-       "msrp": null,
-       "dealer": "diamond ford",
-       "city": "Lancaster",
-       "url": "https://www.diamondfordav.com/used-Lancaster-2024-Chevrolet-Equinox+EV-RS-3GN7DNRP7RS233712",
-       "image": "https://retail.photos.vin/3GN7DNRP7RS233712-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP7RS233712&partner=FRD_2",
-       "color": "Sterling Gray Metallic",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-04",
-       "days_listed": 26,
-       "first_seen": "2026-08-27",
-       "cuts": 1,
-       "delta": -900,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-27",
-         25814
-        ],
-        [
-         "2026-08-30",
-         24914
-        ]
-       ],
-       "stale_pct": 0.86
-      },
-      {
-       "vin": "3GN7DSRP5RS254783",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MO",
-       "local": false,
-       "lat": 39.78521,
-       "lon": -94.80444,
-       "distance": 400,
-       "ship": 350,
-       "miles": 20083,
-       "price": 24995,
-       "adj": 25345,
-       "msrp": 43400,
-       "dealer": "Victory GMC",
-       "city": "Saint Joseph",
-       "url": "https://www.carfax.com/vehicle/3GN7DSRP5RS254783",
-       "image": "https://retail.photos.vin/3GN7DSRP5RS254783-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP5RS254783&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 2,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-29",
-       "days_listed": 1,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         24995
-        ]
-       ],
-       "stale_pct": 0.0
-      },
-      {
-       "vin": "3GN7DSRP0RS295354",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "lat": 41.50686,
-       "lon": -87.85018,
-       "distance": 25,
-       "ship": 0,
-       "miles": 25536,
-       "price": 25266,
-       "adj": 25266,
-       "msrp": null,
-       "dealer": "phillips chevrolet lansing",
-       "city": "Lansing",
-       "url": "https://phillipschevy.com/wholesale-used/Chevrolet/2024-Chevrolet-Equinox-EV-frankfort-il-dbc8778aac181f7423508e313bd92fcd.htm",
-       "image": "https://retail.photos.vin/3GN7DSRP0RS295354-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP0RS295354&partner=FRD_2",
-       "color": "Sterling Gray Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 2,
-       "delta": -162,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         25428
-        ],
-        [
-         "2026-08-27",
-         25288
-        ],
-        [
-         "2026-08-30",
-         25266
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DSRP9RS253555",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "lat": 41.68254,
-       "lon": -88.07006,
-       "distance": 25,
-       "ship": 0,
-       "miles": 36612,
-       "price": 25364,
-       "adj": 25364,
-       "msrp": null,
-       "dealer": "advantage chevrolet of bolingbrook",
-       "city": "Bolingbrook",
-       "url": "https://advantagechevbb.com/wholesale-used/Chevrolet/2024-Chevrolet-Equinox-EV-252c17bbac185c30491eeacb360e4a53.htm",
-       "image": "https://retail.photos.vin/3GN7DSRP9RS253555-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP9RS253555&partner=FRD_2",
-       "color": "Galaxy Gray Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-22",
-       "days_listed": 8,
-       "first_seen": "2026-08-25",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         25364
-        ],
-        [
-         "2026-08-27",
-         25364
-        ],
-        [
-         "2026-08-30",
-         25364
-        ]
-       ],
-       "stale_pct": 0.21
-      },
-      {
-       "vin": "3GN7DSRP6SS113761",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MO",
-       "local": false,
-       "lat": 39.78521,
-       "lon": -94.80444,
-       "distance": 400,
-       "ship": 350,
-       "miles": 17033,
-       "price": 25399,
-       "adj": 25749,
-       "msrp": 43400,
-       "dealer": "Victory GMC",
-       "city": "Saint Joseph",
-       "url": "https://www.carfax.com/vehicle/3GN7DSRP6SS113761",
-       "image": "https://retail.photos.vin/3GN7DSRP6SS113761-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP6SS113761&partner=FRD_2",
-       "color": "White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -200,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         25599
-        ],
-        [
-         "2026-08-27",
-         25399
-        ],
-        [
-         "2026-08-30",
-         25399
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DSRP7RS278938",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OH",
-       "local": true,
-       "lat": 39.88807,
-       "lon": -82.88862,
-       "distance": 275,
-       "ship": 0,
-       "miles": 27163,
-       "price": 25648,
-       "adj": 25648,
-       "msrp": 43400,
-       "dealer": "Ricart Ford",
-       "city": "Groveport",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP7RS278938",
-       "image": "https://retail.photos.vin/3GN7DSRP7RS278938-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP7RS278938&partner=FRD_2",
-       "color": "White",
-       "cpo": true,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [
-        "CPO"
-       ],
-       "listed_since": "2026-07-28",
-       "days_listed": 33,
-       "first_seen": "2026-08-25",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         25648
-        ],
-        [
-         "2026-08-27",
-         25648
-        ],
-        [
-         "2026-08-30",
-         25648
-        ]
-       ],
-       "stale_pct": 0.97
-      },
-      {
-       "vin": "3GN7DSRP2RS271010",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "lat": 41.96904,
-       "lon": -88.71942,
-       "distance": 50,
-       "ship": 0,
-       "miles": 20745,
-       "price": 25889,
-       "adj": 25889,
-       "msrp": null,
-       "dealer": "kunes honda of sycamore",
-       "city": "Sycamore",
-       "url": "https://kuneshondasycamore.com/inventory/Used-2024-Chevrolet-Equinox_EV-RS-3GN7DSRP2RS271010-131",
-       "image": "https://retail.photos.vin/3GN7DSRP2RS271010-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP2RS271010&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-09",
-       "days_listed": 21,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -500,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         26389
-        ],
-        [
-         "2026-08-27",
-         26389
-        ],
-        [
-         "2026-08-30",
-         25889
-        ]
-       ],
-       "stale_pct": 0.41
-      },
-      {
-       "vin": "3GN7DRRP7RS272338",
-       "year": 2024,
-       "trim": "3RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MO",
-       "local": false,
-       "lat": 38.22,
-       "lon": -91.1624,
-       "distance": 325,
-       "ship": 350,
-       "miles": 22724,
-       "price": 25995,
-       "adj": 26345,
-       "msrp": 45400,
-       "dealer": "Laura Chevrolet of Sullivan",
-       "city": "Sullivan",
-       "url": "https://www.laurabgofsullivan.com/used-Sullivan-2024-Chevrolet-Equinox+EV-3RS-3GN7DRRP7RS272338",
-       "image": "https://retail.photos.vin/3GN7DRRP7RS272338-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP7RS272338&partner=FRD_2",
-       "color": "Iridescent Pearl Tricoat",
-       "cpo": true,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "CPO",
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-15",
-       "days_listed": 15,
-       "first_seen": "2026-08-27",
-       "cuts": 1,
-       "delta": -620,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-27",
-         26615
-        ],
-        [
-         "2026-08-30",
-         25995
-        ]
-       ],
-       "stale_pct": 0.28
-      },
-      {
-       "vin": "3GN7DSRP8RS285381",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MI",
-       "local": false,
-       "lat": 42.78953,
-       "lon": -86.08192,
-       "distance": 100,
-       "ship": 350,
-       "miles": 19505,
-       "price": 26119,
-       "adj": 26469,
-       "msrp": 43400,
-       "dealer": "Robert DeNooyer Chevrolet",
-       "city": "Holland",
-       "url": "https://www.denooyerchevy.com/used-Holland-2024-Chevrolet-Equinox+EV-2RS-3GN7DSRP8RS285381",
-       "image": "https://retail.photos.vin/3GN7DSRP8RS285381-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP8RS285381&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-25",
-       "days_listed": 5,
-       "first_seen": "2026-08-27",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-27",
-         26119
-        ],
-        [
-         "2026-08-30",
-         26119
-        ]
-       ],
-       "stale_pct": 0.14
-      },
-      {
-       "vin": "3GN7DPRR5RS234127",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MI",
-       "local": false,
-       "lat": 42.3688,
-       "lon": -83.4799,
-       "distance": 225,
-       "ship": 350,
-       "miles": 24937,
-       "price": 26309,
-       "adj": 26659,
-       "msrp": null,
-       "dealer": "lafontaine chevrolet plymouth",
-       "city": "Plymouth",
-       "url": "https://www.lafontainechevroletplymouth.com/used-Plymouth-2024-Chevrolet-Equinox+EV-RS-3GN7DPRR5RS234127",
-       "image": "https://retail.photos.vin/3GN7DPRR5RS234127-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DPRR5RS234127&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-28",
-       "days_listed": 2,
-       "first_seen": "2026-08-30",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 1,
-       "series": [
-        [
-         "2026-08-30",
-         26309
-        ]
-       ],
-       "stale_pct": 0.07
-      },
-      {
-       "vin": "3GN7DNRPXRS222154",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IN",
-       "local": true,
-       "lat": 39.97091,
-       "lon": -86.00516,
-       "distance": 150,
-       "ship": 0,
-       "miles": 23105,
-       "price": 26455,
-       "adj": 26455,
-       "msrp": null,
-       "dealer": "lockhart cadillac greenwood",
-       "city": "Greenwood",
-       "url": "https://greenwoodcadillac.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-d6ab4eb5ac1820f392fe2f00e180898c.htm",
-       "image": "https://retail.photos.vin/3GN7DNRPXRS222154-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRPXRS222154&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-17",
-       "days_listed": 13,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -400,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         26855
-        ],
-        [
-         "2026-08-27",
-         26455
-        ],
-        [
-         "2026-08-30",
-         26455
-        ]
-       ],
-       "stale_pct": 0.24
-      },
-      {
-       "vin": "3GN7DSRP5RS291722",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "lat": 41.52336,
-       "lon": -88.12751,
-       "distance": 25,
-       "ship": 0,
-       "miles": 23940,
-       "price": 26499,
-       "adj": 26499,
-       "msrp": null,
-       "dealer": "golf mill chevrolet",
-       "city": "Niles",
-       "url": "https://golfmillchevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-f5bf3250ac183894c9dd0fae112a8858.htm",
-       "image": "https://retail.photos.vin/3GN7DSRP5RS291722-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP5RS291722&partner=FRD_2",
-       "color": "Summit White",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-08",
-       "days_listed": 22,
-       "first_seen": "2026-08-25",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         26499
-        ],
-        [
-         "2026-08-27",
-         26499
-        ],
-        [
-         "2026-08-30",
-         26499
-        ]
-       ],
-       "stale_pct": 0.83
-      },
-      {
-       "vin": "3GN7DRRP9RS270820",
-       "year": 2024,
-       "trim": "3RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IN",
-       "local": true,
-       "lat": 38.1829,
-       "lon": -84.81686,
-       "distance": 300,
-       "ship": 0,
-       "miles": 14760,
-       "price": 26500,
-       "adj": 26500,
-       "msrp": null,
-       "dealer": "neil huffman honda",
-       "city": "Clarksville",
-       "url": "https://neilhuffmanhonda.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-3eee0b61ac18090da9ed9f9da831fbba.htm",
-       "image": "https://retail.photos.vin/3GN7DRRP9RS270820-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP9RS270820&partner=FRD_2",
-       "color": "Summit White",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-27",
-       "days_listed": 3,
-       "first_seen": "2026-08-27",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-27",
-         26500
-        ],
-        [
-         "2026-08-30",
-         26500
-        ]
-       ],
-       "stale_pct": 0.1
-      },
-      {
-       "vin": "3GN7DRRP9RS256318",
-       "year": 2024,
-       "trim": "3RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IN",
-       "local": true,
-       "lat": 39.76078,
-       "lon": -86.43225,
-       "distance": 150,
-       "ship": 0,
-       "miles": 29503,
-       "price": 26531,
-       "adj": 26531,
-       "msrp": 45400,
-       "dealer": "Champion Chevrolet",
-       "city": "Avon",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DRRP9RS256318",
-       "image": "https://retail.photos.vin/3GN7DRRP9RS256318-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP9RS256318&partner=FRD_2",
-       "color": "Black",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-23",
-       "days_listed": 7,
-       "first_seen": "2026-08-25",
-       "cuts": 0,
-       "delta": 0,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         26531
-        ],
-        [
-         "2026-08-27",
-         26531
-        ],
-        [
-         "2026-08-30",
-         26531
-        ]
-       ],
-       "stale_pct": 0.17
-      },
-      {
-       "vin": "3GN7DSRP9RS263406",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MO",
-       "local": false,
-       "lat": 38.79985,
-       "lon": -90.61703,
-       "distance": 275,
-       "ship": 350,
-       "miles": 29800,
-       "price": 26554,
-       "adj": 26904,
-       "msrp": 43400,
-       "dealer": "Lou Fusz Chevrolet",
-       "city": "Saint Peters",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP9RS263406",
-       "image": "https://retail.photos.vin/3GN7DSRP9RS263406-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP9RS263406&partner=FRD_2",
-       "color": "Red",
-       "cpo": false,
-       "owners": null,
-       "accidents": null,
-       "usage": "",
-       "flags": [],
-       "listed_since": "2026-08-01",
-       "days_listed": 29,
-       "first_seen": "2026-08-27",
-       "cuts": 1,
-       "delta": -420,
-       "days_tracked": 2,
-       "series": [
-        [
-         "2026-08-27",
-         26974
-        ],
-        [
-         "2026-08-30",
-         26554
-        ]
-       ],
-       "stale_pct": 0.93
-      },
-      {
-       "vin": "3GN7DNRPXRS231405",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "lat": 41.50686,
-       "lon": -87.85018,
-       "distance": 25,
-       "ship": 0,
-       "miles": 22084,
-       "price": 26590,
-       "adj": 26590,
-       "msrp": null,
-       "dealer": "phillips chevrolet lansing",
-       "city": "Lansing",
-       "url": "https://phillipschevy.com/wholesale-used/Chevrolet/2024-Chevrolet-Equinox-EV-frankfort-il-f3265eb0ac180706beba7998b0850a6d.htm",
-       "image": "https://retail.photos.vin/3GN7DNRPXRS231405-1.jpg",
-       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRPXRS231405&partner=FRD_2",
-       "color": "Sterling Gray Metallic",
-       "cpo": false,
-       "owners": 1,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ],
-       "listed_since": "2026-08-12",
-       "days_listed": 18,
-       "first_seen": "2026-08-25",
-       "cuts": 1,
-       "delta": -360,
-       "days_tracked": 3,
-       "series": [
-        [
-         "2026-08-25",
-         26950
-        ],
-        [
-         "2026-08-27",
-         26950
-        ],
-        [
-         "2026-08-30",
-         26590
-        ]
-       ],
-       "stale_pct": 0.38
-      }
-     ],
-     "daily": [
-      {
-       "date": "2026-08-25",
-       "n": 32,
-       "n_local": 19,
-       "min_price": 19600,
-       "min_adj": 20006,
-       "median_adj": 26319,
-       "median_price": 25721
-      },
-      {
-       "date": "2026-08-27",
-       "n": 31,
-       "n_local": 12,
-       "min_price": 19600,
-       "min_adj": 20006,
-       "median_adj": 26249,
-       "median_price": 25648
-      },
-      {
-       "date": "2026-08-30",
-       "n": 29,
-       "n_local": 12,
-       "min_price": 10524,
-       "min_adj": 10524,
-       "median_adj": 25364,
-       "median_price": 24995
-      }
-     ],
-     "daily_by_trim": {
-      "chevrolet-equinox-ev-rs": [
-       {
-        "date": "2026-08-25",
-        "n": 32,
-        "n_local": 19,
-        "min_price": 19600,
-        "min_adj": 20006,
-        "median_adj": 26319,
-        "median_price": 25721
-       },
-       {
-        "date": "2026-08-27",
-        "n": 31,
-        "n_local": 12,
-        "min_price": 19600,
-        "min_adj": 20006,
-        "median_adj": 26249,
-        "median_price": 25648
-       },
-       {
-        "date": "2026-08-30",
-        "n": 29,
-        "n_local": 12,
-        "min_price": 10524,
-        "min_adj": 10524,
-        "median_adj": 25364,
-        "median_price": 24995
-       }
-      ]
-     },
-     "gone": [
-      {
-       "likely": "delisted",
-       "vin": "3GN7DSRP6SS121018",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "FL",
-       "local": false,
-       "distance": 1175,
-       "ship": 764,
-       "miles": 34630,
-       "last_price": 25097,
-       "adj": 25861,
-       "city": "Miramar",
-       "dealer": "auto trust usa",
-       "url": "https://www.autotrustusa.com/inventory/used-2025-chevrolet-equinox-ev-rs-3gn7dsrp6ss121018-in-miramar-fl",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-11",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-25",
-         25097
-        ],
-        [
-         "2026-08-27",
-         25097
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "3GN7DSRP9RS286958",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "FL",
-       "local": false,
-       "distance": 975,
-       "ship": 634,
-       "miles": 36477,
-       "last_price": 25394,
-       "adj": 26028,
-       "city": "Sanford",
-       "dealer": "Driver's Mart Sanford",
-       "url": "https://www.carfax.com/vehicle/3GN7DSRP9RS286958",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-22",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-25",
-         25394
-        ],
-        [
-         "2026-08-27",
-         25394
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "3GN7DSRP7SS241927",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "CA",
-       "local": false,
-       "distance": 1750,
-       "ship": 1138,
-       "miles": 21195,
-       "last_price": 25637,
-       "adj": 26775,
-       "city": "Culver City",
-       "dealer": "Chevrolet of Culver City",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP7SS241927",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-22",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-25",
-         25637
-        ],
-        [
-         "2026-08-27",
-         25637
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ]
-      },
-      {
-       "likely": "delisted",
-       "vin": "3GN7DSRP3SS199613",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "NJ",
-       "local": false,
-       "distance": 700,
-       "ship": 455,
-       "miles": 23996,
-       "last_price": 25794,
-       "adj": 26249,
-       "city": "Wall Township",
-       "dealer": "Automotive Avenues",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP3SS199613",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-22",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 1,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-25",
-         25794
-        ],
-        [
-         "2026-08-27",
-         25794
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "1 accident"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DSRP8SS116872",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "MO",
-       "local": false,
-       "distance": 400,
-       "ship": 350,
-       "miles": 10508,
-       "last_price": 26700,
-       "adj": 27050,
-       "city": "Saint Joseph",
-       "dealer": "Victory GMC",
-       "url": "https://www.carfax.com/vehicle/3GN7DSRP8SS116872",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-27",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-27",
-         26700
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DSRP8SS170883",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OH",
-       "local": true,
-       "distance": 275,
-       "ship": 0,
-       "miles": 32882,
-       "last_price": 26939,
-       "adj": 26939,
-       "city": "Norwalk",
-       "dealer": "Baumann Chevrolet Norwalk",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP8SS170883",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-07",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-25",
-         26939
-        ],
-        [
-         "2026-08-27",
-         26939
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DSRP4SS125181",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OH",
-       "local": true,
-       "distance": 300,
-       "ship": 0,
-       "miles": 19431,
-       "last_price": 26966,
-       "adj": 26966,
-       "city": "Rittman",
-       "dealer": "Laria Chevrolet Buick",
-       "url": "https://www.lariachevybuick.com/used-Rittman+-2025-Chevrolet-Equinox+EV-RS-3GN7DSRP4SS125181",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-25",
-         26966
-        ],
-        [
-         "2026-08-27",
-         26966
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DSRP4RS270893",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OH",
-       "local": true,
-       "distance": 200,
-       "ship": 0,
-       "miles": 14534,
-       "last_price": 27248,
-       "adj": 27248,
-       "city": "Maumee",
-       "dealer": "PricePro",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP4RS270893",
-       "last_seen": "2026-08-27",
-       "listed_since": "2026-08-21",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 2,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-25",
-         27248
-        ],
-        [
-         "2026-08-27",
-         27248
-        ]
-       ],
-       "flags": []
-      },
-      {
-       "likely": "delisted",
-       "vin": "3GN7DSRR7RS267021",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 20850,
-       "last_price": 26850,
-       "adj": 26850,
-       "city": "Glen Ellyn",
-       "dealer": "jerry haggerty chevrolet",
-       "url": "https://jerryhaggertychevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-b8625903ac183b7cfe9e7d6973d2e7a3.htm",
-       "last_seen": "2026-08-25",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "series": [
-        [
-         "2026-08-25",
-         26850
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DNRP7RS235217",
-       "year": 2024,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "distance": 25,
-       "ship": 0,
-       "miles": 10805,
-       "last_price": 27313,
-       "adj": 27313,
-       "city": "Lake Bluff",
-       "dealer": "kunes lakes chevrolet inc",
-       "url": "https://kuneslakeschevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-19cbb9b2ac1846fa1e332511eefa8891.htm",
-       "last_seen": "2026-08-25",
-       "listed_since": "2026-08-20",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-25",
-         27313
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DSRP1SS118799",
-       "year": 2025,
-       "trim": "RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "IL",
-       "local": true,
-       "distance": 125,
-       "ship": 0,
-       "miles": 21496,
-       "last_price": 27352,
-       "adj": 27352,
-       "city": "Morton",
-       "dealer": "Bob Grimm Chevrolet",
-       "url": "https://www.grimmchevy.com/used-Morton-2025-Chevrolet-Equinox+EV-RS-3GN7DSRP1SS118799",
-       "last_seen": "2026-08-25",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Personal Use",
-       "series": [
-        [
-         "2026-08-25",
-         27352
-        ]
-       ],
-       "flags": [
-        "1-owner",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DRRP2RS292948",
-       "year": 2024,
-       "trim": "3RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OH",
-       "local": true,
-       "distance": 250,
-       "ship": 0,
-       "miles": 11874,
-       "last_price": 27500,
-       "adj": 27500,
-       "city": "Sandusky",
-       "dealer": "foster chevrolet cadillac",
-       "url": "https://fostersandusky.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-47aa1d1cac183200ff5014800e548325.htm",
-       "last_seen": "2026-08-25",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 0,
-       "usage": "Multiple Use",
-       "series": [
-        [
-         "2026-08-25",
-         27500
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "no accidents"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DSRP3RS270514",
-       "year": 2024,
-       "trim": "2RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OH",
-       "local": true,
-       "distance": 200,
-       "ship": 0,
-       "miles": 16644,
-       "last_price": 27599,
-       "adj": 27599,
-       "city": "Sylvania",
-       "dealer": "dave white chevrolet",
-       "url": "https://davewhitechevy.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-sylvania-oh-2492ef8aac185cc92880da0795802fb5.htm",
-       "last_seen": "2026-08-25",
-       "listed_since": "2026-08-09",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": 1,
-       "usage": "Multiple Use",
-       "series": [
-        [
-         "2026-08-25",
-         27599
-        ]
-       ],
-       "flags": [
-        "2 owners",
-        "1 accident"
-       ]
-      },
-      {
-       "likely": "out of window",
-       "vin": "3GN7DRRP4RS254654",
-       "year": 2024,
-       "trim": "3RS",
-       "trim_id": "chevrolet-equinox-ev-rs",
-       "trim_label": "RS",
-       "state": "OH",
-       "local": true,
-       "distance": 250,
-       "ship": 0,
-       "miles": 19949,
-       "last_price": 27611,
-       "adj": 27611,
-       "city": "Marysville",
-       "dealer": "Coughlin Chevrolet Buick of Marysville",
-       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DRRP4RS254654",
-       "last_seen": "2026-08-25",
-       "listed_since": "2026-07-15",
-       "prev_fetch_day": "2026-08-27",
-       "first_seen": "2026-08-25",
-       "days_tracked": 1,
-       "cuts": 0,
-       "delta": 0,
-       "accidents": null,
-       "usage": "",
-       "series": [
-        [
-         "2026-08-25",
-         27611
-        ]
-       ],
-       "flags": []
-      }
-     ],
-     "market": {
-      "median_days_listed": 21,
-      "tracked_2d": 24,
-      "cut_share": 0.62,
-      "median_cut": 400,
-      "n_sold": 5,
-      "median_days_to_sale": 5
      }
     }
    }
