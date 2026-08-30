@@ -1189,6 +1189,17 @@ def delisted(tids, all_rows, today_rows, hist):
             "first_seen": s.get("first_seen"),
             "days_tracked": s.get("days_tracked", 0),
             "cuts": s.get("cuts", 0), "delta": s.get("delta", 0),
+            # A departed car is still part of every day it was on the market.
+            # The dashboard rebuilds the price history for whatever scope the
+            # reader has selected, and without these it would rebuild it from
+            # survivors only — the cheap car that sold on Tuesday would vanish
+            # from Monday too, and the floor would look like it fell when it
+            # was simply bought. accidents and usage ride along so the clean
+            # and no-rental filters judge a departed car by the same rule as
+            # a live one.
+            "accidents": to_int(r.get("accidents")),
+            "usage": r.get("usage", ""),
+            "series": s.get("series", []),
             "flags": flags(r),
         })
     out.sort(key=lambda x: (x["last_seen"], -(x["last_price"] or 0)),
@@ -1376,6 +1387,15 @@ def build_outputs(today_rows, all_rows, hist):
         # date the numbers by data_through, never by generated.
         "data_through": max((r["snapshot_date"] for r in all_rows),
                             default=None),
+        # The oldest day the DEPARTURE record can vouch for. delisted() retires
+        # a car once it has been gone 60 days, to stop the gone list growing
+        # forever, but snapshots.csv is never pruned — so before this date the
+        # file knows a day's cars only through the survivors of it. The
+        # dashboard rebuilds "lowest asking in your scope" from per-car
+        # history, and rebuilding it past this line would quietly reinstate
+        # exactly the survivorship bias that history was added to remove, so
+        # the page stops there instead.
+        "departures_from": date.fromordinal(TODAY_ORD - 60).isoformat(),
         "buyer": {
             "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
             "states": STATES,

@@ -587,6 +587,32 @@ class TestDelisted(unittest.TestCase):
         self.assertEqual(gone["HIGH"]["likely"], "out of window")
         self.assertEqual(gone["LOW"]["likely"], "delisted")
 
+    def test_departures_carry_the_history_the_scoped_chart_needs(self):
+        # The dashboard rebuilds "lowest asking per day" over whatever scope
+        # the reader has filtered to, and it can only do that honestly if a
+        # departed car still carries the days it was on the market. Drop the
+        # series and the past gets rebuilt from survivors alone: the cheap car
+        # that sold on Tuesday vanishes from Monday too, so every old floor
+        # reads higher than it was. accidents and usage ride along so the
+        # clean and no-rental filters judge a departure by the same rule as a
+        # live listing instead of silently keeping it.
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-edrive40"
+        # the facts come off the car's LAST snapshot row, not its first
+        last = self.row(tid, "GONE", d1, 30500)
+        last.update({"accidents": "2", "usage": "Rental Use"})
+        all_rows = [self.row(tid, "GONE", d2, 31000), last,
+                    self.row(tid, "STAY", d1, 44000),
+                    self.row(tid, "STAY", T.TODAY, 44000)]
+        today = [x for x in all_rows if x["snapshot_date"] == T.TODAY]
+        g = T.delisted({tid}, all_rows, today,
+                       T.build_history(all_rows))[0]
+        self.assertEqual(g["vin"], "GONE")
+        self.assertEqual(g["series"], [(d2, 31000), (d1, 30500)],
+                         "a departure without its series makes every day it "
+                         "was on the market look more expensive than it was")
+        self.assertEqual(g["accidents"], 2)
+        self.assertEqual(g["usage"], "Rental Use")
+
     def test_short_vanish_day_returned_everything_so_no_cutoff(self):
         d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-m60"
         fill = [self.row(tid, f"W{i}", d, 40000 + i * 1000)

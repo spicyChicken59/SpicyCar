@@ -1523,6 +1523,82 @@
   function model() { return S.site.brands[S.brand].models[S.model]; }
   function trimRows(rows) { return S.trim === 'all' ? rows : rows.filter((x) => x.trim_id === S.trim); }
   function dailyFor(m) { return S.trim === 'all' ? (m.daily || []) : ((m.daily_by_trim || {})[S.trim] || []); }
+  // The same daily series, rebuilt over exactly the cars the reader has in
+  // view. m.daily is a national aggregate computed at build time, so before
+  // this the chart answered "the cheapest car in the country" while the table
+  // beside it answered "the cheapest car in Illinois" — two different
+  // questions under one heading.
+  //
+  // Every live listing carries its own price history, and since the run that
+  // added it so does every departure. That second half is what makes this
+  // honest rather than merely filtered: rebuild the past from survivors alone
+  // and the cheap car that sold on Tuesday disappears from Monday as well, so
+  // every old floor reads higher than it was and the line slopes down for no
+  // reason but its own bookkeeping.
+  //
+  // Reconciled against the precomputed series when written: with no filters
+  // this reproduces m.daily and m.daily_by_trim exactly — same count, same
+  // lowest, same median on all 52 day-rows — so the scoped and the national
+  // view can never tell different stories about the same day.
+  //
+  // n_local is the one deliberate difference. The precomputed count asked
+  // where each car was ON THAT DAY; this asks where it is now, which is the
+  // rule the where chips, the map and the table already use. It moved two of
+  // those 52 rows by one car — listings whose state changed between snapshots.
+  // Is anything actually narrowed? Trim is excluded on purpose: daily_by_trim
+  // is precomputed per trim, so a trim-only view already has an exact,
+  // complete series and does not need rebuilding.
+  function sharedActive() {
+    return !!(S.where.size || S.year !== 'all' || S.miles || S.clean || S.rental);
+  }
+  function scopedDaily(m) {
+    // Nothing narrowed: hand back the precomputed series. It is the same
+    // numbers the rebuild produces (verified day-row for day-row) and it is
+    // the only one that can speak for days older than the departure horizon
+    // below, so the default view keeps the whole record.
+    if (!sharedActive()) return dailyFor(m);
+    // Trim is a model-page filter; on the overview the select is hidden and
+    // every model is drawn, so it must not narrow anything there — the same
+    // rule filterBits applies when it names the scope.
+    const byTrim = (arr) => (S.brand === 'all' ? arr : trimRows(arr));
+    const gone = byTrim(m.gone || []);
+    // A data.json written before departures carried their history would leave
+    // exactly the survivorship hole described above. Take the precomputed
+    // national series instead of drawing a wrong one.
+    if (gone.length && !gone.some((x) => (x.series || []).length)) return dailyFor(m);
+    // One car, one price per day. Python aggregates pick_display_rows(), which
+    // is one row per VIN; here m.listings is already VIN-unique but m.gone is
+    // keyed by (target, vin), so a VIN two trim targets both matched would be
+    // counted twice on every day their histories overlap. No car does that in
+    // today's file — a trim whose trim_match is empty is what would cause it.
+    const uniq = new Map();
+    for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter(passesShared)) {
+      const k = String(x.vin || '').toUpperCase();
+      if (!k) continue;
+      if (!uniq.has(k)) uniq.set(k, x);   // the live listing comes first and wins
+    }
+    const by = new Map();
+    for (const x of uniq.values()) {
+      for (const pt of (x.series || [])) {
+        if (!pt[1]) continue;
+        let e = by.get(pt[0]);
+        if (!e) by.set(pt[0], e = { prices: [], local: 0 });
+        e.prices.push(pt[1]);
+        if (x.local) e.local++;
+      }
+    }
+    // Stop where the departure record stops. Past that line the file has only
+    // the survivors of a day, and a floor rebuilt from survivors reads higher
+    // than it was — the very bias the per-car history exists to remove. The
+    // record is younger than the horizon today, so this drops nothing yet; it
+    // is here so that the day it starts mattering, it already works.
+    const from = (S.site || {}).departures_from || '';
+    return [...by.keys()].sort().filter((date) => date >= from).map((date) => {
+      const e = by.get(date), p = e.prices.sort((a, b) => a - b);
+      // trunc, not round: the builder writes int(median(...)) in Python
+      return { date, n: p.length, n_local: e.local, min_price: p[0], median_price: Math.trunc(median(p)) };
+    });
+  }
   // The chart's time window: the last N days ending at the newest snapshot,
   // or everything. The y-scale follows, so recent movement stays readable
   // once months of history accumulate.
@@ -1563,7 +1639,9 @@
   // Lowest asking per day. Days written before min_price existed are skipped; a model with none gets its latest snapshot as one point.
   function askingSeries(m, daily) {
     const pts = (daily || []).filter((d) => d.min_price !== null && d.min_price !== undefined).map((d) => ({ date: d.date, value: d.min_price }));
-    if (!pts.length) { const b = lowestBy((m.listings || []), 'price'); if (b) pts.push({ date: m.as_of || dataThrough(), value: b.price }); }
+    // The one-point fallback has to obey the filters too, or a scope with no
+    // history at all would be handed the nation's cheapest car as its answer.
+    if (!pts.length) { const b = lowestBy(trimRows(m.listings || []).filter(passesShared), 'price'); if (b) pts.push({ date: m.as_of || dataThrough(), value: b.price }); }
     return pts;
   }
   // The DATA day: the newest snapshot date anywhere in the file. site.generated
@@ -2009,7 +2087,7 @@
   }
 
   function renderKpis(rows) {
-    const t = model(), daily = dailyFor(t), host = $('kpis'); host.textContent = '';
+    const t = model(), daily = scopedDaily(t), record = dailyFor(t), host = $('kpis'); host.textContent = '';
     const all = trimRows(t.listings || []);
     const today = daily[daily.length - 1] || null, prev = daily.length >= 2 ? daily[daily.length - 2] : null;
     const priced = rows.filter(hasPrice);
@@ -2024,7 +2102,19 @@
     const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
       el('div', { class: 'sc-tile__value' }, best ? money(best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
-    if (!filteredView && today) tile1.appendChild(deltaEl(today.min_price, prev && prev.min_price, prev && prev.date, true, daily.length));
+    // The day-over-day move used to be dropped under any filter, because the
+    // number behind it was the nation's. It is the selected scope's own floor
+    // now, so it can stay — but only when the scope's newest day is ABOUT the
+    // car on the tile. Trims run on their own cadences (eDrive40 daily,
+    // xDrive40 and M60 every second day), so on half the build days the newest
+    // row covers one trim while `best` ranges over all of them, and the tile
+    // would print a move no car made. Equal prices means the day and the tile
+    // are describing the same car; anything else shows the value with no delta.
+    // record.length, not daily.length: the count is a fact about the tracker's
+    // history, and a filter must not make the page claim there is none.
+    if (best && today && today.min_price === best.price) {
+      tile1.appendChild(deltaEl(today.min_price, prev && prev.min_price, prev && prev.date, true, record.length));
+    }
     host.appendChild(tile1);
 
     const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
@@ -2039,11 +2129,16 @@
       el('div', { class: 'sc-tile__value' }, String(rows.length)),
       el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local} beyond your states`
         + (med != null ? ` · median ${money(med)}` : '')));
+    // The spark follows the scope (its tile value does), but the "no trend yet"
+    // line is a claim about the RECORD — gate it on the record, or a filter
+    // tells a reader on day 8 that the tracker has only ever run once.
     if (daily.length >= 2 && rows.length) tile3.appendChild(el('div', { class: 'sc-tile__spark' }, spark(daily.map((d) => d.n), 120, 26, true)));
-    else if (daily.length < 2) tile3.appendChild(el('div', { class: 'sc-delta sc-delta--flat' }, 'trend appears after day 2'));
+    else if (record.length < 2) tile3.appendChild(el('div', { class: 'sc-delta sc-delta--flat' }, 'trend appears after day 2'));
     host.appendChild(tile3);
 
-    const { cuts, fresh: newToday, gone } = movementFor(all, trimRows(t.gone || []), daily);
+    // The movement tile counts over `all` — the model's rows before the shared
+    // filters — so it takes the record's own series, not the scoped one.
+    const { cuts, fresh: newToday, gone } = movementFor(all, trimRows(t.gone || []), record);
     // The tile advertised "N new" and then buried them: under any price-based
     // order the new arrivals sit wherever their price puts them, so the count
     // was unreachable. It now sorts the table to them.
@@ -2070,7 +2165,9 @@
       e.preventDefault();
       $('gone-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
     };
-    const sub = daily.length >= 2
+    // Tile 4 counts over `all` and says so in its own label — every gate on it
+    // reads the record, never the filtered series.
+    const sub = record.length >= 2
       ? el('div', { class: 'sc-tile__sub' },
           newToday > 0
             ? el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:new', onclick: showNewest,
@@ -2083,7 +2180,7 @@
     const cutsTxt = `${cuts} price cut${cuts === 1 ? '' : 's'}`;
     const tile4 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' },
         filteredView ? 'Since the previous snapshot (all cars)' : 'Since the previous snapshot'),
-      el('div', { class: 'sc-tile__value sc-tile__value--sm' }, daily.length < 2 ? '—'
+      el('div', { class: 'sc-tile__value sc-tile__value--sm' }, record.length < 2 ? '—'
         : (cuts > 0
             ? el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:cuts', onclick: showCuts,
                         title: 'Sort the listings by the size of the cut at the latest snapshot' }, cutsTxt)
@@ -2093,16 +2190,33 @@
   }
 
   function renderChart() {
-    const t = model(), daily = rangeDaily(dailyFor(t));
+    const t = model();
+    // A scope with no live car left has nothing to plot, whatever history its
+    // departures carry: the notice, the tiles and the filter count all say the
+    // scope is empty, and a line drawn from cars that have all gone would be
+    // the one element on screen disagreeing with them.
+    const live = trimRows(t.listings || []).filter(passesShared);
+    const daily = live.length ? rangeDaily(scopedDaily(t)) : [];
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'Asking price over time';
-    $('chart-scope').hidden = false;
     rangeChips();
-    const scope = S.trim === 'all' ? 'all trims, drivable and beyond combined' : `${(t.trims[S.trim] || {}).label || 'this trim'}, drivable and beyond combined`;
-    $('chart-hint').textContent = (daily.length >= 2
-      ? `Lowest and median asking price on the market each day — ${scope}.`
-      : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
-      + ` ${spanText(daily)}.`;
+    // Name the scope the lines were actually drawn over, in the filter bar's
+    // own words — the caption is the only place the reader can check that the
+    // chart and the table below it are answering the same question.
+    const bits = filterBits(false);
+    const scope = bits.length ? bits.join(' · ') : 'every car tracked for this model, drivable and beyond';
+    chartScopeChip(bits);
+    $('chart-hint').textContent = !daily.length
+      ? `No tracked car matches these filters, so there is no history to draw — ${scope}.`
+      : (daily.length >= 2
+          ? `Lowest and median asking price each day among the cars in view — ${scope}.`
+          // One plotted day means either a young tracker or a scope only one
+          // day's cars reached. Saying "one snapshot so far" for the second is
+          // a claim about the record, and it is false.
+          : dailyFor(t).length >= 2
+            ? `Only one snapshot day has a car in this scope — ${scope}.`
+            : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
+        + ` ${spanText(daily)}.`;
     const lg = $('legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-emphasis)' }), 'Lowest asking'));
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-context)' }), 'Median asking'));
@@ -2110,7 +2224,8 @@
     lineChart($('chart'), [
       { label: 'median asking', emphasis: false, points: daily.filter((d) => d.median_price != null).map((d) => ({ date: d.date, value: d.median_price })) },
       { label: 'lowest asking', emphasis: true, points: askingSeries(t, daily) },
-    ], { meta: (d) => { const x = byDate[d]; return x ? `${x.n} vehicle${x.n === 1 ? '' : 's'}${x.n_local ? ` · ${x.n_local} drivable` : ''}` : ''; } });
+    ], { meta: (d) => { const x = byDate[d]; return x ? `${x.n} vehicle${x.n === 1 ? '' : 's'}${x.n_local ? ` · ${x.n_local} drivable` : ''}` : ''; },
+         empty: 'No car in this scope has price history yet.' });
     const tb = $('chart-table'); tb.textContent = '';
     const table = el('table', { class: 'sc-table sc-table--compact' }, el('thead', null, el('tr', null,
       el('th', null, 'Day'), el('th', { class: 'sc-num' }, 'Vehicles'), el('th', { class: 'sc-num' }, 'Drivable'),
@@ -2361,7 +2476,25 @@
   }
 
   // ---------- overview: every model on the watchlist, priced the same way ----------
+  // One scoped series per model, memoised for the length of a render pass:
+  // the chart's lines, the model table's trend column and the caption's day
+  // count are then literally the same arrays, so they cannot disagree, and the
+  // aggregation runs once per model per pass instead of once per reader of it.
+  let OV_SERIES = null;
+  function overviewSeries() {
+    if (OV_SERIES) return OV_SERIES;
+    OV_SERIES = new Map();
+    for (const { bk, mk, m } of allModels()) {
+      // a model with no live car in scope has nothing to plot, the same rule
+      // the model page's chart follows
+      const live = applyShared(m.listings || []);
+      OV_SERIES.set(bk + '/' + mk, live.length ? askingSeries(m, rangeDaily(scopedDaily(m))) : []);
+    }
+    return OV_SERIES;
+  }
   function overviewRows() {
+    OV_SERIES = null;   // a new pass: the filters or the range may have moved
+    const series = overviewSeries();
     return allModels().map(({ bk, mk, b, m }) => {
       const rows = applyShared(m.listings || []);
       const priced = rows.filter(hasPrice);
@@ -2370,7 +2503,10 @@
       return { bk, mk, m, brand: b.label || bk, label: m.label || mk, shopping: !!m.shopping, cadence: m.cadence || 1, as_of: m.as_of, next_due: m.next_due,
         n: rows.length, n_local: rows.filter(isLocal).length, best, bestLocal, photo, photos: rows.filter((x) => x.image).map((x) => x.image).slice(0, 8),
         median: median(priced.map((x) => x.price)),
-        trend: askingSeries(m, m.daily || []).map((p) => p.value) };
+        // the same series the chart above this table draws — while this read
+        // m.daily it painted the nation's shape beside a scoped price, and on
+        // 21 of 28 state-model pairs it sloped the opposite way to the line
+        trend: (series.get(bk + '/' + mk) || []).map((p) => p.value) };
     }).sort((a, b) => (b.shopping - a.shopping) || ((a.best ? a.best.price : 1e12) - (b.best ? b.best.price : 1e12)));
   }
   function bestCell(b, emptyText) {
@@ -2398,8 +2534,7 @@
     $('tabs').hidden = true;
     renderShortlist(true);
     $('notes-card').hidden = true;
-    renderOverviewChart(rows);
-    updateRowsOverview();     // tiles, picks, map, table, notice, next — the same path a filter change takes
+    updateRowsOverview();     // chart, tiles, picks, map, table, notice, next — the same path a filter change takes
     orderSections('overview');
     footLine();
   }
@@ -2409,6 +2544,7 @@
   function updateRowsOverview() {
     const rows = overviewRows();
     updateEyebrow();
+    renderOverviewChart(rows);   // filter-scoped like everything below it
     renderOverviewKpis(rows);
     renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label, r.shopping)), pickParams().per_model);
     updateMapVisibility();
@@ -2426,9 +2562,14 @@
     const bestRow = rows.filter((r) => r.best).reduce((a, r) => (!a || r.best.price < a.best.price ? r : a), null);
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
     const host = $('kpis'); host.textContent = '';
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
+    // The value has always been scoped; only the label claimed otherwise. With
+    // Illinois picked this tile read "Lowest asking nationwide $19,980" while
+    // the real national floor, which it had shown one click earlier, was
+    // $10,524. The model page already swaps this label; the overview did not.
+    const filteredView = !!filterBits(true).length;
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping` : 'Nothing drivable under these filters')));
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
+    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
       el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond your states · ${rows.length} models`)));
@@ -2474,14 +2615,28 @@
   function renderOverviewChart(rows) {
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'The market over time';
-    $('chart-scope').hidden = false;
     rangeChips();
-    const nDays = new Set(rows.flatMap((r) => askingSeries(r.m, rangeDaily(r.m.daily || [])).map((p) => p.date))).size;
-    $('chart-hint').textContent = (nDays >= 2
-      ? 'Lowest asking price on the market each day — one line per model, colored by brand, the models being shopped drawn heavier. '
-      : 'One snapshot so far for most models — lines fill in as daily runs accumulate. ')
+    const seriesOf = overviewSeries();   // shared with the model table's trend column
+    const seriesFor = (r) => seriesOf.get(r.bk + '/' + r.mk) || [];
+    const drawn = [...new Set(rows.flatMap((r) => seriesFor(r).map((p) => p.date)))].sort().map((date) => ({ date }));
+    const nDays = drawn.length;
+    const obits = filterBits(true);
+    chartScopeChip(obits);
+    // Describe the days actually drawn, not the record: spanText() with no
+    // argument reports every model's national history, which was the right
+    // answer only while these lines were national. Under a filter it claimed
+    // eight snapshot days over six drawn, and told a reader whose filter
+    // matched nothing that the tracker had barely started.
+    $('chart-hint').textContent = (nDays === 0
+      ? `No tracked car matches these filters, so there is no history to draw${obits.length ? ` — ${obits.join(' · ')}` : ''}. `
+      : (nDays >= 2
+          ? 'Lowest asking price each day among the cars in view — one line per model, colored by brand, the models being shopped drawn heavier. '
+          : allModels().some(({ m }) => (m.daily || []).length >= 2)
+            ? 'Only one snapshot day has a car in this scope. '
+            : 'One snapshot so far for most models — lines fill in as daily runs accumulate. ')
+        + (obits.length ? `Filtered to ${obits.join(' · ')}. ` : ''))
       + 'Click a legend chip to hide or show a model; hover the chart for any day\'s numbers.'
-      + ` ${spanText()}.`;
+      + (nDays ? ` ${spanText(drawn)}.` : '');
     const highlightSeries = (id) => {
       for (const n of $('chart').querySelectorAll('[data-sid]')) n.style.opacity = (!id || n.getAttribute('data-sid') === id) ? '' : '0.15';
     };
@@ -2503,13 +2658,13 @@
       .filter(({ bk, mk }) => !S.hidden.has(bk + '/' + mk))
       .map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label, emphasis: !!m.shopping,
         tone: brandTone(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
-        labeled: !!m.shopping, points: askingSeries(m, rangeDaily(m.daily || [])) })),
-      { named: true, height: 340 });
+        labeled: !!m.shopping, points: seriesOf.get(bk + '/' + mk) || [] })),
+      { named: true, height: 340, empty: 'No car in this scope has price history yet.' });
     const tb = $('chart-table'); tb.textContent = '';
-    const dates = [...new Set(rows.flatMap((r) => askingSeries(r.m, rangeDaily(r.m.daily || [])).map((p) => p.date)))].sort().reverse();
+    const dates = [...new Set(rows.flatMap((r) => seriesFor(r).map((p) => p.date)))].sort().reverse();
     const table = el('table', { class: 'sc-table sc-table--compact' }, el('thead', null, el('tr', null, el('th', null, 'Day'), ...rows.map((r) => el('th', { class: 'sc-num sc-case' }, r.label)))));
     const body = el('tbody');
-    for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = askingSeries(r.m, rangeDaily(r.m.daily || [])).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
+    for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = seriesFor(r).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
     table.appendChild(body); tb.appendChild(table);
   }
 
@@ -2531,7 +2686,7 @@
     const oCompact = oBand === 'compact';
     ot.appendChild(el('thead', null, el('tr', null, el('th', null, 'Model'),
       ...(oSlim ? [] : [el('th', { class: 'sc-num' }, 'Cars'), el('th', { class: 'sc-num' }, 'Drivable')]),
-      el('th', { class: 'sc-num' }, 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, 'Lowest drivable asking'),
+      el('th', { class: 'sc-num' }, filterBits(true).length ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'), el('th', { class: 'sc-num' }, 'Lowest drivable asking'),
       ...(slimOverview || oCompact ? [] : [el('th', { class: 'sc-num' }, 'Median asking')]),
       oBandSlim ? null : el('th', null, 'Trend'), oBandSlim ? null : el('th', null, 'Data through'))));
     const obody = el('tbody');
@@ -2648,8 +2803,7 @@
     renderHeader();
     renderShortlist(false);      // front page only — model rows carry a chip instead
     renderNotes(model());
-    renderChart();
-    updateRows(filtered());
+    updateRows(filtered());   // renders the chart too — it is filter-scoped
     renderGone();
     orderSections('model');
     footLine();
@@ -2677,6 +2831,10 @@
   function updateRows(rows, fk) {
     const t = model();
     updateEyebrow();
+    // The chart reads the same filters the rows do now, so it belongs on this
+    // path rather than beside it — otherwise a where chip would move the table
+    // and the KPIs while the lines above them kept answering about the nation.
+    renderChart();
     renderKpis(rows);
     renderPicks(scoredFrom(rows, t.label, !!t.shopping));
     renderScatter(rows);
@@ -2738,6 +2896,32 @@
     $('filters-card').hidden = false;
     filterCount();
   }
+  // What the filters are doing, in words. One list, so the filter bar and the
+  // chart's caption can never describe the same scope in different terms.
+  function filterBits(overview) {
+    const bits = [];
+    if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
+    if (S.trim !== 'all' && !overview) bits.push(((model().trims || {})[S.trim] || {}).label || S.trim);
+    if (S.year !== 'all') bits.push(S.year);
+    if (S.miles) bits.push(`under ${num(S.miles)} mi`);
+    if (S.clean) bits.push('no accidents');
+    if (S.rental) bits.push('no rentals');
+    return bits;
+  }
+  // The chip in the chart card's header. It read "whole market — not filtered"
+  // unconditionally, which was true while the lines were a national aggregate
+  // and became this change's own thesis inverted the moment they stopped being
+  // one: on the i5 with Illinois picked it labelled a $50,370 Illinois floor as
+  // the nation's, $13,891 below the real national figure. It now says what the
+  // chart actually plotted, from the same bits the caption uses.
+  function chartScopeChip(bits) {
+    const chip = $('chart-scope');
+    chip.hidden = false;
+    chip.textContent = bits.length ? `filtered — ${bits.join(' · ')}` : 'whole market — not filtered';
+    chip.title = bits.length
+      ? 'This chart plots only the cars your filters select'
+      : 'This chart plots the whole market so the trend stays comparable day to day';
+  }
   // What the filters are actually doing, said in one line beside their name.
   function filterCount() {
     const overview = S.brand === 'all';
@@ -2747,13 +2931,7 @@
     const total = overview
       ? allModels().reduce((a, { m }) => a + (m.listings || []).length, 0)
       : (model().listings || []).length;
-    const bits = [];
-    if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
-    if (S.trim !== 'all' && !overview) bits.push(((model().trims || {})[S.trim] || {}).label || S.trim);
-    if (S.year !== 'all') bits.push(S.year);
-    if (S.miles) bits.push(`under ${num(S.miles)} mi`);
-    if (S.clean) bits.push('no accidents');
-    if (S.rental) bits.push('no rentals');
+    const bits = filterBits(overview);
     $('filter-count').textContent = shown === total
       ? `showing all ${num(total)} cars`
       : `showing ${num(shown)} of ${num(total)} cars${bits.length ? ' · ' + bits.join(' · ') : ''}`;
@@ -2811,7 +2989,7 @@
     const before = anchored ? bar.getBoundingClientRect().top : null;
     const y = window.scrollY;
     switch (scope) {
-      case 'trim': renderHeader(); updateRows(filtered()); renderChart(); renderGone(); break;
+      case 'trim': renderHeader(); updateRows(filtered()); renderGone(); break;
       case 'rows': overview ? updateRowsOverview() : updateRows(filtered(), fk); break;
       case 'sort':
       case 'showList': renderList(filtered()); break;

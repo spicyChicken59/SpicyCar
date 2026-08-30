@@ -7,13 +7,13 @@
 - ▼ $600 cut · BMW i4 eDrive40 · now $40,990 · Cleveland, OH · drivable `WBY73AW03RFS90309`
 - …and 62 more price changes in the sections below
 - 77 new on the shopped models · best 26% under typical ($32,460, Kennesaw, GA)
-- 14 gone since the last fetch on the shopped models
+- 19 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
 - Lowest asking **$36,479** (Seffner, FL) · + $650 shipping · = vs 2026-08-29
 - Lowest drivable **$42,990** (Indianapolis, IN) · no shipping
-- 126 on the market · 19 drivable · 18 price changes · 3 new · 12 gone
+- 126 on the market · 19 drivable · 18 price changes · 3 new · 17 gone
 
 **New today (3)** — first seen this run, best value first
 
@@ -57,7 +57,7 @@ _Worth the ship:_
   [listing](https://www.corwinbuickgmcreno.com/used-Reno-2024-BMW-i5-eDrive40-WBY33FK07RCR83662) `WBY33FK07RCR83662`
 
 _126 vehicles across 3 trims · IL 8 · OH 2 · IN 7 · WI 2 · beyond 107_
-_typical car 21d on market · 51% cut while tracked, median $600 · sold cars lasted ~16d (36 sold)_
+_typical car 21d on market · 51% cut while tracked, median $600 · sold cars lasted ~16d (41 sold)_
 
 ### eDrive40 — 74 vehicles · lowest asking $36,479 (Seffner, FL)
 
@@ -73,6 +73,11 @@ _First real buyer, near Chicago. Decide by mid-Sept._
 **Gone since 2026-08-29**
 - $37,762 · 2024 · San Diego, CA · tracked 6d `WBY33FK08RCS83536`
 - $41,998 · 2024 · Katy, TX · tracked 7d `WBY33FK01RCS37885`
+- $44,998 · 2024 · Stockbridge, GA · tracked 6d `WBY33FK0XRCR49411`
+- $45,209 · 2024 · Austin, TX · tracked 7d `WBY33FK0XRCR35394`
+- $48,675 · 2025 · Chandler, AZ · tracked 7d `WBY33FK0XSCU70010`
+- $48,761 · 2025 · Greensboro, NC · tracked 1d `WBY33FK03SCT79709`
+- $49,898 · 2025 · Marietta, GA · tracked 7d `WBY33FK08SCU88019`
 
 **Indiana (3)**
 - **$42,990** · 26,983 mi · no shipping · 2024 · Indianapolis, IN · ~175 mi from Chicago
@@ -634,4 +639,4 @@ _By asking price, shipping stated per car, on a slower cadence: the cheapest 20 
 - **Chevrolet Equinox EV** — 29 cars · 12 drivable · lowest asking $10,524 (Noblesville, IN) · drivable from $10,524 (Noblesville, IN) · median asking $24,995 _(every 3 days)_
 
 ---
-_1054 vehicle histories across 8 days · 27 API calls today._
+_1054 vehicle histories across 8 days · 0 API calls today._
