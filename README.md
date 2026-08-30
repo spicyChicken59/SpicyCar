@@ -116,8 +116,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
   every drivable listing grouped by state (drive-radius states marked), and the five best-value
   cars beyond driving range.
-- The dashboard — opens on the whole market at once: a photo per model, lowest asking nationwide
-  and lowest drivable, median, brand-coloured trend lines, a **market map** — on the front page
+- The dashboard — "the watchlist" opens on the number that decides things: **lowest drivable
+  asking**, then lowest nationwide, the market count and what moved since the last snapshot. Below
+  that: spicy picks, brand-coloured trend lines, a **model index** table, a **market map** — on the front page
   and every model page: each car at its own coordinates, filled when drivable, hollow when it pays
   shipping, the five-hour drive ring drawn around the anchor, spicy picks ringed and shortlisted
   cars drawn in the accent, photos on hover (on a phone, tap previews and a second tap opens),

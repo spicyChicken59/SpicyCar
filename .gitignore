@@ -1,5 +1,5 @@
-# local Claude Code permissions
-.claude/
+# local Claude Code permissions (shared skills and settings ARE versioned)
+.claude/settings.local.json
 
 # python
 __pycache__/
