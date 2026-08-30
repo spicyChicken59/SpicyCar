@@ -2,6 +2,7 @@
  "app": "SpicyCar",
  "generated": "2026-08-30",
  "data_through": "2026-08-30",
+ "departures_from": "2026-07-01",
  "buyer": {
   "id": "chicago",
   "label": "Chicago",

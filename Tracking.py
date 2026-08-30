@@ -1387,6 +1387,15 @@ def build_outputs(today_rows, all_rows, hist):
         # date the numbers by data_through, never by generated.
         "data_through": max((r["snapshot_date"] for r in all_rows),
                             default=None),
+        # The oldest day the DEPARTURE record can vouch for. delisted() retires
+        # a car once it has been gone 60 days, to stop the gone list growing
+        # forever, but snapshots.csv is never pruned — so before this date the
+        # file knows a day's cars only through the survivors of it. The
+        # dashboard rebuilds "lowest asking in your scope" from per-car
+        # history, and rebuilding it past this line would quietly reinstate
+        # exactly the survivorship bias that history was added to remove, so
+        # the page stops there instead.
+        "departures_from": date.fromordinal(TODAY_ORD - 60).isoformat(),
         "buyer": {
             "id": BUYER.get("id", ""), "label": BUYER.get("label", ""),
             "states": STATES,
