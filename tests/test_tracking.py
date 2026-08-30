@@ -88,7 +88,8 @@ class TestBudget(unittest.TestCase):
         self.assertEqual(i5["newest"], 1)
         self.assertEqual(T.calls_for(i5), 10,
                          "2 sources x (2 sorts x 2 pages + 1 newest page)")
-        self.assertEqual(T.calls_for(target("bmw-i7")), 10)
+        self.assertEqual(T.calls_for(target("bmw-i4-edrive40")), 10,
+                         "the second shopped target budgets like the first")
         self.assertEqual(target("bmw-i5-xdrive40")["newest"], 0,
                          "newest is a shopped-target parameter, not a default")
 
@@ -143,23 +144,31 @@ class TestDrivable(unittest.TestCase):
         self.assertIn("WI", T.STATES)
         self.assertTrue(T.in_scope({"state": "WI"}))
 
-    def test_drive_radius_comes_from_drive_hours(self):
-        self.assertEqual(T.DRIVE_RADIUS, int(round(T.DRIVE_HOURS * 55)))
-        self.assertGreater(T.DRIVE_RADIUS, 0, "buyer.drive_hours should be set")
-
-    def test_within_the_radius_is_drivable_and_ships_free(self):
+    def test_drivable_is_state_membership_and_nothing_else(self):
+        """The drive-hours radius was removed on purpose: the buyer names the
+        states, and the line sits exactly where they drew it. A car ninety
+        miles away across a state line ships; the far corner of a listed
+        state drives."""
         near_mi = {"state": "MI", "distance": 90}       # Benton Harbor-ish
-        self.assertTrue(T.in_scope(near_mi))
-        self.assertEqual(T.ship_for(near_mi), 0)
+        self.assertFalse(T.in_scope(near_mi))
+        self.assertGreater(T.ship_for(near_mi), 0)
+        far_oh = {"state": "OH", "distance": 350}       # eastern Ohio
+        self.assertTrue(T.in_scope(far_oh))
+        self.assertEqual(T.ship_for(far_oh), 0)
+        self.assertFalse(hasattr(T, "DRIVE_RADIUS"),
+                         "the radius concept should be gone, not just unused")
 
-    def test_beyond_the_radius_pays_shipping(self):
+    def test_beyond_the_states_pays_shipping(self):
         msp = {"state": "MN", "distance": 400}          # Twin Cities-ish
         self.assertFalse(T.in_scope(msp))
         self.assertGreater(T.ship_for(msp), 0)
 
-    def test_the_radius_boundary_is_inclusive(self):
-        self.assertTrue(T.in_scope({"state": "MO", "distance": T.DRIVE_RADIUS}))
-        self.assertFalse(T.in_scope({"state": "MO", "distance": T.DRIVE_RADIUS + 25}))
+    def test_the_configured_state_list_is_the_whole_rule(self):
+        for st in T.STATES:
+            self.assertTrue(T.in_scope({"state": st}))
+            self.assertTrue(T.in_scope({"state": st.lower()}))   # case-blind
+        self.assertFalse(T.in_scope({"state": ""}))
+        self.assertFalse(T.in_scope({}))
 
     def test_a_car_with_no_location_falls_back_to_the_state_list(self):
         """No coordinates and no stored distance: only the state field decides."""
@@ -733,8 +742,18 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(t["make"], "BMW")               # from the brand
 
     def test_a_model_without_trims_is_one_target(self):
-        self.assertIn("bmw-i7", T.TARGETS)
-        self.assertEqual(T.TARGETS["bmw-i7"]["trim_key"], "all")
+        self.assertIn("hyundai-ioniq5", T.TARGETS)
+        self.assertEqual(T.TARGETS["hyundai-ioniq5"]["trim_key"], "all")
+
+    def test_the_i7_is_really_gone(self):
+        """Removed from the watchlist on request — history rows may linger in
+        the CSV, but no target, no fetches, no budget."""
+        self.assertNotIn("bmw-i7", T.TARGETS)
+        self.assertTrue(all("i7" not in tid for tid in T.TARGETS))
+
+    def test_shopping_is_the_i5_and_the_i4(self):
+        shopped = sorted(t for t, v in T.TARGETS.items() if v["shopping"])
+        self.assertEqual(shopped, ["bmw-i4-edrive40", "bmw-i5-edrive40"])
 
     def test_parsers_survive_dirty_input(self):
         self.assertEqual(T.to_int("$46,590"), 46590)
