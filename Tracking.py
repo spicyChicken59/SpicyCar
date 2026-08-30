@@ -1189,6 +1189,17 @@ def delisted(tids, all_rows, today_rows, hist):
             "first_seen": s.get("first_seen"),
             "days_tracked": s.get("days_tracked", 0),
             "cuts": s.get("cuts", 0), "delta": s.get("delta", 0),
+            # A departed car is still part of every day it was on the market.
+            # The dashboard rebuilds the price history for whatever scope the
+            # reader has selected, and without these it would rebuild it from
+            # survivors only — the cheap car that sold on Tuesday would vanish
+            # from Monday too, and the floor would look like it fell when it
+            # was simply bought. accidents and usage ride along so the clean
+            # and no-rental filters judge a departed car by the same rule as
+            # a live one.
+            "accidents": to_int(r.get("accidents")),
+            "usage": r.get("usage", ""),
+            "series": s.get("series", []),
             "flags": flags(r),
         })
     out.sort(key=lambda x: (x["last_seen"], -(x["last_price"] or 0)),

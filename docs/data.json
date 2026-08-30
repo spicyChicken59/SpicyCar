@@ -8747,6 +8747,38 @@
        "days_tracked": 7,
        "cuts": 2,
        "delta": -49,
+       "accidents": 0,
+       "usage": "Rental Use",
+       "series": [
+        [
+         "2026-08-23",
+         46040
+        ],
+        [
+         "2026-08-24",
+         46040
+        ],
+        [
+         "2026-08-25",
+         46040
+        ],
+        [
+         "2026-08-26",
+         45991
+        ],
+        [
+         "2026-08-27",
+         45991
+        ],
+        [
+         "2026-08-28",
+         46040
+        ],
+        [
+         "2026-08-29",
+         45991
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -8776,6 +8808,34 @@
        "days_tracked": 6,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-23",
+         34551
+        ],
+        [
+         "2026-08-24",
+         34551
+        ],
+        [
+         "2026-08-25",
+         34551
+        ],
+        [
+         "2026-08-26",
+         34551
+        ],
+        [
+         "2026-08-27",
+         34551
+        ],
+        [
+         "2026-08-28",
+         34551
+        ]
+       ],
        "flags": []
       },
       {
@@ -8802,6 +8862,34 @@
        "days_tracked": 6,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         42997
+        ],
+        [
+         "2026-08-24",
+         42997
+        ],
+        [
+         "2026-08-25",
+         42997
+        ],
+        [
+         "2026-08-26",
+         42997
+        ],
+        [
+         "2026-08-27",
+         42997
+        ],
+        [
+         "2026-08-28",
+         42997
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -8831,6 +8919,30 @@
        "days_tracked": 5,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         43997
+        ],
+        [
+         "2026-08-24",
+         43997
+        ],
+        [
+         "2026-08-25",
+         43997
+        ],
+        [
+         "2026-08-26",
+         43997
+        ],
+        [
+         "2026-08-28",
+         43997
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -8860,6 +8972,30 @@
        "days_tracked": 5,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         44079
+        ],
+        [
+         "2026-08-24",
+         44079
+        ],
+        [
+         "2026-08-25",
+         44079
+        ],
+        [
+         "2026-08-26",
+         44079
+        ],
+        [
+         "2026-08-28",
+         44079
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -8889,6 +9025,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         44083
+        ],
+        [
+         "2026-08-28",
+         44083
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -8918,6 +9066,34 @@
        "days_tracked": 6,
        "cuts": 1,
        "delta": 831,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         48992
+        ],
+        [
+         "2026-08-24",
+         48992
+        ],
+        [
+         "2026-08-25",
+         48952
+        ],
+        [
+         "2026-08-26",
+         49823
+        ],
+        [
+         "2026-08-27",
+         49823
+        ],
+        [
+         "2026-08-28",
+         49823
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -8947,6 +9123,26 @@
        "days_tracked": 4,
        "cuts": 1,
        "delta": -743,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         54338
+        ],
+        [
+         "2026-08-24",
+         54338
+        ],
+        [
+         "2026-08-26",
+         53595
+        ],
+        [
+         "2026-08-28",
+         53595
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -8976,6 +9172,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-26",
+         53998
+        ],
+        [
+         "2026-08-28",
+         53998
+        ]
+       ],
        "flags": []
       },
       {
@@ -9002,6 +9210,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         56931
+        ],
+        [
+         "2026-08-24",
+         56931
+        ],
+        [
+         "2026-08-28",
+         56931
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9031,6 +9255,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "series": [
+        [
+         "2026-08-26",
+         57990
+        ],
+        [
+         "2026-08-28",
+         57990
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -9060,6 +9296,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-23",
+         58293
+        ],
+        [
+         "2026-08-24",
+         58293
+        ],
+        [
+         "2026-08-28",
+         58293
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents",
@@ -9090,6 +9342,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-23",
+         58299
+        ],
+        [
+         "2026-08-28",
+         58299
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents",
@@ -9120,6 +9384,26 @@
        "days_tracked": 4,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         61884
+        ],
+        [
+         "2026-08-24",
+         61884
+        ],
+        [
+         "2026-08-26",
+         61884
+        ],
+        [
+         "2026-08-28",
+         61884
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9149,6 +9433,26 @@
        "days_tracked": 4,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         61954
+        ],
+        [
+         "2026-08-24",
+         61954
+        ],
+        [
+         "2026-08-26",
+         61954
+        ],
+        [
+         "2026-08-28",
+         61954
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9178,6 +9482,26 @@
        "days_tracked": 4,
        "cuts": 1,
        "delta": -377,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         62367
+        ],
+        [
+         "2026-08-24",
+         61990
+        ],
+        [
+         "2026-08-26",
+         61990
+        ],
+        [
+         "2026-08-28",
+         61990
+        ]
+       ],
        "flags": [
         "CPO",
         "1-owner",
@@ -9208,6 +9532,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         65398
+        ],
+        [
+         "2026-08-28",
+         65398
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9237,6 +9573,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Multiple Use",
+       "series": [
+        [
+         "2026-08-23",
+         67398
+        ],
+        [
+         "2026-08-28",
+         67398
+        ]
+       ],
        "flags": [
         "2 owners",
         "1 accident"
@@ -9266,6 +9614,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         44995
+        ],
+        [
+         "2026-08-27",
+         44995
+        ]
+       ],
        "flags": [
         "CPO",
         "1-owner",
@@ -9296,6 +9656,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Rental Use",
+       "series": [
+        [
+         "2026-08-24",
+         45586
+        ],
+        [
+         "2026-08-26",
+         45586
+        ],
+        [
+         "2026-08-27",
+         45586
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -9325,6 +9701,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Corporate Use",
+       "series": [
+        [
+         "2026-08-26",
+         60195
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9354,6 +9738,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 799,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-23",
+         41477
+        ],
+        [
+         "2026-08-24",
+         41477
+        ],
+        [
+         "2026-08-25",
+         42276
+        ]
+       ],
        "flags": [
         "CPO"
        ]
@@ -9382,6 +9782,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Corporate Use",
+       "series": [
+        [
+         "2026-08-23",
+         46395
+        ],
+        [
+         "2026-08-24",
+         46395
+        ],
+        [
+         "2026-08-25",
+         46395
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9411,6 +9827,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-23",
+         42901
+        ],
+        [
+         "2026-08-24",
+         42901
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident",
@@ -9441,6 +9869,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-23",
+         43771
+        ],
+        [
+         "2026-08-24",
+         43771
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents",
@@ -9471,6 +9911,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Rental Use",
+       "series": [
+        [
+         "2026-08-24",
+         45100
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9500,6 +9948,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         48884
+        ],
+        [
+         "2026-08-24",
+         48884
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9529,6 +9989,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         52484
+        ],
+        [
+         "2026-08-24",
+         52484
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -9558,6 +10030,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-23",
+         53590
+        ],
+        [
+         "2026-08-24",
+         53590
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents",
@@ -9588,6 +10072,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Corporate Use",
+       "series": [
+        [
+         "2026-08-23",
+         54644
+        ],
+        [
+         "2026-08-24",
+         54644
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -9617,6 +10113,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         58499
+        ],
+        [
+         "2026-08-24",
+         58499
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -9646,6 +10154,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         58977
+        ]
+       ],
        "flags": [
         "CPO"
        ]
@@ -9674,6 +10190,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         58991
+        ]
+       ],
        "flags": [
         "CPO"
        ]
@@ -9702,6 +10226,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         41590
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9731,6 +10263,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         56004
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -9760,6 +10300,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-23",
+         60997
+        ]
+       ],
        "flags": []
       },
       {
@@ -9786,6 +10334,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         62490
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -12925,6 +13481,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         30595
+        ],
+        [
+         "2026-08-28",
+         30595
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -12954,6 +13522,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Rental Use",
+       "series": [
+        [
+         "2026-08-26",
+         34000
+        ],
+        [
+         "2026-08-28",
+         34000
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -12983,6 +13563,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         34695
+        ],
+        [
+         "2026-08-28",
+         34695
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -13012,6 +13604,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         34900
+        ],
+        [
+         "2026-08-28",
+         34900
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -13041,6 +13645,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-26",
+         35543
+        ],
+        [
+         "2026-08-28",
+         35543
+        ]
+       ],
        "flags": []
       },
       {
@@ -13067,6 +13683,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-26",
+         35799
+        ],
+        [
+         "2026-08-28",
+         35799
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents",
@@ -13097,6 +13725,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         35895
+        ],
+        [
+         "2026-08-28",
+         35895
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -13126,6 +13766,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Corporate Fleet",
+       "series": [
+        [
+         "2026-08-26",
+         35999
+        ],
+        [
+         "2026-08-28",
+         35999
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -13155,6 +13807,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-26",
+         36118
+        ],
+        [
+         "2026-08-28",
+         36118
+        ]
+       ],
        "flags": []
       },
       {
@@ -13181,6 +13845,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-28",
+         36224
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents",
@@ -13211,6 +13883,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-26",
+         37734
+        ],
+        [
+         "2026-08-28",
+         37734
+        ]
+       ],
        "flags": []
       },
       {
@@ -13237,6 +13921,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         41750
+        ],
+        [
+         "2026-08-28",
+         41750
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -13266,6 +13962,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-26",
+         42345
+        ],
+        [
+         "2026-08-28",
+         42345
+        ]
+       ],
        "flags": []
       },
       {
@@ -13292,6 +14000,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-28",
+         42366
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -13321,6 +14037,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 398,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         41987
+        ],
+        [
+         "2026-08-28",
+         42385
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -13350,6 +14078,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         48083
+        ],
+        [
+         "2026-08-28",
+         48083
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -13379,6 +14119,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         48990
+        ],
+        [
+         "2026-08-28",
+         48990
+        ]
+       ],
        "flags": [
         "2 owners",
         "1 accident"
@@ -13408,6 +14160,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Corporate Fleet",
+       "series": [
+        [
+         "2026-08-26",
+         54998
+        ],
+        [
+         "2026-08-28",
+         54998
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -13437,6 +14201,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-28",
+         63367
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17578,6 +18350,26 @@
        "days_tracked": 4,
        "cuts": 1,
        "delta": -501,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         28978
+        ],
+        [
+         "2026-08-24",
+         28978
+        ],
+        [
+         "2026-08-25",
+         28978
+        ],
+        [
+         "2026-08-27",
+         28477
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17607,6 +18399,26 @@
        "days_tracked": 4,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         28999
+        ],
+        [
+         "2026-08-24",
+         28999
+        ],
+        [
+         "2026-08-25",
+         28999
+        ],
+        [
+         "2026-08-27",
+         28999
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -17636,6 +18448,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         29078
+        ],
+        [
+         "2026-08-27",
+         29078
+        ]
+       ],
        "flags": []
       },
       {
@@ -17662,6 +18486,26 @@
        "days_tracked": 4,
        "cuts": 0,
        "delta": 85,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-23",
+         28999
+        ],
+        [
+         "2026-08-24",
+         28999
+        ],
+        [
+         "2026-08-25",
+         28999
+        ],
+        [
+         "2026-08-27",
+         29084
+        ]
+       ],
        "flags": [
         "CPO"
        ]
@@ -17690,6 +18534,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         29135
+        ],
+        [
+         "2026-08-27",
+         29135
+        ]
+       ],
        "flags": []
       },
       {
@@ -17716,6 +18572,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         33552
+        ],
+        [
+         "2026-08-27",
+         33552
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17745,6 +18613,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         34875
+        ],
+        [
+         "2026-08-27",
+         34875
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17774,6 +18654,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         39998
+        ],
+        [
+         "2026-08-27",
+         39998
+        ]
+       ],
        "flags": []
       },
       {
@@ -17800,6 +18692,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-27",
+         40484
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17829,6 +18729,26 @@
        "days_tracked": 4,
        "cuts": 1,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         43298
+        ],
+        [
+         "2026-08-24",
+         42898
+        ],
+        [
+         "2026-08-25",
+         42898
+        ],
+        [
+         "2026-08-27",
+         43298
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17858,6 +18778,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         28090
+        ],
+        [
+         "2026-08-24",
+         28090
+        ],
+        [
+         "2026-08-25",
+         28090
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -17887,6 +18823,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         29214
+        ]
+       ],
        "flags": []
       },
       {
@@ -17913,6 +18857,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         29500
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17942,6 +18894,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         38583
+        ],
+        [
+         "2026-08-24",
+         38583
+        ],
+        [
+         "2026-08-25",
+         38583
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -17971,6 +18939,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         38951
+        ],
+        [
+         "2026-08-24",
+         38951
+        ],
+        [
+         "2026-08-25",
+         38951
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18000,6 +18984,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         39995
+        ],
+        [
+         "2026-08-25",
+         39995
+        ]
+       ],
        "flags": [
         "CPO",
         "1-owner",
@@ -18030,6 +19026,22 @@
        "days_tracked": 3,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-23",
+         40898
+        ],
+        [
+         "2026-08-24",
+         40898
+        ],
+        [
+         "2026-08-25",
+         40898
+        ]
+       ],
        "flags": []
       },
       {
@@ -18056,6 +19068,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         41418
+        ],
+        [
+         "2026-08-25",
+         41418
+        ]
+       ],
        "flags": []
       },
       {
@@ -18082,6 +19106,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-24",
+         41590
+        ],
+        [
+         "2026-08-25",
+         41590
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents",
@@ -18112,6 +19148,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         41948
+        ],
+        [
+         "2026-08-25",
+         41948
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18141,6 +19189,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         42293
+        ],
+        [
+         "2026-08-25",
+         42293
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18170,6 +19230,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Corporate Fleet",
+       "series": [
+        [
+         "2026-08-23",
+         19885
+        ],
+        [
+         "2026-08-24",
+         19885
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18199,6 +19271,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-23",
+         26188
+        ],
+        [
+         "2026-08-24",
+         26188
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents",
@@ -18229,6 +19313,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         40990
+        ],
+        [
+         "2026-08-24",
+         40990
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18258,6 +19354,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         45288
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18287,6 +19391,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-23",
+         49900
+        ],
+        [
+         "2026-08-24",
+         49900
+        ]
+       ],
        "flags": [
         "CPO"
        ]
@@ -18315,6 +19431,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         36300
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18344,6 +19468,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         36797
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18373,6 +19505,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Lease",
+       "series": [
+        [
+         "2026-08-23",
+         38998
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents",
@@ -18403,6 +19543,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         38998
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -18432,6 +19580,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "series": [
+        [
+         "2026-08-23",
+         39417
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -18461,6 +19617,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "series": [
+        [
+         "2026-08-23",
+         40999
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -18490,6 +19654,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-23",
+         41167
+        ]
+       ],
        "flags": []
       },
       {
@@ -18516,6 +19688,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         46799
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -18545,6 +19725,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-23",
+         50529
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -19678,6 +20866,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         21099
+        ],
+        [
+         "2026-08-26",
+         21099
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -19707,6 +20907,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         22990
+        ],
+        [
+         "2026-08-26",
+         22990
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -19736,6 +20948,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         23927
+        ],
+        [
+         "2026-08-26",
+         23927
+        ]
+       ],
        "flags": []
       },
       {
@@ -19762,6 +20986,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 1400,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         22550
+        ],
+        [
+         "2026-08-26",
+         23950
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -21239,6 +22475,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         15900
+        ]
+       ],
        "flags": []
       },
       {
@@ -21265,6 +22509,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         25164
+        ]
+       ],
        "flags": []
       },
       {
@@ -21291,6 +22543,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         25267
+        ]
+       ],
        "flags": []
       },
       {
@@ -21317,6 +22577,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         25405
+        ]
+       ],
        "flags": []
       },
       {
@@ -21343,6 +22611,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         25519
+        ]
+       ],
        "flags": []
       },
       {
@@ -21369,6 +22645,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         25656
+        ]
+       ],
        "flags": []
       },
       {
@@ -21395,6 +22679,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         25789
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -21424,6 +22716,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         25877
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -23164,6 +24464,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         27025
+        ],
+        [
+         "2026-08-27",
+         27025
+        ]
+       ],
        "flags": []
       },
       {
@@ -23190,6 +24502,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         32076
+        ],
+        [
+         "2026-08-27",
+         32076
+        ]
+       ],
        "flags": []
       },
       {
@@ -23216,6 +24540,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         33243
+        ],
+        [
+         "2026-08-27",
+         33243
+        ]
+       ],
        "flags": []
       },
       {
@@ -23242,6 +24578,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         41064
+        ],
+        [
+         "2026-08-27",
+         41064
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -23271,6 +24619,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         33198
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -23300,6 +24656,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         33398
+        ]
+       ],
        "flags": []
       },
       {
@@ -23326,6 +24690,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         33590
+        ]
+       ],
        "flags": []
       },
       {
@@ -23352,6 +24724,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         33596
+        ]
+       ],
        "flags": []
       }
      ],
@@ -25169,6 +26549,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         23575
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25198,6 +26586,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         23798
+        ],
+        [
+         "2026-08-26",
+         23798
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25227,6 +26627,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-26",
+         23798
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25256,6 +26664,18 @@
        "days_tracked": 2,
        "cuts": 1,
        "delta": -1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         28924
+        ],
+        [
+         "2026-08-26",
+         28923
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -25285,6 +26705,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         22018
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -25314,6 +26742,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         23625
+        ]
+       ],
        "flags": []
       },
       {
@@ -25340,6 +26776,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         23995
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25369,6 +26813,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         24083
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25398,6 +26850,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         24286
+        ]
+       ],
        "flags": []
       },
       {
@@ -25424,6 +26884,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         24348
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25453,6 +26921,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Corporate Use",
+       "series": [
+        [
+         "2026-08-24",
+         29368
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -25482,6 +26958,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         29375
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -25511,6 +26995,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         29396
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25540,6 +27032,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Corporate Fleet",
+       "series": [
+        [
+         "2026-08-24",
+         29590
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -25569,6 +27069,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         29697
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -25598,6 +27106,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         29865
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25627,6 +27143,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         29981
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25656,6 +27180,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         30064
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -25685,6 +27217,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         30132
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -28838,6 +30378,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         39975
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -28867,6 +30415,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         40600
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -28896,6 +30452,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         40696
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -28925,6 +30489,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         40896
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -28954,6 +30526,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         40988
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -28983,6 +30563,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         43794
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -29012,6 +30600,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         45176
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -29041,6 +30637,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-24",
+         45390
+        ]
+       ],
        "flags": []
       },
       {
@@ -29067,6 +30671,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         45877
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -29096,6 +30708,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Corporate Fleet",
+       "series": [
+        [
+         "2026-08-24",
+         46357
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -29125,6 +30745,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         46367
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -29154,6 +30782,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-24",
+         74994
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -30733,6 +32369,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         25097
+        ],
+        [
+         "2026-08-27",
+         25097
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -30762,6 +32410,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         25394
+        ],
+        [
+         "2026-08-27",
+         25394
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -30791,6 +32451,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         25637
+        ],
+        [
+         "2026-08-27",
+         25637
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -30820,6 +32492,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         25794
+        ],
+        [
+         "2026-08-27",
+         25794
+        ]
+       ],
        "flags": [
         "1-owner",
         "1 accident"
@@ -30849,6 +32533,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-27",
+         26700
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -30878,6 +32570,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         26939
+        ],
+        [
+         "2026-08-27",
+         26939
+        ]
+       ],
        "flags": []
       },
       {
@@ -30904,6 +32608,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         26966
+        ],
+        [
+         "2026-08-27",
+         26966
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -30933,6 +32649,18 @@
        "days_tracked": 2,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         27248
+        ],
+        [
+         "2026-08-27",
+         27248
+        ]
+       ],
        "flags": []
       },
       {
@@ -30959,6 +32687,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "series": [
+        [
+         "2026-08-25",
+         26850
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -30988,6 +32724,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         27313
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -31017,6 +32761,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "series": [
+        [
+         "2026-08-25",
+         27352
+        ]
+       ],
        "flags": [
         "1-owner",
         "no accidents"
@@ -31046,6 +32798,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "series": [
+        [
+         "2026-08-25",
+         27500
+        ]
+       ],
        "flags": [
         "2 owners",
         "no accidents"
@@ -31075,6 +32835,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": 1,
+       "usage": "Multiple Use",
+       "series": [
+        [
+         "2026-08-25",
+         27599
+        ]
+       ],
        "flags": [
         "2 owners",
         "1 accident"
@@ -31104,6 +32872,14 @@
        "days_tracked": 1,
        "cuts": 0,
        "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "series": [
+        [
+         "2026-08-25",
+         27611
+        ]
+       ],
        "flags": []
       }
      ],
