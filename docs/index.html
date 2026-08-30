@@ -1640,6 +1640,7 @@
   }
 
   function renderList(rows) {
+    LIST_TOKEN++;   // any sync rebuild supersedes a pending deferred one
     const t = model(), daily = dailyFor(t);
     $('list-card').hidden = false;
     const all = trimRows(t.listings || []).length;
@@ -2033,17 +2034,37 @@
     footLine();
   }
 
+  // After show-all the list is ~80% of a 'rows' update — heavy enough to hold
+  // the first paint hostage. A filter toggle paints everything else first and
+  // rebuilds the list one frame later (double rAF: the browser paints between
+  // them). Latest wins: every renderList call bumps LIST_TOKEN, so a toggle
+  // storm coalesces into one rebuild of the final state, and a sync render
+  // (sort, show-all, nav, resize) silently cancels whatever was pending.
+  let LIST_TOKEN = 0;
+  function scheduleListRender(rows, fk) {
+    const tok = ++LIST_TOKEN;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (tok !== LIST_TOKEN) return;   // superseded — a newer render owns the list
+      renderList(rows);
+      restoreFocus(fk, false);   // a list-internal focus died with the old rows — re-land it
+    }));
+  }
+
   // Everything that changes when the filtered row set changes — and nothing
   // that doesn't. The shared path for filter chips, checkboxes and selects;
   // render() calls it too, so a scoped update and a full render cannot drift.
-  function updateRows(rows) {
+  function updateRows(rows, fk) {
     const t = model();
     updateEyebrow();
     renderKpis(rows);
     renderPicks(scoredFrom(rows, t.label, !!t.shopping));
     renderScatter(rows);
     updateMapVisibility();
-    renderList(rows);
+    // Deferred only on the explicit filter path (fk passed), and only once the
+    // reader opted into the heavy list — the 30-row default and the empty state
+    // stay atomic with the KPIs and the notice.
+    if (fk !== undefined && S.showAllList && rows.length > 60) scheduleListRender(rows, fk);
+    else renderList(rows);
     renderEmptyNotice(rows.length, trimRows(t.listings || []).length);
     const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
     renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
@@ -2170,7 +2191,7 @@
     const y = window.scrollY;
     switch (scope) {
       case 'trim': renderHeader(); updateRows(filtered()); renderChart(); renderGone(); break;
-      case 'rows': overview ? updateRowsOverview() : updateRows(filtered()); break;
+      case 'rows': overview ? updateRowsOverview() : updateRows(filtered(), fk); break;
       case 'sort':
       case 'showList': renderList(filtered()); break;
       case 'showGone': renderGone(); break;
