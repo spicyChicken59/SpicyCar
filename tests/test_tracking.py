@@ -569,6 +569,55 @@ class TestDelisted(unittest.TestCase):
         self.assertEqual(T.delisted({tid}, all_rows, today, hist)[0]["likely"],
                          "delisted")
 
+    def test_rebuild_reconstructs_the_window_from_history(self):
+        # No live fetch signals at all — the offline-rebuild situation that
+        # used to mark every departure 'unknown'. The snapshot history keeps
+        # every kept row per fetch day, so the vanish day's max kept price
+        # IS that day's cheapest-N cut-off.
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-edrive40"
+        fill = [self.row(tid, f"W{i:02d}", d, 30000 + i * 500)
+                for d in (d2, d1) for i in range(T.PER_PAGE)]
+        all_rows = fill + [self.row(tid, "HIGH", d2, 41000),
+                           self.row(tid, "LOW", d2, 31250)]
+        today = [r for r in all_rows if r["snapshot_date"] == d1]
+        gone = {g["vin"]: g for g in T.delisted({tid}, all_rows, today,
+                                                T.build_history(all_rows))}
+        # d1 kept a full page (20 rows, max 39,500): above it is an artifact,
+        # below it is a car the fetch should have seen — a real departure
+        self.assertEqual(gone["HIGH"]["likely"], "out of window")
+        self.assertEqual(gone["LOW"]["likely"], "delisted")
+
+    def test_short_vanish_day_returned_everything_so_no_cutoff(self):
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-m60"
+        fill = [self.row(tid, f"W{i}", d, 40000 + i * 1000)
+                for d in (d2, d1) for i in range(5)]
+        all_rows = fill + [self.row(tid, "HIGH", d2, 90000)]
+        today = [r for r in all_rows if r["snapshot_date"] == d1]
+        gone = T.delisted({tid}, all_rows, today, T.build_history(all_rows))
+        # the vanish day kept fewer rows than one page, so its queries saw
+        # their entire scope — no cut-off exists and the missing car is
+        # really gone whatever its price
+        self.assertEqual(gone[0]["likely"], "delisted")
+
+    def test_departure_is_judged_at_its_own_vanish_day_not_today(self):
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i4-edrive40"
+        fill = [self.row(tid, f"W{i:02d}", d, 30000 + i * 100)
+                for d in (d2, d1, T.TODAY) for i in range(T.PER_PAGE)]
+        all_rows = fill + [self.row(tid, "V1", d2, 35000)]
+        today = [r for r in all_rows if r["snapshot_date"] == T.TODAY]
+        T.PRICE_WINDOW[(tid, "National")] = 99999    # today's window is huge
+        gone = T.delisted({tid}, all_rows, today, T.build_history(all_rows))
+        self.assertEqual(gone[0]["likely"], "out of window",
+                         "V1 vanished at the d1 fetch, whose cut-off was "
+                         "$31,900 — today's wider window must not turn an "
+                         "old artifact into a confirmed sale")
+
+    def test_never_fetched_again_is_not_checked(self):
+        d1, tid = self.days_ago(1), "bmw-i5-edrive40"
+        all_rows = [self.row(tid, "V1", d1, 45000)]
+        gone = T.delisted({tid}, all_rows, [], T.build_history(all_rows))
+        self.assertEqual(gone[0]["likely"], "not checked")
+
 
 # --------------------------------------------------------------------------
 # Market stats: the negotiation context — how long cars sit, how often and

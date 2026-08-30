@@ -2255,7 +2255,19 @@
   function renderGone() {
     const t = model(), gone = trimRows(t.gone || []), card = $('gone-card');
     const daily = dailyFor(t);
-    $('gone-hint').textContent = 'Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day\'s cheapest-N cut-off and simply not fetched.';
+    // Confirmed departures lead the table; the fetch artifacts ('out of
+    // window' / 'not checked') follow. The sort is stable, so each half
+    // keeps its most-recent-first order.
+    gone.sort((a, b) => (a.likely === 'delisted' ? 0 : 1) - (b.likely === 'delisted' ? 0 : 1));
+    const nDel = gone.filter((g) => g.likely === 'delisted').length;
+    const nOow = gone.filter((g) => g.likely === 'out of window').length;
+    const nNc = gone.length - nDel - nOow;
+    const splitTxt = [
+      `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (sold or pulled)`,
+      nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
+      nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null,
+    ].filter(Boolean).join(' · ');
+    $('gone-hint').textContent = `Vehicles seen on an earlier snapshot but not on the latest, confirmed departures first — ${splitTxt}.`;
     const table = $('gone-table'); table.textContent = '';
     if (!gone.length) {
       $('gone-more').hidden = true;
@@ -2277,7 +2289,7 @@
     if (narrow()) {
       goneScroll.hidden = true; goneCards.hidden = false;
       for (const g of shownG) goneCards.appendChild(goneCard(g));
-      if (shownG.length < gone.length) $('gone-hint').textContent = `The ${shownG.length} most recent of ${gone.length} departed vehicles — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.`;
+      if (shownG.length < gone.length) $('gone-hint').textContent = `Showing ${shownG.length} of ${gone.length} departed vehicles, confirmed departures first — ${splitTxt}.`;
       return;
     }
     goneScroll.hidden = false; goneCards.hidden = true;
@@ -2292,7 +2304,7 @@
     const body = el('tbody');
     for (const g of shownG) {
       const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
-      const likely = g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above today\'s cut-off' : 'not checked that day') : null;
+      const likely = g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'priced above that day\'s cut-off' : 'not checked that day') : null;
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
           gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · tracked ${g.days_tracked || 0}d${drop}`) : null,
@@ -2307,7 +2319,7 @@
     }
     table.appendChild(body);
     markClipped(goneScroll);
-    if (shownG.length < gone.length) $('gone-hint').textContent = `The ${shownG.length} most recent of ${gone.length} departed vehicles — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.`;
+    if (shownG.length < gone.length) $('gone-hint').textContent = `Showing ${shownG.length} of ${gone.length} departed vehicles, confirmed departures first — ${splitTxt}.`;
   }
 
   // ---------- overview: every model on the watchlist, priced the same way ----------

@@ -701,7 +701,8 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
                 "delisted": "**GONE — likely sold or pulled**",
                 "out of window": "missing today — priced above the fetch "
                                  "cut-off, probably still for sale",
-                "unknown": "not checked today (its trim was not due)",
+                "not checked": "missing — not checked since it was last "
+                               "seen, so nothing is known yet",
             }.get(g["likely"], "missing today")
             line = (f"- {verdict} · last seen {g['last_seen']} at "
                     f"{money(g['last_price'])} · {g.get('trim_label') or ''} · "
@@ -1098,18 +1099,34 @@ def daily_stats(rows):
 
 def delisted(tids, all_rows, today_rows, hist):
     """Vehicles seen before but not today. Because each query only returns
-    the cheapest N, a car priced above today's window for its trim may simply
-    have been pushed out rather than sold — that is flagged, not hidden. When
-    a query came back short it returned its scope's whole market, so absence
-    there is a real delisting whatever the price. Each entry carries its own
-    trim's previous fetch day, because trims of one model can run on
-    different cadences and the model's yesterday is not every trim's."""
+    the cheapest N, a car priced above the fetch window for its trim may
+    simply have been pushed out rather than sold — that is flagged, not
+    hidden. When a query came back short it returned its scope's whole
+    market, so absence there is a real delisting whatever the price.
+
+    Each departure is judged at the day it VANISHED — the trim's first fetch
+    day after the car was last seen — against that day's window, never
+    today's. The snapshot CSV keeps every kept row of every fetch day, so
+    that window is reconstructed from history: the day's max kept price IS
+    the cheapest-N cut-off, and a day with fewer kept rows than one page
+    returned its scope's entire market, so no cut-off applies. When the
+    vanish day is today's live fetch, the run's own per-source window
+    (PRICE_WINDOW / EXHAUSTED) is used instead — it is exact.
+
+    Each entry carries its own trim's previous fetch day, because trims of
+    one model can run on different cadences and the model's yesterday is
+    not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
-    window_max = PRICE_WINDOW
     days_by_tid = defaultdict(set)
+    win_max, win_n = {}, Counter()      # (target, fetch day) -> window
     for r in all_rows:
         if r["target"] in tids:
-            days_by_tid[r["target"]].add(r["snapshot_date"])
+            d = r["snapshot_date"]
+            days_by_tid[r["target"]].add(d)
+            win_n[(r["target"], d)] += 1
+            p = to_int(r["price"])
+            if p is not None and p > win_max.get((r["target"], d), 0):
+                win_max[(r["target"], d)] = p
     by_key = defaultdict(list)
     for r in all_rows:
         if r["target"] in tids and (r["target"], r["vin"]) not in today_vins:
@@ -1128,19 +1145,33 @@ def delisted(tids, all_rows, today_rows, hist):
         last_price = to_int(r["price"])
         tdays = sorted(days_by_tid[tid])
         prev_fetch = tdays[-2] if len(tdays) >= 2 else None
+        # the day the car disappeared: its trim's first fetch after last_seen
+        van_day = next((d for d in tdays if d > last_day), None)
         # a car in a queried state comes back through either query, so it is
         # only out of window when it is above both cut-offs
         keys = (["States", "National"] if r["state"] in SEARCH_STATES
                 else ["National"])
-        cutoffs = [c for c in (window_max.get((tid, k)) for k in keys)
-                   if c is not None]
-        cutoff = max(cutoffs) if cutoffs else None
-        if any((tid, k) in EXHAUSTED for k in keys):
+        if van_day == TODAY and any((tid, k) in PRICE_WINDOW
+                                    or (tid, k) in EXHAUSTED for k in keys):
+            # live run, vanished at today's fetch: use its exact window
+            cutoffs = [c for c in (PRICE_WINDOW.get((tid, k)) for k in keys)
+                       if c is not None]
+            cutoff = max(cutoffs) if cutoffs else None
+            exhausted = any((tid, k) in EXHAUSTED for k in keys)
+        else:
+            # older departure, or an offline rebuild: reconstruct the vanish
+            # day's window from the snapshots themselves
+            cutoff = win_max.get((tid, van_day))
+            exhausted = (van_day is not None
+                         and win_n[(tid, van_day)] < PER_PAGE)
+        if van_day is None:
+            likely = "not checked"      # not fetched again since last seen
+        elif exhausted:
             likely = "delisted"         # a query that saw everything missed it
-        elif cutoff is None:
-            likely = "unknown"          # nothing fetched for this trim today
-        elif last_price is not None and last_price > cutoff:
-            likely = "out of window"    # pricier than today's cheapest-N cut-off
+        elif cutoff is None or last_price is None:
+            likely = "not checked"      # no window to judge the absence by
+        elif last_price > cutoff:
+            likely = "out of window"    # pricier than that day's cheapest-N cut-off
         else:
             likely = "delisted"
         out.append({

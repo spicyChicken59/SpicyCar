@@ -3,6 +3,7 @@
 ## Today
 
 - 7 new on the shopped models · best 1% under typical ($28,890, Plano, TX)
+- 19 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
@@ -10,7 +11,7 @@ _Not fetched today — showing 2026-08-29._
 
 - Lowest asking **$36,479** (Seffner, FL) · + $650 shipping · ▲ $1,928 vs 2026-08-28
 - Lowest drivable **$42,990** (Indianapolis, IN) · no shipping
-- 136 on the market · 22 drivable · 31 price changes · 1 new · 0 gone
+- 136 on the market · 22 drivable · 31 price changes · 1 new · 9 gone
 
 **New today (1)** — first seen this run, best value first
 
@@ -50,7 +51,7 @@ _Worth the ship:_
   [listing](https://www.carfax.com/vehicle/WBY13HG01SCS85680) `WBY13HG01SCS85680`
 
 _136 vehicles across 3 trims · IL 10 · OH 2 · IN 7 · WI 3 · beyond 114_
-_typical car 21d on market · 47% cut while tracked, median $600_
+_typical car 21d on market · 47% cut while tracked, median $600 · sold cars lasted ~15d (28 sold)_
 
 ### eDrive40 — 79 vehicles · lowest asking $36,479 (Seffner, FL)
 
@@ -85,6 +86,15 @@ _First real buyer, near Chicago. Decide by mid-Sept._
 - $49,000 -> **$49,898** (Marietta, GA) `WBY33FK08SCU88019`
 - $53,476 -> **$52,876** (Jacksonville, FL) `WBY33FK06SCU73471`
 - $55,759 -> **$54,459** (Spokane, WA) `WBY33FK00RCR93000`
+
+**Gone since 2026-08-28**
+- $34,551 · 2024 · San Francisco, CA · tracked 6d `WBY33FK02RCP44486`
+- $42,997 · 2024 · Denver, CO · tracked 6d `WBY33FK06RCN91322`
+- $43,997 · 2024 · Bridgewater, NJ · tracked 5d `WBY33FK00RCP89054`
+- $44,079 · 2024 · Santa Clara, CA · tracked 5d `WBY33FK0XRCP37866`
+- $44,083 · 2024 · Riverside, CA · tracked 2d `WBY33FK01RCP92870`
+- $46,998 · 2024 · Laurel, MD · tracked 6d `WBY33FK03RCR06660`
+- $49,823 · 2024 · Henrico, VA · tracked 6d `WBY33FK05RCR93025`
 
 **Indiana (3)**
 - **$42,990** · 26,983 mi · no shipping · 2024 · Indianapolis, IN · ~175 mi from Chicago
@@ -135,6 +145,9 @@ _First real buyer, near Chicago. Decide by mid-Sept._
 - $53,987 -> **$55,482** (Fairfax, VA) `WBY13HG08SCS39361`
 - $56,297 -> **$59,697** (Pompano Beach, FL) `WBY13HG07SCS61030`
 
+**Gone since 2026-08-26**
+- $60,195 · 2025 · Spokane, WA · tracked 1d `WBY13HG02SCU64018`
+
 **Illinois (1)**
 - **$53,052** · 27,530 mi · no shipping · 2025 · Ottawa, IL · ~75 mi from Chicago
   _1-owner · no accidents_
@@ -174,6 +187,9 @@ _First real buyer, near Chicago. Decide by mid-Sept._
   `WBY13HG04SCS35730`
 
 ### M60 — 35 vehicles · lowest asking $48,995 (Allston, MA)
+
+**Gone since 2026-08-26**
+- $65,489 · 2024 · Saint Louis, MO · tracked 1d `WBY43FK07RCP55178`
 
 **Illinois (9)**
 - **$50,370** · 50,163 mi · no shipping · 2024 · Roselle, IL · ~25 mi from Chicago
@@ -269,7 +285,7 @@ _Not fetched today — showing 2026-08-29._
 
 - Lowest asking **$25,225** (Arlington, TX) · + $536 shipping · ▲ $225 vs 2026-08-27
 - Lowest drivable **$28,371** (Franklin, WI) · no shipping
-- 70 on the market · 33 drivable · 15 price changes · 6 new · 0 gone
+- 70 on the market · 33 drivable · 15 price changes · 6 new · 10 gone
 
 **New today (6)** — first seen this run, best value first
 
@@ -320,7 +336,7 @@ _Worth the ship:_
   [listing](https://www.autolist.com/bmw-i4#vin=WBY73AW06PFP89165) `WBY73AW06PFP89165`
 
 _70 vehicles across 2 trims · IL 22 · OH 8 · IN 2 · WI 1 · beyond 37_
-_typical car 21d on market · 39% cut while tracked, median $475_
+_typical car 21d on market · 39% cut while tracked, median $475 · sold cars lasted ~15d (28 sold)_
 
 ### eDrive40 — 34 vehicles · lowest asking $25,225 (Arlington, TX)
 
@@ -335,6 +351,15 @@ _Shopping alongside the i5 — the cheaper way into the same drivetrain._
 - $38,391 -> **$37,621** (Bedford, OH) `WBY73AW00RFR51049`
 - $40,418 -> **$38,418** (Elgin, IL) `WBY73AW05PFR16732`
 - $39,593 -> **$39,000** (Downers Grove, IL) `WBY73AW04PFP60277`
+
+**Gone since 2026-08-27**
+- $28,477 · 2023 · Newport Beach, CA · tracked 4d `WBY73AW01PFN91531`
+- $28,999 · 2023 · Horsham, PA · tracked 4d `WBY73AW09PFP98457`
+- $29,078 · 2023 · San Jose, CA · tracked 2d `WBY73AW05PFR08582`
+- $29,084 · 2023 · Fresno, CA · tracked 4d `WBY73AW01PFR46519`
+- $29,135 · 2023 · Hawthorne, CA · tracked 2d `WBY73AW05PFR29898`
+- $33,552 · 2023 · Manchester, MO · tracked 2d `WBY73AW05PFR06640`
+- $34,875 · 2023 · Hazelwood, MO · tracked 2d `WBY73AW09PFR37339`
 
 **Illinois (7)**
 - **$32,990** · 38,213 mi · no shipping · 2023 · Chicago, IL · ~25 mi from Chicago
@@ -440,6 +465,11 @@ _Shopping alongside the i5 — the cheaper way into the same drivetrain._
 - $45,333 -> **$45,519** (Skokie, IL) `WBY33AW09PFP87487`
 - $45,444 -> **$45,852** (Skokie, IL) `WBY33AW07PFP47909`
 - $52,995 -> **$52,862** (Calumet City, IL) `WBY33HD01SFT96001`
+
+**Gone since 2026-08-27**
+- $39,998 · 2023 · Oceanside, CA · tracked 2d `WBY33AW00PFP30692`
+- $40,484 · 2023 · Ocala, FL · tracked 1d `WBY33AW08PFR22345`
+- $43,298 · 2023 · Dublin, OH · tracked 4d `WBY33AW07PFR39685`
 
 **Illinois (15)**
 - **$40,409** · 20,680 mi · no shipping · 2022 · Bloomington, IL · ~125 mi from Chicago

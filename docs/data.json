@@ -8402,7 +8402,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK02RCP44486",
        "year": 2024,
        "trim": "eDrive40",
@@ -8428,7 +8428,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK06RCN91322",
        "year": 2024,
        "trim": "eDrive40",
@@ -8457,7 +8457,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK00RCP89054",
        "year": 2024,
        "trim": "eDrive40",
@@ -8486,7 +8486,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK0XRCP37866",
        "year": 2024,
        "trim": "eDrive40",
@@ -8515,7 +8515,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK01RCP92870",
        "year": 2024,
        "trim": "eDrive40",
@@ -8544,7 +8544,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK03RCR06660",
        "year": 2024,
        "trim": "eDrive40",
@@ -8572,7 +8572,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK05RCR93025",
        "year": 2024,
        "trim": "eDrive40",
@@ -8601,7 +8601,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK0XRCS96353",
        "year": 2024,
        "trim": "eDrive40",
@@ -8631,7 +8631,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK01RCS84947",
        "year": 2024,
        "trim": "eDrive40",
@@ -8660,7 +8660,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY13HG02SCU64018",
        "year": 2025,
        "trim": "xDrive40",
@@ -8689,7 +8689,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY43FK07RCP55178",
        "year": 2024,
        "trim": "M60",
@@ -8718,7 +8718,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK09RCP87626",
        "year": 2024,
        "trim": "eDrive40",
@@ -8746,7 +8746,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK03RCS03415",
        "year": 2024,
        "trim": "eDrive40",
@@ -8775,7 +8775,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK0XRCP36412",
        "year": 2024,
        "trim": "eDrive40",
@@ -8805,7 +8805,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK00RCP40114",
        "year": 2024,
        "trim": "eDrive40",
@@ -8835,7 +8835,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK05SCT65228",
        "year": 2025,
        "trim": "eDrive40",
@@ -8864,7 +8864,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK09SCT13763",
        "year": 2025,
        "trim": "eDrive40",
@@ -8893,7 +8893,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY13HG0XSCS54122",
        "year": 2025,
        "trim": "xDrive40",
@@ -8922,7 +8922,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY13HG04SCS84975",
        "year": 2025,
        "trim": "xDrive40",
@@ -8952,7 +8952,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY13HG06SCS12076",
        "year": 2025,
        "trim": "xDrive40",
@@ -8981,7 +8981,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY43FK09RCR05226",
        "year": 2024,
        "trim": "M60",
@@ -9010,7 +9010,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY43FK03RCR83131",
        "year": 2024,
        "trim": "M60",
@@ -9039,7 +9039,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY43FK06RCR50334",
        "year": 2024,
        "trim": "M60",
@@ -9067,7 +9067,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY43FK00RCP18604",
        "year": 2024,
        "trim": "M60",
@@ -9095,7 +9095,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33FK09RCP82409",
        "year": 2024,
        "trim": "eDrive40",
@@ -9124,7 +9124,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY43FK03RCN91315",
        "year": 2024,
        "trim": "M60",
@@ -9153,7 +9153,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY13HG08SCS11804",
        "year": 2025,
        "trim": "xDrive40",
@@ -9179,7 +9179,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY43FK01RCR03812",
        "year": 2024,
        "trim": "M60",
@@ -9213,8 +9213,8 @@
       "tracked_2d": 135,
       "cut_share": 0.47,
       "median_cut": 600,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 28,
+      "median_days_to_sale": 15
      }
     },
     "ix": {
@@ -16824,7 +16824,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW01PFN91531",
        "year": 2023,
        "trim": "eDrive40",
@@ -16853,7 +16853,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW09PFP98457",
        "year": 2023,
        "trim": "eDrive40",
@@ -16882,7 +16882,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW05PFR08582",
        "year": 2023,
        "trim": "eDrive40",
@@ -16908,7 +16908,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW01PFR46519",
        "year": 2023,
        "trim": "eDrive40",
@@ -16936,7 +16936,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW05PFR29898",
        "year": 2023,
        "trim": "eDrive40",
@@ -16962,7 +16962,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW05PFR06640",
        "year": 2023,
        "trim": "eDrive40",
@@ -16991,7 +16991,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW09PFR37339",
        "year": 2023,
        "trim": "eDrive40",
@@ -17020,7 +17020,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW00PFP30692",
        "year": 2023,
        "trim": "M50",
@@ -17046,7 +17046,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW08PFR22345",
        "year": 2023,
        "trim": "M50",
@@ -17075,7 +17075,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW07PFR39685",
        "year": 2023,
        "trim": "M50",
@@ -17104,7 +17104,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW08PFP78765",
        "year": 2023,
        "trim": "eDrive40",
@@ -17133,7 +17133,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW09RFS79606",
        "year": 2024,
        "trim": "eDrive40",
@@ -17159,7 +17159,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW09PFR01747",
        "year": 2023,
        "trim": "eDrive40",
@@ -17188,7 +17188,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WBY73AW04PFP45018",
        "year": 2023,
        "trim": "eDrive40",
@@ -17217,7 +17217,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW04PFR32354",
        "year": 2023,
        "trim": "M50",
@@ -17246,7 +17246,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WBY73AW0XPFR09372",
        "year": 2023,
        "trim": "eDrive40",
@@ -17276,7 +17276,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW03PFP49947",
        "year": 2023,
        "trim": "M50",
@@ -17302,7 +17302,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WBY73AW03PFR19368",
        "year": 2023,
        "trim": "eDrive40",
@@ -17328,7 +17328,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WBY73AW03RFS90309",
        "year": 2024,
        "trim": "eDrive40",
@@ -17358,7 +17358,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WBY73AW00PFP75262",
        "year": 2023,
        "trim": "eDrive40",
@@ -17387,7 +17387,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WBY73AW00PFR16265",
        "year": 2023,
        "trim": "eDrive40",
@@ -17416,7 +17416,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW02NFN17922",
        "year": 2022,
        "trim": "eDrive40",
@@ -17445,7 +17445,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW04RFR67979",
        "year": 2024,
        "trim": "eDrive40",
@@ -17475,7 +17475,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW03PFN68119",
        "year": 2023,
        "trim": "M50",
@@ -17504,7 +17504,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WBY23HD09SFT87607",
        "year": 2025,
        "trim": "eDrive40",
@@ -17533,7 +17533,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW06RFS00939",
        "year": 2024,
        "trim": "M50",
@@ -17561,7 +17561,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW07PFR03285",
        "year": 2023,
        "trim": "eDrive40",
@@ -17590,7 +17590,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW06PFR08171",
        "year": 2023,
        "trim": "eDrive40",
@@ -17619,7 +17619,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW0XRFR50961",
        "year": 2024,
        "trim": "eDrive40",
@@ -17649,7 +17649,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY73AW05RFT29644",
        "year": 2024,
        "trim": "eDrive40",
@@ -17678,7 +17678,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY23HD03SFU00254",
        "year": 2025,
        "trim": "eDrive40",
@@ -17707,7 +17707,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW09PFP07167",
        "year": 2023,
        "trim": "M50",
@@ -17736,7 +17736,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW0XPFR41477",
        "year": 2023,
        "trim": "M50",
@@ -17762,7 +17762,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW05RFS76474",
        "year": 2024,
        "trim": "M50",
@@ -17791,7 +17791,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WBY33AW02RFR86867",
        "year": 2024,
        "trim": "M50",
@@ -17825,8 +17825,8 @@
       "tracked_2d": 64,
       "cut_share": 0.39,
       "median_cut": 475,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 28,
+      "median_days_to_sale": 15
      }
     }
    }
@@ -18924,7 +18924,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KM8KMDAF0NU055213",
        "year": 2022,
        "trim": "SE",
@@ -18953,7 +18953,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KM8KMDAF4NU113033",
        "year": 2022,
        "trim": "SE",
@@ -18982,7 +18982,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "KM8KM4AEXNU109883",
        "year": 2022,
        "trim": "SE",
@@ -19008,7 +19008,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "KM8KMDDF3RU259991",
        "year": 2024,
        "trim": "SE",
@@ -19042,8 +19042,8 @@
       "tracked_2d": 16,
       "cut_share": 0.44,
       "median_cut": 311,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 2,
+      "median_days_to_sale": 17
      }
     }
    }
@@ -20485,7 +20485,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDC34LB9N5056506",
        "year": 2022,
        "trim": "Wind",
@@ -20511,7 +20511,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDC3DLC5P5114798",
        "year": 2023,
        "trim": "Wind",
@@ -20537,7 +20537,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDC3DLC4N5028878",
        "year": 2022,
        "trim": "GT-Line",
@@ -20563,7 +20563,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "KNDC3DLC1P5106746",
        "year": 2023,
        "trim": "Wind",
@@ -20589,7 +20589,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "KNDC5DLEXP5105607",
        "year": 2023,
        "trim": "GT",
@@ -20615,7 +20615,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "KNDC3DLC4N5027150",
        "year": 2022,
        "trim": "Wind",
@@ -20641,7 +20641,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "KNDC4DLCXP5120335",
        "year": 2023,
        "trim": "GT-Line",
@@ -20670,7 +20670,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "KNDC3DLCXR5172022",
        "year": 2024,
        "trim": "Wind",
@@ -20704,8 +20704,8 @@
       "tracked_2d": 21,
       "cut_share": 0.19,
       "median_cut": 234,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 3,
+      "median_days_to_sale": 34
      }
     },
     "ev9": {
@@ -22322,7 +22322,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDAB5S11R6035397",
        "year": 2024,
        "trim": "Light Long Range",
@@ -22351,7 +22351,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDAA5S23R6033758",
        "year": 2024,
        "trim": "Light",
@@ -22377,7 +22377,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDAA5S2XR6020893",
        "year": 2024,
        "trim": "Light",
@@ -22403,7 +22403,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDAB5S13R6022392",
        "year": 2024,
        "trim": "Light Long Range",
@@ -22429,7 +22429,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "KNDADFS50R6026077",
        "year": 2024,
        "trim": "Land",
@@ -22463,8 +22463,8 @@
       "tracked_2d": 30,
       "cut_share": 0.27,
       "median_cut": 422,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 5,
+      "median_days_to_sale": 16
      }
     }
    }
@@ -24249,7 +24249,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1K2BFZ1PP052916",
        "year": 2023,
        "trim": "Premium",
@@ -24278,7 +24278,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1K2BFZ4PP030991",
        "year": 2023,
        "trim": "Premium",
@@ -24307,7 +24307,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1G2BFZ3NP049051",
        "year": 2022,
        "trim": "Premium",
@@ -24336,7 +24336,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1L2BFZ3PP046846",
        "year": 2023,
        "trim": "Premium Plus",
@@ -24365,7 +24365,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1K2BFZ1PP031788",
        "year": 2023,
        "trim": "Premium",
@@ -24394,7 +24394,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1H2BFZ1NP016070",
        "year": 2022,
        "trim": "Premium Plus",
@@ -24420,7 +24420,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1K2BFZ2PP054254",
        "year": 2023,
        "trim": "Premium",
@@ -24449,7 +24449,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1ACBFZ9PP032826",
        "year": 2023,
        "trim": "Premium",
@@ -24478,7 +24478,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1H2BFZ6NP015013",
        "year": 2022,
        "trim": "Premium Plus",
@@ -24504,7 +24504,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "WA1LUBFZ7RP052940",
        "year": 2024,
        "trim": "Premium Plus",
@@ -24533,7 +24533,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA132BFZ2PP052511",
        "year": 2023,
        "trim": "Premium Plus",
@@ -24562,7 +24562,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1L2BFZ2PP049270",
        "year": 2023,
        "trim": "Premium Plus",
@@ -24591,7 +24591,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1BCBFZ7PP061620",
        "year": 2023,
        "trim": "Premium Plus",
@@ -24620,7 +24620,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1L2BFZ2PP001364",
        "year": 2023,
        "trim": "Premium Plus",
@@ -24649,7 +24649,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1L2BFZ9RP013546",
        "year": 2024,
        "trim": "Premium Plus",
@@ -24678,7 +24678,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1L2BFZ3PP054543",
        "year": 2023,
        "trim": "Premium Plus",
@@ -24707,7 +24707,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1L2BFZ6PP002050",
        "year": 2023,
        "trim": "Premium Plus",
@@ -24736,7 +24736,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1K2BFZ3RP014798",
        "year": 2024,
        "trim": "Premium",
@@ -24765,7 +24765,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "WA1M2BFZXPP045312",
        "year": 2023,
        "trim": "Prestige",
@@ -24799,8 +24799,8 @@
       "tracked_2d": 29,
       "cut_share": 0.31,
       "median_cut": 470,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 9,
+      "median_days_to_sale": 15
      }
     }
    }
@@ -27918,7 +27918,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1TEA5RA008392",
        "year": 2024,
        "trim": "Touring",
@@ -27947,7 +27947,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1TEA6PA005739",
        "year": 2023,
        "trim": "Touring",
@@ -27976,7 +27976,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1TEA9RA003275",
        "year": 2024,
        "trim": "Touring",
@@ -28005,7 +28005,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1TEAXRA008579",
        "year": 2024,
        "trim": "Touring",
@@ -28034,7 +28034,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1TEA0PA004389",
        "year": 2023,
        "trim": "Touring",
@@ -28063,7 +28063,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1GBA3NA004640",
        "year": 2022,
        "trim": "Grand Touring",
@@ -28092,7 +28092,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1TEA1PA003557",
        "year": 2023,
        "trim": "Touring",
@@ -28121,7 +28121,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "50EA1GBA1NA001588",
        "year": 2022,
        "trim": "Grand Touring",
@@ -28147,7 +28147,7 @@
        "flags": []
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "50EA1TEAXRA001163",
        "year": 2024,
        "trim": "Touring",
@@ -28176,7 +28176,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "50EA1TEA1RA001195",
        "year": 2024,
        "trim": "Touring",
@@ -28205,7 +28205,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "50EA1TEA8RA001663",
        "year": 2024,
        "trim": "Touring",
@@ -28234,7 +28234,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "50EA1GBA9NA002889",
        "year": 2022,
        "trim": "Grand Touring",
@@ -28268,8 +28268,8 @@
       "tracked_2d": 51,
       "cut_share": 0.22,
       "median_cut": 409,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 8,
+      "median_days_to_sale": 15
      }
     }
    }
@@ -29810,7 +29810,7 @@
      },
      "gone": [
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "3GN7DSRP1RS253520",
        "year": 2024,
        "trim": "2RS",
@@ -29839,7 +29839,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "delisted",
        "vin": "3GN7DSRR7RS267021",
        "year": 2024,
        "trim": "2RS",
@@ -29868,7 +29868,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "3GN7DNRP7RS235217",
        "year": 2024,
        "trim": "RS",
@@ -29897,7 +29897,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "3GN7DSRP1SS118799",
        "year": 2025,
        "trim": "RS",
@@ -29926,7 +29926,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "3GN7DRRP2RS292948",
        "year": 2024,
        "trim": "3RS",
@@ -29955,7 +29955,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "3GN7DSRP3RS270514",
        "year": 2024,
        "trim": "2RS",
@@ -29984,7 +29984,7 @@
        ]
       },
       {
-       "likely": "unknown",
+       "likely": "out of window",
        "vin": "3GN7DRRP4RS254654",
        "year": 2024,
        "trim": "3RS",
@@ -30015,8 +30015,8 @@
       "tracked_2d": 25,
       "cut_share": 0.28,
       "median_cut": 396,
-      "n_sold": 0,
-      "median_days_to_sale": null
+      "n_sold": 2,
+      "median_days_to_sale": 16
      }
     }
    }
