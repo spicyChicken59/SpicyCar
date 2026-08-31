@@ -81,11 +81,59 @@
   #notes-grid ul { margin: 0; padding-left: 18px; }
   #notes-grid li { margin-top: 6px; font-size: 14px; }
   .chart-head__right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  /* The chip names every filter in force, and a comparison can put seven model
+     names in it. sc-chip does not wrap, so at 390px seven models pushed the
+     document to 679px wide — 289px of empty page beside the masthead, reachable
+     by pressing chips, which is this feature's own primary gesture. */
+  #chart-scope { white-space: normal; max-width: 100%; overflow-wrap: anywhere; }
 
   /* Captions ran 173 characters a line at 1280px because they span the whole
      card; 65-75 is the readable band. (The picks head sets its own width
      below — it used to appear in this list too, where it was dead code.) */
   #map-hint, #chart-hint, #list-hint, #scatter-hint, #gone-hint, #overview-hint { max-width: 58ch; }
+
+  /* Side by side. The metric column is the row's label, so it is the one that
+     must never wrap to two lines while a figure beside it sits on one — and it
+     is sticky for the same reason the listings table's vehicle column is: at
+     three or four columns the table scrolls, and a number with no name is not
+     a comparison. */
+  #compare-table .cmp-metric,
+  #compare-table thead th:first-child { position: sticky; left: 0; z-index: 1; background: var(--sc-surface); text-align: left; }
+  #compare-table .cmp-metric { font-weight: 600; min-width: 168px; }
+  #compare-table thead th { vertical-align: bottom; min-width: 148px; }
+  #compare-table thead th > span { display: block; }   /* the header stacks; the chip inside the last one must not stretch to the column */
+  #compare-table .cmp-swatch { margin-bottom: 4px; }
+  #compare-table td { vertical-align: top; }
+  /* On a phone the scroll window is 348px and the metric column took 168 of
+     it, so every right-aligned figure in the table started outside the strip:
+     ten labels and no numbers until the reader scrolled each row. The metric
+     column gives back what it can, the value columns narrow to what a price
+     needs, and the figures move left so the first thing past the label IS the
+     number. (Every other table on the page shrinks or becomes cards below
+     721px; this one had no narrow band at all.) */
+  @media (max-width: 720px) {
+    /* Widths, not minimums: the columns are sized by their longest sub-line
+       ("2024 · 40,138 mi · Cincinnati, OH"), which ran the two-column table to
+       687px inside a 348px window. Capped and wrapped, two columns come to
+       96 + 124 + 124 = 344 and both are on screen at once, which is the whole
+       point of the card; three or more scroll, with the metric column sticky. */
+    #compare-table .cmp-metric { min-width: 96px; max-width: 96px; white-space: normal; }
+    #compare-table thead th, #compare-table tbody td { min-width: 0; max-width: 124px; white-space: normal; overflow-wrap: anywhere; }
+    #compare-table tbody td { text-align: left; }
+    #compare-table thead th .sc-nowrap { white-space: normal; }
+  }
+  /* The one marked winner on the page. It is a weight and a rule, not a colour
+     of its own: the "best value here" line under it already carries the word. */
+  #compare-table td.is-best { box-shadow: inset 2px 0 0 0 var(--sc-accent); }
+  /* The count riding on a trim or model chip. Muted so the label reads first
+     — but sc-note's grey is a colour for a card, and a pressed chip is cobalt
+     with white text: measured 1.37:1 in light, 2.99:1 in dark, which is to say
+     the count vanished at the exact moment the reader selected the chip. A
+     pressed chip's count inherits the chip's own colour, so it passes wherever
+     the label it sits under passes (7.96:1). */
+  #f-trim .chip-n, #f-model .chip-n { margin-left: 6px; opacity: 0.7; }
+  #f-trim [aria-pressed="true"] .chip-n,
+  #f-model [aria-pressed="true"] .chip-n { color: currentColor; opacity: 0.85; }
 
   /* Spicy picks — this app's own idea, and the one block that stays */
   .picks-grid { grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr)); }   /* two picks per row on a desktop, one on a phone */
@@ -244,9 +292,12 @@
               aria-expanded="false" aria-controls="filters">Filters</button>
     </div>
     <div class="sc-filters" id="filters">
-      <label class="sc-field">Trim
-        <select class="sc-select" id="f-trim"></select>
-      </label>
+      <div class="sc-field" id="f-model-field">Models
+        <div class="sc-tabs" id="f-model" role="group" aria-label="Models — pick any; two or more compares them; none selected means every model"></div>
+      </div>
+      <div class="sc-field" id="f-trim-field">Trim
+        <div class="sc-tabs" id="f-trim" role="group" aria-label="Trim — pick any; two or more compares them; none selected means every trim"></div>
+      </div>
       <div class="sc-field">Where
         <div class="sc-tabs" id="f-where" role="group" aria-label="Where — pick any; none selected means everywhere"></div>
       </div>
@@ -279,6 +330,16 @@
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
       <label class="sc-check" title="Certified pre-owned only — the cars the promo financing applies to"><input type="checkbox" id="f-cpo"> CPO only</label>
     </div>
+  </section>
+
+  <section class="sc-card" id="compare-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2 id="compare-title">Side by side</h2>
+        <p class="sc-hint" id="compare-hint"></p>
+      </div>
+    </div>
+    <div class="sc-table-scroll"><table class="sc-table sc-table--compact" id="compare-table"></table></div>
   </section>
 
   <div id="shortlist" hidden></div>
@@ -349,7 +410,7 @@
   <section class="sc-card" id="list-card" hidden>
     <div class="sc-card__head">
       <div>
-        <h2>Listings</h2>
+        <h2 id="list-title">Listings</h2>
         <p class="sc-hint" id="list-hint"></p>
       </div>
     </div>
@@ -390,9 +451,13 @@
 
   // ---------- state ----------
   // The front page is the overview of every model (brand 'all'); a model view is a brand + model.
+  // trims / models: the comparison. A set of trim ids on a model page, a set of
+  //   'brand/model' keys on the overview — empty means all of them, exactly the
+  //   rule the where chips already teach. One picked is a scope; TWO OR MORE is
+  //   a comparison, and that is the only thing that turns a view into one.
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) hidden from the market chart via the legend.
-  const S = { site: null, brand: 'all', model: null, trim: 'all', where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -410,6 +475,33 @@
   function savePrefs() {
     try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden], range: S.range })); } catch (e) { /* private mode etc. */ }
   }
+  // ---------- the comparison ----------
+  // Which trims a model page is about, in the config's own order (a Set has
+  // insertion order, and the chips must not reshuffle as they are pressed).
+  // Empty means every trim, so this is the list to iterate and S.trims.size is
+  // the question "did the reader pick".
+  function trimIds(t) { return Object.keys((t || {}).trims || {}); }
+  function selectedTrims(t) {
+    const ids = trimIds(t);
+    return S.trims.size ? ids.filter((id) => S.trims.has(id)) : ids;
+  }
+  // A comparison is two or more picked ON PURPOSE. A model that happens to
+  // have four trims is not comparing them; a reader who pressed two is.
+  const comparingTrims = () => S.trims.size >= 2;
+  const comparingModels = () => S.models.size >= 2;
+  // The models a view is about — every one on the overview until the reader
+  // picks. Sections that describe the RECORD (how many days the tracker has
+  // run, how many trims it watches) keep calling allModels(); everything that
+  // describes what is on screen calls this.
+  function modelsInView() {
+    const all = allModels();
+    return S.models.size ? all.filter(({ bk, mk }) => S.models.has(bk + '/' + mk)) : all;
+  }
+  // A selection can outlive the config that made it legal — a shared link, a
+  // trim dropped from the watchlist. It is validated in exactly one place,
+  // applyUrl, which is the only door a selection ever comes through: the chips
+  // can only press ids they were built from, and every navigation clears them.
+  const modelKey = (bk, mk) => bk + '/' + mk;
   // Brand palette — the design system's categorical slots, in fixed watchlist
   // order. Hue carries the BRAND; the dash pattern carries the model within it,
   // so identity never rides on color alone. The sheet ships five slots and folds
@@ -430,6 +522,22 @@
   function modelDash(bk, mk) {
     const models = Object.keys((((S.site || {}).brands || {})[bk] || {}).models || {});
     return DASHES[Math.max(0, models.indexOf(mk)) % DASHES.length];
+  }
+  // Hue carries whatever the view is actually comparing. Across the watchlist
+  // that is the brand — a BMW and a Kia have to be told apart at a glance. On
+  // one model page every car is the same brand, so the brand hue is a constant
+  // and carries nothing; the trim is what varies, so the trim takes the channel.
+  // Same five slots, same sheet, same "a 6th folds to Other" rule — only the
+  // thing being distinguished changes with the question on screen.
+  function trimTone(t, trimId) {
+    const ids = trimIds(t);
+    const idx = ids.indexOf(trimId);
+    return idx >= 0 && idx < BRAND_TONES.length ? BRAND_TONES[idx] : 'chart-other';
+  }
+  // The tone a single car wears, wherever it is drawn. One rule for the map,
+  // the scatter and the sparklines, so a dot and its row can never disagree.
+  function carTone(x, bk, t) {
+    return (t && trimIds(t).length > 1 && x && x.trim_id) ? trimTone(t, x.trim_id) : brandTone(bk);
   }
 
   // ---------- helpers ----------
@@ -568,14 +676,21 @@
       return { x, modelLabel, year, trim, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
+  // What the per-slot cap counts. Across the watchlist it is the model, so one
+  // model cannot take the whole page. Inside a trim comparison the model is a
+  // constant and the TRIM is the thing with sides, so it counts trims instead —
+  // press two chips and get four cars from one of them and the card has
+  // answered a question nobody asked.
+  const capKey = (p) => (S.brand === 'all' ? p.modelLabel : (p.x.trim_id || p.modelLabel));
   function choosePicks(scored, n, perModel, seed) {
     const out = [], per = Object.assign({}, seed && seed.per);
     const taken = new Set((seed && seed.taken) || []);
     for (const p of scored.slice().sort((a, b) => b.pct - a.pct)) {
       if (p.pct <= 0) break;   // a pick must actually sit under typical
       if (taken.has(p.x.vin)) continue;
-      if (perModel && (per[p.modelLabel] || 0) >= perModel) continue;
-      out.push(p); per[p.modelLabel] = (per[p.modelLabel] || 0) + 1;
+      const k = capKey(p);
+      if (perModel && (per[k] || 0) >= perModel) continue;
+      out.push(p); per[k] = (per[k] || 0) + 1;
       if (out.length >= n) break;
     }
     return out;
@@ -591,12 +706,18 @@
     const shop = choosePicks(scored.filter((p) => p.shopping), Math.min(reserve, n), perModel);
     if (!shop.length) return choosePicks(scored, n, perModel);
     const per = {};
-    for (const p of shop) per[p.modelLabel] = (per[p.modelLabel] || 0) + 1;
+    for (const p of shop) per[capKey(p)] = (per[capKey(p)] || 0) + 1;
     const rest = choosePicks(scored, n - shop.length, perModel, { per, taken: shop.map((p) => p.x.vin) });
     return [...shop, ...rest];
   }
   // Decided once, so the cards, the map rings and the scatter rings cannot drift
   // apart — they were each running their own copy of this.
+  //
+  // pickCap is the other half of that promise: each of the three used to pass
+  // its own idea of the cap (the overview capped per model, the model page
+  // capped not at all), so the same three call sites could still disagree about
+  // WHICH cars even while agreeing how to choose them. One question, one answer.
+  const pickCap = () => (S.brand === 'all' || comparingTrims() ? pickParams().per_model : undefined);
   function pickSets(scored, perModel) {
     const P = pickParams();
     return {
@@ -897,7 +1018,12 @@
           img.addEventListener('load', clampTip);
           tip.appendChild(img);
         }
-        tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${c.m.label} · ${c.x.year || ''}`));
+        // Name the thing the dot's colour is standing for. On a model page the
+        // hue carries the trim and nothing else on the map said which trim a dot
+        // was — a colour with no text channel is not an answer for a reader who
+        // cannot separate the two hues, or for one using a screen reader.
+        tip.appendChild(el('div', { class: 'sc-tooltip__date' },
+          [c.m.label, c.x.trim_label || c.x.trim, c.x.year || ''].filter(Boolean).join(' · ')));
         tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + SC.toneRef(brandTone(c.bk)) }),
           el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
         const extras = [];
@@ -953,7 +1079,7 @@
         const isShort = onShortlist(c.x);
         // a var() reference, not a resolved hex — the map is built once per
         // view, so a draw-time colour would sit stale after a theme flip
-        const hueRef = isShort ? 'var(--sc-accent)' : SC.toneRef(brandTone(c.bk));
+        const hueRef = isShort ? 'var(--sc-accent)' : SC.toneRef(carTone(c.x, c.bk, mode === 'model' ? c.m : null));
         const dot = svgEl('circle', {
           class: 'sc-dot sc-dot--link is-off ' + (c.x.local ? 'is-filled' : 'is-hollow'),
           cx, cy,
@@ -1067,6 +1193,10 @@
       }
 
       MAP_CTL = { key, mode, entries, picked, visible: [], VIEW, svg, hideTip, states,
+                  // whether the dots wear trim hues, which decides the pick
+                  // ring's dash — a property of the view, not of the selection,
+                  // so it is settled once here with the rest of the build
+                  byTrimHue: mode === 'model' && trimIds(model()).length > 1,
                   halos, hitR: null, haloW: 0, haloStale: false, twinKey: null, kOrder: [], kIdx: -1, kBig: null };
       // Keyboard: arrows step the VISIBLE dots west→east (the order the map
       // reads), Enter opens the car, Escape clears, blur clears — the
@@ -1117,16 +1247,16 @@
     if (!MAP_CTL || MAP_CTL.key !== mapKey()) { buildMap(); return; }
     if (MAP_CTL.empty) return;
     const ctl = MAP_CTL, mode = ctl.mode;
-    const inTrim = (x) => mode !== 'model' || S.trim === 'all' || x.trim_id === S.trim;
-    const entryVisible = (e) => (mode === 'model'
-      ? inTrim(e.c.x) && passesShared(e.c.x)
-      : !S.hidden.has(e.c.bk + '/' + e.c.mk) && passesShared(e.c.x));
-    // the same pick sets as the cards above the map
-    const P = pickParams();
-    const scored = mode === 'model'
-      ? scoredFrom(applyShared(trimRows(model().listings || [])), model().label || '', !!model().shopping)
-      : allModels().flatMap(({ m }) => scoredFrom(applyShared(m.listings || []), m.label || '', !!m.shopping));
-    const sets = pickSets(scored, mode === 'model' ? undefined : P.per_model);
+    // The trim rule is trimRows', not a second copy of it: one predicate for
+    // the table, the counts and the dots, so they cannot drift apart. On the
+    // watchlist the model chips narrow the map the same way, and the legend's
+    // hidden set still hides a line's dots on top of that.
+    const inSel = (e) => (mode === 'model'
+      ? (!S.trims.size || S.trims.has(e.c.x.trim_id))
+      : (!S.models.size || S.models.has(modelKey(e.c.bk, e.c.mk))) && !S.hidden.has(modelKey(e.c.bk, e.c.mk)));
+    const entryVisible = (e) => inSel(e) && passesShared(e.c.x);
+    // literally the same pick sets as the cards above the map
+    const sets = pickSets(scopedScored(), pickCap());
     ctl.picked.clear();
     for (const p of [...sets.local, ...sets.far]) ctl.picked.add(p.x.vin);
     let onMap = 0, offMap = 0, anyShort = false, addedRing = false;
@@ -1141,6 +1271,8 @@
       const wantRing = vis && (ctl.picked.has(e.c.x.vin) || onShortlist(e.c.x));
       if (wantRing && !e.ring) {
         e.ring = svgEl('circle', { class: 'sc-dot-ring',
+          // dashed where the dots wear trim hues — see the scatter's ring
+          'stroke-dasharray': ctl.byTrimHue ? '3 2.5' : null,
           cx: e.cx, cy: e.cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke', ...e.spread });
         ctl.svg.insertBefore(e.ring, e.dot);
         addedRing = true;
@@ -1174,7 +1306,11 @@
     sizeMapHalos();
     // Refit when the Where selection (or what the map is of) changes; the other
     // filters hide dots without moving the frame — exactly the old behavior.
-    const fitKey = mode + '|' + [...S.where].sort().join(',') + '|' + (mode === 'model' ? S.brand + '/' + S.model : '');
+    // Sorted, both of them: a Set iterates in insertion order, so pressing the
+    // same two models in the other order would otherwise read as a new frame
+    // and animate for nothing.
+    const fitKey = mode + '|' + [...S.where].sort().join(',') + '|'
+      + (mode === 'model' ? S.brand + '/' + S.model : [...S.models].sort().join(','));
     if (fitKey !== MAP_FIT_KEY) {
       MAP_FIT_KEY = fitKey;
       ctl.VIEW.animateTo(mapFitTarget(ctl.states, visible));
@@ -1182,7 +1318,16 @@
     const lg = $('map-legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-chart-context)' }), 'filled — drivable'));
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid var(--sc-chart-context)' }), 'hollow — shipping added'));
-    if (ctl.picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid var(--sc-accent)' }), 'spicy pick'));
+    // On a model page the dots are coloured by trim (carTone), so the key says
+    // which is which — and only for the trims actually on the map right now.
+    if (mode === 'model') {
+      const t = model(), keys = trimIds(t);
+      if (keys.length > 1) for (const id of keys) {
+        if (!visible.some((v) => v.x.trim_id === id)) continue;
+        lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + SC.toneRef(trimTone(t, id)) }), trimLabel(t, id)));
+      }
+    }
+    if (ctl.picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px ' + (ctl.byTrimHue ? 'dashed' : 'solid') + ' var(--sc-accent)' }), 'spicy pick'));
     if (anyShort) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-accent)' }), 'shortlist'));
     const noPointer = window.matchMedia('(hover: none)').matches;
     const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
@@ -1282,7 +1427,14 @@
     if (pts.length < 3) { card.hidden = true; return; }
     card.hidden = false;            // unhide before measuring, or clientWidth is 0 on a direct load
     const host = $('scatter'); host.textContent = '';
-    const color = SC.toneRef(brandTone(S.brand));   // a live var() reference — re-resolves on a theme flip
+    // A live var() reference — re-resolves on a theme flip. `color` is what a
+    // dot wears when nothing else distinguishes it; on a model with more than
+    // one trim the TRIM takes the hue instead (carTone), because that is the
+    // only thing that varies inside one model page and the plot's whole job is
+    // to show which cars sit under their year's line.
+    const color = SC.toneRef(brandTone(S.brand));
+    const byTrimHue = trimIds(t).length > 1;
+    const dotTone = (x) => SC.toneRef(carTone(x, S.brand, t));
     const W = Math.max(320, host.clientWidth || 720), H = 300;
     const m = { t: 16, r: 60, b: 40, l: 56 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
@@ -1346,8 +1498,7 @@
       svg.appendChild(t2);
     }
     // the picks currently shown above, ringed
-    const sc = scoredFrom(rows, t.label, !!t.shopping);
-    const scSets = pickSets(sc);
+    const scSets = pickSets(scopedScored(rows), pickCap());
     const ringed = new Set([...scSets.local, ...scSets.far].map((p) => p.x.vin));
     const TIP = SC.tooltip(host, { live: false, flip: 0.6, offsetX: 14, offsetY: -34 });
     const tip = TIP.node;
@@ -1369,7 +1520,7 @@
         tip.appendChild(img);
       }
       tip.appendChild(el('div', { class: 'sc-tooltip__date' }, `${x.year || ''} ${x.trim || ''}`.trim()));
-      tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + color }),
+      tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + dotTone(x) }),
         el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
       const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
       if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
@@ -1442,9 +1593,14 @@
     for (const x of pts) {
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
       const isShort = onShortlist(x);
-      const hue = isShort ? 'var(--sc-accent)' : color;      // shortlisted cars wear the accent outright
+      const hue = isShort ? 'var(--sc-accent)' : dotTone(x);      // shortlisted cars wear the accent outright
       const yr = String(x.year || '');
-      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'sc-dot-ring', cx, cy, r: 7.5, 'data-year': yr }));
+      // Dashed when the dots are trim-coloured: --sc-accent (#AC3400) and the
+      // second categorical slot (#D24100) are both dark orange, so a ringed
+      // eDrive40 was an orange ring around an orange dot and read as a fuzzy
+      // edge rather than a mark. The dash is a channel no palette can take.
+      if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'sc-dot-ring', cx, cy, r: 7.5,
+        'stroke-dasharray': byTrimHue ? '3 2.5' : null, 'data-year': yr }));
       const u = safeUrl(x.url);
       const dot = svgEl('circle', { class: 'sc-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' sc-dot--link' : ''),
         cx, cy, r: 4, 'data-year': yr, style: x.local ? 'fill:' + hue : 'stroke:' + hue });
@@ -1494,9 +1650,17 @@
     };
     host.onblur = () => focusDot(-1);
     const lg = $('scatter-legend'); lg.textContent = '';
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + color }), 'drivable'));
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + color }), 'shipping added'));
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px solid var(--sc-accent)' }), 'spicy pick'));
+    // Fill and outline say drivable or shipped; hue says which trim, when there
+    // is more than one. Named here rather than left to be guessed, because a
+    // reader comparing two trims will read the colour first.
+    const trimKeys = trimIds(t);
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + (trimKeys.length > 1 ? 'var(--sc-chart-context)' : color) }), 'drivable'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + (trimKeys.length > 1 ? 'var(--sc-chart-context)' : color) }), 'shipping added'));
+    if (trimKeys.length > 1) for (const id of trimKeys) {
+      if (!pts.some((x) => x.trim_id === id)) continue;   // a trim with no car on the plot needs no key
+      lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + SC.toneRef(trimTone(t, id)) }), trimLabel(t, id)));
+    }
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px ' + (byTrimHue ? 'dashed' : 'solid') + ' var(--sc-accent)' }), 'spicy pick'));
     if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-accent)' }), 'shortlist'));
     if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed var(--sc-border-strong)' }), 'typical value by year'));
     // one chip per model year — hover to preview, press to hold (the touch path)
@@ -1522,8 +1686,56 @@
 
   // ---------- data access ----------
   function model() { return S.site.brands[S.brand].models[S.model]; }
-  function trimRows(rows) { return S.trim === 'all' ? rows : rows.filter((x) => x.trim_id === S.trim); }
-  function dailyFor(m) { return S.trim === 'all' ? (m.daily || []) : ((m.daily_by_trim || {})[S.trim] || []); }
+  function trimRows(rows) { return S.trims.size ? rows.filter((x) => S.trims.has(x.trim_id)) : rows; }
+  // Departures are keyed (target, vin), not by VIN alone, so a car two trim
+  // targets both matched leaves two rows — and any scope holding both trims
+  // would list it twice and count it twice as gone. Unconditional on purpose:
+  // the widest scope is the model page with nothing picked, which holds strictly
+  // more (target, vin) rows than any subset of it, so gating this on a
+  // comparison would have skipped the view most exposed to the duplicate.
+  // Live listings need no such pass: pick_display_rows already made them
+  // VIN-unique.
+  function goneRows(m) {
+    const rows = trimRows(m.gone || []);
+    const seen = new Set(), out = [];
+    for (const g of rows) {
+      const k = String(g.vin || '').toUpperCase();
+      if (k && seen.has(k)) continue;
+      if (k) seen.add(k);
+      out.push(g);
+    }
+    return out;
+  }
+  const dailyOfTrim = (m, id) => ((m.daily_by_trim || {})[id] || []);
+  // The precomputed record for the current trim selection: the model's own when
+  // nothing is picked, one trim's when one is, and for a subset the union of
+  // their days — counts SUMMED and the floor taken, the medians dropped.
+  //
+  // Summing counts is not exact either, and the i5's own file says so: on
+  // 2026-08-30 its four trim rows add to 137 cars over a model row of 136,
+  // because the nationwide CPO watch and the eDrive40 target both saw the same
+  // certified car. That is why a multi-trim scope goes through the rebuild
+  // below, which is VIN-unique by construction. This merge is the fallback for
+  // a file whose departures carry no history, where the rebuild cannot run —
+  // one car double-counted beats no line at all, and the medians, which cannot
+  // be merged at any price, are simply not claimed.
+  function mergeDaily(series) {
+    const by = new Map();
+    for (const one of series) for (const d of one) {
+      let e = by.get(d.date);
+      if (!e) by.set(d.date, e = { date: d.date, n: 0, n_local: 0, min_price: null, median_price: null });
+      e.n += d.n || 0;
+      e.n_local += d.n_local || 0;
+      if (d.min_price != null && (e.min_price == null || d.min_price < e.min_price)) e.min_price = d.min_price;
+    }
+    return [...by.keys()].sort().map((k) => by.get(k));
+  }
+  function dailyFor(m) {
+    if (!S.trims.size) return m.daily || [];
+    const ids = selectedTrims(m);
+    if (ids.length === 1) return dailyOfTrim(m, ids[0]);
+    return mergeDaily(ids.map((id) => dailyOfTrim(m, id)));
+  }
   // The same daily series, rebuilt over exactly the cars the reader has in
   // view. m.daily is a national aggregate computed at build time, so before
   // this the chart answered "the cheapest car in the country" while the table
@@ -1548,30 +1760,45 @@
   // those 52 rows by one car — listings whose state changed between snapshots.
   // Is anything actually narrowed? Trim is excluded on purpose: daily_by_trim
   // is precomputed per trim, so a trim-only view already has an exact,
-  // complete series and does not need rebuilding.
+  // complete series and does not need rebuilding. A subset of two or more is
+  // the exception — see needsRebuild: nothing was precomputed for "eDrive40
+  // and xDrive40 together", and their day rows cannot simply be added.
   function sharedActive() {
     return !!(S.where.size || S.year !== 'all' || S.miles || S.clean || S.rental || S.cpo);
   }
-  function scopedDaily(m) {
+  // A pooled trim selection has no precomputed answer, so it is rebuilt for the
+  // same reason a filtered one is: the alternative is a number nothing computed.
+  function needsRebuild() {
+    return sharedActive() || (S.brand !== 'all' && comparingTrims());
+  }
+  // `only` names one trim, for the line a trim comparison draws for it. Without
+  // it the series is the whole current scope, pooled.
+  function scopedDaily(m, only) {
     // Nothing narrowed: hand back the precomputed series. It is the same
     // numbers the rebuild produces (verified day-row for day-row) and it is
     // the only one that can speak for days older than the departure horizon
     // below, so the default view keeps the whole record.
-    if (!sharedActive()) return dailyFor(m);
-    // Trim is a model-page filter; on the overview the select is hidden and
+    if (only) { if (!sharedActive()) return dailyOfTrim(m, only); }
+    else if (!needsRebuild()) return dailyFor(m);
+    // Trim is a model-page filter; on the overview the chips are hidden and
     // every model is drawn, so it must not narrow anything there — the same
     // rule filterBits applies when it names the scope.
-    const byTrim = (arr) => (S.brand === 'all' ? arr : trimRows(arr));
+    const byTrim = (arr) => (S.brand === 'all' ? arr
+      : only ? arr.filter((x) => x.trim_id === only)
+      : trimRows(arr));
     const gone = byTrim(m.gone || []);
     // A data.json written before departures carried their history would leave
     // exactly the survivorship hole described above. Take the precomputed
     // national series instead of drawing a wrong one.
-    if (gone.length && !gone.some((x) => (x.series || []).length)) return dailyFor(m);
+    if (gone.length && !gone.some((x) => (x.series || []).length)) return only ? dailyOfTrim(m, only) : dailyFor(m);
     // One car, one price per day. Python aggregates pick_display_rows(), which
     // is one row per VIN; here m.listings is already VIN-unique but m.gone is
     // keyed by (target, vin), so a VIN two trim targets both matched would be
-    // counted twice on every day their histories overlap. No car does that in
-    // today's file — a trim whose trim_match is empty is what would cause it.
+    // counted twice on every day their histories overlap. A car DOES do that
+    // now: the nationwide CPO watch and the ordinary eDrive40 target match the
+    // same certified cars, and the per-trim day rows prove it — the i5's four
+    // trims add to 137 vehicles on 2026-08-30 over a model row of 136. This
+    // map is what keeps the pooled trim scope honest about it.
     const uniq = new Map();
     for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter(passesShared)) {
       const k = String(x.vin || '').toUpperCase();
@@ -1668,6 +1895,16 @@
       for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; }
     }
   }
+  // The one scored pool for the view on screen. The pick cards, the map's rings
+  // and the scatter's rings each built this expression themselves and agreed
+  // only by coincidence; a comparison would have had to make the same guess
+  // three more times. `rows` is the model page's already-filtered set when the
+  // caller has it in hand, so the filtering is not paid for twice.
+  function scopedScored(rows) {
+    if (S.brand === 'all') return modelsInView().flatMap(({ m, mk }) => scoredFrom(applyShared(m.listings || []), m.label || mk, !!m.shopping));
+    const t = model();
+    return scoredFrom(rows || applyShared(trimRows(t.listings || [])), t.label || S.model, !!t.shopping);
+  }
   // The boot-time full-market scores, restricted to the rows currently in view.
   function scoredFrom(rows, label, shopping) {
     return rows.filter((x) => x.pick_pct != null)
@@ -1683,11 +1920,17 @@
       const p = Object.values(site.brands || {}).flatMap((b) => Object.values(b.models || {})).map((m) => m.params || {}).find((q) => q.ship_cost != null) || {};
       site.buyer = { id: '', label: '', home_zip: '', states: [], state_names: {}, ship_cost: p.ship_cost };
     }
-    for (const b of Object.values(site.brands || {})) for (const m of Object.values(b.models || {})) {
+    for (const [bk, b] of Object.entries(site.brands || {})) for (const [mk, m] of Object.entries(b.models || {})) {
       m.params = m.params || {};
       for (const x of [...(m.listings || []), ...(m.gone || [])]) {
         if (x.local === undefined) x.local = (x.markets || [x.market]).some((k) => k && k !== 'National');
         if (x.price === undefined && x.last_price !== undefined) x.price = x.last_price;
+        // Which car this is, carried by the row itself. A table that pools two
+        // models has to say which is which on every line, and a row that knows
+        // its own model cannot be handed the wrong label by whatever assembled
+        // the list — the same reason trim_id rides along already.
+        x.model_key = bk + '/' + mk;
+        x.model_label = m.label || mk;
       }
     }
     return site;
@@ -1699,10 +1942,14 @@
   const lastStep = (x) => (x.series && x.series.length >= 2)
     ? x.series[x.series.length - 1][1] - x.series[x.series.length - 2][1] : 0;
 
-  function filtered() {
-    const t = model();
-    let rows = trimRows(t.listings || []);
-    rows = applyShared(rows).slice();   // copy: sort() below must not reorder the site data in place
+  // The table's order, applied to whatever set of cars it was handed. Split out
+  // from filtered() the day the table stopped being about one model: a
+  // comparison ranks every selected model's cars against each other in ONE
+  // list, which is the point of putting them side by side, and it has to be the
+  // same ranking the single-model table uses or the two would disagree about
+  // which car is cheapest.
+  function sortRows(rows) {
+    const out = rows.slice();   // copy: sort() below must not reorder the site data in place
     const big = 1e12;
     const keyFns = {
       local: (x) => (x.local ? 0 : 1) * 1e15 + (x.price ?? big),
@@ -1716,8 +1963,25 @@
       newest: (x) => (x.first_seen ? -Date.parse(x.first_seen) : 0),
     };
     const k = keyFns[S.sort] || keyFns.local;
-    rows.sort((a, b) => k(a) - k(b) || (a.price ?? big) - (b.price ?? big));
-    return rows;
+    out.sort((a, b) => k(a) - k(b) || (a.price ?? big) - (b.price ?? big));
+    return out;
+  }
+  function filtered() { return sortRows(applyShared(trimRows(model().listings || []))); }
+  // Every selected model's cars in one ranking. VIN-unique across the pool as a
+  // guard, not a fix: one model's listings already are, and no VIN in today's
+  // file appears under two models (585 distinct VINs, checked) — but the trim
+  // queries are text matches on overlapping spellings, so the day one model's
+  // query starts catching another's car, this table drops the duplicate instead
+  // of counting it twice in every number above it.
+  function pooledRows() {
+    const seen = new Set(), out = [];
+    for (const { m } of modelsInView()) for (const x of applyShared(m.listings || [])) {
+      const k = String(x.vin || '').toUpperCase();
+      if (k && seen.has(k)) continue;
+      if (k) seen.add(k);
+      out.push(x);
+    }
+    return sortRows(out);
   }
   // The where chips, defined once so the filter bar's summary line can name the
   // same things the chips do.
@@ -1753,10 +2017,24 @@
 
   // ---------- navigation ----------
   function brandLabel(id) { return id === 'all' ? 'all' : (S.site.brands[id].label || id); }
+  // A comparison has to be sharable or it is not a comparison — the reader who
+  // built it wants to send it to whoever is buying the car with them. The
+  // selection therefore rides in the address bar, in the same brand-model-trim
+  // slug the watchlist ids already use: ?models=bmw-i5,bmw-ix and
+  // ?trims=bmw-i5-edrive40,bmw-i5-xdrive40. The other filters stay per-session,
+  // exactly as before; what is shared is WHAT is being compared, not how the
+  // sender happened to have the table sorted.
+  const modelSlug = (bk, mk) => bk + '-' + mk;
   // The address bar follows the view, so the back button and a shared link both work.
   function syncUrl(replace) {
     const q = new URLSearchParams();
-    if (S.brand !== 'all') { q.set('brand', S.brand); if (S.model) q.set('m', S.model); }
+    if (S.brand !== 'all') {
+      q.set('brand', S.brand);
+      if (S.model) q.set('m', S.model);
+      if (S.trims.size) q.set('trims', selectedTrims(model()).join(','));
+    } else if (S.models.size) {
+      q.set('models', modelsInView().map(({ bk, mk }) => modelSlug(bk, mk)).join(','));
+    }
     history[replace ? 'replaceState' : 'pushState'](null, '', location.pathname + (q.toString() ? '?' + q : ''));
   }
   // ?brand=bmw opens a brand; ?m=i5 names its model; ?model=bmw-i5-edrive40 opens the model that trim belongs to.
@@ -1764,12 +2042,13 @@
   // typo) is never honored with a different car: land on the neutral overview,
   // remember what was asked (urlMiss — the first notice pass says so), and
   // clean the address bar so the dead link is not re-shared.
-  let urlMiss = null;   // { asked, kind: 'car'|'brand' } — one-shot, consumed by renderEmptyNotice
+  let urlMiss = null;   // { asked, kind: 'car'|'brand'|'part' } — one-shot, consumed by renderEmptyNotice
   function applyUrl() {
     const q = new URLSearchParams(location.search);
     const lc = (k) => { const v = q.get(k); return v ? v.toLowerCase() : v; };   // keys are lowercase slugs; casing alone must not fake a miss
+    const list = (k) => (lc(k) || '').split(',').map((x) => x.trim()).filter(Boolean);
     const wantBrand = lc('brand'), wantModel = lc('model'), wantM = lc('m');
-    S.brand = 'all'; S.model = null; urlMiss = null;
+    S.brand = 'all'; S.model = null; S.models = new Set(); S.trims = new Set(); urlMiss = null;
     if (wantModel) {
       for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if ((m.trims || {})[wantModel]) { S.brand = bk; S.model = mk; }
       if (!S.model) urlMiss = { asked: wantModel, kind: 'car' };
@@ -1785,7 +2064,36 @@
       for (const [bk, b] of Object.entries(S.site.brands)) if ((b.models || {})[wantM]) { S.brand = bk; S.model = wantM; }
       if (!S.model) urlMiss = { asked: wantM, kind: 'car' };
     }
-    S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
+    // The selection, restored against the live watchlist. A link that names
+    // four cars of which one has since been dropped is neither a clean hit nor
+    // a dead link: keep the three that still exist, say which one went, and let
+    // the comparison open. Losing the whole link over one retired trim would be
+    // the least useful of the three possible answers.
+    const missed = [];
+    if (S.brand === 'all') {
+      const want = list('models');
+      if (want.length) {
+        const by = new Map(allModels().map(({ bk, mk }) => [modelSlug(bk, mk), modelKey(bk, mk)]));
+        for (const slug of want) { const k = by.get(slug); if (k) S.models.add(k); else missed.push(slug); }
+      }
+    } else {
+      const want = list('trims');
+      if (want.length) {
+        const ids = new Set(trimIds(model()));
+        for (const id of want) { if (ids.has(id)) S.trims.add(id); else missed.push(id); }
+      }
+    }
+    // A selection of one that came from a link is honored as a scope, not
+    // promoted to anything — one chip pressed is one chip pressed.
+    // 'part' is about whether the LINK opened, not whether anything survived
+    // the selection: ?brand=bmw&m=i5&trims=<two dead ids> lands on the i5 with
+    // all 136 of its cars on screen, and saying "showing the whole watchlist
+    // instead" there describes a page the reader is not looking at.
+    if (missed.length && !urlMiss) urlMiss = { asked: missed.join(', '), kind: (S.brand !== 'all' || S.models.size) ? 'part' : 'car' };
+    S.year = 'all'; S.showAllList = S.showAllGone = false;
+    // A model the link put in the comparison must be visible in it, whatever a
+    // legend chip pressed on some earlier visit remembers.
+    for (const k of S.models) S.hidden.delete(k);
     // Always canonicalize (replace, so history stays sane): a miss must not
     // leave the dead URL to be copied onward, and a hit must not keep stray
     // contradictions (?model=…&brand=tesla) or casing variants alive either.
@@ -1794,10 +2102,14 @@
   function pickBrand(id) {
     S.brand = id;
     if (id !== 'all') S.model = Object.keys(S.site.brands[id].models)[0];
-    S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false;
+    S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false;
     syncUrl(); rerender('nav');
   }
-  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); window.scrollTo(0, 0); }
+  // Opening one car out of a comparison is a drill-down, not an exit: the model
+  // selection is left standing, so the brand tab back to "all" — and the back
+  // button, which this pushes a state for — returns to the comparison the
+  // reader built instead of to a watchlist they have to rebuild it from.
+  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); window.scrollTo(0, 0); }
   function segment(host, ids, current, labelOf, caseClass, onPick, fkey) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
@@ -2028,32 +2340,57 @@
   // ---------- model view ----------
   // The eyebrow names the current Where picks, so it refreshes with the rows —
   // the one line of the header that a filter change touches.
+  // The one trim a scope is about, or null — one picked is a scope, none and
+  // two-or-more are not. The header, the meta row and the min-price line all
+  // ask this instead of counting chips themselves.
+  function soleTrim(t) {
+    if (S.trims.size !== 1) return null;
+    return (t.trims || {})[[...S.trims][0]] || null;
+  }
+  const trimLabel = (t, id) => (((t.trims || {})[id] || {}).label || id);
+  // What the reader picked, as a title. "vs" is the whole point of the page in
+  // that state, so the title says it rather than listing four filter bits.
+  function selectionTitle() {
+    if (S.brand === 'all') {
+      const picked = modelsInView();
+      return S.models.size ? picked.map(({ m, mk }) => m.label || mk).join(' vs ') : 'The watchlist';
+    }
+    const t = model();
+    if (S.trims.size >= 2) return `${t.label || S.model} — ${selectedTrims(t).map((id) => trimLabel(t, id)).join(' vs ')}`;
+    const one = soleTrim(t);
+    return one ? `${t.label} ${one.label}` : (t.label || S.model);
+  }
+  const yearSpan = (years) => {
+    const y = years || [];
+    return y.length > 1 ? `${y[0]}–${y[y.length - 1]}` : (y[0] || '');
+  };
   function updateEyebrow() {
     const states = (S.site.buyer || {}).states || [];
     const whereNow = S.where.size ? [...S.where].map(whereLabel) : states;
     if (S.brand === 'all') {
-      $('eyebrow').textContent = ['watchlist', whereNow.join(' · ')].filter(Boolean).join(' · ');
+      $('eyebrow').textContent = [comparingModels() ? 'comparison' : 'watchlist', whereNow.join(' · ')].filter(Boolean).join(' · ');
       return;
     }
     const t = model(), brand = S.site.brands[S.brand];
-    const trim = S.trim === 'all' ? null : (t.trims || {})[S.trim];
+    const trim = soleTrim(t);
     const years = trim && trim.years && trim.years.length ? trim.years : (t.years || []);
-    const yearSpan = years.length > 1 ? `${years[0]}–${years[years.length - 1]}` : (years[0] || '');
     const anyShopping = (((S.site.buyer || {}).shopping || []).length > 0);
     const role = anyShopping ? (t.shopping ? 'shopping' : 'comparison') : null;
-    $('eyebrow').textContent = [brand.label, yearSpan, whereNow.join(' · '), role].filter(Boolean).join(' · ') || 'analyzer';
+    $('eyebrow').textContent = [brand.label, yearSpan(years), whereNow.join(' · '), role].filter(Boolean).join(' · ') || 'analyzer';
   }
   function renderHeader() {
     const t = model(), site = S.site, brand = site.brands[S.brand];
     const brandIds = Object.keys(site.brands), modelIds = Object.keys(brand.models);
     $('mast-right').textContent = 'Data through ' + (dataThrough() || '—');
-    const trim = S.trim === 'all' ? null : (t.trims || {})[S.trim];
+    const trim = soleTrim(t);
     updateEyebrow();
-    $('h1').textContent = trim ? `${t.label} ${trim.label}` : (t.label || S.model);
+    $('h1').textContent = selectionTitle();
     document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
-    const note = trim ? (trim.note || '') : (t.note || '');
+    // Two trims picked have two notes, and neither belongs in a shared dek —
+    // each one is said on its own column in the side-by-side card instead.
+    const note = comparingTrims() ? `${selectedTrims(t).length} trims of the same car, side by side.` : (trim ? (trim.note || '') : (t.note || ''));
     $('dek').textContent = [note, `Asking prices as listed; shipping stated per car.`].filter(Boolean).join(' ');
-    const daily = dailyFor(t), nDays = daily.length, nTrims = Object.keys(t.trims || {}).length;
+    const daily = dailyFor(t), nDays = daily.length, nTrims = trimIds(t).length;
     const p = t.params || {}, minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
     const unfetched = !t.as_of && t.next_due;
     metaRow([
@@ -2063,7 +2400,7 @@
       // fetched model (a CPO watch before its first run) says so instead of
       // claiming a day it does not have; a never-fetched model claims nothing
       unfetched ? null : nDays ? `${nDays} snapshot day${nDays === 1 ? '' : 's'}` : 'first fetch pending for this view',
-      nTrims > 1 && !trim ? `${nTrims} trims` : null,
+      nTrims > 1 && !trim ? (comparingTrims() ? `${S.trims.size} of ${nTrims} trims` : `${nTrims} trims`) : null,
       // A CPO watch names its own window instead of the generic depth label —
       // "Deep fetch" describes a cheapest-N sweep, which is not what it does.
       trim && trim.cpo_only ? `Certified cars under ${num(trim.max_miles)} mi, nationwide, lowest-mileage first`
@@ -2072,7 +2409,7 @@
     ]);
     segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand, 'tab-brand');
     segment($('tabs'), modelIds, S.model, (id) => brand.models[id].label || id, true,
-      (id) => { S.model = id; S.trim = 'all'; S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); }, 'tab-model');
+      (id) => { S.model = id; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); }, 'tab-model');
   }
 
   // Since-the-previous-snapshot movement, one rule for both views: a cut is a
@@ -2080,7 +2417,7 @@
   // latest snapshot (nothing is "new" on day 1, when every car is one day
   // old), gone is a real delisting at the previous fetch day. The model tile
   // and the overview tile both count with exactly this, so they cannot drift.
-  function movementFor(listings, goneRows, daily) {
+  function movementFor(listings, departed, daily) {
     const prev = daily.length >= 2 ? daily[daily.length - 2] : null;
     return {
       hasPrev: daily.length >= 2,
@@ -2089,7 +2426,7 @@
       // same rule as the report: real delistings at each trim's own previous fetch
       // gone respects hasPrev like the others: one snapshot day cannot
       // distinguish a departure, whatever a gone row claims
-      gone: daily.length < 2 ? 0 : goneRows.filter((g) => g.likely === 'delisted'
+      gone: daily.length < 2 ? 0 : departed.filter((g) => g.likely === 'delisted'
         && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : (prev && g.last_seen === prev.date))).length,
     };
   }
@@ -2146,7 +2483,7 @@
 
     // The movement tile counts over `all` — the model's rows before the shared
     // filters — so it takes the record's own series, not the scoped one.
-    const { cuts, fresh: newToday, gone } = movementFor(all, trimRows(t.gone || []), record);
+    const { cuts, fresh: newToday, gone } = movementFor(all, goneRows(t), record);
     // The tile advertised "N new" and then buried them: under any price-based
     // order the new arrivals sit wherever their price puts them, so the count
     // was unreachable. It now sorts the table to them.
@@ -2197,6 +2534,48 @@
     host.appendChild(tile4);
   }
 
+  // Two trims picked draw two lines, not one merged one — and that is a
+  // correctness decision before it is a design one. There is no honest way to
+  // fold two trims into a single median (the file's own numbers: the median of
+  // the i5's four per-trim medians on 2026-08-30 is $54,865 against a true
+  // deduped $49,073), and a reader who pressed two chips is asking how they
+  // differ, which one line cannot answer at any accuracy. Each line is that
+  // trim's own exact series — precomputed when nothing else is narrowed,
+  // rebuilt from the cars' own histories when something is.
+  function renderChartByTrim(t, live) {
+    const cols = selectedTrims(t).map((id) => ({ id, label: trimLabel(t, id), tone: trimTone(t, id),
+      shopping: !!((t.trims || {})[id] || {}).shopping,
+      daily: live.some((x) => x.trim_id === id) ? rangeDaily(scopedDaily(t, id)) : [] }));
+    const dates = [...new Set(cols.flatMap((c) => c.daily.map((d) => d.date)))].sort();
+    const bits = filterBits(false);
+    chartScopeChip(bits);
+    $('chart-title').textContent = 'Asking price over time — by trim';
+    $('chart-hint').textContent = (dates.length
+        ? `Lowest asking price each day for each trim you picked, on one scale. `
+        : `No tracked car matches these filters, so there is no history to draw. `)
+      + (bits.length ? `Filtered to ${bits.join(' · ')}. ` : '')
+      + 'There is no combined line: each trim has its own floor, and one median across them would describe no car on the market.'
+      + (dates.length ? ` ${spanText(dates.map((date) => ({ date })))}.` : '');
+    const lg = $('legend'); lg.textContent = '';
+    // A key for a line that was not drawn is a line the reader then hunts for.
+    for (const c of cols) if (c.daily.length) {
+      lg.appendChild(el('span', null, el('i', { style: 'background:' + SC.toneRef(c.tone) }), c.label));
+    }
+    lineChart($('chart'), cols.map((c) => ({ id: c.id, label: c.label, emphasis: !!c.shopping, tone: c.tone,
+      width: c.shopping ? 2.5 : 1.5, labeled: true,
+      points: c.daily.filter((d) => d.min_price != null).map((d) => ({ date: d.date, value: d.min_price })) })),
+      { named: true, empty: 'No car in this scope has price history yet.' });
+    // One column per trim, the same shape the watchlist's chart table already
+    // uses for models — a merged median column would be the very number the
+    // lines refuse to draw.
+    const tb = $('chart-table'); tb.textContent = '';
+    const table = el('table', { class: 'sc-table sc-table--compact' },
+      el('thead', null, el('tr', null, el('th', null, 'Day'), ...cols.map((c) => el('th', { class: 'sc-num sc-case' }, c.label)))));
+    const body = el('tbody');
+    for (const date of dates.slice().reverse()) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, date),
+      ...cols.map((c) => { const d = c.daily.find((q) => q.date === date); return el('td', { class: 'sc-num' }, d && d.min_price != null ? money(d.min_price) : '—'); })));
+    table.appendChild(body); tb.appendChild(table);
+  }
   function renderChart() {
     const t = model();
     // A scope with no live car left has nothing to plot, whatever history its
@@ -2204,10 +2583,11 @@
     // scope is empty, and a line drawn from cars that have all gone would be
     // the one element on screen disagreeing with them.
     const live = trimRows(t.listings || []).filter(passesShared);
-    const daily = live.length ? rangeDaily(scopedDaily(t)) : [];
     $('chart-card').hidden = false;
-    $('chart-title').textContent = 'Asking price over time';
     rangeChips();
+    if (comparingTrims()) { renderChartByTrim(t, live); return; }
+    const daily = live.length ? rangeDaily(scopedDaily(t)) : [];
+    $('chart-title').textContent = 'Asking price over time';
     // Name the scope the lines were actually drawn over, in the filter bar's
     // own words — the caption is the only place the reader can check that the
     // chart and the table below it are answering the same question.
@@ -2245,10 +2625,14 @@
     table.appendChild(body); tb.appendChild(table);
   }
 
-  function vehicleCell(x, compact) {
+  // `named` is the pooled table's one difference: with two models in one
+  // ranking, "2024 eDrive40" is not enough to tell a reader what they are
+  // looking at, and the row already carries its own model.
+  function vehicleCell(x, compact, named) {
     const trim = (x.trim || '').length > 22 ? (x.trim || '').slice(0, 22) + '…' : (x.trim || '');
     const title = [`${x.year || ''} ${trim}`.trim(), x.color].filter(Boolean).join(' · ');
     return el('div', { class: 'sc-media' }, compact ? null : thumbFor(x), el('div', { class: 'sc-media__body' },
+      named && x.model_label ? el('div', { class: 'sc-eyebrow sc-eyebrow--case' }, x.model_label) : null,
       el('div', { class: 'sc-media__title' }, title,
         onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null),
       el('div', { class: 'sc-media__code' }, x.vin),
@@ -2257,7 +2641,7 @@
   }
 
   // The phone twin of a table row: .sc-media--card (frame · title / sub / code · aside, then a foot row).
-  function listingCard(x, daily) {
+  function listingCard(x, daily, named) {
     const trim = (x.trim || '').length > 22 ? (x.trim || '').slice(0, 22) + '…' : (x.trim || '');
     const aside = el('div', { class: 'sc-media__aside' }, el('div', { class: 'sc-figure' }, money(x.price)),
       el('span', { class: 'sc-note' }, shipNote(x)), movement(x, daily),
@@ -2274,6 +2658,7 @@
       flagsCell(x),
       (x.url || x.carfax) ? quietLinks(x, true) : null);
     return el('div', { class: 'sc-media sc-media--card' }, thumbFor(x),
+      named && x.model_label ? el('div', { class: 'sc-eyebrow sc-eyebrow--case' }, x.model_label) : null,
       el('div', { class: 'sc-media__title' }, `${x.year || ''} ${trim}`.trim(),
         onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null), aside,
       el('div', { class: 'sc-media__sub' }, [x.color, placeCell(x), x.local ? 'drivable' : null].filter(Boolean).join(' · ')),
@@ -2281,17 +2666,66 @@
       foot);
   }
 
+  // What the table is a list OF. One model's cars under the trim chips, or —
+  // when the watchlist is narrowed to a comparison — every selected model's
+  // cars pooled into one ranking. Both answers come from here so the header,
+  // the denominator and the market note can never describe a different set than
+  // the rows below them.
+  function listScope() {
+    if (S.brand === 'all') {
+      const models = modelsInView();
+      const totals = models.flatMap(({ m }) => Object.values(m.trims || {}).map((q) => q.market_total));
+      return {
+        pooled: true,
+        // Counted the way pooledRows() counts, VIN-unique across the models:
+        // summing the model totals would print "168 of 169 tracked" the day one
+        // car is matched by two model targets.
+        all: new Set(models.flatMap(({ m }) => (m.listings || []).map((x) => String(x.vin || '').toUpperCase()))).size,
+        // Only claimed when every trim in the pool reported, and even then it is
+        // a sum over fetch targets that can overlap (a nationwide CPO watch
+        // counts certified cars an ordinary trim counts too), so it is used
+        // solely for the "the API lists N nationwide" line and only when that N
+        // exceeds what is on the page. Null for every target today.
+        cover: totals.length && totals.every((v) => v != null) ? totals.reduce((a, b) => a + b, 0) : null,
+        // the market note is one model's summary statistic; pooled, it would be
+        // an average of unlike things, so the comparison does without it
+        market: {},
+        // movement() marks a car "new" when it is one day old AND its record
+        // has a second day to be new against. Pooled, that question is per
+        // model: the Audi has one snapshot day to the i5's eight, and one
+        // shared series handed every Audi row a "new" chip the Audi's own page
+        // and the compare card beside it both denied. Each row is answered
+        // from its own model's record.
+        daily: [],
+        dailyOf: new Map(models.map(({ bk, mk, m }) => [modelKey(bk, mk), m.daily || []])),
+        what: `${models.length} models`,
+      };
+    }
+    const t = model();
+    const trims = t.trims || {};
+    // Every trim in the current scope, or all of them: the sum is only claimed
+    // when every one of them reported, since a missing total would read as a
+    // smaller market rather than an unknown one.
+    const vals = selectedTrims(t).map((id) => (trims[id] || {}).market_total);
+    return {
+      pooled: false,
+      all: trimRows(t.listings || []).length,
+      cover: vals.length && vals.every((v) => v != null) ? vals.reduce((a, b) => a + b, 0) : null,
+      market: t.market || {},
+      daily: dailyFor(t),
+      what: t.label || S.model,
+    };
+  }
   function renderList(rows) {
     LIST_TOKEN++;   // any sync rebuild supersedes a pending deferred one
-    const t = model(), daily = dailyFor(t);
+    const sc = listScope(), pooled = sc.pooled;
+    // One model's record, or — pooled — the record of the model the row belongs
+    // to. Only movement() reads it, and only for whether a second day exists.
+    const dailyOf = (x) => (sc.dailyOf ? (sc.dailyOf.get(x.model_key) || []) : sc.daily);
     $('list-card').hidden = false;
-    const all = trimRows(t.listings || []).length;
-    // the honest denominator, when the API said how big the market really is
-    const trims = t.trims || {};
-    let cover = null;
-    if (S.trim !== 'all') cover = (trims[S.trim] || {}).market_total;
-    else { const vals = Object.values(trims).map((q) => q.market_total); if (vals.length && vals.every((v) => v != null)) cover = vals.reduce((a, b) => a + b, 0); }
-    const mk = t.market || {}, mbits = [];
+    const all = sc.all;
+    const cover = sc.cover;
+    const mk = sc.market, mbits = [];
     if (mk.median_days_listed != null) mbits.push(`typical car ${mk.median_days_listed}d on market`);
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
     if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 5) mbits.push(`sold cars lasted ~${mk.median_days_to_sale}d (${mk.n_sold} sold)`);
@@ -2306,14 +2740,16 @@
     // "130 of 130 tracked" read as a stutter; show the middle count only when a filter is narrowing.
     const order = S.sort === 'local' ? 'drivable cars first, then by asking price' : null;
     $('list-hint').textContent = `${shown.length < rows.length ? `first ${shown.length} of ` : ''}${rows.length === all ? `${all} tracked` : `${rows.length} of ${all} tracked`}${cover && cover > all ? ` — the API lists ${num(cover)} nationwide` : ''} · one row per VIN${order ? ` · ${order}` : ''} · asking price as listed, shipping stated per car.`
+      + (pooled ? ` Every car across ${sc.what}, ranked together — the Car column says which is which.` : '')
       + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '');
+    $('list-title').textContent = pooled ? 'Every car, side by side' : 'The listings';
     const table = $('list-table'); table.textContent = '';
     const scroll = $('list-scroll');
     const cardsHost = $('list-cards'); cardsHost.textContent = '';
     if (narrow()) {
       scroll.hidden = true; cardsHost.hidden = false;
       if (!rows.length) cardsHost.appendChild(el('p', { class: 'sc-empty' }, 'Nothing matches these filters.'));
-      for (const x of shown) cardsHost.appendChild(listingCard(x, daily));
+      for (const x of shown) cardsHost.appendChild(listingCard(x, dailyOf(x), pooled));
       return;
     }
     scroll.hidden = false; cardsHost.hidden = true;
@@ -2334,7 +2770,7 @@
     const bandSlim = band !== 'full';
     const bandCompact = band === 'compact';
     const cols = [
-      ['Vehicle', null], ['Asking', 'price'], ['Miles', 'miles'], ['Shipping', null],
+      [pooled ? 'Car' : 'Vehicle', null], ['Asking', 'price'], ['Miles', 'miles'], ['Shipping', null],
       ...(dropLanded ? [] : [['Asking + shipping', 'landed']]),
       ['Location', null],
       ...(bandCompact ? [] : [['History', null]]),
@@ -2354,7 +2790,7 @@
     if (!rows.length) body.appendChild(el('tr', { class: 'sc-empty' }, el('td', { colspan: cols.length }, 'Nothing matches these filters.')));
     let lastMsrp = null;
     for (const x of shown) {
-      const price = el('td', { class: 'sc-num col-price' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, daily),
+      const price = el('td', { class: 'sc-num col-price' }, el('span', { class: 'sc-figure' }, money(x.price)), movement(x, dailyOf(x)),
         // Sorted by the latest snapshot's cut, the number the sort ran on must
         // be visible — the movement badge shows the LIFETIME change, which can
         // read non-monotonic (or "cut, then back up") against this ordering.
@@ -2385,7 +2821,7 @@
       const trend = bandSlim ? null : el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
       if (trend) trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');
       body.appendChild(el('tr', null,
-        el('td', { class: 'col-vehicle' }, vehicleCell(x, bandCompact)), price,
+        el('td', { class: 'col-vehicle' }, vehicleCell(x, bandCompact, pooled)), price,
         el('td', { class: 'sc-num' }, x.miles != null ? num(x.miles) : '—'),
         shipping, ...(dropLanded ? [] : [total]), loc,
         bandCompact ? null : el('td', null, flagsCell(x)), listed, trend));
@@ -2414,7 +2850,7 @@
       el('div', { class: 'sc-media__code' }, g.vin), foot);
   }
   function renderGone() {
-    const t = model(), gone = trimRows(t.gone || []), card = $('gone-card');
+    const t = model(), gone = goneRows(t), card = $('gone-card');
     const daily = dailyFor(t);
     // Confirmed departures lead the table; the fetch artifacts ('out of
     // window' / 'not checked') follow. The sort is stable, so each half
@@ -2492,7 +2928,7 @@
   function overviewSeries() {
     if (OV_SERIES) return OV_SERIES;
     OV_SERIES = new Map();
-    for (const { bk, mk, m } of allModels()) {
+    for (const { bk, mk, m } of modelsInView()) {
       // a model with no live car in scope has nothing to plot, the same rule
       // the model page's chart follows
       const live = applyShared(m.listings || []);
@@ -2503,7 +2939,7 @@
   function overviewRows() {
     OV_SERIES = null;   // a new pass: the filters or the range may have moved
     const series = overviewSeries();
-    return allModels().map(({ bk, mk, b, m }) => {
+    return modelsInView().map(({ bk, mk, b, m }) => {
       const rows = applyShared(m.listings || []);
       const priced = rows.filter(hasPrice);
       const best = lowestBy(priced, 'price'), bestLocal = lowestBy(priced.filter(isLocal), 'price');
@@ -2525,19 +2961,33 @@
     if (safeUrl(b.url)) td.appendChild(el('span', { class: 'sc-note' }, el('a', { class: 'sc-link--quiet', href: safeUrl(b.url), target: '_blank', rel: 'noopener' }, 'Listing ↗')));
     return td;
   }
+  // The title block of the watchlist. Split out because pressing a model chip
+  // changes it — "The watchlist" and "i5 vs iX" are different pages — while
+  // rebuilding the filter bar under the reader's finger is exactly what the
+  // chip machinery exists to avoid.
+  function overviewTitles(rows) {
+    const site = S.site;
+    $('mast-right').textContent = 'Data through ' + (dataThrough() || '—');
+    updateEyebrow();
+    $('h1').textContent = selectionTitle();
+    document.title = `${$('h1').textContent} — ${site.app || 'SpicyCar'}`;
+    // One sentence of purpose. The shipping formula lives in how.html; repeating
+    // it here cost the phone fold and said nothing a buyer can act on.
+    $('dek').textContent = comparingModels()
+      ? `${rows.length} models side by side, priced for one buyer in ${homeName()} — every car in one table, cheapest first.`
+      : S.models.size
+        ? `One model of the watchlist, priced for one buyer in ${homeName()} — press another to compare.`
+        : `${rows.length} electric cars, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
+    const nShop = rows.filter((r) => r.shopping).length;
+    metaRow([`Data through ${fmtDateLong(dataThrough())}`,
+      S.models.size ? `${rows.length} of ${allModels().length} models` : null,
+      nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
+  }
   function renderOverview() {
     const site = S.site;
     const rows = overviewRows();
-    for (const id of ['list-card', 'gone-card', 'scatter-card']) $(id).hidden = true;
-    $('mast-right').textContent = 'Data through ' + (dataThrough() || '—');
-    updateEyebrow();
-    $('h1').textContent = 'The watchlist';
-    document.title = `The watchlist — ${site.app || 'SpicyCar'}`;
-    // One sentence of purpose. The shipping formula lives in how.html; repeating
-    // it here cost the phone fold and said nothing a buyer can act on.
-    $('dek').textContent = `${rows.length} electric cars, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
-    const nShop = rows.filter((r) => r.shopping).length;
-    metaRow([`Data through ${fmtDateLong(dataThrough())}`, nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
+    for (const id of ['gone-card', 'scatter-card']) $(id).hidden = true;
+    overviewTitles(rows);
     segment($('tabs-brand'), ['all', ...Object.keys(site.brands)], 'all', brandLabel, true, pickBrand, 'tab-brand');
     $('tabs').hidden = true;
     renderShortlist(true);
@@ -2554,11 +3004,19 @@
     updateEyebrow();
     renderOverviewChart(rows);   // filter-scoped like everything below it
     renderOverviewKpis(rows);
-    renderPicks(rows.flatMap((r) => scoredFrom(applyShared(r.m.listings || []), r.label, r.shopping)), pickParams().per_model);
+    renderCompare();
+    renderPicks(scopedScored(), pickCap());
     updateMapVisibility();
+    // The comparison's own listings table: two models picked means the reader
+    // wants to see their cars against each other, not two tables to scroll
+    // between. The watchlist proper keeps the model index instead — 600 rows of
+    // seven models is a list nobody reads.
+    syncSortField();
+    if (comparingModels()) renderList(pooledRows());
+    else { $('list-card').hidden = true; LIST_TOKEN++; }
     renderOverviewTable(rows);
     renderEmptyNotice(rows.reduce((a, r) => a + r.n, 0),
-                      allModels().reduce((a, { m }) => a + (m.listings || []).length, 0));
+                      modelsInView().reduce((a, { m }) => a + (m.listings || []).length, 0));
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
     renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car');
     filterCount();
@@ -2580,7 +3038,7 @@
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
-      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond your states · ${rows.length} models`)));
+      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond your states · ${rows.length} model${rows.length === 1 ? '' : 's'}`)));
     // Tile 4 — the returning buyer's daily question, answered on the front
     // page: what moved since the last check? Counted per model against its
     // own previous snapshot (models run on different cadences), by the same
@@ -2589,13 +3047,13 @@
     // shopping-chipped table rows, and the picks — while nothing else on
     // the overview said what changed. The sub names the models that moved
     // most, as doors — each model's own tile breaks its movement down.
-    const mvs = allModels().map(({ bk, mk, m }) => ({ bk, mk, label: m.label || mk,
+    const mvs = modelsInView().map(({ bk, mk, m }) => ({ bk, mk, label: m.label || mk,
       ...movementFor(m.listings || [], m.gone || [], m.daily || []) }));
     const anyPrev = mvs.some((v) => v.hasPrev);
     const cuts = mvs.reduce((a, v) => a + v.cuts, 0);
     const fresh = mvs.reduce((a, v) => a + v.fresh, 0);
     const gone = mvs.reduce((a, v) => a + v.gone, 0);
-    const allTotal = allModels().reduce((a, { m }) => a + (m.listings || []).length, 0);
+    const allTotal = modelsInView().reduce((a, { m }) => a + (m.listings || []).length, 0);
     const movers = mvs.filter((v) => v.cuts + v.fresh + v.gone > 0)
       .sort((a, b) => (b.cuts + b.fresh + b.gone) - (a.cuts + a.fresh + a.gone)).slice(0, 3);
     const sub4 = el('div', { class: 'sc-tile__sub' });
@@ -2649,7 +3107,7 @@
       for (const n of $('chart').querySelectorAll('[data-sid]')) n.style.opacity = (!id || n.getAttribute('data-sid') === id) ? '' : '0.15';
     };
     const lg = $('legend'); lg.textContent = '';
-    for (const { bk, mk, m } of allModels()) {
+    for (const { bk, mk, m } of modelsInView()) {
       const id = bk + '/' + mk, off = S.hidden.has(id);
       const sample = svgEl('svg', { width: 24, height: 10, viewBox: '0 0 24 10', 'aria-hidden': 'true' },
         svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, style: 'stroke:' + SC.toneRef(brandTone(bk)), 'stroke-width': m.shopping ? 3 : 2,
@@ -2662,7 +3120,7 @@
         onmouseleave: () => highlightSeries(null) },
         sample, el('span', null, m.label)));
     }
-    lineChart($('chart'), allModels()
+    lineChart($('chart'), modelsInView()
       .filter(({ bk, mk }) => !S.hidden.has(bk + '/' + mk))
       .map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label, emphasis: !!m.shopping,
         tone: brandTone(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
@@ -2674,6 +3132,150 @@
     const body = el('tbody');
     for (const d of dates) body.appendChild(el('tr', null, el('td', { class: 'sc-mono' }, d), ...rows.map((r) => { const p = seriesFor(r).find((q) => q.date === d); return el('td', { class: 'sc-num' }, p ? money(p.value) : '—'); })));
     table.appendChild(body); tb.appendChild(table);
+  }
+
+  // ---------- side by side ----------
+  // What the reader picked, one column each. Trims of one model on a model
+  // page; models of the watchlist on the front page — the same card either way,
+  // because "which of these two" is the same question at both altitudes.
+  function compareColumns() {
+    if (S.brand === 'all') {
+      return modelsInView().map(({ bk, mk, b, m }) => ({
+        key: modelKey(bk, mk), label: m.label || mk, sub: yearSpan(m.years),
+        tone: brandTone(bk), dash: modelDash(bk, mk), shopping: !!m.shopping, note: m.note || '',
+        rows: applyShared(m.listings || []), all: m.listings || [], gone: m.gone || [],
+        daily: rangeDaily(scopedDaily(m)), record: m.daily || [],
+        go: () => goTo(bk, mk), goTxt: 'Open →',
+      }));
+    }
+    const t = model();
+    return selectedTrims(t).map((id) => {
+      const q = (t.trims || {})[id] || {};
+      const mine = (arr) => (arr || []).filter((x) => x.trim_id === id);
+      return {
+        key: id, label: q.label || id, sub: yearSpan(q.years && q.years.length ? q.years : t.years),
+        tone: trimTone(t, id), dash: '', shopping: !!q.shopping, note: q.note || '',
+        rows: applyShared(mine(t.listings)), all: mine(t.listings), gone: mine(t.gone),
+        // Same live-car gate the chart uses. bmw-i5-cpo has one precomputed day
+        // row and zero listings — the certified car it saw is filed under the
+        // trim it also is — and without this its column drew a lone spark dot at
+        // $51,588 under a row saying "Cars on the market 0".
+        daily: mine(t.listings).length ? rangeDaily(scopedDaily(t, id)) : [], record: dailyOfTrim(t, id),
+        // narrowing to one column is how you leave a comparison for a scope
+        go: () => { S.trims = new Set([id]); syncUrl(true); buildFilters(); rerender('trim'); }, goTxt: 'Only this →',
+      };
+    });
+  }
+  // A cell that is a figure and a line about it, so every column reads the same
+  // way down the table.
+  function cmpCell(figure, sub, best) {
+    return el('td', { class: 'sc-num' + (best ? ' is-best' : '') },
+      el('span', { class: 'sc-figure' }, figure),
+      sub ? el('span', { class: 'sc-note' }, sub) : null,
+      best ? el('span', { class: 'sc-note sc-text-good' }, 'best value here') : null);
+  }
+  function renderCompare() {
+    const card = $('compare-card');
+    const on = S.brand === 'all' ? comparingModels() : comparingTrims();
+    if (!on) { card.hidden = true; return; }
+    const cols = compareColumns();
+    if (cols.length < 2) { card.hidden = true; return; }
+    card.hidden = false;
+    const byTrim = S.brand !== 'all';
+    $('compare-title').textContent = byTrim ? 'The trims, side by side' : 'The models, side by side';
+    // Only one row of this table has a winner marked, and it is on purpose. A
+    // price is not a score: the cheapest car here is the smallest car, and
+    // marking it "best" would say the EV9 beat the i5 by costing less. The one
+    // number that survives the comparison is how far under ITS OWN typical
+    // price a car sits — the same rule the picks are chosen by — so that is the
+    // only row that names a winner.
+    $('compare-hint').textContent = `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters`
+      + `, each column its own market. Prices are not scored against each other — a cheaper car is not a better one — so at most one row marks a winner: “best value vs typical”, and only when every column’s best car had enough siblings of its own trim and year to be judged against them.`;
+    const P = pickParams();
+    const stat = cols.map((c) => {
+      const priced = c.rows.filter(hasPrice);
+      const drive = priced.filter(isLocal);
+      const landedRows = priced.map(landed).filter((v) => v != null);
+      const scored = scoredFrom(c.rows, c.label, c.shopping);
+      const days = c.rows.map((x) => x.days_listed).filter((v) => v != null);
+      return { c, priced, best: lowestBy(priced, 'price'), bestLocal: lowestBy(drive, 'price'),
+        landed: landedRows.length ? Math.min(...landedRows) : null,
+        med: median(priced.map((x) => x.price)), medMiles: median(c.rows.map((x) => x.miles).filter((v) => v != null)),
+        medDays: days.length ? median(days) : null,
+        top: scored.length ? scored[0] : null,
+        mv: movementFor(c.all, c.gone, c.record) };
+    });
+    // The winner is only markable when every column's best car was scored
+    // against ITS OWN TRIM AND YEAR. scorePicks takes the tightest cohort with
+    // three eligible cars and falls back to the model year, then to the whole
+    // model — and `trim` is empty exactly when it fell back. On the iX that
+    // fallback is not hypothetical: the 2024 cohort is six M60s and one
+    // xDrive50, so the xDrive column's top car scored 24% under a mostly-M60
+    // median while sitting 17.9% ABOVE a typical xDrive. Marking that is the
+    // apples-to-oranges the hint above promises not to do, so when any column
+    // fell back, no column is marked and the numbers stand on their own.
+    const comparableCohorts = stat.every((v) => v.top && v.top.pct > 0 && v.top.trim);
+    const bestPct = Math.max(...stat.map((v) => (v.top && v.top.pct > 0 ? v.top.pct : -1)));
+    const table = $('compare-table'); table.textContent = '';
+    // The header cell stacks a swatch, a label, a year span, a role chip and a
+    // link — and a screen reader in table mode repeats the whole stack on all
+    // ten cells of the column. aria-label names the column the way a person
+    // would; the caption names the table once; scope says which way to read.
+    table.appendChild(el('caption', { class: 'sc-sr-only' },
+      `${byTrim ? 'The trims' : 'The models'}, side by side — one column each, ${cols.length} of them`));
+    const head = el('tr', null, el('th', { scope: 'col' }, ''));
+    for (const v of stat) {
+      head.appendChild(el('th', { class: 'sc-case', scope: 'col',
+        'aria-label': `${v.c.label}${v.c.sub ? ', ' + v.c.sub : ''}` },
+        el('span', { class: 'cmp-swatch' }, svgEl('svg', { width: 22, height: 8, viewBox: '0 0 22 8', 'aria-hidden': 'true' },
+          svgEl('line', { x1: 1, y1: 4, x2: 21, y2: 4, style: 'stroke:' + SC.toneRef(v.c.tone), 'stroke-width': v.c.shopping ? 3 : 2,
+                          'stroke-dasharray': v.c.dash || null, 'stroke-linecap': 'round' }))),
+        el('span', null, v.c.label),
+        el('span', { class: 'sc-note' }, v.c.sub),
+        el('span', { class: 'sc-nowrap' },
+          el('span', { class: 'sc-chip ' + (v.c.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, v.c.shopping ? 'shopping' : 'comparison'), ' ',
+          el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'cmp:' + v.c.key,
+            onclick: (e) => { e.preventDefault(); v.c.go(); } }, v.c.goTxt))));
+    }
+    table.appendChild(el('thead', null, head));
+    const body = el('tbody');
+    const row = (label, title, cells) => {
+      const tr = el('tr', null, el('th', { class: 'cmp-metric', scope: 'row', title: title || null }, label));
+      for (const td of cells) tr.appendChild(td);
+      body.appendChild(tr);
+    };
+    row('Lowest drivable asking', `Listed in one of your states (${scopeTxt()}) — no shipping`,
+      stat.map((v) => cmpCell(v.bestLocal ? money(v.bestLocal.price) : '—',
+        v.bestLocal ? `${v.bestLocal.year} · ${num(v.bestLocal.miles)} mi · ${placeTxt(v.bestLocal)}` : 'nothing drivable')));
+    row('Lowest asking anywhere', 'The cheapest one on the market, wherever it is',
+      stat.map((v) => cmpCell(v.best ? money(v.best.price) : '—',
+        v.best ? `${v.best.year} · ${num(v.best.miles)} mi · ${placeTxt(v.best)}${v.best.local ? '' : (v.best.ship ? ` · + ${money(v.best.ship)} ship` : '')}` : 'no priced listings')));
+    row('Cheapest landed', 'Asking plus shipping — what it costs to have one in the driveway',
+      stat.map((v) => cmpCell(v.landed != null ? money(v.landed) : '—', 'asking + shipping')));
+    row('Median asking', 'The middle of this column’s own market',
+      stat.map((v) => cmpCell(v.med != null ? money(v.med) : '—', `${v.priced.length} priced`)));
+    row('Cars on the market', 'Under the current filters',
+      stat.map((v) => cmpCell(String(v.c.rows.length), `${v.c.rows.filter(isLocal).length} drivable · ${v.c.rows.length - v.c.rows.filter(isLocal).length} beyond`)));
+    row('Median miles', null, stat.map((v) => cmpCell(v.medMiles != null ? num(v.medMiles) + ' mi' : '—', null)));
+    row('Typical days on market', 'Half of them have been listed longer than this',
+      stat.map((v) => cmpCell(v.medDays != null ? `${Math.round(v.medDays)}d` : '—', null)));
+    row('Best value vs typical', picksRule(),
+      stat.map((v) => cmpCell(v.top && v.top.pct > 0 ? `${Math.round(v.top.pct * 100)}% under` : '—',
+        v.top && v.top.pct > 0 ? `${v.top.x.year} · ${money(v.top.x.price)} · ${placeTxt(v.top.x)}` : 'nothing under typical',
+        !!(comparableCohorts && v.top.pct === bestPct))));
+    // Counted over every car in the column, not the filtered ones — the same
+    // rule (and now the same label) as the movement tile above it, which has
+    // said "(all cars)" under a filter since long before there was a comparison.
+    row(sharedActive() ? 'Since the previous snapshot (all cars)' : 'Since the previous snapshot',
+      'Each column against its own previous fetch — cadences differ, so the windows do too. Counted over every car in the column, before the filters.',
+      stat.map((v) => cmpCell(v.mv.hasPrev ? `${v.mv.cuts} cut${v.mv.cuts === 1 ? '' : 's'}` : '—',
+        v.mv.hasPrev ? `${v.mv.fresh} new · ${v.mv.gone} gone` : 'shows from day 2')));
+    row('Lowest asking over time', 'The same line the chart below draws for this column',
+      // the day rows' own floors — no one-point fallback here, because an empty
+      // column should read as an empty spark rather than borrow a number
+      stat.map((v) => el('td', null, spark(v.c.daily.filter((d) => d.min_price != null).map((d) => d.min_price), 90, 26, v.c.shopping, v.c.tone))));
+    table.appendChild(body);
+    markClipped(table.closest('.sc-table-scroll'));
   }
 
   // the table: one row per model, with a photo — the row itself is the door in
@@ -2751,15 +3353,15 @@
   // the order is readable in one place instead of emerging from .after() calls
   // scattered through two render paths.
   const SECTION_ORDER = {
-    overview: ['notice', 'kpis', 'filters-card', 'shortlist', 'takeaway', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
-    model: ['notice', 'kpis', 'filters-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
+    overview: ['notice', 'kpis', 'filters-card', 'compare-card', 'shortlist', 'takeaway', 'list-card', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
+    model: ['notice', 'kpis', 'filters-card', 'compare-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
   };
   // Supporting sections (the evidence and the reference material) wear the
   // smaller heading; the chapter starts get the wider gap above them.
   const SUPPORT = new Set(['scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card']);
   const CHAPTERS = {
-    overview: new Set(['takeaway', 'map-card', 'next-callout']),
-    model: new Set(['takeaway', 'list-card', 'scatter-card', 'notes-card', 'next-callout']),
+    overview: new Set(['compare-card', 'takeaway', 'map-card', 'next-callout']),
+    model: new Set(['compare-card', 'takeaway', 'list-card', 'scatter-card', 'notes-card', 'next-callout']),
   };
   // Filtering to nothing used to make the picks, the scatter and the map simply
   // disappear — three sections gone, no message, the page just shorter. Say it
@@ -2773,10 +3375,15 @@
     if (urlMiss) {
       const miss = urlMiss; urlMiss = null;
       n.appendChild(el('div', { class: 'sc-notice' },
-        el('div', { class: 'sc-eyebrow' }, miss.kind === 'brand' ? 'that brand is not tracked' : 'that car is no longer tracked'),
-        el('p', null, 'The link asked for “' + miss.asked + '”, ' + (miss.kind === 'brand'
-          ? 'which is not a brand on this watchlist'
-          : 'which is not on the watchlist any more') + ' — showing the whole watchlist instead.')));
+        el('div', { class: 'sc-eyebrow' }, miss.kind === 'brand' ? 'that brand is not tracked'
+          : miss.kind === 'part' ? 'part of that comparison is gone' : 'that car is no longer tracked'),
+        el('p', null, miss.kind === 'part'
+          // the rest of the link opened; only the missing part is reported, and
+          // the address bar has already been rewritten to what is actually shown
+          ? 'The link also asked for “' + miss.asked + '”, which is not on the watchlist any more — showing the rest of it.'
+          : 'The link asked for “' + miss.asked + '”, ' + (miss.kind === 'brand'
+            ? 'which is not a brand on this watchlist'
+            : 'which is not on the watchlist any more') + ' — showing the whole watchlist instead.')));
       n.hidden = false;
       return;
     }
@@ -2786,8 +3393,11 @@
       el('p', null, `All ${num(total)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
         el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
-          S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false; S.trim = 'all';
-          // trim is among the resets, and trim reaches the header, chart and gone table
+          S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false;
+          // The comparison is NOT a filter and does not clear with them: it is
+          // what the reader came to look at, it took several presses to build,
+          // and clearing it here would land them on the watchlist with no way
+          // back — this path replaces the history entry rather than pushing one.
           savePrefs(); buildFilters(); rerender(S.brand === 'all' ? 'rows' : 'trim');
         } }, 'Clear the filters'), '.')));
     n.hidden = false;
@@ -2844,7 +3454,8 @@
     // and the KPIs while the lines above them kept answering about the nation.
     renderChart();
     renderKpis(rows);
-    renderPicks(scoredFrom(rows, t.label, !!t.shopping));
+    renderCompare();
+    renderPicks(scopedScored(rows), pickCap());
     renderScatter(rows);
     updateMapVisibility();
     // Deferred only on the explicit filter path (fk passed), and only once the
@@ -2858,41 +3469,125 @@
     filterCount();
   }
 
+  // One chip, one rule, three groups. The where chips taught it and the trim
+  // and model chips inherit it verbatim: press any mix, none pressed means all
+  // of them, and the press flips aria-pressed IN PLACE — the chip is never
+  // rebuilt under the reader's finger, so it keeps focus natively and a
+  // keyboard user's next Space still lands on the chip they just pressed.
+  // `count` rides along when the group has one: a trim with no cars in it says
+  // so before it is pressed rather than after.
+  function chipInto(host, key, label, title, on, count, onToggle) {
+    // `on === null` means this chip is not a toggle at all — it acts, like the
+    // compare-with chips on a model page — so it carries no pressed state to
+    // be announced wrongly.
+    const b = el('button', { class: 'sc-tab sc-tab--case', type: 'button',
+      'aria-pressed': on === null ? null : (on ? 'true' : 'false'), 'data-fkey': key, title,
+      onclick: (ev) => { onToggle(ev.currentTarget.getAttribute('aria-pressed') === 'true'); } }, label);
+    if (count !== null && count !== undefined) b.appendChild(el('span', { class: 'sc-note chip-n' }, String(count)));
+    host.appendChild(b);
+    return b;
+  }
+  // Pressing a chip must never leave a set that means something else than what
+  // is on screen: every group writes through this, which flips the button and
+  // then hands the work to the scope that owns it.
+  //
+  // `url` marks the two groups that ARE the comparison, so the address bar can
+  // follow them — always with replaceState, never push: a reader setting up a
+  // three-model comparison presses four or five chips, and each one costing a
+  // back-button step would bury the page they arrived from.
+  function toggleIn(set, id, btn, scope, opt) {
+    const o = opt || {};
+    const was = set.has(id);
+    if (was) set.delete(id); else set.add(id);
+    if (btn) btn.setAttribute('aria-pressed', was ? 'false' : 'true');
+    // A model just chosen for a comparison must be IN it: the legend's hidden
+    // set outlives the visit that filled it, and a line silently missing from
+    // a two-model chart is the worst way to find that out.
+    if (!was && o.unhide) S.hidden.delete(id);
+    if (o.persist) savePrefs();
+    if (o.url) syncUrl(true);
+    rerender(scope);
+  }
+
+  // The watchlist has its own order — shopping first, then lowest asking — so
+  // the sort select is hidden there. A comparison has a real listings table
+  // under it, and ranking two models' cars by price is the whole reason to pool
+  // them, so the control comes back. Called from both the full rebuild and the
+  // model-chip path, because pressing a chip is exactly when this changes and
+  // that path must not rebuild the bar.
+  function syncSortField() {
+    $('f-sort').parentElement.hidden = S.brand === 'all' && !comparingModels();
+  }
   function buildFilters() {
     const overview = S.brand === 'all';
     const t = overview ? null : model();
-    const ft = $('f-trim'); ft.textContent = '';
-    const trimIds = t ? Object.keys(t.trims || {}) : [];
-    if (t) {
-      ft.appendChild(el('option', { value: 'all' }, trimIds.length > 1 ? 'All trims' : (((t.trims || {})[trimIds[0]] || {}).label || 'All')));
-      if (trimIds.length > 1) for (const id of trimIds) ft.appendChild(el('option', { value: id }, t.trims[id].label || id));
-      ft.value = S.trim;
+    // Models: on the watchlist a chip per model, pressed to narrow — two or
+    // more and the page stops being a survey and becomes a comparison of them.
+    // On a model page the same group reads "compare with": the model in view is
+    // already one side of it, so pressing another car opens the comparison of
+    // the two rather than navigating away to it.
+    const fm = $('f-model'); fm.textContent = '';
+    const here = overview ? null : modelKey(S.brand, S.model);
+    for (const { bk, mk, b, m } of allModels()) {
+      const id = modelKey(bk, mk);
+      if (id === here) continue;
+      // m.label already carries the brand ("BMW iX"); only a model with no
+      // label of its own needs one prefixed.
+      const label = m.label || ((b.label || bk) + ' ' + mk);
+      const n = (m.listings || []).length;
+      chipInto(fm, 'model:' + id, m.label || mk,
+        overview ? `${label} — pick any; two or more compares them; none selected means every model`
+                 : `Compare ${model().label || S.model} with ${label}`,
+        overview ? S.models.has(id) : null, n,
+        () => {
+          if (overview) { toggleIn(S.models, id, fm.querySelector(`[data-fkey="model:${id}"]`), 'models', { url: true, unhide: true, persist: true }); return; }
+          // From a model page the press is a move, not a filter: take the two
+          // cars into the comparison view with the current one already in it.
+          S.models = new Set([here, id]);
+          S.hidden.delete(here); S.hidden.delete(id);   // a legend chip pressed months ago must not blank half a comparison
+          S.brand = 'all'; S.model = null; S.trims = new Set();
+          savePrefs(); syncUrl(); rerender('nav'); window.scrollTo(0, 0);
+        });
     }
-    ft.parentElement.hidden = trimIds.length <= 1;
+    $('f-model-field').hidden = allModels().length < 2;
+    $('f-model-field').firstChild.textContent = overview ? 'Models' : 'Compare with';
+    // The group's job changes with the view, so its accessible name has to as
+    // well: on the watchlist these are toggles, on a model page each one is a
+    // door into a comparison — and chipInto leaves aria-pressed off the doors,
+    // because a link announced as an unpressed toggle is a promise it breaks.
+    fm.setAttribute('aria-label', overview
+      ? 'Models — pick any; two or more compares them; none selected means every model'
+      : 'Compare with — opens this car beside the one you are looking at');
+    // Trim: a chip per trim of this model, same rule. The count on each chip is
+    // what the page has, not what the API has — the CPO watch reads 0 because
+    // every certified car it finds is also filed under the trim it is, and one
+    // row per VIN is the whole point of the list below.
+    const ft = $('f-trim'); ft.textContent = '';
+    const tIds = t ? trimIds(t) : [];
+    if (t && tIds.length > 1) {
+      const counts = {};
+      for (const x of (t.listings || [])) counts[x.trim_id] = (counts[x.trim_id] || 0) + 1;
+      for (const id of tIds) {
+        const q = t.trims[id] || {};
+        chipInto(ft, 'trim:' + id, q.label || id,
+          `${q.label || id}${q.note ? ' — ' + q.note : ''} — pick any; two or more compares them; none selected means every trim`,
+          S.trims.has(id), counts[id] || 0,
+          () => toggleIn(S.trims, id, ft.querySelector(`[data-fkey="trim:${id}"]`), 'trim', { url: true }));
+      }
+    }
+    $('f-trim-field').hidden = tIds.length <= 1;
     // Where: a chip per buyer state, plus one for beyond —
     // press any combination; none pressed means everywhere. Lives on the
     // overview too, so the whole-market view narrows with it.
     const fw = $('f-where'); fw.textContent = '';
-    const buyer = S.site.buyer || {}, states = buyer.states || [], names = buyer.state_names || {};
-    const opts = whereOpts();
-    for (const [key, lab, tip] of opts) {
-      const on = S.where.has(key);
-      fw.appendChild(el('button', { class: 'sc-tab sc-tab--case', type: 'button', 'aria-pressed': on ? 'true' : 'false',
-        'data-fkey': 'where:' + key,
-        title: `${tip} — pick any; none selected means everywhere`,
-        onclick: (ev) => {
-          // toggle the pressed state in place — the chip is not rebuilt, so it
-          // keeps focus natively and the press costs only the sections that read it
-          const was = S.where.has(key);
-          if (was) S.where.delete(key); else S.where.add(key);
-          ev.currentTarget.setAttribute('aria-pressed', was ? 'false' : 'true');
-          savePrefs(); rerender('rows');
-        } }, lab));
+    for (const [key, lab, tip] of whereOpts()) {
+      chipInto(fw, 'where:' + key, lab, `${tip} — pick any; none selected means everywhere`, S.where.has(key), null,
+        () => toggleIn(S.where, key, fw.querySelector(`[data-fkey="where:${key}"]`), 'rows', { persist: true }));
     }
-    $('f-sort').parentElement.hidden = overview;   // the overview has its own order: shopping first, then lowest asking
+    syncSortField();
     const fy = $('f-year'); fy.textContent = '';
     fy.appendChild(el('option', { value: 'all' }, 'All years'));
-    const pool = overview ? allModels().map(({ m }) => m) : [t];
+    const pool = overview ? modelsInView().map(({ m }) => m) : [t];
     const years = [...new Set(pool.flatMap((m) => [...(m.years || []), ...(m.listings || []).map((x) => String(x.year))]))].filter(Boolean).sort();
     for (const y of years) fy.appendChild(el('option', { value: y }, y));
     if (S.year !== 'all' && !years.includes(S.year)) S.year = 'all';   // a stale year would blank the select and silently empty the list
@@ -2910,7 +3605,8 @@
   function filterBits(overview) {
     const bits = [];
     if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
-    if (S.trim !== 'all' && !overview) bits.push(((model().trims || {})[S.trim] || {}).label || S.trim);
+    if (S.models.size && overview) bits.push(modelsInView().map(({ m, mk }) => m.label || mk).join(' + '));
+    if (S.trims.size && !overview) bits.push(selectedTrims(model()).map((id) => trimLabel(model(), id)).join(' + '));
     if (S.year !== 'all') bits.push(S.year);
     if (S.miles) bits.push(`under ${num(S.miles)} mi`);
     if (S.clean) bits.push('no accidents');
@@ -2936,8 +3632,12 @@
   function filterCount() {
     const overview = S.brand === 'all';
     const shown = overview
-      ? allModels().reduce((a, { m }) => a + applyShared(m.listings || []).length, 0)
+      ? modelsInView().reduce((a, { m }) => a + applyShared(m.listings || []).length, 0)
       : filtered().length;
+    // The whole watchlist, not the selection: a model selection is a filter
+    // like any other, and measuring it against itself made the one line whose
+    // job is to say what the filters are doing print "showing all 169 cars"
+    // over 503 — and drop the names of the models doing the narrowing with it.
     const total = overview
       ? allModels().reduce((a, { m }) => a + (m.listings || []).length, 0)
       : (model().listings || []).length;
@@ -2978,7 +3678,11 @@
       else n.setAttribute('tabindex', '-1');
     }
     if (!n && (nav || (f.fkey && (f.fkey.indexOf('open:') === 0 || f.fkey.indexOf('sl:') === 0
-        || f.fkey.indexOf('tab-') === 0 || f.fkey.indexOf('notice:') === 0)))) {
+        || f.fkey.indexOf('tab-') === 0 || f.fkey.indexOf('notice:') === 0
+        // "Only this →" narrows a comparison to one column and takes its own
+        // card off the page with it — the same shape as the links above, and
+        // without this the keyboard reader lands on <body>
+        || f.fkey.indexOf('cmp:') === 0)))) {
       // the view switched (or the control left with the old one) — land on the new heading
       n = $('h1');
       if (n) n.setAttribute('tabindex', '-1');
@@ -2993,16 +3697,23 @@
     scope = scope || 'all';
     const fk = rememberFocus();
     const overview = S.brand === 'all';
-    const anchorScope = scope === 'all' || scope === 'trim' || scope === 'rows';
+    const anchorScope = scope === 'all' || scope === 'trim' || scope === 'rows' || scope === 'models';
     const bar = $('filters-card');
     const anchored = anchorScope && bar && !bar.hidden;
     const before = anchored ? bar.getBoundingClientRect().top : null;
     const y = window.scrollY;
     switch (scope) {
       case 'trim': renderHeader(); updateRows(filtered()); renderGone(); break;
+      // A model chip changes what the page IS — the title says "i5 vs iX", not
+      // "the watchlist" — but never rebuilds the filter bar, so the chip the
+      // reader is standing on keeps its focus and its place in the tab order.
+      case 'models': overviewTitles(overviewRows()); updateRowsOverview(); break;
       case 'rows': overview ? updateRowsOverview() : updateRows(filtered(), fk); break;
+      // The comparison has a listings table on the watchlist too, so these two
+      // can no longer assume a model page — filtered() would ask for
+      // brands['all'] and throw before it ever reached the rows.
       case 'sort':
-      case 'showList': renderList(filtered()); break;
+      case 'showList': renderList(overview ? pooledRows() : filtered()); break;
       case 'showGone': renderGone(); break;
       case 'hide': renderOverviewChart(overviewRows()); updateMapVisibility(); break;
       case 'range': overview ? renderOverviewChart(overviewRows()) : renderChart(); break;
@@ -3020,7 +3731,6 @@
     });
   }
   function wireFilters() {
-    $('f-trim').addEventListener('change', (e) => { S.trim = e.target.value; rerender('trim'); });
     $('f-year').addEventListener('change', (e) => { S.year = e.target.value; rerender('rows'); });
     $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); rerender('rows'); });
     $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender('sort'); });
@@ -3115,7 +3825,7 @@
           const rows = filtered(), t = model();
           renderList(rows);
           renderGone();                // its column set follows the band too
-          renderPicks(scoredFrom(rows, t.label, !!t.shopping));   // the picks' phone collapse follows the breakpoint too
+          renderPicks(scopedScored(rows), pickCap());   // the picks' phone collapse follows the breakpoint too
           restoreFocus(fk, false);
         }
       });

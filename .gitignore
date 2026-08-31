@@ -7,3 +7,8 @@ __pycache__/
 
 # tracker scratch
 data/snapshots.tmp
+
+# the dashboard smoke test's browser driver, installed on demand and never
+# committed — this repo has no package.json and does not want one
+node_modules/
+package-lock.json

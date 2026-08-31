@@ -73,6 +73,23 @@ if (refs.size > 1) {
   console.log(`pages pin design-system@${[...refs][0] ?? '(no pin found)'}`);
 }
 
+// The README names the pin in prose, and prose does not get checked out — so it
+// drifted, and sat wrong for three releases saying v2.1.0 over pages pinning
+// v2.4.0. It is the first thing a reader is told about the stack, and it is one
+// grep away from being true, so it is checked with the rest of them.
+const readme = new URL('../README.md', import.meta.url);
+try {
+  const said = readFileSync(readme, 'utf8').match(/design system pinned at (v[^\s]+)/i);
+  const pin = [...refs][0];
+  if (said && pin && said[1] !== pin) {
+    console.error(`FAIL  README says the design system is pinned at ${said[1]}, the pages pin ${pin}`);
+    console.error('      (the prose is part of the pin — move it with them)');
+    hard++;
+  } else if (said) {
+    console.log(`README agrees: ${said[1]}`);
+  }
+} catch (e) { /* no README to disagree with */ }
+
 // --- lint each page against the checked-out sheet --------------------------
 const show = (name, label, list, blocking) => {
   const uniq = [...new Set(list)];
