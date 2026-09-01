@@ -1742,3 +1742,76 @@ class TestFees(unittest.TestCase):
         if f is None:
             self.skipTest("no fees configured")
         self.assertTrue(f["tax_note"].strip(), "the rate needs its explanation shipped beside it")
+
+
+class TestExitStats(unittest.TestCase):
+    """Where comparable cars stopped being advertised.
+
+    A tool with no transaction feed will never know a sale price. What it does
+    know is the last number a car asked before its listing ended, and across a
+    trim that is the closest honest proxy — which is why nothing here is named
+    for a sale. A delisted car may have sold, gone to auction, moved to a
+    sister lot, or simply had its ad expire, and all four look identical from
+    outside.
+
+    The trap this class exists to hold shut is the one the first version fell
+    into: a median PRICE CUT among departed cars came out at exactly $0 for
+    every trim on the sheet. Not because these cars never discount — 9 of 94
+    demonstrably did — but because half are observed on two days or fewer of a
+    listing life whose median is over three weeks, and a quarter are seen
+    exactly once, where a cut cannot be observed at all. That number described
+    the fetch cadence and would have been read as market behaviour.
+    """
+
+    @staticmethod
+    def _gone(n, price=40000, series_len=3, trim="t1"):
+        return [{"likely": "delisted", "trim_id": trim, "last_price": price,
+                 "first_seen": "2026-08-01", "last_seen": "2026-08-15",
+                 "listed_since": "2026-08-01",
+                 "series": [["2026-08-0%d" % (i + 1), price] for i in range(series_len)]}
+                for _ in range(n)]
+
+    def test_no_median_cut_is_published(self):
+        """The specific number that was wrong. If it comes back, this fails."""
+        st = T.sale_stats(self._gone(10))
+        self.assertNotIn("median_exit_cut", st,
+                         "a median cut over a 2-day observation window describes the cadence, not the market")
+
+    def test_a_cut_is_counted_only_where_it_could_be_seen(self):
+        """Cars seen once cannot show a cut, so they must not sit in the
+        denominator and quietly drag the rate toward zero."""
+        once = self._gone(4, series_len=1)
+        twice = self._gone(6, series_len=2)
+        st = T.sale_stats(once + twice)
+        self.assertEqual(st["exit_watched"], 6, "only multi-observation cars can be watched for a cut")
+        self.assertEqual(st["n_exits"], 10, "but every departure still counts as an exit price")
+
+    def test_a_real_cut_is_counted(self):
+        g = self._gone(1, price=38000, series_len=2)
+        g[0]["series"] = [["2026-08-01", 40000], ["2026-08-02", 38000]]
+        self.assertEqual(T.sale_stats(g)["exit_cut_while_watched"], 1)
+
+    def test_out_of_window_departures_are_excluded(self):
+        """A car that fell out of the price window did not leave the market."""
+        g = self._gone(6) + [{"likely": "out of window", "trim_id": "t1",
+                              "last_price": 1, "series": [["2026-08-01", 1]]}]
+        self.assertEqual(T.sale_stats(g)["n_exits"], 6)
+
+    def test_a_thin_cohort_publishes_nothing(self):
+        """Two departures make a median that swings by thousands on the third.
+        Below the floor the trim ships no exit stats at all rather than a
+        number a reader would reasonably trust."""
+        self.assertEqual(T.exit_stats(self._gone(4), "t1"), {})
+        self.assertTrue(T.exit_stats(self._gone(5), "t1"))
+
+    def test_stats_are_scoped_to_one_trim(self):
+        """A median mixing an eDrive50 with an M70 describes no car that exists."""
+        mixed = self._gone(6, price=40000, trim="cheap") + self._gone(6, price=120000, trim="dear")
+        self.assertEqual(T.exit_stats(mixed, "cheap")["exit_price"], 40000)
+        self.assertEqual(T.exit_stats(mixed, "dear")["exit_price"], 120000)
+
+    def test_the_report_never_calls_a_delisting_a_sale(self):
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        line = src[src.index("def market_line("):src.index("def build_today(")]
+        self.assertNotIn("sold cars lasted", line,
+                         "a listing ending is not a confirmed sale and the reader-facing text must not say it is")

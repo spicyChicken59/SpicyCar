@@ -166,7 +166,12 @@
        "min_price": 20000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 19,
+       "exit_price": 44696,
+       "exit_watched": 17,
+       "exit_cut_seen": 1,
+       "exit_days": 15
       },
       "bmw-i5-xdrive40": {
        "label": "xDrive40",
@@ -181,7 +186,12 @@
        "min_price": 20000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 8,
+       "exit_price": 56073,
+       "exit_watched": 6,
+       "exit_cut_seen": 1,
+       "exit_days": 15
       },
       "bmw-i5-m60": {
        "label": "M60",
@@ -196,7 +206,12 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 11,
+       "exit_price": 58977,
+       "exit_watched": 7,
+       "exit_cut_seen": 3,
+       "exit_days": 16
       }
      },
      "listings": [
@@ -11667,7 +11682,11 @@
       "cut_share": 0.61,
       "median_cut": 600,
       "n_sold": 38,
-      "median_days_to_sale": 15
+      "median_days_to_sale": 15,
+      "n_exits": 38,
+      "median_exit_price": 51281,
+      "exit_watched": 30,
+      "exit_cut_while_watched": 5
      }
     },
     "i7": {
@@ -11740,7 +11759,12 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 9,
+       "exit_price": 118834,
+       "exit_watched": 9,
+       "exit_cut_seen": 0,
+       "exit_days": 37
       },
       "bmw-i7-xdrive60": {
        "label": "xDrive60",
@@ -11757,7 +11781,12 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 43,
+       "exit_price": 60140,
+       "exit_watched": 33,
+       "exit_cut_seen": 3,
+       "exit_days": 7
       },
       "bmw-i7-m70": {
        "label": "M70",
@@ -24082,7 +24111,11 @@
       "cut_share": 0.34,
       "median_cut": 561,
       "n_sold": 55,
-      "median_days_to_sale": 10
+      "median_days_to_sale": 10,
+      "n_exits": 55,
+      "median_exit_price": 62998,
+      "exit_watched": 45,
+      "exit_cut_while_watched": 3
      }
     },
     "ix": {
@@ -28247,7 +28280,11 @@
       "cut_share": 0.39,
       "median_cut": 677,
       "n_sold": 8,
-      "median_days_to_sale": 19
+      "median_days_to_sale": 19,
+      "n_exits": 8,
+      "median_exit_price": 42908,
+      "exit_watched": 7,
+      "exit_cut_while_watched": 0
      }
     }
    }
@@ -29518,7 +29555,11 @@
       "cut_share": 0.44,
       "median_cut": 311,
       "n_sold": 2,
-      "median_days_to_sale": 17
+      "median_days_to_sale": 17,
+      "n_exits": 2,
+      "median_exit_price": 22044,
+      "exit_watched": 2,
+      "exit_cut_while_watched": 0
      }
     }
    }
@@ -29574,7 +29615,12 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 14,
+       "exit_price": 33494,
+       "exit_watched": 10,
+       "exit_cut_seen": 1,
+       "exit_days": 20
       }
      },
      "listings": [
@@ -31800,7 +31846,11 @@
       "cut_share": 0.56,
       "median_cut": 444,
       "n_sold": 14,
-      "median_days_to_sale": 20
+      "median_days_to_sale": 20,
+      "n_exits": 14,
+      "median_exit_price": 33494,
+      "exit_watched": 10,
+      "exit_cut_while_watched": 1
      }
     }
    }
@@ -32947,7 +32997,11 @@
       "cut_share": null,
       "median_cut": null,
       "n_sold": 0,
-      "median_days_to_sale": null
+      "median_days_to_sale": null,
+      "n_exits": 0,
+      "median_exit_price": null,
+      "exit_watched": 0,
+      "exit_cut_while_watched": 0
      }
     }
    }
@@ -33007,7 +33061,12 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 6,
+       "exit_price": 40796,
+       "exit_watched": 0,
+       "exit_cut_seen": 0,
+       "exit_days": 15
       },
       "lucid-air-grand-touring": {
        "label": "Grand Touring",
@@ -36528,7 +36587,11 @@
       "cut_share": 0.22,
       "median_cut": 409,
       "n_sold": 8,
-      "median_days_to_sale": 15
+      "median_days_to_sale": 15,
+      "n_exits": 8,
+      "median_exit_price": 40942,
+      "exit_watched": 0,
+      "exit_cut_while_watched": 0
      }
     }
    }

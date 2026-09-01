@@ -2192,6 +2192,25 @@
       + (f.checked ? ` · rates checked ${f.checked}` : ' · ESTIMATE, rates not verified') },
       `${money(total)} out the door`);
   }
+  // Where this car sits against the last asks of its own trim's departures.
+  // Not "overpriced": a delisted car may have sold, gone to auction, moved
+  // lots or simply expired, and those are indistinguishable from outside. The
+  // claim is narrower and survives that — comparable cars stopped being
+  // advertised around here, and this one is asking above it.
+  function exitNote(x) {
+    const t = (S.brand === 'all' ? null : model());
+    const trim = t && (t.trims || {})[x.trim_id];
+    if (!trim || !trim.exit_price || !hasPrice(x)) return null;
+    const over = x.price - trim.exit_price;
+    if (Math.abs(over) < 500) return null;      // inside the noise of a median this thin
+    const watched = trim.exit_watched || 0, cut = trim.exit_cut_seen || 0;
+    return el('span', { class: 'sc-note', title:
+      `${trim.exit_n} ${trim.label} listings ended while tracked, last asking a median of ${money(trim.exit_price)}`
+      + (trim.exit_days ? ` after about ${trim.exit_days} days` : '')
+      + (watched >= 5 ? ` · ${cut} of ${watched} cut before going` : '')
+      + ' · a listing ending is not a confirmed sale' },
+      `${money(Math.abs(over))} ${over > 0 ? 'above' : 'below'} where this trim's listings ended`);
+  }
   function payNote(x) {
     const pay = payFor(x);
     if (pay == null) return null;
@@ -2984,7 +3003,7 @@
       S.sort === 'cut' && lastStep(x) < 0
         ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
       x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
-      otdNote(x), payNote(x));   // the phone twins of the table's payment and out-the-door notes
+      otdNote(x), payNote(x), exitNote(x));   // the phone twins of the table's payment, out-the-door and exit-comp notes
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
@@ -3143,6 +3162,7 @@
         // Same rule, same cell: the out-the-door total is derived from the
         // price and shows when it is the figure being ranked on.
         otdNote(x),
+        exitNote(x),
         (x.msrp && x.msrp !== lastMsrp) ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
       lastMsrp = x.msrp || lastMsrp;
       const shipping = el('td', { class: 'sc-num' }, x.local

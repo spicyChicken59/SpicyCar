@@ -786,6 +786,26 @@ def market_stats(listings):
     }
 
 
+def exit_stats(gone, trim_id, floor=5):
+    """One trim's exit prices, or an empty dict when too few cars have left.
+
+    `floor` is not decoration. Two departures make a median that swings by
+    thousands on the next one, and a number that unstable printed beside a live
+    car reads as authority it has not earned. Below the floor the page shows
+    nothing rather than something shaky — the same rule the cut-share line
+    already follows.
+    """
+    rows = [g for g in gone if g.get("trim_id") == trim_id]
+    st = sale_stats(rows)
+    if (st.get("n_exits") or 0) < floor:
+        return {}
+    return {"exit_n": st["n_exits"],
+            "exit_price": st["median_exit_price"],
+            "exit_watched": st.get("exit_watched", 0),
+            "exit_cut_seen": st.get("exit_cut_while_watched", 0),
+            "exit_days": st.get("median_days_to_sale")}
+
+
 def sale_stats(gone):
     """How fast this model's cars actually leave, from the ones that really
     left: days from the listing date (or first sighting, when the dealer
@@ -801,8 +821,42 @@ def sale_stats(gone):
                                  - date.fromisoformat(str(start)[:10])).days))
         except (TypeError, ValueError):
             continue
+    # What they were asking when they went. The closest thing a tool with no
+    # transaction feed will ever have to a sale price — and emphatically not a
+    # sale price, which is why nothing here is called one. A delisted car may
+    # have sold, gone to auction, moved to a sister lot, or simply had its ad
+    # expire; all four look identical from outside. What IS true is that the
+    # last ask is the last number the market saw and did not beat, so a live
+    # car asking well above its trim's exit prices is asking above where
+    # comparable cars stopped being advertised. That is a weaker claim than
+    # "overpriced" and it is the one the data supports.
+    exits, cuts = [], []
+    for g in gone:
+        if g.get("likely") != "delisted":
+            continue
+        last = to_int(g.get("last_price"))
+        if last is None:
+            continue
+        exits.append(last)
+        # NOT a median cut. Half these cars are observed on two days or fewer
+        # of a listing life whose median is over three weeks, and a quarter are
+        # seen exactly once, where a cut is arithmetically impossible. The
+        # median of that is $0 for every trim on the sheet — a number that
+        # describes the fetch cadence, not the market, and would read as "these
+        # cars never discount" when it means "we mostly were not looking".
+        # What IS honest is the count that cut while we watched, over the
+        # number we could have seen cut at all.
+        series = g.get("series") or []
+        if len(series) >= 2:
+            first = to_int(series[0][1]) if len(series[0]) > 1 else None
+            cuts.append(1 if (first and first > last) else 0)
     return {"n_sold": len(spans),
-            "median_days_to_sale": int(median(spans)) if spans else None}
+            "median_days_to_sale": int(median(spans)) if spans else None,
+            # Deliberately not "sold_price": see above.
+            "n_exits": len(exits),
+            "median_exit_price": int(median(exits)) if exits else None,
+            "exit_watched": len(cuts),
+            "exit_cut_while_watched": sum(cuts)}
 
 
 def market_line(stats):
@@ -815,9 +869,18 @@ def market_line(stats):
         if stats.get("median_cut"):
             cut += f", median {money(stats['median_cut'])}"
         bits.append(cut)
+    # "Delisted" is not "sold" — a car whose ad ends may have sold, gone to
+    # auction, moved lots, or simply expired, and none of those are
+    # distinguishable from outside. The field names stay as they are because
+    # they ship in data.json and the report, but the sentence a reader actually
+    # sees should claim only what happened: the listing ended.
     if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 5:
-        bits.append(f"sold cars lasted ~{stats['median_days_to_sale']}d "
-                    f"({stats['n_sold']} sold)")
+        bits.append(f"listings ended after ~{stats['median_days_to_sale']}d "
+                    f"({stats['n_sold']} gone)")
+    if stats.get("median_exit_price") and stats.get("n_exits", 0) >= 5:
+        watched, cut = stats.get("exit_watched", 0), stats.get("exit_cut_while_watched", 0)
+        bits.append(f"last ask before leaving {money(stats['median_exit_price'])}"
+                    + (f" · {cut} of {watched} cut while watched" if watched >= 5 else ""))
     return " · ".join(bits)
 
 
@@ -1906,6 +1969,10 @@ def build_outputs(today_rows, all_rows, hist):
             m_rows = current_rows(all_rows, tids)
             as_of = max((r["snapshot_date"] for r in m_rows), default=None)
             prev_day = m_days[-2] if len(m_days) >= 2 else None
+            # Hoisted out of the literal below: the trim entries need it, and
+            # a dict cannot reference a key it has not finished defining.
+            # Computed once either way.
+            m_gone = delisted(tids, all_rows, m_rows, hist)
             m_entry = {
                 "label": label, "note": m0["model_note"],
                 "notes": m0["model_notes"],
@@ -1923,14 +1990,19 @@ def build_outputs(today_rows, all_rows, hist):
                                     "min_price": t.get("min_price"),
                                     "max_miles": t.get("max_miles"),
                                     "cpo_only": bool(t.get("cpo_only")),
-                                    "market_total": TOTALS.get((t["id"], "National"))}
+                                    "market_total": TOTALS.get((t["id"], "National")),
+                                    # Per TRIM, not per model: a median mixing an
+                                    # eDrive50 with an M70 describes no car that
+                                    # exists. The trim is the cohort a reader is
+                                    # actually shopping within.
+                                    **exit_stats(m_gone, t["id"])}
                           for t in trims},
                 "listings": [],
                 "daily": daily_stats(m_rows_all),
                 "daily_by_trim": {t["id"]: daily_stats(
                     [r for r in m_rows_all if r["target"] == t["id"]])
                     for t in trims},
-                "gone": delisted(tids, all_rows, m_rows, hist),
+                "gone": m_gone,
             }
             b_entry["models"][mkey] = m_entry
             if SHORTLIST:
