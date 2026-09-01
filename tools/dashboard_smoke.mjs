@@ -903,6 +903,77 @@ if (!subject) {
 }
 }
 
+// ---- ns/7B-C ----
+{
+// The corner cell of the side-by-side table — the one above the metric column
+// — shipped as a th[scope=col] with nothing in it. That is the whole of axe's
+// empty-table-header, and it was the last violation left on the site: it fired
+// on all four audited states that open the compare card. What it costs a
+// reader is not theoretical. Every row label under that cell ("Lowest drivable
+// asking", "Best value vs typical") is a th[scope=row], and in a screen
+// reader's table mode a row header is announced under its own column heading —
+// which was silence.
+//
+// The oracle names the mechanism, not just "some text is there": the corner
+// heads the column of ROW LABELS, so its name has to be a name for those, and
+// the tempting wrong fix is to copy a model or trim name into it (which would
+// have a screen reader read "BMW i5: Lowest drivable asking"). So the corner's
+// text is asserted non-empty AND distinct from every case column's own label,
+// with scope=col still saying which way the cell reads, and the row labels
+// beside it asserted non-empty too — the same rule, one axis over, which holds
+// on the unfixed page and guards the other half of the header.
+//
+// Both comparisons are checked because one cell serves both, and both subjects
+// come out of data.json rather than being typed here: the two models carrying
+// the most cars, and the model with the most trims (its two best-stocked ones).
+// Nothing is pinned to a count, a price or a named car, so a tracker run that
+// empties a trim or reorders the watchlist cannot move this. A watchlist with
+// fewer than two models AND no model with two trims has no comparison to open
+// at all — that is a skip by name, not a pass and not a failure.
+const NAME = 'the side-by-side table names the column its row labels sit in';
+const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const all = [];
+for (const [bk, b] of Object.entries(site.brands || {}))
+  for (const [mk, m] of Object.entries((b || {}).models || {})) {
+    const cars = ((m || {}).listings || []);
+    const held = {};
+    for (const x of cars) if (x && x.trim_id) held[x.trim_id] = (held[x.trim_id] || 0) + 1;
+    const trims = Object.keys((m || {}).trims || {})
+      .sort((x, y) => (held[y] || 0) - (held[x] || 0) || x.localeCompare(y));
+    all.push({ bk, mk, slug: `${bk}-${mk}`, cars: cars.length, trims });
+  }
+const pair = [...all].sort((a, b) => b.cars - a.cars || a.slug.localeCompare(b.slug)).slice(0, 2);
+const multi = [...all].filter((m) => m.trims.length >= 2)
+  .sort((a, b) => b.trims.length - a.trims.length || b.cars - a.cars || a.slug.localeCompare(b.slug))[0];
+const cases = [];
+if (pair.length === 2) cases.push(['models', `?models=${pair[0].slug},${pair[1].slug}`]);
+if (multi) cases.push(['trims', `?brand=${multi.bk}&m=${multi.mk}&trims=${multi.trims[0]},${multi.trims[1]}`]);
+await page.setViewportSize({ width: 1280, height: 1000 });
+if (!cases.length) {
+  skip(NAME, 'this snapshot has neither two models nor a model with two trims to compare');
+} else {
+  const seen = [];
+  for (const [what, q] of cases) {
+    await open(q);
+    const corner = await page.evaluate(() => {
+      const heads = [...document.querySelectorAll('#compare-table thead th')];
+      if (!heads.length) return null;
+      const txt = (n) => (n.textContent || '').replace(/\s+/g, ' ').trim();
+      const labels = [...document.querySelectorAll('#compare-table tbody th.cmp-metric')].map(txt);
+      return { name: txt(heads[0]), scope: heads[0].getAttribute('scope'),
+               columns: heads.slice(1).map((h) => h.getAttribute('aria-label') || txt(h)),
+               rows: labels.length, blankRows: labels.filter((t) => !t).length };
+    });
+    seen.push({ what, q, corner });
+  }
+  const bad = seen.filter(({ corner: c }) => !c || !c.name || c.scope !== 'col'
+    || c.columns.some((h) => h && h.trim() === c.name) || !c.rows || c.blankRows);
+  ok(NAME, bad.length === 0, seen.map(({ what, corner: c }) => c
+    ? `${what}: "${c.name}" over ${c.rows} row labels, ${c.blankRows} of them blank, beside ${c.columns.length} columns`
+    : `${what}: no compare table drew`).join(' · '));
+}
+}
+
 await browser.close();
 server.close();
 

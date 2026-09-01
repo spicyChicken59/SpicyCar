@@ -3351,7 +3351,19 @@
     // would; the caption names the table once; scope says which way to read.
     table.appendChild(el('caption', { class: 'sc-sr-only' },
       `${byTrim ? 'The trims' : 'The models'}, side by side — one column each, ${cols.length} of them`));
-    const head = el('tr', null, el('th', { scope: 'col' }, ''));
+    // The corner cell heads the column of row labels, not a column of cars,
+    // so it names what that column holds. It shipped empty, which is the one
+    // thing a th may not be: axe flagged it (empty-table-header) on every
+    // state that opens this card, and a screen reader reading the metric
+    // column in table mode announced its heading as nothing. "Measure" is
+    // true of all ten rows below it — prices, counts, medians, days, the
+    // sparkline — and it is the same ten rows whether the columns beside it
+    // are trims or models, so the word does not change with the mode. It is
+    // visible, like the "Day" the two history tables put in the same corner:
+    // sc.css lowercases thead in mono, so it reads as a label, not a heading,
+    // and the column is already 96px (phone) / 148px (desktop) wide for the
+    // labels under it, so seven characters move nothing.
+    const head = el('tr', null, el('th', { scope: 'col' }, 'Measure'));
     for (const v of stat) {
       head.appendChild(el('th', { class: 'sc-case', scope: 'col',
         'aria-label': `${v.c.label}${v.c.sub ? ', ' + v.c.sub : ''}` },
