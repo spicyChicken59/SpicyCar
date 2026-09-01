@@ -252,6 +252,30 @@ await page.waitForTimeout(400);
 ok('narrowing to one column keeps the keyboard somewhere',
   (await page.evaluate(() => document.activeElement.tagName)) !== 'BODY');
 
+// A trim chip with no cars behind it used to empty the page in silence: the
+// notice measured its total THROUGH the trim selection under test, so total
+// came back 0 and the `!total` guard skipped the notice — one press on the i5's
+// "CPO under 30k mi 0" chip left 136 cars' worth of page as dashes with no
+// message and no way back. Two of the fifteen watched trims read 0 today.
+await open('?brand=bmw&m=i5&trims=bmw-i5-cpo');
+const zeroTrim = await page.evaluate(() => ({
+  hidden: document.getElementById('notice').hidden,
+  text: document.getElementById('notice').textContent,
+}));
+ok('a zero-car trim says why the page is empty', !zeroTrim.hidden && zeroTrim.text.includes('CPO under 30k mi'),
+  JSON.stringify(zeroTrim));
+// Guarded so the regression reports as a failed check rather than a 30s hang
+// on a link that is not there.
+if (await page.locator('#notice a').count()) { await page.click('#notice a'); await page.waitForTimeout(400); }
+const backFromZero = await page.evaluate(() => ({
+  trims: new URLSearchParams(location.search).get('trims'),
+  count: document.getElementById('filter-count').textContent.trim(),
+  stillGone: ['takeaway', 'scatter-card', 'map-card', 'gone-card'].filter((id) => document.getElementById(id).hidden),
+}));
+ok('and its way out drops the trim and brings the sections back',
+  backFromZero.trims === null && /^showing all [\d,]+ cars$/.test(backFromZero.count) && !backFromZero.stillGone.length,
+  JSON.stringify(backFromZero));
+
 // --- the phone -------------------------------------------------------------
 await page.setViewportSize({ width: 390, height: 844 });
 await open('?models=bmw-i5,bmw-ix');

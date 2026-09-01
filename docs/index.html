@@ -3401,6 +3401,34 @@
       return;
     }
     if (shown > 0 || !total) { n.hidden = true; return; }
+    // A trim selection can be the whole reason nothing is shown, and then
+    // "Clear the filters" below is a dead end: that handler deliberately leaves
+    // S.trims alone, so the page would come back exactly as empty. Two of the
+    // fifteen watched trims are in this state today — bmw-i5-cpo and
+    // bmw-i7-cpo, the certified watches on the only two models marked shopping
+    // — because every certified car they find is also filed under the trim it
+    // is and the list keeps one row per VIN, so the chip offers "CPO under 30k
+    // mi 0" and one press empties 136 cars' worth of page. Name the trim as the
+    // cause and offer the way out that actually works.
+    const t = S.brand === 'all' ? null : model();
+    const picked = t && S.trims.size ? selectedTrims(t) : [];
+    if (picked.length && !trimRows(t.listings || []).length) {
+      const name = t.label || S.model;
+      n.appendChild(el('div', { class: 'sc-notice' },
+        el('div', { class: 'sc-eyebrow' }, picked.length > 1 ? 'no cars in these trims right now' : 'no cars in this trim right now'),
+        el('p', null, `The watchlist holds ${num(total)} ${name} cars, but none of them are ${picked.map((id) => trimLabel(t, id)).join(' + ')}, `
+          + 'so the picks, the map and the price chart below have nothing to draw. ',
+          el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:trims', onclick: (e) => {
+            e.preventDefault();
+            // Only the trim selection: the year, miles and history filters are
+            // the reader's own and are not what emptied this page, so they
+            // survive — the same restraint the clear-the-filters link shows the
+            // comparison. Replaces the history entry rather than pushing one.
+            S.trims = new Set(); syncUrl(true); buildFilters(); rerender('trim');
+          } }, `Show all ${name} trims`), '.')));
+      n.hidden = false;
+      return;
+    }
     n.appendChild(el('div', { class: 'sc-notice' },
       el('div', { class: 'sc-eyebrow' }, 'nothing matches these filters'),
       el('p', null, `All ${num(total)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
@@ -3476,7 +3504,12 @@
     // stay atomic with the KPIs and the notice.
     if (fk !== undefined && S.showAllList && rows.length > 60) scheduleListRender(rows, fk);
     else renderList(rows);
-    renderEmptyNotice(rows.length, trimRows(t.listings || []).length);
+    // The whole model, not the selection — the same rule filterCount follows
+    // one function down. Measuring the denominator through trimRows() made it
+    // 0 for a trim with no cars, and the notice's own `!total` guard then
+    // silently skipped the notice: pressing "CPO under 30k mi 0" on the i5 left
+    // 136 cars' worth of page as dashes with nothing said and no way back.
+    renderEmptyNotice(rows.length, (t.listings || []).length);
     const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
     renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
     filterCount();
