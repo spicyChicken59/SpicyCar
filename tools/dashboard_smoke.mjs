@@ -252,6 +252,39 @@ await page.waitForTimeout(400);
 ok('narrowing to one column keeps the keyboard somewhere',
   (await page.evaluate(() => document.activeElement.tagName)) !== 'BODY');
 
+// A chart-legend chip is the price chart's control, not a filter. It also cut
+// the map's dots, so pressing "Hide BMW i7" — a chip a full screen BELOW the
+// map — dropped 137 of the 484 cars off it (479 dots to 342) while
+// #filter-count still read "showing all 484 cars" and the map's own caption
+// still blamed "the current filters". Whichever chip is first, not a named
+// model — the watchlist changes. From a clean profile, and read again after a
+// reload, because S.hidden outlives the visit: the state the press leaves
+// behind is the one a returning reader would have met.
+await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+await open('');
+const mapState = () => page.evaluate(() => ({
+  dots: document.querySelectorAll('#map .sc-dot:not(.is-off)').length,
+  hint: document.getElementById('map-hint').textContent.split(',')[0],
+  count: document.getElementById('filter-count').textContent,
+  lines: document.querySelectorAll('#chart [data-sid]').length,
+}));
+const litUp = await mapState();
+const legendKey = await page.evaluate(() => document.querySelector('#legend .sc-legend__chip').getAttribute('data-fkey'));
+await page.click(`#legend [data-fkey="${legendKey}"]`);
+await page.waitForTimeout(400);
+const hidden = await mapState();
+ok('a legend chip still hides its own line', hidden.lines < litUp.lines && litUp.lines > 0,
+  `${litUp.lines} series nodes → ${hidden.lines}`);
+ok('but it takes no dot off the map',
+  hidden.dots === litUp.dots && hidden.hint === litUp.hint && hidden.count === litUp.count,
+  `${litUp.dots} dots / "${litUp.hint}" / "${litUp.count}" → ${hidden.dots} dots / "${hidden.hint}" / "${hidden.count}"`);
+await open('');   // and the chip it remembers does not narrow the map on the next visit either
+const revisit = await mapState();
+ok('nor on the next visit, with the chip still remembered',
+  revisit.dots === litUp.dots && revisit.lines === hidden.lines,
+  `${revisit.dots} dots, ${revisit.lines} series nodes`);
+await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+
 // --- the phone -------------------------------------------------------------
 await page.setViewportSize({ width: 390, height: 844 });
 await open('?models=bmw-i5,bmw-ix');
