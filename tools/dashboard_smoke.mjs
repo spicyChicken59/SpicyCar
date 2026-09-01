@@ -281,6 +281,32 @@ await page.waitForTimeout(400);
 const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of overflow`);
 
+// Turn the phone sideways. Every rule that folds the filter panel away is
+// keyed to WIDTH — sc.css hides .sc-filters below 721px and narrow() gates the
+// JS at the same edge — so landscape (844x390 on an iPhone 13/14/15) un-folds
+// it while the viewport stays 390px tall. The sticky bar then stood 371px of
+// those 390 with its toggle at display:none, leaving a 19px letterbox of
+// results at every scroll offset and no control to dismiss it.
+await page.setViewportSize({ width: 844, height: 390 });
+await open('?brand=bmw&m=i5');
+await page.evaluate(() => window.scrollTo(0, 4000));
+await page.waitForTimeout(250);
+const land = await page.evaluate(() => {
+  const c = document.getElementById('filters-card');
+  return { left: Math.round(innerHeight - c.getBoundingClientRect().bottom),
+           clipped: c.scrollHeight - c.clientHeight, height: Math.round(c.getBoundingClientRect().height) };
+});
+ok('a phone in landscape still sees the results under the filter bar',
+  land.left >= 180, `${land.height}px bar, ${land.left}px of 390 left for the page`);
+// The cap is only honest if what it hides can still be reached: the panel
+// scrolls inside itself rather than losing its last controls off the bottom.
+ok('and can still reach every filter in it',
+  land.clipped === 0 || (await page.evaluate(() => {
+    const c = document.getElementById('filters-card');
+    c.scrollTop = c.scrollHeight;
+    return c.scrollTop > 0;
+  })), `${land.clipped}px past the cap`);
+
 await browser.close();
 server.close();
 
