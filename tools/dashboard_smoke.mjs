@@ -281,6 +281,22 @@ await page.waitForTimeout(400);
 const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of overflow`);
 
+// The loading shell is SHORT: h1 "Loading snapshot…", an empty #kpis and every
+// card still hidden leave #main 314px tall, so footer.sc-foot painted at y=462
+// on this 390×844 phone and was evicted to y=5527 the instant data.json
+// rendered — one layout-shift entry, the page's entire 0.199 CLS. Held with a
+// stalled data.json because the shift is over ~160ms after paint and nothing
+// after render can see it. #main{min-height:100vh} is what keeps the footer
+// off the first screen, so unhiding the cards moves nothing the reader had.
+await ctx.route('**/data.json', async (r) => { await new Promise((z) => setTimeout(z, 1500)); r.continue(); });
+await page.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(400);
+const footTop = await page.evaluate(() => Math.round(document.querySelector('footer.sc-foot').getBoundingClientRect().top));
+ok('the footer waits below the fold while the data loads', footTop >= 844,
+  `footer top y=${footTop} in an 844px viewport`);
+await page.waitForFunction(() => document.getElementById('h1').textContent.trim() === 'The watchlist', null, { timeout: 20000 });
+await ctx.unroute('**/data.json');
+
 await browser.close();
 server.close();
 

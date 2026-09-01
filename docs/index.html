@@ -52,6 +52,21 @@
      late fetch popped in a 906px card and shifted everything below it by
      938px at 1280×900 (557px at 390×844). */
   #map:empty { aspect-ratio: 975 / 610; background: var(--sc-raised); border-radius: var(--sc-r-sm); }
+  /* The same reservation one level up, for the whole page. The loading shell —
+     h1 "Loading snapshot…", empty #kpis, every card still hidden — leaves #main
+     314px tall, so footer.sc-foot painted at y=462 on a 390×844 phone, INSIDE
+     the fold, and render() evicted it to y=5527 the moment data.json landed:
+     one layout-shift entry, one source, t≈160ms, and it was the ENTIRE phone
+     CLS of 0.1991 — the site's only failing Core Web Vital. One viewport is
+     enough, because rendered #main runs 5,183px (watchlist at 1280) to
+     14,537px (the i5 page on a phone), so the rule is inert after boot. 100vh
+     not svh/dvh is deliberate: vh is the LARGE viewport, so a phone still
+     showing its URL bar is covered. The cost: if data.json fails outright,
+     fail()'s notice now sits above a viewport of empty main with the footer a
+     screen down instead of at y=315. The 0.0009 left at 1280×1000 is a
+     different node — .sc-masthead__right widening as #mast-right swaps
+     'Loading…' for the meta line. */
+  #main { min-height: 100vh; }
   /* Touch hit halo — one invisible circle per dot, built only on coarse
      pointers. Pure geometry: r rides user units, sized to ~25px on screen
      and re-derived when the viewport width changes (fill:none paints
