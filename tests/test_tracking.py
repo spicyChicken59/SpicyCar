@@ -1388,3 +1388,113 @@ class TestFinance(unittest.TestCase):
         for p in fin["promos"]:
             self.assertIn("active", p, "the page trusts `active` for arithmetic; it must be published")
             self.assertIsNotNone(p.get("apr"))
+
+
+class TestSourceOverlap(unittest.TestCase):
+    """What the States query buys that National does not already bring.
+
+    Half of most targets' calls go to asking the buyer's eight states the same
+    question the national query just asked, and the obvious saving — make the
+    benchmark models national_only — is worth about 180 calls a month. Whether
+    it is FREE is a different question: National sorted by price returns the
+    twenty cheapest in the country, which on a model whose cheap end sits in
+    California can be twenty cars none of them drivable, while the States query
+    is the only thing surfacing the Ohio one.
+
+    So the flag is not flipped on an argument. It is flipped when this audit
+    has watched `states_only` sit at zero for a while. These tests hold the
+    measurement itself honest, because a saving justified by a broken
+    instrument is the most expensive kind.
+    """
+
+    def setUp(self):
+        self._vins = dict(T.SOURCE_VINS)
+        self._exh = set(T.EXHAUSTED)
+        T.SOURCE_VINS.clear()
+        T.EXHAUSTED.clear()
+
+    def tearDown(self):
+        T.SOURCE_VINS.clear(); T.SOURCE_VINS.update(self._vins)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._exh)
+
+    @staticmethod
+    def _a_target_with_both_sources():
+        for t in T.TARGETS.values():
+            if len(T.sources_for(t)) == 2:
+                return t["id"]
+        return None
+
+    def test_states_only_is_what_national_only_would_lose(self):
+        """The one number the decision rests on: cars no national query returned."""
+        tid = self._a_target_with_both_sources()
+        if not tid:
+            self.skipTest("no target uses both sources")
+        T.SOURCE_VINS[(tid, "States")] = {"A", "B", "C"}
+        T.SOURCE_VINS[(tid, "National")] = {"B", "C", "D"}
+        rows = {(tid, "A"): {"state": "OH"}, (tid, "B"): {"state": "CA"},
+                (tid, "C"): {"state": "TX"}, (tid, "D"): {"state": "FL"}}
+        o = T.source_overlap(rows)[tid]
+        self.assertEqual(o["states_only"], 1, "A is the only car National never returned")
+        self.assertEqual(o["both"], 2)
+        self.assertEqual(o["states_only_in"], ["OH"],
+                         "the states that would go dark are named, not just counted")
+
+    def test_an_exhausted_national_query_settles_it(self):
+        """A short page means that query returned its scope's ENTIRE result set.
+        If National came back short, it saw the whole country, so the States
+        half cannot be buying anything new — no local-coverage argument
+        survives that, and the audit has to say so."""
+        tid = self._a_target_with_both_sources()
+        if not tid:
+            self.skipTest("no target uses both sources")
+        T.SOURCE_VINS[(tid, "States")] = {"A"}
+        T.SOURCE_VINS[(tid, "National")] = {"A", "B"}
+        T.EXHAUSTED.add((tid, "National"))
+        self.assertTrue(T.source_overlap({})[tid]["national_exhausted"])
+
+    def test_a_national_only_target_is_not_audited(self):
+        """It has no States query to compare against; reporting it as
+        zero-overlap would read as evidence for a saving already taken."""
+        nat = next((t["id"] for t in T.TARGETS.values() if t.get("national_only")), None)
+        if not nat:
+            self.skipTest("no national_only target configured")
+        T.SOURCE_VINS[(nat, "National")] = {"A", "B"}
+        self.assertNotIn(nat, T.source_overlap({}))
+
+    def test_the_log_keeps_one_entry_per_day(self):
+        """The run is re-runnable; the audit is about days. A second run on the
+        same date must correct its entry, not append a second one."""
+        import tempfile
+        tid = self._a_target_with_both_sources() or "x"
+        o = {tid: {"states": 3, "national": 5, "both": 3, "states_only": 0}}
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "ov.json"
+            T.save_overlap_history(o, path=p)
+            T.save_overlap_history(o, path=p)
+            hist = json.loads(p.read_text())
+            self.assertEqual(len(hist), 1)
+            self.assertEqual(hist[T.TODAY][tid], [3, 5, 3, 0])
+
+    def test_the_log_is_bounded(self):
+        """It rides in the repo beside a ledger that already grows daily; it
+        keeps a window, not a history."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "ov.json"
+            p.write_text(json.dumps({f"2020-01-{d:02d}": {"t": [1, 1, 1, 0]} for d in range(1, 29)}))
+            T.save_overlap_history({"t": {"states": 1, "national": 1, "both": 1, "states_only": 0}},
+                                   path=p, keep=10)
+            hist = json.loads(p.read_text())
+            self.assertEqual(len(hist), 10)
+            self.assertIn(T.TODAY, hist, "today's entry is never the one evicted")
+
+    def test_a_corrupt_log_is_replaced_not_fatal(self):
+        """A half-written file from a killed run must not take down the next
+        one — the audit is instrumentation, and instrumentation that can crash
+        the thing it measures is worse than none."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "ov.json"
+            p.write_text("{not json")
+            T.save_overlap_history({"t": {"states": 1, "national": 1, "both": 1, "states_only": 0}}, path=p)
+            self.assertEqual(list(json.loads(p.read_text())), [T.TODAY])

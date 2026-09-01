@@ -855,6 +855,112 @@ TOTALS = {}            # (target id, source) -> the API's own total result count
                        # when the response envelope carries one — the honest
                        # denominator behind "N tracked"
 ENVELOPE_WARNED = False
+OVERLAP = {}           # target id -> today's States-vs-National audit, persisted so the
+                       # decision it informs can be made on a week of runs instead of
+                       # one: Actions logs expire, and a single day where the States
+                       # query happened to add nothing is not evidence that it never does.
+SOURCE_VINS = {}       # (target id, source) -> the VINs that source returned today.
+                       # `rows` is keyed (target, vin) and shared across sources, so a
+                       # car both queries return collapses into one row and the overlap
+                       # becomes invisible the moment the fetch ends. It is measured
+                       # here because it is the only place it still exists — and it is
+                       # the number that decides whether the States query is worth its
+                       # half of the call budget, or is re-buying cars National already
+                       # brought back.
+
+
+def source_overlap(rows):
+    """What the States query bought today that National did not already bring.
+
+    Half this run's calls go to asking the buyer's own eight states the same
+    question the national query just asked. Whether that is worth paying for is
+    an empirical question with one number behind it — how many cars only the
+    States query saw — and nobody has ever measured it, because the two answers
+    are merged into one VIN-keyed table the moment they arrive.
+
+    So: per target, the size of each source's own catch, the overlap, and the
+    part that matters — `states_only`, which is exactly what would be LOST by
+    making a target national_only. A target whose National query came back
+    short is marked exhausted: that query returned the entire national market,
+    so its States half cannot be buying anything new by definition, and no
+    amount of local coverage argument survives it.
+    """
+    out = {}
+    for t in TARGETS.values():
+        tid = t["id"]
+        st = SOURCE_VINS.get((tid, "States"))
+        nat = SOURCE_VINS.get((tid, "National"))
+        if st is None or nat is None:
+            continue          # national_only, or not due today: nothing to compare
+        only_st = st - nat
+        out[tid] = {
+            "states": len(st), "national": len(nat),
+            "both": len(st & nat), "states_only": len(only_st),
+            "national_exhausted": (tid, "National") in EXHAUSTED,
+            # The states that would go dark. A benchmark model losing Ohio
+            # visibility is a different decision from one losing nothing.
+            "states_only_in": sorted({r.get("state") for k, r in rows.items()
+                                      if k[0] == tid and k[1] in only_st and r.get("state")}),
+            "shopping": bool(t.get("shopping")),
+            "calls_saved_per_due_day": len(sorts_pages(t)[0]) * sorts_pages(t)[1] + t["newest"],
+        }
+    return out
+
+
+def report_source_overlap(overlap):
+    """Print the audit as a table, and say what it implies rather than leaving
+    the reader to divide the columns themselves."""
+    if not overlap:
+        return
+    print("\nStates-vs-National overlap (what the second source actually bought):")
+    print(f"  {'target':<24}{'States':>7}{'Natl':>6}{'both':>6}{'only States':>12}  note")
+    free = 0.0
+    for tid, o in sorted(overlap.items(), key=lambda kv: kv[1]["states_only"]):
+        t = TARGETS[tid]
+        note = ""
+        if o["national_exhausted"]:
+            note = "National saw the whole market — States is redundant"
+        elif o["states_only"] == 0:
+            note = "States added nothing today"
+        elif o["states_only_in"]:
+            note = "would lose " + "/".join(o["states_only_in"])
+        if o["states_only"] == 0 and not o["shopping"]:
+            free += o["calls_saved_per_due_day"] / t["cadence"]
+        print(f"  {tid:<24}{o['states']:>7}{o['national']:>6}{o['both']:>6}{o['states_only']:>12}  {note}")
+    if free:
+        print(f"  -> {free:.1f} calls/day (~{free * 30.4:.0f}/month) sit behind benchmark targets whose "
+              f"States query added nothing today. One day is not proof; watch it before flipping national_only.")
+
+
+OVERLAP_LOG = Path("data/source_overlap.json")
+
+
+def save_overlap_history(overlap, path=OVERLAP_LOG, keep=120):
+    """Append today's audit to a small dated log, newest days kept.
+
+    Only the four numbers that answer the question are stored — a full record
+    per target per day would grow faster than the ledger it sits beside for no
+    extra answer. A rerun on the same day overwrites its own entry rather than
+    doubling it, because the run is not idempotent about calls but this file
+    must be about days.
+    """
+    if not overlap:
+        return
+    try:
+        hist = json.loads(path.read_text()) if path.exists() else {}
+    except (OSError, ValueError):
+        hist = {}
+    if not isinstance(hist, dict):
+        hist = {}
+    hist[TODAY] = {tid: [o["states"], o["national"], o["both"], o["states_only"]]
+                   for tid, o in sorted(overlap.items())}
+    for day in sorted(hist)[:-keep]:
+        del hist[day]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(hist, indent=1, sort_keys=True) + "\n")
+    except OSError as e:
+        print(f"  ! could not write {path}: {e}")
 
 
 def envelope_total(payload):
@@ -1779,6 +1885,7 @@ def main():
                             MILES_WINDOW[wk] = max(MILES_WINDOW.get(wk, 0),
                                                    n["miles"])
                         key = (tid, n["vin"])
+                        SOURCE_VINS.setdefault((tid, source_name), set()).add(n["vin"])
                         cur = rows.get(key)
                         if cur is None or n["price"] < to_int(cur["price"]):
                             rows[key] = n
@@ -1802,6 +1909,7 @@ def main():
                     if not n:
                         continue
                     key = (tid, n["vin"])
+                    SOURCE_VINS.setdefault((tid, source_name), set()).add(n["vin"])
                     cur = rows.get(key)
                     if cur is None or n["price"] < to_int(cur["price"]):
                         rows[key] = n
@@ -1815,6 +1923,9 @@ def main():
     print(f"API calls made: {CALLS}"
           + (f" · {FAILED_FETCHES} failed after retry" if FAILED_FETCHES else "")
           + (f" · {len(EXHAUSTED)} exhaustive queries" if EXHAUSTED else ""))
+    OVERLAP.update(source_overlap(rows))
+    report_source_overlap(OVERLAP)
+    save_overlap_history(OVERLAP)
     print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "
           f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
     save_zip_cache()
