@@ -516,20 +516,36 @@ SHIP_BANDS = [(to_float(b.get("to")), to_float(b.get("per_mile")))
 SHIP_ROAD_FACTOR = to_float(BUYER.get("ship_road_factor")) or 1.0
 
 
-def band_rate(miles):
-    """The per-mile rate for a haul of this length, or None if unbanded.
+def band_cost(miles):
+    """What a haul of this length costs, banded MARGINALLY, or None if unbanded.
 
     Transport is not linear in distance and never was. A carrier's fixed costs
     — dispatch, loading, the deadhead to reach the car — are the same for 200
     miles as for 2,000, so the short haul carries them alone and the long one
-    spreads them. One flat rate therefore has to be wrong at both ends: it
-    undercharges the short move and overcharges the long one, which on this
-    watchlist means it is wrong in the direction that flatters far-away cars.
+    spreads them. One flat rate therefore has to be wrong at both ends.
+
+    The bands accumulate like tax brackets rather than one replacing another,
+    and that is a correctness requirement, not a preference. The first version
+    of this picked a single rate by distance, which made the estimate NON-
+    MONOTONE: at 423 straight-line miles it charged $574 and at 424 it charged
+    $425, so a car one mile further away was $149 cheaper to bring home. Every
+    mile is now billed at its own band's rate, so the total can only rise with
+    distance while the EFFECTIVE per-mile rate still falls — which was the
+    whole point of banding.
     """
+    if not SHIP_BANDS:
+        return None
+    total, lo = 0.0, 0.0
     for edge, rate in SHIP_BANDS:
-        if edge is None or miles <= edge:
-            return rate
-    return SHIP_BANDS[-1][1] if SHIP_BANDS else None
+        hi = miles if edge is None else min(miles, edge)
+        if hi > lo:
+            total += (hi - lo) * rate
+        lo = max(lo, hi)
+        if edge is not None and miles <= edge:
+            break
+    if lo < miles:                      # past the last edge with no open band
+        total += (miles - lo) * SHIP_BANDS[-1][1]
+    return total
 
 
 def ship_for(r):
@@ -543,7 +559,7 @@ def ship_for(r):
                    around lakes and terrain, and the detour is systematic, not
                    noise: real road miles run above the great-circle figure on
                    essentially every corridor out of Chicago.
-      bands        See band_rate. A flat per-mile rate misprices both ends.
+      bands        See band_cost. A flat per-mile rate misprices both ends.
 
     What this does NOT buy, measured rather than assumed: a different ranking.
     Correcting the estimate moves the median shipped car $148 and reorders the
@@ -580,7 +596,10 @@ def ship_for(r):
         return to_int(BUYER.get("ship_cost")) or 0
     floor = to_float(BUYER.get("ship_min")) or 0
     road = d * SHIP_ROAD_FACTOR
-    rate = band_rate(road)
+    banded = band_cost(road)
+    if banded is not None:
+        return int(round(max(floor, banded)))
+    rate = None
     if rate is None:
         # No bands configured: the flat rate this replaced, unchanged, so a
         # config without ship_bands keeps behaving exactly as it did.
@@ -605,10 +624,10 @@ def ship_calibration():
     errs = []
     for q in quotes:
         miles, price = to_float(q["miles"]), to_float(q["price"])
-        rate = band_rate(miles)
-        if rate is None:
+        est_raw = band_cost(miles)
+        if est_raw is None:
             continue
-        est = max(to_float(BUYER.get("ship_min")) or 0, miles * rate)
+        est = max(to_float(BUYER.get("ship_min")) or 0, est_raw)
         errs.append(est - price)
     if not errs:
         return None
@@ -877,10 +896,21 @@ def market_line(stats):
     if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 5:
         bits.append(f"listings ended after ~{stats['median_days_to_sale']}d "
                     f"({stats['n_sold']} gone)")
-    if stats.get("median_exit_price") and stats.get("n_exits", 0) >= 5:
+    # Model level only. A median mixing an eDrive50 with an M70 describes no car
+    # that exists — exit_stats() says so and refuses to compute one per model —
+    # so the report shows this ONLY where a model has a single trim. Everywhere
+    # else the per-trim figures on the dashboard are the honest ones.
+    if (stats.get("median_exit_price") and stats.get("n_exits", 0) >= 5
+            and stats.get("one_trim")):
+        # The cut count needs a real denominator before it is worth a sentence.
+        # At five, "3 of 7" carries a confidence interval from roughly 10% to
+        # 80% — a number that invites a comparison it cannot support, which is
+        # exactly the mistake the $0 median made in a different costume. Twelve
+        # is still small; it is the point where the count stops pretending to
+        # be a rate.
         watched, cut = stats.get("exit_watched", 0), stats.get("exit_cut_while_watched", 0)
         bits.append(f"last ask before leaving {money(stats['median_exit_price'])}"
-                    + (f" · {cut} of {watched} cut while watched" if watched >= 5 else ""))
+                    + (f" · {cut} of {watched} cut in the days we saw them" if watched >= 12 else ""))
     return " · ".join(bits)
 
 
@@ -1934,9 +1964,16 @@ def build_outputs(today_rows, all_rows, hist):
                       "mileage_baseline": PICKS.get("mileage_baseline", 20000),
                       "exclude_accidents": PICKS.get("exclude_accidents", True),
                       "exclude_rental": PICKS.get("exclude_rental", True)},
+            # The bands ride along with the flat keys because this block is the
+            # published record of how the `ship` on every row was arrived at.
+            # Without them a reader reconstructs `d x ship_per_mile` and gets a
+            # different number than the one sitting beside it in the same file.
             "ship_per_mile": BUYER.get("ship_per_mile"),
             "ship_min": BUYER.get("ship_min"),
             "ship_cost": BUYER.get("ship_cost"),
+            "ship_bands": BUYER.get("ship_bands") or None,
+            "ship_road_factor": BUYER.get("ship_road_factor"),
+            "ship_calibrated": BUYER.get("ship_calibrated"),
             "cents_per_mile": BUYER.get("cents_per_mile"),
             "mileage_baseline": BUYER.get("mileage_baseline"),
             "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
@@ -2021,7 +2058,13 @@ def build_outputs(today_rows, all_rows, hist):
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
             m_entry["market"] = {**market_stats(m_entry["listings"]),
-                                 **sale_stats(m_entry["gone"])}
+                                 **sale_stats(m_gone),
+                                 # A model with one trim IS its trim, so its
+                                 # pooled exit median describes a real cohort.
+                                 # With several it does not, and market_line
+                                 # withholds it rather than average an M70 into
+                                 # an eDrive50.
+                                 "one_trim": len(trims) == 1}
             scored = score_picks(m_entry["listings"], label)
             all_scored += scored
             if SHORTLIST:

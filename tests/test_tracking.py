@@ -1601,11 +1601,41 @@ class TestShipModel(unittest.TestCase):
                              "a car in a state the buyer drives to is never shipped")
 
     def test_cost_rises_with_distance(self):
-        prev = -1
-        for d in (300, 600, 900, 1200, 1800, 2500):
+        """Swept every mile, not sampled.
+
+        The first version of this test checked six widely spaced distances and
+        passed while the model was badly broken: rates REPLACED each other by
+        band, so crossing an edge cut the estimate — 423 miles cost $574 and
+        424 cost $425, making a car one mile further away $149 cheaper to bring
+        home. The samples straddled all three edges without landing on one.
+        A property this cheap to check exhaustively should never be sampled.
+        """
+        prev, drops = 0, []
+        for d in range(1, 3201):
             cost = T.ship_for({"state": "CA", "distance": d})
-            self.assertGreater(cost, prev, f"{d}mi must cost more than the haul before it")
+            if cost < prev:
+                drops.append((d, prev, cost))
             prev = cost
+        self.assertEqual(drops, [], f"further away must never be cheaper; first drop at {drops[:1]}")
+
+    def test_the_effective_rate_still_falls(self):
+        """Monotonicity must not be bought by flattening the curve — the whole
+        reason for bands is that a long haul costs less PER MILE."""
+        rates = [T.ship_for({"state": "CA", "distance": d}) / d for d in (400, 900, 1600, 2600)]
+        self.assertTrue(all(a > b for a, b in zip(rates, rates[1:])),
+                        f"per-mile must keep falling with distance, got {[round(r, 3) for r in rates]}")
+
+    def test_every_band_edge_is_continuous(self):
+        """One mile either side of a configured edge must differ by about one
+        mile's worth of money, not by a step."""
+        for edge, _ in T.SHIP_BANDS:
+            if edge is None:
+                continue
+            straight = edge / T.SHIP_ROAD_FACTOR
+            lo = T.ship_for({"state": "CA", "distance": straight - 1})
+            hi = T.ship_for({"state": "CA", "distance": straight + 1})
+            self.assertLessEqual(hi - lo, 10,
+                                 f"a step of ${hi - lo} at the {edge}-mile edge; bands must be marginal")
 
     def test_per_mile_falls_with_distance(self):
         """The whole reason for bands: fixed costs spread over a longer haul."""
@@ -1622,8 +1652,10 @@ class TestShipModel(unittest.TestCase):
         """A truck does not fly. Whatever the rate, the distance it bills is
         the route, and the route is longer than the great-circle figure."""
         self.assertGreater(T.SHIP_ROAD_FACTOR, 1.0)
-        band = T.band_rate(1000 * T.SHIP_ROAD_FACTOR)
-        self.assertGreater(T.ship_for({"state": "CA", "distance": 1000}), 1000 * band * 0.99)
+        # Billing the route rather than the straight line means the estimate
+        # must exceed what the same bands would charge for the straight line.
+        self.assertGreater(T.ship_for({"state": "CA", "distance": 1000}),
+                           T.band_cost(1000) * 0.99)
 
     def test_no_bands_means_the_old_behaviour_exactly(self):
         """A config without ship_bands must be untouched by this change — the
@@ -1671,8 +1703,7 @@ class TestShipModel(unittest.TestCase):
     def test_calibration_measures_against_the_brokers_own_mileage(self):
         saved = T.BUYER.get("ship_quotes")
         try:
-            rate = T.band_rate(900)
-            T.BUYER["ship_quotes"] = [{"miles": 900, "price": 900 * rate - 100, "route": "test"}]
+            T.BUYER["ship_quotes"] = [{"miles": 900, "price": T.band_cost(900) - 100, "route": "test"}]
             cal = T.ship_calibration()
             self.assertEqual(cal["n"], 1)
             self.assertEqual(cal["mean_error"], 100, "estimate minus quote, so + means we overcharge")
@@ -1815,3 +1846,52 @@ class TestExitStats(unittest.TestCase):
         line = src[src.index("def market_line("):src.index("def build_today(")]
         self.assertNotIn("sold cars lasted", line,
                          "a listing ending is not a confirmed sale and the reader-facing text must not say it is")
+
+
+class TestExitReporting(unittest.TestCase):
+    """What the REPORT is allowed to say about departures.
+
+    Two findings from the audit of this feature, both the same species: a
+    number that is arithmetically fine and rhetorically false.
+
+    The pooled median mixes trims. exit_stats() refuses to compute one per
+    model for exactly that reason — an eDrive50 averaged with an M70 describes
+    no car anyone can buy — and then market_line() published one anyway.
+
+    The cut fraction invites a comparison it cannot carry. "3 of 7" has a
+    confidence interval running from roughly a tenth to four fifths; set beside
+    "3 of 33" it reads as a finding about two markets when it is a finding
+    about two sample sizes.
+    """
+
+    @staticmethod
+    def _stats(**kw):
+        base = {"median_days_listed": 20, "median_exit_price": 50000,
+                "n_exits": 30, "n_sold": 30, "median_days_to_sale": 15,
+                "exit_watched": 20, "exit_cut_while_watched": 3, "one_trim": True}
+        base.update(kw)
+        return base
+
+    def test_a_multi_trim_model_publishes_no_pooled_exit_median(self):
+        line = T.market_line(self._stats(one_trim=False))
+        self.assertNotIn("last ask", line,
+                         "pooling an eDrive50 with an M70 describes no car that exists")
+
+    def test_a_single_trim_model_does(self):
+        self.assertIn("last ask", T.market_line(self._stats(one_trim=True)))
+
+    def test_a_thin_cut_denominator_is_withheld(self):
+        line = T.market_line(self._stats(exit_watched=7, exit_cut_while_watched=3))
+        self.assertIn("last ask", line, "the median itself is still fine")
+        self.assertNotIn("cut in the days", line,
+                         "3 of 7 is a sample size, not a market rate")
+
+    def test_a_real_denominator_is_published(self):
+        self.assertIn("cut in the days",
+                      T.market_line(self._stats(exit_watched=20, exit_cut_while_watched=3)))
+
+    def test_the_wording_never_claims_a_sale(self):
+        line = T.market_line(self._stats())
+        for word in ("sold", "sale"):
+            self.assertNotIn(word, line.lower(),
+                             "a listing ending is not a confirmed sale")

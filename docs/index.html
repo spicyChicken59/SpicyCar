@@ -2122,7 +2122,10 @@
       + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
     return Math.round(dealer + (f.finance_shipping && !x.local ? (x.ship || 0) : 0));
   }
-  // Amortised monthly payment on the landed price less whatever is put down.
+  // Amortised monthly payment on what the dealer actually finances less
+  // whatever is put down — the car plus its tax and paperwork, NOT the hauler's
+  // bill, which is a separate cheque to a separate company and does not go on
+  // the note unless buyer.fees.finance_shipping says it does.
   // Zero APR is not a rounding case — it is a real promo shape — so it divides
   // rather than dividing by a zero rate.
   function payFor(x) {
@@ -2162,9 +2165,14 @@
     if (!fin) return '';
     const bits = [];
     const live = (fin.promos || []).filter((p) => p.active);
+    // A promo that caps the term shorter than the chosen one is quoted at its
+    // cap, so the cell can read "60mo" under a note that says 72. Say the cap
+    // here rather than letting the reader find the contradiction themselves.
+    const want = S.term || fin.default_term;
     for (const p of live) {
       bits.push(`${p.label || p.model} applies to certified cars${p.days_left != null
-        ? `, ${p.days_left} day${p.days_left === 1 ? '' : 's'} left` : ''}`);
+        ? `, ${p.days_left} day${p.days_left === 1 ? '' : 's'} left` : ''}`
+        + (p.max_term && want && p.max_term < want ? ` and is capped at ${p.max_term} months` : ''));
     }
     for (const p of (fin.promos || []).filter((p) => !p.active && p.expires)) {
       bits.push(`${p.label || p.model} expired ${fmtDate(p.expires)} — those cars now price at the ordinary rate`);
@@ -2220,9 +2228,17 @@
     const saves = base == null ? null : Math.round(base - pay);
     const bits = [`${perMo(pay)} at ${x.apr}%`];
     if (saves > 0) bits.push(`saves ${money(saves)}/mo`);
-    return el('span', { class: 'sc-note', title: x.apr_promo
-      ? `${x.apr_label || 'Promotional rate'} — ${termFor(x)} months on ${money(financed(x) - (S.down || 0))} financed`
-      : `${termFor(x)} months on ${money(financed(x) - (S.down || 0))} financed at the ordinary used rate` },
+    // payFor clamps a down payment that covers the whole car to a $0 payment.
+    // The tooltip has to clamp with it: subtracting straight through printed
+    // "60 months on -$4,200 financed" under a row reading $0/mo, which is not
+    // a smaller version of the truth, it is a different claim.
+    const owed = financed(x) - (S.down || 0);
+    const on = owed > 0
+      ? `${termFor(x)} months on ${money(owed)} financed`
+      : `paid outright — the down payment covers all ${money(financed(x))}`;
+    return el('span', { class: 'sc-note', title: owed <= 0 ? on
+      : x.apr_promo ? `${x.apr_label || 'Promotional rate'} — ${on}`
+      : `${on} at the ordinary used rate` },
       bits.join(' · '));
   }
   // The one scored pool for the view on screen. The pick cards, the map's rings
@@ -3995,18 +4011,25 @@
   // that path must not rebuild the bar.
   function syncSortField() {
     $('f-sort').parentElement.hidden = S.brand === 'all' && !comparingModels();
-    syncFinanceControls();
+    syncCostControls();
   }
   // The term and down controls exist only where a payment does: a config with
   // no finance block leaves them hidden and the payment sort out of the list,
   // so a page whose buyer never set a rate never offers a ranking it cannot
-  // compute.
-  function syncFinanceControls() {
+  // compute. The out-the-door sort follows the same rule against buyer.fees.
+  // Without it every row's key falls back to the same sentinel, so the sort
+  // silently does nothing — an option that reorders nothing is worse than an
+  // option that is not there, because the reader reads the unchanged list as
+  // an answer.
+  function syncCostControls() {
     const fin = financeCfg();
     const sortSel = $('f-sort');
     const payOpt = sortSel.querySelector('option[value="payment"]');
     if (payOpt) payOpt.hidden = !fin;
     if (!fin && S.sort === 'payment') { S.sort = 'local'; sortSel.value = 'local'; }
+    const otdOpt = sortSel.querySelector('option[value="otd"]');
+    if (otdOpt) otdOpt.hidden = !feesCfg();
+    if (!feesCfg() && S.sort === 'otd') { S.sort = 'landed'; sortSel.value = 'landed'; }
     const on = !!fin && !sortSel.parentElement.hidden;
     $('f-term-field').hidden = !on;
     $('f-down-field').hidden = !on;

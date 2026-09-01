@@ -31,10 +31,10 @@
     "ship_cost": 1100,
     "ship_road_factor": 1.18,
     "ship_bands": [
-      { "to": 500, "per_mile": 1.15 },
-      { "to": 1000, "per_mile": 0.85 },
-      { "to": 1500, "per_mile": 0.68 },
-      { "to": null, "per_mile": 0.58 }
+      { "to": 500, "per_mile": 1.20 },
+      { "to": 1000, "per_mile": 0.70 },
+      { "to": 1500, "per_mile": 0.45 },
+      { "to": null, "per_mile": 0.30 }
     ],
     "ship_calibrated": null,
     "ship_quotes": [],

@@ -1418,6 +1418,97 @@ if (!cases.length) {
   }
 }
 
+// ---- what the page refuses to offer -----------------------------------------
+// A sort the sheet cannot compute is the quietest kind of wrong: every row's key
+// falls back to the same sentinel, the list does not move, and the reader reads
+// the unchanged order as the answer to the question they just asked. So the
+// option has to be GONE, not inert. Proved against a sheet with the fees block
+// cut out — the shape a page has before a buyer has ever filled one in — rather
+// than by reading the guard's source.
+await step('a sort the sheet cannot compute is not offered', async () => {
+  plan('the out-the-door sort is withheld without a fee block');
+  // Only buyer.fees is cut. Whether this sheet HAS a finance block decides what
+  // the payment option proves below, so it is read before the cut, not assumed.
+  const hasFinance = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).finance);
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    if (sheet.buyer) delete sheet.buyer.fees;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open('?brand=bmw&m=i5');
+    const state = await page.evaluate(() => ({
+      hidden: !!document.querySelector('#f-sort option[value="otd"]')?.hidden,
+      // Two controls against a false pass. "landed" must survive, or the select
+      // emptied and every option is "hidden" for the wrong reason. And where the
+      // sheet has finance, "payment" must survive too — it is guarded off a
+      // DIFFERENT config block, so cutting fees must not take it down with it.
+      payShown: !document.querySelector('#f-sort option[value="payment"]')?.hidden,
+      landedShown: !document.querySelector('#f-sort option[value="landed"]')?.hidden,
+    }));
+    ok('the out-the-door sort is withheld without a fee block',
+       state.hidden && state.landedShown && (!hasFinance || state.payShown),
+       `otd hidden=${state.hidden} · landed still offered=${state.landedShown}`
+       + ` · payment ${hasFinance ? `still offered=${state.payShown}` : 'not applicable, this sheet has no finance block'}`);
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+});
+
+// ---- the term the note claims is the term the rows are quoted at ------------
+await step('the finance note owns the promo term cap', async () => {
+  plan('a note that claims 72 months says which promos are capped shorter');
+  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  const capped = fin && (fin.promos || []).find((p) => p.active && p.max_term);
+  const longest = fin && Math.max(...(fin.terms || [60]));
+  if (!capped || !(longest > capped.max_term)) {
+    return skipRest('no live promo caps the term below the longest one offered');
+  }
+  await open('?brand=bmw&m=i5');
+  // #compare-hint carries the note, and the card only exists once two trims are
+  // picked ON PURPOSE — a model that happens to have four is not comparing them.
+  const chips = await page.$$('#f-trim button');
+  if (chips.length < 2) return skipRest('this model has fewer than two trims to compare');
+  await chips[0].click(); await chips[1].click();
+  await page.waitForTimeout(300);
+  await page.selectOption('#f-term', String(longest));
+  await page.waitForTimeout(350);
+  const hint = await page.$eval('#compare-hint', (n) => n.textContent);
+  ok('a note that claims 72 months says which promos are capped shorter',
+     hint.includes(`${longest} months`) && hint.includes(`capped at ${capped.max_term} months`),
+     hint.slice(hint.indexOf('Payments assume')) || '(no finance note rendered)');
+  await page.selectOption('#f-term', String(fin.default_term || 60));
+});
+
+// ---- a down payment that covers the whole car -------------------------------
+// payFor clamps the payment to $0; the tooltip used to subtract straight through
+// and print "60 months on -$4,200 financed" underneath it. Two numbers from one
+// principal must not disagree about its sign.
+await step('a down payment larger than the car', async () => {
+  plan('a covered car is not quoted a negative balance');
+  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  if (!fin) return skipRest('this sheet has no finance block');
+  await open('?brand=bmw&m=i5&sort=payment');
+  await page.fill('#f-down', '400000');
+  // fill() raises `input`; the control listens for `change`, which a real reader
+  // fires by leaving the field. Without this the page never sees the number and
+  // the check passes on rows that were never given a down payment at all.
+  await page.dispatchEvent('#f-down', 'change');
+  await page.waitForTimeout(400);
+  const notes = await page.$$eval('#list-scroll tbody .sc-note',
+    (ns) => ns.map((n) => ({ text: n.textContent, title: n.getAttribute('title') || '' }))
+              .filter((n) => /\/mo|month/.test(n.text + n.title)));
+  const negative = notes.filter((n) => /-\s*\$|\$-/.test(n.title));
+  ok('a covered car is not quoted a negative balance',
+     notes.length > 0 && negative.length === 0
+       && notes.some((n) => /paid outright/.test(n.title)),
+     notes.length ? `${notes.length} payment notes, ${negative.length} negative · "${(notes[0].title || '').slice(0, 64)}"`
+                  : 'no payment notes rendered at a $400,000 down payment');
+  await page.fill('#f-down', '0');
+  await page.dispatchEvent('#f-down', 'change');
+});
+
 await browser.close();
 server.close();
 
@@ -1442,7 +1533,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 87;
+const EXPECTED = 90;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
