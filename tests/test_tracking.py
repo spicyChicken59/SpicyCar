@@ -20,6 +20,9 @@ import re
 import struct
 import unittest
 import unittest.mock
+import contextlib
+import copy
+import io as _io
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -338,8 +341,11 @@ class TestNormalize(unittest.TestCase):
         rec["retailListing"]["cpo"] = True
         self.assertIsNone(T.normalize(rec, target("bmw-i5-cpo"), self.dropped))
         self.assertEqual(self.dropped["trim mismatch"], 1)
-        self.assertNotIn("m70", target("bmw-i7-cpo")["trim_query"].lower())
-        self.assertEqual(target("bmw-i7-cpo")["trim_exclude"], "m70",
+        # Read from the config rather than TARGETS: the i7 watch is stood
+        # down, and this rule has to survive the day it comes back.
+        i7cpo = json.loads(Path("targets.json").read_text())["watchlist"]["bmw"]["models"]["i7"]["trims"]["cpo"]
+        self.assertNotIn("m70", i7cpo["trim_query"].lower())
+        self.assertEqual(i7cpo["trim_exclude"], "m70",
                          "the i7 M70 is spelled with xDrive, so the query "
                          "alone cannot keep it out — trim_exclude must")
 
@@ -943,8 +949,11 @@ class TestConfig(unittest.TestCase):
         # nationwide CPO watch, because the certified promo rate is what makes
         # any of them affordable, plus the daily hunt on the trim being bought.
         shopped = sorted(t for t, v in T.TARGETS.items() if v["shopping"])
+        # The i7's certified watch is stood down — see
+        # test_the_i7_certified_watch_cannot_reach_a_certified_i7 — so the i7
+        # is shopped through its edrive50 hunt alone.
         self.assertEqual(shopped, ["bmw-i5-cpo", "bmw-i5-edrive40",
-                                   "bmw-i7-cpo", "bmw-i7-edrive50"])
+                                   "bmw-i7-edrive50"])
 
     def test_the_i4_paid_for_the_i7(self):
         """The i4 was already a benchmark rather than a candidate, and at full
@@ -975,15 +984,54 @@ class TestConfig(unittest.TestCase):
         # two watches take alternating cadence-2 days, so neither the worst
         # day nor the month blows the budget the way two full-depth
         # nationwide targets naively would.
-        for tid in ("bmw-i5-cpo", "bmw-i7-cpo"):
+        watches = [tid for tid in T.TARGETS if tid.endswith("-cpo")]
+        self.assertTrue(watches, "the i5 certified watch is the live one")
+        for tid in watches:
             t = T.TARGETS[tid]
             self.assertEqual(T.sources_for(t), [("National", None)])
             self.assertEqual(T.calls_for(t), 2)     # 1 source x 1 sort x 2 pages
             self.assertEqual(T.window_dim(t), "miles")
-        self.assertNotEqual(T.TARGETS["bmw-i5-cpo"]["offset"],
-                            T.TARGETS["bmw-i7-cpo"]["offset"],
-                            "both watches on the same days doubles the "
-                            "worst-day cost for no coverage gain")
+        offsets = [T.TARGETS[tid]["offset"] for tid in watches]
+        self.assertEqual(len(offsets), len(set(offsets)),
+                         "two watches on the same days doubles the worst-day "
+                         "cost for no coverage gain")
+
+    def test_the_i7_certified_watch_cannot_reach_a_certified_i7(self):
+        """Stood down because it cannot work, not because it was expensive.
+
+        Zero rows in ten days of fetching, at 30 calls a month. The query takes
+        the 40 lowest-mileage i7s nationally on miles.asc and then filters to
+        certified under 30,000 miles — but the lowest-mileage i7s in the
+        country are 2026 cars at 1-14 miles, which are new inventory and not
+        certified. The first certified i7 sits below a 40-record window, so no
+        number of pages of miles.asc reaches one.
+
+        This test exists so it cannot be switched back on without the fix. The
+        i5 watch is left alone: it works, on a narrower year range.
+        """
+        cfg = json.loads(Path("targets.json").read_text())
+        i7cpo = cfg["watchlist"]["bmw"]["models"]["i7"]["trims"]["cpo"]
+        # The guidance rides on the assertion rather than sitting behind an
+        # `if active:` branch below it — that branch could never run, because
+        # the line above has already asserted active is False, so the one thing
+        # a person re-enabling this needs to read would never have printed.
+        self.assertIs(i7cpo.get("active"), False,
+                      "Re-enabling this needs more than a flag: miles.asc alone "
+                      "cannot reach a certified i7 while 2026 is in its years. "
+                      "Drop 2026 first (the i5 watch works precisely because "
+                      "its years stop at 2025), or switch the sort.")
+        self.assertNotIn("bmw-i7-cpo", T.TARGETS)
+        self.assertNotIn("bmw-i7-cpo", cfg["buyer"]["shopping"],
+                         "a stood-down target must not stay on the shopping list")
+
+    def test_no_history_is_orphaned_by_standing_it_down(self):
+        """Retiring a target that HAD rows would strand them: the report reads
+        history through TARGETS. The i7 watch never returned one, so there is
+        nothing to strand — and this checks that rather than assuming it."""
+        import csv as _csv
+        seen = {r["target"] for r in _csv.DictReader(
+            (Path(__file__).parent.parent / "data/snapshots.csv").open(newline=""))}
+        self.assertNotIn("bmw-i7-cpo", seen)
 
     def test_the_watchlist_reduction(self):
         # Removed to pay for the CPO watches; the A6 e-tron replaces them.
@@ -1618,6 +1666,307 @@ class TestSpend(unittest.TestCase):
 
 def to_float_or_zero(v):
     return T.to_float(v) or 0
+
+
+class TestRerunGuard(unittest.TestCase):
+    """A day already fetched must not be fetched again.
+
+    The cron fires once. Every extra run is a workflow_dispatch, and each one
+    re-bills the whole day at full price. Reconstructed from the snapshot
+    commits' own footers: 529 calls over nine days — 58.8/day, ~1,790 a month
+    against a 1,000-call tier — while planned_calls() reported 30.0/day and
+    approved every one of them, because it reads INTENT.
+    """
+
+    def test_the_guard_reads_the_snapshot_not_the_plan(self):
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        body = src[src.index("def main("):]
+        body = body[:body.index("    rows = {}")]
+        self.assertIn("load_history()", body,
+                      "the guard must ask what was actually fetched, not what was planned")
+        self.assertIn("ALLOW_REFETCH", body,
+                      "a run that died partway needs a documented way back in")
+        self.assertIn("rebuild_outputs.py", body,
+                      "the guard must name the free alternative, or it just blocks people")
+
+    def test_the_guard_is_before_the_first_call(self):
+        """Refusing after spending is not refusing."""
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        main = src[src.index("def main("):]
+        self.assertLess(main.index("ALLOW_REFETCH"), main.index("batch = fetch("),
+                        "the guard must sit above the fetch loop")
+
+
+class TestSpendAccumulates(unittest.TestCase):
+    """SPENT is a per-process global, so a second run of the day starts at
+    zero. Writing hist[TODAY] = row straight over the first run's total made
+    this log blind to the exact leak it was built to catch."""
+
+    def _row(self, actual):
+        return {"planned": actual, "actual": actual, "banked": 0, "unrun": 0,
+                "silent_targets": [], "targets_due": 1, "exhausted": 0,
+                "failed": 0, "off_plan": {}}
+
+    def test_a_second_run_adds_to_the_day_rather_than_replacing_it(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "s.json"
+            T.save_spend_history(self._row(24), path=p)
+            T.save_spend_history(self._row(24), path=p)
+            hist = T.save_spend_history(self._row(24), path=p)
+            day = hist[T.TODAY]
+            self.assertEqual(day["actual"], 72, "three 24-call runs cost 72, not 24")
+            self.assertEqual(day["runs"], 3)
+
+    def test_the_days_plan_does_not_double_when_the_day_runs_twice(self):
+        """`planned` is the DAY's plan, not a per-run cost.
+
+        The first version of this accumulated it with the costs, so two runs of
+        a 32-call day recorded planned 64 against actual 30 and reported 34
+        calls banked — more headroom than the day ever had, on the day it was
+        overspent. The one number this log exists to make honest was the one it
+        inflated.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "s.json"
+            T.save_spend_history({**self._row(20), "planned": 30, "unrun": 0}, path=p)
+            hist = T.save_spend_history({**self._row(20), "planned": 30, "unrun": 0}, path=p)
+            day = hist[T.TODAY]
+            self.assertEqual(day["planned"], 30, "the day was planned once")
+            self.assertEqual(day["actual"], 40, "but it ran twice at 20 each")
+            # Negative headroom is the point: the day spent more than it planned.
+            self.assertEqual(day["banked"], -10)
+
+    def test_the_first_run_of_a_day_still_reads_normally(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "s.json"
+            hist = T.save_spend_history(self._row(24), path=p)
+            self.assertEqual(hist[T.TODAY]["actual"], 24)
+            self.assertEqual(hist[T.TODAY]["runs"], 1)
+
+
+class TestGuardAndProvenanceBehaviour(unittest.TestCase):
+    """These two features drive the real code. The rest of their coverage does
+    not, and that is the point of this class.
+
+    Every other assertion about the guard and about `via` greps Tracking.py's
+    own source text, and an adversarial pass showed all of them pass on broken
+    code: deleting the guard but leaving a comment carrying the tokens passes;
+    inverting `TODAY in already` passes AND then makes real requests on a day
+    already fetched; `sys.exit(` to `print(` passes; moving `via[key].add()`
+    into the cheaper-duplicate branch — the exact failure the code's own
+    comment warns about — passes; and lowercasing the vin in the key blanks the
+    column universally and passes. Nothing downstream reads `via`, so that last
+    regression has no symptom anywhere.
+    """
+
+    @staticmethod
+    def _hist_row(day):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"snapshot_date": day, "target": "bmw-i5-edrive40",
+                  "vin": "X" * 17, "price": "40000", "miles": "1000",
+                  "state": "IL", "year": "2024", "trim": "eDrive40"})
+        return r
+
+    def _drive(self, history, batches, allow_refetch=False):
+        """Run the real main() with the API and every write stubbed out.
+
+        write_rows is where the fetch loop's work lands, so capturing there and
+        stopping runs everything under test and nothing after it.
+        """
+        seen, captured = [], {}
+        # Tracking keeps per-run state in module globals, and other tests in
+        # this file leave it dirty. EXHAUSTED especially: one stale
+        # (target, source) entry short-circuits the second sort and this class
+        # silently stops testing the thing it exists to test. It passed alone
+        # and failed in the suite, which is exactly how that looks.
+        for g in ("EXHAUSTED",):
+            getattr(T, g).clear()
+        for g in ("PRICE_WINDOW", "MILES_WINDOW", "SOURCE_VINS", "SPENT",
+                  "OVERLAP", "TOTALS"):
+            getattr(T, g).clear()
+        T.CALLS = 0
+        T.FAILED_FETCHES = 0
+
+        def fake_fetch(source_name, source, sort, page, t):
+            seen.append((t["id"], source_name, sort, page))
+            return batches(t, source_name, sort, page)
+
+        def fake_write_rows(rows):
+            captured["rows"] = list(rows)
+            raise SystemExit("captured")
+
+        env = dict(os.environ)
+        env.pop("ALLOW_REFETCH", None)
+        if allow_refetch is not False:
+            env["ALLOW_REFETCH"] = "1" if allow_refetch is True else str(allow_refetch)
+        patches = [
+            unittest.mock.patch.object(T, "fetch", fake_fetch),
+            unittest.mock.patch.object(T, "write_rows", fake_write_rows),
+            unittest.mock.patch.object(T, "load_history", lambda: list(history)),
+            unittest.mock.patch.object(T, "send_email", lambda *a, **k: None),
+            unittest.mock.patch.object(T, "save_zip_cache", lambda *a, **k: None),
+            unittest.mock.patch.object(T, "save_spend_history", lambda row, **k: {}),
+            unittest.mock.patch.object(T, "save_overlap_history", lambda *a, **k: {}),
+            unittest.mock.patch.dict(os.environ, env, clear=True),
+        ]
+        for p_ in patches:
+            p_.start()
+        try:
+            with contextlib.redirect_stdout(_io.StringIO()):
+                try:
+                    T.main()
+                except SystemExit as e:
+                    return seen, captured, str(e)
+            return seen, captured, None
+        finally:
+            for p_ in reversed(patches):
+                p_.stop()
+
+    # ---- the guard ----------------------------------------------------------
+    def test_an_already_fetched_day_spends_nothing(self):
+        seen, captured, msg = self._drive([self._hist_row(T.TODAY)],
+                                          lambda *a: [])
+        self.assertEqual(seen, [], "the guard must refuse BEFORE the first request")
+        self.assertNotIn("rows", captured, "and must not rewrite the snapshot")
+        self.assertIn("already been fetched", msg or "")
+
+    def test_the_message_names_the_free_way_out(self):
+        _, _, msg = self._drive([self._hist_row(T.TODAY)], lambda *a: [])
+        self.assertIn("rebuild_outputs.py", msg or "")
+        self.assertIn("ALLOW_REFETCH", msg or "")
+
+    def test_a_fresh_day_is_not_blocked(self):
+        """The guard must not be a wall. A day not yet in the snapshot runs."""
+        seen, _, _ = self._drive([self._hist_row("2020-01-01")], lambda *a: [])
+        self.assertTrue(seen, "an unfetched day must reach the API")
+
+    def test_the_hatch_lets_a_genuine_re_run_through(self):
+        seen, _, _ = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
+                                 allow_refetch=True)
+        self.assertTrue(seen, "ALLOW_REFETCH must reach the API")
+
+    def test_an_empty_hatch_is_not_a_hatch(self):
+        """daily.yml passes ALLOW_REFETCH as `inputs.allow_refetch && '1' || ''`,
+        so on every scheduled run the variable is PRESENT and empty. If the
+        guard tested for presence rather than truth, the cron would open its own
+        escape hatch on every single day."""
+        seen, _, msg = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
+                                   allow_refetch="")
+        self.assertEqual(seen, [], "an empty value must not unlock the guard")
+        self.assertIn("already been fetched", msg or "")
+
+    # ---- provenance ---------------------------------------------------------
+    def _via_batches(self):
+        """A full page per query so the short-page EXHAUSTED short-circuit does
+        not fire and both sorts actually run — that is the path under test."""
+        base = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                              if not k.startswith("_")})
+
+        def make(vin, price, miles, trim):
+            r = copy.deepcopy(base)
+            r.setdefault("vehicle", {}).update({"vin": vin, "trim": trim})
+            r["vin"] = vin
+            r.setdefault("retailListing", {}).update({"price": price, "miles": miles})
+            for k in ("price", "miles"):
+                if k in r:
+                    r[k] = r["retailListing"][k]
+            return r
+
+        def batches(t, source_name, sort, page):
+            if t["id"] != "bmw-i5-edrive40":
+                return []
+            trim = "eDrive40"
+            if sort == "price.asc":
+                # BOTH0000000000001 is also the CHEAPEST, so it is the record
+                # that survives dedup; PRICEONLY is unique to this sort.
+                out = [make("BOTH0000000000001", 30000, 500, trim)]
+                out += [make(f"PRICEONLY{page}{i:06d}", 40000 + i, 9000, trim)
+                        for i in range(19)]
+                return out
+            if sort == "miles.asc":
+                # The same car arrives again, DEARER — so rows[key] keeps the
+                # price.asc record and this one is discarded. via must survive
+                # that, which is the whole reason it is accumulated separately.
+                out = [make("BOTH0000000000001", 99000, 500, trim)]
+                out += [make(f"MILESONLY{page}{i:06d}", 41000 + i, 100 + i, trim)
+                        for i in range(19)]
+                return out
+            return []
+        return batches
+
+    def test_via_records_every_query_that_returned_a_row(self):
+        _, captured, _ = self._drive([], self._via_batches(), allow_refetch=True)
+        rows = {r["vin"]: r for r in captured.get("rows", [])
+                if r["target"] == "bmw-i5-edrive40"}
+        self.assertIn("BOTH0000000000001", rows)
+        both = rows["BOTH0000000000001"]["via"].split("|")
+        self.assertEqual(sorted(both),
+                         ["National:miles.asc", "National:price.asc",
+                          "States:miles.asc", "States:price.asc"],
+                         "a car returned by both sorts on both sources must say so")
+
+    def test_via_survives_the_cheaper_duplicate_replacing_the_record(self):
+        """rows[key] is REPLACED whenever a cheaper duplicate arrives. If via
+        rode on the record, the replacement would drop the earlier query from
+        its own provenance — so it is accumulated separately, and this is what
+        proves that actually works rather than merely being intended."""
+        _, captured, _ = self._drive([], self._via_batches(), allow_refetch=True)
+        rows = {r["vin"]: r for r in captured.get("rows", [])}
+        both = rows["BOTH0000000000001"]
+        self.assertEqual(T.to_int(both["price"]), 30000,
+                         "the cheaper price.asc record is the one kept")
+        self.assertIn("miles.asc", both["via"],
+                      "but the discarded miles.asc sighting is still recorded")
+
+    def test_a_row_from_one_sort_records_only_that_sort(self):
+        """Or the column says nothing: if everything reported every query, it
+        could not distinguish the windows it exists to distinguish."""
+        _, captured, _ = self._drive([], self._via_batches(), allow_refetch=True)
+        rows = {r["vin"]: r for r in captured.get("rows", [])}
+        price_only = next(v for k, v in rows.items() if k.startswith("PRICEONLY"))
+        miles_only = next(v for k, v in rows.items() if k.startswith("MILESONLY"))
+        self.assertNotIn("miles.asc", price_only["via"], price_only["via"])
+        self.assertNotIn("price.asc", miles_only["via"], miles_only["via"])
+        self.assertIn("price.asc", price_only["via"])
+        self.assertIn("miles.asc", miles_only["via"])
+
+
+class TestProvenance(unittest.TestCase):
+    """Which query returned a row. Without it a car pushed out of the
+    lowest-by-miles window cannot be told from one that left the market, which
+    is why exit prices are withheld for every multi-sort target today."""
+
+    def test_via_is_a_column(self):
+        self.assertIn("via", T.FIELDS)
+
+    def test_a_normalized_row_always_carries_it(self):
+        import copy
+        rec = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                             if not k.startswith("_")})
+        row = T.normalize(rec, target("bmw-i5-m60"), Counter())
+        self.assertIsNotNone(row)
+        self.assertIn("via", row)
+
+    def test_history_without_the_column_still_loads(self):
+        """Every row written before today has no provenance and never will —
+        it cannot be reconstructed. Loading must treat that as empty, not as
+        a crash, or the whole ten-day history becomes unreadable."""
+        rows = T.load_history()
+        self.assertTrue(rows)
+        self.assertTrue(all("via" in r for r in rows))
+
+    def test_the_fetch_loop_accumulates_across_queries(self):
+        """A row is replaced whenever a cheaper duplicate arrives. If
+        provenance rode on the record, the replacement would drop the earlier
+        query from its own history — so it is accumulated separately."""
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        main = src[src.index("def main("):]
+        self.assertIn("via[key].add(", main)
+        self.assertLess(main.index("via = defaultdict(set)"), main.index("via[key].add("))
+        self.assertIn('r["via"] = "|".join(sorted(via.get(', main)
 
 
 class TestShipModel(unittest.TestCase):

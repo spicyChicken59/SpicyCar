@@ -773,13 +773,42 @@ function emptyTrim() {
 const SECTIONS = ['kpis', 'filters-card', 'compare-card', 'takeaway', 'list-card', 'scatter-card',
                   'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'];
 const onScreen = () => page.evaluate((ids) => ids.filter((id) => { const n = document.getElementById(id); return n && !n.hidden; }), SECTIONS);
-const zt = emptyTrim();
+// When the market hands us no empty trim, SYNTHESIZE one rather than skip.
+// These three checks were carried for a year by bmw-i7-cpo, a watch that
+// returned zero cars because its query could not reach one; standing it down
+// retired the empty-state coverage with it, silently, and a permanently
+// skipped check is a check that no longer exists. The rule under test — a
+// trim with no cars must SAY so and offer a way back — does not depend on
+// which trim is empty or on why, so an emptied one proves it exactly as well.
+let stubbedEmpty = false;
+async function synthesizeEmptyTrim() {
+  for (const [bk, b] of Object.entries(DATA.brands || {}))
+    for (const [mk, m] of Object.entries(b.models || {})) {
+      const c = perTrim(m);
+      const ids = Object.keys(m.trims || {});
+      // Needs a model that still has cars once one trim is emptied, or the
+      // page takes the different `!total` path and this proves nothing.
+      const victim = ids.find((tid) => c[tid] && (m.listings || []).length > c[tid]);
+      if (!victim) continue;
+      await ctx.route('**/data.json', async (route) => {
+        const r = await route.fetch();
+        const sheet = JSON.parse(await r.text());
+        const mm = ((sheet.brands || {})[bk] || {}).models[mk];
+        mm.listings = (mm.listings || []).filter((x) => x.trim_id !== victim);
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      stubbedEmpty = true;
+      return { bk, mk, tid: victim, label: (m.trims[victim] || {}).label || victim };
+    }
+  return null;
+}
+const zt = emptyTrim() || await synthesizeEmptyTrim();
 if (!zt) {
   // vanished from the tally would be indistinguishable from one deleted.
   for (const name of ['a zero-car trim says why the page is empty',
                       'and its way out drops the trim and brings the sections back',
                       'a stale link onto an empty trim is not a dead end either'])
-    skip(name, 'no watched trim holds zero cars in this snapshot');
+    skip(name, 'no watched trim holds zero cars and none could be emptied');
 } else {
   await open('?brand=' + zt.bk + '&m=' + zt.mk);
   await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
@@ -852,6 +881,12 @@ function narrowedTrim() {
     }
   return null;
 }
+// The emptied-trim sheet belongs to the three checks above and to nothing else.
+// The check below needs a trim that holds SOME cars, which is exactly what the
+// stub took away — it selects from the real sheet on disk and would then drive
+// a page serving the stubbed one, and read "no cars in this trim" where it
+// expects "all N are filtered out".
+if (stubbedEmpty) { await ctx.unroute('**/data.json'); stubbedEmpty = false; }
 const nt = narrowedTrim();
 if (!nt) skip('the empty-filters notice counts what its own link restores', 'no trim in this snapshot is empty in a buyer state');
 else {
