@@ -102,6 +102,11 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + 
 
 const results = [];
 const ok = (name, pass, detail = '') => results.push({ name, pass: !!pass, detail });
+// A check whose subject does not exist in today's data reports skip, not FAIL:
+// the market moves, and an absent fixture is not a broken dashboard. Both
+// flags are set on purpose — sibling branches print skips off `skip` and off
+// `skipped`, and a row that carries both renders right under either printer.
+const skip = (name, detail = '') => results.push({ name, pass: true, skip: true, skipped: true, detail });
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
   await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
@@ -251,12 +256,40 @@ ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.t
 // beside the i5 eDrive40." The rule is asserted, not that one string: nothing
 // the page prints from a note may carry a dated commitment, because a date in
 // the dek rots silently on a page that is published every day.
+//
+// Asserted over the DATA, because every note reaches a dek (index.html:2392)
+// and a chip title (:3586), and a rule enforced on one URL is the gap that let
+// this ship. The render is then proved on a subject discovered from data.json
+// rather than named here — naming bmw-i5-edrive40 would test the config, and
+// would pass vacuously the day that trim is renamed or the i5 drops to one
+// trim (chips render only when tIds.length > 1, :3580).
 const DATED = /\b(decide|decision|deadline)\s+by\b|\bby\s+(mid|early|late)[- ]?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
-await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40');
-const dek = (await page.textContent('#dek')).trim();
-ok('a trim dek describes the car, not a deadline', !DATED.test(dek), dek);
-const dated = (await page.$$eval('#f-trim button', (bs) => bs.map((b) => b.title))).filter((t) => DATED.test(t));
-ok('nor does any trim chip it sits beside', dated.length === 0, dated.join(' | '));
+const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const noted = [];
+for (const [bId, b] of Object.entries(site.brands || {})) {
+  for (const [mId, m] of Object.entries(b.models || {})) {
+    const tIds = Object.keys(m.trims || {});
+    noted.push({ key: `${bId}/${mId}`, note: m.note || '', bId, mId, tId: null, siblings: tIds.length });
+    for (const tId of tIds) noted.push({ key: `${bId}/${mId}/${tId}`, note: (m.trims[tId] || {}).note || '', bId, mId, tId, siblings: tIds.length });
+  }
+}
+const datedNotes = noted.filter((n) => DATED.test(n.note));
+ok('no note on the watchlist carries a dated commitment', datedNotes.length === 0,
+  datedNotes.map((n) => `${n.key}: ${n.note}`).join(' | ') || `${noted.filter((n) => n.note).length} notes read`);
+
+// One rendered proof that a note really is what the dek and the chip say.
+const subject = noted.find((n) => n.tId && n.note && n.siblings > 1);
+if (!subject) {
+  skip('a described trim reaches the dek and its own chip', 'no model today has a described trim beside a sibling');
+} else {
+  await open(`?brand=${subject.bId}&m=${subject.mId}&trims=${subject.tId}`);
+  const dek = (await page.textContent('#dek')).trim();
+  ok('a described trim reaches the dek', dek.startsWith(subject.note), `${subject.key} — ${dek}`);
+  const titles = await page.$$eval('#f-trim button', (bs) => bs.map((b) => b.title));
+  const chip = titles.find((t) => t.includes(subject.note));
+  ok('and the chip it sits beside says the same', !!chip, `${titles.length} chips — ${chip || titles.join(' | ')}`);
+  ok('and neither reads as a deadline', !DATED.test(dek) && !DATED.test(chip || ''), dek);
+}
 
 // "Only this →" takes its own card off the page; the keyboard must land
 // somewhere, not on <body>.
@@ -299,8 +332,10 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 await browser.close();
 server.close();
 
-for (const r of results) console.log(`  ${r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
+for (const r of results) console.log(`  ${r.skipped ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
 if (errors.length) { console.log('\n  the page logged errors:'); for (const e of [...new Set(errors)]) console.log('      - ' + e); }
 const failed = results.filter((r) => !r.pass).length;
-console.log(`\ndashboard smoke: ${results.length - failed}/${results.length} checks, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
+const skipped = results.filter((r) => r.skipped).length;
+const ran = results.length - skipped;
+console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks${skipped ? `, ${skipped} skipped` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
 process.exit(failed || errors.length ? 1 : 0);
