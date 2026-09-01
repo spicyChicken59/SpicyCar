@@ -102,6 +102,11 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + 
 
 const results = [];
 const ok = (name, pass, detail = '') => results.push({ name, pass: !!pass, detail });
+// A check whose SUBJECT is absent from today's snapshot has nothing to say
+// about the code, and a dashboard with nothing to look at is not a broken one.
+// It reports skip and is left out of the tally, the same way a machine with no
+// chromium is.
+const skip = (name, why) => results.push({ name, skip: true, detail: why });
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
   await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
@@ -248,20 +253,52 @@ ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.t
 // tooltip. The count line says the right sentence already; it just has to be
 // a status message, and a re-sort has to move it (it changed nothing before,
 // so a live region would have had nothing to read out).
+//
+// Asserted on #filter-count and nothing else. The obvious stronger-looking
+// assertion — document.querySelectorAll('[role=status]').length >= 2 — is a
+// trap: only ONE of those two nodes is in this repo. The other is built by the
+// design system (sc-charts.js, `if (opts.live)` on the chart tooltip), so a
+// pin bump, or whoever gives that tooltip role=alert instead, would turn this
+// check red for a reason that has nothing to do with this page. The count is
+// still reported, so the number stays on the record; it just is not the claim.
+// Being outside a [hidden] subtree IS the claim, and is ours: a status message
+// in a hidden container announces nothing.
 const liveCount = await page.evaluate(() => {
   const n = document.getElementById('filter-count');
-  return { role: n.getAttribute('role'), live: n.getAttribute('aria-live'), regions: document.querySelectorAll('[role=status]').length };
+  return { role: n.getAttribute('role'), live: n.getAttribute('aria-live'),
+           inA11yTree: !n.closest('[hidden]'), regionsInDoc: document.querySelectorAll('[role=status]').length };
 });
-ok('the filter count is a status message', liveCount.role === 'status' && liveCount.live === 'polite' && liveCount.regions >= 2,
-  JSON.stringify(liveCount));
-const sortSaid = await page.evaluate(async () => {
-  const n = document.getElementById('filter-count'), was = n.textContent;
-  const sel = document.getElementById('f-sort');
-  sel.value = 'miles'; sel.dispatchEvent(new Event('change'));
-  await new Promise((r) => setTimeout(r, 300));
-  return { was, now: n.textContent };
-});
-ok('and a re-sort changes what it says', sortSaid.was !== sortSaid.now, `${sortSaid.was} → ${sortSaid.now}`);
+ok('the filter count is a status message',
+  liveCount.role === 'status' && liveCount.live === 'polite' && liveCount.inA11yTree, JSON.stringify(liveCount));
+
+// The sort control only exists where a listings table does, so this needs a
+// model page — and WHICH model must not be written down here: the watchlist is
+// whatever the tracker fetched this morning, and a check that names a model
+// tests the config instead of the page. Open the first "Open →" the overview
+// rendered. The order is picked the same way, off the select's own options,
+// so nine hard-coded value strings cannot rot either. Empty watchlist means no
+// subject, which is not the same thing as a broken announcement.
+await open('');
+const sortSubject = await page.evaluate(() =>
+  (document.querySelector('#overview-table [data-fkey^="open:"]') || {}).dataset?.fkey?.slice(5) || null);
+if (!sortSubject) {
+  skip('and a re-sort changes what it says', 'no model on the watchlist to open');
+} else {
+  const sortSaid = await page.evaluate(async () => {
+    document.querySelector('#overview-table [data-fkey^="open:"]').click();
+    await new Promise((r) => setTimeout(r, 500));
+    const n = document.getElementById('filter-count'), sel = document.getElementById('f-sort');
+    const was = n.textContent;
+    const other = [...sel.options].find((o) => o.value !== sel.value);
+    if (!other) return { was, now: was, why: 'the sort select offers only one order' };
+    sel.value = other.value; sel.dispatchEvent(new Event('change'));
+    await new Promise((r) => setTimeout(r, 300));
+    return { was, now: n.textContent, order: other.value, shown: !sel.parentElement.hidden };
+  });
+  ok('and a re-sort changes what it says', sortSaid.was !== sortSaid.now,
+    `${sortSubject} → ${sortSaid.order || sortSaid.why}: "${sortSaid.was}" → "${sortSaid.now}"`
+    + (sortSaid.shown === false ? '  (the sort select was off-screen — nothing to announce an order for)' : ''));
+}
 
 // "Only this →" takes its own card off the page; the keyboard must land
 // somewhere, not on <body>.
@@ -304,8 +341,10 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 await browser.close();
 server.close();
 
-for (const r of results) console.log(`  ${r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
+for (const r of results) console.log(`  ${r.skip ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
 if (errors.length) { console.log('\n  the page logged errors:'); for (const e of [...new Set(errors)]) console.log('      - ' + e); }
-const failed = results.filter((r) => !r.pass).length;
-console.log(`\ndashboard smoke: ${results.length - failed}/${results.length} checks, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
+const failed = results.filter((r) => !r.skip && !r.pass).length;
+const skipped = results.filter((r) => r.skip).length;
+const ran = results.length - skipped;
+console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks${skipped ? `, ${skipped} skipped` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
 process.exit(failed || errors.length ? 1 : 0);

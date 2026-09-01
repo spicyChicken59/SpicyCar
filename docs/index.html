@@ -3648,8 +3648,14 @@
   // from 484 cars to 92 (WCAG 4.1.3). The span carries role=status now, and
   // this writes only when the sentence actually changed, so the re-renders
   // that call it with nothing new to say stay silent. The one unprompted
-  // announcement left is the first fill, after data.json lands — which is the
-  // only signal a screen reader gets that the async render happened at all.
+  // announcement left is the first fill, after data.json lands, and it is kept:
+  // it is the only signal a screen reader gets that the async render happened.
+  // Calling this before the line that reveals #filters-card does NOT silence it
+  // — measured, not assumed: one MutationObserver over the card sees the whole
+  // first render as a single 26-record batch, so the fill and the unhide are in
+  // one task and no order within it is observable from outside. Real silence
+  // would mean withholding aria-live until a later task, which throws the cue
+  // away for nothing.
   function filterCount() {
     const overview = S.brand === 'all';
     const shown = overview
