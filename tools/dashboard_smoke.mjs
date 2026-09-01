@@ -102,6 +102,11 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + 
 
 const results = [];
 const ok = (name, pass, detail = '') => results.push({ name, pass: !!pass, detail });
+// A check whose SUBJECT is absent from today's snapshot has nothing to say
+// about the code, and a dashboard with nothing to look at is not a broken one.
+// It reports skip and is left out of the tally, the same way a machine with no
+// chromium is.
+const skip = (name, why) => results.push({ name, skip: true, detail: why });
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
   await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
@@ -254,27 +259,134 @@ ok('narrowing to one column keeps the keyboard somewhere',
 
 // A trim chip with no cars behind it used to empty the page in silence: the
 // notice measured its total THROUGH the trim selection under test, so total
-// came back 0 and the `!total` guard skipped the notice — one press on the i5's
-// "CPO under 30k mi 0" chip left 136 cars' worth of page as dashes with no
-// message and no way back. Two of the fifteen watched trims read 0 today.
-await open('?brand=bmw&m=i5&trims=bmw-i5-cpo');
-const zeroTrim = await page.evaluate(() => ({
-  hidden: document.getElementById('notice').hidden,
-  text: document.getElementById('notice').textContent,
-}));
-ok('a zero-car trim says why the page is empty', !zeroTrim.hidden && zeroTrim.text.includes('CPO under 30k mi'),
-  JSON.stringify(zeroTrim));
-// Guarded so the regression reports as a failed check rather than a 30s hang
-// on a link that is not there.
-if (await page.locator('#notice a').count()) { await page.click('#notice a'); await page.waitForTimeout(400); }
-const backFromZero = await page.evaluate(() => ({
-  trims: new URLSearchParams(location.search).get('trims'),
-  count: document.getElementById('filter-count').textContent.trim(),
-  stillGone: ['takeaway', 'scatter-card', 'map-card', 'gone-card'].filter((id) => document.getElementById(id).hidden),
-}));
-ok('and its way out drops the trim and brings the sections back',
-  backFromZero.trims === null && /^showing all [\d,]+ cars$/.test(backFromZero.count) && !backFromZero.stillGone.length,
-  JSON.stringify(backFromZero));
+// came back 0 and the `!total` guard skipped the notice — one press on a
+// "CPO under 30k mi 0" chip left a whole model's worth of page as dashes with
+// no message and no way back.
+//
+// WHICH trim reads 0 is a tracker accident, not a property of the page, so the
+// subject is discovered and never named. The first draft of this check named
+// bmw-i5-cpo: it held 0 cars the morning it was written and 2 the next
+// morning, and the check went red on a CORRECT page reporting
+// {"hidden":true,"text":""} — byte-identical to what the unfixed code
+// produces, so an operator would have read a healthy dashboard as a regression.
+// The oracle is the rule: whatever trim holds no cars must say so and offer a
+// way out. A market where no trim is empty is not a failing dashboard, it is a
+// check with nothing to look at — so it reports skip.
+const DATA = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const perTrim = (m) => (m.listings || []).reduce((c, x) => (c[x.trim_id] = (c[x.trim_id] || 0) + 1, c), {});
+// A model with no listings at all is the pre-existing `!total` path, not this
+// one, so it is not a subject here.
+function emptyTrim() {
+  for (const [bk, b] of Object.entries(DATA.brands || {}))
+    for (const [mk, m] of Object.entries(b.models || {})) {
+      if (!(m.listings || []).length) continue;
+      const c = perTrim(m);
+      for (const [tid, t] of Object.entries(m.trims || {})) if (!c[tid]) return { bk, mk, tid, label: t.label || tid };
+    }
+  return null;
+}
+const SECTIONS = ['kpis', 'filters-card', 'compare-card', 'takeaway', 'list-card', 'scatter-card',
+                  'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'];
+const onScreen = () => page.evaluate((ids) => ids.filter((id) => { const n = document.getElementById(id); return n && !n.hidden; }), SECTIONS);
+const zt = emptyTrim();
+if (!zt) {
+  // Every check under this subject reports skip by name. A check that simply
+  // vanished from the tally would be indistinguishable from one deleted.
+  for (const name of ['a zero-car trim says why the page is empty',
+                      'and its way out drops the trim and brings the sections back',
+                      'a stale link onto an empty trim is not a dead end either'])
+    skip(name, 'no watched trim holds zero cars in this snapshot');
+} else {
+  await open('?brand=' + zt.bk + '&m=' + zt.mk);
+  await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+  // The control: the same model with nothing picked. Which sections a model
+  // shows depends on what the market handed it — a model with no departures
+  // has no gone-card — so the way out is measured against this page, not
+  // against a list of ids somebody typed.
+  await open('?brand=' + zt.bk + '&m=' + zt.mk);
+  const control = { count: (await page.textContent('#filter-count')).trim(), sections: await onScreen() };
+  await open('?brand=' + zt.bk + '&m=' + zt.mk + '&trims=' + zt.tid);
+  const zeroTrim = await page.evaluate(() => ({
+    hidden: document.getElementById('notice').hidden,
+    text: document.getElementById('notice').textContent,
+  }));
+  ok('a zero-car trim says why the page is empty',
+    !zeroTrim.hidden && zeroTrim.text.includes(zt.label), zt.tid + ' → ' + JSON.stringify(zeroTrim));
+  // Guarded so the regression reports as a failed check rather than a 30s hang
+  // on a link that is not there.
+  if (await page.locator('#notice a').count()) { await page.click('#notice a'); await page.waitForTimeout(400); }
+  const backFromZero = { trims: await page.evaluate(() => new URLSearchParams(location.search).get('trims')),
+                         count: (await page.textContent('#filter-count')).trim(), sections: await onScreen() };
+  ok('and its way out drops the trim and brings the sections back',
+    backFromZero.trims === null && /^showing all [\d,]+ cars$/.test(backFromZero.count)
+      && backFromZero.count === control.count
+      && backFromZero.sections.join() === control.sections.join(),
+    JSON.stringify(backFromZero) + ' vs control ' + JSON.stringify(control));
+
+  // A shared link can be stale AND empty at once, and the stale-link notice
+  // returns before every other branch: it printed "showing the rest of it"
+  // over a page with nothing on it and offered no link at all, and stayed
+  // that way until some other press re-rendered it.
+  // A trim id this model certainly does not have — checked against the config,
+  // not assumed, so the check cannot be defeated by a watchlist that grows one.
+  const ids = new Set(Object.keys(DATA.brands[zt.bk].models[zt.mk].trims || {}));
+  let ghost = zt.tid + '-retired'; while (ids.has(ghost)) ghost += '-x';
+  await open('?brand=' + zt.bk + '&m=' + zt.mk + '&trims=' + zt.tid + ',' + ghost);
+  const stale = await page.evaluate(() => ({ hidden: document.getElementById('notice').hidden,
+    text: document.getElementById('notice').textContent, links: document.querySelectorAll('#notice a').length }));
+  if (stale.links) { await page.click('#notice a'); await page.waitForTimeout(400); }
+  const backFromStale = { trims: await page.evaluate(() => new URLSearchParams(location.search).get('trims')),
+                          count: (await page.textContent('#filter-count')).trim() };
+  ok('a stale link onto an empty trim is not a dead end either',
+    !stale.hidden && stale.links === 1 && stale.text.includes(ghost)
+      && backFromStale.trims === null && backFromStale.count === control.count,
+    JSON.stringify(stale) + ' → ' + JSON.stringify(backFromStale));
+}
+
+// The other notice prints a number, and that number is a promise its own link
+// has to keep: "Clear the filters" deliberately leaves the trim selection
+// alone, so the sentence has to count what comes back, not what the model
+// holds. Making the guard above honest broke this — with one trim picked the
+// notice said "All 136 cars are filtered out" over a link that restored 80,
+// and never named the trim holding the other 56 back.
+//
+// Discovered, again: a trim that holds SOME of its model's cars, plus a buyer
+// state that trim has none of — press that where-chip and the page is empty
+// for a reason the link does not undo. The assertion is the equality of the
+// two numbers, so it neither knows nor cares which trim or which state.
+function narrowedTrim() {
+  for (const [bk, b] of Object.entries(DATA.brands || {}))
+    for (const [mk, m] of Object.entries(b.models || {})) {
+      const L = m.listings || [];
+      const c = perTrim(m);
+      for (const tid of Object.keys(m.trims || {})) {
+        if (!c[tid] || c[tid] === L.length) continue;       // must be a real narrowing, or the check cannot discriminate
+        const held = new Set(L.filter((x) => x.trim_id === tid).map((x) => (x.state || '').toUpperCase()));
+        const w = ((DATA.buyer || {}).states || []).find((s) => !held.has(s));
+        if (w) return { bk, mk, tid, w };
+      }
+    }
+  return null;
+}
+const nt = narrowedTrim();
+if (!nt) skip('the empty-filters notice counts what its own link restores', 'no trim in this snapshot is empty in a buyer state');
+else {
+  await open('?brand=' + nt.bk + '&m=' + nt.mk + '&trims=' + nt.tid);
+  await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+  await open('?brand=' + nt.bk + '&m=' + nt.mk + '&trims=' + nt.tid);
+  await page.click('[data-fkey="where:' + nt.w + '"]');
+  await page.waitForTimeout(400);
+  const promised = (await page.textContent('#notice')).match(/All ([\d,]+) cars are filtered out/);
+  if (await page.locator('#notice a').count()) { await page.click('#notice a'); await page.waitForTimeout(400); }
+  const restored = (await page.textContent('#filter-count')).trim().match(/^showing ([\d,]+) of ([\d,]+) cars/);
+  const n = (s) => Number(String(s).replace(/,/g, ''));
+  ok('the empty-filters notice counts what its own link restores',
+    promised && restored && n(promised[1]) === n(restored[1]) && n(restored[1]) < n(restored[2]),
+    nt.tid + ' + ' + nt.w + ' → promised ' + (promised ? promised[1] : 'no number')
+      + ', restored ' + (restored ? restored[1] + ' of ' + restored[2] : 'nothing'));
+  // The where-chip persists; leave the browser as the rest of the run found it.
+  await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+}
 
 // --- the phone -------------------------------------------------------------
 await page.setViewportSize({ width: 390, height: 844 });
@@ -308,8 +420,10 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 await browser.close();
 server.close();
 
-for (const r of results) console.log(`  ${r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
+for (const r of results) console.log(`  ${r.skip ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
 if (errors.length) { console.log('\n  the page logged errors:'); for (const e of [...new Set(errors)]) console.log('      - ' + e); }
-const failed = results.filter((r) => !r.pass).length;
-console.log(`\ndashboard smoke: ${results.length - failed}/${results.length} checks, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
+const failed = results.filter((r) => !r.skip && !r.pass).length;
+const skipped = results.filter((r) => r.skip).length;
+const ran = results.length - skipped;
+console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks${skipped ? `, ${skipped} skipped` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
 process.exit(failed || errors.length ? 1 : 0);
