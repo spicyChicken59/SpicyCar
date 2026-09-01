@@ -180,6 +180,58 @@ await open('?models=bmw-i5,bmw-not-a-car');
 ok('a half-dead link still opens', (await page.locator('#overview-table tbody tr').count()) === 1);
 ok('and names what went missing', /bmw-not-a-car/.test(await page.textContent('#notice')));
 
+// The same promise, against the keys every plain object already answers to.
+// applyUrl used to test membership with `brands[wantBrand]` and
+// `(m.trims || {})[wantModel]`, so Object.prototype's own keys all read as
+// hits: ?model=constructor matched every trim in the file and the last match
+// won, so it opened whichever car the watchlist ends on, with no notice and a
+// canonical ?brand=…&m=… in the address bar — the one thing the comment above
+// applyUrl swears never happens, a link honored with a different car and then
+// made re-shareable. ?brand=__proto__ set a brand that does not exist and the
+// page rendered "Snapshot unavailable — could not load data.json" over a
+// data.json that had parsed fine, bookmarkable because syncUrl kept the query.
+// lc() hid three of these behind lowercasing (tostring, valueof,
+// hasownproperty already missed correctly); these four did not.
+//
+// The fifth URL is the one that pins the fourth call site. Reverting only
+// `!own(models, wantM)` leaves the other four URLs green — ?brand=__proto__
+// and ?brand=constructor stop at the brand lookup, ?model=constructor and
+// ?m=constructor never reach it — while ?<a real brand>&m=constructor still
+// renders "constructor" as the <h1> and keeps the dead query. The brand comes
+// out of data.json, not out of this file: naming one here would test the
+// watchlist's contents instead of the page.
+const brands = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8')).brands || {};
+const realBrand = Object.keys(brands).find((b) => Object.keys(brands[b].models || {}).length);
+// Only two of Object.prototype's keys survive lc(); the probe needs one of them
+// that the watchlist itself does not use, or the check would be asserting the
+// config rather than the page.
+const ghost = realBrand && ['constructor', '__proto__'].find(
+  (k) => !Object.prototype.hasOwnProperty.call(brands[realBrand].models, k));
+const protoUrls = ['?brand=__proto__', '?brand=constructor', '?model=constructor', '?m=constructor'];
+if (ghost) protoUrls.push(`?brand=${encodeURIComponent(realBrand)}&m=${ghost}`);
+else skip('a tracked brand plus a prototype-key model lands on the watchlist',
+  realBrand ? `${realBrand} really has a model called constructor and one called __proto__`
+            : 'data.json has no brand with models — nothing to ask for');
+await open('');
+const baseRows = await page.locator('#overview-table tbody tr').count();
+for (const q of protoUrls) {
+  let state = null;
+  try {
+    await open(q);
+    state = await page.evaluate(() => ({
+      h1: document.getElementById('h1').textContent.trim(),
+      search: location.search,
+      notice: document.getElementById('notice').textContent,
+    }));
+  } catch (e) { state = { h1: 'never rendered', search: '?', notice: String(e.message).slice(0, 60) }; }
+  const rows = state.h1 === 'never rendered' ? -1 : await page.locator('#overview-table tbody tr').count();
+  ok(`${q} lands on the watchlist, not on a car`,
+    state.h1 === 'The watchlist' && rows === baseRows, `${state.h1}, ${rows} rows`);
+  ok(`${q} says the link missed and stops re-sharing itself`,
+    /not tracked|no longer tracked/.test(state.notice) && state.search === '',
+    `search=${JSON.stringify(state.search)} notice=${JSON.stringify(state.notice.replace(/\s+/g, ' ').slice(0, 40))}`);
+}
+
 // --- the things two audits found, so they cannot come back -----------------
 // The marked winner is the one number that survives a comparison, and it is
 // only markable when every column's best car was judged against its own trim
