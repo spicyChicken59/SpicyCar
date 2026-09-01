@@ -284,17 +284,35 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 // The loading shell is SHORT: h1 "Loading snapshot…", an empty #kpis and every
 // card still hidden leave #main 314px tall, so footer.sc-foot painted at y=462
 // on this 390×844 phone and was evicted to y=5527 the instant data.json
-// rendered — one layout-shift entry, the page's entire 0.199 CLS. Held with a
-// stalled data.json because the shift is over ~160ms after paint and nothing
+// rendered — one layout-shift entry, the page's entire 0.199 CLS. Measured
+// against the SHELL because the shift is over ~160ms after paint and nothing
 // after render can see it. #main{min-height:100vh} is what keeps the footer
 // off the first screen, so unhiding the cards moves nothing the reader had.
-await ctx.route('**/data.json', async (r) => { await new Promise((z) => setTimeout(z, 1500)); r.continue(); });
-await page.goto(BASE + '/index.html', { waitUntil: 'domcontentloaded' });
-await page.waitForTimeout(400);
-const footTop = await page.evaluate(() => Math.round(document.querySelector('footer.sc-foot').getBoundingClientRect().top));
-ok('the footer waits below the fold while the data loads', footTop >= 844,
-  `footer top y=${footTop} in an 844px viewport`);
-await page.waitForFunction(() => document.getElementById('h1').textContent.trim() === 'The watchlist', null, { timeout: 20000 });
+//
+// data.json is held on a latch rather than a sleep, so no machine is slow
+// enough to render the page out from under the measurement, and the shell is
+// re-asserted alongside the geometry: a footer below the fold means nothing if
+// what is on screen is the finished page. Both figures are read from the live
+// viewport (innerHeight, not the literal 844) so the check follows the phone
+// block if its size ever changes. Nothing here touches the data — no car,
+// price, count or trim id — so a tracker run cannot move it.
+let releaseData;
+const dataHeld = new Promise((r) => { releaseData = r; });
+await ctx.route('**/data.json', async (r) => { await dataHeld; r.continue(); });
+await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+const shell = await page.evaluate(() => ({
+  h1: (document.getElementById('h1').textContent || '').trim(),
+  footTop: Math.round(document.querySelector('footer.sc-foot').getBoundingClientRect().top),
+  vh: window.innerHeight,
+}));
+ok('the footer waits below the fold while the data loads',
+  shell.h1 === 'Loading snapshot…' && shell.footTop >= shell.vh,
+  `footer top y=${shell.footTop} in a ${shell.vh}px viewport, h1 "${shell.h1}"`);
+releaseData();
+await page.waitForFunction(() => {
+  const h = document.getElementById('h1');
+  return h && h.textContent.trim() && h.textContent !== 'Loading snapshot…';
+}, null, { timeout: 20000 }).catch(() => {});
 await ctx.unroute('**/data.json');
 
 await browser.close();
