@@ -100,48 +100,106 @@ const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push('uncaught: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
 
-const results = [];
-const ok = (name, pass, detail = '') => results.push({ name, pass: !!pass, detail });
-
+// --- one check may fail; the run may not -------------------------------------
+// This file used to be one straight line of awaits, and a thrown locator was
+// the end of it: `#f-trim button` .nth(1) on a model the sheet had left with
+// one trim raised TimeoutError 30000ms out of the top level, and node printed
+// a Playwright stack trace where the check names should have been. Not one
+// result reached the operator either — every row was buffered to the end — so
+// a run that had already proved forty claims reported none of them, and there
+// was no way to tell a broken dashboard from a thinner watchlist.
+//
+// The irony is what makes it worth fixing: half the checks below carry a
+// `skip` path so the suite survives a market that moves. Those paths could not
+// fire. On the very morning the data shrank the way they were written for, the
+// crash came a hundred lines earlier than the remedy.
+//
+// So the run is a list of STEPS. A step is a stretch of page-driving that
+// shares one setup, it names the checks it is going to report, and it is run
+// inside a try. If it throws, every check it promised and had not yet reported
+// is written down BY NAME as a failure that never ran, the page is put back the
+// way the next step expects to find it, and the run carries on. A step that
+// finds no subject says so under those same names with skipRest(), which is the
+// remedy the market-movement paths always meant.
+//
+// Three flags per skipped row is deliberate. Five workstreams wrote this helper
+// independently in three different row shapes; a row missing `pass` was counted
+// FAILED by one tally and a row missing `skipped` vanished from another.
+// Carrying all three makes a skip render and count correctly under any of them.
+//
 // A check whose SUBJECT is not in today's data has neither passed nor failed —
-// it had nothing to look at. Saying so keeps the count honest about what was
-// actually covered: scoring it a pass would quietly retire the check on the day
-// the tracker stops watching the car it needed, and scoring it a failure would
-// blame the dashboard for the market.
-// Every flag is set on purpose. Five workstreams wrote this helper independently
-// in three different row shapes; a row missing `pass` was counted FAILED by one
-// tally and a row missing `skipped` vanished from another. Carrying all three
-// makes a skip render and count correctly under any of them.
-const skip = (name, detail = '') => results.push({ name, pass: true, skip: true, skipped: true, detail });
-// ---- ns/NS-02 ----
-{
-// failed — it had nothing to look at. Saying so keeps the count honest about
-// what was actually covered; scoring it a pass would quietly retire the check
-// on the day the tracker stops watching the car it needed.
+// it had nothing to look at. Saying so out loud keeps the count honest about
+// what was actually covered: scoring it a pass would quietly retire the check
+// on the day the tracker stops watching the car it needed, and scoring it a
+// failure would blame the dashboard for the market.
+let live = null;                                   // the step running right now
+const results = [];
+const RESULT_LINE = (r) => `  ${r.skip || r.skipped ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}`
+  + `${r.detail ? '  — ' + r.detail : ''}`;
+// Streamed, not buffered: whatever else goes wrong, the operator keeps the
+// record of everything that had already been decided.
+const record = (r) => { results.push(r); console.log(RESULT_LINE(r)); if (live) live.said.add(r.name); return r; };
+const ok = (name, pass, detail = '') => record({ name, pass: !!pass, detail });
+// A skip names itself in the output and in the tally, so it counts as planned:
+// only an `ok` that no step declared is a hole in the isolation.
+const skip = (name, detail = '') => {
+  if (live) live.planned.add(name);
+  return record({ name, pass: true, skip: true, skipped: true, detail });
+};
+
+// What this step is about to report. Declared inside the body so a step whose
+// check names come out of the sheet can name them once it knows them, and
+// enforced both ways: a name reported without being planned is itself a
+// failure, so a check added here later cannot quietly escape the isolation.
+const plan = (...names) => { for (const n of names) live.planned.add(n); };
+const unsaid = () => [...live.planned].filter((n) => !live.said.has(n));
+// The subject is not in today's sheet: every check still owed is a skip, by name.
+const skipRest = (why) => { for (const n of unsaid()) skip(n, why); };
+
+// Put the page back the way an untouched step expects it. A step that threw may
+// have left a route installed (the two CLS checks hold data.json on a latch), a
+// phone-sized viewport, or a written profile behind it, and none of those are
+// the next step's fault.
+async function recover() {
+  try { await ctx.unroute('**/data.json'); } catch { /* none installed */ }
+  try { await page.setViewportSize({ width: 1280, height: 1000 }); } catch { /* page is gone */ }
+  try { await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } }); }
+  catch { /* nothing loaded */ }
 }
-// ---- ns/NS-03 ----
-{
-// dashboard — it is a check with nothing to point at. Say so out loud rather
-// than passing quietly or failing on the config.
+
+// Playwright's call log is coloured and several lines long; the first line of
+// it says which locator sat there, which is the whole of what an operator
+// needs to go and look.
+const oneLine = (e) => String((e && e.message) || e).replace(/\u001b\[[0-9;]*m/g, '')
+  .split('\n').slice(0, 3).join(' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+async function step(label, body) {
+  live = { label, planned: new Set(), said: new Set() };
+  try {
+    await body();
+  } catch (e) {
+    const lost = unsaid();
+    // Named where the step said what it owed; named after the step where it
+    // threw before it could say, or after everything it owed was already in.
+    if (lost.length) for (const n of lost) record({ name: n, pass: false, detail: `never ran — ${label} threw: ${oneLine(e)}` });
+    else record({ name: label, pass: false, detail: `threw: ${oneLine(e)}` });
+    await recover();
+  } finally {
+    const stray = [...live.said].filter((n) => live.planned.size && !live.planned.has(n));
+    if (stray.length) record({ name: `${label} declares every check it reports`, pass: false,
+                               detail: `unplanned: ${stray.join(' | ')}` });
+    live = null;
+  }
 }
-// ---- ns/NS-04 ----
-{
-// about the code, and a dashboard with nothing to look at is not a broken one.
-// chromium is.
-}
-// ---- ns/NS-08 ----
-{
-// the market moves, and an absent fixture is not a broken dashboard. Both
-}
-// ---- ns/NS-09 ----
-{
-// about the code, and a dashboard with nothing to look at is not a broken one.
-// chromium is.
-}
-// ---- ns/NS-10 ----
-{
-// loud, so a green run never quietly stops covering something.
-}
+
+// The watchlist is whatever the tracker fetched this morning, so a step that
+// needs a car finds one here rather than naming one: a check that writes down
+// ?brand=…&m=… asserts today's config beside the page's behaviour and goes red
+// on a night that only changed the watchlist.
+const SHEET = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const WATCHED = Object.entries(SHEET.brands || {}).flatMap(([bk, b]) =>
+  Object.entries((b || {}).models || {}).map(([mk, m]) => ({
+    bk, mk, id: `${bk} ${mk}`, slug: `${bk}-${mk}`, q: `?brand=${bk}&m=${mk}`, label: (m || {}).label || mk,
+    trims: Object.keys((m || {}).trims || {}), cars: ((m || {}).listings || []).length })));
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
   await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
@@ -153,70 +211,130 @@ async function open(query) {
 }
 
 // --- the watchlist ---------------------------------------------------------
-await open('');
-ok('the watchlist opens', (await page.textContent('#h1')) === 'The watchlist', await page.textContent('#h1'));
-ok('four tiles', (await page.locator('#kpis .sc-tile').count()) === 4);
-ok('a row per model', (await page.locator('#overview-table tbody tr').count()) > 1);
-ok('the chart draws', (await page.locator('#chart svg').count()) > 0);
-ok('the map draws', (await page.locator('#map svg').count()) > 0);
-ok('three chip groups', (await page.locator('#f-where button').count()) > 0
-  && (await page.locator('#f-model button').count()) > 1);
-await shot('watchlist');
+await step('the watchlist', async () => {
+  plan('the watchlist opens', 'four tiles', 'a row per model', 'the chart draws', 'the map draws',
+       'three chip groups');
+  await open('');
+  ok('the watchlist opens', (await page.textContent('#h1')) === 'The watchlist', await page.textContent('#h1'));
+  ok('four tiles', (await page.locator('#kpis .sc-tile').count()) === 4);
+  // Two of these six are claims about a watchlist with more than one model on
+  // it — the index draws a row EACH, and the model chips are a group only where
+  // there is something to tell apart (index.html hides #f-model-field below two
+  // models, :3818) — and two are claims about a watchlist with a car on it. The
+  // rest hold on any sheet. Below either line the check has nothing to look at,
+  // which is a thinner watchlist and not a broken page.
+  const several = WATCHED.length > 1;
+  const thin = `the watchlist holds ${WATCHED.length === 1 ? 'one model' : 'no models'} today`;
+  if (several) ok('a row per model', (await page.locator('#overview-table tbody tr').count()) > 1);
+  else skip('a row per model', thin);
+  if (WATCHED.some((w) => w.cars)) {
+    ok('the chart draws', (await page.locator('#chart svg').count()) > 0);
+    ok('the map draws', (await page.locator('#map svg').count()) > 0);
+  } else {
+    skip('the chart draws', 'no model on the watchlist holds a car today');
+    skip('the map draws', 'no model on the watchlist holds a car today');
+  }
+  if (several) ok('three chip groups', (await page.locator('#f-where button').count()) > 0
+    && (await page.locator('#f-model button').count()) > 1);
+  else skip('three chip groups', `${thin} — no model chips are drawn`);
+  await shot('watchlist');
+});
 
 // --- a model page ----------------------------------------------------------
-await open('?brand=bmw&m=i5');
-ok('a model page opens', (await page.textContent('#h1')).includes('i5'), await page.textContent('#h1'));
-ok('it lists cars', (await page.locator('#list-table tbody tr').count()) > 0);
-ok('it plots price against miles', (await page.locator('#scatter svg').count()) > 0);
-ok('no compare card at rest', await page.locator('#compare-card').isHidden());
+// WHICH model belongs to the sheet, not to this file. The first one the
+// watchlist holds cars for: a model with none renders no list and no scatter,
+// so it is not a subject for these four, and a sheet holding none at all is a
+// thinner watchlist rather than a broken page.
+const carried = WATCHED.find((w) => w.cars);
+await step('a model page', async () => {
+  plan('a model page opens', 'it lists cars', 'it plots price against miles', 'no compare card at rest');
+  if (!carried) return skipRest('no model on the watchlist holds a car today');
+  await open(carried.q);
+  ok('a model page opens', (await page.textContent('#h1')).includes(carried.label), await page.textContent('#h1'));
+  ok('it lists cars', (await page.locator('#list-table tbody tr').count()) > 0);
+  ok('it plots price against miles', (await page.locator('#scatter svg').count()) > 0);
+  ok('no compare card at rest', await page.locator('#compare-card').isHidden());
+});
 
 // --- comparing trims -------------------------------------------------------
-const trims = page.locator('#f-trim button');
-ok('the trim control is chips', (await trims.count()) > 1, `${await trims.count()} chips`);
-await trims.nth(1).click(); await page.waitForTimeout(250);
-ok('one trim is a scope, not a comparison', await page.locator('#compare-card').isHidden());
-ok('one trim reaches the title', (await page.textContent('#h1')).split(' ').length >= 2);
-await trims.nth(2).click(); await page.waitForTimeout(350);
-ok('two trims compare', await page.locator('#compare-card').isVisible());
-ok('the title says vs', (await page.textContent('#h1')).includes(' vs '), await page.textContent('#h1'));
-ok('a column per trim', (await page.locator('#compare-table thead th').count()) === 3);
-ok('a line per trim', (await page.locator('#chart svg [data-sid]').count()) >= 2);
-ok('the chart says which question it answered', (await page.textContent('#chart-title')).includes('by trim'));
-ok('the comparison is in the address bar', page.url().includes('trims='), page.url());
-await shot('compare-trims');
+// This presses the SECOND chip and then the THIRD, so it wants a model the
+// sheet gives at least three trims — and index.html renders no chip at all
+// below two (:3833), which is how `#f-trim button` .nth(1) used to end the
+// whole run on the morning a model dropped to one. The first such model, so a
+// reordered watchlist does not move the subject.
+const trio = WATCHED.find((w) => w.trims.length >= 3);
+await step('comparing trims', async () => {
+  plan('the trim control is chips', 'one trim is a scope, not a comparison', 'one trim reaches the title',
+       'two trims compare', 'the title says vs', 'a column per trim', 'a line per trim',
+       'the chart says which question it answered', 'the comparison is in the address bar',
+       'a shared trim comparison reopens', 'with both chips pressed');
+  if (!trio) return skipRest('no watched model has three trims today — nothing to compare');
+  await open(trio.q);
+  const trims = page.locator('#f-trim button');
+  ok('the trim control is chips', (await trims.count()) > 1, `${await trims.count()} chips`);
+  await trims.nth(1).click(); await page.waitForTimeout(250);
+  ok('one trim is a scope, not a comparison', await page.locator('#compare-card').isHidden());
+  ok('one trim reaches the title', (await page.textContent('#h1')).split(' ').length >= 2);
+  await trims.nth(2).click(); await page.waitForTimeout(350);
+  ok('two trims compare', await page.locator('#compare-card').isVisible());
+  ok('the title says vs', (await page.textContent('#h1')).includes(' vs '), await page.textContent('#h1'));
+  ok('a column per trim', (await page.locator('#compare-table thead th').count()) === 3);
+  ok('a line per trim', (await page.locator('#chart svg [data-sid]').count()) >= 2);
+  ok('the chart says which question it answered', (await page.textContent('#chart-title')).includes('by trim'));
+  ok('the comparison is in the address bar', page.url().includes('trims='), page.url());
+  await shot('compare-trims');
 
-const trimUrl = page.url();
-await open(trimUrl.slice(trimUrl.indexOf('?')));
-ok('a shared trim comparison reopens', await page.locator('#compare-card').isVisible());
-ok('with both chips pressed', (await page.locator('#f-trim button[aria-pressed="true"]').count()) === 2);
+  const trimUrl = page.url();
+  await open(trimUrl.slice(trimUrl.indexOf('?')));
+  ok('a shared trim comparison reopens', await page.locator('#compare-card').isVisible());
+  ok('with both chips pressed', (await page.locator('#f-trim button[aria-pressed="true"]').count()) === 2);
+});
 
 // --- comparing models ------------------------------------------------------
-await open('');
-const models = page.locator('#f-model button');
-await models.nth(0).click(); await page.waitForTimeout(250);
-ok('one model narrows the index', (await page.locator('#overview-table tbody tr').count()) === 1);
-await models.nth(1).click(); await page.waitForTimeout(400);
-ok('two models compare', await page.locator('#compare-card').isVisible());
-ok('the index narrows to both', (await page.locator('#overview-table tbody tr').count()) === 2);
-ok('their cars pool into one table', await page.locator('#list-card').isVisible());
-ok('the pooled table names the car', (await page.textContent('#list-table thead th:first-child')).trim() === 'Car');
-ok('every pooled row says which model', (await page.locator('#list-table tbody .sc-eyebrow').count()) > 0);
-ok('and it can be sorted', await page.locator('#f-sort').isVisible());
-ok('the comparison is in the address bar', page.url().includes('models='), page.url());
-await shot('compare-models');
+// The other crash site, and the same shape: index.html hides #f-model-field
+// below two models (:3818), so on a single-model watchlist the chip is in the
+// DOM but never visible and `.first().click()` sat there for 30s and then took
+// the process down with it.
+await step('comparing models', async () => {
+  plan('one model narrows the index', 'two models compare', 'the index narrows to both',
+       'their cars pool into one table', 'the pooled table names the car',
+       'every pooled row says which model', 'and it can be sorted',
+       'the comparison is in the address bar', 'a shared model comparison reopens');
+  if (WATCHED.length < 2) return skipRest('the watchlist holds fewer than two models today — nothing to compare');
+  await open('');
+  const models = page.locator('#f-model button');
+  await models.nth(0).click(); await page.waitForTimeout(250);
+  ok('one model narrows the index', (await page.locator('#overview-table tbody tr').count()) === 1);
+  await models.nth(1).click(); await page.waitForTimeout(400);
+  ok('two models compare', await page.locator('#compare-card').isVisible());
+  ok('the index narrows to both', (await page.locator('#overview-table tbody tr').count()) === 2);
+  ok('their cars pool into one table', await page.locator('#list-card').isVisible());
+  ok('the pooled table names the car', (await page.textContent('#list-table thead th:first-child')).trim() === 'Car');
+  ok('every pooled row says which model', (await page.locator('#list-table tbody .sc-eyebrow').count()) > 0);
+  ok('and it can be sorted', await page.locator('#f-sort').isVisible());
+  ok('the comparison is in the address bar', page.url().includes('models='), page.url());
+  await shot('compare-models');
 
-const modelUrl = page.url();
-await open(modelUrl.slice(modelUrl.indexOf('?')));
-ok('a shared model comparison reopens', await page.locator('#compare-card').isVisible());
+  const modelUrl = page.url();
+  await open(modelUrl.slice(modelUrl.indexOf('?')));
+  ok('a shared model comparison reopens', await page.locator('#compare-card').isVisible());
+});
 
 // A link naming a car the watchlist no longer has opens the rest and says so,
-// rather than dropping the reader on a page that is silently missing one.
-await open('?models=bmw-i5,bmw-not-a-car');
-ok('a half-dead link still opens', (await page.locator('#overview-table tbody tr').count()) === 1);
-ok('and names what went missing', /bmw-not-a-car/.test(await page.textContent('#notice')));
+// rather than dropping the reader on a page that is silently missing one. The
+// live half is a real slug out of the sheet; the dead half is built from it, so
+// the URL cannot go stale and cannot accidentally name a car that comes back.
+await step('a half-dead link', async () => {
+  plan('a half-dead link still opens', 'and names what went missing');
+  if (!carried) return skipRest('no model on the watchlist holds a car today');
+  const ghost = `${carried.bk}-not-a-car`;
+  await open(`?models=${carried.slug},${ghost}`);
+  ok('a half-dead link still opens', (await page.locator('#overview-table tbody tr').count()) === 1);
+  ok('and names what went missing', new RegExp(ghost).test(await page.textContent('#notice')));
+});
 
 // ---- ns/NS-03 ----
-{
+await step('prototype-key links', async () => {
 // The same promise, against the keys every plain object already answers to.
 // applyUrl used to test membership with `brands[wantBrand]` and
 // `(m.trims || {})[wantModel]`, so Object.prototype's own keys all read as
@@ -249,6 +367,8 @@ if (ghost) protoUrls.push(`?brand=${encodeURIComponent(realBrand)}&m=${ghost}`);
 else skip('a tracked brand plus a prototype-key model lands on the watchlist',
   realBrand ? `${realBrand} really has a model called constructor and one called __proto__`
             : 'data.json has no brand with models — nothing to ask for');
+plan(...protoUrls.flatMap((q) => [`${q} lands on the watchlist, not on a car`,
+                                  `${q} says the link missed and stops re-sharing itself`]));
 await open('');
 const baseRows = await page.locator('#overview-table tbody tr').count();
 for (const q of protoUrls) {
@@ -268,8 +388,23 @@ for (const q of protoUrls) {
     /not tracked|no longer tracked/.test(state.notice) && state.search === '',
     `search=${JSON.stringify(state.search)} notice=${JSON.stringify(state.notice.replace(/\s+/g, ' ').slice(0, 40))}`);
 }
-}
+});
 // --- the things two audits found, so they cannot come back -----------------
+// A URL is a subject only while the sheet still holds the car it names. The
+// three comparisons below were written against particular cohorts — the trims
+// whose years proved the winner rule, the model with one snapshot day, the two
+// models whose pooled count was measured against itself — and which cars those
+// are belongs to the watchlist, not to this file. A morning that retires one is
+// a morning with nothing to look at, not a failing dashboard, and it used to be
+// a page of dashes read as a regression.
+const inSheet = (q) => {
+  const p = new URLSearchParams(q.slice(1));
+  const want = (p.get('models') || '').split(',').filter(Boolean);
+  if (want.length) return want.every((sl) => WATCHED.some((w) => w.slug === sl));
+  const w = WATCHED.find((x) => x.bk === p.get('brand') && x.mk === p.get('m'));
+  return !!w && (p.get('trims') || '').split(',').filter(Boolean).every((t) => w.trims.includes(t));
+};
+
 // The marked winner is the one number that survives a comparison, and it is
 // only markable when every column's best car was judged against its own trim
 // AND year. The iX proved it: its 2024 cohort was six M60s and one xDrive50,
@@ -283,11 +418,16 @@ for (const q of protoUrls) {
 // basis: each column says in data-basis whether its percentage was measured
 // against the car's trim and year, its year, or the whole model, and a winner
 // may be marked only where every column says "trim".
-for (const q of ['?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m',
+await step('the marked winner', async () => {
+const MARKED = 'a winner is marked only where every column was judged on its own trim and year';
+plan(MARKED);
+const cohorts = ['?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m',
                  '?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-m60',
                  '?brand=bmw&m=i7&trims=bmw-i7-edrive50,bmw-i7-xdrive60',
                  '?brand=bmw&m=i7&trims=bmw-i7-edrive50,bmw-i7-m70',
-                 '?models=bmw-i5,bmw-i7']) {
+                 '?models=bmw-i5,bmw-i7'].filter(inSheet);
+if (!cohorts.length) return skipRest('this snapshot holds none of the comparisons the rule was written against');
+for (const q of cohorts) {
   await open(q);
   const r = await page.evaluate(() => {
     const row = [...document.querySelectorAll('#compare-table tbody tr')]
@@ -297,14 +437,19 @@ for (const q of ['?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m',
              marked: cells.filter((td) => td.classList.contains('is-best')).length };
   });
   const comparable = r.bases.every((b) => b === 'trim');
-  ok('a winner is marked only where every column was judged on its own trim and year',
-    comparable ? r.marked <= 1 : r.marked === 0,
+  ok(MARKED, comparable ? r.marked <= 1 : r.marked === 0,
     `${q} → ${r.marked} marked, bases ${r.bases.join('/')}`);
 }
+});
 
 // One shared record handed every Audi row a "new" chip while the compare card
 // beside it said the Audi had no previous snapshot to be new against.
-await open('?models=audi-a6-etron,bmw-i5');
+await step('the "new" chip', async () => {
+const FRESH = 'a model with one snapshot day has no "new" cars';
+plan(FRESH);
+const q = '?models=audi-a6-etron,bmw-i5';
+if (!inSheet(q)) return skipRest(`${q} names a car the watchlist no longer holds`);
+await open(q);
 const newByModel = await page.evaluate(() => {
   const out = {};
   for (const tr of document.querySelectorAll('#list-table tbody tr')) {
@@ -315,17 +460,23 @@ const newByModel = await page.evaluate(() => {
   }
   return out;
 });
-ok('a model with one snapshot day has no "new" cars',
-  Object.values(newByModel).every((v) => v.fresh < v.rows), JSON.stringify(newByModel));
+ok(FRESH, Object.values(newByModel).every((v) => v.fresh < v.rows), JSON.stringify(newByModel));
+});
 
 // The line whose job is to say what the filters are doing measured the
-// selection against itself and printed "showing all 169 cars" over 503.
-await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
-await open('?models=bmw-i5,kia-ev9');
+// selection against itself and printed "showing all 169 cars" over 503, and the
+// count on the chip beside it turned muted-grey-on-cobalt the moment it was
+// pressed. One selection, so one step: the second reads the chip the first
+// pressed.
+await step('the filter line and the chip beside it', async () => {
+plan('the count measures against the whole watchlist', "a pressed chip's count is still readable");
+const q = '?models=bmw-i5,kia-ev9';
+if (!inSheet(q)) return skipRest(`${q} names a car the watchlist no longer holds`);
+await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+await open(q);
 const count = await page.textContent('#filter-count');
 ok('the count measures against the whole watchlist', / of \d+ cars/.test(count) && /\+/.test(count), count);
 
-// The count on a chip turned muted-grey-on-cobalt the moment it was pressed.
 const chipCR = await page.evaluate(() => {
   const n = document.querySelector('#f-model button[aria-pressed="true"] .chip-n');
   if (!n) return null;
@@ -336,9 +487,10 @@ const chipCR = await page.evaluate(() => {
   return (a + 0.05) / (b + 0.05);
 });
 ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.toFixed(2) + ':1' : 'no pressed chip');
+});
 
 // ---- ns/NS-02 ----
-{
+await step('chip counts in both themes', async () => {
 // ...and an UNPRESSED chip's count was the same defect one step quieter, left
 // behind when the pressed state was fixed: an opacity: 0.7 over sc-note's
 // --sc-text-2 — 6.44:1 dark and 5.83:1 light on its own ground — composited
@@ -393,6 +545,8 @@ const subject = watched.length > 1 ? watched.find((m) => m.nt > 1) : null;
 const chipStates = [['the watchlist', null]];      // whatever the check above left — chips pressed and not
 if (subject) chipStates.push(['a model page', `?brand=${subject.bk}&m=${subject.mk}`]);
 else skip('every chip count is readable on a model page', 'no watched model has two trims today');
+plan(...chipStates.flatMap(([where]) => ['dark', 'light']
+  .map((theme) => `every chip count is readable on ${where}, in ${theme}`)));
 for (const [where, query] of chipStates) {
   if (query) await open(query);
   for (const theme of ['dark', 'light']) {
@@ -407,9 +561,9 @@ for (const [where, query] of chipStates) {
   // full load, which drops the attribute anyway.
   await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
 }
-}
+});
 // ---- ns/NS-08 ----
-{
+await step('what a note may say', async () => {
 // The dek prints a trim's note verbatim, and the i5 eDrive40's note was the
 // buyer's own project status: "First real buyer, near Chicago. Decide by
 // mid-Sept." shipped as the public one-line statement of what that page is
@@ -424,6 +578,8 @@ for (const [where, query] of chipStates) {
 // rather than named here — naming bmw-i5-edrive40 would test the config, and
 // would pass vacuously the day that trim is renamed or the i5 drops to one
 // trim (chips render only when tIds.length > 1, :3580).
+plan('no note on the watchlist carries a dated commitment', 'a described trim reaches the dek',
+     'and the chip it sits beside says the same', 'and neither reads as a deadline');
 const DATED = /\b(decide|decision|deadline)\s+by\b|\bby\s+(mid|early|late)[- ]?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
 const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const noted = [];
@@ -451,9 +607,9 @@ if (!subject) {
   ok('and the chip it sits beside says the same', !!chip, `${titles.length} chips — ${chip || titles.join(' | ')}`);
   ok('and neither reads as a deadline', !DATED.test(dek) && !DATED.test(chip || ''), dek);
 }
-}
+});
 // ---- ns/NS-09 ----
-{
+await step('the filter count announces itself', async () => {
 // Pressing a chip rewrote the tiles, the map, the chart and the table and
 // announced the word "pressed" — the page's only live region was the chart
 // tooltip. The count line says the right sentence already; it just has to be
@@ -469,6 +625,7 @@ if (!subject) {
 // still reported, so the number stays on the record; it just is not the claim.
 // Being outside a [hidden] subtree IS the claim, and is ours: a status message
 // in a hidden container announces nothing.
+plan('the filter count is a status message', 'and a re-sort changes what it says');
 const liveCount = await page.evaluate(() => {
   const n = document.getElementById('filter-count');
   return { role: n.getAttribute('role'), live: n.getAttribute('aria-live'),
@@ -504,18 +661,23 @@ if (!sortSubject) {
     `${sortSubject} → ${sortSaid.order || sortSaid.why}: "${sortSaid.was}" → "${sortSaid.now}"`
     + (sortSaid.shown === false ? '  (the sort select was off-screen — nothing to announce an order for)' : ''));
 }
-}
+});
 // "Only this →" takes its own card off the page; the keyboard must land
 // somewhere, not on <body>.
-await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-xdrive40');
+await step('narrowing to one column', async () => {
+plan('narrowing to one column keeps the keyboard somewhere');
+const q = '?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-xdrive40';
+if (!inSheet(q)) return skipRest(`${q} names a trim the watchlist no longer holds`);
+await open(q);
 await page.evaluate(() => document.querySelector('[data-fkey^="cmp:"]').focus());
 await page.keyboard.press('Enter');
 await page.waitForTimeout(400);
 ok('narrowing to one column keeps the keyboard somewhere',
   (await page.evaluate(() => document.activeElement.tagName)) !== 'BODY');
+});
 
 // ---- ns/NS-01 ----
-{
+await step('the tiles and the chart chip agree', async () => {
 // A trim chip narrows the tiles but could never make them SAY so: renderKpis
 // asked "is this filtered?" as rows.length !== trimRows(listings).length, and
 // the trim sits on both sides of that, so tile 1 called the i7's M70 floor of
@@ -532,6 +694,9 @@ ok('narrowing to one column keeps the keyboard somewhere',
 // than one trim (buildFilters hides #f-trim-field below two) and press its
 // busiest chip. A night with no such model is a thinner watchlist, not a
 // already does.
+plan('at rest the tiles claim the nation and the chart chip agrees',
+     'a trim chip makes the price tiles say filtered, like the chart chip',
+     'and leaves the movement tile, which counts every trim, saying so');
 const scopeSubject = (() => {
   const sheet = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   for (const [bk, b] of Object.entries(sheet.brands || {})) {
@@ -550,7 +715,7 @@ const scopeSubject = (() => {
   return null;
 })();
 if (!scopeSubject) {
-  console.log('  skip  no watched model has two trims today — the tiles-vs-chip scope check has no subject');
+  skipRest('no watched model has two trims today — the tiles-vs-chip scope check has no subject');
 } else {
   // Guarded: three workstreams add a block at this anchor and the order they
   // end up in is an integration decision, so this must not be the one thing
@@ -574,9 +739,9 @@ if (!scopeSubject) {
   ok('and leaves the movement tile, which counts every trim, saying so',
     !/all cars/.test(scoped.tiles[3]), `${scopeSubject.who} → ${scoped.tiles[3]}`);
 }
-}
+});
 // ---- ns/NS-04 ----
-{
+await step('an empty trim', async () => {
 // A trim chip with no cars behind it used to empty the page in silence: the
 // notice measured its total THROUGH the trim selection under test, so total
 // "CPO under 30k mi 0" chip left a whole model's worth of page as dashes with
@@ -589,6 +754,10 @@ if (!scopeSubject) {
 // produces, so an operator would have read a healthy dashboard as a regression.
 // The oracle is the rule: whatever trim holds no cars must say so and offer a
 // way out. A market where no trim is empty is not a failing dashboard, it is a
+plan('a zero-car trim says why the page is empty',
+     'and its way out drops the trim and brings the sections back',
+     'a stale link onto an empty trim is not a dead end either',
+     'the empty-filters notice counts what its own link restores');
 const DATA = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const perTrim = (m) => (m.listings || []).reduce((c, x) => (c[x.trim_id] = (c[x.trim_id] || 0) + 1, c), {});
 // A model with no listings at all is the pre-existing `!total` path, not this
@@ -702,9 +871,9 @@ else {
   // The where-chip persists; leave the browser as the rest of the run found it.
   await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
 }
-}
+});
 // ---- ns/NS-05 ----
-{
+await step('a legend chip is not a filter', async () => {
 // A chart-legend chip is the price chart's control, not a filter. It also cut
 // the map's dots, so pressing "Hide BMW i7" — a chip a full screen BELOW the
 // map — dropped 137 of the 484 cars off it (479 dots to 342) while
@@ -716,6 +885,9 @@ else {
 // still draws one node, but if the data ever leaves every chip lineless there
 // is nothing here to test and this says so instead of going red). Every figure
 // is read off the live page before the press and compared against itself.
+plan('a legend chip still hides its own line', 'but it takes no dot off the map',
+     'and the toggle does not outlive the visit',
+     'and a hidden set left by an older profile is ignored');
 await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
 await open('');
 const mapState = () => page.evaluate(() => ({
@@ -732,7 +904,7 @@ const legendKey = await page.evaluate(() => {
   return chip ? chip.getAttribute('data-fkey') : null;
 });
 if (!legendKey) {
-  console.log('  skip  no legend chip has a line drawn in this data — the legend/map checks did not run');
+  skipRest('no legend chip has a line drawn in this data — the legend and map checks had nothing to press');
 } else {
   await page.click(`#legend [data-fkey="${legendKey}"]`);
   await page.waitForTimeout(400);
@@ -765,10 +937,15 @@ if (!legendKey) {
     `${stale.dots} dots / ${stale.lines} series nodes / "${stale.count}"`);
 }
 await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
-}
+});
 // --- the phone -------------------------------------------------------------
+await step('a comparison on a phone', async () => {
+plan('the comparison survives a phone', 'and does not scroll the page sideways',
+     'and every figure in it is on screen');
 await page.setViewportSize({ width: 390, height: 844 });
-await open('?models=bmw-i5,bmw-ix');
+const q = '?models=bmw-i5,bmw-ix';
+if (!inSheet(q)) return skipRest(`${q} names a car the watchlist no longer holds`);
+await open(q);
 ok('the comparison survives a phone', await page.locator('#compare-card').isVisible());
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 ok('and does not scroll the page sideways', overflow <= 1, `${overflow}px of overflow`);
@@ -781,11 +958,16 @@ const offscreen = await page.evaluate(() => {
 });
 ok('and every figure in it is on screen', offscreen === 0, `${offscreen} off the edge`);
 await shot('compare-phone');
+});
 
 // The scope chip names every selection, and sc-chip does not wrap: seven models
 // pushed the document 289px wider than the phone. Selected by pressing, not by
 // a hand-written URL — the watchlist changes, and a test that names its models
 // tests the config instead of the page.
+await step('every model on a phone', async () => {
+plan('nor does selecting every model');
+await page.setViewportSize({ width: 390, height: 844 });
+if (WATCHED.length < 2) return skipRest('the watchlist holds fewer than two models today — no chips to press');
 await open('');
 await page.locator('#filter-toggle').click();
 await page.waitForTimeout(200);
@@ -794,9 +976,10 @@ for (let i = 0; i < chips; i++) { await page.locator('#f-model button').nth(i).c
 await page.waitForTimeout(400);
 const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of overflow`);
+});
 
 // ---- ns/NS-06 ----
-{
+await step('the footer while the data loads', async () => {
 // The loading shell is SHORT: h1 "Loading snapshot…", an empty #kpis and every
 // card still hidden leave #main 314px tall, so footer.sc-foot painted at y=462
 // on this 390×844 phone and was evicted to y=5527 the instant data.json
@@ -812,6 +995,11 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 // viewport (innerHeight, not the literal 844) so the check follows the phone
 // block if its size ever changes. Nothing here touches the data — no car,
 // price, count or trim id — so a tracker run cannot move it.
+plan('the footer waits below the fold while the data loads');
+// Set here rather than inherited from the phone block above: a step that has
+// to be isolated has to carry its own viewport, or the size it measures at is
+// whatever the step before it happened to survive on.
+await page.setViewportSize({ width: 390, height: 844 });
 let releaseData;
 const dataHeld = new Promise((r) => { releaseData = r; });
 await ctx.route('**/data.json', async (r) => { await dataHeld; r.continue(); });
@@ -830,9 +1018,9 @@ await page.waitForFunction(() => {
   return h && h.textContent.trim() && h.textContent !== 'Loading snapshot…';
 }, null, { timeout: 20000 }).catch(() => {});
 await ctx.unroute('**/data.json');
-}
+});
 // ---- ns/NS-10 ----
-{
+await step('a phone in landscape', async () => {
 // Turn the phone sideways. Every rule that folds the filter panel away is
 // keyed to WIDTH — sc.css hides .sc-filters below 721px and narrow() gates the
 // JS at the same edge — so landscape (844x390 on an iPhone 13/14/15) un-folds
@@ -854,6 +1042,8 @@ await ctx.unroute('**/data.json');
 // itself is asserted beside the geometry — a real max-height, bounded to half
 // the viewport, on a panel that scrolls — and those three do not move when the
 // market does.
+plan('a phone in landscape still sees the results under the filter bar',
+     'and can still reach every filter in it', 'and the cap lifts again on a tall screen');
 const subject = (() => {
   const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const all = [];
@@ -901,10 +1091,10 @@ if (!subject) {
   const tall = await page.evaluate(() => getComputedStyle(document.getElementById('filters-card')).maxHeight);
   ok('and the cap lifts again on a tall screen', tall === 'none', `max-height ${tall} at 390x844`);
 }
-}
+});
 
 // ---- ns/7B-A ----
-{
+await step('the masthead while the data loads', async () => {
 // The masthead's right-hand slot was the last box on this page nobody had
 // reserved, and the last layout-shift entry with it. It ships "Loading…" and
 // render() replaces it with "Data through " + an ISO date — 56px of text
@@ -928,6 +1118,8 @@ if (!subject) {
 // keeps the check off the market entirely. It reads no car, price, count or
 // trim id, and if data.json does not render there is no swap to watch and it
 // says so by name instead of passing quietly.
+const mastName = 'the masthead holds its height when the data line lands';
+plan(mastName);
 let releaseMast;
 const mastHeld = new Promise((r) => { releaseMast = r; });
 await ctx.route('**/data.json', async (r) => { await mastHeld; r.continue(); });
@@ -959,18 +1151,17 @@ const mastLive = await page.evaluate(() => {
            mastH: +document.querySelector('header.sc-masthead').getBoundingClientRect().height.toFixed(2) };
 });
 await ctx.unroute('**/data.json');
-const mastName = 'the masthead holds its height when the data line lands';
 if (mastLive.h1 === 'Snapshot unavailable' || mastLive.text === mastShell.text)
   skip(mastName, `#mast-right never swapped — it still reads "${mastLive.text}"`);
 else
   ok(mastName, mastLive.mastH === mastShell.mastH && mastShell.reserved >= mastLive.ink,
     `320x568: masthead ${mastShell.mastH}px "${mastShell.text}" -> ${mastLive.mastH}px "${mastLive.text}",`
     + ` ${mastShell.reserved}px reserved for a ${mastLive.ink}px "${mastLive.wide}"`);
-}
+});
 
 
 // ---- ns/7B-B ----
-{
+await step('the narrowest phone', async () => {
 // ---- ns/7B-B ----
 // 320x568 — an iPhone SE / small Android, the narrowest phone still in use, and
 // the width below every band this file measured. A model page scrolled 12px
@@ -992,6 +1183,7 @@ else
 // The subject is whichever model has the most departures in today's file, and
 // a file with no departure anywhere renders no card to look at: that is a skip,
 // not a pass, because the check would have had nothing to measure.
+plan('a model page does not scroll sideways on the narrowest phone');
 {
   const departed = (() => {
     const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
@@ -1030,10 +1222,10 @@ else
   }
 }
 
-}
+});
 
 // ---- ns/7B-C ----
-{
+await step('the side-by-side table header', async () => {
 // ---- ns/7B-C ----
 {
 // The corner cell of the side-by-side table — the one above the metric column
@@ -1062,6 +1254,7 @@ else
 // fewer than two models AND no model with two trims has no comparison to open
 // at all — that is a skip by name, not a pass and not a failure.
 const NAME = 'the side-by-side table names the column its row labels sit in';
+plan(NAME);
 const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const all = [];
 for (const [bk, b] of Object.entries(site.brands || {}))
@@ -1105,15 +1298,19 @@ if (!cases.length) {
 }
 }
 
-}
+});
 
 await browser.close();
 server.close();
 
-for (const r of results) console.log(`  ${r.skip || r.skipped ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
+// Every row was printed as it was decided; what is left is the reckoning.
+const failedRows = results.filter((r) => !r.skip && !r.skipped && !r.pass);
+// Named again at the bottom, without the detail already printed beside each:
+// on a long CI log the roll-call is the thing worth scrolling to.
+if (failedRows.length) { console.log('\n  what failed:'); for (const r of failedRows) console.log('      - ' + r.name); }
 if (errors.length) { console.log('\n  the page logged errors:'); for (const e of [...new Set(errors)]) console.log('      - ' + e); }
 const skipped = results.filter((r) => r.skip || r.skipped).length;
-const failed = results.filter((r) => !r.skip && !r.skipped && !r.pass).length;
+const failed = failedRows.length;
 const ran = results.length - skipped;
 console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
   + `${skipped ? `, ${skipped} skipped for want of a subject` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
