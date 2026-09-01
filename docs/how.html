@@ -113,7 +113,8 @@
 
     <h2 id="prices">Prices</h2>
     <p>The number everywhere is the <strong>asking price</strong>, exactly as the dealer listed it. Nothing is adjusted or inferred. Every sort, tile and chart uses it, and miles are shown next to every price so you can weigh them yourself.</p>
-    <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A drivable car costs nothing to bring home — you drive it. Anything else gets an estimate from the distance between the listing and the buyer's anchor point: $0.65 a mile with a $350 floor, roughly what open-carrier transport costs. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
+    <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A drivable car costs nothing to bring home — you drive it. Anything else gets an estimate in two steps. First the straight-line distance from the listing to the buyer's anchor point is inflated by <strong>1.18</strong> into road miles, because a truck follows interstates around lakes and terrain and a great-circle line does not. Then those road miles are priced through <strong>distance bands, marginally — like tax brackets</strong>: $1.20 a mile for the first 500, $0.70 to 1,000, $0.45 to 1,500 and $0.30 beyond, with a $350 floor. Each band applies only to the miles inside it, so a longer haul always costs more in total while costing less per mile — which is how transport actually prices, since the carrier's fixed costs are the same for 200 miles as for 2,000. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
+    <p class="sc-hint">Those band rates are <strong>published typical open-carrier ranges, not quotes anyone obtained</strong>. The shape of the model is defensible; its constants are not yet. Every shipping figure on this site is an estimate until real quotes calibrate it, and the site says so rather than presenting a guess as research.</p>
     <figure class="diagram" role="img" aria-label="Price anatomy: a drivable car costs its asking price alone; a car outside your states costs asking plus a stated shipping estimate.">
       <svg viewBox="0 0 720 178" xmlns="http://www.w3.org/2000/svg">
         <text class="dg-side" x="10" y="34">drivable</text>
@@ -128,14 +129,20 @@
         <text class="dg-figure" x="400" y="119">$38,000</text>
         <rect class="dg-bar-ship" x="492" y="100" width="78" height="28" rx="4"/>
         <text class="dg-title" x="500" y="119">+ ship</text>
-        <text class="dg-figure" x="584" y="119">= $39,170</text>
+        <text class="dg-figure" x="584" y="119">= $39,362</text>
         <path class="dg-line" d="M492 138 v6 h78 v-6"/>
-        <text class="dg-sub" x="531" y="160" text-anchor="middle">max($350, miles × $0.65)</text>
+        <text class="dg-sub" x="531" y="160" text-anchor="middle">max($350, banded road miles)</text>
         <text class="dg-sub" x="100" y="160">the sum is never less than asking</text>
       </svg>
     </figure>
-<pre tabindex="0" role="region" aria-label="The landed-price formula">asking + shipping        shipping = 0 if drivable
-                                  = max($350, miles from home × $0.65) otherwise</pre>
+<pre tabindex="0" role="region" aria-label="The landed-price formula">asking + shipping   shipping = 0 if drivable, else max($350, banded(road))
+
+                    road = straight-line miles from home x 1.18
+
+                    banded(m) = 1.20/mi on the first        500 road miles
+                              + 0.70/mi on the next         500  (to 1,000)
+                              + 0.45/mi on the next         500  (to 1,500)
+                              + 0.30/mi on everything beyond</pre>
     <p>That sum is never less than asking; it is only ever the listed price plus the truck. Three illustrative cars for a buyer near Chicago whose states are Illinois, Ohio, Indiana and Wisconsin:</p>
     <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Three illustrative cars, priced">
       <table class="sc-table sc-table--compact">
@@ -143,11 +150,11 @@
         <tbody>
           <tr><td>A</td><td class="sc-num">$46,000</td><td class="sc-num">16,000</td><td>Indiana — a buyer state</td><td class="sc-num">$0</td><td class="sc-num"><strong>$46,000</strong></td></tr>
           <tr><td>B</td><td class="sc-num">$42,000</td><td class="sc-num">24,000</td><td>Michigan — ~150 mi, but not a buyer state</td><td class="sc-num">$350</td><td class="sc-num"><strong>$42,350</strong></td></tr>
-          <tr><td>C</td><td class="sc-num">$38,000</td><td class="sc-num">18,000</td><td>California — ~1,800 mi away</td><td class="sc-num">$1,170</td><td class="sc-num"><strong>$39,170</strong></td></tr>
+          <tr><td>C</td><td class="sc-num">$38,000</td><td class="sc-num">18,000</td><td>California — ~1,800 mi away</td><td class="sc-num">$1,362</td><td class="sc-num"><strong>$39,362</strong></td></tr>
         </tbody>
       </table>
     </div>
-    <p>Car C is still the cheapest by more than $3,000 after the truck — which is the point of stating it. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible.</p>
+    <p>Car C is still the cheapest by more than $2,600 after the truck — which is the point of stating it. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible.</p>
     <p><strong>Spicy picks</strong> are the one place miles are priced in — but only to rank, never to change a number you see. A car is eligible under 50,000 miles with no reported accidents and no rental or fleet history. Each eligible car gets a value: asking, plus shipping, plus 30 cents for every mile above 20,000 (or minus, below). It is then compared with the typical value for its own model, so a cheap model does not win just for being cheap. The picks come in two lists under that one rule — the best values <em>in your states</em>, and the best values <em>worth the ship</em> from everywhere else — and only cars genuinely under typical qualify, so a thin drivable market never promotes an ordinary car. The label says how far under typical each pick sits; the price on the card is still the asking price.</p>
 
     <h2 id="data">Where the data comes from</h2>

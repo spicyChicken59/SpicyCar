@@ -63,7 +63,7 @@ _Worth the ship:_
   [listing](https://www.carfax.com/vehicle/WBY13HG01SCS85680) `WBY13HG01SCS85680`
 
 _137 vehicles across 4 trims · IL 7 · OH 2 · IN 7 · WI 4 · beyond 117_
-_typical car 23d on market · 61% cut while tracked, median $600 · listings ended after ~15d (38 gone)_
+_typical car 23d on market · 61% cut while tracked, median $600 · listings ran at least ~15d (38 gone)_
 
 ### CPO under 30k mi — 2 vehicles · lowest asking $64,888 (Irvine, CA)
 
@@ -362,7 +362,7 @@ _Worth the ship:_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01RCN97139) `WBY43EJ01RCN97139`
 
 _150 vehicles across 4 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 125_
-_typical car 23d on market · 34% cut while tracked, median $561 · listings ended after ~10d (55 gone)_
+_typical car 23d on market · 34% cut while tracked, median $561 · listings ran at least ~10d (55 gone)_
 
 ### CPO under 30k mi — none found
 

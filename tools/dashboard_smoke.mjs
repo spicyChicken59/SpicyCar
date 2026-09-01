@@ -1426,7 +1426,8 @@ if (!cases.length) {
 // cut out — the shape a page has before a buyer has ever filled one in — rather
 // than by reading the guard's source.
 await step('a sort the sheet cannot compute is not offered', async () => {
-  plan('the out-the-door sort is withheld without a fee block');
+  plan('the out-the-door sort is withheld without a fee block',
+       'and offered again when the sheet has one');
   // Only buyer.fees is cut. Whether this sheet HAS a finance block decides what
   // the payment option proves below, so it is read before the cut, not assumed.
   const hasFinance = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).finance);
@@ -1454,11 +1455,24 @@ await step('a sort the sheet cannot compute is not offered', async () => {
   } finally {
     await ctx.unroute('**/data.json');
   }
+  // And the other direction, which is the half that keeps the guard honest.
+  // Testing only the absent case passes an unconditional `hidden = true`: the
+  // whole out-the-door ranking vanishes from the real sheet and CI stays green.
+  // Playwright will select a hidden option without complaint, so the existing
+  // otd checks cannot notice either.
+  await open('?brand=bmw&m=i5');
+  const shownAgain = await page.evaluate(() => !!document.querySelector('#f-sort option[value="otd"]')?.hidden);
+  const sheetHasFees = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).fees);
+  ok('and offered again when the sheet has one',
+     shownAgain === !sheetHasFees,
+     sheetHasFees ? `this sheet has fees, otd hidden=${shownAgain}`
+                  : `this sheet has no fees, otd correctly hidden=${shownAgain}`);
 });
 
 // ---- the term the note claims is the term the rows are quoted at ------------
 await step('the finance note owns the promo term cap', async () => {
-  plan('a note that claims 72 months says which promos are capped shorter');
+  plan('a note that claims 72 months says which promos are capped shorter',
+       'and claims no cap when the term already fits inside one');
   const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
   const capped = fin && (fin.promos || []).find((p) => p.active && p.max_term);
   const longest = fin && Math.max(...(fin.terms || [60]));
@@ -1478,6 +1492,16 @@ await step('the finance note owns the promo term cap', async () => {
   ok('a note that claims 72 months says which promos are capped shorter',
      hint.includes(`${longest} months`) && hint.includes(`capped at ${capped.max_term} months`),
      hint.slice(hint.indexOf('Payments assume')) || '(no finance note rendered)');
+  // The negative case, without which the check passes on an UNCONDITIONAL cap
+  // clause — a cap that does not bite, phrased as though it forces 60. Asked at
+  // a term the promo already accommodates, the note must not mention a cap.
+  const fits = Math.min(...(fin.terms || [60]).filter((t) => t <= capped.max_term));
+  await page.selectOption('#f-term', String(fits));
+  await page.waitForTimeout(350);
+  const short = await page.$eval('#compare-hint', (n) => n.textContent);
+  ok('and claims no cap when the term already fits inside one',
+     short.includes(`${fits} months`) && !short.includes('capped at'),
+     short.slice(short.indexOf('Payments assume')) || '(no finance note rendered)');
   await page.selectOption('#f-term', String(fin.default_term || 60));
 });
 
@@ -1489,7 +1513,14 @@ await step('a down payment larger than the car', async () => {
   plan('a covered car is not quoted a negative balance');
   const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
   if (!fin) return skipRest('this sheet has no finance block');
-  await open('?brand=bmw&m=i5&sort=payment');
+  await open('?brand=bmw&m=i5');
+  // The sort must be SELECTED, not asked for in the query string: the page
+  // parses brand/m/model/models/trims and nothing else, so `?sort=payment` left
+  // S.sort at 'local' — where payNote renders only for PROMO cars. This check
+  // was reading 4 rows of 30, and a clamp applied to the promo branch alone
+  // passed it green while 25 rows printed "60 months on -$359,373 financed".
+  await page.selectOption('#f-sort', 'payment');
+  await page.waitForTimeout(300);
   await page.fill('#f-down', '400000');
   // fill() raises `input`; the control listens for `change`, which a real reader
   // fires by leaving the field. Without this the page never sees the number and
@@ -1500,10 +1531,14 @@ await step('a down payment larger than the car', async () => {
     (ns) => ns.map((n) => ({ text: n.textContent, title: n.getAttribute('title') || '' }))
               .filter((n) => /\/mo|month/.test(n.text + n.title)));
   const negative = notes.filter((n) => /-\s*\$|\$-/.test(n.title));
+  // Every priced row must carry one, or the check is reading a subset again.
+  const rowCount = await page.$$eval('#list-scroll tbody tr', (rs) => rs.length);
   ok('a covered car is not quoted a negative balance',
-     notes.length > 0 && negative.length === 0
-       && notes.some((n) => /paid outright/.test(n.title)),
-     notes.length ? `${notes.length} payment notes, ${negative.length} negative · "${(notes[0].title || '').slice(0, 64)}"`
+     notes.length >= rowCount && rowCount > 4 && negative.length === 0
+       && notes.every((n) => /paid outright/.test(n.title)),
+     notes.length ? `${notes.length} payment notes over ${rowCount} rows, ${negative.length} negative,`
+                    + ` ${notes.filter((n) => /paid outright/.test(n.title)).length} say paid outright`
+                    + ` · "${(notes[0].title || '').slice(0, 56)}"`
                   : 'no payment notes rendered at a $400,000 down payment');
   await page.fill('#f-down', '0');
   await page.dispatchEvent('#f-down', 'change');
@@ -1533,7 +1568,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 90;
+const EXPECTED = 92;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

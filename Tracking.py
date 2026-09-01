@@ -510,9 +510,52 @@ def finance_export():
     }
 
 
-SHIP_BANDS = [(to_float(b.get("to")), to_float(b.get("per_mile")))
-              for b in (BUYER.get("ship_bands") or [])
-              if to_float(b.get("per_mile"))]
+def _ship_bands(raw):
+    """buyer.ship_bands as (edge, rate) pairs, widest edge last, open band last.
+
+    Three things this does NOT do the obvious way, each because the obvious way
+    fails silently on a hand-edited config:
+
+    A rate of ZERO is kept. Filtering on truthiness dropped it, and "the first
+    hundred miles are free" is the one config where a zero rate is meaningful —
+    dropping it silently OVERCHARGES, billing those miles at the next band up.
+
+    A missing or unparseable `to` is REJECTED, not read as the open band.
+    `"to": null` is a deliberate declaration that a band is the open tail;
+    a missing key or `"to": "1,000"` (to_float gives None on the comma) is a
+    typo. Conflating them promotes the typo'd band to the catch-all, which
+    swallows the whole distance and makes every band after it dead code.
+
+    And the bands are SORTED by edge. band_cost bills the remainder past the
+    last edge at the widest band's rate; unsorted, "widest" and "last in the
+    list" are different bands, and a descending config bills long hauls at the
+    SHORT-haul rate — which reverses the whole point of banding.
+    """
+    out, seen_open = [], False
+    for b in (raw or []):
+        rate = to_float(b.get("per_mile"))
+        if rate is None:
+            print(f"  ! ship_bands: dropping a band with no usable per_mile: {b}")
+            continue
+        if "to" in b and b.get("to") is None:
+            edge = None
+        else:
+            edge = to_float(b.get("to"))
+            if edge is None:
+                print(f"  ! ship_bands: dropping a band whose 'to' is missing or "
+                      f"unparseable — write null for the open band: {b}")
+                continue
+        if edge is None:
+            if seen_open:
+                print(f"  ! ship_bands: a second open band is unreachable, dropping: {b}")
+                continue
+            seen_open = True
+        out.append((edge, rate))
+    out.sort(key=lambda t: (t[0] is None, t[0]))
+    return out
+
+
+SHIP_BANDS = _ship_bands(BUYER.get("ship_bands"))
 SHIP_ROAD_FACTOR = to_float(BUYER.get("ship_road_factor")) or 1.0
 
 
@@ -530,8 +573,15 @@ def band_cost(miles):
     MONOTONE: at 423 straight-line miles it charged $574 and at 424 it charged
     $425, so a car one mile further away was $149 cheaper to bring home. Every
     mile is now billed at its own band's rate, so the total can only rise with
-    distance while the EFFECTIVE per-mile rate still falls — which was the
-    whole point of banding.
+    distance while the EFFECTIVE per-mile rate is NON-INCREASING across bands —
+    which was the whole point of banding.
+
+    Non-increasing ACROSS BANDS, not strictly falling everywhere: inside a
+    single band the effective rate is exactly flat (every mile costs the same),
+    and int(round()) in ship_for then jitters it by fractions of a cent, so
+    two distances a hundred miles apart in the same band can differ in the
+    fourth decimal place in either direction. The property that holds — and
+    that the tests check — is between bands.
     """
     if not SHIP_BANDS:
         return None
@@ -543,7 +593,9 @@ def band_cost(miles):
         lo = max(lo, hi)
         if edge is not None and miles <= edge:
             break
-    if lo < miles:                      # past the last edge with no open band
+    if lo < miles:
+        # Past the last edge with no open band. SHIP_BANDS is sorted, so the
+        # last entry IS the widest — which is the whole reason it is sorted.
         total += (miles - lo) * SHIP_BANDS[-1][1]
     return total
 
@@ -561,20 +613,37 @@ def ship_for(r):
                    essentially every corridor out of Chicago.
       bands        See band_cost. A flat per-mile rate misprices both ends.
 
-    What this does NOT buy, measured rather than assumed: a different ranking.
-    Correcting the estimate moves the median shipped car $148 and reorders the
-    landed-cost top 25 by zero. Two reasons, both worth knowing before anyone
-    spends effort here expecting the list to move. Twenty-two of the top
-    twenty-five are DRIVABLE, so shipping is zero for them and no correction to
-    it can touch them. And a correction only reorders through its DIFFERENTIAL
-    part: this one is mostly a uniform lift, with a standard deviation of $84
-    against a $274 median gap between adjacent cars, so it lifts the shipped
-    cars together rather than past each other.
+    What this buys the RANKING is very little, which is worth knowing before
+    anyone spends effort here expecting the shortlist to move. Measured against
+    the flat model on the 2026-09-01 snapshot (348 shipped cars of 495):
 
-    (An earlier note here reasoned from the error's magnitude — $340-790
-    against those $274 gaps — to the conclusion that the ordering was being
-    decided by the error. That was wrong: a systematic bias cannot reorder
-    anything, and only the spread around it can.)
+      median shipped car     +$351   (mean +$288, sd $120)
+      landed top 25          3 of 25 positions change, all at 22-24;
+                             one car enters, one leaves
+      drivable in the top 25 23
+
+    Twenty-three of the top twenty-five are DRIVABLE, so shipping is zero for
+    them and no correction to it can touch them at all. And a correction only
+    reorders through its DIFFERENTIAL part: this one is mostly a uniform lift
+    ($120 of spread against a $300 median gap between adjacent cars), so it
+    lifts the shipped cars together rather than past each other. The three
+    positions that do change are the tail, where the gaps are smallest.
+
+    Those figures are a SNAPSHOT MEASUREMENT, not a property of the model.
+    They move with the market and they move with the bands; re-cut the bands
+    and they are stale until re-measured. Two earlier versions of this
+    paragraph were wrong for exactly that reason:
+
+      - the first reasoned from the error's MAGNITUDE ($340-790 against those
+        gaps) to "the ordering is being decided by the error". Wrong in
+        principle: a systematic bias cannot reorder anything, only the spread
+        around it can.
+      - the second was measured correctly against the ORIGINAL bands
+        (1.15/0.85/0.68/0.58), then carried forward verbatim when those bands
+        were re-cut to 1.20/0.70/0.45/0.30 a few hours later. Every figure in
+        it was false by the time it was committed, including the headline
+        claim that the correction "reorders the landed-cost top 25 by zero".
+        It reorders three of them.
 
     What it does buy is an absolute number worth quoting. "Bring it from
     Phoenix for about $1,180" is a sentence this model can now say and the flat
@@ -617,13 +686,31 @@ def ship_calibration():
     {miles, price, route} — the miles the BROKER quoted, not the great-circle
     figure, because that is the number the model is trying to predict.
     """
-    quotes = [q for q in (BUYER.get("ship_quotes") or [])
-              if to_float(q.get("miles")) and to_float(q.get("price"))]
+    raw = BUYER.get("ship_quotes") or []
+    if not isinstance(raw, list):
+        print("  ! ship_quotes is not a list; ignoring it")
+        return None
+    quotes, dropped = [], 0
+    for q in raw:
+        if not isinstance(q, dict):
+            dropped += 1
+            continue
+        miles, price = to_float(q.get("miles")), to_float(q.get("price"))
+        if miles is None or miles <= 0 or price is None or price <= 0:
+            dropped += 1
+            continue
+        quotes.append((miles, price))
+    # A quote written with the wrong key is indistinguishable from no quote at
+    # all, and this is the ONE documented path out of the uncalibrated state.
+    # Silence here means a buyer who collected three real quotes sees exactly
+    # what they saw before collecting them.
+    if dropped:
+        print(f"  ! ship_quotes: {dropped} quote(s) ignored — each needs a positive "
+              f"`miles` and `price`")
     if not quotes:
         return None
     errs = []
-    for q in quotes:
-        miles, price = to_float(q["miles"]), to_float(q["price"])
+    for miles, price in quotes:
         est_raw = band_cost(miles)
         if est_raw is None:
             continue
@@ -805,7 +892,38 @@ def market_stats(listings):
     }
 
 
-def exit_stats(gone, trim_id, floor=5):
+def median_ci(values, conf=0.95):
+    """A distribution-free confidence interval for a median, from the order
+    statistics. Returns (lo, hi) or None when the sample cannot support one.
+
+    No assumption about the shape of the price distribution, which is the point
+    — exit prices are skewed and small-n, and a normal-theory interval on eight
+    of them would be a worse lie than no interval.
+
+    The rank k is the largest with P(k <= position of median <= n+1-k) >= conf
+    under Binomial(n, 0.5). At n=5 no such k exists: even min..max covers only
+    93.75%, which is why five is not a floor anyone should publish a median at.
+    """
+    xs = sorted(v for v in values if v is not None)
+    n = len(xs)
+    if n < 6:
+        return None
+    # P(k <= B <= n-k) for B ~ Bin(n, 1/2), walking k up while it still covers.
+    from math import comb
+    total = 2.0 ** n
+    best = None
+    for k in range(1, n // 2 + 1):
+        covered = sum(comb(n, i) for i in range(k, n - k + 1)) / total
+        if covered >= conf:
+            best = k
+        else:
+            break
+    if best is None:
+        return None
+    return (xs[best - 1], xs[n - best])
+
+
+def exit_stats(gone, trim_id, floor=6):
     """One trim's exit prices, or an empty dict when too few cars have left.
 
     `floor` is not decoration. Two departures make a median that swings by
@@ -813,13 +931,30 @@ def exit_stats(gone, trim_id, floor=5):
     car reads as authority it has not earned. Below the floor the page shows
     nothing rather than something shaky — the same rule the cut-share line
     already follows.
+
+    Six, not five, and the reason is arithmetic rather than taste: five is the
+    largest n at which NO distribution-free interval for a median exists at
+    all. Even min-to-max covers only 93.75% of the time at n=5, so a median of
+    five is a number with no honest error bar to put beside it. Six is the
+    first n where the whole sample is a 95% interval.
+
+    The interval itself ships as exit_lo/exit_hi so the page can compare a
+    car's price against the median's OWN uncertainty instead of a flat
+    threshold. It used to use $500, which on these cohorts is between 10 and 42
+    times narrower than the real interval — 42% of the notes it drew named a
+    gap smaller than the sampling error of the number they were drawn against.
     """
     rows = [g for g in gone if g.get("trim_id") == trim_id]
     st = sale_stats(rows)
     if (st.get("n_exits") or 0) < floor:
         return {}
+    exits = [to_int(g.get("last_price")) for g in rows
+             if g.get("likely") == "delisted" and to_int(g.get("last_price")) is not None]
+    ci = median_ci(exits)
     return {"exit_n": st["n_exits"],
             "exit_price": st["median_exit_price"],
+            "exit_lo": ci[0] if ci else None,
+            "exit_hi": ci[1] if ci else None,
             "exit_watched": st.get("exit_watched", 0),
             "exit_cut_seen": st.get("exit_cut_while_watched", 0),
             "exit_days": st.get("median_days_to_sale")}
@@ -878,6 +1013,30 @@ def sale_stats(gone):
             "exit_cut_while_watched": sum(cuts)}
 
 
+def one_cohort(gone):
+    """Do the departed cars behind a pooled exit median describe ONE trim?
+
+    This asks the DATA, not the watchlist, and the difference is the whole
+    point. The first version was `len(trims) == 1`, counting watchlist targets
+    under a model — which inverts the test it was written for. A target like
+    `kia-ev9` is one entry covering the entire model, so it scored one_trim
+    TRUE while pooling a Light with a GT-Line; `audi-a6-etron` scored TRUE over
+    a cohort spanning $28,077. The gate passed on exactly the catch-all
+    targets it existed to stop, and blocked only the models whose trims are
+    tracked properly enough to be separable.
+
+    So: count the distinct trim labels actually carried by the cars whose
+    prices form the median. One label (or none to distinguish) is a cohort.
+    Anything else is an average of cars that do not exist.
+    """
+    labels = set()
+    for g in gone:
+        if g.get("likely") != "delisted" or to_int(g.get("last_price")) is None:
+            continue
+        labels.add((g.get("trim") or g.get("trim_id") or "").strip().lower())
+    return len(labels) <= 1
+
+
 def market_line(stats):
     """The market context as one report phrase, or ''. """
     bits = []
@@ -893,14 +1052,26 @@ def market_line(stats):
     # distinguishable from outside. The field names stay as they are because
     # they ship in data.json and the report, but the sentence a reader actually
     # sees should claim only what happened: the listing ended.
-    if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 5:
-        bits.append(f"listings ended after ~{stats['median_days_to_sale']}d "
+    # Twelve, not five, on a BARE median — one printed with no interval beside
+    # it, so the floor is the only thing doing the work. At five no
+    # distribution-free interval exists at all; at eight, this model's own
+    # "~19d" spans 3 to 57 days, which is not a fact about the market. Twelve
+    # is where the interval narrows to the middle two thirds of the sample.
+    #
+    # "at least", because the span is RIGHT-CENSORED. It runs from the list
+    # date to the last day the car was SEEN, and the listing actually ended
+    # somewhere between that day and the next fetch — a mean of 2.0 days later
+    # on this data, against a median span of 15. Saying "ended after ~15d"
+    # understates listing life by around 17% and makes the market look faster
+    # than it is; "ran at least" is the same number without the overclaim.
+    if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 12:
+        bits.append(f"listings ran at least ~{stats['median_days_to_sale']}d "
                     f"({stats['n_sold']} gone)")
     # Model level only. A median mixing an eDrive50 with an M70 describes no car
     # that exists — exit_stats() says so and refuses to compute one per model —
     # so the report shows this ONLY where a model has a single trim. Everywhere
     # else the per-trim figures on the dashboard are the honest ones.
-    if (stats.get("median_exit_price") and stats.get("n_exits", 0) >= 5
+    if (stats.get("median_exit_price") and stats.get("n_exits", 0) >= 12
             and stats.get("one_trim")):
         # The cut count needs a real denominator before it is worth a sentence.
         # At five, "3 of 7" carries a confidence interval from roughly 10% to
@@ -2071,12 +2242,11 @@ def build_outputs(today_rows, all_rows, hist):
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
             m_entry["market"] = {**market_stats(m_entry["listings"]),
                                  **sale_stats(m_gone),
-                                 # A model with one trim IS its trim, so its
-                                 # pooled exit median describes a real cohort.
-                                 # With several it does not, and market_line
-                                 # withholds it rather than average an M70 into
-                                 # an eDrive50.
-                                 "one_trim": len(trims) == 1}
+                                 # Whether the cars behind the pooled exit
+                                 # median are ONE cohort — measured on the
+                                 # departed cars themselves, not on the
+                                 # watchlist.
+                                 "one_trim": one_cohort(m_gone)}
             scored = score_picks(m_entry["listings"], label)
             all_scored += scored
             if SHORTLIST:

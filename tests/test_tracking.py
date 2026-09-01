@@ -1616,6 +1616,10 @@ class TestSpend(unittest.TestCase):
         self.assertIn(f"~{want}", out.replace(",", ""), out)
 
 
+def to_float_or_zero(v):
+    return T.to_float(v) or 0
+
+
 class TestShipModel(unittest.TestCase):
     """The banded, road-factored shipping estimate.
 
@@ -1688,12 +1692,30 @@ class TestShipModel(unittest.TestCase):
 
     def test_road_miles_exceed_the_straight_line(self):
         """A truck does not fly. Whatever the rate, the distance it bills is
-        the route, and the route is longer than the great-circle figure."""
+        the route, and the route is longer than the great-circle figure.
+
+        Pinned to the factor's EXACT effect, at several distances, because the
+        loose version of this test was worthless. It asserted only that
+        SHIP_ROAD_FACTOR > 1.0 and that ship_for(1000) exceeded 99% of the
+        straight-line band cost. Deleting the multiplication entirely — so the
+        constant was still 1.18 but nothing ever used it — left ship_for(1000)
+        at exactly 100% of the straight line, which cleared the 99% bar. The
+        estimate changed at 2,753 of 3,001 distances and all 142 tests passed.
+        Applying the factor TWICE passed too: the old assertions bounded it
+        from neither side.
+        """
         self.assertGreater(T.SHIP_ROAD_FACTOR, 1.0)
-        # Billing the route rather than the straight line means the estimate
-        # must exceed what the same bands would charge for the straight line.
+        for d in (200, 423, 424, 700, 1000, 1600, 2600):
+            want = int(round(max(to_float_or_zero(T.BUYER.get("ship_min")),
+                                 T.band_cost(d * T.SHIP_ROAD_FACTOR))))
+            self.assertEqual(T.ship_for({"state": "CA", "distance": d}), want,
+                             f"at {d} straight-line miles the bill must be the "
+                             f"bands applied to {d} x {T.SHIP_ROAD_FACTOR} road miles")
+        # And the factor must actually be USED, not merely defined: the route
+        # bill is strictly above the straight-line bill wherever money is owed
+        # beyond the floor.
         self.assertGreater(T.ship_for({"state": "CA", "distance": 1000}),
-                           T.band_cost(1000) * 0.99)
+                           T.band_cost(1000))
 
     def test_no_bands_means_the_old_behaviour_exactly(self):
         """A config without ship_bands must be untouched by this change — the
@@ -1870,8 +1892,51 @@ class TestExitStats(unittest.TestCase):
         """Two departures make a median that swings by thousands on the third.
         Below the floor the trim ships no exit stats at all rather than a
         number a reader would reasonably trust."""
-        self.assertEqual(T.exit_stats(self._gone(4), "t1"), {})
-        self.assertTrue(T.exit_stats(self._gone(5), "t1"))
+        self.assertEqual(T.exit_stats(self._gone(5), "t1"), {})
+        self.assertTrue(T.exit_stats(self._gone(6), "t1"))
+        # Six is not a preference. Five is the largest n at which NO
+        # distribution-free interval for a median exists — even min-to-max
+        # covers 93.75% — so a median of five has no honest error bar.
+        self.assertIsNone(T.median_ci([1, 2, 3, 4, 5]))
+        self.assertIsNotNone(T.median_ci([1, 2, 3, 4, 5, 6]))
+
+    def test_the_median_carries_its_own_interval(self):
+        """A reference price with no error bar invites a comparison it cannot
+        support. exit_lo/exit_hi ship so the page can suppress a note whose gap
+        is smaller than the median's own sampling error — which 129 of the 310
+        notes it drew under the old flat $500 threshold were."""
+        st = T.exit_stats(self._gone(12, price=40000), "t1")
+        self.assertIsNotNone(st["exit_lo"])
+        self.assertIsNotNone(st["exit_hi"])
+        self.assertLessEqual(st["exit_lo"], st["exit_price"])
+        self.assertLessEqual(st["exit_price"], st["exit_hi"])
+
+    def test_the_interval_is_the_order_statistics_not_a_normal_curve(self):
+        """Exit prices are skewed and small-n. A normal-theory interval on
+        eight of them would be a worse lie than none, so the interval is
+        distribution-free: it is a pair of the observed values themselves."""
+        xs = [10, 20, 30, 40, 50, 60, 70, 80, 90, 900, 1000, 2000]
+        lo, hi = T.median_ci(xs)
+        self.assertIn(lo, xs)
+        self.assertIn(hi, xs)
+        # n=12 -> the 3rd and 10th order statistics (96.1% coverage)
+        self.assertEqual((lo, hi), (sorted(xs)[2], sorted(xs)[9]))
+
+    def test_the_interval_widens_as_the_sample_thins(self):
+        wide = T.median_ci(list(range(100)))
+        narrow = T.median_ci(list(range(1000)))
+        self.assertLess((narrow[1] - narrow[0]) / 1000, (wide[1] - wide[0]) / 100)
+
+    def test_a_pooled_cohort_is_not_one_trim(self):
+        """one_trim asks the DATA, not the watchlist. The first version counted
+        watchlist targets, which inverts the test: a catch-all target like
+        `kia-ev9` is ONE entry covering the whole model, so it scored True
+        while pooling a Light with a GT-Line, and `audi-a6-etron` scored True
+        over a cohort spanning $28,077. The gate passed on exactly the
+        cohorts it existed to stop."""
+        mixed = self._gone(6, price=40000, trim="cheap") + self._gone(6, price=120000, trim="dear")
+        self.assertFalse(T.one_cohort(mixed))
+        self.assertTrue(T.one_cohort(self._gone(6, price=40000, trim="only")))
 
     def test_stats_are_scoped_to_one_trim(self):
         """A median mixing an eDrive50 with an M70 describes no car that exists."""
@@ -1880,10 +1945,50 @@ class TestExitStats(unittest.TestCase):
         self.assertEqual(T.exit_stats(mixed, "dear")["exit_price"], 120000)
 
     def test_the_report_never_calls_a_delisting_a_sale(self):
+        """EVERY reader-facing surface, not just the one that was fixed.
+
+        The first version of this sliced market_line() out of Tracking.py and
+        checked that. It passed while docs/index.html shipped the banned string
+        verbatim — `sold cars lasted ~15d (38 sold)` — to five of seven models,
+        on the page that is the PRIMARY surface. The test's name promised the
+        report and it read one function. So it now reads every file a reader
+        can see, and it looks for the claim rather than one phrasing of it.
+        """
+        root = Path(__file__).parent.parent
+        # Shapes of the CLAIM, not the word. Prose may reason about selling —
+        # "pushed out rather than sold" is honest and belongs in a docstring —
+        # so what is banned is a departure COUNT or DURATION presented as a
+        # sale, which is what actually reached the reader.
+        banned = {
+            r"sold cars lasted": "calls departures sales outright",
+            r"\bsold\b[^\n]{0,24}\blasted\b": "attributes a duration to sales",
+            r"\}\s*sold\b": "renders a count as 'N sold'",
+            r"\b\d+\s+sold\b": "states a number of cars sold",
+            r"\bsold in ~": "claims a time to sale",
+        }
+        # Field NAMES may say sale — they ship in data.json and renaming them
+        # breaks every sheet already stored. Only rendered text is a claim.
+        ident = re.compile(r"median_days_to_sale|n_sold|days_to_sale")
+        for name in ("Tracking.py", "docs/index.html", "docs/how.html", "README.md"):
+            prose = ident.sub("", (root / name).read_text())
+            for pat, why in banned.items():
+                hit = re.search(pat, prose, re.I)
+                self.assertIsNone(hit, f"{name} {why}: {hit.group(0) if hit else ''!r}")
+
+    def test_the_page_and_the_report_use_the_same_floors(self):
+        """Two surfaces, one rule. The report raised its cut-count floor to 12
+        and its bare-median floor to 12 during the audit; the dashboard kept 5
+        and went on printing exactly the string the report had just retired —
+        `3 of 7 cut before going`, the case the comment calls indefensible.
+        A floor that lives in two files drifts, so this pins them together.
+        """
+        page = (Path(__file__).parent.parent / "docs/index.html").read_text()
+        self.assertNotIn("watched >= 5", page,
+                         "the dashboard must not publish a cut fraction at n=5")
+        self.assertIn("watched >= 12", page,
+                      "the dashboard's cut floor must match market_line's")
         src = (Path(__file__).parent.parent / "Tracking.py").read_text()
-        line = src[src.index("def market_line("):src.index("def build_today(")]
-        self.assertNotIn("sold cars lasted", line,
-                         "a listing ending is not a confirmed sale and the reader-facing text must not say it is")
+        self.assertIn("watched >= 12", src)
 
 
 class TestExitReporting(unittest.TestCase):
