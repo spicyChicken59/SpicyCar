@@ -98,7 +98,18 @@ ZIPCODES = DATA / "zipcodes.json"
 FIELDS = ["snapshot_date", "target", "vin", "year", "trim", "miles",
           "price", "dealer", "city", "state", "listed_since", "url",
           "msrp", "color", "cpo", "owners", "accidents", "usage", "image",
-          "carfax", "lat", "lon", "distance"]
+          "carfax", "lat", "lon", "distance",
+          # WHICH QUERIES RETURNED THIS ROW, pipe-joined "Source:sort" tokens
+          # (e.g. "National:miles.asc|States:price.asc"). A target fetching
+          # both price.asc and miles.asc has TWO windows, and without this
+          # column there is no way to tell which one a car was inside — so a
+          # car pushed out of the lowest-by-miles window by newer arrivals
+          # cannot be told from one that actually left the market. That
+          # ambiguity is why exit prices are currently withheld for every
+          # multi-sort target (see departures_are_separable). Empty on every
+          # row written before this column existed, which is honest: their
+          # provenance is genuinely unknown and cannot be reconstructed.
+          "via"]
 
 
 # --------------------------------------------------------------------------
@@ -1464,13 +1475,40 @@ def report_spend(row, hist):
 
 def save_spend_history(row, path=SPEND_LOG, keep=400):
     """One row per day, newest kept. Small on purpose: this file exists to be
-    read by a decision, not to be a second ledger."""
+    read by a decision, not to be a second ledger.
+
+    Today's row ACCUMULATES rather than replaces. SPENT is a per-process
+    global, so a second run of the day starts from zero and the first version
+    of this wrote `hist[TODAY] = row` straight over the first run's total —
+    which made this log structurally blind to the one thing it was built to
+    catch. On 2026-09-01 it would have recorded 24 calls on a day that spent
+    72 across three runs. `runs` is what makes that visible at a glance.
+    """
     try:
         hist = json.loads(path.read_text()) if path.exists() else {}
     except (OSError, ValueError):
         hist = {}
     if not isinstance(hist, dict):
         hist = {}
+    prior = hist.get(TODAY) if isinstance(hist.get(TODAY), dict) else None
+    if prior:
+        row = dict(row)
+        row["runs"] = (to_int(prior.get("runs")) or 1) + 1
+        # actual, unrun and failed are per-run costs and add. `planned` is not
+        # a cost — it is the DAY's plan, the same number every run of that day
+        # computes — so adding it makes banked (planned - actual - unrun)
+        # overstate headroom by (runs - 1) times the whole plan. Two runs of a
+        # 32-call day reported planned 64, actual 30, banked 34: more headroom
+        # than the day ever had, on the day it was overspent.
+        for k in ("actual", "unrun", "failed"):
+            row[k] = (to_int(prior.get(k)) or 0) + (to_int(row.get(k)) or 0)
+        row["planned"] = max(to_int(prior.get("planned")) or 0,
+                             to_int(row.get("planned")) or 0)
+        # Headroom is a derived quantity; recompute it from the day's totals
+        # rather than adding two runs' independently-computed versions.
+        row["banked"] = row["planned"] - row["actual"] - row["unrun"]
+    else:
+        row = {**row, "runs": 1}
     hist[TODAY] = row
     for day in sorted(hist)[:-keep]:
         del hist[day]
@@ -1686,6 +1724,11 @@ def normalize(rec, t, dropped):
         "lat": "" if lat is None else round(lat, 5),
         "lon": "" if lon is None else round(lon, 5),
         "distance": distance if distance is not None else "",
+        # Filled in by the fetch loop once every query that returned this row
+        # is known — a row can arrive from several, and normalize sees one at
+        # a time. Initialised here so a normalized row always carries the full
+        # column set.
+        "via": "",
     }
 
 
@@ -1696,7 +1739,13 @@ def load_history():
     if not SNAPSHOTS.exists():
         return []
     rows = []
-    with SNAPSHOTS.open(newline="") as f:
+    # utf-8-sig, not utf-8. A UTF-8 BOM — which is what a round trip through
+    # Excel leaves behind — turns the first header into "\ufeffsnapshot_date",
+    # so every row reads snapshot_date as "". That silently defeats the
+    # already-fetched guard (TODAY is in no row) and then write_rows rewrites
+    # the whole file with 3,581 blank dates. utf-8-sig strips a BOM when there
+    # is one and is identical to utf-8 when there is not.
+    with SNAPSHOTS.open(newline="", encoding="utf-8-sig") as f:
         for r in csv.DictReader(f):
             row = {k: r.get(k, "") or "" for k in FIELDS}
             row["target"] = LEGACY_IDS.get(row["target"], row["target"])
@@ -2430,8 +2479,35 @@ def main():
                  f"more targets a cadence of 2 or more, set trims to depth "
                  f"'light', or raise the budgets.")
 
+    # A day already fetched must not be fetched again. The cron fires once
+    # (0 11 * * *); every extra run is a workflow_dispatch, and each one
+    # re-bills the whole day at full price. Reconstructed from the snapshot
+    # commits' own footers, that habit spent 529 calls over nine days —
+    # 58.8/day, about 1,790 a month against a 1,000-call tier — while
+    # planned_calls() reported 30.0/day and approved every run, because it
+    # reads INTENT and never sees what a second run costs.
+    #
+    # The guard is here rather than in the workflow because the workflow is
+    # not the only way in. Outputs can always be regenerated for free with
+    # tools/rebuild_outputs.py, which is what a re-run is almost always
+    # actually for. ALLOW_REFETCH=1 is the escape hatch for the real case: a
+    # run that died partway and left the day incomplete.
+    already = {r["snapshot_date"] for r in load_history()}
+    if TODAY in already and not os.environ.get("ALLOW_REFETCH"):
+        due_today = [t["id"] for t in TARGETS.values() if due_on(t, TODAY_ORD)]
+        sys.exit(
+            f"{TODAY} has already been fetched — refusing to spend "
+            f"{today_calls} calls on it again.\n"
+            f"  To rebuild REPORT.md and docs/data.json from the snapshot "
+            f"already on disk, for free:\n"
+            f"      python3 tools/rebuild_outputs.py\n"
+            f"  To genuinely re-fetch (a run that died partway and left "
+            f"{len(due_today)} due targets incomplete):\n"
+            f"      ALLOW_REFETCH=1 python3 Tracking.py")
+
     rows = {}
     dropped = Counter()
+    via = defaultdict(set)      # (target id, vin) -> the queries that returned it
     for tid, t in TARGETS.items():
         if not due_on(t, TODAY_ORD):
             print(f"{tid}: not today (every {t['cadence']} days, next {next_due(t)})")
@@ -2463,6 +2539,9 @@ def main():
                                                    n["miles"])
                         key = (tid, n["vin"])
                         SOURCE_VINS.setdefault((tid, source_name), set()).add(n["vin"])
+                        # Which query returned it, accumulated across every
+                        # sort and source that did. See FIELDS["via"].
+                        via[key].add(f"{source_name}:{sort}")
                         cur = rows.get(key)
                         if cur is None or n["price"] < to_int(cur["price"]):
                             rows[key] = n
@@ -2487,6 +2566,7 @@ def main():
                         continue
                     key = (tid, n["vin"])
                     SOURCE_VINS.setdefault((tid, source_name), set()).add(n["vin"])
+                    via[key].add(f"{source_name}:{NEWEST_SORT}")
                     cur = rows.get(key)
                     if cur is None or n["price"] < to_int(cur["price"]):
                         rows[key] = n
@@ -2509,6 +2589,12 @@ def main():
           f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
     save_zip_cache()
 
+    # Stamp each kept row with every query that returned it. Accumulated over
+    # the whole fetch, not taken from the winning record, because a row is
+    # replaced whenever a cheaper duplicate arrives and the replacement would
+    # otherwise drop the earlier query from its own provenance.
+    for (tid, vin), r in rows.items():
+        r["via"] = "|".join(sorted(via.get((tid, vin), ())))
     today_rows = list(rows.values())
     if not today_rows:
         msg = ("No listings fetched for any target — "

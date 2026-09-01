@@ -36,7 +36,6 @@
   "shopping": [
    "bmw-i5-cpo",
    "bmw-i5-edrive40",
-   "bmw-i7-cpo",
    "bmw-i7-edrive50"
   ],
   "picks": {
@@ -11733,23 +11732,6 @@
       "min_price": 35000
      },
      "trims": {
-      "bmw-i7-cpo": {
-       "label": "CPO under 30k mi",
-       "note": "Every certified eDrive50 and xDrive60 under 30,000 miles, nationwide \u2014 the same certified-EV promo that makes the i5 worth watching. M70s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call.",
-       "depth": "full",
-       "cadence": 2,
-       "shopping": true,
-       "years": [
-        "2023",
-        "2024",
-        "2025",
-        "2026"
-       ],
-       "min_price": 35000,
-       "max_miles": 30000,
-       "cpo_only": true,
-       "market_total": null
-      },
       "bmw-i7-edrive50": {
        "label": "eDrive50",
        "note": "The other half of the decision, beside the i5 eDrive40.",
@@ -19585,7 +19567,6 @@
       }
      ],
      "daily_by_trim": {
-      "bmw-i7-cpo": [],
       "bmw-i7-edrive50": [
        {
         "date": "2026-08-25",

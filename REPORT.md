@@ -361,10 +361,8 @@ _Worth the ship:_
   _spicy pick: 14% under typical for a 2024 BMW i7 eDrive50 ($9,193 less)_ · _1-owner · no accidents · ex-lease_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01RCN97139) `WBY43EJ01RCN97139`
 
-_150 vehicles across 4 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 125_
+_150 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 125_
 _typical car 23d on market · 34% cut while tracked, median $561 · listings ran at least ~10d (55 gone)_
-
-### CPO under 30k mi — none found
 
 ### eDrive50 — 91 vehicles · lowest asking $54,000 (Marietta, GA)
 

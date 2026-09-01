@@ -3,7 +3,24 @@ name: SpicyCar daily
 on:
   schedule:
     - cron: "0 11 * * *"
+  # Dispatch is for a run that DIED PARTWAY and left the day incomplete —
+  # nothing else. Every dispatch on a day already fetched re-bills that whole
+  # day at full price: over nine days that habit spent 529 calls, about 1,790 a
+  # month against a 1,000-call tier, while the pre-flight guard reported 30/day
+  # and approved every one, because it reads the PLAN and not the ledger.
+  #
+  # Tracking.py now refuses such a run before spending anything, so a dispatch
+  # on an already-fetched day fails the job on purpose — that red X is the
+  # guard working, not a broken tracker. To regenerate REPORT.md and
+  # docs/data.json from the snapshot already on disk, run
+  # `python3 tools/rebuild_outputs.py` locally: free, and what a re-run is
+  # almost always actually for. Tick allow_refetch below to get past it.
   workflow_dispatch:
+    inputs:
+      allow_refetch:
+        description: "Re-fetch a day already fetched (only after a run died partway)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -30,6 +47,8 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           BUYER_HOME_ZIP: ${{ secrets.BUYER_HOME_ZIP }}
+          # Empty on the cron path, so the guard is live for every scheduled run.
+          ALLOW_REFETCH: ${{ inputs.allow_refetch && '1' || '' }}
         run: python Tracking.py
       - name: Commit outputs
         # The listings API is live-only: a rejected push would discard a

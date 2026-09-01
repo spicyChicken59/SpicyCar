@@ -15,7 +15,7 @@
 [![SpicyCar daily](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml)
 
 **A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i7 being shopped —
-including a nationwide watch on every certified (CPO) example under 30,000 miles, where the
+including a nationwide watch on every certified (CPO) i5 under 30,000 miles, where the
 promo rate on certified EVs (2.99% on the i5) makes the financing the story — their siblings
 and rivals follow on their own cadence. Each car is priced as what it would actually cost to land in a
 specific buyer's driveway, and the result is published as a report, an email, and a dashboard.
@@ -54,10 +54,13 @@ Two things are configured, separately:
   and how they value miles and shipping. One buyer today; the first real use is a buyer near
   Chicago deciding between the i5 and the i7 — drawn by a CPO financing promo (2.99% APR on
   certified EVs). The shape is built for more.
-- **watchlist** — what to track: brands → models → trims. The shopped i5 and i7 each carry a
+- **watchlist** — what to track: brands → models → trims. The shopped i5 carries a
   nationwide CPO watch (every certified eDrive/xDrive under 30,000 miles — the M trims are
-  not the shopping pool — fetched lowest-mileage first, national query only) beside their
-  ordinary trim targets; the iX is tracked for comparison only; comparison models from Hyundai,
+  not the shopping pool — fetched lowest-mileage first, national query only) beside its
+  ordinary trim targets. The i7's was stood down before it ever ran: the same recipe on the
+  i7 sorts miles.asc into a national pool whose 40 lowest-mileage cars are all uncertified
+  2026 delivery-mileage inventory, so no certified car falls inside the window (see the note
+  on that trim in `targets.json`). The iX is tracked for comparison only; comparison models from Hyundai,
   Kia, Audi and Lucid run every third day. `buyer.shopping` names the targets that lead the
   report in full; everything else gets one line.
 
@@ -161,7 +164,7 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
   and a price sparkline — the top thirty shown, one press for all; and the "gone" list, twelve
   most recent first.
-- `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home.
+- `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home. The `via` column records which queries returned each row (`National:miles.asc|States:price.asc`), because a target fetching two sorts has two windows and without it a car pushed out of one cannot be told from a car that left the market. Blank on every row written before the column existed — that provenance is genuinely unrecoverable, which is why exit prices are currently withheld for multi-sort targets.
 
 ## Run it yourself
 
