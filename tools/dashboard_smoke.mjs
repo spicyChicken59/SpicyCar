@@ -968,6 +968,145 @@ else
     + ` ${mastShell.reserved}px reserved for a ${mastLive.ink}px "${mastLive.wide}"`);
 }
 
+
+// ---- ns/7B-B ----
+{
+// ---- ns/7B-B ----
+// 320x568 — an iPhone SE / small Android, the narrowest phone still in use, and
+// the width below every band this file measured. A model page scrolled 12px
+// sideways there: docH scrollWidth 332 in a 320 viewport.
+//
+// The cause is structural, not a width. sc.css lays .sc-media--card out as
+// `auto 1fr auto` — frame | the three text lines | aside — and the frame,
+// spanning three rows in column 1, is what parks title/sub/code in column 2.
+// The departed-vehicle card is the one card on the page with no photo, so
+// auto-placement put its title in column 1, the price in column 2 and the
+// LOCATION in a third column of its own; three max-content columns plus two
+// gaps came to 286px inside a 228px card and hung 12px off the document.
+//
+// Both halves are asserted, and neither is a width or a pixel budget:
+//   1. the document does not scroll sideways at all, and
+//   2. every departed card keeps its own content inside its own border box —
+//      the mechanism, so this cannot go green on a day the strings happen to
+//      be short enough to fit a still-scrambled grid.
+// The subject is whichever model has the most departures in today's file, and
+// a file with no departure anywhere renders no card to look at: that is a skip,
+// not a pass, because the check would have had nothing to measure.
+{
+  const departed = (() => {
+    const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+    const all = [];
+    for (const [bk, b] of Object.entries(site.brands || {}))
+      for (const [mk, m] of Object.entries((b || {}).models || {})) {
+        const vins = new Set(((m || {}).gone || []).map((g) => String(g.vin || '').toUpperCase()).filter(Boolean));
+        all.push({ q: `?brand=${bk}&m=${mk}`, id: `${bk} ${mk}`, gone: vins.size });
+      }
+    all.sort((a, b) => b.gone - a.gone || a.id.localeCompare(b.id));
+    return all[0] && all[0].gone ? all[0] : null;
+  })();
+  const NAME = 'a model page does not scroll sideways on the narrowest phone';
+  if (!departed) {
+    skip(NAME, 'no model in data.json has a departed vehicle — no card to lay out');
+  } else {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await open(departed.q);
+    await page.waitForTimeout(250);
+    const narrow320 = await page.evaluate(() => {
+      const de = document.documentElement, cards = document.getElementById('gone-cards');
+      const shown = cards && !cards.hidden ? [...cards.children] : [];
+      return {
+        over: de.scrollWidth - de.clientWidth,
+        cards: shown.length,
+        worstCard: shown.reduce((w, c) => Math.max(w, c.scrollWidth - c.clientWidth), 0),
+      };
+    });
+    if (!narrow320.cards) {
+      skip(NAME, `${departed.id}: the departed-vehicle cards did not render at 320px`);
+    } else {
+      ok(NAME, narrow320.over <= 1 && narrow320.worstCard <= 1,
+        `${departed.id}: ${narrow320.over}px past the 320px viewport, `
+        + `worst of ${narrow320.cards} departed cards ${narrow320.worstCard}px past its own box`);
+    }
+  }
+}
+
+}
+
+// ---- ns/7B-C ----
+{
+// ---- ns/7B-C ----
+{
+// The corner cell of the side-by-side table — the one above the metric column
+// — shipped as a th[scope=col] with nothing in it. That is the whole of axe's
+// empty-table-header, and it was the last violation left on the site: it fired
+// on all four audited states that open the compare card. What it costs a
+// reader is not theoretical. Every row label under that cell ("Lowest drivable
+// asking", "Best value vs typical") is a th[scope=row], and in a screen
+// reader's table mode a row header is announced under its own column heading —
+// which was silence.
+//
+// The oracle names the mechanism, not just "some text is there": the corner
+// heads the column of ROW LABELS, so its name has to be a name for those, and
+// the tempting wrong fix is to copy a model or trim name into it (which would
+// have a screen reader read "BMW i5: Lowest drivable asking"). So the corner's
+// text is asserted non-empty AND distinct from every case column's own label,
+// with scope=col still saying which way the cell reads, and the row labels
+// beside it asserted non-empty too — the same rule, one axis over, which holds
+// on the unfixed page and guards the other half of the header.
+//
+// Both comparisons are checked because one cell serves both, and both subjects
+// come out of data.json rather than being typed here: the two models carrying
+// the most cars, and the model with the most trims (its two best-stocked ones).
+// Nothing is pinned to a count, a price or a named car, so a tracker run that
+// empties a trim or reorders the watchlist cannot move this. A watchlist with
+// fewer than two models AND no model with two trims has no comparison to open
+// at all — that is a skip by name, not a pass and not a failure.
+const NAME = 'the side-by-side table names the column its row labels sit in';
+const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const all = [];
+for (const [bk, b] of Object.entries(site.brands || {}))
+  for (const [mk, m] of Object.entries((b || {}).models || {})) {
+    const cars = ((m || {}).listings || []);
+    const held = {};
+    for (const x of cars) if (x && x.trim_id) held[x.trim_id] = (held[x.trim_id] || 0) + 1;
+    const trims = Object.keys((m || {}).trims || {})
+      .sort((x, y) => (held[y] || 0) - (held[x] || 0) || x.localeCompare(y));
+    all.push({ bk, mk, slug: `${bk}-${mk}`, cars: cars.length, trims });
+  }
+const pair = [...all].sort((a, b) => b.cars - a.cars || a.slug.localeCompare(b.slug)).slice(0, 2);
+const multi = [...all].filter((m) => m.trims.length >= 2)
+  .sort((a, b) => b.trims.length - a.trims.length || b.cars - a.cars || a.slug.localeCompare(b.slug))[0];
+const cases = [];
+if (pair.length === 2) cases.push(['models', `?models=${pair[0].slug},${pair[1].slug}`]);
+if (multi) cases.push(['trims', `?brand=${multi.bk}&m=${multi.mk}&trims=${multi.trims[0]},${multi.trims[1]}`]);
+await page.setViewportSize({ width: 1280, height: 1000 });
+if (!cases.length) {
+  skip(NAME, 'this snapshot has neither two models nor a model with two trims to compare');
+} else {
+  const seen = [];
+  for (const [what, q] of cases) {
+    await open(q);
+    const corner = await page.evaluate(() => {
+      const heads = [...document.querySelectorAll('#compare-table thead th')];
+      if (!heads.length) return null;
+      const txt = (n) => (n.textContent || '').replace(/\s+/g, ' ').trim();
+      const labels = [...document.querySelectorAll('#compare-table tbody th.cmp-metric')].map(txt);
+      return { name: txt(heads[0]), scope: heads[0].getAttribute('scope'),
+               columns: heads.slice(1).map((h) => h.getAttribute('aria-label') || txt(h)),
+               rows: labels.length, blankRows: labels.filter((t) => !t).length };
+    });
+    seen.push({ what, q, corner });
+  }
+  const bad = seen.filter(({ corner: c }) => !c || !c.name || c.scope !== 'col'
+    || c.columns.some((h) => h && h.trim() === c.name) || !c.rows || c.blankRows);
+  ok(NAME, bad.length === 0, seen.map(({ what, corner: c }) => c
+    ? `${what}: "${c.name}" over ${c.rows} row labels, ${c.blankRows} of them blank, beside ${c.columns.length} columns`
+    : `${what}: no compare table drew`).join(' · '));
+}
+}
+
+}
+
 await browser.close();
 server.close();
 
