@@ -2439,12 +2439,24 @@
     const best = lowestBy(priced, 'price');
     const med = median(priced.map((x) => x.price));
     const filteredView = rows.length !== all.length;
+    // Is the view narrowed? For tiles 1 and 2 that has to be the filter bar's
+    // own question, not a row count: `all` is trimRows(...) too, so the trim
+    // sits on BOTH sides and no trim chip can ever make filteredView true.
+    // Tile 1 therefore called a $93,399 M70 floor "nationwide" against the
+    // i7's real national $43,663, and $54,898 on eDrive50 against that same
+    // figure — while the chart chip an inch below said "filtered — M70" and
+    // the count line said "showing 6 of 138 cars · M70". filterBits is the
+    // answer the overview tiles and the overview table header already ask
+    // for, so the three stop disagreeing on one screen. Tile 4 keeps
+    // filteredView: it counts over `all`, so a trim chip really is not a
+    // filter there.
+    const scopedView = !!filterBits(false).length;
 
     // Labels mirror the overview's, and the decision number a buyer here actually
     // needs — the cheapest car they can drive to — gets its own tile rather than
     // being left to the table. Median moves into the market tile's sub-line.
     const bestLocal = lowestBy(priced.filter(isLocal), 'price');
-    const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
+    const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, scopedView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
       el('div', { class: 'sc-tile__value' }, best ? money(best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
     // The day-over-day move used to be dropped under any filter, because the
@@ -2462,7 +2474,7 @@
     }
     host.appendChild(tile1);
 
-    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
+    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, scopedView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
       el('div', { class: 'sc-tile__value' }, bestLocal ? money(bestLocal.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestLocal
         ? `${bestLocal.year} · ${num(bestLocal.miles)} mi · ${placeTxt(bestLocal)} · no shipping`

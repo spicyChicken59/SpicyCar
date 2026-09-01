@@ -252,6 +252,33 @@ await page.waitForTimeout(400);
 ok('narrowing to one column keeps the keyboard somewhere',
   (await page.evaluate(() => document.activeElement.tagName)) !== 'BODY');
 
+// A trim chip narrows the tiles but could never make them SAY so: renderKpis
+// asked "is this filtered?" as rows.length !== trimRows(listings).length, and
+// the trim sits on both sides of that, so tile 1 called the i7's M70 floor of
+// $93,399 "Lowest asking nationwide" over a real national $43,663 — $49,736
+// of overstatement, with the chart chip an inch below already reading
+// "filtered — M70". The oracle is that agreement, not those numbers: the two
+// elements describe one screen and may not contradict each other. Tile 4 is
+// the exception and is checked as one — its counts run over the model's own
+// rows before the shared filters, so a trim chip really is not a filter there.
+await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+await open('?brand=bmw&m=i7');
+const scopeSaid = () => page.evaluate(() => ({
+  tiles: [...document.querySelectorAll('#kpis .sc-tile__label')].map((n) => n.textContent),
+  chip: document.getElementById('chart-scope').textContent,
+}));
+const rest = await scopeSaid();
+ok('at rest the tiles claim the nation and the chart chip agrees',
+  /nationwide/.test(rest.tiles[0]) && /drivable asking/.test(rest.tiles[1]) && !/^filtered/.test(rest.chip),
+  JSON.stringify(rest));
+await page.locator('#f-trim button').nth(1).click(); await page.waitForTimeout(350);
+const scoped = await scopeSaid();
+ok('a trim chip makes the price tiles say filtered, like the chart chip',
+  /^filtered/.test(scoped.chip) && /\(filtered\)/.test(scoped.tiles[0]) && /\(filtered\)/.test(scoped.tiles[1]),
+  JSON.stringify(scoped));
+ok('and leaves the movement tile, which counts every trim, saying so',
+  !/all cars/.test(scoped.tiles[3]), scoped.tiles[3]);
+
 // --- the phone -------------------------------------------------------------
 await page.setViewportSize({ width: 390, height: 844 });
 await open('?models=bmw-i5,bmw-ix');
