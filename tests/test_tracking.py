@@ -1927,6 +1927,49 @@ class TestExitStats(unittest.TestCase):
         narrow = T.median_ci(list(range(1000)))
         self.assertLess((narrow[1] - narrow[0]) / 1000, (wide[1] - wide[0]) / 100)
 
+    def test_a_two_sort_target_publishes_no_exit_price(self):
+        """The bug this gate exists for was live on the published sheet.
+
+        bmw-i7-edrive50 fetches price.asc AND miles.asc, but delisted()
+        reconstructs one cut-off on one axis pooled over both. The miles.asc
+        rows are $115k-$125k delivery-mileage cars, so they lifted the
+        reconstructed PRICE ceiling above every car in the set and nothing
+        could be judged out of window. Eight 1-to-4-mile 2026 cars that had
+        merely been pushed out of the lowest-by-miles window became
+        "delistings", their median became a published exit_price of $118,834,
+        and the dashboard told the reader a $54,000 i7 was "$64,834 below
+        where this trim's listings ended".
+        """
+        real = [t for t in T.TARGETS.values() if len(t.get("sorts") or []) > 1]
+        self.assertTrue(real, "the watchlist should still have a two-sort target")
+        for t in real:
+            self.assertFalse(T.departures_are_separable(t), t["id"])
+            self.assertEqual(T.exit_stats(self._gone(20), t["id"]), {},
+                             f"{t['id']} fetches {t.get('sorts')} — its departures cannot be "
+                             "told apart from window churn, so it must publish no exit price")
+
+    def test_the_published_sheet_carries_no_exit_price_it_cannot_defend(self):
+        sheet = json.loads((Path(__file__).parent.parent / "docs/data.json").read_text())
+        bad = []
+        for b in (sheet.get("brands") or {}).values():
+            for m in (b.get("models") or {}).values():
+                for tid, tr in (m.get("trims") or {}).items():
+                    t = T.TARGETS.get(tid) or {}
+                    if tr.get("exit_price") and not T.departures_are_separable(t):
+                        bad.append(tid)
+        self.assertEqual(bad, [], f"these ship an exit price built on unseparable departures: {bad}")
+
+    def test_departures_themselves_are_still_reported(self):
+        """Withholding the exit PRICE is not withholding the departures. "This
+        stopped being listed" is true whatever pushed it out, and the gone list
+        labels each one; only the dollar claim built on top is withheld."""
+        sheet = json.loads((Path(__file__).parent.parent / "docs/data.json").read_text())
+        gone = [g for b in (sheet.get("brands") or {}).values()
+                for m in (b.get("models") or {}).values()
+                for g in (m.get("gone") or [])]
+        self.assertGreater(len(gone), 50)
+        self.assertTrue({g.get("likely") for g in gone} >= {"delisted", "out of window"})
+
     def test_a_pooled_cohort_is_not_one_trim(self):
         """one_trim asks the DATA, not the watchlist. The first version counted
         watchlist targets, which inverts the test: a catch-all target like

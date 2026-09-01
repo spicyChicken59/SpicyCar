@@ -892,6 +892,38 @@ def market_stats(listings):
     }
 
 
+def departures_are_separable(t):
+    """Can this target's departures be told apart from window churn?
+
+    Only on a SINGLE-SORT target, and the reason is that the snapshot CSV does
+    not record which query returned each row. A target fetching both price.asc
+    and miles.asc has TWO windows, and delisted() reconstructs a vanish day's
+    cut-off as the extreme kept value on ONE axis (window_dim), pooled across
+    both. That pooling is not conservative, it is backwards: the miles.asc rows
+    are the expensive delivery-mileage cars, so they push the reconstructed
+    PRICE ceiling up above every car in the set, and nothing can then be judged
+    out of window.
+
+    What that produced, live, on bmw-i7-edrive50: nine "delistings" of which
+    eight are 1-to-4-mile 2026 cars asking $115k-$125k. They did not leave the
+    market — newer delivery-mileage cars pushed them out of the lowest-by-miles
+    window. Their median became a published `exit_price` of $118,834, and the
+    dashboard subtracted live cars from it, telling the reader a $54,000 i7 was
+    "$64,834 below where this trim's listings ended".
+
+    A value-based per-axis cut-off does not rescue this either: at 40 cars
+    inside 9 miles, rank and value come apart, so "3 miles" is inside the
+    window by value and outside it by rank on the same day. The distinction
+    needs provenance the CSV has never carried.
+
+    So the EXIT PRICE — the one claim that asserts these were comparable market
+    exits, in dollars, next to a car being decided on — is withheld here. The
+    gone list itself still shows every departure with its own `likely` label,
+    because "this stopped being listed" is true whatever the cause.
+    """
+    return len(t.get("sorts") or []) <= 1
+
+
 def median_ci(values, conf=0.95):
     """A distribution-free confidence interval for a median, from the order
     statistics. Returns (lo, hi) or None when the sample cannot support one.
@@ -944,6 +976,9 @@ def exit_stats(gone, trim_id, floor=6):
     times narrower than the real interval — 42% of the notes it drew named a
     gap smaller than the sampling error of the number they were drawn against.
     """
+    t = TARGETS.get(trim_id) or {}
+    if not departures_are_separable(t):
+        return {}
     rows = [g for g in gone if g.get("trim_id") == trim_id]
     st = sale_stats(rows)
     if (st.get("n_exits") or 0) < floor:
@@ -1033,6 +1068,10 @@ def one_cohort(gone):
     for g in gone:
         if g.get("likely") != "delisted" or to_int(g.get("last_price")) is None:
             continue
+        # A departure this target cannot separate from window churn is not
+        # evidence about anything, so it cannot make a cohort either.
+        if not departures_are_separable(TARGETS.get(g.get("trim_id")) or {}):
+            return False
         labels.add((g.get("trim") or g.get("trim_id") or "").strip().lower())
     return len(labels) <= 1
 
