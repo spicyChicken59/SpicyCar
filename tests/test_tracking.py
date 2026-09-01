@@ -88,7 +88,7 @@ class TestBudget(unittest.TestCase):
         self.assertEqual(i5["newest"], 1)
         self.assertEqual(T.calls_for(i5), 10,
                          "2 sources x (2 sorts x 2 pages + 1 newest page)")
-        self.assertEqual(T.calls_for(target("bmw-i4-edrive40")), 10,
+        self.assertEqual(T.calls_for(target("bmw-i7-edrive50")), 10,
                          "the second shopped target budgets like the first")
         self.assertEqual(target("bmw-i5-xdrive40")["newest"], 0,
                          "newest is a shopped-target parameter, not a default")
@@ -308,8 +308,10 @@ class TestNormalize(unittest.TestCase):
         rec["retailListing"]["cpo"] = True
         self.assertIsNone(T.normalize(rec, target("bmw-i5-cpo"), self.dropped))
         self.assertEqual(self.dropped["trim mismatch"], 1)
-        self.assertNotIn("m60", target("bmw-ix-cpo")["trim_query"].lower())
-        self.assertNotIn("m70", target("bmw-ix-cpo")["trim_query"].lower())
+        self.assertNotIn("m70", target("bmw-i7-cpo")["trim_query"].lower())
+        self.assertEqual(target("bmw-i7-cpo")["trim_exclude"], "m70",
+                         "the i7 M70 is spelled with xDrive, so the query "
+                         "alone cannot keep it out — trim_exclude must")
 
     def test_cpo_watch_drops_the_uncertified(self):
         # the clean fixture is cpo: false as shipped
@@ -710,7 +712,7 @@ class TestDelisted(unittest.TestCase):
         self.assertEqual(gone[0]["likely"], "delisted")
 
     def test_departure_is_judged_at_its_own_vanish_day_not_today(self):
-        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i4-edrive40"
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i7-edrive50"
         fill = [self.row(tid, f"W{i:02d}", d, 30000 + i * 100)
                 for d in (d2, d1, T.TODAY) for i in range(T.PER_PAGE)]
         all_rows = fill + [self.row(tid, "V1", d2, 35000)]
@@ -904,19 +906,38 @@ class TestConfig(unittest.TestCase):
         self.assertIn("hyundai-ioniq5", T.TARGETS)
         self.assertEqual(T.TARGETS["hyundai-ioniq5"]["trim_key"], "all")
 
-    def test_the_i7_is_really_gone(self):
-        """Removed from the watchlist on request — history rows may linger in
-        the CSV, but no target, no fetches, no budget."""
-        self.assertNotIn("bmw-i7", T.TARGETS)
-        self.assertTrue(all("i7" not in tid for tid in T.TARGETS))
-
-    def test_shopping_is_the_i5_and_the_ix(self):
-        # The CPO financing promo (2.99% on certified EVs, 2.49% on the iX)
-        # moved the shopping list: the two nationwide CPO watches plus the
-        # original eDrive40 hunt. The i4 stays tracked as a benchmark only.
+    def test_shopping_is_the_i5_and_the_i7(self):
+        # The decision is between the i5 and the i7 now. The iX came off the
+        # shopping list and the i7 — removed once before, when it was not in
+        # the running — came back onto it; each shopped model brings its
+        # nationwide CPO watch, because the certified promo rate is what makes
+        # any of them affordable, plus the daily hunt on the trim being bought.
         shopped = sorted(t for t, v in T.TARGETS.items() if v["shopping"])
         self.assertEqual(shopped, ["bmw-i5-cpo", "bmw-i5-edrive40",
-                                   "bmw-ix-cpo"])
+                                   "bmw-i7-cpo", "bmw-i7-edrive50"])
+
+    def test_the_i4_paid_for_the_i7(self):
+        """The i4 was already a benchmark rather than a candidate, and at full
+        depth on a daily cadence it was the single most expensive target on the
+        list — ten calls a day, a third of the whole plan. Standing it down is
+        what bought the i7 its own daily hunt without the month moving."""
+        self.assertTrue(all("i4" not in tid for tid in T.TARGETS))
+        self.assertIn("bmw-i7-edrive50", T.TARGETS)
+        _, worst, avg = T.planned_calls()
+        self.assertLessEqual(worst, T.BUDGET)
+        self.assertLessEqual(avg * 30.5, T.MONTHLY)
+
+    def test_the_ix_stepped_back_without_leaving(self):
+        """Toned down, not removed: still tracked for comparison, on the slow
+        cadence the other comparison models use, but its nationwide certified
+        sweep — the most expensive thing a model can carry — stands down with
+        the shopping decision that justified it."""
+        ix = [t for t in T.TARGETS if t.startswith("bmw-ix")]
+        self.assertTrue(ix, "the iX is a comparison model, not a deletion")
+        self.assertNotIn("bmw-ix-cpo", T.TARGETS)
+        for tid in ix:
+            self.assertFalse(T.TARGETS[tid]["shopping"])
+            self.assertGreaterEqual(T.TARGETS[tid]["cadence"], 3)
 
     def test_cpo_watches_are_affordable_and_staggered(self):
         # national_only halves each watch's cost (no States query — the
@@ -924,13 +945,13 @@ class TestConfig(unittest.TestCase):
         # two watches take alternating cadence-2 days, so neither the worst
         # day nor the month blows the budget the way two full-depth
         # nationwide targets naively would.
-        for tid in ("bmw-i5-cpo", "bmw-ix-cpo"):
+        for tid in ("bmw-i5-cpo", "bmw-i7-cpo"):
             t = T.TARGETS[tid]
             self.assertEqual(T.sources_for(t), [("National", None)])
             self.assertEqual(T.calls_for(t), 2)     # 1 source x 1 sort x 2 pages
             self.assertEqual(T.window_dim(t), "miles")
         self.assertNotEqual(T.TARGETS["bmw-i5-cpo"]["offset"],
-                            T.TARGETS["bmw-ix-cpo"]["offset"],
+                            T.TARGETS["bmw-i7-cpo"]["offset"],
                             "both watches on the same days doubles the "
                             "worst-day cost for no coverage gain")
 

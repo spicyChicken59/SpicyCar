@@ -8,7 +8,7 @@
     "anchor": [41.8781, -87.6298],
     "states": ["IL", "OH", "IN", "WI"],
     "search_states": ["MI", "IA", "MO", "KY"],
-    "shopping": ["bmw-i5-cpo", "bmw-i5-edrive40", "bmw-ix-cpo"],
+    "shopping": ["bmw-i5-cpo", "bmw-i5-edrive40", "bmw-i7-cpo", "bmw-i7-edrive50"],
     "shortlist": [],
     "ship_per_mile": 0.65,
     "ship_min": 350,
@@ -63,12 +63,34 @@
             "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
           }
         },
+        "i7": {
+          "label": "BMW i7",
+          "model": "i7",
+          "years": ["2023", "2024", "2025", "2026"],
+          "min_price": 35000,
+          "notes": {
+            "good": ["Depreciation is the whole story: well over $100k new, and used ones now sit far below that — the cheapest way into a 7-Series there has ever been", "The quietest car BMW makes, and the rear seat is the point — Executive Lounge cars recline the right rear seat and add the 31-inch Theatre Screen", "eDrive50 is the rear-drive single-motor car, xDrive60 the dual-motor one; both are rated around 300 miles depending on wheels", "Same 400-volt platform and service network as the i5, so nothing about owning it is exotic"],
+            "bad": ["Nearly 6,000 lb on 20–21 in tires: consumables, brakes and a tow all cost what the car cost new implies", "Charging peaks around 195 kW and tapers, so for the money it is not a fast road-tripper", "Equipment swing is enormous — two i7s at the same asking price can be $30k apart in options", "It is a very large car; measure the garage before falling for one"],
+            "watch": ["Confirm the CPO rate that applies to the i7 specifically — the promo's headline numbers differ by model (2.99% on the i5, 2.49% on the iX)", "Check what the VIN actually has: Executive Lounge, Theatre Screen, automatic doors, Bowers & Wilkins — options move the price more than mileage does", "Air suspension and big wheels: look for leaks and kerbed rims before making the drive", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
+          },
+          "trims": {
+            "cpo":      { "label": "CPO under 30k mi", "trim_query": "eDrive50,xDrive60", "trim_match": "drive", "trim_exclude": "m70",
+                          "years": ["2023", "2024", "2025", "2026"], "cadence": 2,
+                          "depth": "full", "sorts": ["miles.asc"], "pages": 2,
+                          "max_miles": 30000, "cpo_only": true, "national_only": true,
+                          "note": "Every certified eDrive50 and xDrive60 under 30,000 miles, nationwide — the same certified-EV promo that makes the i5 worth watching. M70s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call." },
+            "edrive50": { "label": "eDrive50", "trim_query": "eDrive50", "trim_match": "edrive50", "depth": "full", "pages": 2, "newest": 1,
+                          "note": "The other half of the decision, beside the i5 eDrive40." },
+            "xdrive60": { "label": "xDrive60", "trim_query": "xDrive60", "trim_match": "xdrive60", "cadence": 3 },
+            "m70":      { "label": "M70",      "trim_query": "M70",      "trim_match": "m70", "min_price": 60000, "cadence": 3 }
+          }
+        },
         "ix": {
           "label": "BMW iX",
           "model": "iX",
           "years": ["2022", "2023", "2024", "2025", "2026"],
           "min_price": 25000,
-          "cadence": 2,
+          "cadence": 3,
           "notes": {
             "good": ["CPO promo: 2.49% APR financing on certified iXs — the best rate in the whole promo, on the deepest-depreciating car in it", "One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size", "Depreciation has been brutal — $90k cars now sit in the $40k–60k range", "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"],
             "bad": ["Divisive looks, and the big grille is a plastic sensor panel that is expensive if damaged", "21–22 in tires and a heavy car: consumables cost real money", "2022 cars had high-voltage battery and software recalls; charging peaks near 195 kW"],
@@ -78,8 +100,8 @@
             "cpo":    { "label": "CPO under 30k mi", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive",
                         "years": ["2024", "2025", "2026"], "cadence": 2,
                         "depth": "full", "sorts": ["miles.asc"], "pages": 2,
-                        "max_miles": 30000, "cpo_only": true, "national_only": true,
-                        "note": "Every certified xDrive under 30,000 miles, nationwide — 2.49% APR CPO promo financing, the best rate offered. M60 and M70 excluded on purpose: not the shopping pool." },
+                        "max_miles": 30000, "cpo_only": true, "national_only": true, "active": false,
+                        "note": "Stood down when the decision became the i5 against the i7. A nationwide certified sweep is what you run on a car you are buying — it is the most expensive thing on the watchlist per model, and the 2.49% rate only matters to someone signing for one. One flag brings it back." },
             "xdrive": { "label": "xDrive (45 / 50 / 60)", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive" },
             "m":      { "label": "M (M60 / M70)",         "trim_query": "M60,M70", "trim_match": "", "trim_exclude": "xdrive", "min_price": 35000 }
           }
@@ -89,6 +111,7 @@
           "model": "i4",
           "years": ["2022", "2023", "2024", "2025"],
           "cadence": 2,
+          "active": false,
           "notes": {
             "good": ["Drives like a 4-Series; the eDrive40 does about 300 miles", "One of the better reliability records among EVs, and cheap used", "Hatchback practicality with a proper trunk opening"],
             "bad": ["2022 and early 2023 cars had infotainment and charging glitches, mostly cured by updates", "Low roof: rear headroom is tight", "eDrive35 has the smaller battery — roughly 260 miles, and slower charging"],
@@ -96,7 +119,7 @@
           },
           "trims": {
             "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"], "active": false },
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "No longer being shopped — kept as the price benchmark for the same drivetrain in the i5." },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "Stood down with the rest of the i4: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the i5 and i7 pages now show directly." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"], "active": false },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }

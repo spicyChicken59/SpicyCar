@@ -245,10 +245,17 @@ ok('and every figure in it is on screen', offscreen === 0, `${offscreen} off the
 await shot('compare-phone');
 
 // The scope chip names every selection, and sc-chip does not wrap: seven models
-// pushed the document 289px wider than the phone.
-await open('?models=bmw-i5,bmw-ix,bmw-i4,hyundai-ioniq5,kia-ev9,audi-a6-etron,lucid-air');
+// pushed the document 289px wider than the phone. Selected by pressing, not by
+// a hand-written URL — the watchlist changes, and a test that names its models
+// tests the config instead of the page.
+await open('');
+await page.locator('#filter-toggle').click();
+await page.waitForTimeout(200);
+const chips = await page.locator('#f-model button').count();
+for (let i = 0; i < chips; i++) { await page.locator('#f-model button').nth(i).click(); await page.waitForTimeout(60); }
+await page.waitForTimeout(400);
 const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-ok('nor does selecting every model', wide <= 1, `${wide}px of overflow`);
+ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of overflow`);
 
 await browser.close();
 server.close();

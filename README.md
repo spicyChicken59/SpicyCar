@@ -6,10 +6,10 @@
 
 [![SpicyCar daily](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml)
 
-**A used-car purchase analyzer.** Every day it snapshots the BMW i5 and iX being shopped —
-including a nationwide watch on every certified (CPO) example under 30,000 miles, where a
-2.99% APR promo (2.49% on the iX) makes the financing the story — their siblings and rivals
-follow on their own cadence. Each car is priced as what it would actually cost to land in a
+**A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i7 being shopped —
+including a nationwide watch on every certified (CPO) example under 30,000 miles, where the
+promo rate on certified EVs (2.99% on the i5) makes the financing the story — their siblings
+and rivals follow on their own cadence. Each car is priced as what it would actually cost to land in a
 specific buyer's driveway, and the result is published as a report, an email, and a dashboard.
 
 It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
@@ -44,15 +44,21 @@ Two things are configured, separately:
 
 - **buyer** — who is purchasing: a public home anchor, the states they will drive to for a car,
   and how they value miles and shipping. One buyer today; the first real use is a buyer near
-  Chicago shopping the i5 and the iX — drawn by a CPO financing promo (2.99% APR on certified
-  EVs, 2.49% on the iX). The shape is built for more.
-- **watchlist** — what to track: brands → models → trims. The shopped i5 and iX each carry a
-  nationwide CPO watch (every certified 2024+ eDrive/xDrive under 30,000 miles — the M trims are
+  Chicago deciding between the i5 and the i7 — drawn by a CPO financing promo (2.99% APR on
+  certified EVs). The shape is built for more.
+- **watchlist** — what to track: brands → models → trims. The shopped i5 and i7 each carry a
+  nationwide CPO watch (every certified eDrive/xDrive under 30,000 miles — the M trims are
   not the shopping pool — fetched lowest-mileage first, national query only) beside their
-  ordinary trim targets; the i4 stays as the price
-  benchmark for the same drivetrain; comparison models from Hyundai, Kia, Audi and Lucid run
-  every third day. `buyer.shopping` names the targets that lead the report in full; everything
-  else gets one line.
+  ordinary trim targets; the iX is tracked for comparison only; comparison models from Hyundai,
+  Kia, Audi and Lucid run every third day. `buyer.shopping` names the targets that lead the
+  report in full; everything else gets one line.
+
+  The list is meant to move with the decision. When it narrowed to the i5 against the i7, the
+  i4 stood down — at full depth on a daily cadence it was ten calls a day, a third of the whole
+  plan, to benchmark a drivetrain the two shopped pages now show directly — and the iX kept its
+  ordinary trims on the slow cadence but gave up its nationwide certified sweep, which is the
+  most expensive thing a model can carry and only earns its place on a car you are buying.
+  Both are one `active` flag from coming back.
 
 ## Design decisions
 
