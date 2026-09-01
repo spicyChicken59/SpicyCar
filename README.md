@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://spicychicken59.github.io/SpicyCar/"><img src="docs/screenshot.png" alt="SpicyCar dashboard — BMW i5, lowest and median landed price, listings with photos and history flags" width="920"></a>
+  <a href="https://spicychicken59.github.io/SpicyCar/"><img src="docs/screenshot.png" alt="SpicyCar dashboard — the watchlist: lowest drivable asking, lowest asking nationwide, how many cars are on the market, what changed since the previous snapshot, and the model and state filters" width="920"></a>
 </p>
 
 # SpicyCar

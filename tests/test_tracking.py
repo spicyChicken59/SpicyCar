@@ -15,6 +15,7 @@ key is set here before the import.
 
 import json
 import os
+import re
 import unittest
 from collections import Counter
 from datetime import date
@@ -1110,6 +1111,66 @@ class TestDashboardContract(unittest.TestCase):
                 self.assertGreaterEqual(
                     sum(parts), d.get("n") or 0,
                     f"{bk}/{mk} {d['date']}: the trim rows do not cover the model row")
+
+
+# --------------------------------------------------------------------------
+# The share card. Not Tracking.py, but the same rule: every number defensible.
+# --------------------------------------------------------------------------
+class TestShareCard(unittest.TestCase):
+    """docs/og.png must not be able to go stale.
+
+    It used to be a dashboard screenshot, taken 2026-08-26 and never retaken.
+    Five days later it was still unfurling "Every model", "10 models", a
+    Chevrolet chip and "$13,901 · Kia EV6" on Slack, iMessage, X and LinkedIn
+    — while data.json said "The watchlist", seven models, five brands (no
+    Chevrolet, no EV6). Nothing corrects it: the crawlers that draw the unfurl
+    do not run the JS that writes the real title, and the daily run writes
+    data.json, REPORT.md and snapshots.csv but has never written a PNG.
+
+    So the card carries no number and names no car. These tests hold that,
+    against a future session that helpfully puts "7 models" back on it.
+    """
+
+    ROOT = Path(__file__).parent.parent
+
+    @classmethod
+    def _card_text(cls):
+        """The card's visible words — body markup with the tags taken out. The
+        head is excluded on purpose: the comment there quotes the stale numbers
+        this class exists to explain."""
+        src = (cls.ROOT / "tools" / "og_card.html").read_text()
+        body = src.split("<body>", 1)[1].split("</body>", 1)[0]
+        return re.sub(r"<[^>]*>", " ", body)
+
+    def test_the_card_carries_no_number(self):
+        """A count, a price or a date on the card is wrong the day after it is
+        committed and stays wrong, because nothing regenerates the image."""
+        text = self._card_text()
+        self.assertNotIn("$", text, "a price on the og card")
+        self.assertFalse(re.search(r"\d", text),
+                         f"a digit on the og card: {re.findall(r'.{0,24}[0-9].{0,24}', text)}")
+
+    def test_the_card_names_no_car(self):
+        """The watchlist is config: brands and models come and go (Chevrolet
+        did). A card that names one is a card that has to be retaken."""
+        site = json.loads((self.ROOT / "docs" / "data.json").read_text())
+        names = {b["label"] for b in site["brands"].values()}
+        names |= {m["label"] for b in site["brands"].values() for m in b["models"].values()}
+        text = self._card_text()
+        for name in names:
+            self.assertIsNone(re.search(rf"\b{re.escape(name)}\b", text),
+                              f"the og card names {name}")
+
+    def test_both_pages_describe_the_card(self):
+        """og:image with no og:image:alt leaves the unfurl's whole visual
+        payload undescribed to a screen reader. The alt is checked for digits
+        too — it is the same promise in text."""
+        for page in ("index.html", "how.html"):
+            head = (self.ROOT / "docs" / page).read_text()
+            m = re.search(r'<meta property="og:image:alt" content="([^"]*)">', head)
+            self.assertIsNotNone(m, f"docs/{page}: og:image with no og:image:alt")
+            self.assertFalse(re.search(r"[0-9$]", m.group(1)),
+                             f"docs/{page}: a number in og:image:alt")
 
 
 if __name__ == "__main__":
