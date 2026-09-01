@@ -3011,10 +3011,21 @@
       g.likely && g.likely !== 'delisted'
         ? el('span', null, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null,
       (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
+    // The .sc-media__body wrapper is load-bearing, not tidiness. sc.css lays
+    // .sc-media--card out as `auto 1fr auto` and it is the .sc-frame — column 1,
+    // spanning three rows — that parks title/sub/code in column 2 and the aside
+    // in column 3. This is the one card on the page with no photo, so as five
+    // bare children auto-placement gave it title | aside | LOCATION across three
+    // max-content columns, with the VIN alone under the title: 286px of columns
+    // inside a 228px card at 320x568, which hung 12px off the document and cut
+    // "Bentonville, AR" in half. Wrapped, the three lines are ONE grid item, the
+    // card is body | aside — the phone listing card's own shape, minus the photo
+    // it has no field for — and it fits any width the cards are rendered at.
     return el('div', { class: 'sc-media sc-media--card' },
-      el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), aside,
-      el('div', { class: 'sc-media__sub' }, placeCell(g)),
-      el('div', { class: 'sc-media__code' }, g.vin), foot);
+      el('div', { class: 'sc-media__body' },
+        el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()),
+        el('div', { class: 'sc-media__sub' }, placeCell(g)),
+        el('div', { class: 'sc-media__code' }, g.vin)), aside, foot);
   }
   function renderGone() {
     const t = model(), gone = goneRows(t), card = $('gone-card');
