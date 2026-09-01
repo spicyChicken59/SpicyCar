@@ -102,6 +102,11 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + 
 
 const results = [];
 const ok = (name, pass, detail = '') => results.push({ name, pass: !!pass, detail });
+// A check whose SUBJECT is not in today's data has not passed and has not
+// failed — it had nothing to look at. Saying so keeps the count honest about
+// what was actually covered; scoring it a pass would quietly retire the check
+// on the day the tracker stops watching the car it needed.
+const skip = (name, detail = '') => results.push({ name, skip: true, detail });
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
   await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
@@ -243,6 +248,76 @@ const chipCR = await page.evaluate(() => {
 });
 ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.toFixed(2) + ':1' : 'no pressed chip');
 
+// ...and an UNPRESSED chip's count was the same defect one step quieter, left
+// behind when the pressed state was fixed: an opacity: 0.7 over sc-note's
+// --sc-text-2 — 6.44:1 dark and 5.83:1 light on its own ground — composited
+// down to 3.82:1 (#6c7889 on #121c2a) and 3.05:1 (#8e949c on #ffffff) at
+// 12px/400. That was every one of axe's serious nodes on the page: 7 on the
+// watchlist, 9 on a model page, 5 on compare, in BOTH themes. Unpressed is the
+// resting state of nearly every chip, so it is the ratio that matters most,
+// and light — the theme nobody had measured — was the worse of the two, which
+// is why this asserts each theme rather than whichever one CI happens to boot
+// in.
+//
+// It reads EVERY count in both groups and reports the WORST, because the one
+// declaration governed three sets and a single-node read could only ever see
+// one of them: #f-model on the watchlist (pressed and unpressed), #f-model on
+// a model page — the "compare with" doors, which carry no aria-pressed at all
+// and were the largest group axe found — and #f-trim. Scoping a dim back onto
+// any one of the three would otherwise ship green.
+//
+// Two things it has to get right: opacity never appears in
+// getComputedStyle().color, so the ratio is taken on the composite; and sc.css
+// transitions .sc-tab's background, so the switch has to settle before
+// anything is read or the theme just left is what gets measured. The worst
+// node is often the one the mouse happens to be resting on, whose ground is
+// --sc-hover rather than --sc-surface — a real state, and one axe never sees,
+// so it belongs in the measurement even though it makes the number wobble.
+const worstChipCount = () => page.evaluate(() => {
+  const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+  const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  let n = 0, worst = Infinity;
+  for (const cn of document.querySelectorAll('#f-model .chip-n, #f-trim .chip-n')) {
+    if (!cn.getBoundingClientRect().width) continue;  // below 721px the bar folds the counts away
+    const btn = cn.closest('button');
+    const bg = rgb(getComputedStyle(btn).backgroundColor);
+    let alpha = 1;                       // every opacity between the count and its ground
+    for (let e = cn; e && e !== btn.parentElement; e = e.parentElement) alpha *= Number(getComputedStyle(e).opacity);
+    const fg = rgb(getComputedStyle(cn).color).map((v, i) => v * alpha + bg[i] * (1 - alpha));
+    const [a, b] = [lum(fg), lum(bg)].sort((x, y) => y - x);
+    worst = Math.min(worst, (a + 0.05) / (b + 0.05));
+    n++;
+  }
+  return { n, worst };
+});
+// Which model page is read out of data.json rather than named here: index.html
+// hides "compare with" below two models and the trim field below two trims, so
+// the state exists only where the data still has it — and a check that names a
+// car tests the config instead of the page. No subject today is a skip, not a
+// failure; the watchlist half still runs.
+const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const watched = Object.entries(site.brands || {}).flatMap(([bk, b]) =>
+  Object.entries(b.models || {}).map(([mk, m]) => ({ bk, mk, nt: Object.keys(m.trims || {}).length })));
+const subject = watched.length > 1 ? watched.find((m) => m.nt > 1) : null;
+const chipStates = [['the watchlist', null]];      // whatever the check above left — chips pressed and not
+if (subject) chipStates.push(['a model page', `?brand=${subject.bk}&m=${subject.mk}`]);
+else skip('every chip count is readable on a model page', 'no watched model has two trims today');
+for (const [where, query] of chipStates) {
+  if (query) await open(query);
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+    await page.waitForTimeout(400);
+    const { n, worst } = await worstChipCount();
+    const claim = `every chip count is readable on ${where}, in ${theme}`;
+    if (n) ok(claim, worst >= 4.5, `${worst.toFixed(2)}:1, worst of ${n}`);
+    else skip(claim, 'no chip counts on screen');
+  }
+  // Restored, but not waited on: nothing reads the page again before the next
+  // full load, which drops the attribute anyway.
+  await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+}
+
 // "Only this →" takes its own card off the page; the keyboard must land
 // somewhere, not on <body>.
 await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-xdrive40');
@@ -345,8 +420,10 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 await browser.close();
 server.close();
 
-for (const r of results) console.log(`  ${r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
+for (const r of results) console.log(`  ${r.skip ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
 if (errors.length) { console.log('\n  the page logged errors:'); for (const e of [...new Set(errors)]) console.log('      - ' + e); }
-const failed = results.filter((r) => !r.pass).length;
-console.log(`\ndashboard smoke: ${results.length - failed}/${results.length} checks, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
+const failed = results.filter((r) => !r.pass && !r.skip).length;
+const skipped = results.filter((r) => r.skip).length;
+console.log(`\ndashboard smoke: ${results.length - skipped - failed}/${results.length - skipped} checks`
+  + `${skipped ? `, ${skipped} skipped for want of a subject` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
 process.exit(failed || errors.length ? 1 : 0);
