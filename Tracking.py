@@ -92,6 +92,9 @@ DATA.mkdir(exist_ok=True)
 DOCS = Path("docs")
 DOCS.mkdir(exist_ok=True)
 SNAPSHOTS = DATA / "snapshots.csv"
+# Exit code for "today was already fetched, nothing was spent". Distinct from 1
+# so the workflow can tell a saving apart from a failure and act on it.
+ALREADY_FETCHED = 3
 SAMPLE = DATA / "sample_record.json"
 ZIPCODES = DATA / "zipcodes.json"
 
@@ -2450,7 +2453,13 @@ def send_email(report, subject=None):
     key = os.environ.get("RESEND_API_KEY")
     to = os.environ.get("EMAIL_TO")
     if not (key and to):
-        print("Email not configured — skipping.")
+        # Not a warning. Email is OFF ON PURPOSE here: the dashboard is this
+        # tool's delivery surface and the owner said plainly they do not want
+        # the email. RESEND_API_KEY and EMAIL_TO have never been set, and an
+        # annotation on every run for a feature nobody wants is just noise
+        # that trains you to ignore annotations. Set both secrets and it
+        # starts sending; until then this line is a fact, not a complaint.
+        print("Email off (no RESEND_API_KEY / EMAIL_TO) — report written to REPORT.md.")
         return
     try:
         r = requests.post(
@@ -2495,15 +2504,22 @@ def main():
     already = {r["snapshot_date"] for r in load_history()}
     if TODAY in already and not os.environ.get("ALLOW_REFETCH"):
         due_today = [t["id"] for t in TARGETS.values() if due_on(t, TODAY_ORD)]
-        sys.exit(
-            f"{TODAY} has already been fetched — refusing to spend "
-            f"{today_calls} calls on it again.\n"
-            f"  To rebuild REPORT.md and docs/data.json from the snapshot "
-            f"already on disk, for free:\n"
-            f"      python3 tools/rebuild_outputs.py\n"
-            f"  To genuinely re-fetch (a run that died partway and left "
-            f"{len(due_today)} due targets incomplete):\n"
-            f"      ALLOW_REFETCH=1 python3 Tracking.py")
+        # Exit 3, not 1, and it is not a failure. A re-run is almost always
+        # somebody wanting FRESH OUTPUTS after a config or code change, which
+        # costs nothing — so daily.yml reads this code and regenerates them
+        # offline instead of stopping. The first version exited 1 and painted
+        # the run red, which reads as a broken tracker rather than a saving:
+        # the operator's own words on seeing it were "got this error".
+        print(f"{TODAY} has already been fetched — not spending "
+              f"{today_calls} calls on it again.\n"
+              f"  Nothing is wrong. To rebuild REPORT.md and docs/data.json "
+              f"from the snapshot already on disk, for free:\n"
+              f"      python3 tools/rebuild_outputs.py\n"
+              f"  (A dispatched run does this for you automatically.)\n"
+              f"  To genuinely RE-FETCH — only when a run died partway and "
+              f"left {len(due_today)} due targets incomplete:\n"
+              f"      ALLOW_REFETCH=1 python3 Tracking.py")
+        sys.exit(ALREADY_FETCHED)
 
     rows = {}
     dropped = Counter()
