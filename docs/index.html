@@ -435,12 +435,20 @@
           <option value="newest">Newest to tracker</option>
           <option value="price">Asking price</option>
           <option value="landed">Asking + shipping</option>
+          <option value="otd">Out the door, all in</option>
+          <option value="payment">Monthly payment</option>
           <option value="value">Best value vs typical</option>
           <option value="miles">Miles</option>
           <option value="delta">Biggest price drop</option>
           <option value="cut">Cut at the latest snapshot</option>
           <option value="days_listed">Longest on market</option>
         </select>
+      </label>
+      <label class="sc-field" id="f-term-field" hidden>Term
+        <select class="sc-select" id="f-term"></select>
+      </label>
+      <label class="sc-field" id="f-down-field" hidden>Down
+        <input class="sc-input" id="f-down" type="number" min="0" step="500" inputmode="numeric">
       </label>
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
@@ -574,7 +582,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0 };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -596,10 +604,15 @@
       const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
       S.where = new Set(Array.isArray(p.where) ? p.where : []);
       S.range = ['30', '90', 'all'].includes(p.range) ? p.range : '90';
-    } catch (e) { S.where = new Set(); S.range = '90'; }
+      // A term is only restored if the config still offers it: dropping 72 from
+      // the sheet must not leave a saved profile quoting payments at 72.
+      const terms = (financeCfg() || {}).terms || [];
+      S.term = terms.includes(p.term) ? p.term : null;
+      S.down = Number.isFinite(p.down) && p.down >= 0 ? p.down : 0;
+    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range, term: S.term, down: S.down })); } catch (e) { /* private mode etc. */ }
   }
   // ---------- the comparison ----------
   // Which trims a model page is about, in the config's own order (a Set has
@@ -2040,6 +2053,215 @@
       for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; }
     }
   }
+  // ---- what the car costs per month -------------------------------------
+  // The rate a car finances at is a property OF THE CAR — its model and whether
+  // it is certified — so it is settled once here, at boot, the way the value
+  // score is. The payment itself is not: term and down payment are knobs the
+  // reader turns, so payFor() computes that on demand from the rate parked here.
+  // A promo reaches a car only when the run marked it active AND the car is
+  // certified AND it is that promo's own model: a non-CPO i5 finances at the
+  // fallback like anything else, which is the whole reason this ranking moves
+  // cars around at all.
+  function annotateFinance(site) {
+    const fin = (site.buyer || {}).finance;
+    if (!fin) return;
+    const live = (fin.promos || []).filter((p) => p.active && p.apr != null);
+    for (const [bk, b] of Object.entries(site.brands || {})) {
+      for (const [mk, m] of Object.entries(b.models || {})) {
+        const key = bk + '/' + mk;
+        const promo = live.find((p) => p.model === key);
+        for (const x of [...(m.listings || []), ...(m.gone || [])]) {
+          const gets = promo && (!promo.cpo_only || x.cpo);
+          x.apr = gets ? promo.apr : fin.fallback_apr;
+          x.apr_promo = !!gets;
+          x.apr_label = gets ? promo.label : '';
+          x.apr_max_term = gets ? promo.max_term : null;
+        }
+      }
+    }
+  }
+  const financeCfg = () => ((S.site || {}).buyer || {}).finance || null;
+  // The reader's term, clamped to what a promo will actually write. A 2.99%
+  // offer capped at 60 months does not finance 72 — quoting it at 72 would
+  // invent a payment no lender has offered, and it is exactly the car the
+  // ranking is about, so the cap is enforced rather than noted.
+  function termFor(x) {
+    const fin = financeCfg();
+    const want = S.term || (fin && fin.default_term) || 60;
+    return (x && x.apr_promo && x.apr_max_term) ? Math.min(want, x.apr_max_term) : want;
+  }
+  const feesCfg = () => ((S.site || {}).buyer || {}).fees || null;
+  // What the car actually costs to own: asking, plus the tax and paperwork the
+  // state adds, plus getting it here. Illinois charges the buyer's home rate
+  // wherever the car was bought, so the tax lands on every row — the Phoenix
+  // car and the Naperville car are taxed alike, and only the shipping differs.
+  //
+  // This is the first number on the page that SCALES with price. Shipping is a
+  // near-constant few hundred dollars whatever the car costs, which is why
+  // correcting it moved no rankings; tax is a percentage, so it widens the gap
+  // between a cheap distant car and an expensive local one rather than lifting
+  // them together. That is also why it is kept out of `landed` rather than
+  // folded into it: landed is the number the picks and the value scores were
+  // built on, and quietly redefining it would move every one of them.
+  function otd(x) {
+    const f = feesCfg();
+    if (!f || !hasPrice(x)) return null;
+    return Math.round(x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0)
+      + (x.local ? 0 : (x.ship || 0)));
+  }
+  // The part a lender writes the loan against. A transport broker is a separate
+  // cash transaction weeks after the dealer is paid, so shipping is excluded
+  // unless the buyer says otherwise — financing it would make every payment on
+  // the page a little too high and nothing would say why.
+  function financed(x) {
+    const f = feesCfg();
+    if (!hasPrice(x)) return null;
+    if (!f) return landed(x);
+    const dealer = x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+    return Math.round(dealer + (f.finance_shipping && !x.local ? (x.ship || 0) : 0));
+  }
+  // Amortised monthly payment on what the dealer actually finances less
+  // whatever is put down — the car plus its tax and paperwork, NOT the hauler's
+  // bill, which is a separate cheque to a separate company and does not go on
+  // the note unless buyer.fees.finance_shipping says it does. On a sheet with
+  // NO fee block at all, financed() falls back to the landed price, shipping
+  // included: without a tax rate there is no better figure to amortise, and
+  // that fallback is the pre-fees behaviour preserved rather than a claim.
+  // Zero APR is not a rounding case — it is a real promo shape — so it divides
+  // rather than dividing by a zero rate.
+  function payFor(x) {
+    const fin = financeCfg();
+    if (!fin || !hasPrice(x) || x.apr == null) return null;
+    const principal = financed(x) - (S.down || 0);
+    if (principal <= 0) return 0;
+    const n = termFor(x);
+    const r = x.apr / 100 / 12;
+    return r > 0 ? principal * r / (1 - Math.pow(1 + r, -n)) : principal / n;
+  }
+  // The same car financed at the ordinary rate — what the promo is worth per
+  // month. Null when there is no promo on it, so callers can skip the line
+  // rather than print a zero saving.
+  function payAtFallback(x) {
+    const fin = financeCfg();
+    if (!fin || !x.apr_promo || !hasPrice(x) || fin.fallback_apr == null) return null;
+    const principal = financed(x) - (S.down || 0);
+    if (principal <= 0) return 0;
+    const n = termFor(x);
+    const r = fin.fallback_apr / 100 / 12;
+    return r > 0 ? principal * r / (1 - Math.pow(1 + r, -n)) : principal / n;
+  }
+  const perMo = (v) => (v == null ? '—' : money(Math.round(v)) + '/mo');
+  // One line under a price: what it costs per month, and — on a promo car —
+  // what the promo is worth against the ordinary rate. Silent on cars where it
+  // would only repeat the fallback everyone else also gets, unless the reader
+  // is actively ranking by payment, in which case every row must show the
+  // number it was ordered on.
+  // What the payments on screen are resting on, said once rather than per car:
+  // the term, the ordinary rate, which promos are live and when they end, and —
+  // the part that rots — how long since a human checked that ordinary rate. The
+  // whole ranking pivots on it and nothing fetches it, so the page says its age
+  // instead of presenting it as fact.
+  function financeNote() {
+    const fin = financeCfg();
+    if (!fin) return '';
+    const bits = [];
+    // Same test annotateFinance applies when it attaches a promo to a car: a
+    // promo with no apr is never given to anything, so naming it here — and,
+    // since the cap clause was added, claiming it shortens a term — describes
+    // an offer no row on the page is financed under.
+    const live = (fin.promos || []).filter((p) => p.active && p.apr != null);
+    // A promo that caps the term shorter than the chosen one is quoted at its
+    // cap, so the cell can read "60mo" under a note that says 72. Say the cap
+    // here rather than letting the reader find the contradiction themselves.
+    const want = S.term || fin.default_term;
+    for (const p of live) {
+      bits.push(`${p.label || p.model} applies to ${p.cpo_only === false ? 'these cars' : 'certified cars'}${p.days_left != null
+        ? `, ${p.days_left} day${p.days_left === 1 ? '' : 's'} left` : ''}`
+        + (p.max_term && want && p.max_term < want ? ` and is capped at ${p.max_term} months` : ''));
+    }
+    for (const p of (fin.promos || []).filter((p) => !p.active && p.expires)) {
+      bits.push(`${p.label || p.model} expired ${fmtDate(p.expires)} — those cars now price at the ordinary rate`);
+    }
+    const stale = fin.stale_days;
+    const rate = `Payments assume ${S.term || fin.default_term} months at ${fin.fallback_apr}% unless a promo applies`
+      + (stale != null && stale > 120 ? `; that rate was last checked ${stale} days ago and is probably stale` : '')
+      + '.';
+    return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
+  }
+  // The out-the-door total, shown when it is the number being ranked on — the
+  // same rule payNote follows, because a sort by a figure the reader cannot see
+  // is a sort they have to take on trust. The title carries the breakdown, and
+  // says "estimate" until buyer.fees.checked is dated: the tax rate is locally
+  // specific and nobody has verified this one.
+  function otdNote(x) {
+    const f = feesCfg(), total = otd(x);
+    if (!f || total == null || S.sort !== 'otd') return null;
+    const tax = Math.round(x.price * (f.tax_rate || 0));
+    const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+    const ship = x.local ? 0 : (x.ship || 0);
+    return el('span', { class: 'sc-note', title:
+      `${money(x.price)} asking + ${money(tax)} tax + ${money(fixed)} title, doc and plates`
+      + (ship ? ` + ${money(ship)} shipping` : ' · drivable, no shipping')
+      + (f.checked ? ` · rates checked ${f.checked}` : ' · ESTIMATE, rates not verified') },
+      `${money(total)} out the door`);
+  }
+  // Where this car sits against the last asks of its own trim's departures.
+  // Not "overpriced": a delisted car may have sold, gone to auction, moved
+  // lots or simply expired, and those are indistinguishable from outside. The
+  // claim is narrower and survives that — comparable cars stopped being
+  // advertised around here, and this one is asking above it.
+  function exitNote(x) {
+    const t = (S.brand === 'all' ? null : model());
+    const trim = t && (t.trims || {})[x.trim_id];
+    if (!trim || !trim.exit_price || !hasPrice(x)) return null;
+    const over = x.price - trim.exit_price;
+    // Suppressed against the median's OWN uncertainty, not a flat threshold.
+    // This used to be `Math.abs(over) < 500`, which on these cohorts is
+    // between 10 and 42 times narrower than the real interval: 42% of the
+    // notes it drew named a gap smaller than the sampling error of the number
+    // they were drawn against. exit_lo/exit_hi are the distribution-free
+    // interval from the order statistics, so a price inside them is not
+    // distinguishable from the median and the page says nothing.
+    const lo = trim.exit_lo, hi = trim.exit_hi;
+    if (lo != null && hi != null) { if (x.price >= lo && x.price <= hi) return null; }
+    else if (Math.abs(over) < 500) return null;
+    const watched = trim.exit_watched || 0, cut = trim.exit_cut_seen || 0;
+    return el('span', { class: 'sc-note', title:
+      `${trim.exit_n} ${trim.label} listings ended while tracked, last asking a median of ${money(trim.exit_price)}`
+      + (lo != null && hi != null ? ` (${money(lo)}–${money(hi)} at 95%)` : '')
+      + (trim.exit_days ? ` after at least about ${trim.exit_days} days` : '')
+      // Twelve matches market_line. Even there it is a COUNT with a visible
+      // denominator, never a rate: at twelve the interval on the proportion is
+      // still around ±25 points, so two trims' counts cannot be compared —
+      // which is the exact mistake this floor was raised to stop.
+      + (watched >= 12 ? ` · ${cut} of ${watched} cut in the days we saw them, too few to compare with another trim` : '')
+      + ' · a listing ending is not a confirmed sale' },
+      `${money(Math.abs(over))} ${over > 0 ? 'above' : 'below'} where this trim's listings ended`);
+  }
+  function payNote(x) {
+    const pay = payFor(x);
+    if (pay == null) return null;
+    const ranking = S.sort === 'payment';
+    if (!x.apr_promo && !ranking) return null;
+    const base = payAtFallback(x);
+    const saves = base == null ? null : Math.round(base - pay);
+    const bits = [`${perMo(pay)} at ${x.apr}%`];
+    if (saves > 0) bits.push(`saves ${money(saves)}/mo`);
+    // payFor clamps a down payment that covers the whole car to a $0 payment.
+    // The tooltip has to clamp with it: subtracting straight through printed
+    // "60 months on -$4,200 financed" under a row reading $0/mo, which is not
+    // a smaller version of the truth, it is a different claim.
+    const owed = financed(x) - (S.down || 0);
+    const on = owed > 0
+      ? `${termFor(x)} months on ${money(owed)} financed`
+      : `paid outright — the down payment covers all ${money(financed(x))}`;
+    return el('span', { class: 'sc-note', title: owed <= 0 ? on
+      : x.apr_promo ? `${x.apr_label || 'Promotional rate'} — ${on}`
+      : `${on} at the ordinary used rate` },
+      bits.join(' · '));
+  }
   // The one scored pool for the view on screen. The pick cards, the map's rings
   // and the scatter's rings each built this expression themselves and agreed
   // only by coincidence; a comparison would have had to make the same guess
@@ -2100,6 +2322,8 @@
       local: (x) => (x.local ? 0 : 1) * 1e15 + (x.price ?? big),
       price: (x) => x.price ?? big,
       landed: (x) => landed(x) ?? big,
+      otd: (x) => otd(x) ?? big,
+      payment: (x) => payFor(x) ?? big,
       value: (x) => (x.pick_pct == null ? big : -x.pick_pct),
       miles: (x) => x.miles ?? big,
       delta: (x) => (x.delta ?? 0),
@@ -2815,7 +3039,8 @@
       // the phone twin of the table's cut-sort note — the sorted number must be visible here too
       S.sort === 'cut' && lastStep(x) < 0
         ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
-      x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null);
+      x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
+      otdNote(x), payNote(x), exitNote(x));   // the phone twins of the table's payment, out-the-door and exit-comp notes
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
@@ -2895,7 +3120,15 @@
     const mk = sc.market, mbits = [];
     if (mk.median_days_listed != null) mbits.push(`typical car ${mk.median_days_listed}d on market`);
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
-    if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 5) mbits.push(`sold cars lasted ~${mk.median_days_to_sale}d (${mk.n_sold} sold)`);
+    // Same sentence, same floor, same caveats as the report's market_line —
+    // this is the PRIMARY surface and it was the one still saying "sold". A
+    // listing ending is not a sale: it may have sold, gone to auction, moved
+    // lots or simply expired, and none of those are separable from outside.
+    // "at least" because the span ends at the last day the car was SEEN, and
+    // the ad actually ended somewhere after that. Twelve because the number
+    // is printed bare, and below twelve its own interval is wider than the
+    // claim (at eight, "~19d" spans 3 to 57 days).
+    if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 12) mbits.push(`listings ran at least ~${mk.median_days_to_sale}d (${mk.n_sold} gone)`);
     // the full list is scannable nowhere — show the first slice, offer the rest
     const LIMIT = 30;
     const shown = S.showAllList ? rows : rows.slice(0, LIMIT);
@@ -2964,6 +3197,17 @@
         S.sort === 'cut' && lastStep(x) < 0
           ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
         x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
+        // The payment rides in the price cell rather than a column of its own:
+        // the header set is already rationed by viewport band above, and a
+        // number derived from the price belongs beside it. It shows always when
+        // the reader is ranking on it, and otherwise only where a promo makes it
+        // differ from what the fallback rate would say — the case the ranking
+        // exists to surface.
+        payNote(x),
+        // Same rule, same cell: the out-the-door total is derived from the
+        // price and shows when it is the figure being ranked on.
+        otdNote(x),
+        exitNote(x),
         (x.msrp && x.msrp !== lastMsrp) ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
       lastMsrp = x.msrp || lastMsrp;
       const shipping = el('td', { class: 'sc-num' }, x.local
@@ -3371,7 +3615,8 @@
     // price a car sits — the same rule the picks are chosen by — so that is the
     // only row that names a winner.
     $('compare-hint').textContent = `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters`
-      + `, each column its own market. Prices are not scored against each other — a cheaper car is not a better one — so at most one row marks a winner: “best value vs typical”, and only when every column’s best car had enough siblings of its own trim and year to be judged against them.`;
+      + `, each column its own market. Prices are not scored against each other — a cheaper car is not a better one — so at most one row marks a winner: “best value vs typical”, and only when every column’s best car had enough siblings of its own trim and year to be judged against them.`
+      + financeNote();
     const P = pickParams();
     const stat = cols.map((c) => {
       const priced = c.rows.filter(hasPrice);
@@ -3384,6 +3629,13 @@
         med: median(priced.map((x) => x.price)), medMiles: median(c.rows.map((x) => x.miles).filter((v) => v != null)),
         medDays: days.length ? median(days) : null,
         top: scored.length ? scored[0] : null,
+        // The cheapest MONTHLY, which is not the cheapest landed whenever a
+        // promo is in play — that divergence is the entire reason this row
+        // exists beside "Cheapest landed" rather than instead of it.
+        payBest: priced.reduce((best, x) => {
+          const p = payFor(x);
+          return (p != null && (!best || p < best.pay)) ? { pay: p, x } : best;
+        }, null),
         mv: movementFor(c.all, c.gone, c.record) };
     });
     // The winner is only markable when every column's best car was scored
@@ -3445,6 +3697,11 @@
         v.best ? `${v.best.year} · ${num(v.best.miles)} mi · ${placeTxt(v.best)}${v.best.local ? '' : (v.best.ship ? ` · + ${money(v.best.ship)} ship` : '')}` : 'no priced listings')));
     row('Cheapest landed', 'Asking plus shipping — what it costs to have one in the driveway',
       stat.map((v) => cmpCell(v.landed != null ? money(v.landed) : '—', 'asking + shipping')));
+    if (financeCfg()) {
+      row('Cheapest monthly', 'The lowest payment in this column at its own best rate — a certified car on a promo can beat a cheaper one that is not',
+        stat.map((v) => cmpCell(v.payBest ? perMo(v.payBest.pay) : '—',
+          v.payBest ? `${v.payBest.x.year} · ${v.payBest.x.apr}%${v.payBest.x.apr_promo ? ' promo' : ''} · ${termFor(v.payBest.x)}mo` : 'no priced listings')));
+    }
     row('Median asking', 'The middle of this column’s own market',
       stat.map((v) => cmpCell(v.med != null ? money(v.med) : '—', `${v.priced.length} priced`)));
     row('Cars on the market', 'Under the current filters',
@@ -3783,6 +4040,44 @@
   // that path must not rebuild the bar.
   function syncSortField() {
     $('f-sort').parentElement.hidden = S.brand === 'all' && !comparingModels();
+    syncCostControls();
+  }
+  // The term and down controls exist only where a payment does: a config with
+  // no finance block leaves them hidden and the payment sort out of the list,
+  // so a page whose buyer never set a rate never offers a ranking it cannot
+  // compute. The out-the-door sort follows the same rule against buyer.fees.
+  // Without it every row's key falls back to the same sentinel and the
+  // TIEBREAK decides the order, so the list silently becomes a pure
+  // asking-price sort with the drivable-first grouping dropped — not a list
+  // that failed to move, a different list wearing the label the reader asked
+  // for. That is worse than an absent option, because the reader reads it as
+  // the answer.
+  function syncCostControls() {
+    const fin = financeCfg();
+    const sortSel = $('f-sort');
+    const payOpt = sortSel.querySelector('option[value="payment"]');
+    // hidden AND disabled: hidden is a rendering hint some browsers have
+    // ignored on <option>, disabled is a refusal. The fallbacks below are
+    // unreachable through this UI today — S.sort is neither a URL parameter
+    // nor a saved preference, so the select is its only writer — and they stay
+    // as the guard for a build where that stops being true.
+    if (payOpt) { payOpt.hidden = !fin; payOpt.disabled = !fin; }
+    if (!fin && S.sort === 'payment') { S.sort = 'local'; sortSel.value = 'local'; }
+    const otdOpt = sortSel.querySelector('option[value="otd"]');
+    if (otdOpt) { otdOpt.hidden = !feesCfg(); otdOpt.disabled = !feesCfg(); }
+    if (!feesCfg() && S.sort === 'otd') { S.sort = 'landed'; sortSel.value = 'landed'; }
+    const on = !!fin && !sortSel.parentElement.hidden;
+    $('f-term-field').hidden = !on;
+    $('f-down-field').hidden = !on;
+    if (!fin) return;
+    const sel = $('f-term');
+    const want = String(S.term || fin.default_term || 60);
+    if (sel.options.length !== (fin.terms || []).length) {
+      sel.textContent = '';
+      for (const t of fin.terms || []) sel.appendChild(el('option', { value: String(t) }, t + ' months'));
+    }
+    sel.value = want;
+    $('f-down').value = S.down || '';
   }
   function buildFilters() {
     const overview = S.brand === 'all';
@@ -4034,6 +4329,15 @@
     $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender('rows'); });
     $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender('rows'); });
     $('f-cpo').addEventListener('change', (e) => { S.cpo = e.target.checked; rerender('rows'); });
+    // Term and down change what every payment on the page says, so they redraw
+    // the rows like a filter does — and they persist, because a reader who
+    // finances at 48 months finances at 48 months tomorrow too.
+    $('f-term').addEventListener('change', (e) => { S.term = Number(e.target.value) || null; savePrefs(); rerender('rows'); });
+    $('f-down').addEventListener('change', (e) => {
+      const v = Math.max(0, Math.round(Number(e.target.value) || 0));
+      S.down = v; e.target.value = v || '';
+      savePrefs(); rerender('rows');
+    });
     // The phone bar: one 44px row that expands on tap, so the controls are one
     // press away instead of five screens down. Setting several filters in a
     // row is normal, so a CHANGE never closes it; scrolling away to read the
@@ -4164,6 +4468,7 @@
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }
       S.site = site;
       annotateValue(site);
+      annotateFinance(site);
       loadPrefs();
       applyUrl();
       window.addEventListener('popstate', () => { applyUrl(); rerender('nav'); });

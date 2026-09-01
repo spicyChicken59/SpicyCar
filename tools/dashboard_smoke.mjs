@@ -1300,6 +1300,250 @@ if (!cases.length) {
 
 });
 
+// ---- the monthly payment, which is the number this buyer decides on -------
+// A certified car on a promotional APR can cost less per month than a cheaper
+// car that is not, and that is the ONLY reason this ranking exists — so the
+// checks below hold the two things that make it true rather than decorative:
+// the promo reaches certified cars and nothing else, and a promo capped at 60
+// months is not quoted at 72. Both are asserted against whatever the sheet says
+// today: the subject is discovered, never named, because a config that retires
+// the i5 must not read as a broken dashboard.
+{
+  const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const fin = (site.buyer || {}).finance;
+  const livePromo = ((fin || {}).promos || []).find((p) => p.active && p.apr != null);
+  // A model that has both a certified car and a non-certified one, under a live
+  // promo — the only shape where the boundary is observable at all.
+  const subject = !livePromo ? null : (() => {
+    const [bk, mk] = String(livePromo.model).split('/');
+    const m = ((site.brands || {})[bk] || {}).models?.[mk];
+    const rows = (m || {}).listings || [];
+    return (rows.some((x) => x.cpo) && rows.some((x) => !x.cpo))
+      ? { q: `?brand=${bk}&m=${mk}`, who: `${bk} ${mk}`, apr: livePromo.apr, cap: livePromo.max_term } : null;
+  })();
+  if (!subject) {
+    skip('a promo reaches certified cars and no others',
+         'no watched model has a live promo with both certified and non-certified cars today');
+    skip('a promo capped at 60 months is not quoted at 72', 'same');
+  } else {
+    await open(subject.q);
+    await page.selectOption('#f-sort', 'payment');
+    await page.waitForTimeout(350);
+    const seen = await page.$$eval('#list-table tbody tr', (rows) => rows.map((r) => {
+      const code = r.querySelector('.sc-media__code');
+      const note = [...r.querySelectorAll('.sc-note')].map((n) => n.textContent).find((t) => /\/mo at /.test(t)) || '';
+      const m = note.match(/at ([\d.]+)%/);
+      return { vin: code ? code.textContent.trim() : '', apr: m ? Number(m[1]) : null };
+    }));
+    const cpoVins = await page.evaluate(() => window.__cpoVins || null);
+    const promoRows = seen.filter((r) => r.apr === subject.apr);
+    const otherRows = seen.filter((r) => r.apr != null && r.apr !== subject.apr);
+    ok('a promo reaches certified cars and no others',
+       promoRows.length > 0 && otherRows.length > 0 && new Set(seen.map((r) => r.apr).filter((v) => v != null)).size === 2,
+       `${subject.who}: ${promoRows.length} rows at ${subject.apr}%, ${otherRows.length} at the ordinary rate`);
+    // The cap: ask for the longest term the sheet offers and the promo car must
+    // still quote its own maximum, not the longer one.
+    const longest = Math.max(...((fin.terms || [60])));
+    if (subject.cap && longest > subject.cap) {
+      await page.selectOption('#f-term', String(longest));
+      await page.waitForTimeout(350);
+      const title = await page.$$eval('#list-table tbody .sc-note', (ns, apr) => {
+        const t = ns.map((n) => n.getAttribute('title') || '').find((t) => t.includes(apr + '%'));
+        return t || '';
+      }, String(subject.apr));
+      ok('a promo capped at 60 months is not quoted at 72',
+         title.includes(`${subject.cap} months`),
+         `term set to ${longest}; the promo car says "${title.slice(0, 70)}"`);
+      await page.selectOption('#f-term', String(fin.default_term || 60));
+    } else {
+      skip('a promo capped at 60 months is not quoted at 72',
+           'no live promo has a term cap shorter than the longest offered term');
+    }
+  }
+}
+
+// ---- out-the-door ----
+// Tax is the largest number this page has never shown — roughly seven times the
+// median shipping estimate it always has — and it lands on EVERY car, because
+// Illinois charges the buyer's home rate wherever the car was bought. Checked
+// through the rendered page rather than the internals, and against the sheet's
+// own fee block, so it follows the config instead of a number written here.
+{
+  const fees = await page.evaluate(async () => {
+    const r = await fetch('data.json');
+    return ((await r.json()).buyer || {}).fees || null;
+  });
+  if (!fees) {
+    skip('every car carries tax, local and shipped alike', 'this sheet has no fees block');
+    skip('the out-the-door total shows its own working', 'this sheet has no fees block');
+  } else {
+    await open('?brand=bmw&m=i5');
+    await page.selectOption('#f-sort', 'otd');
+    await page.waitForTimeout(350);
+    const rows = await page.evaluate(() => {
+      // Row shape, verified against the rendered DOM rather than assumed: the
+      // price cell carries the first .sc-figure, and the shipping cell is the
+      // one whose text says "landed", "drivable" or "n/a" — it carries a
+      // .sc-figure only when there is a charge. The total column is dropped at
+      // some widths, so shipping is taken from its own cell, never from the
+      // last figure in the row and never from the out-the-door note itself.
+      const num = (el) => (el ? Number((el.textContent.match(/\$([\d,]+)/) || [0, 0])[1].replace(/,/g, '')) : null);
+      return [...document.querySelectorAll('#list-scroll tbody tr')].slice(0, 12).map((tr) => {
+        const tds = [...tr.querySelectorAll('td')];
+        const shipCell = tds.find((td) => /landed|drivable|n\/a/.test(td.textContent));
+        const otdEl = [...tr.querySelectorAll('.sc-note')].find((n) => /out the door/.test(n.textContent));
+        const shipFig = shipCell ? shipCell.querySelector('.sc-figure') : null;
+        return {
+          price: num(tr.querySelector('.sc-figure')),
+          ship: shipFig ? num(shipFig) : 0,
+          drivable: !!(shipCell && /drivable/.test(shipCell.textContent)),
+          otd: num(otdEl),
+          title: otdEl ? otdEl.getAttribute('title') || '' : '',
+        };
+      }).filter((r) => r.price && r.otd);
+    });
+    const fixed = (fees.doc_fee || 0) + (fees.title || 0) + (fees.registration || 0) + (fees.ev_surcharge || 0);
+    const want = (r) => Math.round(r.price * (1 + fees.tax_rate) + fixed + (r.drivable ? 0 : r.ship));
+    const bad = rows.filter((r) => Math.abs(r.otd - want(r)) > 1);
+    ok('every car carries tax, local and shipped alike',
+      rows.length > 0 && bad.length === 0,
+      rows.length ? `${rows.length} rows, ${rows.filter((r) => r.drivable).length} drivable · ${bad.length ? `worst $${bad[0].otd} vs $${want(bad[0])}` : 'every total exact'}`
+                  : 'no out-the-door rows rendered under the otd sort');
+    // A total nobody has verified must say so, or it reads as researched.
+    const verified = !!fees.checked;
+    ok('the out-the-door total shows its own working',
+      rows.length > 0 && rows.every((r) => /asking/.test(r.title) && /tax/.test(r.title)
+        && (verified ? /checked/.test(r.title) : /ESTIMATE/.test(r.title))),
+      rows.length ? rows[0].title : 'no rows');
+  }
+}
+
+// ---- what the page refuses to offer -----------------------------------------
+// A sort the sheet cannot compute is the quietest kind of wrong: every row's key
+// falls back to the same sentinel, the list does not move, and the reader reads
+// the unchanged order as the answer to the question they just asked. So the
+// option has to be GONE, not inert. Proved against a sheet with the fees block
+// cut out — the shape a page has before a buyer has ever filled one in — rather
+// than by reading the guard's source.
+await step('a sort the sheet cannot compute is not offered', async () => {
+  plan('the out-the-door sort is withheld without a fee block',
+       'and offered again when the sheet has one');
+  // Only buyer.fees is cut. Whether this sheet HAS a finance block decides what
+  // the payment option proves below, so it is read before the cut, not assumed.
+  const hasFinance = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).finance);
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    if (sheet.buyer) delete sheet.buyer.fees;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open('?brand=bmw&m=i5');
+    const state = await page.evaluate(() => ({
+      hidden: !!document.querySelector('#f-sort option[value="otd"]')?.hidden,
+      // Two controls against a false pass. "landed" must survive, or the select
+      // emptied and every option is "hidden" for the wrong reason. And where the
+      // sheet has finance, "payment" must survive too — it is guarded off a
+      // DIFFERENT config block, so cutting fees must not take it down with it.
+      payShown: !document.querySelector('#f-sort option[value="payment"]')?.hidden,
+      landedShown: !document.querySelector('#f-sort option[value="landed"]')?.hidden,
+    }));
+    ok('the out-the-door sort is withheld without a fee block',
+       state.hidden && state.landedShown && (!hasFinance || state.payShown),
+       `otd hidden=${state.hidden} · landed still offered=${state.landedShown}`
+       + ` · payment ${hasFinance ? `still offered=${state.payShown}` : 'not applicable, this sheet has no finance block'}`);
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+  // And the other direction, which is the half that keeps the guard honest.
+  // Testing only the absent case passes an unconditional `hidden = true`: the
+  // whole out-the-door ranking vanishes from the real sheet and CI stays green.
+  // Playwright will select a hidden option without complaint, so the existing
+  // otd checks cannot notice either.
+  await open('?brand=bmw&m=i5');
+  const shownAgain = await page.evaluate(() => !!document.querySelector('#f-sort option[value="otd"]')?.hidden);
+  const sheetHasFees = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).fees);
+  ok('and offered again when the sheet has one',
+     shownAgain === !sheetHasFees,
+     sheetHasFees ? `this sheet has fees, otd hidden=${shownAgain}`
+                  : `this sheet has no fees, otd correctly hidden=${shownAgain}`);
+});
+
+// ---- the term the note claims is the term the rows are quoted at ------------
+await step('the finance note owns the promo term cap', async () => {
+  plan('a note that claims 72 months says which promos are capped shorter',
+       'and claims no cap when the term already fits inside one');
+  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  const capped = fin && (fin.promos || []).find((p) => p.active && p.max_term);
+  const longest = fin && Math.max(...(fin.terms || [60]));
+  if (!capped || !(longest > capped.max_term)) {
+    return skipRest('no live promo caps the term below the longest one offered');
+  }
+  await open('?brand=bmw&m=i5');
+  // #compare-hint carries the note, and the card only exists once two trims are
+  // picked ON PURPOSE — a model that happens to have four is not comparing them.
+  const chips = await page.$$('#f-trim button');
+  if (chips.length < 2) return skipRest('this model has fewer than two trims to compare');
+  await chips[0].click(); await chips[1].click();
+  await page.waitForTimeout(300);
+  await page.selectOption('#f-term', String(longest));
+  await page.waitForTimeout(350);
+  const hint = await page.$eval('#compare-hint', (n) => n.textContent);
+  ok('a note that claims 72 months says which promos are capped shorter',
+     hint.includes(`${longest} months`) && hint.includes(`capped at ${capped.max_term} months`),
+     hint.slice(hint.indexOf('Payments assume')) || '(no finance note rendered)');
+  // The negative case, without which the check passes on an UNCONDITIONAL cap
+  // clause — a cap that does not bite, phrased as though it forces 60. Asked at
+  // a term the promo already accommodates, the note must not mention a cap.
+  const fits = Math.min(...(fin.terms || [60]).filter((t) => t <= capped.max_term));
+  await page.selectOption('#f-term', String(fits));
+  await page.waitForTimeout(350);
+  const short = await page.$eval('#compare-hint', (n) => n.textContent);
+  ok('and claims no cap when the term already fits inside one',
+     short.includes(`${fits} months`) && !short.includes('capped at'),
+     short.slice(short.indexOf('Payments assume')) || '(no finance note rendered)');
+  await page.selectOption('#f-term', String(fin.default_term || 60));
+});
+
+// ---- a down payment that covers the whole car -------------------------------
+// payFor clamps the payment to $0; the tooltip used to subtract straight through
+// and print "60 months on -$4,200 financed" underneath it. Two numbers from one
+// principal must not disagree about its sign.
+await step('a down payment larger than the car', async () => {
+  plan('a covered car is not quoted a negative balance');
+  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  if (!fin) return skipRest('this sheet has no finance block');
+  await open('?brand=bmw&m=i5');
+  // The sort must be SELECTED, not asked for in the query string: the page
+  // parses brand/m/model/models/trims and nothing else, so `?sort=payment` left
+  // S.sort at 'local' — where payNote renders only for PROMO cars. This check
+  // was reading 4 rows of 30, and a clamp applied to the promo branch alone
+  // passed it green while 25 rows printed "60 months on -$359,373 financed".
+  await page.selectOption('#f-sort', 'payment');
+  await page.waitForTimeout(300);
+  await page.fill('#f-down', '400000');
+  // fill() raises `input`; the control listens for `change`, which a real reader
+  // fires by leaving the field. Without this the page never sees the number and
+  // the check passes on rows that were never given a down payment at all.
+  await page.dispatchEvent('#f-down', 'change');
+  await page.waitForTimeout(400);
+  const notes = await page.$$eval('#list-scroll tbody .sc-note',
+    (ns) => ns.map((n) => ({ text: n.textContent, title: n.getAttribute('title') || '' }))
+              .filter((n) => /\/mo|month/.test(n.text + n.title)));
+  const negative = notes.filter((n) => /-\s*\$|\$-/.test(n.title));
+  // Every priced row must carry one, or the check is reading a subset again.
+  const rowCount = await page.$$eval('#list-scroll tbody tr', (rs) => rs.length);
+  ok('a covered car is not quoted a negative balance',
+     notes.length >= rowCount && rowCount > 4 && negative.length === 0
+       && notes.every((n) => /paid outright/.test(n.title)),
+     notes.length ? `${notes.length} payment notes over ${rowCount} rows, ${negative.length} negative,`
+                    + ` ${notes.filter((n) => /paid outright/.test(n.title)).length} say paid outright`
+                    + ` · "${(notes[0].title || '').slice(0, 56)}"`
+                  : 'no payment notes rendered at a $400,000 down payment');
+  await page.fill('#f-down', '0');
+  await page.dispatchEvent('#f-down', 'change');
+});
+
 await browser.close();
 server.close();
 
@@ -1324,7 +1568,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 83;
+const EXPECTED = 92;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

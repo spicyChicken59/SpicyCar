@@ -10,9 +10,44 @@
     "search_states": ["MI", "IA", "MO", "KY"],
     "shopping": ["bmw-i5-cpo", "bmw-i5-edrive40", "bmw-i7-cpo", "bmw-i7-edrive50"],
     "shortlist": [],
+
+    "// finance": "What the car costs per month, which is the number this buyer actually decides on. A promo applies ONLY to a certified car of its own model — a non-CPO i5 finances at fallback_apr like anything else. Past its expires date a promo stops applying and the page says so; it is never silently kept alive. fallback_apr is a real rate that drifts: fallback_checked is when it was last verified, and the page warns when that goes stale.",
+    "finance": {
+      "fallback_apr": 6.9,
+      "fallback_checked": "2026-09-01",
+      "default_term": 60,
+      "terms": [36, 48, 60, 72],
+      "down": 0,
+      "promos": [
+        { "model": "bmw/i5", "cpo_only": true, "apr": 2.99, "max_term": 60, "expires": "2026-10-31",
+          "label": "BMW FS certified 2.99%" },
+        { "model": "bmw/ix", "cpo_only": true, "apr": 2.49, "max_term": 60, "expires": "2026-10-31",
+          "label": "BMW FS certified 2.49%" }
+      ]
+    },
+
     "ship_per_mile": 0.65,
     "ship_min": 350,
     "ship_cost": 1100,
+    "ship_road_factor": 1.18,
+    "ship_bands": [
+      { "to": 500, "per_mile": 1.20 },
+      { "to": 1000, "per_mile": 0.70 },
+      { "to": 1500, "per_mile": 0.45 },
+      { "to": null, "per_mile": 0.30 }
+    ],
+    "ship_calibrated": null,
+    "ship_quotes": [],
+    "fees": {
+      "tax_rate": 0.0925,
+      "tax_note": "Illinois taxes a vehicle at the BUYER's home rate wherever it is bought, so this applies to every car on the page, not just the local ones. Chicago/Cook combined — verify against the current rate before trusting a total.",
+      "doc_fee": 358,
+      "title": 165,
+      "registration": 151,
+      "ev_surcharge": 100,
+      "finance_shipping": false,
+      "checked": null
+    },
     "cents_per_mile": 0,
     "mileage_baseline": 20000,
     "picks": {

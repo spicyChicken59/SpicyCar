@@ -19,6 +19,7 @@ import os
 import re
 import struct
 import unittest
+import unittest.mock
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -1301,3 +1302,739 @@ class TestCanonicalUrl(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestFinance(unittest.TestCase):
+    """The rate a car finances at, and the promo's end date.
+
+    Monthly payment is the number this buyer decides on: a certified i5 at the
+    2.99% promo beats a cheaper non-certified one at the ordinary rate by more
+    than shipping ever moves, which is why it reorders a shortlist where landed
+    cost does not. That makes the rate table load-bearing, and it has two ways
+    to lie quietly.
+
+    The first is the CPO boundary. A promo that leaked onto a non-certified car
+    would invent a payment no lender has offered, on exactly the cars the
+    ranking is meant to separate. The second is time: a promo has an end date,
+    and a page still ranking on a rate that lapsed last month is worse than one
+    that never had the feature. Both are settled in Python, against the run's
+    own clock, so a reader's device cannot disagree.
+    """
+
+    def test_a_live_promo_is_active_and_an_expired_one_is_not(self):
+        """The whole point of shipping `active` rather than a date the browser
+        re-decides: one clock settles it, and it is this one."""
+        today = date.fromordinal(T.TODAY_ORD)
+        past = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        future = date.fromordinal(T.TODAY_ORD + 30).isoformat()
+        cfg = {"fallback_apr": 6.9, "promos": [
+            {"model": "bmw/i5", "apr": 2.99, "expires": future},
+            {"model": "bmw/i7", "apr": 3.49, "expires": past},
+            {"model": "bmw/ix", "apr": 2.49},                     # no end date
+        ]}
+        with unittest.mock.patch.dict(T.BUYER, {"finance": cfg}, clear=False):
+            out = T.finance_export()
+        by = {p["model"]: p for p in out["promos"]}
+        self.assertTrue(by["bmw/i5"]["active"], "a promo ending in 30 days still applies")
+        self.assertFalse(by["bmw/i7"]["active"], "a promo that ended yesterday must not apply")
+        self.assertTrue(by["bmw/ix"]["active"], "no end date is a standing offer, not an expired one")
+        self.assertEqual(by["bmw/i5"]["days_left"], 30)
+        self.assertIsNone(by["bmw/ix"]["days_left"])
+        # An expired promo still ships, because "that rate ran out on the 31st"
+        # explains a page that suddenly ranks differently.
+        self.assertEqual(len(out["promos"]), 3)
+        self.assertEqual(out["stale_days"], None)
+        del today
+
+    def test_a_bad_date_does_not_take_the_run_down(self):
+        """targets.json is hand-edited. A typo in an expiry must degrade to a
+        standing offer, not raise inside build_outputs at 11:00 UTC."""
+        cfg = {"fallback_apr": 6.9, "fallback_checked": "not-a-date",
+               "promos": [{"model": "bmw/i5", "apr": 2.99, "expires": "2026-13-45"}]}
+        with unittest.mock.patch.dict(T.BUYER, {"finance": cfg}, clear=False):
+            out = T.finance_export()
+        self.assertTrue(out["promos"][0]["active"])
+        self.assertIsNone(out["stale_days"], "an unparseable check date is unknown, not zero")
+
+    def test_no_finance_block_means_no_finance_key(self):
+        """A buyer who never set a rate gets no payment ranking at all — the
+        page hides the sort rather than quoting a made-up number."""
+        with unittest.mock.patch.dict(T.BUYER, {"finance": {}}, clear=False):
+            self.assertIsNone(T.finance_export())
+
+    def test_the_shipped_config_is_coherent(self):
+        """The real targets.json, held to the shape the dashboard assumes."""
+        fin = json.loads((Path(__file__).parent.parent / "targets.json").read_text())["buyer"].get("finance")
+        if not fin:
+            self.skipTest("this buyer has no finance block")
+        self.assertGreater(fin["fallback_apr"], 0, "the fallback rate is what every non-promo car uses")
+        self.assertIn(fin["default_term"], fin["terms"], "the default term must be one the reader can pick")
+        cfg = json.loads((Path(__file__).parent.parent / "targets.json").read_text())
+        models = {f"{bk}/{mk}" for bk, b in cfg["watchlist"].items()
+                  for mk in (b.get("models") or {})}
+        for p in fin["promos"]:
+            self.assertIn(p["model"], models, f"promo names {p['model']}, which is not a watched model")
+            self.assertLess(p["apr"], fin["fallback_apr"],
+                            "a promo above the ordinary rate is not a promo")
+            date.fromisoformat(p["expires"])       # raises if the date is malformed
+
+    def test_the_dashboard_gets_the_table(self):
+        """docs/data.json is what the page actually reads; the block has to
+        survive the export, not just exist in the config."""
+        site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        fin = (site.get("buyer") or {}).get("finance")
+        if not fin:
+            self.skipTest("no finance block in this snapshot")
+        for p in fin["promos"]:
+            self.assertIn("active", p, "the page trusts `active` for arithmetic; it must be published")
+            self.assertIsNotNone(p.get("apr"))
+
+
+class TestSourceOverlap(unittest.TestCase):
+    """What the States query buys that National does not already bring.
+
+    Half of most targets' calls go to asking the buyer's eight states the same
+    question the national query just asked, and the obvious saving — make the
+    benchmark models national_only — is worth about 180 calls a month. Whether
+    it is FREE is a different question: National sorted by price returns the
+    twenty cheapest in the country, which on a model whose cheap end sits in
+    California can be twenty cars none of them drivable, while the States query
+    is the only thing surfacing the Ohio one.
+
+    So the flag is not flipped on an argument. It is flipped when this audit
+    has watched `states_only` sit at zero for a while. These tests hold the
+    measurement itself honest, because a saving justified by a broken
+    instrument is the most expensive kind.
+    """
+
+    def setUp(self):
+        self._vins = dict(T.SOURCE_VINS)
+        self._exh = set(T.EXHAUSTED)
+        T.SOURCE_VINS.clear()
+        T.EXHAUSTED.clear()
+
+    def tearDown(self):
+        T.SOURCE_VINS.clear(); T.SOURCE_VINS.update(self._vins)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._exh)
+
+    @staticmethod
+    def _a_target_with_both_sources():
+        for t in T.TARGETS.values():
+            if len(T.sources_for(t)) == 2:
+                return t["id"]
+        return None
+
+    def test_states_only_is_what_national_only_would_lose(self):
+        """The one number the decision rests on: cars no national query returned."""
+        tid = self._a_target_with_both_sources()
+        if not tid:
+            self.skipTest("no target uses both sources")
+        T.SOURCE_VINS[(tid, "States")] = {"A", "B", "C"}
+        T.SOURCE_VINS[(tid, "National")] = {"B", "C", "D"}
+        rows = {(tid, "A"): {"state": "OH"}, (tid, "B"): {"state": "CA"},
+                (tid, "C"): {"state": "TX"}, (tid, "D"): {"state": "FL"}}
+        o = T.source_overlap(rows)[tid]
+        self.assertEqual(o["states_only"], 1, "A is the only car National never returned")
+        self.assertEqual(o["both"], 2)
+        self.assertEqual(o["states_only_in"], ["OH"],
+                         "the states that would go dark are named, not just counted")
+
+    def test_an_exhausted_national_query_settles_it(self):
+        """A short page means that query returned its scope's ENTIRE result set.
+        If National came back short, it saw the whole country, so the States
+        half cannot be buying anything new — no local-coverage argument
+        survives that, and the audit has to say so."""
+        tid = self._a_target_with_both_sources()
+        if not tid:
+            self.skipTest("no target uses both sources")
+        T.SOURCE_VINS[(tid, "States")] = {"A"}
+        T.SOURCE_VINS[(tid, "National")] = {"A", "B"}
+        T.EXHAUSTED.add((tid, "National"))
+        self.assertTrue(T.source_overlap({})[tid]["national_exhausted"])
+
+    def test_a_national_only_target_is_not_audited(self):
+        """It has no States query to compare against; reporting it as
+        zero-overlap would read as evidence for a saving already taken."""
+        nat = next((t["id"] for t in T.TARGETS.values() if t.get("national_only")), None)
+        if not nat:
+            self.skipTest("no national_only target configured")
+        T.SOURCE_VINS[(nat, "National")] = {"A", "B"}
+        self.assertNotIn(nat, T.source_overlap({}))
+
+    def test_the_log_keeps_one_entry_per_day(self):
+        """The run is re-runnable; the audit is about days. A second run on the
+        same date must correct its entry, not append a second one."""
+        import tempfile
+        tid = self._a_target_with_both_sources() or "x"
+        o = {tid: {"states": 3, "national": 5, "both": 3, "states_only": 0}}
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "ov.json"
+            T.save_overlap_history(o, path=p)
+            T.save_overlap_history(o, path=p)
+            hist = json.loads(p.read_text())
+            self.assertEqual(len(hist), 1)
+            self.assertEqual(hist[T.TODAY][tid], [3, 5, 3, 0])
+
+    def test_the_log_is_bounded(self):
+        """It rides in the repo beside a ledger that already grows daily; it
+        keeps a window, not a history."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "ov.json"
+            p.write_text(json.dumps({f"2020-01-{d:02d}": {"t": [1, 1, 1, 0]} for d in range(1, 29)}))
+            T.save_overlap_history({"t": {"states": 1, "national": 1, "both": 1, "states_only": 0}},
+                                   path=p, keep=10)
+            hist = json.loads(p.read_text())
+            self.assertEqual(len(hist), 10)
+            self.assertIn(T.TODAY, hist, "today's entry is never the one evicted")
+
+    def test_a_corrupt_log_is_replaced_not_fatal(self):
+        """A half-written file from a killed run must not take down the next
+        one — the audit is instrumentation, and instrumentation that can crash
+        the thing it measures is worse than none."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "ov.json"
+            p.write_text("{not json")
+            T.save_overlap_history({"t": {"states": 1, "national": 1, "both": 1, "states_only": 0}}, path=p)
+            self.assertEqual(list(json.loads(p.read_text())), [T.TODAY])
+
+
+class TestSpend(unittest.TestCase):
+    """What the run actually cost, as opposed to what it was budgeted.
+
+    planned_calls() is an upper bound: every due target billed for every page
+    it may fetch. The fetch loop then spends less whenever a query comes back
+    short, because that stops its pagination and skips its newest probe — and
+    the thin certified markets do this most days. The difference is the real
+    headroom, and every "can we afford one more model?" is a guess without it.
+
+    The trap this guards is the one that would make the measurement worse than
+    none: a target that was DUE and spent NOTHING has not saved money, it has
+    failed. Counting that as headroom spends the budget twice — once on the
+    model it appears to afford, and again when the broken target recovers.
+    """
+
+    def setUp(self):
+        self._spent, self._exh = dict(T.SPENT), set(T.EXHAUSTED)
+        T.SPENT.clear(); T.EXHAUSTED.clear()
+
+    def tearDown(self):
+        T.SPENT.clear(); T.SPENT.update(self._spent)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._exh)
+
+    @staticmethod
+    def _due():
+        return [t for t in T.TARGETS.values() if T.due_on(t, T.TODAY_ORD)]
+
+    def test_an_exhausted_market_banks_the_calls_it_did_not_spend(self):
+        due = self._due()
+        planned = sum(T.calls_for(t) for t in due)
+        for t in due:
+            T.SPENT[t["id"]] = T.calls_for(t)
+        T.SPENT[due[0]["id"]] -= 3
+        row = T.spend_report(planned)
+        self.assertEqual(row["banked"], 3)
+        self.assertEqual(row["unrun"], 0)
+        self.assertEqual(row["off_plan"][due[0]["id"]], [T.calls_for(due[0]), T.calls_for(due[0]) - 3])
+
+    def test_a_target_that_never_ran_is_not_headroom(self):
+        """The whole reason this class exists."""
+        due = self._due()
+        planned = sum(T.calls_for(t) for t in due)
+        for t in due:
+            T.SPENT[t["id"]] = T.calls_for(t)
+        T.SPENT[due[0]["id"]] -= 3          # a real saving
+        T.SPENT[due[1]["id"]] = 0           # a failure wearing a saving's clothes
+        row = T.spend_report(planned)
+        self.assertEqual(row["banked"], 3, "only the working target's underspend is headroom")
+        self.assertEqual(row["unrun"], T.calls_for(due[1]))
+        self.assertIn(due[1]["id"], row["silent_targets"])
+
+    def test_spending_the_whole_plan_banks_nothing(self):
+        due = self._due()
+        for t in due:
+            T.SPENT[t["id"]] = T.calls_for(t)
+        row = T.spend_report(sum(T.calls_for(t) for t in due))
+        self.assertEqual(row["banked"], 0)
+        self.assertEqual(row["off_plan"], {}, "a run that went to plan reports no exceptions")
+
+    def test_retries_are_counted_because_they_are_billed(self):
+        """SPENT increments per REQUEST, not per intended fetch. A retry costs a
+        call whether or not it succeeds, and a ledger of intentions would hand
+        back headroom that a bad network day already ate."""
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        block = src[src.index("    for attempt in (1, 2):"):]
+        block = block[:block.index("\n\n")]
+        self.assertIn("SPENT[t[\"id\"]] = SPENT.get(t[\"id\"], 0) + 1", block,
+                      "the per-target counter must sit inside the retry loop, beside CALLS")
+
+    def test_the_log_survives_a_corrupt_file(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "s.json"
+            p.write_text("]]not json[[")
+            hist = T.save_spend_history({"planned": 1, "actual": 1, "banked": 0}, path=p)
+            self.assertEqual(list(hist), [T.TODAY])
+
+    def _pace_line(self, per_day):
+        """report_spend's month-to-date paragraph, for a month running at
+        `per_day` calls. Two days is its minimum before it will project."""
+        import io as _io, contextlib
+        month = T.TODAY[:7]
+        hist = {f"{month}-01": {"actual": per_day}, f"{month}-02": {"actual": per_day}}
+        row = {"planned": per_day, "actual": per_day, "banked": 0, "unrun": 0,
+               "silent_targets": [], "targets_due": 1, "exhausted": 0,
+               "failed": 0, "off_plan": {}}
+        buf = _io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            T.report_spend(row, hist)
+        return buf.getvalue()
+
+    def test_a_month_on_pace_to_overspend_says_so(self):
+        """The headroom line used to print max(0, plan - projected), so a month
+        four hundred calls over plan and a month exactly on it produced the SAME
+        sentence: "~0 unspent at this rate". The one case the meter exists for
+        was the one case it could not express. The plan is 92% committed before
+        a single retry, and a retry bills twice, so this is not hypothetical."""
+        over = T.MONTHLY / 30.4 * 1.5              # half again over plan
+        out = self._pace_line(int(over) + 1)
+        self.assertIn("OVERSPEND", out, out)
+        self.assertNotIn("unspent at this rate", out, out)
+
+    def test_a_month_inside_the_plan_still_reports_headroom(self):
+        out = self._pace_line(int(T.MONTHLY / 30.4 * 0.5))
+        self.assertIn("unspent at this rate", out, out)
+        self.assertNotIn("OVERSPEND", out, out)
+
+    def test_the_overspend_line_says_how_far_over(self):
+        """"Over budget" without a magnitude is a feeling. The gap decides
+        whether the answer is dropping a page or dropping a whole target."""
+        per_day = int(T.MONTHLY / 30.4 * 2)
+        out = self._pace_line(per_day)
+        want = round(per_day * 30.4 - T.MONTHLY)
+        self.assertIn(f"~{want}", out.replace(",", ""), out)
+
+
+def to_float_or_zero(v):
+    return T.to_float(v) or 0
+
+
+class TestShipModel(unittest.TestCase):
+    """The banded, road-factored shipping estimate.
+
+    The flat great-circle rate it replaces was wrong in a specific direction:
+    a straight line understates a route, and one per-mile rate misprices both
+    ends of a cost curve whose fixed component does not scale. Both errors
+    flattered distant cars.
+
+    These tests hold the SHAPE, not the constants. The constants ship
+    uncalibrated on purpose — they are published typical ranges, not quotes
+    anyone obtained — so a test asserting a particular dollar figure would be
+    pinning a guess and would have to be rewritten the day real quotes arrive.
+    What must not drift is the shape: monotone in distance, cheaper per mile
+    the further you go, never below the floor, zero in-state, and identical to
+    the old behaviour when no bands are configured.
+    """
+
+    def test_drivable_is_still_free(self):
+        for st in T.STATES:
+            self.assertEqual(T.ship_for({"state": st, "distance": 1200}), 0,
+                             "a car in a state the buyer drives to is never shipped")
+
+    def test_cost_rises_with_distance(self):
+        """Swept every mile, not sampled.
+
+        The first version of this test checked six widely spaced distances and
+        passed while the model was badly broken: rates REPLACED each other by
+        band, so crossing an edge cut the estimate — 423 miles cost $574 and
+        424 cost $425, making a car one mile further away $149 cheaper to bring
+        home. The samples straddled all three edges without landing on one.
+        A property this cheap to check exhaustively should never be sampled.
+        """
+        prev, drops = 0, []
+        for d in range(1, 3201):
+            cost = T.ship_for({"state": "CA", "distance": d})
+            if cost < prev:
+                drops.append((d, prev, cost))
+            prev = cost
+        self.assertEqual(drops, [], f"further away must never be cheaper; first drop at {drops[:1]}")
+
+    def test_the_effective_rate_still_falls(self):
+        """Monotonicity must not be bought by flattening the curve — the whole
+        reason for bands is that a long haul costs less PER MILE."""
+        rates = [T.ship_for({"state": "CA", "distance": d}) / d for d in (400, 900, 1600, 2600)]
+        self.assertTrue(all(a > b for a, b in zip(rates, rates[1:])),
+                        f"per-mile must keep falling with distance, got {[round(r, 3) for r in rates]}")
+
+    def test_every_band_edge_is_continuous(self):
+        """One mile either side of a configured edge must differ by about one
+        mile's worth of money, not by a step."""
+        for edge, _ in T.SHIP_BANDS:
+            if edge is None:
+                continue
+            straight = edge / T.SHIP_ROAD_FACTOR
+            lo = T.ship_for({"state": "CA", "distance": straight - 1})
+            hi = T.ship_for({"state": "CA", "distance": straight + 1})
+            self.assertLessEqual(hi - lo, 10,
+                                 f"a step of ${hi - lo} at the {edge}-mile edge; bands must be marginal")
+
+    def test_per_mile_falls_with_distance(self):
+        """The whole reason for bands: fixed costs spread over a longer haul."""
+        rates = [T.ship_for({"state": "CA", "distance": d}) / d
+                 for d in (700, 1200, 2000)]
+        self.assertTrue(all(a > b for a, b in zip(rates, rates[1:])),
+                        f"per-mile must fall as the haul lengthens, got {rates}")
+
+    def test_the_floor_holds(self):
+        floor = T.to_float(T.BUYER.get("ship_min")) or 0
+        self.assertGreaterEqual(T.ship_for({"state": "MI", "distance": 5}), floor)
+
+    def test_road_miles_exceed_the_straight_line(self):
+        """A truck does not fly. Whatever the rate, the distance it bills is
+        the route, and the route is longer than the great-circle figure.
+
+        Pinned to the factor's EXACT effect, at several distances, because the
+        loose version of this test was worthless. It asserted only that
+        SHIP_ROAD_FACTOR > 1.0 and that ship_for(1000) exceeded 99% of the
+        straight-line band cost. Deleting the multiplication entirely — so the
+        constant was still 1.18 but nothing ever used it — left ship_for(1000)
+        at exactly 100% of the straight line, which cleared the 99% bar. The
+        estimate changed at 2,753 of 3,001 distances and all 142 tests passed.
+        Applying the factor TWICE passed too: the old assertions bounded it
+        from neither side.
+        """
+        self.assertGreater(T.SHIP_ROAD_FACTOR, 1.0)
+        for d in (200, 423, 424, 700, 1000, 1600, 2600):
+            want = int(round(max(to_float_or_zero(T.BUYER.get("ship_min")),
+                                 T.band_cost(d * T.SHIP_ROAD_FACTOR))))
+            self.assertEqual(T.ship_for({"state": "CA", "distance": d}), want,
+                             f"at {d} straight-line miles the bill must be the "
+                             f"bands applied to {d} x {T.SHIP_ROAD_FACTOR} road miles")
+        # And the factor must actually be USED, not merely defined: the route
+        # bill is strictly above the straight-line bill wherever money is owed
+        # beyond the floor.
+        self.assertGreater(T.ship_for({"state": "CA", "distance": 1000}),
+                           T.band_cost(1000))
+
+    def test_no_bands_means_the_old_behaviour_exactly(self):
+        """A config without ship_bands must be untouched by this change — the
+        fallback is what makes the new model safe to land."""
+        saved = list(T.SHIP_BANDS)
+        try:
+            T.SHIP_BANDS.clear()
+            d, rate = 900, T.to_float(T.BUYER.get("ship_per_mile"))
+            floor = T.to_float(T.BUYER.get("ship_min")) or 0
+            self.assertEqual(T.ship_for({"state": "CA", "distance": d}),
+                             int(round(max(floor, d * rate))))
+        finally:
+            T.SHIP_BANDS[:] = saved
+
+    def test_an_unplaceable_car_falls_back_to_the_flat_cost(self):
+        self.assertEqual(T.ship_for({"state": "MI"}), T.to_int(T.BUYER.get("ship_cost")))
+
+    def test_calibration_is_absent_until_quotes_exist(self):
+        """The model must not claim to be calibrated when nobody has checked
+        it. buyer.ship_quotes is empty, so there is no error to report — and
+        an empty calibration reads as 'unknown', never as 'zero error'."""
+        self.assertIsNone(T.BUYER.get("ship_calibrated"),
+                          "shipping bands ship uncalibrated; set the date when quotes are added")
+        self.assertIsNone(T.ship_calibration())
+
+    def test_quotes_without_bands_report_unknown_not_zero(self):
+        """The gap a mutation found. If quotes exist but no bands are
+        configured, every quote is unpriceable and no error can be computed —
+        which must read as UNKNOWN. Reporting mean_error 0 there would put
+        'perfectly calibrated' on a model nothing has been measured against,
+        which is worse than the uncalibrated state it replaced."""
+        saved_q, saved_b = T.BUYER.get("ship_quotes"), list(T.SHIP_BANDS)
+        try:
+            T.SHIP_BANDS.clear()
+            T.BUYER["ship_quotes"] = [{"miles": 900, "price": 800, "route": "test"}]
+            self.assertIsNone(T.ship_calibration(),
+                              "unpriceable quotes are no measurement, not a perfect one")
+        finally:
+            T.SHIP_BANDS[:] = saved_b
+            if saved_q is None:
+                T.BUYER.pop("ship_quotes", None)
+            else:
+                T.BUYER["ship_quotes"] = saved_q
+
+    def test_calibration_measures_against_the_brokers_own_mileage(self):
+        saved = T.BUYER.get("ship_quotes")
+        try:
+            T.BUYER["ship_quotes"] = [{"miles": 900, "price": T.band_cost(900) - 100, "route": "test"}]
+            cal = T.ship_calibration()
+            self.assertEqual(cal["n"], 1)
+            self.assertEqual(cal["mean_error"], 100, "estimate minus quote, so + means we overcharge")
+        finally:
+            if saved is None:
+                T.BUYER.pop("ship_quotes", None)
+            else:
+                T.BUYER["ship_quotes"] = saved
+
+
+class TestFees(unittest.TestCase):
+    """Tax and paperwork — the largest number the dashboard never showed.
+
+    At the configured rate the tax on a median car is roughly $4,600, seven
+    times the median shipping estimate the page has always displayed. It is
+    also the first figure here that scales with price rather than sitting at a
+    few hundred dollars whatever the car costs.
+
+    The modelling choice worth guarding is `finance_shipping`. A lender writes
+    the loan against the dealer's invoice — price, tax, doc, title,
+    registration — while a transport broker is a separate cash transaction
+    weeks later. Financing the shipping would make every payment on the page
+    slightly too high, and nothing would say why.
+    """
+
+    def test_the_block_exports_or_is_absent_cleanly(self):
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        for k in ("tax_rate", "doc_fee", "title", "registration", "ev_surcharge"):
+            self.assertIsInstance(f[k], (int, float))
+            self.assertGreaterEqual(f[k], 0)
+
+    def test_shipping_is_not_financed_by_default(self):
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        self.assertFalse(f["finance_shipping"],
+                         "a transport broker is not the lender; default must be False")
+
+    def test_the_default_is_read_explicitly_not_inferred(self):
+        """A config that omits finance_shipping must get the documented default,
+        not whatever a missing key happens to evaluate to."""
+        saved = T.BUYER.get("fees")
+        try:
+            T.BUYER["fees"] = {"tax_rate": 0.09}
+            self.assertIs(T.fees_export()["finance_shipping"], False)
+        finally:
+            if saved is None:
+                T.BUYER.pop("fees", None)
+            else:
+                T.BUYER["fees"] = saved
+
+    def test_fees_ship_unverified(self):
+        """Same discipline as the shipping bands: a tax rate is locally
+        specific and changes, so it is not presented as checked until it is."""
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        self.assertIsNone(f["checked"],
+                          "set fees.checked once the rate has been verified against the county")
+
+    def test_the_note_explains_why_tax_lands_on_every_car(self):
+        """Illinois taxes at the buyer's home rate wherever the car was bought.
+        Without that sentence the tax on a Phoenix car reads as a bug."""
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        self.assertTrue(f["tax_note"].strip(), "the rate needs its explanation shipped beside it")
+
+
+class TestExitStats(unittest.TestCase):
+    """Where comparable cars stopped being advertised.
+
+    A tool with no transaction feed will never know a sale price. What it does
+    know is the last number a car asked before its listing ended, and across a
+    trim that is the closest honest proxy — which is why nothing here is named
+    for a sale. A delisted car may have sold, gone to auction, moved to a
+    sister lot, or simply had its ad expire, and all four look identical from
+    outside.
+
+    The trap this class exists to hold shut is the one the first version fell
+    into: a median PRICE CUT among departed cars came out at exactly $0 for
+    every trim on the sheet. Not because these cars never discount — 9 of 94
+    demonstrably did — but because half are observed on two days or fewer of a
+    listing life whose median is over three weeks, and a quarter are seen
+    exactly once, where a cut cannot be observed at all. That number described
+    the fetch cadence and would have been read as market behaviour.
+    """
+
+    @staticmethod
+    def _gone(n, price=40000, series_len=3, trim="t1"):
+        return [{"likely": "delisted", "trim_id": trim, "last_price": price,
+                 "first_seen": "2026-08-01", "last_seen": "2026-08-15",
+                 "listed_since": "2026-08-01",
+                 "series": [["2026-08-0%d" % (i + 1), price] for i in range(series_len)]}
+                for _ in range(n)]
+
+    def test_no_median_cut_is_published(self):
+        """The specific number that was wrong. If it comes back, this fails."""
+        st = T.sale_stats(self._gone(10))
+        self.assertNotIn("median_exit_cut", st,
+                         "a median cut over a 2-day observation window describes the cadence, not the market")
+
+    def test_a_cut_is_counted_only_where_it_could_be_seen(self):
+        """Cars seen once cannot show a cut, so they must not sit in the
+        denominator and quietly drag the rate toward zero."""
+        once = self._gone(4, series_len=1)
+        twice = self._gone(6, series_len=2)
+        st = T.sale_stats(once + twice)
+        self.assertEqual(st["exit_watched"], 6, "only multi-observation cars can be watched for a cut")
+        self.assertEqual(st["n_exits"], 10, "but every departure still counts as an exit price")
+
+    def test_a_real_cut_is_counted(self):
+        g = self._gone(1, price=38000, series_len=2)
+        g[0]["series"] = [["2026-08-01", 40000], ["2026-08-02", 38000]]
+        self.assertEqual(T.sale_stats(g)["exit_cut_while_watched"], 1)
+
+    def test_out_of_window_departures_are_excluded(self):
+        """A car that fell out of the price window did not leave the market."""
+        g = self._gone(6) + [{"likely": "out of window", "trim_id": "t1",
+                              "last_price": 1, "series": [["2026-08-01", 1]]}]
+        self.assertEqual(T.sale_stats(g)["n_exits"], 6)
+
+    def test_a_thin_cohort_publishes_nothing(self):
+        """Two departures make a median that swings by thousands on the third.
+        Below the floor the trim ships no exit stats at all rather than a
+        number a reader would reasonably trust."""
+        self.assertEqual(T.exit_stats(self._gone(5), "t1"), {})
+        self.assertTrue(T.exit_stats(self._gone(6), "t1"))
+        # Six is not a preference. Five is the largest n at which NO
+        # distribution-free interval for a median exists — even min-to-max
+        # covers 93.75% — so a median of five has no honest error bar.
+        self.assertIsNone(T.median_ci([1, 2, 3, 4, 5]))
+        self.assertIsNotNone(T.median_ci([1, 2, 3, 4, 5, 6]))
+
+    def test_the_median_carries_its_own_interval(self):
+        """A reference price with no error bar invites a comparison it cannot
+        support. exit_lo/exit_hi ship so the page can suppress a note whose gap
+        is smaller than the median's own sampling error — which 129 of the 310
+        notes it drew under the old flat $500 threshold were."""
+        st = T.exit_stats(self._gone(12, price=40000), "t1")
+        self.assertIsNotNone(st["exit_lo"])
+        self.assertIsNotNone(st["exit_hi"])
+        self.assertLessEqual(st["exit_lo"], st["exit_price"])
+        self.assertLessEqual(st["exit_price"], st["exit_hi"])
+
+    def test_the_interval_is_the_order_statistics_not_a_normal_curve(self):
+        """Exit prices are skewed and small-n. A normal-theory interval on
+        eight of them would be a worse lie than none, so the interval is
+        distribution-free: it is a pair of the observed values themselves."""
+        xs = [10, 20, 30, 40, 50, 60, 70, 80, 90, 900, 1000, 2000]
+        lo, hi = T.median_ci(xs)
+        self.assertIn(lo, xs)
+        self.assertIn(hi, xs)
+        # n=12 -> the 3rd and 10th order statistics (96.1% coverage)
+        self.assertEqual((lo, hi), (sorted(xs)[2], sorted(xs)[9]))
+
+    def test_the_interval_widens_as_the_sample_thins(self):
+        wide = T.median_ci(list(range(100)))
+        narrow = T.median_ci(list(range(1000)))
+        self.assertLess((narrow[1] - narrow[0]) / 1000, (wide[1] - wide[0]) / 100)
+
+    def test_a_pooled_cohort_is_not_one_trim(self):
+        """one_trim asks the DATA, not the watchlist. The first version counted
+        watchlist targets, which inverts the test: a catch-all target like
+        `kia-ev9` is ONE entry covering the whole model, so it scored True
+        while pooling a Light with a GT-Line, and `audi-a6-etron` scored True
+        over a cohort spanning $28,077. The gate passed on exactly the
+        cohorts it existed to stop."""
+        mixed = self._gone(6, price=40000, trim="cheap") + self._gone(6, price=120000, trim="dear")
+        self.assertFalse(T.one_cohort(mixed))
+        self.assertTrue(T.one_cohort(self._gone(6, price=40000, trim="only")))
+
+    def test_stats_are_scoped_to_one_trim(self):
+        """A median mixing an eDrive50 with an M70 describes no car that exists."""
+        mixed = self._gone(6, price=40000, trim="cheap") + self._gone(6, price=120000, trim="dear")
+        self.assertEqual(T.exit_stats(mixed, "cheap")["exit_price"], 40000)
+        self.assertEqual(T.exit_stats(mixed, "dear")["exit_price"], 120000)
+
+    def test_the_report_never_calls_a_delisting_a_sale(self):
+        """EVERY reader-facing surface, not just the one that was fixed.
+
+        The first version of this sliced market_line() out of Tracking.py and
+        checked that. It passed while docs/index.html shipped the banned string
+        verbatim — `sold cars lasted ~15d (38 sold)` — to five of seven models,
+        on the page that is the PRIMARY surface. The test's name promised the
+        report and it read one function. So it now reads every file a reader
+        can see, and it looks for the claim rather than one phrasing of it.
+        """
+        root = Path(__file__).parent.parent
+        # Shapes of the CLAIM, not the word. Prose may reason about selling —
+        # "pushed out rather than sold" is honest and belongs in a docstring —
+        # so what is banned is a departure COUNT or DURATION presented as a
+        # sale, which is what actually reached the reader.
+        banned = {
+            r"sold cars lasted": "calls departures sales outright",
+            r"\bsold\b[^\n]{0,24}\blasted\b": "attributes a duration to sales",
+            r"\}\s*sold\b": "renders a count as 'N sold'",
+            r"\b\d+\s+sold\b": "states a number of cars sold",
+            r"\bsold in ~": "claims a time to sale",
+        }
+        # Field NAMES may say sale — they ship in data.json and renaming them
+        # breaks every sheet already stored. Only rendered text is a claim.
+        ident = re.compile(r"median_days_to_sale|n_sold|days_to_sale")
+        for name in ("Tracking.py", "docs/index.html", "docs/how.html", "README.md"):
+            prose = ident.sub("", (root / name).read_text())
+            for pat, why in banned.items():
+                hit = re.search(pat, prose, re.I)
+                self.assertIsNone(hit, f"{name} {why}: {hit.group(0) if hit else ''!r}")
+
+    def test_the_page_and_the_report_use_the_same_floors(self):
+        """Two surfaces, one rule. The report raised its cut-count floor to 12
+        and its bare-median floor to 12 during the audit; the dashboard kept 5
+        and went on printing exactly the string the report had just retired —
+        `3 of 7 cut before going`, the case the comment calls indefensible.
+        A floor that lives in two files drifts, so this pins them together.
+        """
+        page = (Path(__file__).parent.parent / "docs/index.html").read_text()
+        self.assertNotIn("watched >= 5", page,
+                         "the dashboard must not publish a cut fraction at n=5")
+        self.assertIn("watched >= 12", page,
+                      "the dashboard's cut floor must match market_line's")
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        self.assertIn("watched >= 12", src)
+
+
+class TestExitReporting(unittest.TestCase):
+    """What the REPORT is allowed to say about departures.
+
+    Two findings from the audit of this feature, both the same species: a
+    number that is arithmetically fine and rhetorically false.
+
+    The pooled median mixes trims. exit_stats() refuses to compute one per
+    model for exactly that reason — an eDrive50 averaged with an M70 describes
+    no car anyone can buy — and then market_line() published one anyway.
+
+    The cut fraction invites a comparison it cannot carry. "3 of 7" has a
+    confidence interval running from roughly a tenth to four fifths; set beside
+    "3 of 33" it reads as a finding about two markets when it is a finding
+    about two sample sizes.
+    """
+
+    @staticmethod
+    def _stats(**kw):
+        base = {"median_days_listed": 20, "median_exit_price": 50000,
+                "n_exits": 30, "n_sold": 30, "median_days_to_sale": 15,
+                "exit_watched": 20, "exit_cut_while_watched": 3, "one_trim": True}
+        base.update(kw)
+        return base
+
+    def test_a_multi_trim_model_publishes_no_pooled_exit_median(self):
+        line = T.market_line(self._stats(one_trim=False))
+        self.assertNotIn("last ask", line,
+                         "pooling an eDrive50 with an M70 describes no car that exists")
+
+    def test_a_single_trim_model_does(self):
+        self.assertIn("last ask", T.market_line(self._stats(one_trim=True)))
+
+    def test_a_thin_cut_denominator_is_withheld(self):
+        line = T.market_line(self._stats(exit_watched=7, exit_cut_while_watched=3))
+        self.assertIn("last ask", line, "the median itself is still fine")
+        self.assertNotIn("cut in the days", line,
+                         "3 of 7 is a sample size, not a market rate")
+
+    def test_a_real_denominator_is_published(self):
+        self.assertIn("cut in the days",
+                      T.market_line(self._stats(exit_watched=20, exit_cut_while_watched=3)))
+
+    def test_the_wording_never_claims_a_sale(self):
+        line = T.market_line(self._stats())
+        for word in ("sold", "sale"):
+            self.assertNotIn(word, line.lower(),
+                             "a listing ending is not a confirmed sale")

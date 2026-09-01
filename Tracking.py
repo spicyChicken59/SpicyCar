@@ -411,17 +411,317 @@ def scope_label():
     return "/".join(STATES) or "your states"
 
 
+def fees_export():
+    """What the state and the dealer add on top of the asking price.
+
+    Illinois charges the BUYER's home rate on a vehicle wherever it was bought,
+    which is why this belongs on every car on the page rather than only the
+    drivable ones — the Phoenix car and the Naperville car are taxed the same.
+
+    Tax is the largest single number the dashboard has never shown: at the
+    configured rate it is roughly $4,600 on a $50,000 car, seven times the
+    median shipping estimate the page has always displayed prominently. It also
+    behaves differently from shipping, which is the reason it can change a
+    ranking rather than merely raise every total: tax SCALES with price while
+    shipping does not, so it widens the gap between a cheap far car and an
+    expensive near one instead of shifting them together.
+
+    `finance_shipping` is a modelling choice, not a fact, and it is here to be
+    argued with. The default says no: an auto loan is written against the
+    dealer's invoice — price, tax, doc, title, registration — while a transport
+    broker is a separate cash transaction weeks later. Roll shipping into the
+    principal and every payment on the page is quietly a little too high.
+
+    Nothing here is verified: `checked` is null and the rates are the ones a
+    reader would guess from public sources. A tax rate is exactly the kind of
+    number that is locally specific and changes, so the page shows a total that
+    says "estimate" until this block is dated.
+    """
+    f = BUYER.get("fees") or {}
+    if not f:
+        return None
+    return {
+        "tax_rate": to_float(f.get("tax_rate")) or 0,
+        "tax_note": f.get("tax_note") or "",
+        "doc_fee": to_int(f.get("doc_fee")) or 0,
+        "title": to_int(f.get("title")) or 0,
+        "registration": to_int(f.get("registration")) or 0,
+        "ev_surcharge": to_int(f.get("ev_surcharge")) or 0,
+        # Default False, and read explicitly so a config that omits it gets the
+        # documented default rather than a falsy accident.
+        "finance_shipping": bool(f.get("finance_shipping", False)),
+        "checked": f.get("checked"),
+    }
+
+
+def finance_export():
+    """The buyer's rate table, with each promo's expiry already decided here.
+
+    A promo is a real offer with an end date, and an expired one is worth more
+    than nothing to a reader — "that 2.99% ran out on the 31st" explains a page
+    that suddenly ranks differently. So every promo ships, each carrying an
+    `active` the page trusts for arithmetic and an `expires` it can count down
+    from. Deciding it here rather than in the browser means one clock (the run's
+    TODAY) settles it, instead of whatever the reader's device believes.
+
+    fallback_apr is the rate every non-promo car finances at, and it is the
+    number the whole payment ranking pivots on: it drifts with the market and
+    nothing fetches it. `fallback_checked` is when a human last verified it, and
+    `stale_days` lets the page say so rather than quietly ranking on a rate from
+    last spring.
+    """
+    fin = BUYER.get("finance") or {}
+    if not fin:
+        return None
+    today = date.fromordinal(TODAY_ORD)
+    promos = []
+    for p in fin.get("promos") or []:
+        exp = str(p.get("expires") or "")
+        try:
+            ends = date.fromisoformat(exp) if exp else None
+        except ValueError:
+            ends = None
+        promos.append({
+            "model": p.get("model"),
+            "cpo_only": bool(p.get("cpo_only", True)),
+            "apr": to_float(p.get("apr")),
+            "max_term": to_int(p.get("max_term")),
+            "expires": exp or None,
+            "label": p.get("label") or "",
+            # No end date is a standing offer, not an expired one.
+            "active": (ends is None or ends >= today),
+            "days_left": ((ends - today).days if ends else None),
+        })
+    checked = str(fin.get("fallback_checked") or "")
+    try:
+        stale = (today - date.fromisoformat(checked)).days if checked else None
+    except ValueError:
+        stale = None
+    terms = [t for t in (to_int(x) for x in (fin.get("terms") or [])) if t]
+    default_term = to_int(fin.get("default_term")) or 60
+    return {
+        "fallback_apr": to_float(fin.get("fallback_apr")),
+        "fallback_checked": checked or None,
+        "stale_days": stale,
+        "default_term": default_term,
+        "terms": terms or [default_term],
+        "down": to_int(fin.get("down")) or 0,
+        "promos": promos,
+    }
+
+
+def _ship_bands(raw):
+    """buyer.ship_bands as (edge, rate) pairs, widest edge last, open band last.
+
+    Three things this does NOT do the obvious way, each because the obvious way
+    fails silently on a hand-edited config:
+
+    A rate of ZERO is kept. Filtering on truthiness dropped it, and "the first
+    hundred miles are free" is the one config where a zero rate is meaningful —
+    dropping it silently OVERCHARGES, billing those miles at the next band up.
+
+    A missing or unparseable `to` is REJECTED, not read as the open band.
+    `"to": null` is a deliberate declaration that a band is the open tail;
+    a missing key or `"to": "1,000"` (to_float gives None on the comma) is a
+    typo. Conflating them promotes the typo'd band to the catch-all, which
+    swallows the whole distance and makes every band after it dead code.
+
+    And the bands are SORTED by edge. band_cost bills the remainder past the
+    last edge at the widest band's rate; unsorted, "widest" and "last in the
+    list" are different bands, and a descending config bills long hauls at the
+    SHORT-haul rate — which reverses the whole point of banding.
+    """
+    out, seen_open = [], False
+    for b in (raw or []):
+        rate = to_float(b.get("per_mile"))
+        if rate is None:
+            print(f"  ! ship_bands: dropping a band with no usable per_mile: {b}")
+            continue
+        if "to" in b and b.get("to") is None:
+            edge = None
+        else:
+            edge = to_float(b.get("to"))
+            if edge is None:
+                print(f"  ! ship_bands: dropping a band whose 'to' is missing or "
+                      f"unparseable — write null for the open band: {b}")
+                continue
+        if edge is None:
+            if seen_open:
+                print(f"  ! ship_bands: a second open band is unreachable, dropping: {b}")
+                continue
+            seen_open = True
+        out.append((edge, rate))
+    out.sort(key=lambda t: (t[0] is None, t[0]))
+    return out
+
+
+SHIP_BANDS = _ship_bands(BUYER.get("ship_bands"))
+SHIP_ROAD_FACTOR = to_float(BUYER.get("ship_road_factor")) or 1.0
+
+
+def band_cost(miles):
+    """What a haul of this length costs, banded MARGINALLY, or None if unbanded.
+
+    Transport is not linear in distance and never was. A carrier's fixed costs
+    — dispatch, loading, the deadhead to reach the car — are the same for 200
+    miles as for 2,000, so the short haul carries them alone and the long one
+    spreads them. One flat rate therefore has to be wrong at both ends.
+
+    The bands accumulate like tax brackets rather than one replacing another,
+    and that is a correctness requirement, not a preference. The first version
+    of this picked a single rate by distance, which made the estimate NON-
+    MONOTONE: at 423 straight-line miles it charged $574 and at 424 it charged
+    $425, so a car one mile further away was $149 cheaper to bring home. Every
+    mile is now billed at its own band's rate, so the total can only rise with
+    distance while the EFFECTIVE per-mile rate is NON-INCREASING across bands —
+    which was the whole point of banding.
+
+    Non-increasing ACROSS BANDS, not strictly falling everywhere: inside a
+    single band the effective rate is exactly flat (every mile costs the same),
+    and int(round()) in ship_for then jitters it by fractions of a cent, so
+    two distances a hundred miles apart in the same band can differ in the
+    fourth decimal place in either direction. The property that holds — and
+    that the tests check — is between bands.
+    """
+    if not SHIP_BANDS:
+        return None
+    total, lo = 0.0, 0.0
+    for edge, rate in SHIP_BANDS:
+        hi = miles if edge is None else min(miles, edge)
+        if hi > lo:
+            total += (hi - lo) * rate
+        lo = max(lo, hi)
+        if edge is not None and miles <= edge:
+            break
+    if lo < miles:
+        # Past the last edge with no open band. SHIP_BANDS is sorted, so the
+        # last entry IS the widest — which is the whole reason it is sorted.
+        total += (miles - lo) * SHIP_BANDS[-1][1]
+    return total
+
+
 def ship_for(r):
     """Shipping for a listing: nothing in-state; otherwise by distance from
-    home when it is known, else the flat ship_cost."""
+    home when it is known, else the flat ship_cost.
+
+    Two corrections over the flat great-circle estimate this replaces, both
+    of which pushed the same way — understating what a distant car costs:
+
+      road factor  A straight line is not a route. Trucks follow interstates
+                   around lakes and terrain, and the detour is systematic, not
+                   noise: real road miles run above the great-circle figure on
+                   essentially every corridor out of Chicago.
+      bands        See band_cost. A flat per-mile rate misprices both ends.
+
+    What this buys the RANKING is very little, which is worth knowing before
+    anyone spends effort here expecting the shortlist to move. Measured against
+    the flat model on the 2026-09-01 snapshot (348 shipped cars of 495):
+
+      median shipped car     +$351   (mean +$288, sd $120)
+      landed top 25          3 of 25 positions change, all at 22-24;
+                             one car enters, one leaves
+      drivable in the top 25 23
+
+    Twenty-three of the top twenty-five are DRIVABLE, so shipping is zero for
+    them and no correction to it can touch them at all. And a correction only
+    reorders through its DIFFERENTIAL part: this one is mostly a uniform lift
+    ($120 of spread against a $300 median gap between adjacent cars), so it
+    lifts the shipped cars together rather than past each other. The three
+    positions that do change are the tail, where the gaps are smallest.
+
+    Those figures are a SNAPSHOT MEASUREMENT, not a property of the model.
+    They move with the market and they move with the bands; re-cut the bands
+    and they are stale until re-measured. Two earlier versions of this
+    paragraph were wrong for exactly that reason:
+
+      - the first reasoned from the error's MAGNITUDE ($340-790 against those
+        gaps) to "the ordering is being decided by the error". Wrong in
+        principle: a systematic bias cannot reorder anything, only the spread
+        around it can.
+      - the second was measured correctly against the ORIGINAL bands
+        (1.15/0.85/0.68/0.58), then carried forward verbatim when those bands
+        were re-cut to 1.20/0.70/0.45/0.30 a few hours later. Every figure in
+        it was false by the time it was committed, including the headline
+        claim that the correction "reorders the landed-cost top 25 by zero".
+        It reorders three of them.
+
+    What it does buy is an absolute number worth quoting. "Bring it from
+    Phoenix for about $1,180" is a sentence this model can now say and the flat
+    one could not, and it is the number the fly-and-drive comparison has to be
+    right about to mean anything.
+
+    The bands below ship UNCALIBRATED — published typical open-carrier ranges,
+    not quotes anyone obtained. That is why buyer.ship_calibrated is null and
+    why the page says "estimate" rather than a number: the shape of this model
+    is defensible today, its constants are not yet, and pretending otherwise
+    would trade a wrong number for a wrong number that looks researched. Put
+    three real quotes on real corridors into buyer.ship_quotes, set the date,
+    and calibrate() will tell you how far off the bands are.
+    """
     if in_scope(r):
         return 0
     d = row_distance(r)
-    rate = to_float(BUYER.get("ship_per_mile"))
-    if d is not None and rate:
-        floor = to_float(BUYER.get("ship_min")) or 0
-        return int(round(max(floor, d * rate)))
-    return to_int(BUYER.get("ship_cost")) or 0
+    if d is None:
+        return to_int(BUYER.get("ship_cost")) or 0
+    floor = to_float(BUYER.get("ship_min")) or 0
+    road = d * SHIP_ROAD_FACTOR
+    banded = band_cost(road)
+    if banded is not None:
+        return int(round(max(floor, banded)))
+    rate = None
+    if rate is None:
+        # No bands configured: the flat rate this replaced, unchanged, so a
+        # config without ship_bands keeps behaving exactly as it did.
+        rate = to_float(BUYER.get("ship_per_mile"))
+        if not rate:
+            return to_int(BUYER.get("ship_cost")) or 0
+        road = d
+    return int(round(max(floor, road * rate)))
+
+
+def ship_calibration():
+    """How far the bands are from the quotes the buyer actually collected.
+
+    Returns None until buyer.ship_quotes has something in it. Each quote is
+    {miles, price, route} — the miles the BROKER quoted, not the great-circle
+    figure, because that is the number the model is trying to predict.
+    """
+    raw = BUYER.get("ship_quotes") or []
+    if not isinstance(raw, list):
+        print("  ! ship_quotes is not a list; ignoring it")
+        return None
+    quotes, dropped = [], 0
+    for q in raw:
+        if not isinstance(q, dict):
+            dropped += 1
+            continue
+        miles, price = to_float(q.get("miles")), to_float(q.get("price"))
+        if miles is None or miles <= 0 or price is None or price <= 0:
+            dropped += 1
+            continue
+        quotes.append((miles, price))
+    # A quote written with the wrong key is indistinguishable from no quote at
+    # all, and this is the ONE documented path out of the uncalibrated state.
+    # Silence here means a buyer who collected three real quotes sees exactly
+    # what they saw before collecting them.
+    if dropped:
+        print(f"  ! ship_quotes: {dropped} quote(s) ignored — each needs a positive "
+              f"`miles` and `price`")
+    if not quotes:
+        return None
+    errs = []
+    for miles, price in quotes:
+        est_raw = band_cost(miles)
+        if est_raw is None:
+            continue
+        est = max(to_float(BUYER.get("ship_min")) or 0, est_raw)
+        errs.append(est - price)
+    if not errs:
+        return None
+    return {"n": len(errs),
+            "mean_error": round(sum(errs) / len(errs)),
+            "worst": round(max(errs, key=abs)),
+            "calibrated": BUYER.get("ship_calibrated")}
 
 
 def adjusted(price, miles, ship=0):
@@ -592,6 +892,74 @@ def market_stats(listings):
     }
 
 
+def median_ci(values, conf=0.95):
+    """A distribution-free confidence interval for a median, from the order
+    statistics. Returns (lo, hi) or None when the sample cannot support one.
+
+    No assumption about the shape of the price distribution, which is the point
+    — exit prices are skewed and small-n, and a normal-theory interval on eight
+    of them would be a worse lie than no interval.
+
+    The rank k is the largest with P(k <= position of median <= n+1-k) >= conf
+    under Binomial(n, 0.5). At n=5 no such k exists: even min..max covers only
+    93.75%, which is why five is not a floor anyone should publish a median at.
+    """
+    xs = sorted(v for v in values if v is not None)
+    n = len(xs)
+    if n < 6:
+        return None
+    # P(k <= B <= n-k) for B ~ Bin(n, 1/2), walking k up while it still covers.
+    from math import comb
+    total = 2.0 ** n
+    best = None
+    for k in range(1, n // 2 + 1):
+        covered = sum(comb(n, i) for i in range(k, n - k + 1)) / total
+        if covered >= conf:
+            best = k
+        else:
+            break
+    if best is None:
+        return None
+    return (xs[best - 1], xs[n - best])
+
+
+def exit_stats(gone, trim_id, floor=6):
+    """One trim's exit prices, or an empty dict when too few cars have left.
+
+    `floor` is not decoration. Two departures make a median that swings by
+    thousands on the next one, and a number that unstable printed beside a live
+    car reads as authority it has not earned. Below the floor the page shows
+    nothing rather than something shaky — the same rule the cut-share line
+    already follows.
+
+    Six, not five, and the reason is arithmetic rather than taste: five is the
+    largest n at which NO distribution-free interval for a median exists at
+    all. Even min-to-max covers only 93.75% of the time at n=5, so a median of
+    five is a number with no honest error bar to put beside it. Six is the
+    first n where the whole sample is a 95% interval.
+
+    The interval itself ships as exit_lo/exit_hi so the page can compare a
+    car's price against the median's OWN uncertainty instead of a flat
+    threshold. It used to use $500, which on these cohorts is between 10 and 42
+    times narrower than the real interval — 42% of the notes it drew named a
+    gap smaller than the sampling error of the number they were drawn against.
+    """
+    rows = [g for g in gone if g.get("trim_id") == trim_id]
+    st = sale_stats(rows)
+    if (st.get("n_exits") or 0) < floor:
+        return {}
+    exits = [to_int(g.get("last_price")) for g in rows
+             if g.get("likely") == "delisted" and to_int(g.get("last_price")) is not None]
+    ci = median_ci(exits)
+    return {"exit_n": st["n_exits"],
+            "exit_price": st["median_exit_price"],
+            "exit_lo": ci[0] if ci else None,
+            "exit_hi": ci[1] if ci else None,
+            "exit_watched": st.get("exit_watched", 0),
+            "exit_cut_seen": st.get("exit_cut_while_watched", 0),
+            "exit_days": st.get("median_days_to_sale")}
+
+
 def sale_stats(gone):
     """How fast this model's cars actually leave, from the ones that really
     left: days from the listing date (or first sighting, when the dealer
@@ -607,8 +975,66 @@ def sale_stats(gone):
                                  - date.fromisoformat(str(start)[:10])).days))
         except (TypeError, ValueError):
             continue
+    # What they were asking when they went. The closest thing a tool with no
+    # transaction feed will ever have to a sale price — and emphatically not a
+    # sale price, which is why nothing here is called one. A delisted car may
+    # have sold, gone to auction, moved to a sister lot, or simply had its ad
+    # expire; all four look identical from outside. What IS true is that the
+    # last ask is the last number the market saw and did not beat, so a live
+    # car asking well above its trim's exit prices is asking above where
+    # comparable cars stopped being advertised. That is a weaker claim than
+    # "overpriced" and it is the one the data supports.
+    exits, cuts = [], []
+    for g in gone:
+        if g.get("likely") != "delisted":
+            continue
+        last = to_int(g.get("last_price"))
+        if last is None:
+            continue
+        exits.append(last)
+        # NOT a median cut. Half these cars are observed on two days or fewer
+        # of a listing life whose median is over three weeks, and a quarter are
+        # seen exactly once, where a cut is arithmetically impossible. The
+        # median of that is $0 for every trim on the sheet — a number that
+        # describes the fetch cadence, not the market, and would read as "these
+        # cars never discount" when it means "we mostly were not looking".
+        # What IS honest is the count that cut while we watched, over the
+        # number we could have seen cut at all.
+        series = g.get("series") or []
+        if len(series) >= 2:
+            first = to_int(series[0][1]) if len(series[0]) > 1 else None
+            cuts.append(1 if (first and first > last) else 0)
     return {"n_sold": len(spans),
-            "median_days_to_sale": int(median(spans)) if spans else None}
+            "median_days_to_sale": int(median(spans)) if spans else None,
+            # Deliberately not "sold_price": see above.
+            "n_exits": len(exits),
+            "median_exit_price": int(median(exits)) if exits else None,
+            "exit_watched": len(cuts),
+            "exit_cut_while_watched": sum(cuts)}
+
+
+def one_cohort(gone):
+    """Do the departed cars behind a pooled exit median describe ONE trim?
+
+    This asks the DATA, not the watchlist, and the difference is the whole
+    point. The first version was `len(trims) == 1`, counting watchlist targets
+    under a model — which inverts the test it was written for. A target like
+    `kia-ev9` is one entry covering the entire model, so it scored one_trim
+    TRUE while pooling a Light with a GT-Line; `audi-a6-etron` scored TRUE over
+    a cohort spanning $28,077. The gate passed on exactly the catch-all
+    targets it existed to stop, and blocked only the models whose trims are
+    tracked properly enough to be separable.
+
+    So: count the distinct trim labels actually carried by the cars whose
+    prices form the median. One label (or none to distinguish) is a cohort.
+    Anything else is an average of cars that do not exist.
+    """
+    labels = set()
+    for g in gone:
+        if g.get("likely") != "delisted" or to_int(g.get("last_price")) is None:
+            continue
+        labels.add((g.get("trim") or g.get("trim_id") or "").strip().lower())
+    return len(labels) <= 1
 
 
 def market_line(stats):
@@ -621,9 +1047,41 @@ def market_line(stats):
         if stats.get("median_cut"):
             cut += f", median {money(stats['median_cut'])}"
         bits.append(cut)
-    if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 5:
-        bits.append(f"sold cars lasted ~{stats['median_days_to_sale']}d "
-                    f"({stats['n_sold']} sold)")
+    # "Delisted" is not "sold" — a car whose ad ends may have sold, gone to
+    # auction, moved lots, or simply expired, and none of those are
+    # distinguishable from outside. The field names stay as they are because
+    # they ship in data.json and the report, but the sentence a reader actually
+    # sees should claim only what happened: the listing ended.
+    # Twelve, not five, on a BARE median — one printed with no interval beside
+    # it, so the floor is the only thing doing the work. At five no
+    # distribution-free interval exists at all; at eight, this model's own
+    # "~19d" spans 3 to 57 days, which is not a fact about the market. Twelve
+    # is where the interval narrows to the middle two thirds of the sample.
+    #
+    # "at least", because the span is RIGHT-CENSORED. It runs from the list
+    # date to the last day the car was SEEN, and the listing actually ended
+    # somewhere between that day and the next fetch — a mean of 2.0 days later
+    # on this data, against a median span of 15. Saying "ended after ~15d"
+    # understates listing life by around 17% and makes the market look faster
+    # than it is; "ran at least" is the same number without the overclaim.
+    if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 12:
+        bits.append(f"listings ran at least ~{stats['median_days_to_sale']}d "
+                    f"({stats['n_sold']} gone)")
+    # Model level only. A median mixing an eDrive50 with an M70 describes no car
+    # that exists — exit_stats() says so and refuses to compute one per model —
+    # so the report shows this ONLY where a model has a single trim. Everywhere
+    # else the per-trim figures on the dashboard are the honest ones.
+    if (stats.get("median_exit_price") and stats.get("n_exits", 0) >= 12
+            and stats.get("one_trim")):
+        # The cut count needs a real denominator before it is worth a sentence.
+        # At five, "3 of 7" carries a confidence interval from roughly 10% to
+        # 80% — a number that invites a comparison it cannot support, which is
+        # exactly the mistake the $0 median made in a different costume. Twelve
+        # is still small; it is the point where the count stops pretending to
+        # be a rate.
+        watched, cut = stats.get("exit_watched", 0), stats.get("exit_cut_while_watched", 0)
+        bits.append(f"last ask before leaving {money(stats['median_exit_price'])}"
+                    + (f" · {cut} of {watched} cut in the days we saw them" if watched >= 12 else ""))
     return " · ".join(bits)
 
 
@@ -782,6 +1240,12 @@ def picks_rule():
 # Fetch
 # --------------------------------------------------------------------------
 CALLS = 0
+SPENT = {}             # target id -> calls this target actually spent today. The plan is
+                       # an upper bound, not a bill: a query that comes back short stops
+                       # its own pagination and skips its newest probe, so a thin market
+                       # silently costs less than it was budgeted. Nobody has ever known
+                       # by how much, which makes every "can we afford one more model?"
+                       # a guess against a number the run already had and discarded.
 PRICE_WINDOW = {}      # (target id, source) -> highest price its price.asc query returned today
 MILES_WINDOW = {}      # (target id, source) -> highest mileage its miles.asc query returned today
 
@@ -799,6 +1263,215 @@ TOTALS = {}            # (target id, source) -> the API's own total result count
                        # when the response envelope carries one — the honest
                        # denominator behind "N tracked"
 ENVELOPE_WARNED = False
+OVERLAP = {}           # target id -> today's States-vs-National audit, persisted so the
+                       # decision it informs can be made on a week of runs instead of
+                       # one: Actions logs expire, and a single day where the States
+                       # query happened to add nothing is not evidence that it never does.
+SOURCE_VINS = {}       # (target id, source) -> the VINs that source returned today.
+                       # `rows` is keyed (target, vin) and shared across sources, so a
+                       # car both queries return collapses into one row and the overlap
+                       # becomes invisible the moment the fetch ends. It is measured
+                       # here because it is the only place it still exists — and it is
+                       # the number that decides whether the States query is worth its
+                       # half of the call budget, or is re-buying cars National already
+                       # brought back.
+
+
+def source_overlap(rows):
+    """What the States query bought today that National did not already bring.
+
+    Half this run's calls go to asking the buyer's own eight states the same
+    question the national query just asked. Whether that is worth paying for is
+    an empirical question with one number behind it — how many cars only the
+    States query saw — and nobody has ever measured it, because the two answers
+    are merged into one VIN-keyed table the moment they arrive.
+
+    So: per target, the size of each source's own catch, the overlap, and the
+    part that matters — `states_only`, which is exactly what would be LOST by
+    making a target national_only. A target whose National query came back
+    short is marked exhausted: that query returned the entire national market,
+    so its States half cannot be buying anything new by definition, and no
+    amount of local coverage argument survives it.
+    """
+    out = {}
+    for t in TARGETS.values():
+        tid = t["id"]
+        st = SOURCE_VINS.get((tid, "States"))
+        nat = SOURCE_VINS.get((tid, "National"))
+        if st is None or nat is None:
+            continue          # national_only, or not due today: nothing to compare
+        only_st = st - nat
+        out[tid] = {
+            "states": len(st), "national": len(nat),
+            "both": len(st & nat), "states_only": len(only_st),
+            "national_exhausted": (tid, "National") in EXHAUSTED,
+            # The states that would go dark. A benchmark model losing Ohio
+            # visibility is a different decision from one losing nothing.
+            "states_only_in": sorted({r.get("state") for k, r in rows.items()
+                                      if k[0] == tid and k[1] in only_st and r.get("state")}),
+            "shopping": bool(t.get("shopping")),
+            "calls_saved_per_due_day": len(sorts_pages(t)[0]) * sorts_pages(t)[1] + t["newest"],
+        }
+    return out
+
+
+def report_source_overlap(overlap):
+    """Print the audit as a table, and say what it implies rather than leaving
+    the reader to divide the columns themselves."""
+    if not overlap:
+        return
+    print("\nStates-vs-National overlap (what the second source actually bought):")
+    print(f"  {'target':<24}{'States':>7}{'Natl':>6}{'both':>6}{'only States':>12}  note")
+    free = 0.0
+    for tid, o in sorted(overlap.items(), key=lambda kv: kv[1]["states_only"]):
+        t = TARGETS[tid]
+        note = ""
+        if o["national_exhausted"]:
+            note = "National saw the whole market — States is redundant"
+        elif o["states_only"] == 0:
+            note = "States added nothing today"
+        elif o["states_only_in"]:
+            note = "would lose " + "/".join(o["states_only_in"])
+        if o["states_only"] == 0 and not o["shopping"]:
+            free += o["calls_saved_per_due_day"] / t["cadence"]
+        print(f"  {tid:<24}{o['states']:>7}{o['national']:>6}{o['both']:>6}{o['states_only']:>12}  {note}")
+    if free:
+        print(f"  -> {free:.1f} calls/day (~{free * 30.4:.0f}/month) sit behind benchmark targets whose "
+              f"States query added nothing today. One day is not proof; watch it before flipping national_only.")
+
+
+SPEND_LOG = Path("data/spend.json")
+
+
+def spend_report(planned_today):
+    """Planned against actual, and what the difference is worth.
+
+    `planned_calls()` returns an upper bound: every due target billed for every
+    page it is allowed. The fetch loop then spends less whenever a query comes
+    back short — it stops paginating and skips that scope's newest probe — so
+    the thin certified markets in particular cost a fraction of their budget.
+
+    The gap is the real headroom, and it is the number every "can we afford one
+    more model?" needs. It has never been recorded: the run prints CALLS and
+    exits. So this returns today's row, and the log below keeps it.
+    """
+    actual = sum(SPENT.values())
+    due = [t for t in TARGETS.values() if due_on(t, TODAY_ORD)]
+    by_target = {}
+    for t in due:
+        tid = t["id"]
+        want = calls_for(t)
+        got = SPENT.get(tid, 0)
+        if got != want:
+            by_target[tid] = [want, got]
+    # A target that was due and spent NOTHING did not save money — it did not
+    # run. Counting that as headroom is how a budget gets spent twice: once on
+    # the new model it appears to afford, and again when the broken target
+    # starts working. So it is named separately and kept out of `banked`.
+    silent = sorted(t["id"] for t in due if not SPENT.get(t["id"]))
+    lost = sum(calls_for(t) for t in due if not SPENT.get(t["id"]))
+    return {
+        "planned": planned_today,
+        "actual": actual,
+        # Headroom is what the run declined to spend while working, not what it
+        # failed to spend at all.
+        "banked": planned_today - actual - lost,
+        "unrun": lost,
+        "silent_targets": silent,
+        "targets_due": len(due),
+        "exhausted": len(EXHAUSTED),
+        "failed": FAILED_FETCHES,
+        # Only the targets whose bill differed from their budget — a full table
+        # would be mostly rows saying "as planned" every day forever.
+        "off_plan": by_target,
+    }
+
+
+def report_spend(row, hist):
+    """Say what was spent, and what the month looks like at this rate."""
+    banked = row["banked"]
+    print(f"\nSpend: {row['actual']} of {row['planned']} planned"
+          + (f" · {banked} banked by {row['exhausted']} exhausted quer"
+             f"{'y' if row['exhausted'] == 1 else 'ies'}" if banked > 0 else "")
+          + (f" · {row['failed']} wasted on retries" if row["failed"] else ""))
+    if row.get("silent_targets"):
+        print(f"  ! {row['unrun']} calls' worth of targets were due and never ran — "
+              f"NOT headroom: {', '.join(row['silent_targets'])}")
+    for tid, (want, got) in sorted(row["off_plan"].items()):
+        print(f"    {tid:<24} planned {want}, spent {got}")
+    # Month to date, from the log itself rather than an average: a cadence cycle
+    # is not a month and the two disagree by more than the headroom being hunted.
+    month = TODAY[:7]
+    days = {d: r for d, r in hist.items() if d.startswith(month)}
+    if len(days) >= 2:
+        spent = sum(r["actual"] for r in days.values())
+        pace = spent / len(days)
+        projected = pace * 30.4
+        print(f"    month to date: {spent} over {len(days)} days ({pace:.1f}/day) "
+              f"→ ~{projected:.0f}/month against a {MONTHLY:,} plan")
+        # The first version of this printed max(0, MONTHLY - projected), which
+        # reads "~0 unspent at this rate" whether the run is exactly on plan or
+        # four hundred calls over it. A headroom meter that floors at zero is
+        # silent in the only case worth printing, so overspend is now its own
+        # sentence and says how far over. The plan is deliberately tight — 915
+        # of 1,000 — and a retry bills twice, so this is a live number, not a
+        # defensive one.
+        if projected > MONTHLY:
+            print(f"    ! on pace to OVERSPEND by ~{projected - MONTHLY:.0f} calls"
+                  f" — {pace:.1f}/day sustains {MONTHLY / 30.4:.1f}/day")
+        else:
+            print(f"    ~{MONTHLY - projected:.0f} unspent at this rate")
+
+
+def save_spend_history(row, path=SPEND_LOG, keep=400):
+    """One row per day, newest kept. Small on purpose: this file exists to be
+    read by a decision, not to be a second ledger."""
+    try:
+        hist = json.loads(path.read_text()) if path.exists() else {}
+    except (OSError, ValueError):
+        hist = {}
+    if not isinstance(hist, dict):
+        hist = {}
+    hist[TODAY] = row
+    for day in sorted(hist)[:-keep]:
+        del hist[day]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(hist, indent=1, sort_keys=True) + "\n")
+    except OSError as e:
+        print(f"  ! could not write {path}: {e}")
+    return hist
+
+
+OVERLAP_LOG = Path("data/source_overlap.json")
+
+
+def save_overlap_history(overlap, path=OVERLAP_LOG, keep=120):
+    """Append today's audit to a small dated log, newest days kept.
+
+    Only the four numbers that answer the question are stored — a full record
+    per target per day would grow faster than the ledger it sits beside for no
+    extra answer. A rerun on the same day overwrites its own entry rather than
+    doubling it, because the run is not idempotent about calls but this file
+    must be about days.
+    """
+    if not overlap:
+        return
+    try:
+        hist = json.loads(path.read_text()) if path.exists() else {}
+    except (OSError, ValueError):
+        hist = {}
+    if not isinstance(hist, dict):
+        hist = {}
+    hist[TODAY] = {tid: [o["states"], o["national"], o["both"], o["states_only"]]
+                   for tid, o in sorted(overlap.items())}
+    for day in sorted(hist)[:-keep]:
+        del hist[day]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(hist, indent=1, sort_keys=True) + "\n")
+    except OSError as e:
+        print(f"  ! could not write {path}: {e}")
 
 
 def envelope_total(payload):
@@ -848,6 +1521,11 @@ def fetch(source_name, source, sort, page, t):
         params.update(source)
     for attempt in (1, 2):
         CALLS += 1
+        # Counted per target as well as globally, and counted HERE so a retry
+        # counts twice — because it costs twice. A ledger that recorded intent
+        # rather than requests would understate a bad network day and hand back
+        # headroom that was never there.
+        SPENT[t["id"]] = SPENT.get(t["id"], 0) + 1
         err = None
         try:
             r = requests.get(BASE, headers=HEADERS, params=params, timeout=45)
@@ -1469,12 +2147,21 @@ def build_outputs(today_rows, all_rows, hist):
                       "mileage_baseline": PICKS.get("mileage_baseline", 20000),
                       "exclude_accidents": PICKS.get("exclude_accidents", True),
                       "exclude_rental": PICKS.get("exclude_rental", True)},
+            # The bands ride along with the flat keys because this block is the
+            # published record of how the `ship` on every row was arrived at.
+            # Without them a reader reconstructs `d x ship_per_mile` and gets a
+            # different number than the one sitting beside it in the same file.
             "ship_per_mile": BUYER.get("ship_per_mile"),
             "ship_min": BUYER.get("ship_min"),
             "ship_cost": BUYER.get("ship_cost"),
+            "ship_bands": BUYER.get("ship_bands") or None,
+            "ship_road_factor": BUYER.get("ship_road_factor"),
+            "ship_calibrated": BUYER.get("ship_calibrated"),
             "cents_per_mile": BUYER.get("cents_per_mile"),
             "mileage_baseline": BUYER.get("mileage_baseline"),
             "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
+            "finance": finance_export(),
+            "fees": fees_export(),
         },
         "brands": {},
     }
@@ -1502,6 +2189,10 @@ def build_outputs(today_rows, all_rows, hist):
             m_rows = current_rows(all_rows, tids)
             as_of = max((r["snapshot_date"] for r in m_rows), default=None)
             prev_day = m_days[-2] if len(m_days) >= 2 else None
+            # Hoisted out of the literal below: the trim entries need it, and
+            # a dict cannot reference a key it has not finished defining.
+            # Computed once either way.
+            m_gone = delisted(tids, all_rows, m_rows, hist)
             m_entry = {
                 "label": label, "note": m0["model_note"],
                 "notes": m0["model_notes"],
@@ -1519,14 +2210,19 @@ def build_outputs(today_rows, all_rows, hist):
                                     "min_price": t.get("min_price"),
                                     "max_miles": t.get("max_miles"),
                                     "cpo_only": bool(t.get("cpo_only")),
-                                    "market_total": TOTALS.get((t["id"], "National"))}
+                                    "market_total": TOTALS.get((t["id"], "National")),
+                                    # Per TRIM, not per model: a median mixing an
+                                    # eDrive50 with an M70 describes no car that
+                                    # exists. The trim is the cohort a reader is
+                                    # actually shopping within.
+                                    **exit_stats(m_gone, t["id"])}
                           for t in trims},
                 "listings": [],
                 "daily": daily_stats(m_rows_all),
                 "daily_by_trim": {t["id"]: daily_stats(
                     [r for r in m_rows_all if r["target"] == t["id"]])
                     for t in trims},
-                "gone": delisted(tids, all_rows, m_rows, hist),
+                "gone": m_gone,
             }
             b_entry["models"][mkey] = m_entry
             if SHORTLIST:
@@ -1545,7 +2241,12 @@ def build_outputs(today_rows, all_rows, hist):
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
             m_entry["market"] = {**market_stats(m_entry["listings"]),
-                                 **sale_stats(m_entry["gone"])}
+                                 **sale_stats(m_gone),
+                                 # Whether the cars behind the pooled exit
+                                 # median are ONE cohort — measured on the
+                                 # departed cars themselves, not on the
+                                 # watchlist.
+                                 "one_trim": one_cohort(m_gone)}
             scored = score_picks(m_entry["listings"], label)
             all_scored += scored
             if SHORTLIST:
@@ -1722,6 +2423,7 @@ def main():
                             MILES_WINDOW[wk] = max(MILES_WINDOW.get(wk, 0),
                                                    n["miles"])
                         key = (tid, n["vin"])
+                        SOURCE_VINS.setdefault((tid, source_name), set()).add(n["vin"])
                         cur = rows.get(key)
                         if cur is None or n["price"] < to_int(cur["price"]):
                             rows[key] = n
@@ -1745,6 +2447,7 @@ def main():
                     if not n:
                         continue
                     key = (tid, n["vin"])
+                    SOURCE_VINS.setdefault((tid, source_name), set()).add(n["vin"])
                     cur = rows.get(key)
                     if cur is None or n["price"] < to_int(cur["price"]):
                         rows[key] = n
@@ -1758,6 +2461,11 @@ def main():
     print(f"API calls made: {CALLS}"
           + (f" · {FAILED_FETCHES} failed after retry" if FAILED_FETCHES else "")
           + (f" · {len(EXHAUSTED)} exhaustive queries" if EXHAUSTED else ""))
+    OVERLAP.update(source_overlap(rows))
+    report_source_overlap(OVERLAP)
+    save_overlap_history(OVERLAP)
+    spend = spend_report(today_calls)
+    report_spend(spend, save_spend_history(spend))
     print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "
           f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
     save_zip_cache()
