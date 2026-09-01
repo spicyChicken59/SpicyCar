@@ -52,6 +52,28 @@
      late fetch popped in a 906px card and shifted everything below it by
      938px at 1280×900 (557px at 390×844). */
   #map:empty { aspect-ratio: 975 / 610; background: var(--sc-raised); border-radius: var(--sc-r-sm); }
+  /* The same reservation one level up, for the whole page. The loading shell —
+     h1 "Loading snapshot…", empty #kpis, every card still hidden — leaves #main
+     314px tall, so footer.sc-foot painted at y=462 on a 390×844 phone, INSIDE
+     the fold, and render() evicted it to y=5527 the moment data.json landed:
+     one layout-shift entry, one source, t≈160ms, and it was the ENTIRE phone
+     CLS of 0.1991. CLS failed at every width measured, not only on phones —
+     0.832 at 320×568, 0.103 at 820×1180, 0.072 at 1280×1000 — and this rule
+     is width-independent: 390 → 0.000, 820 and 1280 → 0.001. It does NOT fix
+     320, which stays at 0.194 on a different node: #mast-right swapping
+     'Loading…' for the meta line, which wraps at that width. That is the same
+     node behind the 0.0009 residue at 1280×1000.
+     One viewport is enough, because rendered #main runs 5,183px (watchlist at
+     1280) to 14,537px (the i5 page on a phone), so the rule is inert after
+     boot. 100vh not svh/dvh is deliberate: vh is the LARGE viewport, so a
+     phone still showing its URL bar is covered.
+     The cost is whitespace, in one state, and it is not a stability cost: when
+     data.json fails outright (abort, 404 and 500 measure identical), fail()'s
+     notice sits above a viewport of empty main and the footer moves from y=746
+     to y=993 at 390×844 (560 → 1116 at 1280, where the page starts to scroll:
+     docH 1000 → 1177). CLS there IMPROVES, the footer having left that shift
+     too: 0.1907 → 0.1217 on the phone, 0.0400 → 0.0266 at 1280. */
+  #main { min-height: 100vh; }
   /* Touch hit halo — one invisible circle per dot, built only on coarse
      pointers. Pure geometry: r rides user units, sized to ~25px on screen
      and re-derived when the viewport width changes (fill:none paints
