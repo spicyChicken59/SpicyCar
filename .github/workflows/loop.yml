@@ -34,7 +34,7 @@ jobs:
           git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/ds \
             || { git clone https://github.com/spicyChicken59/design-system /tmp/ds && git -C /tmp/ds checkout "$PIN"; }
           # tee so the report is both the log and the issue body
-          node tools/consumer_lint_ci.mjs /tmp/ds docs/index.html docs/how.html | tee /tmp/report.txt
+          node tools/consumer_lint_ci.mjs /tmp/ds docs/index.html docs/how.html tools/og_card.html | tee /tmp/report.txt
           { echo '### design-system loop'; echo '```'; cat /tmp/report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
         continue-on-error: true      # a blocking finding is check.yml's job to fail, not this one
 

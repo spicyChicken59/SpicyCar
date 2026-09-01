@@ -22,14 +22,20 @@
   holds that property (TestShareCard) so a future session does not helpfully add
   "7 models" back.
 
-  Re-render after an edit (1200×630 at 2× = the 2400×1260 og.png Facebook and
-  LinkedIn scale from):
+  RE-RENDER AFTER ANY EDIT TO THIS FILE, or docs/og.png stops being what this
+  source says. One recipe, and only one:
 
-    npx playwright screenshot --viewport-size=1200,630 --device-scale-factor=2 \
-      tools/og_card.html docs/og.png
+    node tools/shoot_hero.mjs <design-system-checkout> --only card
 
-  Needs the network for sc.css and the three type families; offline, route cdn.jsdelivr.net
-  at a design-system checkout the way tools/dashboard_smoke.mjs does.
+  It owns the frame (1200×630 at 2× = the 2400×1260 Facebook and LinkedIn scale
+  from), routes cdn.jsdelivr.net at the checkout so it works offline, and refuses
+  to shoot a card whose rendered text contains a digit or a $. Read its header for
+  the offline flags; tests/test_tracking.py reads its frame constants back out and
+  checks the committed PNG is that size.
+
+  This file is linted with the pages (.github/workflows/check.yml passes it to
+  tools/consumer_lint_ci.mjs), so the same rule holds here: semantic tokens only,
+  no raw colour, no var(--sc-<palette>-NNN) primitive.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,8 +51,16 @@
     display: flex; flex-direction: column;
     background: var(--sc-ink);
     /* The one spice note the brand allows, thrown from behind the mark so the
-       lockup at the foot is not competing with it. */
-    background-image: radial-gradient(900px 700px at 4% -6%, rgba(238,93,43,.22), transparent 56%);
+       lockup at the foot is not competing with it. Semantic token, not a
+       primitive and not a literal: #og-card carries .sc-on-ink, so --sc-accent
+       is spice-400 in BOTH colour schemes (DESIGN_SYSTEM.md §2, "the on-ink
+       context") — which is what an ink card needs, since the page-level
+       --sc-accent flips to spice-700 under prefers-color-scheme: light and
+       would go muddy on this ground. color-mix is the sheet's own idiom for a
+       tint; a raw rgba() here is the exact HYGIENE finding
+       tools/consumer_lint_ci.mjs blocks on the pages. */
+    background-image: radial-gradient(900px 700px at 4% -6%,
+      color-mix(in srgb, var(--sc-accent) 22%, transparent), transparent 56%);
     color: var(--sc-on-ink);
     font-family: var(--sc-font-body);
   }
@@ -64,7 +78,7 @@
     font-size: 42px; line-height: 1.32; margin: auto 0; max-width: 1000px;
     color: var(--sc-on-ink);
   }
-  #og-card .card-say b { font-weight: 600; color: var(--sc-spice-400); }
+  #og-card .card-say b { font-weight: 600; color: var(--sc-accent); }   /* == spice-400 on ink, both schemes */
   #og-card .card-foot {
     display: flex; justify-content: flex-end; align-items: center;
     border-top: 1px solid var(--sc-ink-line-strong); padding-top: 24px;
@@ -73,7 +87,9 @@
 </style>
 </head>
 <body>
-<div id="og-card">
+<!-- .sc-on-ink re-scopes the page tokens for a dark surface (sc.css §2c), so every
+     colour below is a semantic token that means the same thing in either scheme. -->
+<div id="og-card" class="sc-on-ink">
   <div class="card-brand">
       <img class="card-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-color-dark.svg" alt="" width="342" height="405">
       <div>

@@ -13,9 +13,11 @@ network call as long as no home zip is configured; conftest-free, so the
 key is set here before the import.
 """
 
+import html as html_mod
 import json
 import os
 import re
+import struct
 import unittest
 from collections import Counter
 from datetime import date
@@ -1139,8 +1141,14 @@ class TestShareCard(unittest.TestCase):
         head is excluded on purpose: the comment there quotes the stale numbers
         this class exists to explain."""
         src = (cls.ROOT / "tools" / "og_card.html").read_text()
-        body = src.split("<body>", 1)[1].split("</body>", 1)[0]
-        return re.sub(r"<[^>]*>", " ", body)
+        # <body[^>]*> not "<body>": the day someone adds a class to it, a
+        # str.split would raise IndexError and this class would fail for a
+        # reason that has nothing to do with the promise it holds.
+        body = re.split(r"<body[^>]*>", src, maxsplit=1)[1].split("</body>", 1)[0]
+        # Entities are unescaped BEFORE the digit scan, in both directions:
+        # &#8212; displays an em dash and must not trip the check, while
+        # &#55; displays a 7 and must.
+        return html_mod.unescape(re.sub(r"<[^>]*>", " ", body))
 
     def test_the_card_carries_no_number(self):
         """A count, a price or a date on the card is wrong the day after it is
@@ -1156,6 +1164,12 @@ class TestShareCard(unittest.TestCase):
         site = json.loads((self.ROOT / "docs" / "data.json").read_text())
         names = {b["label"] for b in site["brands"].values()}
         names |= {m["label"] for b in site["brands"].values() for m in b["models"].values()}
+        # The subject comes from today's data.json, never from a name typed in
+        # here — that is what stops a tracker run rotting this test. If a run
+        # ever leaves it with nothing to look for, say so out loud: a vacuous
+        # pass reading as green coverage is the failure mode one rung up.
+        if not names:
+            self.skipTest("docs/data.json names no brand or model today — nothing to look for")
         text = self._card_text()
         for name in names:
             self.assertIsNone(re.search(rf"\b{re.escape(name)}\b", text),
@@ -1167,10 +1181,122 @@ class TestShareCard(unittest.TestCase):
         too — it is the same promise in text."""
         for page in ("index.html", "how.html"):
             head = (self.ROOT / "docs" / page).read_text()
-            m = re.search(r'<meta property="og:image:alt" content="([^"]*)">', head)
-            self.assertIsNotNone(m, f"docs/{page}: og:image with no og:image:alt")
+            # Find the TAG first, then its content attribute. Pinning the whole
+            # line ties this test to attribute order and spacing in a head block
+            # other work also edits: it would then fail while the promise it
+            # encodes is still kept, which is how a suite gets loosened.
+            tag = re.search(r"<meta\b[^>]*\bproperty=[\"']og:image:alt[\"'][^>]*>", head)
+            self.assertIsNotNone(tag, f"docs/{page}: og:image with no og:image:alt")
+            m = re.search(r"content=[\"']([^\"']*)", tag.group(0))
+            self.assertIsNotNone(m, f"docs/{page}: og:image:alt with no content")
             self.assertFalse(re.search(r"[0-9$]", m.group(1)),
                              f"docs/{page}: a number in og:image:alt")
+
+    def test_the_shipped_card_is_the_frame_the_renderer_declares(self):
+        """A guard, not a regression: it passes on the commit before it, and it
+        is here because nothing else looks at the PNG at all.
+
+        tools/shoot_hero.mjs declares the frame docs/og.png is rendered in.
+        Reading the PNG's own header back and comparing binds the shipped
+        bytes to the committed recipe, so changing the frame without
+        re-rendering fails here instead of shipping a card the unfurl
+        letterboxes. It cannot see a content-only edit to the card — for that
+        the answer is to run the renderer, which refuses to shoot a card with
+        a digit on it.
+        """
+        src = (self.ROOT / "tools" / "shoot_hero.mjs").read_text()
+        frame = re.search(r"CARD_FRAME\s*=\s*\{\s*width:\s*(\d+),\s*height:\s*(\d+)", src)
+        scale = re.search(r"CARD_SCALE\s*=\s*(\d+)", src)
+        self.assertIsNotNone(frame, "tools/shoot_hero.mjs no longer declares CARD_FRAME")
+        self.assertIsNotNone(scale, "tools/shoot_hero.mjs no longer declares CARD_SCALE")
+        want = (int(frame.group(1)) * int(scale.group(1)),
+                int(frame.group(2)) * int(scale.group(1)))
+
+        png = (self.ROOT / "docs" / "og.png").read_bytes()
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n", "docs/og.png is not a PNG")
+        self.assertEqual(png[12:16], b"IHDR", "docs/og.png has no leading IHDR chunk")
+        got = struct.unpack(">II", png[16:24])
+        self.assertEqual(got, want,
+                         f"docs/og.png is {got[0]}x{got[1]}, but tools/shoot_hero.mjs renders "
+                         f"{want[0]}x{want[1]} — re-render it: node tools/shoot_hero.mjs <ds> --only card")
+
+
+class TestCanonicalUrl(unittest.TestCase):
+    """One address per page, stated in the markup.
+
+    The dashboard puts real state in the query string — ?brand, ?m, ?models,
+    ?trims — because a comparison you cannot send to the person buying the car
+    with you is not a comparison. But GitHub Pages has no server-side render:
+    it returns the same byte-identical docs/index.html for every one of those
+    URLs and the JS applies the state afterwards. So to a crawler, which is the
+    only reader a canonical speaks to, they are one document with one title and
+    one description — and without a canonical, nothing says which address that
+    document actually is.
+
+    These tests hold the decision, both halves of it: the tag is there and
+    agrees with og:url, and it is STATIC. A canonical rewritten per view by JS
+    is read by nobody who matters (the unfurl crawlers do not run JS) and would
+    claim distinct pages for identical HTML, which is the duplication the tag
+    exists to resolve.
+    """
+
+    ROOT = Path(__file__).parent.parent
+    PAGES = ("index.html", "how.html")
+
+    @classmethod
+    def _canonicals(cls, src):
+        return [re.search(r"href=[\"']([^\"']*)", t).group(1)
+                for t in re.findall(r"<link\b[^>]*\brel=[\"']canonical[\"'][^>]*>", src)]
+
+    def test_each_page_declares_exactly_one_canonical(self):
+        for page in self.PAGES:
+            hrefs = self._canonicals((self.ROOT / "docs" / page).read_text())
+            self.assertEqual(len(hrefs), 1,
+                             f"docs/{page}: {len(hrefs)} rel=canonical link(s), want exactly 1")
+
+    def test_the_canonical_agrees_with_og_url(self):
+        """Two identity claims in one head that disagree are worse than one:
+        the unfurl would say one thing and the crawlable markup another."""
+        for page in self.PAGES:
+            src = (self.ROOT / "docs" / page).read_text()
+            og = re.search(r"<meta\b[^>]*\bproperty=[\"']og:url[\"'][^>]*>", src)
+            self.assertIsNotNone(og, f"docs/{page}: no og:url")
+            og_url = re.search(r"content=[\"']([^\"']*)", og.group(0)).group(1)
+            self.assertEqual(self._canonicals(src), [og_url],
+                             f"docs/{page}: canonical and og:url disagree")
+
+    def test_the_canonical_names_a_bare_page_not_a_view(self):
+        """It has to be the address the whole ?models=/?trims=/?brand= space
+        collapses onto — absolute, and carrying no state of its own."""
+        for page in self.PAGES:
+            hrefs = self._canonicals((self.ROOT / "docs" / page).read_text())
+            # Named, not indexed: a missing tag should read as the finding it is,
+            # not as an IndexError three lines down.
+            self.assertTrue(hrefs, f"docs/{page}: no rel=canonical to check")
+            href = hrefs[0]
+            self.assertTrue(href.startswith("https://"),
+                            f"docs/{page}: canonical {href!r} is not an absolute https URL")
+            self.assertNotIn("?", href, f"docs/{page}: canonical carries a query string")
+            self.assertNotIn("#", href, f"docs/{page}: canonical carries a fragment")
+
+    def test_no_script_rewrites_the_canonical(self):
+        """The decision, not just its result. syncUrl() rewrites the address bar
+        on every chip press; the day someone makes the canonical follow it, the
+        tag starts claiming a page per permutation to crawlers that never see
+        the rewrite anyway."""
+        for page in self.PAGES:
+            src = (self.ROOT / "docs" / page).read_text()
+            for block in re.findall(r"<script\b[^>]*>([\s\S]*?)</script>", src):
+                # Every way a script reaches this tag pairs "rel" with
+                # "canonical" a few characters apart: link[rel=canonical],
+                # rel="canonical", setAttribute('rel', 'canonical'). The bare
+                # word on its own is not the tell — docs/index.html already
+                # says "canonicalize" about the address bar, which is a
+                # different thing and allowed to stay.
+                hit = re.search(r"rel[^;\n]{0,20}canonical", block, re.I)
+                found = hit.group(0) if hit else ""
+                self.assertIsNone(hit, f"docs/{page}: a script reaches the canonical link "
+                                       f"({found!r} in a <script>) — it must stay static")
 
 
 if __name__ == "__main__":
