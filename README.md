@@ -1,5 +1,13 @@
+<!-- The hero is a real capture of the dashboard, taken against data_through 2026-08-31, and
+     it DATES: the numbers in it are the numbers of that morning and the live dashboard has
+     moved on. That is the deal a screenshot makes; the alt below is deliberately structural
+     (a chip row, a tile row, what changed) and names no figure, so it stays true after the
+     picture does not. Retake it whenever the page changes shape — never by hand:
+       node tools/shoot_hero.mjs <design-system-checkout>
+     which is also what re-renders docs/og.png. That card is data-free precisely because
+     nothing in the daily run regenerates a PNG; see the header of tools/shoot_hero.mjs. -->
 <p align="center">
-  <a href="https://spicychicken59.github.io/SpicyCar/"><img src="docs/screenshot.png" alt="SpicyCar dashboard — BMW i5, lowest and median landed price, listings with photos and history flags" width="920"></a>
+  <a href="https://spicychicken59.github.io/SpicyCar/"><img src="docs/screenshot.png" alt="SpicyCar dashboard — the watchlist: lowest drivable asking, lowest asking nationwide, how many cars are on the market, what changed since the previous snapshot, and the model and state filters" width="920"></a>
 </p>
 
 # SpicyCar

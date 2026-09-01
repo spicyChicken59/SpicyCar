@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SpicyCar — og:image source</title>
+<!--
+  The source of docs/og.png (and of the README hero's companion, docs/screenshot.png,
+  which is a real capture and does go stale — this one cannot).
+
+  Why a card and not a screenshot. The previous og.png was a dashboard capture taken
+  on 2026-08-26 and never retaken: by 2026-09-01 it was advertising "Every model",
+  ten models, a Chevrolet chip and a Kia EV6 at $13,901 — while data.json said
+  "The watchlist", seven models, five brands (no Chevrolet, no EV6) and data_through
+  2026-08-31. Nothing regenerates it. The daily run writes docs/data.json, REPORT.md
+  and data/snapshots.csv; it has never written a PNG and there is no build step that
+  could. So any number baked into this image is a number that starts drifting the day
+  it is committed, and drifts forever — on the one surface (the unfurl on Slack,
+  iMessage, X, LinkedIn, Facebook) where no crawler runs the JS that would correct it.
+
+  Hence: no counts, no prices, no vehicle names, no date. A card with nothing to be
+  wrong about survives a daily-updating dataset with no build step. tests/test_tracking.py
+  holds that property (TestShareCard) so a future session does not helpfully add
+  "7 models" back.
+
+  RE-RENDER AFTER ANY EDIT TO THIS FILE, or docs/og.png stops being what this
+  source says. One recipe, and only one:
+
+    node tools/shoot_hero.mjs <design-system-checkout> --only card
+
+  It owns the frame (1200×630 at 2× = the 2400×1260 Facebook and LinkedIn scale
+  from), routes cdn.jsdelivr.net at the checkout so it works offline, and refuses
+  to shoot a card whose rendered text contains a digit or a $. Read its header for
+  the offline flags; tests/test_tracking.py reads its frame constants back out and
+  checks the committed PNG is that size.
+
+  This file is linted with the pages (.github/workflows/check.yml passes it to
+  tools/consumer_lint_ci.mjs), so the same rule holds here: semantic tokens only,
+  no raw colour, no var(--sc-<palette>-NNN) primitive.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- SpicyChicken Design System v2.4.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc.css">
+<style>
+  /* Page-local, anchored to #og-card: this is one 1200×630 frame, not a page. */
+  html, body { margin: 0; }
+  #og-card {
+    width: 1200px; height: 630px; box-sizing: border-box;
+    padding: 78px 84px 56px;
+    display: flex; flex-direction: column;
+    background: var(--sc-ink);
+    /* The one spice note the brand allows, thrown from behind the mark so the
+       lockup at the foot is not competing with it. Semantic token, not a
+       primitive and not a literal: #og-card carries .sc-on-ink, so --sc-accent
+       is spice-400 in BOTH colour schemes (DESIGN_SYSTEM.md §2, "the on-ink
+       context") — which is what an ink card needs, since the page-level
+       --sc-accent flips to spice-700 under prefers-color-scheme: light and
+       would go muddy on this ground. color-mix is the sheet's own idiom for a
+       tint; a raw rgba() here is the exact HYGIENE finding
+       tools/consumer_lint_ci.mjs blocks on the pages. */
+    background-image: radial-gradient(900px 700px at 4% -6%,
+      color-mix(in srgb, var(--sc-accent) 22%, transparent), transparent 56%);
+    color: var(--sc-on-ink);
+    font-family: var(--sc-font-body);
+  }
+  #og-card .card-brand { display: flex; align-items: center; gap: 34px; }
+  #og-card .card-mark { width: 118px; height: 140px; display: block; }
+  #og-card .card-name {
+    font-family: var(--sc-font-display); font-weight: 700;
+    font-size: 104px; line-height: 1; letter-spacing: -.02em; margin: 0;
+  }
+  #og-card .card-sub {
+    font-family: var(--sc-font-mono); font-size: 26px; letter-spacing: .01em;
+    color: var(--sc-on-ink-2); margin-top: 16px;
+  }
+  #og-card .card-say {
+    font-size: 42px; line-height: 1.32; margin: auto 0; max-width: 1000px;
+    color: var(--sc-on-ink);
+  }
+  #og-card .card-say b { font-weight: 600; color: var(--sc-accent); }   /* == spice-400 on ink, both schemes */
+  #og-card .card-foot {
+    display: flex; justify-content: flex-end; align-items: center;
+    border-top: 1px solid var(--sc-ink-line-strong); padding-top: 24px;
+  }
+  #og-card .card-foot img { height: 30px; width: auto; display: block; opacity: .72; }
+</style>
+</head>
+<body>
+<!-- .sc-on-ink re-scopes the page tokens for a dark surface (sc.css §2c), so every
+     colour below is a semantic token that means the same thing in either scheme. -->
+<div id="og-card" class="sc-on-ink">
+  <div class="card-brand">
+      <img class="card-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-color-dark.svg" alt="" width="342" height="405">
+      <div>
+        <p class="card-name">SpicyCar</p>
+        <div class="card-sub">used-car purchase analyzer</div>
+      </div>
+  </div>
+  <p class="card-say">Asking prices as listed, shipping stated on every car, and <b>the cheapest one you can actually drive to</b>.</p>
+  <div class="card-foot">
+    <img src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-lockup-cream.svg" alt="SpicyChicken" width="1593" height="240">
+  </div>
+</div>
+</body>
+</html>
