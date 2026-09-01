@@ -3168,8 +3168,9 @@
   }
   // A cell that is a figure and a line about it, so every column reads the same
   // way down the table.
-  function cmpCell(figure, sub, best) {
-    return el('td', { class: 'sc-num' + (best ? ' is-best' : '') },
+  function cmpCell(figure, sub, best, basis) {
+    return el('td', { class: 'sc-num' + (best ? ' is-best' : ''),
+                      title: basis ? basis.title : null, 'data-basis': basis ? basis.kind : null },
       el('span', { class: 'sc-figure' }, figure),
       sub ? el('span', { class: 'sc-note' }, sub) : null,
       best ? el('span', { class: 'sc-note sc-text-good' }, 'best value here') : null);
@@ -3259,10 +3260,22 @@
     row('Median miles', null, stat.map((v) => cmpCell(v.medMiles != null ? num(v.medMiles) + ' mi' : '—', null)));
     row('Typical days on market', 'Half of them have been listed longer than this',
       stat.map((v) => cmpCell(v.medDays != null ? `${Math.round(v.medDays)}d` : '—', null)));
+    // Each column says what its percentage was measured against, because
+    // "21% under" means nothing without it — and because the cohort is exactly
+    // what decides whether the winner below may be marked at all. scorePicks
+    // stamps `trim` only when it used the car's own trim AND year, and `year`
+    // only when it got no further than the model year.
     row('Best value vs typical', picksRule(),
-      stat.map((v) => cmpCell(v.top && v.top.pct > 0 ? `${Math.round(v.top.pct * 100)}% under` : '—',
-        v.top && v.top.pct > 0 ? `${v.top.x.year} · ${money(v.top.x.price)} · ${placeTxt(v.top.x)}` : 'nothing under typical',
-        !!(comparableCohorts && v.top.pct === bestPct))));
+      stat.map((v) => {
+        const t = v.top;
+        const basis = !(t && t.pct > 0) ? null
+          : t.trim ? { kind: 'trim', title: `Measured against a typical ${t.year} ${v.c.sub || ''} ${t.trim}`.replace(/\s+/g, ' ') }
+          : t.year ? { kind: 'year', title: `Measured against a typical ${t.year} of this model — too few of its own trim and year to judge it against those` }
+          : { kind: 'model', title: 'Measured against the whole model — too few cars of its own year to judge it against those' };
+        return cmpCell(t && t.pct > 0 ? `${Math.round(t.pct * 100)}% under` : '—',
+          t && t.pct > 0 ? `${t.x.year} · ${money(t.x.price)} · ${placeTxt(t.x)}` : 'nothing under typical',
+          !!(comparableCohorts && t.pct === bestPct), basis);
+      }));
     // Counted over every car in the column, not the filtered ones — the same
     // rule (and now the same label) as the movement tile above it, which has
     // said "(all cars)" under a filter since long before there was a comparison.

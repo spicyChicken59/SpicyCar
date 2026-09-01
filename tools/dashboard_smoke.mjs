@@ -178,11 +178,35 @@ ok('and names what went missing', /bmw-not-a-car/.test(await page.textContent('#
 // --- the things two audits found, so they cannot come back -----------------
 // The marked winner is the one number that survives a comparison, and it is
 // only markable when every column's best car was judged against its own trim
-// AND year. The iX is the case that proved it: its 2024 cohort is six M60s and
-// one xDrive50, so the xDrive column's top car scored 24% under a mostly-M60
-// median while sitting 18% ABOVE a typical xDrive.
-await open('?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m');
-ok('no winner is marked on a fallen-back cohort', (await page.locator('#compare-table td.is-best').count()) === 0);
+// AND year. The iX proved it: its 2024 cohort was six M60s and one xDrive50,
+// so the xDrive column's top car scored 24% under a mostly-M60 median while
+// sitting 18% ABOVE a typical xDrive.
+//
+// The RULE is asserted, not that example. Pinning "the iX marks nothing" made
+// this a test of the market rather than of the page — two more snapshot days
+// gave every iX trim-year three eligible cars, the fallback stopped happening,
+// and a correct page failed the check. The oracle is now the page's own stated
+// basis: each column says in data-basis whether its percentage was measured
+// against the car's trim and year, its year, or the whole model, and a winner
+// may be marked only where every column says "trim".
+for (const q of ['?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m',
+                 '?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-m60',
+                 '?brand=bmw&m=i7&trims=bmw-i7-edrive50,bmw-i7-xdrive60',
+                 '?brand=bmw&m=i7&trims=bmw-i7-edrive50,bmw-i7-m70',
+                 '?models=bmw-i5,bmw-i7']) {
+  await open(q);
+  const r = await page.evaluate(() => {
+    const row = [...document.querySelectorAll('#compare-table tbody tr')]
+      .find((tr) => /Best value vs typical/.test(tr.querySelector('th').textContent));
+    const cells = [...row.querySelectorAll('td')];
+    return { bases: cells.map((td) => td.getAttribute('data-basis')),
+             marked: cells.filter((td) => td.classList.contains('is-best')).length };
+  });
+  const comparable = r.bases.every((b) => b === 'trim');
+  ok('a winner is marked only where every column was judged on its own trim and year',
+    comparable ? r.marked <= 1 : r.marked === 0,
+    `${q} → ${r.marked} marked, bases ${r.bases.join('/')}`);
+}
 
 // One shared record handed every Audi row a "new" chip while the compare card
 // beside it said the Audi had no previous snapshot to be new against.
