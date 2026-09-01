@@ -63,7 +63,10 @@ jobs:
             || { git clone https://github.com/spicyChicken59/design-system /tmp/design-system \
                  && git -C /tmp/design-system checkout "$PIN"; }
           set -o pipefail
-          node tools/consumer_lint_ci.mjs /tmp/design-system docs/index.html docs/how.html | tee /tmp/lint.txt
+          # tools/og_card.html is the source of the og:image and is a design-system consumer
+          # like the pages are — it is linted with them so raw colour cannot slip in
+          # through a file nobody checks.
+          node tools/consumer_lint_ci.mjs /tmp/design-system docs/index.html docs/how.html tools/og_card.html | tee /tmp/lint.txt
           # the author is looking at this PR right now — put the verdict where they are
           { echo '### consumer-lint'; echo '```'; cat /tmp/lint.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 

@@ -74,7 +74,7 @@ _Nothing drivable (IL/OH/IN/WI)._
 
 ### eDrive40 — 78 vehicles · lowest asking $36,479 (Seffner, FL)
 
-_First real buyer, near Chicago. Decide by mid-Sept._
+_The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 **Price changes**
 - $39,998 -> **$40,083** (West Covina, CA) `WBY33FK01RCS76878`

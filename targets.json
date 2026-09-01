@@ -58,7 +58,7 @@
                           "max_miles": 30000, "cpo_only": true, "national_only": true,
                           "note": "Every certified eDrive40 and xDrive40 under 30,000 miles, nationwide — the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call." },
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1,
-                          "note": "First real buyer, near Chicago. Decide by mid-Sept." },
+                          "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },
             "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
           }

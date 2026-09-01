@@ -10,8 +10,24 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="SpicyCar — used-car purchase analyzer">
 <meta property="og:description" content="Every model on the watchlist, on a dashboard updated daily: asking prices, shipping stated per car, the cheapest nationwide and in your own states, and how each model moves over time. Built on the free tier of one API and GitHub Actions.">
+<!-- og.png is a data-free identity card, not a screenshot: no crawler runs the JS that would
+     correct it, and nothing in the daily run regenerates a PNG. Source: tools/og_card.html. -->
 <meta property="og:image" content="https://spicychicken59.github.io/SpicyCar/og.png">
+<meta property="og:image:alt" content="A dark card: the SpicyCar wordmark and the SpicyChicken mark over the line “Asking prices as listed, shipping stated on every car, and the cheapest one you can actually drive to.”">
 <meta property="og:url" content="https://spicychicken59.github.io/SpicyCar/">
+<!-- One canonical for the whole dashboard, and it is static on purpose. The selection
+     rides in the query string (?brand, ?m, ?models, ?trims) so a comparison can be sent
+     to whoever is buying the car with you — but GitHub Pages has no server-side render:
+     it returns this same byte-identical file for every one of those URLs, and the JS
+     applies the state after load. To a crawler, which is the only reader a canonical
+     speaks to, /?models=bmw-i5,bmw-i7 IS / — same title, same description, same og:url.
+     Saying so collapses the whole subsets-times-orderings space onto the one address a
+     search result should point at, and costs a shared link nothing: it still opens with
+     its selection intact and still unfurls from og:* below.
+     Do NOT make this per-view from JS. The crawlers that draw unfurls never run it, and
+     a per-view canonical would assert distinct pages that serve identical HTML — which
+     is the duplication it exists to resolve. Keep it equal to og:url above. -->
+<link rel="canonical" href="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
 <!-- SpicyChicken Design System v2.4.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
 <link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
@@ -52,6 +68,70 @@
      late fetch popped in a 906px card and shifted everything below it by
      938px at 1280×900 (557px at 390×844). */
   #map:empty { aspect-ratio: 975 / 610; background: var(--sc-raised); border-radius: var(--sc-r-sm); }
+  /* The same reservation one level up, for the whole page. The loading shell —
+     h1 "Loading snapshot…", empty #kpis, every card still hidden — leaves #main
+     314px tall, so footer.sc-foot painted at y=462 on a 390×844 phone, INSIDE
+     the fold, and render() evicted it to y=5527 the moment data.json landed:
+     one layout-shift entry, one source, t≈160ms, and it was the ENTIRE phone
+     CLS of 0.1991. CLS failed at every width measured, not only on phones —
+     0.832 at 320×568, 0.103 at 820×1180, 0.072 at 1280×1000 — and this rule
+     is width-independent: 390 → 0.000, 820 and 1280 → 0.001. It does NOT fix
+     320, which stays at 0.194 on a different node: #mast-right swapping
+     'Loading…' for the meta line, which wraps at that width. That is the same
+     node behind the 0.0009 residue at 1280×1000.
+     One viewport is enough, because rendered #main runs 5,183px (watchlist at
+     1280) to 14,537px (the i5 page on a phone), so the rule is inert after
+     boot. 100vh not svh/dvh is deliberate: vh is the LARGE viewport, so a
+     phone still showing its URL bar is covered.
+     The cost is whitespace, in one state, and it is not a stability cost: when
+     data.json fails outright (abort, 404 and 500 measure identical), fail()'s
+     notice sits above a viewport of empty main and the footer moves from y=746
+     to y=993 at 390×844 (560 → 1116 at 1280, where the page starts to scroll:
+     docH 1000 → 1177). CLS there IMPROVES, the footer having left that shift
+     too: 0.1907 → 0.1217 on the phone, 0.0400 → 0.0266 at 1280. */
+  #main { min-height: 100vh; }
+  /* The last box on the page nobody reserved, and the last layout-shift entry
+     with it. The masthead's right-hand slot ships "Loading…" and render()
+     replaces it with "Data through " + an ISO date — 56px of text becoming
+     161px. Below ~333px that no longer fits beside the nav on the masthead's
+     wrapped second row, so the slot took a row of its OWN, grew the masthead
+     from 100.5px to 127.2px and pushed all of #main down with it: one entry,
+     t≈190ms, sources #mast-right and #main, and the entire 0.194 that NS-06's
+     #main reservation could not reach at 320×568.
+     Reserving the WIDTH, not the height, is what makes this width-independent
+     and needs no breakpoint: a box is max(min-width, its text), so once
+     min-width covers the widest line the slot can hold, the box measures the
+     same in the loading state and the loaded one at EVERY viewport — same flex
+     line count, same masthead height, nothing left to shift. The widest line
+     is 'Data through ' + a 10-character ISO date = 23 characters; dataThrough()
+     has no other shape (data_through, the newest daily date, generated, or the
+     em dash), and fail()'s "No data" and the "Loading…" placeholder are both
+     shorter. 23 characters of a font stack that ends in `monospace` are exactly
+     23ch, plus the .4px of tracking .sc-masthead__right sets on each — so the
+     reservation is the rendered width, not a magic number, and it follows the
+     font if the font ever changes. The trailing 1px is rounding headroom, and
+     the only part of this that is not derived: chromium resolves 1ch to
+     6.6013px and quantises the calc to 161.025px against a string that measures
+     161.031px, and a reservation a sixth of a hundredth of a pixel SHORT is not
+     a reservation. 1px is the smallest honest guard and costs a pixel of slack
+     on a masthead row that has 119 to spare at 320px.
+     Measured on the integrated tree, model page and watchlist, at the four
+     widths the run tracks: 320×568 0.1938 → 0.0022 on the model page and
+     0.0000 on the watchlist; 390×844 0.0000 → 0.0000; 820×1180 0.0013 →
+     0.0000; 1280×1000 0.0009 → 0.0000. 820 and 1280 improve rather than hold
+     because their entries were this same node — the desktop masthead is a
+     single flex row where `justify-content: space-between` turns the slot's
+     growth into 105px of leftward travel for the nav instead of a new row, and
+     reserving the width parks the nav at its final x from the first paint.
+     The 0.0022 left at 320 is NOT this node and is not new: it is #eyebrow
+     going from one line to two ("analyzer" → "BMW · 2024–2025 · IL · OH · …"),
+     which moves the h1 12px down. It was always there, bundled inside the
+     0.1938 entry because both fired in render()'s single frame; with the
+     masthead pinned it is all that is left, and it is 2% of the budget.
+     The cost is the same kind #main pays, and smaller: below ~333px the second
+     masthead row stands empty for the ~190ms before data lands, and stays empty
+     in the fail state. Above that width it costs nothing at all. */
+  #mast-right { min-width: calc(23 * (1ch + .4px) + 1px); }
   /* Touch hit halo — one invisible circle per dot, built only on coarse
      pointers. Pure geometry: r rides user units, sized to ~25px on screen
      and re-derived when the viewport width changes (fill:none paints
@@ -130,8 +210,17 @@
      with white text: measured 1.37:1 in light, 2.99:1 in dark, which is to say
      the count vanished at the exact moment the reader selected the chip. A
      pressed chip's count inherits the chip's own colour, so it passes wherever
-     the label it sits under passes (7.96:1). */
-  #f-trim .chip-n, #f-model .chip-n { margin-left: 6px; opacity: 0.7; }
+     the label it sits under passes (7.96:1).
+     The unpressed count carried an opacity: 0.7 that did the same thing more
+     quietly: sc-note is --sc-text-2, which is 6.44:1 dark and 5.83:1 light on
+     its own ground, and the compositing dragged it to 3.82:1 (#6c7889 on
+     #121c2a) and 3.05:1 (#8e949c on #ffffff) at 12px/400 — under the 4.5:1 AA
+     needs, and the whole of axe's 7 serious nodes on the watchlist, 9 on a
+     model page and 5 on compare, in both themes. Unpressed is the normal state
+     of nearly every chip, and the count is the number that says whether
+     pressing it is worth anything (i5 136 against EV9 32), so it keeps the
+     token's own value; quieter than the label is the size and weight's job. */
+  #f-trim .chip-n, #f-model .chip-n { margin-left: 6px; }
   #f-trim [aria-pressed="true"] .chip-n,
   #f-model [aria-pressed="true"] .chip-n { color: currentColor; opacity: 0.85; }
 
@@ -163,6 +252,33 @@
     .picks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .col-model { min-width: 220px; }        /* the small thumb replaces the 120px one here */
     #list-table .col-price { max-width: 176px; white-space: normal; }   /* the long price notes wrap instead of holding the column at 204px */
+  }
+
+  /* A phone in landscape is WIDE and SHORT, and every rule that folds the
+     filter panel away is keyed to width alone: sc.css hides .sc-filters behind
+     .sc-filter-bar__toggle only below 721px, and narrow() gates the JS half at
+     the same edge. Rotate an iPhone 13/14/15 and the viewport crosses to
+     844x390 — the panel springs open at 371px tall, the toggle that would shut
+     it computes display:none, and the sticky bar leaves 19px of those 390 for
+     the results at every scroll offset (915x412 keeps 152px, 932x430 keeps
+     160px). Capping the bar and letting it scroll inside itself keeps the
+     reach the sticky position exists for while giving the page back 215px at
+     844x390 and 227px at 915x412. 560px sits above every phone-landscape
+     height measured (390/412/430) and well below iPad landscape, which needs
+     no help at 768px tall.
+
+     The query is keyed to HEIGHT alone, so it also reaches inside the <=720px
+     band the toggle already covers — deliberately, because the toggle only
+     helps once the panel is shut. Opened at 667x375 (iPhone SE landscape) the
+     panel measures 381px on a 375px viewport, taller than the screen it sits
+     on; the cap takes it to 169px with the rest behind the internal scroll.
+     Same at 320x256. Neither was in the fault this rule was written for, and
+     in both the cap is an improvement, not a regression — but it does fire
+     there, and a reader tracing the 560px number should not be surprised by
+     it. Above 560px tall nothing changes: max-height computes to none at
+     390x844, 768x1024 and 1280x1000, measured. */
+  @media (max-height: 560px) {
+    #filters-card { max-height: 45vh; overflow-y: auto; }
   }
 
   /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
@@ -287,7 +403,7 @@
   <section class="sc-card sc-filter-bar" id="filters-card" hidden>
     <div class="sc-filter-bar__head">
       <span class="sc-eyebrow">filters</span>
-      <span class="sc-note" id="filter-count"></span>
+      <span class="sc-note" id="filter-count" role="status" aria-live="polite"></span>
       <button class="sc-btn sc-btn--ghost sc-btn--sm sc-filter-bar__toggle" id="filter-toggle" type="button"
               aria-expanded="false" aria-controls="filters">Filters</button>
     </div>
@@ -456,24 +572,34 @@
   //   rule the where chips already teach. One picked is a scope; TWO OR MORE is
   //   a comparison, and that is the only thing that turns a view into one.
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
-  // hidden: model ids (brand/model) hidden from the market chart via the legend.
+  // hidden: model ids (brand/model) whose LINE is switched off in the market
+  //   chart's legend. Per visit only, on purpose — see loadPrefs.
   const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
   // (SC.toneRef or a literal), so it re-resolves in CSS on a theme flip and
   // costs no getComputedStyle mid-update.
-  // The where filter and hidden chart lines survive a return visit; everything else is per-session.
+  // The where filter and the chart's range survive a return visit. S.hidden does
+  // NOT, and used to: it is a view toggle on ONE card, and a remembered one is a
+  // page contradicting itself with nothing on screen to say why. It read
+  // {"hidden":["bmw/i7"]} days later and drew six of seven lines while
+  // #chart-scope still said "whole market — not filtered" and #chart-hint still
+  // said "one line per model" — the same lie chartScopeChip() was written to
+  // kill, just quieter. The only notice a returning reader gets is one legend
+  // swatch at 0.35 opacity, which is notice enough in the visit that pressed it
+  // and no notice at all a week on. So it is neither written nor read: an older
+  // profile's `hidden` array is ignored, and S.hidden starts each visit empty
+  // from the initialiser above.
   function loadPrefs() {
     try {
       const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
       S.where = new Set(Array.isArray(p.where) ? p.where : []);
-      S.hidden = new Set(Array.isArray(p.hidden) ? p.hidden : []);
       S.range = ['30', '90', 'all'].includes(p.range) ? p.range : '90';
-    } catch (e) { S.where = new Set(); S.hidden = new Set(); S.range = '90'; }
+    } catch (e) { S.where = new Set(); S.range = '90'; }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden], range: S.range })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range })); } catch (e) { /* private mode etc. */ }
   }
   // ---------- the comparison ----------
   // Which trims a model page is about, in the config's own order (a Set has
@@ -502,6 +628,17 @@
   // applyUrl, which is the only door a selection ever comes through: the chips
   // can only press ids they were built from, and every navigation clears them.
   const modelKey = (bk, mk) => bk + '/' + mk;
+  // Brands, models and trims are plain objects keyed by slug, so `o[slug]` also
+  // answers yes for every key Object.prototype carries. ?model=constructor hit
+  // on every trim in the file and the loop below keeps the LAST match, so it
+  // opened whichever car the watchlist ends on — the Lucid Air, the day this
+  // was found — with no notice and the address bar rewritten to a clean
+  // ?brand=lucid&m=air, so neither sender nor reader could tell the link had
+  // been honored with a different car. ?brand=__proto__ was worse: it set
+  // S.brand to a brand that does not exist and the page rendered "Snapshot
+  // unavailable — could not load data.json" over a data.json that had parsed
+  // fine. Membership is an own-property question; ask it that way.
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
   // Brand palette — the design system's categorical slots, in fixed watchlist
   // order. Hue carries the BRAND; the dash pattern carries the model within it,
   // so identity never rides on color alone. The sheet ships five slots and folds
@@ -1249,11 +1386,19 @@
     const ctl = MAP_CTL, mode = ctl.mode;
     // The trim rule is trimRows', not a second copy of it: one predicate for
     // the table, the counts and the dots, so they cannot drift apart. On the
-    // watchlist the model chips narrow the map the same way, and the legend's
-    // hidden set still hides a line's dots on top of that.
+    // watchlist the model chips narrow the map the same way — and only they
+    // do. S.hidden used to cut dots here too, which is the drift this comment
+    // claims to prevent: pressing "Hide BMW i7" took 137 of the 484 cars off
+    // the map (479 dots → 342) while #filter-count still read "showing all
+    // 484 cars", the tile still said 7 models, the index still listed all
+    // seven rows and the caption still blamed "the current filters". The chip
+    // that did it is 1,058px BELOW the map card (y=3839 vs y=2781), in the
+    // chart's legend, and it outlives the visit in localStorage — so a
+    // returning reader met a map missing a whole model with nothing on screen
+    // naming the filter. S.hidden is the price chart's legend and stops there.
     const inSel = (e) => (mode === 'model'
       ? (!S.trims.size || S.trims.has(e.c.x.trim_id))
-      : (!S.models.size || S.models.has(modelKey(e.c.bk, e.c.mk))) && !S.hidden.has(modelKey(e.c.bk, e.c.mk)));
+      : (!S.models.size || S.models.has(modelKey(e.c.bk, e.c.mk))));
     const entryVisible = (e) => inSel(e) && passesShared(e.c.x);
     // literally the same pick sets as the cards above the map
     const sets = pickSets(scopedScored(), pickCap());
@@ -2050,18 +2195,18 @@
     const wantBrand = lc('brand'), wantModel = lc('model'), wantM = lc('m');
     S.brand = 'all'; S.model = null; S.models = new Set(); S.trims = new Set(); urlMiss = null;
     if (wantModel) {
-      for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if ((m.trims || {})[wantModel]) { S.brand = bk; S.model = mk; }
+      for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if (own(m.trims, wantModel)) { S.brand = bk; S.model = mk; }
       if (!S.model) urlMiss = { asked: wantModel, kind: 'car' };
-    } else if (wantBrand && S.site.brands[wantBrand]) {
+    } else if (wantBrand && own(S.site.brands, wantBrand)) {
       const models = S.site.brands[wantBrand].models || {};
-      if (wantM && !models[wantM]) urlMiss = { asked: wantBrand + ' ' + wantM, kind: 'car' };
+      if (wantM && !own(models, wantM)) urlMiss = { asked: wantBrand + ' ' + wantM, kind: 'car' };
       else { S.brand = wantBrand; S.model = wantM || Object.keys(models)[0]; }
     } else if (wantBrand) {
       urlMiss = { asked: wantBrand, kind: 'brand' };
     } else if (wantM) {
       // ?m= without a brand was never a published shape, but the ask is
       // legible: honor it if exactly the model exists anywhere, else say so
-      for (const [bk, b] of Object.entries(S.site.brands)) if ((b.models || {})[wantM]) { S.brand = bk; S.model = wantM; }
+      for (const [bk, b] of Object.entries(S.site.brands)) if (own(b.models, wantM)) { S.brand = bk; S.model = wantM; }
       if (!S.model) urlMiss = { asked: wantM, kind: 'car' };
     }
     // The selection, restored against the live watchlist. A link that names
@@ -2092,7 +2237,7 @@
     if (missed.length && !urlMiss) urlMiss = { asked: missed.join(', '), kind: (S.brand !== 'all' || S.models.size) ? 'part' : 'car' };
     S.year = 'all'; S.showAllList = S.showAllGone = false;
     // A model the link put in the comparison must be visible in it, whatever a
-    // legend chip pressed on some earlier visit remembers.
+    // legend chip pressed earlier in this visit switched off.
     for (const k of S.models) S.hidden.delete(k);
     // Always canonicalize (replace, so history stays sane): a miss must not
     // leave the dead URL to be copied onward, and a hit must not keep stray
@@ -2439,12 +2584,34 @@
     const best = lowestBy(priced, 'price');
     const med = median(priced.map((x) => x.price));
     const filteredView = rows.length !== all.length;
+    // Is the view narrowed? For tiles 1 and 2 that has to be the filter bar's
+    // own question, not a row count: `all` is trimRows(...) too, so the trim
+    // sits on BOTH sides and no trim chip can ever make filteredView true.
+    // Tile 1 therefore called a $93,399 M70 floor "nationwide" against the
+    // i7's real national $43,663, and $54,898 on eDrive50 against that same
+    // figure — while the chart chip an inch below said "filtered — M70" and
+    // the count line said "showing 6 of 138 cars · M70". filterBits is the
+    // answer the overview tiles and the overview table header already ask
+    // for, so the three stop disagreeing on one screen. Tile 4 keeps
+    // filteredView: it counts over `all`, so a trim chip really is not a
+    // filter there.
+    //   The trade, measured rather than assumed: asking the filter bar means a
+    // filter that happens to remove nothing now says "(filtered)" too. Pick a
+    // model whose cars are all one model year (the day this was written, the
+    // Audi A6 e-tron: 24 cars, all 2025) and select that year — the tiles read
+    // "(filtered) $36,077" while the count line below still reads "showing all
+    // 24 cars". Taken on purpose: the value never moves, the error can only
+    // understate a claim, and overstating one is what put a $93,399 floor under
+    // the word "nationwide". The overview tiles and the overview table header
+    // have always read these same bits, so this is the page agreeing with
+    // itself, not a new answer.
+    const scopedView = !!filterBits(false).length;
 
     // Labels mirror the overview's, and the decision number a buyer here actually
     // needs — the cheapest car they can drive to — gets its own tile rather than
     // being left to the table. Median moves into the market tile's sub-line.
     const bestLocal = lowestBy(priced.filter(isLocal), 'price');
-    const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
+    const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, scopedView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
       el('div', { class: 'sc-tile__value' }, best ? money(best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
     // The day-over-day move used to be dropped under any filter, because the
@@ -2462,7 +2629,7 @@
     }
     host.appendChild(tile1);
 
-    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
+    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, scopedView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
       el('div', { class: 'sc-tile__value' }, bestLocal ? money(bestLocal.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestLocal
         ? `${bestLocal.year} · ${num(bestLocal.miles)} mi · ${placeTxt(bestLocal)} · no shipping`
@@ -2844,10 +3011,21 @@
       g.likely && g.likely !== 'delisted'
         ? el('span', null, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null,
       (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
+    // The .sc-media__body wrapper is load-bearing, not tidiness. sc.css lays
+    // .sc-media--card out as `auto 1fr auto` and it is the .sc-frame — column 1,
+    // spanning three rows — that parks title/sub/code in column 2 and the aside
+    // in column 3. This is the one card on the page with no photo, so as five
+    // bare children auto-placement gave it title | aside | LOCATION across three
+    // max-content columns, with the VIN alone under the title: 286px of columns
+    // inside a 228px card at 320x568, which hung 12px off the document and cut
+    // "Bentonville, AR" in half. Wrapped, the three lines are ONE grid item, the
+    // card is body | aside — the phone listing card's own shape, minus the photo
+    // it has no field for — and it fits any width the cards are rendered at.
     return el('div', { class: 'sc-media sc-media--card' },
-      el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), aside,
-      el('div', { class: 'sc-media__sub' }, placeCell(g)),
-      el('div', { class: 'sc-media__code' }, g.vin), foot);
+      el('div', { class: 'sc-media__body' },
+        el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()),
+        el('div', { class: 'sc-media__sub' }, placeCell(g)),
+        el('div', { class: 'sc-media__code' }, g.vin)), aside, foot);
   }
   function renderGone() {
     const t = model(), gone = goneRows(t), card = $('gone-card');
@@ -3115,7 +3293,9 @@
       lg.appendChild(el('button', { class: 'sc-legend__chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
         'data-fkey': 'legend:' + id,
         title: (off ? 'Show ' : 'Hide ') + m.label + (m.shopping ? ' (shopping)' : ''),
-        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); savePrefs(); rerender('hide'); },
+        // No savePrefs(): S.hidden is not persisted any more, so the call only
+        // rewrote where/range. The chip toggles a line and redraws the chart.
+        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); rerender('hide'); },
         onmouseenter: () => { if (!off) highlightSeries(id); },
         onmouseleave: () => highlightSeries(null) },
         sample, el('span', null, m.label)));
@@ -3224,7 +3404,19 @@
     // would; the caption names the table once; scope says which way to read.
     table.appendChild(el('caption', { class: 'sc-sr-only' },
       `${byTrim ? 'The trims' : 'The models'}, side by side — one column each, ${cols.length} of them`));
-    const head = el('tr', null, el('th', { scope: 'col' }, ''));
+    // The corner cell heads the column of row labels, not a column of cars,
+    // so it names what that column holds. It shipped empty, which is the one
+    // thing a th may not be: axe flagged it (empty-table-header) on every
+    // state that opens this card, and a screen reader reading the metric
+    // column in table mode announced its heading as nothing. "Measure" is
+    // true of all ten rows below it — prices, counts, medians, days, the
+    // sparkline — and it is the same ten rows whether the columns beside it
+    // are trims or models, so the word does not change with the mode. It is
+    // visible, like the "Day" the two history tables put in the same corner:
+    // sc.css lowercases thead in mono, so it reads as a label, not a heading,
+    // and the column is already 96px (phone) / 148px (desktop) wide for the
+    // labels under it, so seven characters move nothing.
+    const head = el('tr', null, el('th', { scope: 'col' }, 'Measure'));
     for (const v of stat) {
       head.appendChild(el('th', { class: 'sc-case', scope: 'col',
         'aria-label': `${v.c.label}${v.c.sub ? ', ' + v.c.sub : ''}` },
@@ -3382,28 +3574,84 @@
   function renderEmptyNotice(shown, total) {
     const n = $('notice');
     n.textContent = '';
+    // A trim selection can be the whole reason nothing is shown, and then
+    // "Clear the filters" below is a dead end: that handler deliberately leaves
+    // S.trims alone, so the page would come back exactly as empty. Two of the
+    // fifteen watched trims were in this state the morning this was written —
+    // bmw-i5-cpo and bmw-i7-cpo, the certified watches on the only two models
+    // marked shopping — because every certified car they find is also filed
+    // under the trim it is and the list keeps one row per VIN, so the chip
+    // offers "CPO under 30k mi 0" and one press empties 136 cars' worth of
+    // page. WHICH trims read 0 is a tracker accident and changes overnight;
+    // that any of them can is a property of the page. Name the trim as the
+    // cause and offer the way out that actually works.
+    //
+    // Measured above the stale-link branch on purpose: that branch returns, and
+    // it lands in exactly the same dead end — a link naming one retired trim
+    // and one empty one printed "showing the rest of it" over a page with
+    // nothing on it, no link, and no way back until the next render.
+    const t = S.brand === 'all' ? null : model();
+    const picked = t && S.trims.size ? selectedTrims(t) : [];
+    const trimsEmpty = !!picked.length && !trimRows(t.listings || []).length;
+    const trimName = t ? (t.label || S.model) : '';
+    const showAllTrims = () => el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:trims', onclick: (e) => {
+      e.preventDefault();
+      // Only the trim selection: the year, miles and history filters are the
+      // reader's own and are not what emptied this page, so they survive — the
+      // same restraint the clear-the-filters link shows the comparison.
+      // Replaces the history entry rather than pushing one.
+      S.trims = new Set(); syncUrl(true); buildFilters(); rerender('trim');
+    } }, `Show all ${trimName} trims`);
     // A link asked for something the watchlist no longer has (applyUrl caught
     // it): say so once, then the flag is spent — the next render pass, filter
     // change or navigation returns this slot to the empty-filters notice.
     if (urlMiss) {
       const miss = urlMiss; urlMiss = null;
+      // Only 'part' can reach a model page at all: applyUrl leaves S.brand at
+      // 'all' for a dead brand or a dead car, so trimsEmpty is false there.
+      const stranded = miss.kind === 'part' && trimsEmpty;
       n.appendChild(el('div', { class: 'sc-notice' },
         el('div', { class: 'sc-eyebrow' }, miss.kind === 'brand' ? 'that brand is not tracked'
           : miss.kind === 'part' ? 'part of that comparison is gone' : 'that car is no longer tracked'),
         el('p', null, miss.kind === 'part'
           // the rest of the link opened; only the missing part is reported, and
           // the address bar has already been rewritten to what is actually shown
-          ? 'The link also asked for “' + miss.asked + '”, which is not on the watchlist any more — showing the rest of it.'
+          ? 'The link also asked for “' + miss.asked + '”, which is not on the watchlist any more — '
+            // ...except when what survived the link holds no cars, and then
+            // "showing the rest of it" describes a page of dashes.
+            + (stranded ? 'and the part that is left has no cars right now. ' : 'showing the rest of it.')
           : 'The link asked for “' + miss.asked + '”, ' + (miss.kind === 'brand'
             ? 'which is not a brand on this watchlist'
-            : 'which is not on the watchlist any more') + ' — showing the whole watchlist instead.')));
+            : 'which is not on the watchlist any more') + ' — showing the whole watchlist instead.',
+          // the escape rides inside the sentence, exactly like the two below
+          stranded ? showAllTrims() : null, stranded ? '.' : null)));
       n.hidden = false;
       return;
     }
     if (shown > 0 || !total) { n.hidden = true; return; }
+    if (trimsEmpty) {
+      n.appendChild(el('div', { class: 'sc-notice' },
+        el('div', { class: 'sc-eyebrow' }, picked.length > 1 ? 'no cars in these trims right now' : 'no cars in this trim right now'),
+        el('p', null, `The watchlist holds ${num(total)} ${trimName} cars, but none of them are ${picked.map((id) => trimLabel(t, id)).join(' + ')}, `
+          + 'so the picks, the map and the price chart below have nothing to draw. ',
+          showAllTrims(), '.')));
+      n.hidden = false;
+      return;
+    }
+    // The number this sentence prints has to be the number its own link brings
+    // back. `total` is the whole model on purpose — measuring a trim selection
+    // against itself is the bug the guard above exists for — but "Clear the
+    // filters" below just as deliberately leaves S.trims alone, so with the i5
+    // narrowed to eDrive40 the sentence promised 136 and the link delivered 80.
+    // filterCount may print 136 because it prints "· eDrive40" on the same line
+    // to qualify it; this sentence has no qualifier and sits on the link.
+    // Past the branch above, trimRows() is non-empty whenever a trim is picked,
+    // and on the overview there is no model to measure so `total` already is
+    // what Clear restores (modelsInView keeps the model selection either way).
+    const restorable = t ? trimRows(t.listings || []).length : total;
     n.appendChild(el('div', { class: 'sc-notice' },
       el('div', { class: 'sc-eyebrow' }, 'nothing matches these filters'),
-      el('p', null, `All ${num(total)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
+      el('p', null, `All ${num(restorable)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
         el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
           S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false;
@@ -3476,7 +3724,12 @@
     // stay atomic with the KPIs and the notice.
     if (fk !== undefined && S.showAllList && rows.length > 60) scheduleListRender(rows, fk);
     else renderList(rows);
-    renderEmptyNotice(rows.length, trimRows(t.listings || []).length);
+    // The whole model, not the selection — the same rule filterCount follows
+    // one function down. Measuring the denominator through trimRows() made it
+    // 0 for a trim with no cars, and the notice's own `!total` guard then
+    // silently skipped the notice: pressing "CPO under 30k mi 0" on the i5 left
+    // 136 cars' worth of page as dashes with nothing said and no way back.
+    renderEmptyNotice(rows.length, (t.listings || []).length);
     const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
     renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
     filterCount();
@@ -3557,7 +3810,7 @@
           // From a model page the press is a move, not a filter: take the two
           // cars into the comparison view with the current one already in it.
           S.models = new Set([here, id]);
-          S.hidden.delete(here); S.hidden.delete(id);   // a legend chip pressed months ago must not blank half a comparison
+          S.hidden.delete(here); S.hidden.delete(id);   // a legend chip pressed upstream must not blank half a comparison
           S.brand = 'all'; S.model = null; S.trims = new Set();
           savePrefs(); syncUrl(); rerender('nav'); window.scrollTo(0, 0);
         });
@@ -3642,6 +3895,20 @@
       : 'This chart plots the whole market so the trend stays comparable day to day';
   }
   // What the filters are actually doing, said in one line beside their name.
+  // It is also the page's only status message: a chip press rewrites the KPIs,
+  // the picks, the map, the chart and the table while focus stays on the chip,
+  // so "pressed" was the entire announcement a screen reader got for going
+  // from 484 cars to 92 (WCAG 4.1.3). The span carries role=status now, and
+  // this writes only when the sentence actually changed, so the re-renders
+  // that call it with nothing new to say stay silent. The one unprompted
+  // announcement left is the first fill, after data.json lands, and it is kept:
+  // it is the only signal a screen reader gets that the async render happened.
+  // Calling this before the line that reveals #filters-card does NOT silence it
+  // — measured, not assumed: one MutationObserver over the card sees the whole
+  // first render as a single 26-record batch, so the fill and the unhide are in
+  // one task and no order within it is observable from outside. Real silence
+  // would mean withholding aria-live until a later task, which throws the cue
+  // away for nothing.
   function filterCount() {
     const overview = S.brand === 'all';
     const shown = overview
@@ -3655,9 +3922,21 @@
       ? allModels().reduce((a, { m }) => a + (m.listings || []).length, 0)
       : (model().listings || []).length;
     const bits = filterBits(overview);
-    $('filter-count').textContent = shown === total
+    // Order rides along, but only when it is not the arrival order: sorting
+    // re-renders the table and touches no count, so 'showing all 136 cars'
+    // before equals 'showing all 136 cars' after and a live region with the
+    // same sentence in it announces nothing. Naming the order makes the
+    // sentence move; skipping the default ('local') and the states where the
+    // select is off-screen keeps every first paint's copy exactly as it was.
+    const sortField = $('f-sort');
+    const sortOpt = S.sort === 'local' || sortField.parentElement.hidden
+      ? null : sortField.querySelector(`option[value="${S.sort}"]`);
+    const line = (shown === total
       ? `showing all ${num(total)} cars`
-      : `showing ${num(shown)} of ${num(total)} cars${bits.length ? ' · ' + bits.join(' · ') : ''}`;
+      : `showing ${num(shown)} of ${num(total)} cars${bits.length ? ' · ' + bits.join(' · ') : ''}`)
+      + (sortOpt ? ` · sorted by ${sortOpt.textContent.toLowerCase()}` : '');
+    const out = $('filter-count');
+    if (out.textContent !== line) out.textContent = line;
     $('filter-toggle').textContent = bits.length ? `Filters · ${bits.length}` : 'Filters';
   }
 
@@ -3725,10 +4004,15 @@
       // The comparison has a listings table on the watchlist too, so these two
       // can no longer assume a model page — filtered() would ask for
       // brands['all'] and throw before it ever reached the rows.
-      case 'sort':
+      // A re-sort reaches filterCount through nothing else, and it is the only
+      // thing on the page that can say the order changed.
+      case 'sort': renderList(overview ? pooledRows() : filtered()); filterCount(); break;
       case 'showList': renderList(overview ? pooledRows() : filtered()); break;
       case 'showGone': renderGone(); break;
-      case 'hide': renderOverviewChart(overviewRows()); updateMapVisibility(); break;
+      // The chart and nothing else: S.hidden is its legend's own state now, so
+      // the map pass this used to make re-toggled ~500 dot classes to arrive
+      // at the same map it started from.
+      case 'hide': renderOverviewChart(overviewRows()); break;
       case 'range': overview ? renderOverviewChart(overviewRows()) : renderChart(); break;
       // buildFilters runs INSIDE the nav scope — after rememberFocus — so a
       // where-chip holding focus is captured before the chips are rebuilt
