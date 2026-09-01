@@ -467,17 +467,112 @@ def finance_export():
     }
 
 
+SHIP_BANDS = [(to_float(b.get("to")), to_float(b.get("per_mile")))
+              for b in (BUYER.get("ship_bands") or [])
+              if to_float(b.get("per_mile"))]
+SHIP_ROAD_FACTOR = to_float(BUYER.get("ship_road_factor")) or 1.0
+
+
+def band_rate(miles):
+    """The per-mile rate for a haul of this length, or None if unbanded.
+
+    Transport is not linear in distance and never was. A carrier's fixed costs
+    — dispatch, loading, the deadhead to reach the car — are the same for 200
+    miles as for 2,000, so the short haul carries them alone and the long one
+    spreads them. One flat rate therefore has to be wrong at both ends: it
+    undercharges the short move and overcharges the long one, which on this
+    watchlist means it is wrong in the direction that flatters far-away cars.
+    """
+    for edge, rate in SHIP_BANDS:
+        if edge is None or miles <= edge:
+            return rate
+    return SHIP_BANDS[-1][1] if SHIP_BANDS else None
+
+
 def ship_for(r):
     """Shipping for a listing: nothing in-state; otherwise by distance from
-    home when it is known, else the flat ship_cost."""
+    home when it is known, else the flat ship_cost.
+
+    Two corrections over the flat great-circle estimate this replaces, both
+    of which pushed the same way — understating what a distant car costs:
+
+      road factor  A straight line is not a route. Trucks follow interstates
+                   around lakes and terrain, and the detour is systematic, not
+                   noise: real road miles run above the great-circle figure on
+                   essentially every corridor out of Chicago.
+      bands        See band_rate. A flat per-mile rate misprices both ends.
+
+    What this does NOT buy, measured rather than assumed: a different ranking.
+    Correcting the estimate moves the median shipped car $148 and reorders the
+    landed-cost top 25 by zero. Two reasons, both worth knowing before anyone
+    spends effort here expecting the list to move. Twenty-two of the top
+    twenty-five are DRIVABLE, so shipping is zero for them and no correction to
+    it can touch them. And a correction only reorders through its DIFFERENTIAL
+    part: this one is mostly a uniform lift, with a standard deviation of $84
+    against a $274 median gap between adjacent cars, so it lifts the shipped
+    cars together rather than past each other.
+
+    (An earlier note here reasoned from the error's magnitude — $340-790
+    against those $274 gaps — to the conclusion that the ordering was being
+    decided by the error. That was wrong: a systematic bias cannot reorder
+    anything, and only the spread around it can.)
+
+    What it does buy is an absolute number worth quoting. "Bring it from
+    Phoenix for about $1,180" is a sentence this model can now say and the flat
+    one could not, and it is the number the fly-and-drive comparison has to be
+    right about to mean anything.
+
+    The bands below ship UNCALIBRATED — published typical open-carrier ranges,
+    not quotes anyone obtained. That is why buyer.ship_calibrated is null and
+    why the page says "estimate" rather than a number: the shape of this model
+    is defensible today, its constants are not yet, and pretending otherwise
+    would trade a wrong number for a wrong number that looks researched. Put
+    three real quotes on real corridors into buyer.ship_quotes, set the date,
+    and calibrate() will tell you how far off the bands are.
+    """
     if in_scope(r):
         return 0
     d = row_distance(r)
-    rate = to_float(BUYER.get("ship_per_mile"))
-    if d is not None and rate:
-        floor = to_float(BUYER.get("ship_min")) or 0
-        return int(round(max(floor, d * rate)))
-    return to_int(BUYER.get("ship_cost")) or 0
+    if d is None:
+        return to_int(BUYER.get("ship_cost")) or 0
+    floor = to_float(BUYER.get("ship_min")) or 0
+    road = d * SHIP_ROAD_FACTOR
+    rate = band_rate(road)
+    if rate is None:
+        # No bands configured: the flat rate this replaced, unchanged, so a
+        # config without ship_bands keeps behaving exactly as it did.
+        rate = to_float(BUYER.get("ship_per_mile"))
+        if not rate:
+            return to_int(BUYER.get("ship_cost")) or 0
+        road = d
+    return int(round(max(floor, road * rate)))
+
+
+def ship_calibration():
+    """How far the bands are from the quotes the buyer actually collected.
+
+    Returns None until buyer.ship_quotes has something in it. Each quote is
+    {miles, price, route} — the miles the BROKER quoted, not the great-circle
+    figure, because that is the number the model is trying to predict.
+    """
+    quotes = [q for q in (BUYER.get("ship_quotes") or [])
+              if to_float(q.get("miles")) and to_float(q.get("price"))]
+    if not quotes:
+        return None
+    errs = []
+    for q in quotes:
+        miles, price = to_float(q["miles"]), to_float(q["price"])
+        rate = band_rate(miles)
+        if rate is None:
+            continue
+        est = max(to_float(BUYER.get("ship_min")) or 0, miles * rate)
+        errs.append(est - price)
+    if not errs:
+        return None
+    return {"n": len(errs),
+            "mean_error": round(sum(errs) / len(errs)),
+            "worst": round(max(errs, key=abs)),
+            "calibrated": BUYER.get("ship_calibrated")}
 
 
 def adjusted(price, miles, ship=0):

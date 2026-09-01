@@ -1576,3 +1576,108 @@ class TestSpend(unittest.TestCase):
             p.write_text("]]not json[[")
             hist = T.save_spend_history({"planned": 1, "actual": 1, "banked": 0}, path=p)
             self.assertEqual(list(hist), [T.TODAY])
+
+
+class TestShipModel(unittest.TestCase):
+    """The banded, road-factored shipping estimate.
+
+    The flat great-circle rate it replaces was wrong in a specific direction:
+    a straight line understates a route, and one per-mile rate misprices both
+    ends of a cost curve whose fixed component does not scale. Both errors
+    flattered distant cars.
+
+    These tests hold the SHAPE, not the constants. The constants ship
+    uncalibrated on purpose — they are published typical ranges, not quotes
+    anyone obtained — so a test asserting a particular dollar figure would be
+    pinning a guess and would have to be rewritten the day real quotes arrive.
+    What must not drift is the shape: monotone in distance, cheaper per mile
+    the further you go, never below the floor, zero in-state, and identical to
+    the old behaviour when no bands are configured.
+    """
+
+    def test_drivable_is_still_free(self):
+        for st in T.STATES:
+            self.assertEqual(T.ship_for({"state": st, "distance": 1200}), 0,
+                             "a car in a state the buyer drives to is never shipped")
+
+    def test_cost_rises_with_distance(self):
+        prev = -1
+        for d in (300, 600, 900, 1200, 1800, 2500):
+            cost = T.ship_for({"state": "CA", "distance": d})
+            self.assertGreater(cost, prev, f"{d}mi must cost more than the haul before it")
+            prev = cost
+
+    def test_per_mile_falls_with_distance(self):
+        """The whole reason for bands: fixed costs spread over a longer haul."""
+        rates = [T.ship_for({"state": "CA", "distance": d}) / d
+                 for d in (700, 1200, 2000)]
+        self.assertTrue(all(a > b for a, b in zip(rates, rates[1:])),
+                        f"per-mile must fall as the haul lengthens, got {rates}")
+
+    def test_the_floor_holds(self):
+        floor = T.to_float(T.BUYER.get("ship_min")) or 0
+        self.assertGreaterEqual(T.ship_for({"state": "MI", "distance": 5}), floor)
+
+    def test_road_miles_exceed_the_straight_line(self):
+        """A truck does not fly. Whatever the rate, the distance it bills is
+        the route, and the route is longer than the great-circle figure."""
+        self.assertGreater(T.SHIP_ROAD_FACTOR, 1.0)
+        band = T.band_rate(1000 * T.SHIP_ROAD_FACTOR)
+        self.assertGreater(T.ship_for({"state": "CA", "distance": 1000}), 1000 * band * 0.99)
+
+    def test_no_bands_means_the_old_behaviour_exactly(self):
+        """A config without ship_bands must be untouched by this change — the
+        fallback is what makes the new model safe to land."""
+        saved = list(T.SHIP_BANDS)
+        try:
+            T.SHIP_BANDS.clear()
+            d, rate = 900, T.to_float(T.BUYER.get("ship_per_mile"))
+            floor = T.to_float(T.BUYER.get("ship_min")) or 0
+            self.assertEqual(T.ship_for({"state": "CA", "distance": d}),
+                             int(round(max(floor, d * rate))))
+        finally:
+            T.SHIP_BANDS[:] = saved
+
+    def test_an_unplaceable_car_falls_back_to_the_flat_cost(self):
+        self.assertEqual(T.ship_for({"state": "MI"}), T.to_int(T.BUYER.get("ship_cost")))
+
+    def test_calibration_is_absent_until_quotes_exist(self):
+        """The model must not claim to be calibrated when nobody has checked
+        it. buyer.ship_quotes is empty, so there is no error to report — and
+        an empty calibration reads as 'unknown', never as 'zero error'."""
+        self.assertIsNone(T.BUYER.get("ship_calibrated"),
+                          "shipping bands ship uncalibrated; set the date when quotes are added")
+        self.assertIsNone(T.ship_calibration())
+
+    def test_quotes_without_bands_report_unknown_not_zero(self):
+        """The gap a mutation found. If quotes exist but no bands are
+        configured, every quote is unpriceable and no error can be computed —
+        which must read as UNKNOWN. Reporting mean_error 0 there would put
+        'perfectly calibrated' on a model nothing has been measured against,
+        which is worse than the uncalibrated state it replaced."""
+        saved_q, saved_b = T.BUYER.get("ship_quotes"), list(T.SHIP_BANDS)
+        try:
+            T.SHIP_BANDS.clear()
+            T.BUYER["ship_quotes"] = [{"miles": 900, "price": 800, "route": "test"}]
+            self.assertIsNone(T.ship_calibration(),
+                              "unpriceable quotes are no measurement, not a perfect one")
+        finally:
+            T.SHIP_BANDS[:] = saved_b
+            if saved_q is None:
+                T.BUYER.pop("ship_quotes", None)
+            else:
+                T.BUYER["ship_quotes"] = saved_q
+
+    def test_calibration_measures_against_the_brokers_own_mileage(self):
+        saved = T.BUYER.get("ship_quotes")
+        try:
+            rate = T.band_rate(900)
+            T.BUYER["ship_quotes"] = [{"miles": 900, "price": 900 * rate - 100, "route": "test"}]
+            cal = T.ship_calibration()
+            self.assertEqual(cal["n"], 1)
+            self.assertEqual(cal["mean_error"], 100, "estimate minus quote, so + means we overcharge")
+        finally:
+            if saved is None:
+                T.BUYER.pop("ship_quotes", None)
+            else:
+                T.BUYER["ship_quotes"] = saved
