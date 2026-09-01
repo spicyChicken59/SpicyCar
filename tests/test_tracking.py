@@ -1577,6 +1577,44 @@ class TestSpend(unittest.TestCase):
             hist = T.save_spend_history({"planned": 1, "actual": 1, "banked": 0}, path=p)
             self.assertEqual(list(hist), [T.TODAY])
 
+    def _pace_line(self, per_day):
+        """report_spend's month-to-date paragraph, for a month running at
+        `per_day` calls. Two days is its minimum before it will project."""
+        import io as _io, contextlib
+        month = T.TODAY[:7]
+        hist = {f"{month}-01": {"actual": per_day}, f"{month}-02": {"actual": per_day}}
+        row = {"planned": per_day, "actual": per_day, "banked": 0, "unrun": 0,
+               "silent_targets": [], "targets_due": 1, "exhausted": 0,
+               "failed": 0, "off_plan": {}}
+        buf = _io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            T.report_spend(row, hist)
+        return buf.getvalue()
+
+    def test_a_month_on_pace_to_overspend_says_so(self):
+        """The headroom line used to print max(0, plan - projected), so a month
+        four hundred calls over plan and a month exactly on it produced the SAME
+        sentence: "~0 unspent at this rate". The one case the meter exists for
+        was the one case it could not express. The plan is 92% committed before
+        a single retry, and a retry bills twice, so this is not hypothetical."""
+        over = T.MONTHLY / 30.4 * 1.5              # half again over plan
+        out = self._pace_line(int(over) + 1)
+        self.assertIn("OVERSPEND", out, out)
+        self.assertNotIn("unspent at this rate", out, out)
+
+    def test_a_month_inside_the_plan_still_reports_headroom(self):
+        out = self._pace_line(int(T.MONTHLY / 30.4 * 0.5))
+        self.assertIn("unspent at this rate", out, out)
+        self.assertNotIn("OVERSPEND", out, out)
+
+    def test_the_overspend_line_says_how_far_over(self):
+        """"Over budget" without a magnitude is a feeling. The gap decides
+        whether the answer is dropping a page or dropping a whole target."""
+        per_day = int(T.MONTHLY / 30.4 * 2)
+        out = self._pace_line(per_day)
+        want = round(per_day * 30.4 - T.MONTHLY)
+        self.assertIn(f"~{want}", out.replace(",", ""), out)
+
 
 class TestShipModel(unittest.TestCase):
     """The banded, road-factored shipping estimate.

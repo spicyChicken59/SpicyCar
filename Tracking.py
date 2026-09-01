@@ -1235,9 +1235,21 @@ def report_spend(row, hist):
     if len(days) >= 2:
         spent = sum(r["actual"] for r in days.values())
         pace = spent / len(days)
+        projected = pace * 30.4
         print(f"    month to date: {spent} over {len(days)} days ({pace:.1f}/day) "
-              f"→ ~{pace * 30.4:.0f}/month against a {MONTHLY:,} plan"
-              f" · ~{max(0, MONTHLY - pace * 30.4):.0f} unspent at this rate")
+              f"→ ~{projected:.0f}/month against a {MONTHLY:,} plan")
+        # The first version of this printed max(0, MONTHLY - projected), which
+        # reads "~0 unspent at this rate" whether the run is exactly on plan or
+        # four hundred calls over it. A headroom meter that floors at zero is
+        # silent in the only case worth printing, so overspend is now its own
+        # sentence and says how far over. The plan is deliberately tight — 915
+        # of 1,000 — and a retry bills twice, so this is a live number, not a
+        # defensive one.
+        if projected > MONTHLY:
+            print(f"    ! on pace to OVERSPEND by ~{projected - MONTHLY:.0f} calls"
+                  f" — {pace:.1f}/day sustains {MONTHLY / 30.4:.1f}/day")
+        else:
+            print(f"    ~{MONTHLY - projected:.0f} unspent at this rate")
 
 
 def save_spend_history(row, path=SPEND_LOG, keep=400):
