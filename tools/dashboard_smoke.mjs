@@ -256,10 +256,14 @@ ok('narrowing to one column keeps the keyboard somewhere',
 // the map's dots, so pressing "Hide BMW i7" — a chip a full screen BELOW the
 // map — dropped 137 of the 484 cars off it (479 dots to 342) while
 // #filter-count still read "showing all 484 cars" and the map's own caption
-// still blamed "the current filters". Whichever chip is first, not a named
-// model — the watchlist changes. From a clean profile, and read again after a
-// reload, because S.hidden outlives the visit: the state the press leaves
-// behind is the one a returning reader would have met.
+// still blamed "the current filters". And it was persisted, so that map met
+// the reader again days later.
+//
+// No named model and no number from today's sheet: the subject is whichever
+// legend chip has a line drawn for it right now (a model with one snapshot day
+// still draws one node, but if the data ever leaves every chip lineless there
+// is nothing here to test and this says so instead of going red). Every figure
+// is read off the live page before the press and compared against itself.
 await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
 await open('');
 const mapState = () => page.evaluate(() => ({
@@ -269,20 +273,45 @@ const mapState = () => page.evaluate(() => ({
   lines: document.querySelectorAll('#chart [data-sid]').length,
 }));
 const litUp = await mapState();
-const legendKey = await page.evaluate(() => document.querySelector('#legend .sc-legend__chip').getAttribute('data-fkey'));
-await page.click(`#legend [data-fkey="${legendKey}"]`);
-await page.waitForTimeout(400);
-const hidden = await mapState();
-ok('a legend chip still hides its own line', hidden.lines < litUp.lines && litUp.lines > 0,
-  `${litUp.lines} series nodes → ${hidden.lines}`);
-ok('but it takes no dot off the map',
-  hidden.dots === litUp.dots && hidden.hint === litUp.hint && hidden.count === litUp.count,
-  `${litUp.dots} dots / "${litUp.hint}" / "${litUp.count}" → ${hidden.dots} dots / "${hidden.hint}" / "${hidden.count}"`);
-await open('');   // and the chip it remembers does not narrow the map on the next visit either
-const revisit = await mapState();
-ok('nor on the next visit, with the chip still remembered',
-  revisit.dots === litUp.dots && revisit.lines === hidden.lines,
-  `${revisit.dots} dots, ${revisit.lines} series nodes`);
+const legendKey = await page.evaluate(() => {
+  const drawn = new Set([...document.querySelectorAll('#chart [data-sid]')].map((n) => n.getAttribute('data-sid')));
+  const chip = [...document.querySelectorAll('#legend .sc-legend__chip')]
+    .find((c) => drawn.has((c.getAttribute('data-fkey') || '').replace(/^legend:/, '')));
+  return chip ? chip.getAttribute('data-fkey') : null;
+});
+if (!legendKey) {
+  console.log('  skip  no legend chip has a line drawn in this data — the legend/map checks did not run');
+} else {
+  await page.click(`#legend [data-fkey="${legendKey}"]`);
+  await page.waitForTimeout(400);
+  const hidden = await mapState();
+  ok('a legend chip still hides its own line', hidden.lines < litUp.lines,
+    `${legendKey}: ${litUp.lines} series nodes → ${hidden.lines}`);
+  ok('but it takes no dot off the map',
+    hidden.dots === litUp.dots && hidden.hint === litUp.hint && hidden.count === litUp.count,
+    `${litUp.dots} dots / "${litUp.hint}" / "${litUp.count}" → ${hidden.dots} dots / "${hidden.hint}" / "${hidden.count}"`);
+  // A view toggle on one card must not outlive the visit: the next load is a
+  // clean one, map AND chart, so no returning reader meets a page quietly
+  // missing a model with only a dimmed swatch to explain it.
+  await open('');
+  const revisit = await mapState();
+  ok('and the toggle does not outlive the visit',
+    revisit.dots === litUp.dots && revisit.lines === litUp.lines
+      && revisit.hint === litUp.hint && revisit.count === litUp.count,
+    `${revisit.dots} dots / ${revisit.lines} series nodes, prefs ${await page.evaluate(() => localStorage.getItem('spicycar.prefs'))}`);
+  // The other half of that, from the other side: a profile written by an older
+  // build still carries a hidden set. It must be ignored, not honoured, or the
+  // one reader this whole entry is about — the one who pressed a chip days ago
+  // — gets the missing model anyway.
+  await page.evaluate((k) => localStorage.setItem('spicycar.prefs',
+    JSON.stringify({ where: [], hidden: [k], range: '90' })), legendKey.replace(/^legend:/, ''));
+  await open('');
+  const stale = await mapState();
+  ok('and a hidden set left by an older profile is ignored',
+    stale.dots === litUp.dots && stale.lines === litUp.lines
+      && stale.hint === litUp.hint && stale.count === litUp.count,
+    `${stale.dots} dots / ${stale.lines} series nodes / "${stale.count}"`);
+}
 await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
 
 // --- the phone -------------------------------------------------------------

@@ -456,24 +456,34 @@
   //   rule the where chips already teach. One picked is a scope; TWO OR MORE is
   //   a comparison, and that is the only thing that turns a view into one.
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
-  // hidden: model ids (brand/model) hidden from the market chart via the legend.
+  // hidden: model ids (brand/model) whose LINE is switched off in the market
+  //   chart's legend. Per visit only, on purpose — see loadPrefs.
   const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
   // (SC.toneRef or a literal), so it re-resolves in CSS on a theme flip and
   // costs no getComputedStyle mid-update.
-  // The where filter and hidden chart lines survive a return visit; everything else is per-session.
+  // The where filter and the chart's range survive a return visit. S.hidden does
+  // NOT, and used to: it is a view toggle on ONE card, and a remembered one is a
+  // page contradicting itself with nothing on screen to say why. It read
+  // {"hidden":["bmw/i7"]} days later and drew six of seven lines while
+  // #chart-scope still said "whole market — not filtered" and #chart-hint still
+  // said "one line per model" — the same lie chartScopeChip() was written to
+  // kill, just quieter. The only notice a returning reader gets is one legend
+  // swatch at 0.35 opacity, which is notice enough in the visit that pressed it
+  // and no notice at all a week on. So it is neither written nor read: an older
+  // profile's `hidden` array is ignored, and S.hidden starts each visit empty
+  // from the initialiser above.
   function loadPrefs() {
     try {
       const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
       S.where = new Set(Array.isArray(p.where) ? p.where : []);
-      S.hidden = new Set(Array.isArray(p.hidden) ? p.hidden : []);
       S.range = ['30', '90', 'all'].includes(p.range) ? p.range : '90';
-    } catch (e) { S.where = new Set(); S.hidden = new Set(); S.range = '90'; }
+    } catch (e) { S.where = new Set(); S.range = '90'; }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], hidden: [...S.hidden], range: S.range })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range })); } catch (e) { /* private mode etc. */ }
   }
   // ---------- the comparison ----------
   // Which trims a model page is about, in the config's own order (a Set has
@@ -2100,7 +2110,7 @@
     if (missed.length && !urlMiss) urlMiss = { asked: missed.join(', '), kind: (S.brand !== 'all' || S.models.size) ? 'part' : 'car' };
     S.year = 'all'; S.showAllList = S.showAllGone = false;
     // A model the link put in the comparison must be visible in it, whatever a
-    // legend chip pressed on some earlier visit remembers.
+    // legend chip pressed earlier in this visit switched off.
     for (const k of S.models) S.hidden.delete(k);
     // Always canonicalize (replace, so history stays sane): a miss must not
     // leave the dead URL to be copied onward, and a hit must not keep stray
@@ -3123,7 +3133,9 @@
       lg.appendChild(el('button', { class: 'sc-legend__chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
         'data-fkey': 'legend:' + id,
         title: (off ? 'Show ' : 'Hide ') + m.label + (m.shopping ? ' (shopping)' : ''),
-        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); savePrefs(); rerender('hide'); },
+        // No savePrefs(): S.hidden is not persisted any more, so the call only
+        // rewrote where/range. The chip toggles a line and redraws the chart.
+        onclick: () => { if (off) S.hidden.delete(id); else S.hidden.add(id); rerender('hide'); },
         onmouseenter: () => { if (!off) highlightSeries(id); },
         onmouseleave: () => highlightSeries(null) },
         sample, el('span', null, m.label)));
@@ -3565,7 +3577,7 @@
           // From a model page the press is a move, not a filter: take the two
           // cars into the comparison view with the current one already in it.
           S.models = new Set([here, id]);
-          S.hidden.delete(here); S.hidden.delete(id);   // a legend chip pressed months ago must not blank half a comparison
+          S.hidden.delete(here); S.hidden.delete(id);   // a legend chip pressed upstream must not blank half a comparison
           S.brand = 'all'; S.model = null; S.trims = new Set();
           savePrefs(); syncUrl(); rerender('nav'); window.scrollTo(0, 0);
         });
