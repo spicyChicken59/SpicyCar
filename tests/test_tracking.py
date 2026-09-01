@@ -1681,3 +1681,64 @@ class TestShipModel(unittest.TestCase):
                 T.BUYER.pop("ship_quotes", None)
             else:
                 T.BUYER["ship_quotes"] = saved
+
+
+class TestFees(unittest.TestCase):
+    """Tax and paperwork — the largest number the dashboard never showed.
+
+    At the configured rate the tax on a median car is roughly $4,600, seven
+    times the median shipping estimate the page has always displayed. It is
+    also the first figure here that scales with price rather than sitting at a
+    few hundred dollars whatever the car costs.
+
+    The modelling choice worth guarding is `finance_shipping`. A lender writes
+    the loan against the dealer's invoice — price, tax, doc, title,
+    registration — while a transport broker is a separate cash transaction
+    weeks later. Financing the shipping would make every payment on the page
+    slightly too high, and nothing would say why.
+    """
+
+    def test_the_block_exports_or_is_absent_cleanly(self):
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        for k in ("tax_rate", "doc_fee", "title", "registration", "ev_surcharge"):
+            self.assertIsInstance(f[k], (int, float))
+            self.assertGreaterEqual(f[k], 0)
+
+    def test_shipping_is_not_financed_by_default(self):
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        self.assertFalse(f["finance_shipping"],
+                         "a transport broker is not the lender; default must be False")
+
+    def test_the_default_is_read_explicitly_not_inferred(self):
+        """A config that omits finance_shipping must get the documented default,
+        not whatever a missing key happens to evaluate to."""
+        saved = T.BUYER.get("fees")
+        try:
+            T.BUYER["fees"] = {"tax_rate": 0.09}
+            self.assertIs(T.fees_export()["finance_shipping"], False)
+        finally:
+            if saved is None:
+                T.BUYER.pop("fees", None)
+            else:
+                T.BUYER["fees"] = saved
+
+    def test_fees_ship_unverified(self):
+        """Same discipline as the shipping bands: a tax rate is locally
+        specific and changes, so it is not presented as checked until it is."""
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        self.assertIsNone(f["checked"],
+                          "set fees.checked once the rate has been verified against the county")
+
+    def test_the_note_explains_why_tax_lands_on_every_car(self):
+        """Illinois taxes at the buyer's home rate wherever the car was bought.
+        Without that sentence the tax on a Phoenix car reads as a bug."""
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        self.assertTrue(f["tax_note"].strip(), "the rate needs its explanation shipped beside it")

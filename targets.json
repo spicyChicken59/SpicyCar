@@ -38,6 +38,16 @@
     ],
     "ship_calibrated": null,
     "ship_quotes": [],
+    "fees": {
+      "tax_rate": 0.0925,
+      "tax_note": "Illinois taxes a vehicle at the BUYER's home rate wherever it is bought, so this applies to every car on the page, not just the local ones. Chicago/Cook combined — verify against the current rate before trusting a total.",
+      "doc_fee": 358,
+      "title": 165,
+      "registration": 151,
+      "ev_surcharge": 100,
+      "finance_shipping": false,
+      "checked": null
+    },
     "cents_per_mile": 0,
     "mileage_baseline": 20000,
     "picks": {

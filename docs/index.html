@@ -435,6 +435,7 @@
           <option value="newest">Newest to tracker</option>
           <option value="price">Asking price</option>
           <option value="landed">Asking + shipping</option>
+          <option value="otd">Out the door, all in</option>
           <option value="payment">Monthly payment</option>
           <option value="value">Best value vs typical</option>
           <option value="miles">Miles</option>
@@ -2089,13 +2090,45 @@
     const want = S.term || (fin && fin.default_term) || 60;
     return (x && x.apr_promo && x.apr_max_term) ? Math.min(want, x.apr_max_term) : want;
   }
+  const feesCfg = () => ((S.site || {}).buyer || {}).fees || null;
+  // What the car actually costs to own: asking, plus the tax and paperwork the
+  // state adds, plus getting it here. Illinois charges the buyer's home rate
+  // wherever the car was bought, so the tax lands on every row — the Phoenix
+  // car and the Naperville car are taxed alike, and only the shipping differs.
+  //
+  // This is the first number on the page that SCALES with price. Shipping is a
+  // near-constant few hundred dollars whatever the car costs, which is why
+  // correcting it moved no rankings; tax is a percentage, so it widens the gap
+  // between a cheap distant car and an expensive local one rather than lifting
+  // them together. That is also why it is kept out of `landed` rather than
+  // folded into it: landed is the number the picks and the value scores were
+  // built on, and quietly redefining it would move every one of them.
+  function otd(x) {
+    const f = feesCfg();
+    if (!f || !hasPrice(x)) return null;
+    return Math.round(x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0)
+      + (x.local ? 0 : (x.ship || 0)));
+  }
+  // The part a lender writes the loan against. A transport broker is a separate
+  // cash transaction weeks after the dealer is paid, so shipping is excluded
+  // unless the buyer says otherwise — financing it would make every payment on
+  // the page a little too high and nothing would say why.
+  function financed(x) {
+    const f = feesCfg();
+    if (!hasPrice(x)) return null;
+    if (!f) return landed(x);
+    const dealer = x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+    return Math.round(dealer + (f.finance_shipping && !x.local ? (x.ship || 0) : 0));
+  }
   // Amortised monthly payment on the landed price less whatever is put down.
   // Zero APR is not a rounding case — it is a real promo shape — so it divides
   // rather than dividing by a zero rate.
   function payFor(x) {
     const fin = financeCfg();
     if (!fin || !hasPrice(x) || x.apr == null) return null;
-    const principal = landed(x) - (S.down || 0);
+    const principal = financed(x) - (S.down || 0);
     if (principal <= 0) return 0;
     const n = termFor(x);
     const r = x.apr / 100 / 12;
@@ -2107,7 +2140,7 @@
   function payAtFallback(x) {
     const fin = financeCfg();
     if (!fin || !x.apr_promo || !hasPrice(x) || fin.fallback_apr == null) return null;
-    const principal = landed(x) - (S.down || 0);
+    const principal = financed(x) - (S.down || 0);
     if (principal <= 0) return 0;
     const n = termFor(x);
     const r = fin.fallback_apr / 100 / 12;
@@ -2142,6 +2175,23 @@
       + '.';
     return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
   }
+  // The out-the-door total, shown when it is the number being ranked on — the
+  // same rule payNote follows, because a sort by a figure the reader cannot see
+  // is a sort they have to take on trust. The title carries the breakdown, and
+  // says "estimate" until buyer.fees.checked is dated: the tax rate is locally
+  // specific and nobody has verified this one.
+  function otdNote(x) {
+    const f = feesCfg(), total = otd(x);
+    if (!f || total == null || S.sort !== 'otd') return null;
+    const tax = Math.round(x.price * (f.tax_rate || 0));
+    const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+    const ship = x.local ? 0 : (x.ship || 0);
+    return el('span', { class: 'sc-note', title:
+      `${money(x.price)} asking + ${money(tax)} tax + ${money(fixed)} title, doc and plates`
+      + (ship ? ` + ${money(ship)} shipping` : ' · drivable, no shipping')
+      + (f.checked ? ` · rates checked ${f.checked}` : ' · ESTIMATE, rates not verified') },
+      `${money(total)} out the door`);
+  }
   function payNote(x) {
     const pay = payFor(x);
     if (pay == null) return null;
@@ -2152,8 +2202,8 @@
     const bits = [`${perMo(pay)} at ${x.apr}%`];
     if (saves > 0) bits.push(`saves ${money(saves)}/mo`);
     return el('span', { class: 'sc-note', title: x.apr_promo
-      ? `${x.apr_label || 'Promotional rate'} — ${termFor(x)} months on ${money(landed(x) - (S.down || 0))} financed`
-      : `${termFor(x)} months on ${money(landed(x) - (S.down || 0))} financed at the ordinary used rate` },
+      ? `${x.apr_label || 'Promotional rate'} — ${termFor(x)} months on ${money(financed(x) - (S.down || 0))} financed`
+      : `${termFor(x)} months on ${money(financed(x) - (S.down || 0))} financed at the ordinary used rate` },
       bits.join(' · '));
   }
   // The one scored pool for the view on screen. The pick cards, the map's rings
@@ -2216,6 +2266,7 @@
       local: (x) => (x.local ? 0 : 1) * 1e15 + (x.price ?? big),
       price: (x) => x.price ?? big,
       landed: (x) => landed(x) ?? big,
+      otd: (x) => otd(x) ?? big,
       payment: (x) => payFor(x) ?? big,
       value: (x) => (x.pick_pct == null ? big : -x.pick_pct),
       miles: (x) => x.miles ?? big,
@@ -2933,7 +2984,7 @@
       S.sort === 'cut' && lastStep(x) < 0
         ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
       x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
-      payNote(x));   // the phone twin of the table's payment note
+      otdNote(x), payNote(x));   // the phone twins of the table's payment and out-the-door notes
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
@@ -3089,6 +3140,9 @@
         // differ from what the fallback rate would say — the case the ranking
         // exists to surface.
         payNote(x),
+        // Same rule, same cell: the out-the-door total is derived from the
+        // price and shows when it is the figure being ranked on.
+        otdNote(x),
         (x.msrp && x.msrp !== lastMsrp) ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
       lastMsrp = x.msrp || lastMsrp;
       const shipping = el('td', { class: 'sc-num' }, x.local

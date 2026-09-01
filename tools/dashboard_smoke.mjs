@@ -1362,6 +1362,62 @@ if (!cases.length) {
   }
 }
 
+// ---- out-the-door ----
+// Tax is the largest number this page has never shown — roughly seven times the
+// median shipping estimate it always has — and it lands on EVERY car, because
+// Illinois charges the buyer's home rate wherever the car was bought. Checked
+// through the rendered page rather than the internals, and against the sheet's
+// own fee block, so it follows the config instead of a number written here.
+{
+  const fees = await page.evaluate(async () => {
+    const r = await fetch('data.json');
+    return ((await r.json()).buyer || {}).fees || null;
+  });
+  if (!fees) {
+    skip('every car carries tax, local and shipped alike', 'this sheet has no fees block');
+    skip('the out-the-door total shows its own working', 'this sheet has no fees block');
+  } else {
+    await open('?brand=bmw&m=i5');
+    await page.selectOption('#f-sort', 'otd');
+    await page.waitForTimeout(350);
+    const rows = await page.evaluate(() => {
+      // Row shape, verified against the rendered DOM rather than assumed: the
+      // price cell carries the first .sc-figure, and the shipping cell is the
+      // one whose text says "landed", "drivable" or "n/a" — it carries a
+      // .sc-figure only when there is a charge. The total column is dropped at
+      // some widths, so shipping is taken from its own cell, never from the
+      // last figure in the row and never from the out-the-door note itself.
+      const num = (el) => (el ? Number((el.textContent.match(/\$([\d,]+)/) || [0, 0])[1].replace(/,/g, '')) : null);
+      return [...document.querySelectorAll('#list-scroll tbody tr')].slice(0, 12).map((tr) => {
+        const tds = [...tr.querySelectorAll('td')];
+        const shipCell = tds.find((td) => /landed|drivable|n\/a/.test(td.textContent));
+        const otdEl = [...tr.querySelectorAll('.sc-note')].find((n) => /out the door/.test(n.textContent));
+        const shipFig = shipCell ? shipCell.querySelector('.sc-figure') : null;
+        return {
+          price: num(tr.querySelector('.sc-figure')),
+          ship: shipFig ? num(shipFig) : 0,
+          drivable: !!(shipCell && /drivable/.test(shipCell.textContent)),
+          otd: num(otdEl),
+          title: otdEl ? otdEl.getAttribute('title') || '' : '',
+        };
+      }).filter((r) => r.price && r.otd);
+    });
+    const fixed = (fees.doc_fee || 0) + (fees.title || 0) + (fees.registration || 0) + (fees.ev_surcharge || 0);
+    const want = (r) => Math.round(r.price * (1 + fees.tax_rate) + fixed + (r.drivable ? 0 : r.ship));
+    const bad = rows.filter((r) => Math.abs(r.otd - want(r)) > 1);
+    ok('every car carries tax, local and shipped alike',
+      rows.length > 0 && bad.length === 0,
+      rows.length ? `${rows.length} rows, ${rows.filter((r) => r.drivable).length} drivable · ${bad.length ? `worst $${bad[0].otd} vs $${want(bad[0])}` : 'every total exact'}`
+                  : 'no out-the-door rows rendered under the otd sort');
+    // A total nobody has verified must say so, or it reads as researched.
+    const verified = !!fees.checked;
+    ok('the out-the-door total shows its own working',
+      rows.length > 0 && rows.every((r) => /asking/.test(r.title) && /tax/.test(r.title)
+        && (verified ? /checked/.test(r.title) : /ESTIMATE/.test(r.title))),
+      rows.length ? rows[0].title : 'no rows');
+  }
+}
+
 await browser.close();
 server.close();
 
@@ -1386,7 +1442,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 85;
+const EXPECTED = 87;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

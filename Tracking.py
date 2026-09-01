@@ -411,6 +411,49 @@ def scope_label():
     return "/".join(STATES) or "your states"
 
 
+def fees_export():
+    """What the state and the dealer add on top of the asking price.
+
+    Illinois charges the BUYER's home rate on a vehicle wherever it was bought,
+    which is why this belongs on every car on the page rather than only the
+    drivable ones — the Phoenix car and the Naperville car are taxed the same.
+
+    Tax is the largest single number the dashboard has never shown: at the
+    configured rate it is roughly $4,600 on a $50,000 car, seven times the
+    median shipping estimate the page has always displayed prominently. It also
+    behaves differently from shipping, which is the reason it can change a
+    ranking rather than merely raise every total: tax SCALES with price while
+    shipping does not, so it widens the gap between a cheap far car and an
+    expensive near one instead of shifting them together.
+
+    `finance_shipping` is a modelling choice, not a fact, and it is here to be
+    argued with. The default says no: an auto loan is written against the
+    dealer's invoice — price, tax, doc, title, registration — while a transport
+    broker is a separate cash transaction weeks later. Roll shipping into the
+    principal and every payment on the page is quietly a little too high.
+
+    Nothing here is verified: `checked` is null and the rates are the ones a
+    reader would guess from public sources. A tax rate is exactly the kind of
+    number that is locally specific and changes, so the page shows a total that
+    says "estimate" until this block is dated.
+    """
+    f = BUYER.get("fees") or {}
+    if not f:
+        return None
+    return {
+        "tax_rate": to_float(f.get("tax_rate")) or 0,
+        "tax_note": f.get("tax_note") or "",
+        "doc_fee": to_int(f.get("doc_fee")) or 0,
+        "title": to_int(f.get("title")) or 0,
+        "registration": to_int(f.get("registration")) or 0,
+        "ev_surcharge": to_int(f.get("ev_surcharge")) or 0,
+        # Default False, and read explicitly so a config that omits it gets the
+        # documented default rather than a falsy accident.
+        "finance_shipping": bool(f.get("finance_shipping", False)),
+        "checked": f.get("checked"),
+    }
+
+
 def finance_export():
     """The buyer's rate table, with each promo's expiry already decided here.
 
@@ -1835,6 +1878,7 @@ def build_outputs(today_rows, all_rows, hist):
             "mileage_baseline": BUYER.get("mileage_baseline"),
             "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
             "finance": finance_export(),
+            "fees": fees_export(),
         },
         "brands": {},
     }
