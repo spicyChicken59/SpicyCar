@@ -243,6 +243,21 @@ const chipCR = await page.evaluate(() => {
 });
 ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.toFixed(2) + ':1' : 'no pressed chip');
 
+// The dek prints a trim's note verbatim, and the i5 eDrive40's note was the
+// buyer's own project status: "First real buyer, near Chicago. Decide by
+// mid-Sept." shipped as the public one-line statement of what that page is
+// about, and again inside the eDrive40 chip's title. Its sibling shows what a
+// note is for — the i7 eDrive50's reads "The other half of the decision,
+// beside the i5 eDrive40." The rule is asserted, not that one string: nothing
+// the page prints from a note may carry a dated commitment, because a date in
+// the dek rots silently on a page that is published every day.
+const DATED = /\b(decide|decision|deadline)\s+by\b|\bby\s+(mid|early|late)[- ]?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
+await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40');
+const dek = (await page.textContent('#dek')).trim();
+ok('a trim dek describes the car, not a deadline', !DATED.test(dek), dek);
+const dated = (await page.$$eval('#f-trim button', (bs) => bs.map((b) => b.title))).filter((t) => DATED.test(t));
+ok('nor does any trim chip it sits beside', dated.length === 0, dated.join(' | '));
+
 // "Only this →" takes its own card off the page; the keyboard must land
 // somewhere, not on <body>.
 await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-xdrive40');

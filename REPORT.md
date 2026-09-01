@@ -63,7 +63,7 @@ _typical car 23d on market · 58% cut while tracked, median $600 · sold cars la
 
 ### eDrive40 — 80 vehicles · lowest asking $36,479 (Seffner, FL)
 
-_First real buyer, near Chicago. Decide by mid-Sept._
+_The volume rear-drive i5 and the half of the decision being shopped, beside the i7 eDrive50._
 
 **Price changes**
 - $46,078 -> **$45,998** (Ontario, CA) `WBY33FK03RCP55559`
