@@ -1498,3 +1498,81 @@ class TestSourceOverlap(unittest.TestCase):
             p.write_text("{not json")
             T.save_overlap_history({"t": {"states": 1, "national": 1, "both": 1, "states_only": 0}}, path=p)
             self.assertEqual(list(json.loads(p.read_text())), [T.TODAY])
+
+
+class TestSpend(unittest.TestCase):
+    """What the run actually cost, as opposed to what it was budgeted.
+
+    planned_calls() is an upper bound: every due target billed for every page
+    it may fetch. The fetch loop then spends less whenever a query comes back
+    short, because that stops its pagination and skips its newest probe — and
+    the thin certified markets do this most days. The difference is the real
+    headroom, and every "can we afford one more model?" is a guess without it.
+
+    The trap this guards is the one that would make the measurement worse than
+    none: a target that was DUE and spent NOTHING has not saved money, it has
+    failed. Counting that as headroom spends the budget twice — once on the
+    model it appears to afford, and again when the broken target recovers.
+    """
+
+    def setUp(self):
+        self._spent, self._exh = dict(T.SPENT), set(T.EXHAUSTED)
+        T.SPENT.clear(); T.EXHAUSTED.clear()
+
+    def tearDown(self):
+        T.SPENT.clear(); T.SPENT.update(self._spent)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._exh)
+
+    @staticmethod
+    def _due():
+        return [t for t in T.TARGETS.values() if T.due_on(t, T.TODAY_ORD)]
+
+    def test_an_exhausted_market_banks_the_calls_it_did_not_spend(self):
+        due = self._due()
+        planned = sum(T.calls_for(t) for t in due)
+        for t in due:
+            T.SPENT[t["id"]] = T.calls_for(t)
+        T.SPENT[due[0]["id"]] -= 3
+        row = T.spend_report(planned)
+        self.assertEqual(row["banked"], 3)
+        self.assertEqual(row["unrun"], 0)
+        self.assertEqual(row["off_plan"][due[0]["id"]], [T.calls_for(due[0]), T.calls_for(due[0]) - 3])
+
+    def test_a_target_that_never_ran_is_not_headroom(self):
+        """The whole reason this class exists."""
+        due = self._due()
+        planned = sum(T.calls_for(t) for t in due)
+        for t in due:
+            T.SPENT[t["id"]] = T.calls_for(t)
+        T.SPENT[due[0]["id"]] -= 3          # a real saving
+        T.SPENT[due[1]["id"]] = 0           # a failure wearing a saving's clothes
+        row = T.spend_report(planned)
+        self.assertEqual(row["banked"], 3, "only the working target's underspend is headroom")
+        self.assertEqual(row["unrun"], T.calls_for(due[1]))
+        self.assertIn(due[1]["id"], row["silent_targets"])
+
+    def test_spending_the_whole_plan_banks_nothing(self):
+        due = self._due()
+        for t in due:
+            T.SPENT[t["id"]] = T.calls_for(t)
+        row = T.spend_report(sum(T.calls_for(t) for t in due))
+        self.assertEqual(row["banked"], 0)
+        self.assertEqual(row["off_plan"], {}, "a run that went to plan reports no exceptions")
+
+    def test_retries_are_counted_because_they_are_billed(self):
+        """SPENT increments per REQUEST, not per intended fetch. A retry costs a
+        call whether or not it succeeds, and a ledger of intentions would hand
+        back headroom that a bad network day already ate."""
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        block = src[src.index("    for attempt in (1, 2):"):]
+        block = block[:block.index("\n\n")]
+        self.assertIn("SPENT[t[\"id\"]] = SPENT.get(t[\"id\"], 0) + 1", block,
+                      "the per-target counter must sit inside the retry loop, beside CALLS")
+
+    def test_the_log_survives_a_corrupt_file(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "s.json"
+            p.write_text("]]not json[[")
+            hist = T.save_spend_history({"planned": 1, "actual": 1, "banked": 0}, path=p)
+            self.assertEqual(list(hist), [T.TODAY])

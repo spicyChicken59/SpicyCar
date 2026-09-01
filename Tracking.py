@@ -838,6 +838,12 @@ def picks_rule():
 # Fetch
 # --------------------------------------------------------------------------
 CALLS = 0
+SPENT = {}             # target id -> calls this target actually spent today. The plan is
+                       # an upper bound, not a bill: a query that comes back short stops
+                       # its own pagination and skips its newest probe, so a thin market
+                       # silently costs less than it was budgeted. Nobody has ever known
+                       # by how much, which makes every "can we afford one more model?"
+                       # a guess against a number the run already had and discarded.
 PRICE_WINDOW = {}      # (target id, source) -> highest price its price.asc query returned today
 MILES_WINDOW = {}      # (target id, source) -> highest mileage its miles.asc query returned today
 
@@ -932,6 +938,97 @@ def report_source_overlap(overlap):
               f"States query added nothing today. One day is not proof; watch it before flipping national_only.")
 
 
+SPEND_LOG = Path("data/spend.json")
+
+
+def spend_report(planned_today):
+    """Planned against actual, and what the difference is worth.
+
+    `planned_calls()` returns an upper bound: every due target billed for every
+    page it is allowed. The fetch loop then spends less whenever a query comes
+    back short — it stops paginating and skips that scope's newest probe — so
+    the thin certified markets in particular cost a fraction of their budget.
+
+    The gap is the real headroom, and it is the number every "can we afford one
+    more model?" needs. It has never been recorded: the run prints CALLS and
+    exits. So this returns today's row, and the log below keeps it.
+    """
+    actual = sum(SPENT.values())
+    due = [t for t in TARGETS.values() if due_on(t, TODAY_ORD)]
+    by_target = {}
+    for t in due:
+        tid = t["id"]
+        want = calls_for(t)
+        got = SPENT.get(tid, 0)
+        if got != want:
+            by_target[tid] = [want, got]
+    # A target that was due and spent NOTHING did not save money — it did not
+    # run. Counting that as headroom is how a budget gets spent twice: once on
+    # the new model it appears to afford, and again when the broken target
+    # starts working. So it is named separately and kept out of `banked`.
+    silent = sorted(t["id"] for t in due if not SPENT.get(t["id"]))
+    lost = sum(calls_for(t) for t in due if not SPENT.get(t["id"]))
+    return {
+        "planned": planned_today,
+        "actual": actual,
+        # Headroom is what the run declined to spend while working, not what it
+        # failed to spend at all.
+        "banked": planned_today - actual - lost,
+        "unrun": lost,
+        "silent_targets": silent,
+        "targets_due": len(due),
+        "exhausted": len(EXHAUSTED),
+        "failed": FAILED_FETCHES,
+        # Only the targets whose bill differed from their budget — a full table
+        # would be mostly rows saying "as planned" every day forever.
+        "off_plan": by_target,
+    }
+
+
+def report_spend(row, hist):
+    """Say what was spent, and what the month looks like at this rate."""
+    banked = row["banked"]
+    print(f"\nSpend: {row['actual']} of {row['planned']} planned"
+          + (f" · {banked} banked by {row['exhausted']} exhausted quer"
+             f"{'y' if row['exhausted'] == 1 else 'ies'}" if banked > 0 else "")
+          + (f" · {row['failed']} wasted on retries" if row["failed"] else ""))
+    if row.get("silent_targets"):
+        print(f"  ! {row['unrun']} calls' worth of targets were due and never ran — "
+              f"NOT headroom: {', '.join(row['silent_targets'])}")
+    for tid, (want, got) in sorted(row["off_plan"].items()):
+        print(f"    {tid:<24} planned {want}, spent {got}")
+    # Month to date, from the log itself rather than an average: a cadence cycle
+    # is not a month and the two disagree by more than the headroom being hunted.
+    month = TODAY[:7]
+    days = {d: r for d, r in hist.items() if d.startswith(month)}
+    if len(days) >= 2:
+        spent = sum(r["actual"] for r in days.values())
+        pace = spent / len(days)
+        print(f"    month to date: {spent} over {len(days)} days ({pace:.1f}/day) "
+              f"→ ~{pace * 30.4:.0f}/month against a {MONTHLY:,} plan"
+              f" · ~{max(0, MONTHLY - pace * 30.4):.0f} unspent at this rate")
+
+
+def save_spend_history(row, path=SPEND_LOG, keep=400):
+    """One row per day, newest kept. Small on purpose: this file exists to be
+    read by a decision, not to be a second ledger."""
+    try:
+        hist = json.loads(path.read_text()) if path.exists() else {}
+    except (OSError, ValueError):
+        hist = {}
+    if not isinstance(hist, dict):
+        hist = {}
+    hist[TODAY] = row
+    for day in sorted(hist)[:-keep]:
+        del hist[day]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(hist, indent=1, sort_keys=True) + "\n")
+    except OSError as e:
+        print(f"  ! could not write {path}: {e}")
+    return hist
+
+
 OVERLAP_LOG = Path("data/source_overlap.json")
 
 
@@ -1010,6 +1107,11 @@ def fetch(source_name, source, sort, page, t):
         params.update(source)
     for attempt in (1, 2):
         CALLS += 1
+        # Counted per target as well as globally, and counted HERE so a retry
+        # counts twice — because it costs twice. A ledger that recorded intent
+        # rather than requests would understate a bad network day and hand back
+        # headroom that was never there.
+        SPENT[t["id"]] = SPENT.get(t["id"], 0) + 1
         err = None
         try:
             r = requests.get(BASE, headers=HEADERS, params=params, timeout=45)
@@ -1926,6 +2028,8 @@ def main():
     OVERLAP.update(source_overlap(rows))
     report_source_overlap(OVERLAP)
     save_overlap_history(OVERLAP)
+    spend = spend_report(today_calls)
+    report_spend(spend, save_spend_history(spend))
     print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "
           f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
     save_zip_cache()
