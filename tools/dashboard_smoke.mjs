@@ -243,6 +243,40 @@ const chipCR = await page.evaluate(() => {
 });
 ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.toFixed(2) + ':1' : 'no pressed chip');
 
+// ...and an UNPRESSED chip's count was the same defect one step quieter, left
+// behind when the pressed state was fixed: an opacity: 0.7 over sc-note's
+// --sc-text-2 — 6.43:1 dark and 5.82:1 light on its own ground — composited
+// down to 3.82:1 (#6c7889 on #121c2a) and 3.05:1 (#8e949c on #ffffff) at
+// 12px/400. That was every one of axe's serious nodes on the page: 7 on the
+// watchlist, 9 on a model page, 5 on compare, in BOTH themes. Unpressed is the
+// resting state of nearly every chip, so it is the ratio that matters most,
+// and light — the theme nobody had measured — was the worse of the two, which
+// is why this asserts each theme rather than whichever one CI happens to boot
+// in. Opacity never shows up in getComputedStyle().color, so the ratio is
+// taken on the composite; sc.css transitions .sc-tab's background, so the
+// switch has to settle before anything is read or the old theme is measured.
+for (const theme of ['dark', 'light']) {
+  await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+  await page.waitForTimeout(400);
+  const cr = await page.evaluate(() => {
+    const n = document.querySelector('#f-model button[aria-pressed="false"] .chip-n');
+    if (!n) return null;
+    const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const bg = rgb(getComputedStyle(n.closest('button')).backgroundColor);
+    let alpha = 1;                       // every opacity between the count and its ground
+    for (let e = n; e && e !== n.closest('button').parentElement; e = e.parentElement) alpha *= Number(getComputedStyle(e).opacity);
+    const fg = rgb(getComputedStyle(n).color).map((v, i) => v * alpha + bg[i] * (1 - alpha));
+    const [a, b] = [lum(fg), lum(bg)].sort((x, y) => y - x);
+    return (a + 0.05) / (b + 0.05);
+  });
+  ok(`an unpressed chip's count is readable in ${theme}`, cr >= 4.5,
+    cr ? cr.toFixed(2) + ':1' : 'no unpressed chip');
+}
+await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+await page.waitForTimeout(400);
+
 // "Only this →" takes its own card off the page; the keyboard must land
 // somewhere, not on <body>.
 await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-xdrive40');
