@@ -287,7 +287,7 @@
   <section class="sc-card sc-filter-bar" id="filters-card" hidden>
     <div class="sc-filter-bar__head">
       <span class="sc-eyebrow">filters</span>
-      <span class="sc-note" id="filter-count"></span>
+      <span class="sc-note" id="filter-count" role="status" aria-live="polite"></span>
       <button class="sc-btn sc-btn--ghost sc-btn--sm sc-filter-bar__toggle" id="filter-toggle" type="button"
               aria-expanded="false" aria-controls="filters">Filters</button>
     </div>
@@ -3642,6 +3642,14 @@
       : 'This chart plots the whole market so the trend stays comparable day to day';
   }
   // What the filters are actually doing, said in one line beside their name.
+  // It is also the page's only status message: a chip press rewrites the KPIs,
+  // the picks, the map, the chart and the table while focus stays on the chip,
+  // so "pressed" was the entire announcement a screen reader got for going
+  // from 484 cars to 92 (WCAG 4.1.3). The span carries role=status now, and
+  // this writes only when the sentence actually changed, so the re-renders
+  // that call it with nothing new to say stay silent. The one unprompted
+  // announcement left is the first fill, after data.json lands — which is the
+  // only signal a screen reader gets that the async render happened at all.
   function filterCount() {
     const overview = S.brand === 'all';
     const shown = overview
@@ -3655,9 +3663,21 @@
       ? allModels().reduce((a, { m }) => a + (m.listings || []).length, 0)
       : (model().listings || []).length;
     const bits = filterBits(overview);
-    $('filter-count').textContent = shown === total
+    // Order rides along, but only when it is not the arrival order: sorting
+    // re-renders the table and touches no count, so 'showing all 136 cars'
+    // before equals 'showing all 136 cars' after and a live region with the
+    // same sentence in it announces nothing. Naming the order makes the
+    // sentence move; skipping the default ('local') and the states where the
+    // select is off-screen keeps every first paint's copy exactly as it was.
+    const sortField = $('f-sort');
+    const sortOpt = S.sort === 'local' || sortField.parentElement.hidden
+      ? null : sortField.querySelector(`option[value="${S.sort}"]`);
+    const line = (shown === total
       ? `showing all ${num(total)} cars`
-      : `showing ${num(shown)} of ${num(total)} cars${bits.length ? ' · ' + bits.join(' · ') : ''}`;
+      : `showing ${num(shown)} of ${num(total)} cars${bits.length ? ' · ' + bits.join(' · ') : ''}`)
+      + (sortOpt ? ` · sorted by ${sortOpt.textContent.toLowerCase()}` : '');
+    const out = $('filter-count');
+    if (out.textContent !== line) out.textContent = line;
     $('filter-toggle').textContent = bits.length ? `Filters · ${bits.length}` : 'Filters';
   }
 
@@ -3725,7 +3745,9 @@
       // The comparison has a listings table on the watchlist too, so these two
       // can no longer assume a model page — filtered() would ask for
       // brands['all'] and throw before it ever reached the rows.
-      case 'sort':
+      // A re-sort reaches filterCount through nothing else, and it is the only
+      // thing on the page that can say the order changed.
+      case 'sort': renderList(overview ? pooledRows() : filtered()); filterCount(); break;
       case 'showList': renderList(overview ? pooledRows() : filtered()); break;
       case 'showGone': renderGone(); break;
       case 'hide': renderOverviewChart(overviewRows()); updateMapVisibility(); break;

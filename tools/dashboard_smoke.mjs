@@ -243,6 +243,26 @@ const chipCR = await page.evaluate(() => {
 });
 ok('a pressed chip\'s count is still readable', chipCR >= 4.5, chipCR ? chipCR.toFixed(2) + ':1' : 'no pressed chip');
 
+// Pressing a chip rewrote the tiles, the map, the chart and the table and
+// announced the word "pressed" — the page's only live region was the chart
+// tooltip. The count line says the right sentence already; it just has to be
+// a status message, and a re-sort has to move it (it changed nothing before,
+// so a live region would have had nothing to read out).
+const liveCount = await page.evaluate(() => {
+  const n = document.getElementById('filter-count');
+  return { role: n.getAttribute('role'), live: n.getAttribute('aria-live'), regions: document.querySelectorAll('[role=status]').length };
+});
+ok('the filter count is a status message', liveCount.role === 'status' && liveCount.live === 'polite' && liveCount.regions >= 2,
+  JSON.stringify(liveCount));
+const sortSaid = await page.evaluate(async () => {
+  const n = document.getElementById('filter-count'), was = n.textContent;
+  const sel = document.getElementById('f-sort');
+  sel.value = 'miles'; sel.dispatchEvent(new Event('change'));
+  await new Promise((r) => setTimeout(r, 300));
+  return { was, now: n.textContent };
+});
+ok('and a re-sort changes what it says', sortSaid.was !== sortSaid.now, `${sortSaid.was} → ${sortSaid.now}`);
+
 // "Only this →" takes its own card off the page; the keyboard must land
 // somewhere, not on <body>.
 await open('?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-xdrive40');
