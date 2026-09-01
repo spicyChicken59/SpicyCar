@@ -19749,8 +19749,8 @@
      "shopping": false,
      "cadence": 3,
      "as_of": "2026-08-28",
-     "fetched_today": true,
-     "next_due": "2026-09-01",
+     "fetched_today": false,
+     "next_due": "2026-09-03",
      "params": {
       "min_price": 25000
      },
@@ -23263,7 +23263,7 @@
      "cadence": 3,
      "as_of": "2026-08-29",
      "fetched_today": false,
-     "next_due": "2026-09-03",
+     "next_due": "2026-09-02",
      "params": {
       "min_price": 8000
      },
@@ -24531,8 +24531,8 @@
      "shopping": false,
      "cadence": 3,
      "as_of": "2026-08-27",
-     "fetched_today": false,
-     "next_due": "2026-09-02",
+     "fetched_today": true,
+     "next_due": "2026-09-01",
      "params": {
       "min_price": 8000
      },
@@ -26341,8 +26341,8 @@
      "shopping": false,
      "cadence": 3,
      "as_of": "2026-08-30",
-     "fetched_today": true,
-     "next_due": "2026-09-01",
+     "fetched_today": false,
+     "next_due": "2026-09-03",
      "params": {
       "min_price": 8000
      },
@@ -27492,7 +27492,7 @@
      "cadence": 3,
      "as_of": "2026-08-28",
      "fetched_today": false,
-     "next_due": "2026-09-03",
+     "next_due": "2026-09-02",
      "params": {
       "min_price": 30000
      },

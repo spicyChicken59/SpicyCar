@@ -82,6 +82,32 @@ class TestBudget(unittest.TestCase):
             self.assertIn(tid, T.TARGETS,
                           f"buyer.shopping names {tid!r}, which is not a target")
 
+    def test_a_models_trims_share_a_day_per_cadence(self):
+        """One page, one fetch day — but only among trims that run at the same
+        rate. Taking a model's offset from whichever trim was listed first gave
+        the i7's every-third-day trims the CPO watch's every-second-day slot,
+        and left them never claiming a place in the cadence-3 rotation: they
+        landed on the Ioniq 5's and Lucid's day and pushed the worst day from
+        34 to 36 of 40 while the monthly average went down."""
+        # every model's trims at one cadence sit on one day...
+        by_model = {}
+        for t in T.TARGETS.values():
+            by_model.setdefault((t["model_key"], t["cadence"]), set()).add(t["offset"])
+        for (mk, cad), offsets in by_model.items():
+            self.assertEqual(len(offsets), 1,
+                             f"{mk} at cadence {cad} is split across days {offsets}")
+        # ...and each cadence's models are dealt round-robin across its slots,
+        # which is the half that broke: the i7's cadence-3 trims took a slot
+        # from the cadence-2 counter, so the three-day rotation held 2/3/1
+        # models instead of 2/2/2 and one day carried the extra.
+        for cad in {t["cadence"] for t in T.TARGETS.values() if t["cadence"] > 1}:
+            slots = Counter(off for (mk, c), (off,) in
+                            ((k, tuple(v)) for k, v in by_model.items()) if c == cad)
+            spread = max(slots.values()) - min(slots[i] for i in range(cad))
+            self.assertLessEqual(spread, 1,
+                                 f"cadence {cad} deals models unevenly: "
+                                 f"{dict(slots)} over {cad} slots")
+
     def test_newest_pages_are_budgeted(self):
         """The newest-first fetch must be counted, or the plan lies."""
         i5 = target("bmw-i5-edrive40")

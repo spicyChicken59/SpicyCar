@@ -115,7 +115,15 @@ def build_targets():
                 continue
             # A model with no trims is one target that covers every trim.
             trims = m.get("trims") or {None: {}}
-            m_offset = None       # a model's trims all run on the same days
+            # A model's trims run on the same days — one page, one fetch day.
+            # Per CADENCE, though: a trim that runs every third day cannot share
+            # the slot of one that runs every second, and taking the offset from
+            # whichever trim happened to be listed first also left the slower
+            # trim never claiming a place in its own rotation. The i7 made that
+            # visible — its two cadence-3 trims inherited the CPO watch's
+            # offset, landed on the Ioniq 5's and Lucid's day, and pushed the
+            # worst day from 34 to 36 of 40 while the month went DOWN.
+            m_offset = {}
             for tkey, tr in trims.items():
                 if not tr.get("active", True):
                     continue
@@ -151,10 +159,11 @@ def build_targets():
                     t["cadence"] = max(1, int(t.get("cadence") or 1))
                 except (TypeError, ValueError):
                     t["cadence"] = 1
-                if m_offset is None:
-                    m_offset = seen[t["cadence"]] % t["cadence"]
-                    seen[t["cadence"]] += 1
-                t["offset"] = m_offset
+                cad = t["cadence"]
+                if cad not in m_offset:
+                    m_offset[cad] = seen[cad] % cad
+                    seen[cad] += 1
+                t["offset"] = m_offset[cad]
                 t["shopping"] = t["id"] in SHOPPING
                 targets[t["id"]] = t
     return targets

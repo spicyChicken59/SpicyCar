@@ -62,7 +62,7 @@ Two things are configured, separately:
 
 ## Design decisions
 
-**It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
+**It runs on about 30 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
 each. So each target is fetched twice — once filtered to the buyer's states plus `search_states`
 (the API takes a comma list, so eight states cost one call) and once nationally — and each target
 has a *depth* (the two being shopped get both sorts at two pages **plus a newest-first page**, so a
