@@ -175,6 +175,37 @@ await open('?models=bmw-i5,bmw-not-a-car');
 ok('a half-dead link still opens', (await page.locator('#overview-table tbody tr').count()) === 1);
 ok('and names what went missing', /bmw-not-a-car/.test(await page.textContent('#notice')));
 
+// The same promise, against the keys every plain object already answers to.
+// applyUrl used to test membership with `brands[wantBrand]` and
+// `(m.trims || {})[wantModel]`, so Object.prototype's own keys all read as
+// hits: ?model=constructor opened the Lucid Air with 59 rows, no notice, and a
+// canonical ?brand=lucid&m=air in the address bar — the one thing the comment
+// above applyUrl swears never happens, a link honored with a different car and
+// then made re-shareable. ?brand=__proto__ set a brand that does not exist and
+// the page rendered "Snapshot unavailable — could not load data.json" over a
+// data.json that had parsed fine, bookmarkable because syncUrl kept the query.
+// lc() hid three of these behind lowercasing (tostring, valueof,
+// hasownproperty already missed correctly); these four did not.
+await open('');
+const baseRows = await page.locator('#overview-table tbody tr').count();
+for (const q of ['?brand=__proto__', '?brand=constructor', '?model=constructor', '?m=constructor']) {
+  let state = null;
+  try {
+    await open(q);
+    state = await page.evaluate(() => ({
+      h1: document.getElementById('h1').textContent.trim(),
+      search: location.search,
+      notice: document.getElementById('notice').textContent,
+    }));
+  } catch (e) { state = { h1: 'never rendered', search: '?', notice: String(e.message).slice(0, 60) }; }
+  const rows = state.h1 === 'never rendered' ? -1 : await page.locator('#overview-table tbody tr').count();
+  ok(`${q} lands on the watchlist, not on a car`,
+    state.h1 === 'The watchlist' && rows === baseRows, `${state.h1}, ${rows} rows`);
+  ok(`${q} says the link missed and stops re-sharing itself`,
+    /not tracked|no longer tracked/.test(state.notice) && state.search === '',
+    `search=${JSON.stringify(state.search)} notice=${JSON.stringify(state.notice.replace(/\s+/g, ' ').slice(0, 40))}`);
+}
+
 // --- the things two audits found, so they cannot come back -----------------
 // The marked winner is the one number that survives a comparison, and it is
 // only markable when every column's best car was judged against its own trim

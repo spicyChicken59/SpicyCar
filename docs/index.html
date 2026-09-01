@@ -502,6 +502,15 @@
   // applyUrl, which is the only door a selection ever comes through: the chips
   // can only press ids they were built from, and every navigation clears them.
   const modelKey = (bk, mk) => bk + '/' + mk;
+  // Brands, models and trims are plain objects keyed by slug, so `o[slug]` also
+  // answers yes for every key Object.prototype carries. ?model=constructor used
+  // to open the Lucid Air — 59 rows, no notice, and the address bar rewritten to
+  // a clean ?brand=lucid&m=air, so neither sender nor reader could tell the link
+  // had been honored with a different car. ?brand=__proto__ was worse: it set
+  // S.brand to a brand that does not exist and the page rendered "Snapshot
+  // unavailable — could not load data.json" over a data.json that had parsed
+  // fine. Membership is an own-property question; ask it that way.
+  const own = (o, k) => Object.prototype.hasOwnProperty.call(o || {}, k);
   // Brand palette — the design system's categorical slots, in fixed watchlist
   // order. Hue carries the BRAND; the dash pattern carries the model within it,
   // so identity never rides on color alone. The sheet ships five slots and folds
@@ -2050,18 +2059,18 @@
     const wantBrand = lc('brand'), wantModel = lc('model'), wantM = lc('m');
     S.brand = 'all'; S.model = null; S.models = new Set(); S.trims = new Set(); urlMiss = null;
     if (wantModel) {
-      for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if ((m.trims || {})[wantModel]) { S.brand = bk; S.model = mk; }
+      for (const [bk, b] of Object.entries(S.site.brands)) for (const [mk, m] of Object.entries(b.models || {})) if (own(m.trims, wantModel)) { S.brand = bk; S.model = mk; }
       if (!S.model) urlMiss = { asked: wantModel, kind: 'car' };
-    } else if (wantBrand && S.site.brands[wantBrand]) {
+    } else if (wantBrand && own(S.site.brands, wantBrand)) {
       const models = S.site.brands[wantBrand].models || {};
-      if (wantM && !models[wantM]) urlMiss = { asked: wantBrand + ' ' + wantM, kind: 'car' };
+      if (wantM && !own(models, wantM)) urlMiss = { asked: wantBrand + ' ' + wantM, kind: 'car' };
       else { S.brand = wantBrand; S.model = wantM || Object.keys(models)[0]; }
     } else if (wantBrand) {
       urlMiss = { asked: wantBrand, kind: 'brand' };
     } else if (wantM) {
       // ?m= without a brand was never a published shape, but the ask is
       // legible: honor it if exactly the model exists anywhere, else say so
-      for (const [bk, b] of Object.entries(S.site.brands)) if ((b.models || {})[wantM]) { S.brand = bk; S.model = wantM; }
+      for (const [bk, b] of Object.entries(S.site.brands)) if (own(b.models, wantM)) { S.brand = bk; S.model = wantM; }
       if (!S.model) urlMiss = { asked: wantM, kind: 'car' };
     }
     // The selection, restored against the live watchlist. A link that names
