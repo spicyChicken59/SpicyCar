@@ -903,6 +903,65 @@ if (!subject) {
 }
 }
 
+// ---- ns/7B-B ----
+// 320x568 — an iPhone SE / small Android, the narrowest phone still in use, and
+// the width below every band this file measured. A model page scrolled 12px
+// sideways there: docH scrollWidth 332 in a 320 viewport.
+//
+// The cause is structural, not a width. sc.css lays .sc-media--card out as
+// `auto 1fr auto` — frame | the three text lines | aside — and the frame,
+// spanning three rows in column 1, is what parks title/sub/code in column 2.
+// The departed-vehicle card is the one card on the page with no photo, so
+// auto-placement put its title in column 1, the price in column 2 and the
+// LOCATION in a third column of its own; three max-content columns plus two
+// gaps came to 286px inside a 228px card and hung 12px off the document.
+//
+// Both halves are asserted, and neither is a width or a pixel budget:
+//   1. the document does not scroll sideways at all, and
+//   2. every departed card keeps its own content inside its own border box —
+//      the mechanism, so this cannot go green on a day the strings happen to
+//      be short enough to fit a still-scrambled grid.
+// The subject is whichever model has the most departures in today's file, and
+// a file with no departure anywhere renders no card to look at: that is a skip,
+// not a pass, because the check would have had nothing to measure.
+{
+  const departed = (() => {
+    const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+    const all = [];
+    for (const [bk, b] of Object.entries(site.brands || {}))
+      for (const [mk, m] of Object.entries((b || {}).models || {})) {
+        const vins = new Set(((m || {}).gone || []).map((g) => String(g.vin || '').toUpperCase()).filter(Boolean));
+        all.push({ q: `?brand=${bk}&m=${mk}`, id: `${bk} ${mk}`, gone: vins.size });
+      }
+    all.sort((a, b) => b.gone - a.gone || a.id.localeCompare(b.id));
+    return all[0] && all[0].gone ? all[0] : null;
+  })();
+  const NAME = 'a model page does not scroll sideways on the narrowest phone';
+  if (!departed) {
+    skip(NAME, 'no model in data.json has a departed vehicle — no card to lay out');
+  } else {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await open(departed.q);
+    await page.waitForTimeout(250);
+    const narrow320 = await page.evaluate(() => {
+      const de = document.documentElement, cards = document.getElementById('gone-cards');
+      const shown = cards && !cards.hidden ? [...cards.children] : [];
+      return {
+        over: de.scrollWidth - de.clientWidth,
+        cards: shown.length,
+        worstCard: shown.reduce((w, c) => Math.max(w, c.scrollWidth - c.clientWidth), 0),
+      };
+    });
+    if (!narrow320.cards) {
+      skip(NAME, `${departed.id}: the departed-vehicle cards did not render at 320px`);
+    } else {
+      ok(NAME, narrow320.over <= 1 && narrow320.worstCard <= 1,
+        `${departed.id}: ${narrow320.over}px past the 320px viewport, `
+        + `worst of ${narrow320.cards} departed cards ${narrow320.worstCard}px past its own box`);
+    }
+  }
+}
+
 await browser.close();
 server.close();
 
