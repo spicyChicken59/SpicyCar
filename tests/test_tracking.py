@@ -19,6 +19,7 @@ import os
 import re
 import struct
 import unittest
+import unittest.mock
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -1301,3 +1302,89 @@ class TestCanonicalUrl(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestFinance(unittest.TestCase):
+    """The rate a car finances at, and the promo's end date.
+
+    Monthly payment is the number this buyer decides on: a certified i5 at the
+    2.99% promo beats a cheaper non-certified one at the ordinary rate by more
+    than shipping ever moves, which is why it reorders a shortlist where landed
+    cost does not. That makes the rate table load-bearing, and it has two ways
+    to lie quietly.
+
+    The first is the CPO boundary. A promo that leaked onto a non-certified car
+    would invent a payment no lender has offered, on exactly the cars the
+    ranking is meant to separate. The second is time: a promo has an end date,
+    and a page still ranking on a rate that lapsed last month is worse than one
+    that never had the feature. Both are settled in Python, against the run's
+    own clock, so a reader's device cannot disagree.
+    """
+
+    def test_a_live_promo_is_active_and_an_expired_one_is_not(self):
+        """The whole point of shipping `active` rather than a date the browser
+        re-decides: one clock settles it, and it is this one."""
+        today = date.fromordinal(T.TODAY_ORD)
+        past = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        future = date.fromordinal(T.TODAY_ORD + 30).isoformat()
+        cfg = {"fallback_apr": 6.9, "promos": [
+            {"model": "bmw/i5", "apr": 2.99, "expires": future},
+            {"model": "bmw/i7", "apr": 3.49, "expires": past},
+            {"model": "bmw/ix", "apr": 2.49},                     # no end date
+        ]}
+        with unittest.mock.patch.dict(T.BUYER, {"finance": cfg}, clear=False):
+            out = T.finance_export()
+        by = {p["model"]: p for p in out["promos"]}
+        self.assertTrue(by["bmw/i5"]["active"], "a promo ending in 30 days still applies")
+        self.assertFalse(by["bmw/i7"]["active"], "a promo that ended yesterday must not apply")
+        self.assertTrue(by["bmw/ix"]["active"], "no end date is a standing offer, not an expired one")
+        self.assertEqual(by["bmw/i5"]["days_left"], 30)
+        self.assertIsNone(by["bmw/ix"]["days_left"])
+        # An expired promo still ships, because "that rate ran out on the 31st"
+        # explains a page that suddenly ranks differently.
+        self.assertEqual(len(out["promos"]), 3)
+        self.assertEqual(out["stale_days"], None)
+        del today
+
+    def test_a_bad_date_does_not_take_the_run_down(self):
+        """targets.json is hand-edited. A typo in an expiry must degrade to a
+        standing offer, not raise inside build_outputs at 11:00 UTC."""
+        cfg = {"fallback_apr": 6.9, "fallback_checked": "not-a-date",
+               "promos": [{"model": "bmw/i5", "apr": 2.99, "expires": "2026-13-45"}]}
+        with unittest.mock.patch.dict(T.BUYER, {"finance": cfg}, clear=False):
+            out = T.finance_export()
+        self.assertTrue(out["promos"][0]["active"])
+        self.assertIsNone(out["stale_days"], "an unparseable check date is unknown, not zero")
+
+    def test_no_finance_block_means_no_finance_key(self):
+        """A buyer who never set a rate gets no payment ranking at all — the
+        page hides the sort rather than quoting a made-up number."""
+        with unittest.mock.patch.dict(T.BUYER, {"finance": {}}, clear=False):
+            self.assertIsNone(T.finance_export())
+
+    def test_the_shipped_config_is_coherent(self):
+        """The real targets.json, held to the shape the dashboard assumes."""
+        fin = json.loads((Path(__file__).parent.parent / "targets.json").read_text())["buyer"].get("finance")
+        if not fin:
+            self.skipTest("this buyer has no finance block")
+        self.assertGreater(fin["fallback_apr"], 0, "the fallback rate is what every non-promo car uses")
+        self.assertIn(fin["default_term"], fin["terms"], "the default term must be one the reader can pick")
+        cfg = json.loads((Path(__file__).parent.parent / "targets.json").read_text())
+        models = {f"{bk}/{mk}" for bk, b in cfg["watchlist"].items()
+                  for mk in (b.get("models") or {})}
+        for p in fin["promos"]:
+            self.assertIn(p["model"], models, f"promo names {p['model']}, which is not a watched model")
+            self.assertLess(p["apr"], fin["fallback_apr"],
+                            "a promo above the ordinary rate is not a promo")
+            date.fromisoformat(p["expires"])       # raises if the date is malformed
+
+    def test_the_dashboard_gets_the_table(self):
+        """docs/data.json is what the page actually reads; the block has to
+        survive the export, not just exist in the config."""
+        site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        fin = (site.get("buyer") or {}).get("finance")
+        if not fin:
+            self.skipTest("no finance block in this snapshot")
+        for p in fin["promos"]:
+            self.assertIn("active", p, "the page trusts `active` for arithmetic; it must be published")
+            self.assertIsNotNone(p.get("apr"))

@@ -53,7 +53,42 @@
   "ship_cost": 1100,
   "cents_per_mile": 0,
   "mileage_baseline": 20000,
-  "shortlist": []
+  "shortlist": [],
+  "finance": {
+   "fallback_apr": 6.9,
+   "fallback_checked": "2026-09-01",
+   "stale_days": 0,
+   "default_term": 60,
+   "terms": [
+    36,
+    48,
+    60,
+    72
+   ],
+   "down": 0,
+   "promos": [
+    {
+     "model": "bmw/i5",
+     "cpo_only": true,
+     "apr": 2.99,
+     "max_term": 60,
+     "expires": "2026-10-31",
+     "label": "BMW FS certified 2.99%",
+     "active": true,
+     "days_left": 60
+    },
+    {
+     "model": "bmw/ix",
+     "cpo_only": true,
+     "apr": 2.49,
+     "max_term": 60,
+     "expires": "2026-10-31",
+     "label": "BMW FS certified 2.49%",
+     "active": true,
+     "days_left": 60
+    }
+   ]
+  }
  },
  "brands": {
   "bmw": {
@@ -9881,7 +9916,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY33FK06RCR98802",
        "year": 2024,
        "trim": "eDrive40",
@@ -9938,7 +9973,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY33FK07RCR64187",
        "year": 2024,
        "trim": "eDrive40",
@@ -10008,7 +10043,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY33FK03RCR76661",
        "year": 2024,
        "trim": "eDrive40",
@@ -10066,7 +10101,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY33FK08RCR50315",
        "year": 2024,
        "trim": "eDrive40",
@@ -11621,7 +11656,7 @@
       "tracked_2d": 132,
       "cut_share": 0.61,
       "median_cut": 600,
-      "n_sold": 34,
+      "n_sold": 38,
       "median_days_to_sale": 15
      }
     },
@@ -19955,7 +19990,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ05PCN85481",
        "year": 2023,
        "trim": "xDrive60",
@@ -20005,7 +20040,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ02PCN64037",
        "year": 2023,
        "trim": "xDrive60",
@@ -20055,7 +20090,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ0XPCM83707",
        "year": 2023,
        "trim": "xDrive60",
@@ -20105,7 +20140,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ04PCN70972",
        "year": 2023,
        "trim": "xDrive60",
@@ -20144,7 +20179,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ03PCN79176",
        "year": 2023,
        "trim": "xDrive60",
@@ -20191,7 +20226,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ07PCN58265",
        "year": 2023,
        "trim": "xDrive60",
@@ -20238,7 +20273,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ06PCN81486",
        "year": 2023,
        "trim": "xDrive60",
@@ -20285,7 +20320,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ07PCN40932",
        "year": 2023,
        "trim": "xDrive60",
@@ -20323,7 +20358,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ07PCN85675",
        "year": 2023,
        "trim": "xDrive60",
@@ -20360,7 +20395,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ08PCN52216",
        "year": 2023,
        "trim": "xDrive60",
@@ -20395,7 +20430,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY53EJ01PCM51390",
        "year": 2023,
        "trim": "xDrive60",
@@ -21222,7 +21257,7 @@
        ]
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY43EJ01TCY16141",
        "year": 2026,
        "trim": "eDrive50",
@@ -21273,7 +21308,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY43EJ0XTCY26716",
        "year": 2026,
        "trim": "eDrive50",
@@ -21324,7 +21359,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY43EJ09TCX74849",
        "year": 2026,
        "trim": "eDrive50",
@@ -21473,7 +21508,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY43EJ02TCX57620",
        "year": 2026,
        "trim": "eDrive50",
@@ -21520,7 +21555,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY43EJ09TCY00298",
        "year": 2026,
        "trim": "eDrive50",
@@ -22520,7 +22555,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY83EH06TCX89008",
        "year": 2026,
        "trim": "M70",
@@ -22571,7 +22606,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "WBY83EH03TCX46116",
        "year": 2026,
        "trim": "M70",
@@ -24036,8 +24071,8 @@
       "tracked_2d": 76,
       "cut_share": 0.34,
       "median_cut": 561,
-      "n_sold": 37,
-      "median_days_to_sale": 7
+      "n_sold": 55,
+      "median_days_to_sale": 10
      }
     },
     "ix": {
@@ -31188,7 +31223,7 @@
      },
      "gone": [
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "KNDAB5S13R6022392",
        "year": 2024,
        "trim": "Light Long Range",
@@ -31227,7 +31262,7 @@
        "flags": []
       },
       {
-       "likely": "out of window",
+       "likely": "delisted",
        "vin": "KNDAA5S29R6024451",
        "year": 2024,
        "trim": "Light Short Range",
@@ -31754,7 +31789,7 @@
       "tracked_2d": 27,
       "cut_share": 0.56,
       "median_cut": 444,
-      "n_sold": 12,
+      "n_sold": 14,
       "median_days_to_sale": 20
      }
     }

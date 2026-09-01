@@ -7,13 +7,13 @@
 - ▼ $1,000 cut · BMW i5 xDrive40 · now $53,990 · Indianapolis, IN · drivable `WBY13HG04SCT78578`
 - …and 33 more price changes in the sections below
 - 79 new on the shopped models · best 14% under typical ($48,398, Marietta, GA)
-- 9 gone since the last fetch on the shopped models
+- 31 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
 - Lowest asking **$36,479** (Seffner, FL) · + $650 shipping · = vs 2026-08-31
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
-- 137 on the market · 20 drivable · 23 price changes · 5 new · 3 gone
+- 137 on the market · 20 drivable · 23 price changes · 5 new · 7 gone
 
 **New today (5)** — first seen this run, best value first
 
@@ -63,7 +63,7 @@ _Worth the ship:_
   [listing](https://www.carfax.com/vehicle/WBY13HG01SCS85680) `WBY13HG01SCS85680`
 
 _137 vehicles across 4 trims · IL 7 · OH 2 · IN 7 · WI 4 · beyond 117_
-_typical car 23d on market · 61% cut while tracked, median $600 · sold cars lasted ~15d (34 sold)_
+_typical car 23d on market · 61% cut while tracked, median $600 · sold cars lasted ~15d (38 sold)_
 
 ### CPO under 30k mi — 2 vehicles · lowest asking $64,888 (Irvine, CA)
 
@@ -105,6 +105,10 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 **Gone since 2026-08-31**
 - $40,986 · 2024 · Duluth, GA · tracked 4d `WBY33FK02RCR47202`
+- $44,696 · 2024 · Charlotte, NC · tracked 6d `WBY33FK06RCR98802`
+- $49,050 · 2024 · Plano, TX · tracked 9d `WBY33FK07RCR64187`
+- $49,096 · 2024 · Roswell, GA · tracked 6d `WBY33FK03RCR76661`
+- $50,079 · 2024 · Los Angeles, CA · tracked 9d `WBY33FK08RCR50315`
 
 **Ohio (1)**
 - **$40,980** · 40,138 mi · no shipping · 2024 · Cincinnati, OH · ~250 mi from Chicago
@@ -295,7 +299,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 - Lowest asking **$48,909** (Indianapolis, IN) · ▲ $5,246 vs 2026-08-29
 - Lowest drivable **$48,909** (Indianapolis, IN) · no shipping
-- 150 on the market · 25 drivable · 19 price changes · 74 new · 6 gone
+- 150 on the market · 25 drivable · 19 price changes · 74 new · 24 gone
 
 **New today (74)** — first seen this run, best value first
 
@@ -358,7 +362,7 @@ _Worth the ship:_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01RCN97139) `WBY43EJ01RCN97139`
 
 _150 vehicles across 4 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 125_
-_typical car 23d on market · 34% cut while tracked, median $561 · sold cars lasted ~7d (37 sold)_
+_typical car 23d on market · 34% cut while tracked, median $561 · sold cars lasted ~10d (55 sold)_
 
 ### CPO under 30k mi — none found
 
@@ -373,6 +377,13 @@ _The other half of the decision, beside the i5 eDrive40._
 - $57,934 -> **$62,475** (Plano, TX) `WBY43EJ05RCR23265`
 - $67,799 -> **$67,000** (Bowling Green, KY) `WBY43EJ06RCR21069`
 - $71,075 -> **$70,555** (San Diego, CA) `WBY43EJ09SCT73901`
+
+**Gone since 2026-08-29**
+- $115,690 · 2026 · Signal Hill, CA · tracked 5d `WBY43EJ01TCY16141`
+- $120,190 · 2026 · Signal Hill, CA · tracked 5d `WBY43EJ0XTCY26716`
+- $121,020 · 2026 · San Diego, CA · tracked 4d `WBY43EJ09TCX74849`
+- $124,187 · 2026 · Miami, FL · tracked 4d `WBY43EJ02TCX57620`
+- $125,270 · 2026 · San Diego, CA · tracked 4d `WBY43EJ09TCY00298`
 
 **Illinois (3)**
 - **$58,995** · 19,411 mi · no shipping · 2024 · Palos Hills, IL · ~25 mi from Chicago
@@ -440,6 +451,17 @@ _The other half of the decision, beside the i5 eDrive40._
 - $55,097 · 2023 · Miramar, FL · tracked 5d `WBY53EJ03PCN21214`
 - $57,213 · 2023 · Plano, TX · tracked 2d `WBY53EJ00PCN86294`
 - $57,839 · 2023 · Plano, TX · tracked 1d `WBY53EJ09PCN87668`
+- $58,880 · 2023 · North Hollywood, CA · tracked 4d `WBY53EJ05PCN85481`
+- $58,889 · 2023 · Sherman Oaks, CA · tracked 4d `WBY53EJ02PCN64037`
+- $58,897 · 2023 · Marietta, GA · tracked 4d `WBY53EJ0XPCM83707`
+- $58,998 · 2023 · Ontario, CA · tracked 1d `WBY53EJ04PCN70972`
+- $59,038 · 2023 · San Luis Obispo, CA · tracked 4d `WBY53EJ03PCN79176`
+- $59,214 · 2023 · Plano, TX · tracked 4d `WBY53EJ07PCN58265`
+- $59,214 · 2023 · Plano, TX · tracked 4d `WBY53EJ06PCN81486`
+- $59,389 · 2023 · Fort Lauderdale, FL · tracked 1d `WBY53EJ07PCN40932`
+- $60,079 · 2023 · Santa Clara, CA · tracked 1d `WBY53EJ07PCN85675`
+- $62,772 · 2023 · Plano, TX · tracked 1d `WBY53EJ08PCN52216`
+- $64,826 · 2023 · Honolulu, HI · tracked 1d `WBY53EJ01PCM51390`
 
 **Illinois (15)**
 - **$56,995** · 54,840 mi · no shipping · 2023 · Midlothian, IL · ~25 mi from Chicago
@@ -549,6 +571,10 @@ _The other half of the decision, beside the i5 eDrive40._
 
 ### M70 — 22 vehicles · lowest asking $66,196 (HILLSIDE, NJ)
 
+**Gone since 2026-08-29**
+- $173,367 · 2026 · Bel Air, MD · tracked 5d `WBY83EH06TCX89008`
+- $182,890 · 2026 · Monrovia, CA · tracked 4d `WBY83EH03TCX46116`
+
 **Illinois (1)**
 - **$190,862** · 15 mi · no shipping · 2026 · Barrington, IL · ~25 mi from Chicago
   _on market 171d · sits longer than 93% of the model_
@@ -628,4 +654,4 @@ _By asking price, shipping stated per car, on a slower cadence: the cheapest 20 
 - **Lucid Air** — 63 cars · 30 drivable · lowest asking $37,990 (location n/a) + $1,100 shipping · drivable from $38,397 (Streetsboro, OH) · median asking $43,064 _(every 3 days · as of 2026-08-28)_
 
 ---
-_1173 vehicle histories across 10 days · 24 API calls today._
+_1173 vehicle histories across 10 days · 0 API calls today._

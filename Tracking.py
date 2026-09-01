@@ -411,6 +411,62 @@ def scope_label():
     return "/".join(STATES) or "your states"
 
 
+def finance_export():
+    """The buyer's rate table, with each promo's expiry already decided here.
+
+    A promo is a real offer with an end date, and an expired one is worth more
+    than nothing to a reader — "that 2.99% ran out on the 31st" explains a page
+    that suddenly ranks differently. So every promo ships, each carrying an
+    `active` the page trusts for arithmetic and an `expires` it can count down
+    from. Deciding it here rather than in the browser means one clock (the run's
+    TODAY) settles it, instead of whatever the reader's device believes.
+
+    fallback_apr is the rate every non-promo car finances at, and it is the
+    number the whole payment ranking pivots on: it drifts with the market and
+    nothing fetches it. `fallback_checked` is when a human last verified it, and
+    `stale_days` lets the page say so rather than quietly ranking on a rate from
+    last spring.
+    """
+    fin = BUYER.get("finance") or {}
+    if not fin:
+        return None
+    today = date.fromordinal(TODAY_ORD)
+    promos = []
+    for p in fin.get("promos") or []:
+        exp = str(p.get("expires") or "")
+        try:
+            ends = date.fromisoformat(exp) if exp else None
+        except ValueError:
+            ends = None
+        promos.append({
+            "model": p.get("model"),
+            "cpo_only": bool(p.get("cpo_only", True)),
+            "apr": to_float(p.get("apr")),
+            "max_term": to_int(p.get("max_term")),
+            "expires": exp or None,
+            "label": p.get("label") or "",
+            # No end date is a standing offer, not an expired one.
+            "active": (ends is None or ends >= today),
+            "days_left": ((ends - today).days if ends else None),
+        })
+    checked = str(fin.get("fallback_checked") or "")
+    try:
+        stale = (today - date.fromisoformat(checked)).days if checked else None
+    except ValueError:
+        stale = None
+    terms = [t for t in (to_int(x) for x in (fin.get("terms") or [])) if t]
+    default_term = to_int(fin.get("default_term")) or 60
+    return {
+        "fallback_apr": to_float(fin.get("fallback_apr")),
+        "fallback_checked": checked or None,
+        "stale_days": stale,
+        "default_term": default_term,
+        "terms": terms or [default_term],
+        "down": to_int(fin.get("down")) or 0,
+        "promos": promos,
+    }
+
+
 def ship_for(r):
     """Shipping for a listing: nothing in-state; otherwise by distance from
     home when it is known, else the flat ship_cost."""
@@ -1475,6 +1531,7 @@ def build_outputs(today_rows, all_rows, hist):
             "cents_per_mile": BUYER.get("cents_per_mile"),
             "mileage_baseline": BUYER.get("mileage_baseline"),
             "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
+            "finance": finance_export(),
         },
         "brands": {},
     }

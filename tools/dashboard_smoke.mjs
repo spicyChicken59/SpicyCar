@@ -1300,6 +1300,68 @@ if (!cases.length) {
 
 });
 
+// ---- the monthly payment, which is the number this buyer decides on -------
+// A certified car on a promotional APR can cost less per month than a cheaper
+// car that is not, and that is the ONLY reason this ranking exists — so the
+// checks below hold the two things that make it true rather than decorative:
+// the promo reaches certified cars and nothing else, and a promo capped at 60
+// months is not quoted at 72. Both are asserted against whatever the sheet says
+// today: the subject is discovered, never named, because a config that retires
+// the i5 must not read as a broken dashboard.
+{
+  const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const fin = (site.buyer || {}).finance;
+  const livePromo = ((fin || {}).promos || []).find((p) => p.active && p.apr != null);
+  // A model that has both a certified car and a non-certified one, under a live
+  // promo — the only shape where the boundary is observable at all.
+  const subject = !livePromo ? null : (() => {
+    const [bk, mk] = String(livePromo.model).split('/');
+    const m = ((site.brands || {})[bk] || {}).models?.[mk];
+    const rows = (m || {}).listings || [];
+    return (rows.some((x) => x.cpo) && rows.some((x) => !x.cpo))
+      ? { q: `?brand=${bk}&m=${mk}`, who: `${bk} ${mk}`, apr: livePromo.apr, cap: livePromo.max_term } : null;
+  })();
+  if (!subject) {
+    skip('a promo reaches certified cars and no others',
+         'no watched model has a live promo with both certified and non-certified cars today');
+    skip('a promo capped at 60 months is not quoted at 72', 'same');
+  } else {
+    await open(subject.q);
+    await page.selectOption('#f-sort', 'payment');
+    await page.waitForTimeout(350);
+    const seen = await page.$$eval('#list-table tbody tr', (rows) => rows.map((r) => {
+      const code = r.querySelector('.sc-media__code');
+      const note = [...r.querySelectorAll('.sc-note')].map((n) => n.textContent).find((t) => /\/mo at /.test(t)) || '';
+      const m = note.match(/at ([\d.]+)%/);
+      return { vin: code ? code.textContent.trim() : '', apr: m ? Number(m[1]) : null };
+    }));
+    const cpoVins = await page.evaluate(() => window.__cpoVins || null);
+    const promoRows = seen.filter((r) => r.apr === subject.apr);
+    const otherRows = seen.filter((r) => r.apr != null && r.apr !== subject.apr);
+    ok('a promo reaches certified cars and no others',
+       promoRows.length > 0 && otherRows.length > 0 && new Set(seen.map((r) => r.apr).filter((v) => v != null)).size === 2,
+       `${subject.who}: ${promoRows.length} rows at ${subject.apr}%, ${otherRows.length} at the ordinary rate`);
+    // The cap: ask for the longest term the sheet offers and the promo car must
+    // still quote its own maximum, not the longer one.
+    const longest = Math.max(...((fin.terms || [60])));
+    if (subject.cap && longest > subject.cap) {
+      await page.selectOption('#f-term', String(longest));
+      await page.waitForTimeout(350);
+      const title = await page.$$eval('#list-table tbody .sc-note', (ns, apr) => {
+        const t = ns.map((n) => n.getAttribute('title') || '').find((t) => t.includes(apr + '%'));
+        return t || '';
+      }, String(subject.apr));
+      ok('a promo capped at 60 months is not quoted at 72',
+         title.includes(`${subject.cap} months`),
+         `term set to ${longest}; the promo car says "${title.slice(0, 70)}"`);
+      await page.selectOption('#f-term', String(fin.default_term || 60));
+    } else {
+      skip('a promo capped at 60 months is not quoted at 72',
+           'no live promo has a term cap shorter than the longest offered term');
+    }
+  }
+}
+
 await browser.close();
 server.close();
 
@@ -1324,7 +1386,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 83;
+const EXPECTED = 85;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
