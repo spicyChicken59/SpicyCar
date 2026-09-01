@@ -49,7 +49,21 @@ jobs:
           BUYER_HOME_ZIP: ${{ secrets.BUYER_HOME_ZIP }}
           # Empty on the cron path, so the guard is live for every scheduled run.
           ALLOW_REFETCH: ${{ inputs.allow_refetch && '1' || '' }}
-        run: python Tracking.py
+        # Exit 3 means "today was already fetched, nothing spent" — a saving,
+        # not a failure. The usual reason to dispatch this workflow is wanting
+        # fresh outputs after a config or code change, and that costs nothing,
+        # so do exactly that instead of painting the run red.
+        run: |
+          set +e
+          python Tracking.py
+          rc=$?
+          set -e
+          if [ "$rc" = "3" ]; then
+            echo "::notice::Today was already fetched. Regenerating REPORT.md and docs/data.json from the snapshot on disk — 0 API calls."
+            python tools/rebuild_outputs.py
+          elif [ "$rc" != "0" ]; then
+            exit $rc
+          fi
       - name: Commit outputs
         # The listings API is live-only: a rejected push would discard a
         # snapshot that can never be re-fetched. Rebase onto whatever landed

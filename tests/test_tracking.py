@@ -1747,6 +1747,47 @@ class TestSpendAccumulates(unittest.TestCase):
             self.assertEqual(hist[T.TODAY]["runs"], 1)
 
 
+class TestEmailDelivery(unittest.TestCase):
+    """Email is off on purpose, and stays quiet about it.
+
+    RESEND_API_KEY and EMAIL_TO have never been set. A first pass made the skip
+    emit a ::warning:: annotation on every run — which is right for a feature
+    that is broken and wrong for one that is switched off deliberately. The
+    dashboard is this tool's delivery surface; an annotation nobody wants,
+    fired daily, only teaches you to ignore annotations.
+    """
+
+    def _skip_output(self, env):
+        import contextlib
+        buf = _io.StringIO()
+        with unittest.mock.patch.dict(os.environ, env, clear=True), \
+             contextlib.redirect_stdout(buf):
+            T.send_email("body", subject="s")
+        return buf.getvalue()
+
+    def test_it_says_so_without_raising_an_alarm(self):
+        out = self._skip_output({"GITHUB_ACTIONS": "true"})
+        self.assertIn("Email off", out)
+        self.assertNotIn("::warning::", out,
+                         "a deliberate setting must not annotate the run")
+        self.assertNotIn("::error::", out)
+
+    def test_it_names_where_the_report_went(self):
+        self.assertIn("REPORT.md", self._skip_output({}))
+
+    def test_configuring_both_secrets_turns_it_on(self):
+        """The off state is the ABSENCE of config, not a hard-coded switch, so
+        setting the two secrets is all it takes to start sending."""
+        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
+        body = src[src.index("def send_email("):]
+        body = body[:body.index("\n\n\n")]
+        self.assertIn("if not (key and to):", body)
+        self.assertIn("api.resend.com", body, "the send path is still there")
+
+
+Exit = __import__("collections").namedtuple("Exit", "code text")
+
+
 class TestGuardAndProvenanceBehaviour(unittest.TestCase):
     """These two features drive the real code. The rest of their coverage does
     not, and that is the point of this class.
@@ -1815,28 +1856,51 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         for p_ in patches:
             p_.start()
         try:
-            with contextlib.redirect_stdout(_io.StringIO()):
+            buf = _io.StringIO()
+            with contextlib.redirect_stdout(buf):
                 try:
                     T.main()
+                    code = None
                 except SystemExit as e:
-                    return seen, captured, str(e)
-            return seen, captured, None
+                    code = e.code
+            # The guard PRINTS its explanation and exits with a code; the code
+            # is what the workflow branches on, the text is what a human reads.
+            return seen, captured, Exit(code, buf.getvalue())
         finally:
             for p_ in reversed(patches):
                 p_.stop()
 
     # ---- the guard ----------------------------------------------------------
     def test_an_already_fetched_day_spends_nothing(self):
-        seen, captured, msg = self._drive([self._hist_row(T.TODAY)],
+        seen, captured, out = self._drive([self._hist_row(T.TODAY)],
                                           lambda *a: [])
         self.assertEqual(seen, [], "the guard must refuse BEFORE the first request")
         self.assertNotIn("rows", captured, "and must not rewrite the snapshot")
-        self.assertIn("already been fetched", msg or "")
+        self.assertIn("already been fetched", out.text)
+
+    def test_it_exits_a_saving_not_a_failure(self):
+        """Exit 3, and daily.yml branches on it to run the free offline rebuild.
+
+        It exited 1 first, which painted the workflow run red — and the
+        operator's own reaction to seeing that was "got this error". A guard
+        that saves 32 calls and reports it the same way a crash does will get
+        switched off.
+        """
+        _, _, out = self._drive([self._hist_row(T.TODAY)], lambda *a: [])
+        self.assertEqual(out.code, T.ALREADY_FETCHED)
+        self.assertNotEqual(out.code, 1, "1 is a failure; this is not one")
+        wf = (Path(__file__).parent.parent / ".github/workflows/daily.yml").read_text()
+        self.assertIn('"$rc" = "3"', wf,
+                      "the workflow must branch on the code, or it is just a red X")
+        self.assertIn("rebuild_outputs.py", wf,
+                      "and it must do the free thing the guard points at")
 
     def test_the_message_names_the_free_way_out(self):
-        _, _, msg = self._drive([self._hist_row(T.TODAY)], lambda *a: [])
-        self.assertIn("rebuild_outputs.py", msg or "")
-        self.assertIn("ALLOW_REFETCH", msg or "")
+        _, _, out = self._drive([self._hist_row(T.TODAY)], lambda *a: [])
+        self.assertIn("rebuild_outputs.py", out.text)
+        self.assertIn("ALLOW_REFETCH", out.text)
+        self.assertIn("Nothing is wrong", out.text,
+                      "a saving must not read like a fault")
 
     def test_a_fresh_day_is_not_blocked(self):
         """The guard must not be a wall. A day not yet in the snapshot runs."""
@@ -1853,10 +1917,10 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         so on every scheduled run the variable is PRESENT and empty. If the
         guard tested for presence rather than truth, the cron would open its own
         escape hatch on every single day."""
-        seen, _, msg = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
+        seen, _, out = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
                                    allow_refetch="")
         self.assertEqual(seen, [], "an empty value must not unlock the guard")
-        self.assertIn("already been fetched", msg or "")
+        self.assertIn("already been fetched", out.text)
 
     # ---- provenance ---------------------------------------------------------
     def _via_batches(self):
