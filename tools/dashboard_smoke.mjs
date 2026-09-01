@@ -903,6 +903,71 @@ if (!subject) {
 }
 }
 
+// ---- ns/7B-A ----
+{
+// The masthead's right-hand slot was the last box on this page nobody had
+// reserved, and the last layout-shift entry with it. It ships "Loading…" and
+// render() replaces it with "Data through " + an ISO date — 56px of text
+// becoming 161px — and at 320x568 that no longer fits beside the nav on the
+// masthead's wrapped second row, so the slot took a row of its OWN, grew the
+// masthead from 100.5px to 127.2px and pushed all of #main down with it: one
+// entry, sources #mast-right and #main, and the whole 0.194 that NS-06's
+// #main{min-height:100vh} could not reach at that width. 320 is where this has
+// to be measured: from ~334px up the same growth costs no row at all and the
+// page is already at 0.001.
+//
+// data.json is held on the same latch NS-06 uses rather than a sleep, so no
+// machine is slow enough to render the page out from under the shell reading.
+//
+// The ORACLE names the mechanism beside the outcome. An equal masthead height
+// on its own only measures how long today's date string happens to be — a
+// shorter one would stop wrapping by itself and let a reverted stylesheet go
+// green — so the reservation is asserted too, and against the WIDEST line the
+// slot can hold rather than against today's: the live label with its value
+// swapped for a full-width ISO stand-in, measured in the slot's own font. That
+// keeps the check off the market entirely. It reads no car, price, count or
+// trim id, and if data.json does not render there is no swap to watch and it
+// says so by name instead of passing quietly.
+let releaseMast;
+const mastHeld = new Promise((r) => { releaseMast = r; });
+await ctx.route('**/data.json', async (r) => { await mastHeld; r.continue(); });
+await page.setViewportSize({ width: 320, height: 568 });
+await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+const mastShell = await page.evaluate(() => {
+  const el = document.getElementById('mast-right');
+  return { text: (el.textContent || '').trim(),
+           reserved: parseFloat(getComputedStyle(el).minWidth) || 0,
+           mastH: +document.querySelector('header.sc-masthead').getBoundingClientRect().height.toFixed(2) };
+});
+releaseMast();
+await page.waitForFunction(() => {
+  const h = document.getElementById('h1');
+  return h && h.textContent.trim() && h.textContent !== 'Loading snapshot…';
+}, null, { timeout: 20000 }).catch(() => {});
+await page.waitForTimeout(250);
+const mastLive = await page.evaluate(() => {
+  const el = document.getElementById('mast-right'), cs = getComputedStyle(el);
+  const probe = document.createElement('span');
+  probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font:${cs.font};`
+    + `letter-spacing:${cs.letterSpacing};text-transform:${cs.textTransform}`;
+  el.parentElement.appendChild(probe);
+  probe.textContent = (el.textContent || '').trim().replace(/\S+$/, '0000-00-00');
+  const ink = +probe.getBoundingClientRect().width.toFixed(2), wide = probe.textContent;
+  probe.remove();
+  return { text: (el.textContent || '').trim(), wide, ink,
+           h1: (document.getElementById('h1').textContent || '').trim(),
+           mastH: +document.querySelector('header.sc-masthead').getBoundingClientRect().height.toFixed(2) };
+});
+await ctx.unroute('**/data.json');
+const mastName = 'the masthead holds its height when the data line lands';
+if (mastLive.h1 === 'Snapshot unavailable' || mastLive.text === mastShell.text)
+  skip(mastName, `#mast-right never swapped — it still reads "${mastLive.text}"`);
+else
+  ok(mastName, mastLive.mastH === mastShell.mastH && mastShell.reserved >= mastLive.ink,
+    `320x568: masthead ${mastShell.mastH}px "${mastShell.text}" -> ${mastLive.mastH}px "${mastLive.text}",`
+    + ` ${mastShell.reserved}px reserved for a ${mastLive.ink}px "${mastLive.wide}"`);
+}
+
 await browser.close();
 server.close();
 

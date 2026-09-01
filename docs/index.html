@@ -90,6 +90,48 @@
      docH 1000 → 1177). CLS there IMPROVES, the footer having left that shift
      too: 0.1907 → 0.1217 on the phone, 0.0400 → 0.0266 at 1280. */
   #main { min-height: 100vh; }
+  /* The last box on the page nobody reserved, and the last layout-shift entry
+     with it. The masthead's right-hand slot ships "Loading…" and render()
+     replaces it with "Data through " + an ISO date — 56px of text becoming
+     161px. Below ~333px that no longer fits beside the nav on the masthead's
+     wrapped second row, so the slot took a row of its OWN, grew the masthead
+     from 100.5px to 127.2px and pushed all of #main down with it: one entry,
+     t≈190ms, sources #mast-right and #main, and the entire 0.194 that NS-06's
+     #main reservation could not reach at 320×568.
+     Reserving the WIDTH, not the height, is what makes this width-independent
+     and needs no breakpoint: a box is max(min-width, its text), so once
+     min-width covers the widest line the slot can hold, the box measures the
+     same in the loading state and the loaded one at EVERY viewport — same flex
+     line count, same masthead height, nothing left to shift. The widest line
+     is 'Data through ' + a 10-character ISO date = 23 characters; dataThrough()
+     has no other shape (data_through, the newest daily date, generated, or the
+     em dash), and fail()'s "No data" and the "Loading…" placeholder are both
+     shorter. 23 characters of a font stack that ends in `monospace` are exactly
+     23ch, plus the .4px of tracking .sc-masthead__right sets on each — so the
+     reservation is the rendered width, not a magic number, and it follows the
+     font if the font ever changes. The trailing 1px is rounding headroom, and
+     the only part of this that is not derived: chromium resolves 1ch to
+     6.6013px and quantises the calc to 161.025px against a string that measures
+     161.031px, and a reservation a sixth of a hundredth of a pixel SHORT is not
+     a reservation. 1px is the smallest honest guard and costs a pixel of slack
+     on a masthead row that has 119 to spare at 320px.
+     Measured on the integrated tree, model page and watchlist, at the four
+     widths the run tracks: 320×568 0.1938 → 0.0022 on the model page and
+     0.0000 on the watchlist; 390×844 0.0000 → 0.0000; 820×1180 0.0013 →
+     0.0000; 1280×1000 0.0009 → 0.0000. 820 and 1280 improve rather than hold
+     because their entries were this same node — the desktop masthead is a
+     single flex row where `justify-content: space-between` turns the slot's
+     growth into 105px of leftward travel for the nav instead of a new row, and
+     reserving the width parks the nav at its final x from the first paint.
+     The 0.0022 left at 320 is NOT this node and is not new: it is #eyebrow
+     going from one line to two ("analyzer" → "BMW · 2024–2025 · IL · OH · …"),
+     which moves the h1 12px down. It was always there, bundled inside the
+     0.1938 entry because both fired in render()'s single frame; with the
+     masthead pinned it is all that is left, and it is 2% of the budget.
+     The cost is the same kind #main pays, and smaller: below ~333px the second
+     masthead row stands empty for the ~190ms before data lands, and stays empty
+     in the fail state. Above that width it costs nothing at all. */
+  #mast-right { min-width: calc(23 * (1ch + .4px) + 1px); }
   /* Touch hit halo — one invisible circle per dot, built only on coarse
      pointers. Pure geometry: r rides user units, sized to ~25px on screen
      and re-derived when the viewport width changes (fill:none paints
