@@ -102,6 +102,10 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + 
 
 const results = [];
 const ok = (name, pass, detail = '') => results.push({ name, pass: !!pass, detail });
+// A check whose SUBJECT is missing from today's data.json has nothing to say
+// about the page. It is not a pass and it is not a failure: it is skipped, out
+// loud, so a green run never quietly stops covering something.
+const skip = (name, detail = '') => results.push({ name, pass: true, skipped: true, detail });
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
   await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
@@ -287,31 +291,77 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 // it while the viewport stays 390px tall. The sticky bar then stood 371px of
 // those 390 with its toggle at display:none, leaving a 19px letterbox of
 // results at every scroll offset and no control to dismiss it.
+//
+// Two things here are deliberate, both to stop this becoming a test of the
+// market instead of the page.
+//
+// The SUBJECT is discovered, not named. The bar is tallest on the model page
+// carrying the most trim chips, and which model that is belongs to the
+// watchlist, not to this file — a hand-written ?brand=…&m=… asserts today's
+// config. If data.json names no model at all there is nothing to open, and
+// this reports skip rather than a failure it cannot honestly attribute.
+//
+// The ORACLE names the mechanism, not only the outcome. `left >= 180` alone
+// measures how tall the bar happens to be, and the bar is made of chips: a
+// watchlist that shed enough model or where chips would drop the UNCAPPED bar
+// under 210px at 844x390 and let a reverted stylesheet go green. So the cap
+// itself is asserted beside the geometry — a real max-height, bounded to half
+// the viewport, on a panel that scrolls — and those three do not move when the
+// market does.
+const subject = (() => {
+  const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const all = [];
+  for (const [bk, b] of Object.entries(site.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {}))
+      all.push({ q: `?brand=${bk}&m=${mk}`, id: `${bk} ${mk}`,
+                 trims: Object.keys((m || {}).trims || {}).length, cars: ((m || {}).listings || []).length });
+  all.sort((a, b) => b.trims - a.trims || b.cars - a.cars || a.id.localeCompare(b.id));
+  return all[0] || null;
+})();
 await page.setViewportSize({ width: 844, height: 390 });
-await open('?brand=bmw&m=i5');
-await page.evaluate(() => window.scrollTo(0, 4000));
-await page.waitForTimeout(250);
-const land = await page.evaluate(() => {
-  const c = document.getElementById('filters-card');
-  return { left: Math.round(innerHeight - c.getBoundingClientRect().bottom),
-           clipped: c.scrollHeight - c.clientHeight, height: Math.round(c.getBoundingClientRect().height) };
-});
-ok('a phone in landscape still sees the results under the filter bar',
-  land.left >= 180, `${land.height}px bar, ${land.left}px of 390 left for the page`);
-// The cap is only honest if what it hides can still be reached: the panel
-// scrolls inside itself rather than losing its last controls off the bottom.
-ok('and can still reach every filter in it',
-  land.clipped === 0 || (await page.evaluate(() => {
-    const c = document.getElementById('filters-card');
-    c.scrollTop = c.scrollHeight;
-    return c.scrollTop > 0;
-  })), `${land.clipped}px past the cap`);
+if (!subject) {
+  skip('a phone in landscape still sees the results under the filter bar', 'data.json names no model to open');
+  skip('and can still reach every filter in it', 'data.json names no model to open');
+  skip('and the cap lifts again on a tall screen', 'data.json names no model to open');
+} else {
+  await open(subject.q);
+  await page.evaluate(() => window.scrollTo(0, 4000));
+  await page.waitForTimeout(250);
+  const land = await page.evaluate(() => {
+    const c = document.getElementById('filters-card'), cs = getComputedStyle(c);
+    return { left: Math.round(innerHeight - c.getBoundingClientRect().bottom),
+             clipped: c.scrollHeight - c.clientHeight, height: Math.round(c.getBoundingClientRect().height),
+             cap: cs.maxHeight, capPx: parseFloat(cs.maxHeight), overflowY: cs.overflowY, vh: innerHeight };
+  });
+  ok('a phone in landscape still sees the results under the filter bar',
+    land.left >= 180 && land.capPx > 0 && land.capPx <= land.vh / 2,
+    `${subject.id}: ${land.height}px bar, ${land.left}px of 390 left for the page, max-height ${land.cap}`);
+  // The cap is only honest if what it hides can still be reached: the panel
+  // scrolls inside itself rather than losing its last controls off the bottom.
+  // The scroll container is asserted directly, so this cannot pass on a page
+  // that simply has no cap and therefore nothing clipped.
+  ok('and can still reach every filter in it',
+    /^(auto|scroll)$/.test(land.overflowY) && (land.clipped === 0 || (await page.evaluate(() => {
+      const c = document.getElementById('filters-card');
+      c.scrollTop = c.scrollHeight;
+      return c.scrollTop > 0;
+    }))), `overflow-y:${land.overflowY}, ${land.clipped}px past the cap`);
+  // …and it is keyed to the SHORT viewport, not applied everywhere. This one
+  // is a guard, not a reproduction: it holds on the unfixed page too, and its
+  // job is to catch a later edit that drops the media query and caps the bar
+  // on the desktop the sticky panel was designed for.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(250);
+  const tall = await page.evaluate(() => getComputedStyle(document.getElementById('filters-card')).maxHeight);
+  ok('and the cap lifts again on a tall screen', tall === 'none', `max-height ${tall} at 390x844`);
+}
 
 await browser.close();
 server.close();
 
-for (const r of results) console.log(`  ${r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
+for (const r of results) console.log(`  ${r.skipped ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
 if (errors.length) { console.log('\n  the page logged errors:'); for (const e of [...new Set(errors)]) console.log('      - ' + e); }
 const failed = results.filter((r) => !r.pass).length;
-console.log(`\ndashboard smoke: ${results.length - failed}/${results.length} checks, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
+const skipped = results.filter((r) => r.skipped).length;
+console.log(`\ndashboard smoke: ${results.length - failed - skipped}/${results.length - skipped} checks${skipped ? `, ${skipped} skipped` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
 process.exit(failed || errors.length ? 1 : 0);

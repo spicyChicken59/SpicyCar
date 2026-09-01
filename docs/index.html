@@ -176,7 +176,18 @@
      reach the sticky position exists for while giving the page back 215px at
      844x390 and 227px at 915x412. 560px sits above every phone-landscape
      height measured (390/412/430) and well below iPad landscape, which needs
-     no help at 768px tall. */
+     no help at 768px tall.
+
+     The query is keyed to HEIGHT alone, so it also reaches inside the <=720px
+     band the toggle already covers — deliberately, because the toggle only
+     helps once the panel is shut. Opened at 667x375 (iPhone SE landscape) the
+     panel measures 381px on a 375px viewport, taller than the screen it sits
+     on; the cap takes it to 169px with the rest behind the internal scroll.
+     Same at 320x256. Neither was in the fault this rule was written for, and
+     in both the cap is an improvement, not a regression — but it does fire
+     there, and a reader tracing the 560px number should not be surprised by
+     it. Above 560px tall nothing changes: max-height computes to none at
+     390x844, 768x1024 and 1280x1000, measured. */
   @media (max-height: 560px) {
     #filters-card { max-height: 45vh; overflow-y: auto; }
   }
