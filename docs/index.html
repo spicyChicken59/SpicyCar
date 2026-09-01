@@ -503,10 +503,12 @@
   // can only press ids they were built from, and every navigation clears them.
   const modelKey = (bk, mk) => bk + '/' + mk;
   // Brands, models and trims are plain objects keyed by slug, so `o[slug]` also
-  // answers yes for every key Object.prototype carries. ?model=constructor used
-  // to open the Lucid Air — 59 rows, no notice, and the address bar rewritten to
-  // a clean ?brand=lucid&m=air, so neither sender nor reader could tell the link
-  // had been honored with a different car. ?brand=__proto__ was worse: it set
+  // answers yes for every key Object.prototype carries. ?model=constructor hit
+  // on every trim in the file and the loop below keeps the LAST match, so it
+  // opened whichever car the watchlist ends on — the Lucid Air, the day this
+  // was found — with no notice and the address bar rewritten to a clean
+  // ?brand=lucid&m=air, so neither sender nor reader could tell the link had
+  // been honored with a different car. ?brand=__proto__ was worse: it set
   // S.brand to a brand that does not exist and the page rendered "Snapshot
   // unavailable — could not load data.json" over a data.json that had parsed
   // fine. Membership is an own-property question; ask it that way.

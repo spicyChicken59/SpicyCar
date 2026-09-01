@@ -102,6 +102,10 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + 
 
 const results = [];
 const ok = (name, pass, detail = '') => results.push({ name, pass: !!pass, detail });
+// A check whose SUBJECT is missing from today's data.json is not a failing
+// dashboard — it is a check with nothing to point at. Say so out loud rather
+// than passing quietly or failing on the config.
+const skip = (name, why) => results.push({ name, pass: true, skipped: true, detail: why });
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
   await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
@@ -178,17 +182,38 @@ ok('and names what went missing', /bmw-not-a-car/.test(await page.textContent('#
 // The same promise, against the keys every plain object already answers to.
 // applyUrl used to test membership with `brands[wantBrand]` and
 // `(m.trims || {})[wantModel]`, so Object.prototype's own keys all read as
-// hits: ?model=constructor opened the Lucid Air with 59 rows, no notice, and a
-// canonical ?brand=lucid&m=air in the address bar — the one thing the comment
-// above applyUrl swears never happens, a link honored with a different car and
-// then made re-shareable. ?brand=__proto__ set a brand that does not exist and
-// the page rendered "Snapshot unavailable — could not load data.json" over a
+// hits: ?model=constructor matched every trim in the file and the last match
+// won, so it opened whichever car the watchlist ends on, with no notice and a
+// canonical ?brand=…&m=… in the address bar — the one thing the comment above
+// applyUrl swears never happens, a link honored with a different car and then
+// made re-shareable. ?brand=__proto__ set a brand that does not exist and the
+// page rendered "Snapshot unavailable — could not load data.json" over a
 // data.json that had parsed fine, bookmarkable because syncUrl kept the query.
 // lc() hid three of these behind lowercasing (tostring, valueof,
 // hasownproperty already missed correctly); these four did not.
+//
+// The fifth URL is the one that pins the fourth call site. Reverting only
+// `!own(models, wantM)` leaves the other four URLs green — ?brand=__proto__
+// and ?brand=constructor stop at the brand lookup, ?model=constructor and
+// ?m=constructor never reach it — while ?<a real brand>&m=constructor still
+// renders "constructor" as the <h1> and keeps the dead query. The brand comes
+// out of data.json, not out of this file: naming one here would test the
+// watchlist's contents instead of the page.
+const brands = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8')).brands || {};
+const realBrand = Object.keys(brands).find((b) => Object.keys(brands[b].models || {}).length);
+// Only two of Object.prototype's keys survive lc(); the probe needs one of them
+// that the watchlist itself does not use, or the check would be asserting the
+// config rather than the page.
+const ghost = realBrand && ['constructor', '__proto__'].find(
+  (k) => !Object.prototype.hasOwnProperty.call(brands[realBrand].models, k));
+const protoUrls = ['?brand=__proto__', '?brand=constructor', '?model=constructor', '?m=constructor'];
+if (ghost) protoUrls.push(`?brand=${encodeURIComponent(realBrand)}&m=${ghost}`);
+else skip('a tracked brand plus a prototype-key model lands on the watchlist',
+  realBrand ? `${realBrand} really has a model called constructor and one called __proto__`
+            : 'data.json has no brand with models — nothing to ask for');
 await open('');
 const baseRows = await page.locator('#overview-table tbody tr').count();
-for (const q of ['?brand=__proto__', '?brand=constructor', '?model=constructor', '?m=constructor']) {
+for (const q of protoUrls) {
   let state = null;
   try {
     await open(q);
@@ -315,8 +340,10 @@ ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of o
 await browser.close();
 server.close();
 
-for (const r of results) console.log(`  ${r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
+for (const r of results) console.log(`  ${r.skipped ? 'skip' : r.pass ? 'ok  ' : 'FAIL'}  ${r.name}${r.detail ? '  — ' + r.detail : ''}`);
 if (errors.length) { console.log('\n  the page logged errors:'); for (const e of [...new Set(errors)]) console.log('      - ' + e); }
 const failed = results.filter((r) => !r.pass).length;
-console.log(`\ndashboard smoke: ${results.length - failed}/${results.length} checks, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
+const skipped = results.filter((r) => r.skipped).length;
+const ran = results.length - skipped;
+console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks${skipped ? `, ${skipped} skipped` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
 process.exit(failed || errors.length ? 1 : 0);
