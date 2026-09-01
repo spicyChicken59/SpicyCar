@@ -212,6 +212,33 @@
     #list-table .col-price { max-width: 176px; white-space: normal; }   /* the long price notes wrap instead of holding the column at 204px */
   }
 
+  /* A phone in landscape is WIDE and SHORT, and every rule that folds the
+     filter panel away is keyed to width alone: sc.css hides .sc-filters behind
+     .sc-filter-bar__toggle only below 721px, and narrow() gates the JS half at
+     the same edge. Rotate an iPhone 13/14/15 and the viewport crosses to
+     844x390 — the panel springs open at 371px tall, the toggle that would shut
+     it computes display:none, and the sticky bar leaves 19px of those 390 for
+     the results at every scroll offset (915x412 keeps 152px, 932x430 keeps
+     160px). Capping the bar and letting it scroll inside itself keeps the
+     reach the sticky position exists for while giving the page back 215px at
+     844x390 and 227px at 915x412. 560px sits above every phone-landscape
+     height measured (390/412/430) and well below iPad landscape, which needs
+     no help at 768px tall.
+
+     The query is keyed to HEIGHT alone, so it also reaches inside the <=720px
+     band the toggle already covers — deliberately, because the toggle only
+     helps once the panel is shut. Opened at 667x375 (iPhone SE landscape) the
+     panel measures 381px on a 375px viewport, taller than the screen it sits
+     on; the cap takes it to 169px with the rest behind the internal scroll.
+     Same at 320x256. Neither was in the fault this rule was written for, and
+     in both the cap is an improvement, not a regression — but it does fire
+     there, and a reader tracing the 560px number should not be surprised by
+     it. Above 560px tall nothing changes: max-height computes to none at
+     390x844, 768x1024 and 1280x1000, measured. */
+  @media (max-height: 560px) {
+    #filters-card { max-height: 45vh; overflow-y: auto; }
+  }
+
   /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
      masthead, theme toggle and footer are sc.css v2.4.0's own 44px block,
      keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
