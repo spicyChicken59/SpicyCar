@@ -2450,6 +2450,16 @@
     // for, so the three stop disagreeing on one screen. Tile 4 keeps
     // filteredView: it counts over `all`, so a trim chip really is not a
     // filter there.
+    //   The trade, measured rather than assumed: asking the filter bar means a
+    // filter that happens to remove nothing now says "(filtered)" too. Pick a
+    // model whose cars are all one model year (the day this was written, the
+    // Audi A6 e-tron: 24 cars, all 2025) and select that year — the tiles read
+    // "(filtered) $36,077" while the count line below still reads "showing all
+    // 24 cars". Taken on purpose: the value never moves, the error can only
+    // understate a claim, and overstating one is what put a $93,399 floor under
+    // the word "nationwide". The overview tiles and the overview table header
+    // have always read these same bits, so this is the page agreeing with
+    // itself, not a new answer.
     const scopedView = !!filterBits(false).length;
 
     // Labels mirror the overview's, and the decision number a buyer here actually

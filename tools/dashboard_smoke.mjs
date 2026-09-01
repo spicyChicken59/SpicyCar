@@ -261,23 +261,57 @@ ok('narrowing to one column keeps the keyboard somewhere',
 // elements describe one screen and may not contradict each other. Tile 4 is
 // the exception and is checked as one — its counts run over the model's own
 // rows before the shared filters, so a trim chip really is not a filter there.
-await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
-await open('?brand=bmw&m=i7');
-const scopeSaid = () => page.evaluate(() => ({
-  tiles: [...document.querySelectorAll('#kpis .sc-tile__label')].map((n) => n.textContent),
-  chip: document.getElementById('chart-scope').textContent,
-}));
-const rest = await scopeSaid();
-ok('at rest the tiles claim the nation and the chart chip agrees',
-  /nationwide/.test(rest.tiles[0]) && /drivable asking/.test(rest.tiles[1]) && !/^filtered/.test(rest.chip),
-  JSON.stringify(rest));
-await page.locator('#f-trim button').nth(1).click(); await page.waitForTimeout(350);
-const scoped = await scopeSaid();
-ok('a trim chip makes the price tiles say filtered, like the chart chip',
-  /^filtered/.test(scoped.chip) && /\(filtered\)/.test(scoped.tiles[0]) && /\(filtered\)/.test(scoped.tiles[1]),
-  JSON.stringify(scoped));
-ok('and leaves the movement tile, which counts every trim, saying so',
-  !/all cars/.test(scoped.tiles[3]), scoped.tiles[3]);
+//
+// The SUBJECT is read out of the sheet, never typed here. The tracker adds and
+// retires models and trims nightly, so a check that names the i7 asserts the
+// watchlist's contents alongside the page's behaviour and goes red on a night
+// that only changed the watchlist. Take the first model the sheet gives more
+// than one trim (buildFilters hides #f-trim-field below two) and press its
+// busiest chip. A night with no such model is a thinner watchlist, not a
+// broken dashboard: say skip and assert nothing, the way a missing chromium
+// already does.
+const scopeSubject = (() => {
+  const sheet = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  for (const [bk, b] of Object.entries(sheet.brands || {})) {
+    for (const [mk, m] of Object.entries(b.models || {})) {
+      const ids = Object.keys(m.trims || {});
+      if (ids.length < 2) continue;
+      const n = {};
+      for (const x of (m.listings || [])) n[x.trim_id] = (n[x.trim_id] || 0) + 1;
+      // stable sort: a tie keeps the sheet's own chip order, so the pick is the
+      // same on two runs of the same data
+      const nth = ids.map((_, i) => i).sort((a, z) => (n[ids[z]] || 0) - (n[ids[a]] || 0))[0];
+      if (!n[ids[nth]]) continue;                 // every chip empty — nothing for it to narrow
+      return { q: `?brand=${bk}&m=${mk}`, nth, who: `${bk} ${mk} · ${(m.trims[ids[nth]] || {}).label || ids[nth]}` };
+    }
+  }
+  return null;
+})();
+if (!scopeSubject) {
+  console.log('  skip  no watched model has two trims today — the tiles-vs-chip scope check has no subject');
+} else {
+  // Guarded: three workstreams add a block at this anchor and the order they
+  // end up in is an integration decision, so this must not be the one thing
+  // that throws if it lands first, on about:blank, where localStorage is a
+  // SecurityError rather than an empty store.
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+  await open(scopeSubject.q);
+  const scopeSaid = async () => ({ who: scopeSubject.who, ...await page.evaluate(() => ({
+    tiles: [...document.querySelectorAll('#kpis .sc-tile__label')].map((n) => n.textContent),
+    chip: document.getElementById('chart-scope').textContent,
+  })) });
+  const rest = await scopeSaid();
+  ok('at rest the tiles claim the nation and the chart chip agrees',
+    /nationwide/.test(rest.tiles[0]) && /drivable asking/.test(rest.tiles[1]) && !/^filtered/.test(rest.chip),
+    JSON.stringify(rest));
+  await page.locator('#f-trim button').nth(scopeSubject.nth).click(); await page.waitForTimeout(350);
+  const scoped = await scopeSaid();
+  ok('a trim chip makes the price tiles say filtered, like the chart chip',
+    /^filtered/.test(scoped.chip) && /\(filtered\)/.test(scoped.tiles[0]) && /\(filtered\)/.test(scoped.tiles[1]),
+    JSON.stringify(scoped));
+  ok('and leaves the movement tile, which counts every trim, saying so',
+    !/all cars/.test(scoped.tiles[3]), `${scopeSubject.who} → ${scoped.tiles[3]}`);
+}
 
 // --- the phone -------------------------------------------------------------
 await page.setViewportSize({ width: 390, height: 844 });
