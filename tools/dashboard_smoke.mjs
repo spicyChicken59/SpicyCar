@@ -1314,4 +1314,19 @@ const failed = failedRows.length;
 const ran = results.length - skipped;
 console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
   + `${skipped ? `, ${skipped} skipped for want of a subject` : ''}, ${errors.length} page error${errors.length === 1 ? '' : 's'}`);
-process.exit(failed || errors.length ? 1 : 0);
+// The hardest lesson this suite has learned, encoded where it survives the night.
+// It has been assembled three different ways that each reported GREEN while quietly
+// covering less: 63/63 with 17 checks missing, 76/76 with 7, and a merge that lost
+// four more. A count is the only thing that catches that, and a count written down
+// in a markdown file catches nothing.
+// Skips are legitimate and vary with the data — a shrunken watchlist genuinely has
+// fewer subjects, and some checks collapse into a coarser skip. So the assertion is
+// made where it is exact: when nothing skipped, every check had a subject and the
+// total must be the declared one. That is the case CI runs.
+// If you ADD a check, raise this number in the same commit. That is the point.
+const EXPECTED = 83;
+if (!skipped && results.length !== EXPECTED) {
+  console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
+  console.log('     with nothing skipped. A check was lost or added silently.');
+}
+process.exit(failed || errors.length || (!skipped && results.length !== EXPECTED) ? 1 : 0);
