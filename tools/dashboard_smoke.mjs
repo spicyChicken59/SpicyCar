@@ -2,7 +2,7 @@
 //
 //   node tools/dashboard_smoke.mjs <design-system-checkout> [--shots <dir>]
 //
-// docs/index.html is 3,700 lines of markup, CSS and one IIFE, and until this
+// docs/index.html is thousands of lines of markup, CSS and one IIFE, and until this
 // existed not one of them could fail a build: the Python suite is a Tracking.py
 // suite, and the consumer linter reads the CSS namespace, not the behaviour. A
 // typo in the render path shipped green.
@@ -174,9 +174,11 @@ const oneLine = (e) => String((e && e.message) || e).replace(/\u001b\[[0-9;]*m/g
   .split('\n').slice(0, 3).join(' ').replace(/\s+/g, ' ').trim().slice(0, 160);
 async function step(label, body) {
   live = { label, planned: new Set(), said: new Set() };
+  let threw = false;
   try {
     await body();
   } catch (e) {
+    threw = true;
     const lost = unsaid();
     // Named where the step said what it owed; named after the step where it
     // threw before it could say, or after everything it owed was already in.
@@ -187,6 +189,18 @@ async function step(label, body) {
     const stray = [...live.said].filter((n) => live.planned.size && !live.planned.has(n));
     if (stray.length) record({ name: `${label} declares every check it reports`, pass: false,
                                detail: `unplanned: ${stray.join(' | ')}` });
+    // The other half of the same promise, and the one that was missing. A step
+    // that RETURNS NORMALLY having declared a check and never reported it used
+    // to lose that check without a word: it is not in the failures, not in the
+    // skips, not in the tally — and the EXPECTED backstop below only fires when
+    // nothing skipped, so one skip anywhere disarmed the only thing that could
+    // have noticed. An early `return` past half a step's checks is exactly how
+    // this file has lost coverage before. A dropped check is a failure of the
+    // suite, not a quiet absence: skipRest() is how a step says "no subject".
+    if (!threw) {
+      for (const n of unsaid()) record({ name: n, pass: false,
+        detail: `declared by "${label}" and never reported — say skip()/skipRest() if it had no subject` });
+    }
     live = null;
   }
 }
@@ -1343,7 +1357,15 @@ if (!cases.length) {
 // months is not quoted at 72. Both are asserted against whatever the sheet says
 // today: the subject is discovered, never named, because a config that retires
 // the i5 must not read as a broken dashboard.
-{
+//
+// Inside step(), like everything else. These four lived in a bare block for
+// want of a wrapper, which meant one thrown locator here ended the whole run
+// with a Playwright stack trace where the results should be — the precise
+// failure the step() harness exists to end, sitting in the same file as the
+// comment describing it.
+await step('the monthly payment', async () => {
+  plan('a promo reaches certified cars and no others',
+       'a promo capped at 60 months is not quoted at 72');
   const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const fin = (site.buyer || {}).finance;
   const livePromo = ((fin || {}).promos || []).find((p) => p.active && p.apr != null);
@@ -1395,7 +1417,7 @@ if (!cases.length) {
            'no live promo has a term cap shorter than the longest offered term');
     }
   }
-}
+});
 
 // ---- out-the-door ----
 // Tax is the largest number this page has never shown — roughly seven times the
@@ -1403,7 +1425,9 @@ if (!cases.length) {
 // Illinois charges the buyer's home rate wherever the car was bought. Checked
 // through the rendered page rather than the internals, and against the sheet's
 // own fee block, so it follows the config instead of a number written here.
-{
+await step('out the door', async () => {
+  plan('every car carries tax, local and shipped alike',
+       'the out-the-door total shows its own working');
   const fees = await page.evaluate(async () => {
     const r = await fetch('data.json');
     return ((await r.json()).buyer || {}).fees || null;
@@ -1451,7 +1475,7 @@ if (!cases.length) {
         && (verified ? /checked/.test(r.title) : /ESTIMATE/.test(r.title))),
       rows.length ? rows[0].title : 'no rows');
   }
-}
+});
 
 // ---- what the page refuses to offer -----------------------------------------
 // A sort the sheet cannot compute is the quietest kind of wrong: every row's key
@@ -1579,6 +1603,239 @@ await step('a down payment larger than the car', async () => {
   await page.dispatchEvent('#f-down', 'change');
 });
 
+// ---- the two ways of building a day row agree -------------------------------
+// The chart draws a precomputed series (Tracking.py's daily_stats) until a
+// filter is on, and then rebuilds the same days from every car's own price
+// history. Those are two implementations of one definition, in two languages,
+// and the file has always claimed they reconcile — so this presses filters that
+// exclude NOTHING and asserts the numbers do not move.
+//
+// It is the check that catches a fix applied to one side only. Both sides had
+// counted the cars FETCHED on a day rather than the cars known on it, so a
+// model whose trims run on different cadences halved its own row every other
+// day and swung its median by thousands; repairing Python alone would have left
+// the page telling one story unfiltered and another with a no-op filter on.
+await step('the rebuilt day rows match the precomputed ones', async () => {
+  plan('a filter that excludes nothing does not move a single day row');
+  const subject = WATCHED.find((w) => w.cars > 1);
+  if (!subject) return skipRest('no model on the watchlist holds cars today');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+  await open(subject.q);
+  const readRows = () => page.$$eval('#chart-table tbody tr',
+    (rs) => rs.map((r) => [...r.querySelectorAll('td')].map((td) => td.textContent.trim()).join('|')));
+  const before = await readRows();
+  // every Where chip pressed: each car sits in one of the buyer's states or
+  // outside them, so the selection is the whole market by construction
+  const chips = await page.$$('#f-where button');
+  for (const c of chips) { await c.click(); await page.waitForTimeout(60); }
+  await page.waitForTimeout(400);
+  const after = await readRows();
+  const rebuilt = await page.textContent('#chart-scope');
+  const same = before.length === after.length && before.every((r, i) => r === after[i]);
+  ok('a filter that excludes nothing does not move a single day row', same && before.length > 0,
+     before.length
+       ? (same ? `${before.length} day rows identical, chip now reads "${rebuilt.trim()}"`
+               : `first difference: precomputed "${before.find((r, i) => r !== after[i])}" vs rebuilt "${after[before.findIndex((r, i) => r !== after[i])]}"`)
+       : 'the chart table drew no rows');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+});
+
+// ---- an estimate says so where it is read -----------------------------------
+// "ESTIMATE" appeared exactly once in 4,482 lines: a title= attribute on the
+// out-the-door note, which renders only under the out-the-door sort. Hover-only,
+// sort-gated, invisible on a phone. Meanwhile every row printed
+// "+ $1,336 shipping = $66,224" as flat fact from band rates nobody has quoted,
+// and every monthly payment silently contained an unverified 9.25% tax.
+//
+// Asserted in BOTH directions against a stubbed sheet, because a check that
+// only looks for the word passes on an unconditional one — a page that cries
+// "estimate" over calibrated numbers is the same failure wearing the other
+// coat, and it is the direction a later edit takes.
+await step('an estimate says so where it is read', async () => {
+  plan('shipping is called an estimate on the row itself',
+       'the listings caption says which numbers nobody has checked',
+       'and a calibrated sheet drops the word');
+  const buyer = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}));
+  if (!((buyer.ship_bands || []).length)) return skipRest('this sheet prices no shipping through bands');
+  if (buyer.ship_calibrated || (buyer.fees || {}).checked)
+    return skipRest('this sheet is already calibrated — the uncalibrated wording has no subject');
+  const shopped = WATCHED.find((w) => w.cars);
+  if (!shopped) return skipRest('no model on the watchlist holds a car today');
+  await open(shopped.q);
+  // the shipping CELL, not the whole row: a row also carries a payment note
+  // and a location, and matching those would pass on a page that says nothing
+  // about shipping at all
+  const shipTexts = await page.$$eval('#list-scroll tbody tr',
+    (rows) => rows.map((r) => {
+      const cell = [...r.querySelectorAll('td')].find((td) => /landed|drivable|n\/a/.test(td.textContent));
+      return cell ? cell.textContent : '';
+    }).filter((t) => /landed/.test(t)).slice(0, 8));
+  ok('shipping is called an estimate on the row itself',
+     shipTexts.length > 0 && shipTexts.every((t) => /est\. shipping/.test(t)),
+     shipTexts.length ? `${shipTexts.length} rows priced for shipping, first says "${shipTexts[0].replace(/\s+/g, ' ').trim()}"`
+                      : 'no shipped car on this page');
+  const hint = await page.textContent('#list-hint');
+  ok('the listings caption says which numbers nobody has checked',
+     /estimate/i.test(hint) && /not verified|unverified/i.test(hint),
+     hint.slice(-190));
+
+  // …and with the two dates filled in, the hedge is gone.
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    if (sheet.buyer) {
+      sheet.buyer.ship_calibrated = '2026-09-01';
+      if (sheet.buyer.fees) sheet.buyer.fees.checked = '2026-09-01';
+    }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(shopped.q);
+    const after = await page.evaluate(() => ({
+      rows: [...document.querySelectorAll('#list-scroll tbody tr')].map((r) => {
+        const cell = [...r.querySelectorAll('td')].find((td) => /landed|drivable|n\/a/.test(td.textContent));
+        return cell ? cell.textContent : '';
+      }).filter((t) => /landed/.test(t)).slice(0, 8),
+      hint: document.getElementById('list-hint').textContent,
+    }));
+    ok('and a calibrated sheet drops the word',
+       after.rows.length > 0 && after.rows.every((t) => !/est\. shipping/.test(t))
+         && /calibrated/i.test(after.hint) && /checked/i.test(after.hint)
+         && !/not verified|unverified/i.test(after.hint),
+       after.hint.slice(-170));
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+});
+
+// ---- the table is actually in the order it says it is -----------------------
+// sortRows could ignore S.sort entirely and the suite still reported green: the
+// select was driven, the re-render was asserted, the ORDER never was. A sort
+// that does not sort is the quietest kind of wrong — the list does not move and
+// the reader takes the unchanged order for the answer to the question they just
+// asked.
+//
+// The oracle is monotonicity of the column the reader is looking at, read out of
+// the rendered rows, so it needs no fixture and cannot rot with the market.
+await step('the listings table honours the order it advertises', async () => {
+  const ORDERS = [['price', 'Asking', 'asc'], ['miles', 'Miles', 'asc'],
+                  ['days_listed', 'Longest on market', 'desc']];
+  plan(...ORDERS.map(([k]) => `sorting by ${k} really orders the rows by ${k}`));
+  const subject = WATCHED.find((w) => w.cars > 3);
+  if (!subject) return skipRest('no model on the watchlist holds enough cars to order');
+  await open(subject.q);
+  for (const [key, , dir] of ORDERS) {
+    await page.selectOption('#f-sort', key);
+    await page.waitForTimeout(350);
+    // read the VALUES from the rows, by the same key the sort claims to use
+    const vals = await page.evaluate((k) => {
+      const cells = (tr) => [...tr.querySelectorAll('td')];
+      return [...document.querySelectorAll('#list-scroll tbody tr')].map((tr) => {
+        const tds = cells(tr);
+        const num = (el) => { const m = (el ? el.textContent : '').match(/-?[\d,]+/); return m ? Number(m[0].replace(/,/g, '')) : null; };
+        if (k === 'price') return num(tds[1]);
+        if (k === 'miles') return num(tds[2]);
+        const loc = tds.find((td) => /d listed|since /.test(td.textContent));
+        const m = loc && loc.textContent.match(/(\d+)d listed/);
+        return m ? Number(m[1]) : null;
+      }).filter((v) => v !== null);
+    }, key);
+    const ordered = vals.every((v, i) => i === 0 || (dir === 'asc' ? v >= vals[i - 1] : v <= vals[i - 1]));
+    ok(`sorting by ${key} really orders the rows by ${key}`,
+       vals.length > 2 && ordered,
+       vals.length > 2 ? `${vals.length} rows: ${vals.slice(0, 6).join(' ')}${ordered ? '' : '  <- out of order'}`
+                       : `only ${vals.length} readable values`);
+  }
+  await page.selectOption('#f-sort', 'local');
+});
+
+// ---- the two numbers the page leads with ------------------------------------
+// The tiles are the first thing read and the last thing checked: tile 2 could
+// name a Florida car as "Lowest drivable asking · no shipping" and the suite
+// reported 92/92. Both tiles are asserted against the sheet itself — the
+// cheapest car, and the cheapest car in a state the buyer actually drives to.
+await step('the headline tiles name the right car', async () => {
+  plan('the lowest-asking tile is the cheapest car on the page',
+       'the lowest-drivable tile is the cheapest car the buyer can drive to');
+  const subject = WATCHED.find((w) => w.cars > 3);
+  if (!subject) return skipRest('no model on the watchlist holds enough cars');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+  await open(subject.q);
+  const truth = await page.evaluate(async (mk) => {
+    const sheet = await (await fetch('data.json')).json();
+    const m = sheet.brands[mk.bk].models[mk.mk];
+    const states = (sheet.buyer || {}).states || [];
+    const priced = (m.listings || []).filter((x) => x.price != null);
+    const local = priced.filter((x) => states.includes(String(x.state || '').toUpperCase()));
+    const low = (a) => a.reduce((b, x) => (!b || x.price < b.price ? x : b), null);
+    return { all: low(priced), local: low(local), states };
+  }, { bk: subject.bk, mk: subject.mk });
+  const tiles = await page.$$eval('#kpis .sc-tile', (ns) => ns.map((n) => ({
+    label: n.querySelector('.sc-tile__label').textContent,
+    value: n.querySelector('.sc-tile__value').textContent,
+    sub: (n.querySelector('.sc-tile__sub') || {}).textContent || '',
+  })));
+  const money = (n) => '$' + Number(n).toLocaleString('en-US');
+  const t1 = tiles.find((t) => /lowest asking/i.test(t.label));
+  const t2 = tiles.find((t) => /drivable/i.test(t.label));
+  ok('the lowest-asking tile is the cheapest car on the page',
+     !!(t1 && truth.all && t1.value.trim() === money(truth.all.price)),
+     t1 ? `tile "${t1.label}" says ${t1.value.trim()}, cheapest in the sheet is ${truth.all ? money(truth.all.price) : 'none'}` : 'no such tile');
+  ok('the lowest-drivable tile is the cheapest car the buyer can drive to',
+     !!(t2 && truth.local && t2.value.trim() === money(truth.local.price)
+        && truth.states.some((st) => t2.sub.includes(st))),
+     t2 ? `tile "${t2.label}" says ${t2.value.trim()} — "${t2.sub.trim()}"; cheapest drivable in the sheet is ${truth.local ? money(truth.local.price) + ' in ' + truth.local.state : 'none'}` : 'no such tile');
+});
+
+// ---- the two surfaces agree about the picks ---------------------------------
+// The dashboard held four drivable seats and reserved two of them for the
+// models being shopped; REPORT.md ranked by margin alone and reserved nothing.
+// Nothing published the rule — targets.json never mentioned it and the export
+// never carried it — so the page carried a hard-coded 2 and the two lists
+// disagreed about half the front page: the report's drivable picks were an
+// Ioniq 5, an Ioniq 5, an iX and an EV9, with neither car being decided on
+// among them. One rule now, buyer.picks.reserve_shopping, read by both.
+//
+// The SETS are asserted, not the order: the page leads with the shopped cars
+// on purpose, while the report keeps every list in margin order. Set equality
+// is the claim that both applied the same rule to the same market.
+await step('the picks agree across both surfaces', async () => {
+  plan('the drivable picks are the same cars in the report and on the page',
+       'and so are the worth-the-ship picks');
+  const reportPath = resolve(HERE, '..', 'REPORT.md');
+  if (!existsSync(reportPath)) return skipRest('no REPORT.md beside the dashboard');
+  const md = readFileSync(reportPath, 'utf8');
+  const whole = md.split('## Spicy picks across the watchlist')[1];
+  if (!whole) return skipRest('this report has no watchlist-wide picks section');
+  const vinsIn = (text) => [...new Set((text.match(/`[A-HJ-NPR-Z0-9]{17}`/g) || [])
+    .map((v) => v.slice(1, -1)))].sort();
+  const section = (head) => {
+    const cut = whole.split(head)[1];
+    return cut === undefined ? null : vinsIn(cut.split('###')[0]);
+  };
+  const wantLocal = section('### Drivable');
+  const wantShip = section('### Worth the ship');
+  await open('');
+  const groups = await page.evaluate(() => [...document.querySelectorAll('#takeaway .picks-group')]
+    .map((g) => ({
+      label: ((g.querySelector('.sc-eyebrow') || g.querySelector('summary') || {}).textContent || ''),
+      vins: [...new Set([...g.querySelectorAll('[data-fkey^="pick:"]')]
+        .map((a) => a.getAttribute('data-fkey').split(':')[1]))].sort(),
+    })));
+  const got = (needle) => (groups.find((g) => g.label.toLowerCase().includes(needle)) || {}).vins || null;
+  const same = (a, b) => a && b && a.length === b.length && a.every((v, i) => v === b[i]);
+  if (wantLocal === null) skip('the drivable picks are the same cars in the report and on the page',
+                              'the report names no drivable picks today');
+  else ok('the drivable picks are the same cars in the report and on the page',
+          same(wantLocal, got('drivable')),
+          `report ${JSON.stringify(wantLocal)} vs page ${JSON.stringify(got('drivable'))}`);
+  if (wantShip === null) skip('and so are the worth-the-ship picks',
+                              'the report names no worth-the-ship picks today');
+  else ok('and so are the worth-the-ship picks',
+          same(wantShip, got('worth the ship')),
+          `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
+});
+
 await browser.close();
 server.close();
 
@@ -1603,7 +1860,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 92;
+const EXPECTED = 103;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

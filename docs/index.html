@@ -743,7 +743,16 @@
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
   // Asking plus the stated shipping estimate — never less than asking. Computed here so it never depends on the data's vintage.
   const landed = (x) => (hasPrice(x) ? x.price + (x.local ? 0 : (x.ship || 0)) : null);
-  const shipNote = (x) => (x.local ? 'drivable · no shipping' : (x.ship ? `+ ${money(x.ship)} shipping = ${money(landed(x))}` : 'shipping estimate n/a'));
+  // "est." is not decoration. Every shipping figure on this page comes from
+  // published open-carrier band rates that nobody has quoted (buyer.ship_bands,
+  // with buyer.ship_calibrated still null), and the page printed them as flat
+  // fact — "+ $1,336 shipping = $66,224" — while README and how.html both told
+  // the reader "the site says so". The word appears wherever the number does,
+  // and disappears the day three real quotes date buyer.ship_calibrated.
+  const shipCalibrated = () => !!(((S.site || {}).buyer || {}).ship_calibrated);
+  const shipWord = () => (shipCalibrated() ? 'shipping' : 'est. shipping');
+  const shipNote = (x) => (x.local ? 'drivable · no shipping'
+    : (x.ship ? `+ ${money(x.ship)} ${shipWord()} = ${money(landed(x))}` : 'shipping estimate n/a'));
   function lowestBy(arr, key) { let best = null; for (const x of arr) { const v = x[key]; if (v === null || v === undefined) continue; if (!best || v < best[key]) best = x; } return best; }
   function statesTxt() { return (((S.site || {}).buyer || {}).states || []).join('/') || 'your states'; }
   // What "drivable" means for this buyer, e.g. "IL/OH/IN/WI".
@@ -787,7 +796,12 @@
   const isRental = (x) => NON_PERSONAL.test(x.usage || '');
   function pickParams() {
     const p = ((S.site || {}).buyer || {}).picks || {};
-    return { count: p.count || 4, per_model: p.per_model || 2, reserve: p.reserve_shopping != null ? p.reserve_shopping : 2,
+    // 0, not 2: a sheet that does not name the rule does not get it applied
+    // invisibly. The hard-coded 2 here was the whole of the reservation's
+    // existence — targets.json never mentioned it and the export never carried
+    // it, so the report ranked by margin alone and the two disagreed about half
+    // the drivable picks.
+    return { count: p.count || 4, per_model: p.per_model || 2, reserve: p.reserve_shopping != null ? p.reserve_shopping : 0,
       max_miles: p.max_miles || 50000, cpm: p.cents_per_mile != null ? p.cents_per_mile : 0.30,
       base: p.mileage_baseline || 20000, no_acc: p.exclude_accidents !== false, no_rental: p.exclude_rental !== false };
   }
@@ -1963,13 +1977,50 @@
       if (!k) continue;
       if (!uniq.has(k)) uniq.set(k, x);   // the live listing comes first and wins
     }
+    // A day holds what the record KNEW on it, not what was fetched on it.
+    // Trims run on their own cadences, so counting sightings alone made a
+    // model's day rows halve on every off day — the i5 went 127, 119, 71, 130,
+    // 73, 140, 79, 136, 80, 137 while its listings table held 137 throughout,
+    // and the median line swung $5,371 every other day out of bookkeeping.
+    // Python's daily_stats() carries each TARGET forward to its own most recent
+    // fetch; this is the same rule expressed per car, so the rebuilt series and
+    // the precomputed one still describe the same market: a car counts on a day
+    // when its trim's latest fetch on or before that day is one it was seen on.
+    // A trim's FETCH days are the days its cars were actually seen — taken from
+    // the model's whole set, never the filtered one, or a Where chip would
+    // shrink the apparent cadence and carry cars across fetches that did happen.
+    // Read from the cars rather than from daily_by_trim because that series is
+    // itself carried forward now and would report every day as a fetch day.
+    const fetchSets = {};
+    for (const c of (m.listings || []).concat(m.gone || [])) {
+      const set = (fetchSets[c.trim_id] = fetchSets[c.trim_id] || new Set());
+      for (const pt of (c.series || [])) if (pt[1]) set.add(pt[0]);
+    }
+    const fetchDays = {};
+    for (const k in fetchSets) fetchDays[k] = [...fetchSets[k]].sort();
+    const allDays = [...new Set([...(m.daily || []).map((d) => d.date),
+                                 ...Object.values(fetchDays).flat()])].sort();
+    const latestFetch = (tid, day) => {
+      const days = fetchDays[tid];
+      if (!days || !days.length) return null;
+      let best = null;
+      for (const d of days) { if (d <= day) best = d; else break; }
+      return best;
+    };
     const by = new Map();
     for (const x of uniq.values()) {
-      for (const pt of (x.series || [])) {
-        if (!pt[1]) continue;
-        let e = by.get(pt[0]);
-        if (!e) by.set(pt[0], e = { prices: [], local: 0 });
-        e.prices.push(pt[1]);
+      const seen = new Map();
+      for (const pt of (x.series || [])) if (pt[1]) seen.set(pt[0], pt[1]);
+      if (!seen.size) continue;
+      // no per-trim record to carry along (an older sheet): fall back to the
+      // sightings themselves rather than inventing a shape
+      const days = fetchDays[x.trim_id] && fetchDays[x.trim_id].length ? allDays : [...seen.keys()];
+      for (const day of days) {
+        const f = fetchDays[x.trim_id] && fetchDays[x.trim_id].length ? latestFetch(x.trim_id, day) : day;
+        if (!f || !seen.has(f)) continue;
+        let e = by.get(day);
+        if (!e) by.set(day, e = { prices: [], local: 0 });
+        e.prices.push(seen.get(f));
         if (x.local) e.local++;
       }
     }
@@ -2190,6 +2241,29 @@
       + '.';
     return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
   }
+  // What the money on this page is made of, and which parts nobody has checked.
+  // The page prints a shipping estimate on every row, folds an unverified tax
+  // rate into every monthly payment, and offers an out-the-door total — and the
+  // only place any of that was called an estimate was a title= attribute on one
+  // note that renders under one sort, which is to say: invisible on a phone,
+  // invisible to a keyboard, invisible unless you were already suspicious.
+  // This sentence rides the captions that sit above the numbers themselves.
+  function costBasisNote() {
+    const b = (S.site || {}).buyer || {}, f = feesCfg();
+    const bits = [];
+    if ((b.ship_bands || []).length) {
+      bits.push(b.ship_calibrated
+        ? `Shipping from bands calibrated ${fmtDate(b.ship_calibrated)}.`
+        : 'Shipping is an estimate: published open-carrier band rates, not quotes anyone obtained.');
+    }
+    if (f) {
+      const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+      bits.push(f.checked
+        ? `Tax and fees checked ${fmtDate(f.checked)}.`
+        : `Out-the-door and monthly figures add ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and ${money(fixed)} of paperwork — rates not verified.`);
+    }
+    return bits.length ? ' ' + bits.join(' ') : '';
+  }
   // The out-the-door total, shown when it is the number being ranked on — the
   // same rule payNote follows, because a sort by a figure the reader cannot see
   // is a sort they have to take on trust. The title carries the breakdown, and
@@ -2257,9 +2331,16 @@
     const on = owed > 0
       ? `${termFor(x)} months on ${money(owed)} financed`
       : `paid outright — the down payment covers all ${money(financed(x))}`;
-    return el('span', { class: 'sc-note', title: owed <= 0 ? on
+    // The financed amount is price x (1 + tax_rate) + paperwork, so an
+    // unverified tax rate sits inside every payment the page ranks on. The
+    // out-the-door note has said so since fees shipped; this one did not, and
+    // it is the note that renders under the payment sort.
+    const f = feesCfg();
+    const unchecked = f && !f.checked
+      ? ` · includes ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and fees, ESTIMATE, rates not verified` : '';
+    return el('span', { class: 'sc-note', title: (owed <= 0 ? on
       : x.apr_promo ? `${x.apr_label || 'Promotional rate'} — ${on}`
-      : `${on} at the ordinary used rate` },
+      : `${on} at the ordinary used rate`) + unchecked },
       bits.join(' · '));
   }
   // The one scored pool for the view on screen. The pick cards, the map's rings
@@ -2661,7 +2742,12 @@
     const { x, m, bk, mk, gone } = hit;
     const daily = m.daily || [];
     const title = `${m.label || ''} · ${x.year || ''} ${x.trim_label || x.trim || ''}`.trim();
-    const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — likely sold or pulled'
+    // "sold or pulled" names two of the four things that end a listing; the
+    // other two — an auction, a move to a sister lot, an ad simply expiring —
+    // are indistinguishable from outside, which market_line() and exitNote()
+    // both say at length. The claim the data supports is that it stopped being
+    // advertised.
+    const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — the listing ended'
       : (x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale' : 'not checked recently')) : null;
     const price = gone ? x.last_price : x.price;
     const media = el('div', { class: 'sc-photo-card__media' }, thumbFor(gone ? null : x, true),
@@ -3141,7 +3227,8 @@
     const order = S.sort === 'local' ? 'drivable cars first, then by asking price' : null;
     $('list-hint').textContent = `${shown.length < rows.length ? `first ${shown.length} of ` : ''}${rows.length === all ? `${all} tracked` : `${rows.length} of ${all} tracked`}${cover && cover > all ? ` — the API lists ${num(cover)} nationwide` : ''} · one row per VIN${order ? ` · ${order}` : ''} · asking price as listed, shipping stated per car.`
       + (pooled ? ` Every car across ${sc.what}, ranked together — the Car column says which is which.` : '')
-      + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '');
+      + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '')
+      + costBasisNote();
     $('list-title').textContent = pooled ? 'Every car, side by side' : 'The listings';
     const table = $('list-table'); table.textContent = '';
     const scroll = $('list-scroll');
@@ -3210,11 +3297,14 @@
         exitNote(x),
         (x.msrp && x.msrp !== lastMsrp) ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
       lastMsrp = x.msrp || lastMsrp;
+      // The desktop table builds this cell itself rather than through
+      // shipNote(), which is why the word "estimate" reached the phone cards
+      // and the pick cards but never the surface most readers use.
       const shipping = el('td', { class: 'sc-num' }, x.local
         ? el('span', { class: 'sc-note' }, 'none · drivable')
         : (x.ship
             ? el('span', null, el('span', { class: 'sc-figure' }, money(x.ship)),
-                 el('span', { class: 'sc-note' }, `${money(landed(x))} landed`))
+                 el('span', { class: 'sc-note' }, `${shipWord()} · ${money(landed(x))} landed`))
             : el('span', { class: 'sc-note' }, 'n/a')));
       const total = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(landed(x))));
       const loc = el('td', { class: 'loc sc-nowrap' }, placeCell(x), el('br'), scopeChip(x),
@@ -3282,7 +3372,7 @@
     const nOow = gone.filter((g) => g.likely === 'out of window').length;
     const nNc = gone.length - nDel - nOow;
     const splitTxt = [
-      `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (sold or pulled)`,
+      `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
       nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
       nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null,
     ].filter(Boolean).join(' · ');
@@ -3616,7 +3706,7 @@
     // only row that names a winner.
     $('compare-hint').textContent = `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters`
       + `, each column its own market. Prices are not scored against each other — a cheaper car is not a better one — so at most one row marks a winner: “best value vs typical”, and only when every column’s best car had enough siblings of its own trim and year to be judged against them.`
-      + financeNote();
+      + financeNote() + costBasisNote();
     const P = pickParams();
     const stat = cols.map((c) => {
       const priced = c.rows.filter(hasPrice);

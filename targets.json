@@ -53,6 +53,7 @@
     "picks": {
       "count": 4,
       "per_model": 2,
+      "reserve_shopping": 2,
       "max_miles": 50000,
       "cents_per_mile": 0.30,
       "mileage_baseline": 20000,
@@ -91,7 +92,7 @@
                           "years": ["2024", "2025"], "cadence": 2,
                           "depth": "full", "sorts": ["miles.asc"], "pages": 2,
                           "max_miles": 30000, "cpo_only": true, "national_only": true,
-                          "note": "Every certified eDrive40 and xDrive40 under 30,000 miles, nationwide — the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call." },
+                          "note": "The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country — the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it — the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call." },
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1,
                           "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },

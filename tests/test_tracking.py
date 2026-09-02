@@ -32,6 +32,8 @@ os.environ.pop("BUYER_HOME_ZIP", None)          # keep the import offline
 
 import Tracking as T                            # noqa: E402
 
+_BAD = object()   # a response body that will not parse as JSON
+
 FIXTURES = json.loads((Path(__file__).parent / "fixtures" / "records.json").read_text())
 CHICAGO = (41.8855, -87.6221)
 INDY = (39.7684, -86.1581)
@@ -609,17 +611,101 @@ class TestFetch(unittest.TestCase):
 # i5's daily eDrive40 must not define "yesterday" for its every-other-day
 # siblings, and a query that returned everything proves a delisting.
 # --------------------------------------------------------------------------
+class TestBrokenEnvelope(unittest.TestCase):
+    """HTTP 200 is not the same as an answer.
+
+    `data: []` is a real result — that query found nothing. A body with no data
+    list at all is a maintenance page, an HTML error, or a renamed envelope, and
+    it used to be turned into `[]`: which the fetch loop reads as a short page,
+    which marks the scope EXHAUSTED, which tells delisted() the query saw the
+    whole market — so every car it did not return is published as gone. One bad
+    deploy upstream would have sold the entire watchlist.
+    """
+
+    @staticmethod
+    def _resp(body, text="", status=200):
+        class R:
+            status_code = status
+            @staticmethod
+            def json():
+                if body is _BAD:
+                    raise ValueError("not json")
+                return body
+        R.text = text
+        return R
+
+    def _fetch(self, body, text=""):
+        old_get, old_failed = T.requests.get, T.FAILED_FETCHES
+        old_sleep = T.time.sleep
+        T.FAILED_SCOPES.discard(("bmw-i5-m60", "National"))
+        try:
+            T.requests.get = lambda *a, **k: self._resp(body, text)
+            T.time.sleep = lambda *_: None
+            return T.fetch("National", None, "price.asc", 1, T.TARGETS["bmw-i5-m60"])
+        finally:
+            T.requests.get, T.time.sleep = old_get, old_sleep
+            T.FAILED_FETCHES = old_failed
+            T.FAILED_SCOPES.discard(("bmw-i5-m60", "National"))
+
+    def test_an_empty_data_list_is_a_real_empty_answer(self):
+        self.assertEqual(self._fetch({"data": [], "total": 0}), [])
+
+    def test_a_body_with_no_data_list_is_a_failure_not_an_empty_market(self):
+        self.assertIsNone(self._fetch({"message": "service unavailable"}),
+                          "no data list means unknown, never 'nothing matched'")
+
+    def test_a_body_that_is_not_json_is_a_failure(self):
+        self.assertIsNone(self._fetch(_BAD, text="<html>maintenance</html>"))
+
+    def test_a_broken_envelope_records_the_scope_as_failed(self):
+        """…so delisted() knows the query never answered, instead of judging
+        an absence against a window that was never opened."""
+        self._fetch({"nope": 1})
+        # _fetch clears it in its own teardown, so re-run and inspect inside
+        old_get, old_sleep = T.requests.get, T.time.sleep
+        try:
+            T.requests.get = lambda *a, **k: self._resp({"nope": 1})
+            T.time.sleep = lambda *_: None
+            T.FAILED_SCOPES.discard(("bmw-i5-m60", "National"))
+            T.fetch("National", None, "price.asc", 1, T.TARGETS["bmw-i5-m60"])
+            self.assertIn(("bmw-i5-m60", "National"), T.FAILED_SCOPES)
+        finally:
+            T.requests.get, T.time.sleep = old_get, old_sleep
+            T.FAILED_SCOPES.discard(("bmw-i5-m60", "National"))
+
+
 class TestDelisted(unittest.TestCase):
     def setUp(self):
         self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
+        self._fs, self._log = set(T.FAILED_SCOPES), T.FETCH_LOG
         T.PRICE_WINDOW.clear()
         T.EXHAUSTED.clear()
+        T.FAILED_SCOPES.clear()
+        # delisted() reads the committed fetch log; point it at nothing so a
+        # test says what it means rather than what today's log happens to hold
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
 
     def tearDown(self):
         T.PRICE_WINDOW.clear()
         T.PRICE_WINDOW.update(self._pw)
         T.EXHAUSTED.clear()
         T.EXHAUSTED.update(self._ex)
+        T.FAILED_SCOPES.clear()
+        T.FAILED_SCOPES.update(self._fs)
+        T.FETCH_LOG = self._log
+
+    @contextlib.contextmanager
+    def fetch_log(self, day, facts):
+        """A fetch log on disk for one day, as save_fetch_log writes it."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "fetch_log.json"
+            p.write_text(json.dumps({day: facts}))
+            was, T.FETCH_LOG = T.FETCH_LOG, p
+            try:
+                yield
+            finally:
+                T.FETCH_LOG = was
 
     @staticmethod
     def row(tid, vin, day, price, state="IL", miles=10000):
@@ -669,8 +755,16 @@ class TestDelisted(unittest.TestCase):
         # No live fetch signals at all — the offline-rebuild situation that
         # used to mark every departure 'unknown'. The snapshot history keeps
         # every kept row per fetch day, so the vanish day's max kept price
-        # IS that day's cheapest-N cut-off.
-        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-edrive40"
+        # IS that day's cheapest-N cut-off — but ONLY on a target that opens
+        # one window on that axis. This one is `light`, so it fetches
+        # price.asc alone and every kept row is inside the price window.
+        # (It used to be written against bmw-i5-edrive40, which also fetches
+        # miles.asc and a newest-first page: rows from those sit ABOVE the
+        # price cut-off, so the premise this test states was false for the
+        # very target it was asserting it on. The two-sort case is now its
+        # own test, one line down, and it refuses to claim.)
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-m60"
+        self.assertTrue(T.window_reconstructable(T.TARGETS[tid]))
         fill = [self.row(tid, f"W{i:02d}", d, 30000 + i * 500)
                 for d in (d2, d1) for i in range(T.PER_PAGE)]
         all_rows = fill + [self.row(tid, "HIGH", d2, 41000),
@@ -735,16 +829,36 @@ class TestDelisted(unittest.TestCase):
         self.assertEqual(g["accidents"], 2)
         self.assertEqual(g["usage"], "Rental Use")
 
-    def test_short_vanish_day_returned_everything_so_no_cutoff(self):
+    def test_a_short_day_is_only_exhaustive_if_the_fetch_said_so(self):
+        """Five kept rows is not a short page.
+
+        EXHAUSTED is set from the RAW length of a page, and every target
+        filters after the fetch — trim_match, years, min_price, and on the CPO
+        watches cpo_only and max_miles. bmw-i5-cpo keeps 6 records out of 40
+        raw ones on a normal day, so "fewer than PER_PAGE rows survived" says
+        nothing whatever about whether the query saw its whole scope. Reading
+        it as exhaustion is what turned every one of that target's days into a
+        day on which every absence was a confirmed departure — on a
+        single-sort target, which then publishes an exit price from them.
+
+        So the count no longer decides it. The run writes down what each query
+        actually did (save_fetch_log), and only that record can call a day
+        exhaustive.
+        """
         d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-m60"
         fill = [self.row(tid, f"W{i}", d, 40000 + i * 1000)
                 for d in (d2, d1) for i in range(5)]
         all_rows = fill + [self.row(tid, "HIGH", d2, 90000)]
         today = [r for r in all_rows if r["snapshot_date"] == d1]
         gone = T.delisted({tid}, all_rows, today, T.build_history(all_rows))
-        # the vanish day kept fewer rows than one page, so its queries saw
-        # their entire scope — no cut-off exists and the missing car is
-        # really gone whatever its price
+        self.assertEqual(gone[0]["likely"], "out of window",
+                         "five kept rows must not be read as a short page")
+        # …and with the run's own record saying the query WAS exhaustive, the
+        # same absence is a real departure whatever the car was asking.
+        facts = {tid: {"States": {"window": 44000, "exhausted": True, "failed": False},
+                       "National": {"window": 44000, "exhausted": True, "failed": False}}}
+        with self.fetch_log(d1, facts):
+            gone = T.delisted({tid}, all_rows, today, T.build_history(all_rows))
         self.assertEqual(gone[0]["likely"], "delisted")
 
     def test_departure_is_judged_at_its_own_vanish_day_not_today(self):
@@ -760,6 +874,139 @@ class TestDelisted(unittest.TestCase):
                          "$31,900 — today's wider window must not turn an "
                          "old artifact into a confirmed sale")
 
+    def test_what_makes_a_window_reconstructable(self):
+        """Both halves of the predicate, including the one no shipped target
+        exercises today.
+
+        A window can be rebuilt from the snapshot rows only when every kept row
+        of that day came through one query shape on the window's own axis. Two
+        things break it and each is checked here on a target built for the
+        purpose, because the watchlist happens to carry no single-sort target
+        that also runs a newest probe — and an unexercised clause is one a
+        later edit deletes without anything going red.
+        """
+        base = dict(T.TARGETS["bmw-i5-m60"])
+        light = {**base, "depth": "light", "sorts": ["price.asc", "miles.asc"], "newest": 0}
+        self.assertEqual(T.sorts_pages(light)[0], ["price.asc"],
+                         "light depth fetches the FIRST configured sort only")
+        self.assertTrue(T.window_reconstructable(light),
+                        "one sort actually fetched, no newest probe")
+        deep = {**light, "depth": "full", "pages": 2}
+        self.assertFalse(T.window_reconstructable(deep),
+                         "a second sort puts rows above this axis's cut-off "
+                         "into the same day")
+        probing = {**light, "newest": 1}
+        self.assertFalse(T.window_reconstructable(probing),
+                         "a newest-first page returns cars at any price, so "
+                         "the widest kept row is not the cut-off")
+
+    def test_a_two_sort_target_cannot_reconstruct_its_window(self):
+        """The 24 departures a rebuild invented.
+
+        bmw-i7-xdrive60 and friends keep rows from price.asc AND miles.asc, and
+        the shopped trims add a newest-first page on top. All three land in the
+        same snapshot day, so the widest kept price is a delivery-mileage 2026
+        car or a car that listed this morning — not the price cut-off. Judging
+        an absence against it says "inside the window, so it is gone" about
+        cars that were never inside anything.
+
+        Measured, not supposed: rebuilding the committed 2026-09-01 outputs
+        flipped 24 departures from 'out of window' to 'delisted' against the
+        live run of the same day, and took the report's headline from "9 gone
+        since the last fetch on the shopped models" to "31". Every dispatch
+        rebuilds (daily.yml), so those were the published numbers.
+        """
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-edrive40"
+        self.assertFalse(T.window_reconstructable(T.TARGETS[tid]))
+        fill = [self.row(tid, f"W{i:02d}", d, 30000 + i * 500)
+                for d in (d2, d1) for i in range(T.PER_PAGE)]
+        all_rows = fill + [self.row(tid, "HIGH", d2, 41000),
+                           self.row(tid, "LOW", d2, 31250)]
+        today = [r for r in all_rows if r["snapshot_date"] == d1]
+        gone = {g["vin"]: g for g in T.delisted({tid}, all_rows, today,
+                                                T.build_history(all_rows))}
+        self.assertEqual(gone["HIGH"]["likely"], "out of window",
+                         "above the widest kept row is above every window — "
+                         "that much the rows still prove")
+        self.assertEqual(gone["LOW"]["likely"], "not checked",
+                         "below it the record cannot tell a departure from a "
+                         "car the price query never reached")
+        # and with the day's own fetch record, the same car is judged exactly
+        facts = {tid: {"States": {"window": 39500, "exhausted": False, "failed": False},
+                       "National": {"window": 39500, "exhausted": False, "failed": False}}}
+        with self.fetch_log(d1, facts):
+            gone = {g["vin"]: g for g in T.delisted({tid}, all_rows, today,
+                                                    T.build_history(all_rows))}
+        self.assertEqual(gone["LOW"]["likely"], "delisted")
+        self.assertEqual(gone["HIGH"]["likely"], "out of window")
+
+    def test_a_car_beyond_the_queried_states_is_not_judged_by_the_states_window(self):
+        """A California car never had a States query to come back through.
+
+        The States query asks for buyer.states plus search_states and nothing
+        else, so a car outside them can only return through National — whose
+        cut-off is the N-th cheapest in the country and runs thousands below
+        the States one, which only has to reach the N-th cheapest in eight
+        states. Pooling the two judged the California car against the Illinois
+        cut-off and called it sold.
+
+        What the rows still prove is bounded on both sides: a kept row from
+        outside the queried states came back through National, so National
+        reached at least that far; and no window is wider than the widest kept
+        row of the day. Between those two the record is silent.
+        """
+        d2, d1, tid = self.days_ago(2), self.days_ago(1), "bmw-i5-m60"
+        # an in-state page reaching $60k, and out-of-state cars only to $45k
+        rows = [self.row(tid, f"IL{i}", d, 40000 + i * 2000, state="IL")
+                for d in (d2, d1) for i in range(11)]
+        rows += [self.row(tid, f"CA{i}", d, 41000 + i * 2000, state="CA")
+                 for d in (d2, d1) for i in range(3)]
+        # three departed California cars: below National's proven reach,
+        # inside the uncertain band, and above every window
+        rows += [self.row(tid, "CALOW", d2, 42000, state="CA"),
+                 self.row(tid, "CAMID", d2, 52000, state="CA"),
+                 self.row(tid, "CAHIGH", d2, 99000, state="CA")]
+        today = [r for r in rows if r["snapshot_date"] == d1]
+        gone = {g["vin"]: g for g in T.delisted({tid}, rows, today,
+                                                T.build_history(rows))}
+        self.assertEqual(gone["CALOW"]["likely"], "delisted",
+                         "National kept a $45,000 California car that day, so "
+                         "it reached past $42,000")
+        self.assertEqual(gone["CAMID"]["likely"], "not checked",
+                         "between National's proven reach and the widest kept "
+                         "row, the record cannot say — and the Illinois "
+                         "cut-off is not evidence about a California car")
+        self.assertEqual(gone["CAHIGH"]["likely"], "out of window")
+
+    def test_a_query_that_failed_is_not_an_empty_market(self):
+        """fetch() returning None means unknown; it used to mean gone.
+
+        When one source fails after its retry the loop keeps what it has, and
+        delisted() had no way to know a scope had gone silent: it judged the
+        absence against whatever the OTHER query returned. Driven live with
+        National dead, bmw-i7-edrive50 published 93 departures where the real
+        run had 9.
+        """
+        d1, tid = self.days_ago(1), "bmw-i5-m60"
+        rows = [self.row(tid, f"IL{i}", d, 40000 + i * 500, state="IL")
+                for d in (d1, T.TODAY) for i in range(5)]
+        # two Illinois departures: one inside the window the surviving query
+        # reached, one above it
+        rows += [self.row(tid, "INSIDE", d1, 41000, state="IL"),
+                 self.row(tid, "ABOVE", d1, 50000, state="IL")]
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        T.PRICE_WINDOW[(tid, "States")] = 42000        # the States query answered
+        T.FAILED_SCOPES.add((tid, "National"))         # the National one did not
+        gone = {g["vin"]: g for g in
+                T.delisted({tid}, rows, today, T.build_history(rows))}
+        self.assertEqual(gone["ABOVE"]["likely"], "not checked",
+                         "the National query might have been the one that "
+                         "reached this car, and it never answered")
+        # …but a failure elsewhere does not un-see what the surviving query saw
+        self.assertEqual(gone["INSIDE"]["likely"], "delisted",
+                         "the States query reached past $41,000 and did not "
+                         "return it — National failing changes nothing there")
+
     def test_never_fetched_again_is_not_checked(self):
         d1, tid = self.days_ago(1), "bmw-i5-edrive40"
         all_rows = [self.row(tid, "V1", d1, 45000)]
@@ -771,6 +1018,205 @@ class TestDelisted(unittest.TestCase):
 # Market stats: the negotiation context — how long cars sit, how often and
 # how much they get cut, and each car's staleness within its own model.
 # --------------------------------------------------------------------------
+class TestDailySeries(unittest.TestCase):
+    """A day row holds what the record knew on that day.
+
+    Trims of one model run on their own cadences — the i5's eDrive40 daily, its
+    xDrive40 and M60 every second day — and counting only the rows FETCHED on a
+    day made the model's own series halve on every off day: 127, 119, 71, 130,
+    73, 140, 79, 136, 80, 137, with the median swinging $5,371 every other day
+    while the listings table beside it showed 137 cars throughout. The chart
+    draws that series under the words "among the cars in view".
+    """
+
+    @staticmethod
+    def row(tid, vin, day, price):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": tid, "vin": vin, "snapshot_date": day, "price": price,
+                  "year": "2024", "miles": 20000, "state": "IL", "city": "Chicago"})
+        return r
+
+    def test_a_slow_trim_is_carried_to_its_own_next_fetch(self):
+        fast, slow = "bmw-i5-edrive40", "bmw-i5-xdrive40"
+        d1, d2, d3 = "2026-08-01", "2026-08-02", "2026-08-03"
+        rows = [self.row(fast, "F1", d, 40000) for d in (d1, d2, d3)]
+        rows += [self.row(slow, "S1", d, 60000) for d in (d1, d3)]   # every other day
+        by_day = {x["date"]: x for x in T.daily_stats(rows)}
+        self.assertEqual([by_day[d]["n"] for d in (d1, d2, d3)], [2, 2, 2],
+                         "the slow trim's car did not leave the market on the "
+                         "day its trim was not fetched")
+        self.assertEqual(by_day[d2]["median_price"], 50000,
+                         "and the median must not halve to the fast trim's own")
+
+    def test_a_car_that_really_left_is_not_carried_past_its_trims_next_fetch(self):
+        """Carrying forward must stop at the next fetch of that trim, or a
+        departure would be invisible for as long as its cadence."""
+        fast, slow = "bmw-i5-edrive40", "bmw-i5-xdrive40"
+        d1, d2, d3 = "2026-08-01", "2026-08-02", "2026-08-03"
+        # a daily trim, so d2 is a snapshot day at all
+        rows = [self.row(fast, "F1", d, 30000) for d in (d1, d2, d3)]
+        rows += [self.row(slow, "KEEP", d, 40000) for d in (d1, d3)]
+        rows += [self.row(slow, "GONE", d1, 60000)]        # absent at the d3 fetch
+        by_day = {x["date"]: x for x in T.daily_stats(rows)}
+        self.assertEqual(by_day[d1]["n"], 3)
+        self.assertEqual(by_day[d2]["n"], 3, "d2 still reads the slow trim's d1 fetch")
+        self.assertEqual(by_day[d3]["n"], 2, "the d3 fetch is what says it went")
+
+    def test_a_target_contributes_nothing_before_its_first_fetch(self):
+        """Each trim's own series is reported over the MODEL's day list, so
+        that the trim rows decompose the model row. A trim that had not been
+        fetched yet on an early day holds nothing there, and nothing is not a
+        market of zero cars — the day is absent, not zeroed, or the trim
+        comparison would draw a line down to the axis and back."""
+        fast, slow = "bmw-i5-edrive40", "bmw-i5-m60"
+        d1, d2 = "2026-08-01", "2026-08-02"
+        rows = [self.row(fast, "F1", d, 40000) for d in (d1, d2)]
+        rows += [self.row(slow, "S1", d2, 60000)]
+        model_days = [d1, d2]
+        by_day = {x["date"]: x for x in T.daily_stats(rows, model_days)}
+        self.assertEqual(by_day[d1]["n"], 1,
+                         "a trim with no fetch yet is not a car on the market")
+        self.assertEqual(by_day[d2]["n"], 2)
+        # …and the slow trim's OWN series simply has no row for that first day
+        slow_only = T.daily_stats([r for r in rows if r["target"] == slow], model_days)
+        self.assertEqual([x["date"] for x in slow_only], [d2])
+
+
+class TestReportFooter(unittest.TestCase):
+    def test_a_rebuild_does_not_overwrite_the_days_cost_with_zero(self):
+        """CALLS is this PROCESS's counter and an offline rebuild makes none, so
+        the footer printed "0 API calls today" over a day that had really spent
+        24 — and every dispatch rebuilds, so that was the committed record."""
+        rows = [dict({k: "" for k in T.FIELDS},
+                     **{"target": "bmw-i5-edrive40", "vin": "V" * 17,
+                        "snapshot_date": T.TODAY, "price": 40000, "year": "2024",
+                        "miles": 20000, "state": "IL", "city": "Chicago"})]
+        was = T.CALLS
+        try:
+            T.CALLS = 0
+            report, _, _ = T.build_outputs(rows, rows, T.build_history(rows))
+            self.assertNotIn("0 API calls today", report)
+            self.assertIn("rebuilt from the snapshot on disk", report)
+            T.CALLS = 24
+            report, _, _ = T.build_outputs(rows, rows, T.build_history(rows))
+            self.assertIn("24 API calls today", report)
+        finally:
+            T.CALLS = was
+
+
+class TestIndexDate(unittest.TestCase):
+    """An API index date is not a listing date.
+
+    listed_since is the API's createdAt — when the RECORD was made — and a bulk
+    load stamps tens of thousands of cars with one instant. On this sheet that
+    is 2026-08-09: 106 of 2026-09-01's 321 rows carry it, across 8 targets, 25
+    states and 85 dealers, while 2026-08-08 carries one row and 2026-08-10 none.
+
+    Published, it made median_days_listed come out at exactly (snapshot date -
+    2026-08-09) for six of seven models, incrementing by one every day — a
+    constant wearing a market's clothes — and made every "sits longer than N%
+    of the model" note a statement about the loader.
+    """
+
+    def setUp(self):
+        self._was = set(T.INDEX_DATES)
+
+    def tearDown(self):
+        T.INDEX_DATES.clear()
+        T.INDEX_DATES.update(self._was)
+
+    @staticmethod
+    def _rows(pairs, snap="2026-09-01"):
+        return [{"target": "t", "vin": v, "snapshot_date": snap, "listed_since": d}
+                for v, d in pairs]
+
+    def test_a_bulk_load_is_recognised_by_its_shape_not_its_date(self):
+        rows = self._rows([(f"BULK{i}", "2026-08-09") for i in range(40)]
+                          + [("A", "2026-08-07"), ("B", "2026-08-08"),
+                             ("C", "2026-08-10"), ("D", "2026-08-11")])
+        self.assertEqual(T.find_index_dates(rows), {"2026-08-09"})
+
+    def test_a_busy_day_that_looks_like_a_market_is_left_alone(self):
+        """Ten times its neighbours, not merely more than them: a genuinely
+        busy Monday must survive, or the rule quietly deletes real history."""
+        rows = self._rows([(f"M{i}", "2026-08-09") for i in range(40)]
+                          + [(f"N{i}", "2026-08-08") for i in range(9)]
+                          + [(f"O{i}", "2026-08-10") for i in range(9)])
+        self.assertEqual(T.find_index_dates(rows), set())
+
+    def test_a_car_seen_every_day_votes_once(self):
+        """Rows are per car per day. Counted raw, one long-lived car becomes a
+        crowd: 25 sightings of a single VIN clears both the floor and the
+        neighbour ratio and condemns its perfectly ordinary listing date,
+        taking the days-on-market of every car sharing it with it."""
+        rows = [{"target": "t", "vin": "SAME", "snapshot_date": f"2026-09-{i:02d}",
+                 "listed_since": "2026-08-09"} for i in range(1, 26)]
+        rows += [{"target": "t", "vin": "OTHER", "snapshot_date": "2026-09-01",
+                  "listed_since": "2026-08-08"}]
+        self.assertEqual(T.find_index_dates(rows), set(),
+                         "one car is one car, however many days it was seen on")
+
+    def test_a_real_build_withholds_the_loaded_cars_days_on_market(self):
+        """End to end, through build_outputs: the set is populated from the
+        history the run is publishing, not left to whatever a caller happened
+        to put in it."""
+        tid = "bmw-i5-m60"
+        def row(vin, day, since, price=45000):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": tid, "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2024", "trim": "M60",
+                      "miles": 20000, "state": "IL", "city": "Chicago",
+                      "listed_since": since})
+            return r
+        day = T.TODAY
+        rows = [row(f"BULK{i:02d}", day, "2026-06-01") for i in range(30)]
+        rows += [row("REAL", day, "2026-06-20")]
+        T.INDEX_DATES.clear()
+        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        self.assertIn("2026-06-01", T.INDEX_DATES)
+        got = {x["vin"]: x for x in site["brands"]["bmw"]["models"]["i5"]["listings"]}
+        self.assertIsNone(got["BULK00"]["days_listed"],
+                          "a car stamped with the load date has no measurable age")
+        self.assertEqual(got["BULK00"]["listed_since"], "",
+                         "and the load date must not ship as a listing date")
+        self.assertIsNotNone(got["REAL"]["days_listed"])
+        self.assertEqual(got["REAL"]["listed_since"], "2026-06-20")
+
+    def test_days_on_market_is_withheld_for_an_index_date(self):
+        T.INDEX_DATES.clear()
+        T.INDEX_DATES.add("2026-08-09")
+        self.assertIsNone(T.days_listed({"listed_since": "2026-08-09"}))
+        real = T.days_listed({"listed_since": "2026-08-20"})
+        self.assertIsNotNone(real, "a real listing date still measures")
+
+    def test_the_median_and_the_percentile_skip_them(self):
+        """market_stats must not average a withheld number in as a zero, and
+        stale_pct must not rank against it."""
+        listings = ([{"days_listed": None, "days_tracked": 3} for _ in range(8)]
+                    + [{"days_listed": d, "days_tracked": 3} for d in (4, 10, 40)])
+        st = T.market_stats(listings)
+        self.assertEqual(st["median_days_listed"], 10,
+                         "the three cars with a real date are the whole sample")
+        self.assertTrue(all(x["stale_pct"] is None
+                            for x in listings if x["days_listed"] is None))
+
+    def test_a_span_needs_a_real_listing_date_not_our_own_first_sighting(self):
+        """first_seen used to stand in for a missing listed_since, which
+        measured how long the TRACKER had watched: on a ten-day-old record no
+        span could exceed ten days, so the published 'listings ran at least
+        ~Nd' was a fact about this repo's start date."""
+        gone = [{"likely": "delisted", "last_price": 40000, "series": [],
+                 "listed_since": "", "first_seen": "2026-08-30",
+                 "last_seen": "2026-09-01"} for _ in range(6)]
+        self.assertEqual(T.sale_stats(gone)["n_sold"], 0)
+        self.assertIsNone(T.sale_stats(gone)["median_days_to_sale"])
+        # the exits themselves are still counted — a price needs no listing date
+        self.assertEqual(T.sale_stats(gone)["n_exits"], 6)
+        dated = [{**g, "listed_since": "2026-08-01"} for g in gone]
+        self.assertEqual(T.sale_stats(dated)["n_sold"], 6)
+        self.assertEqual(T.sale_stats(dated)["median_days_to_sale"], 31)
+
+
 class TestMarketStats(unittest.TestCase):
     @staticmethod
     def entry(days_listed=None, days_tracked=1, series=None):
@@ -805,19 +1251,30 @@ class TestMarketStats(unittest.TestCase):
                                               "median_cut": None})
 
     def test_days_to_sale_counts_only_real_delistings(self):
+        """…and only cars with a real listing date to count from.
+
+        The second row here used to contribute "4d, by first sighting". That
+        was the tracker measuring itself: first_seen is the day THIS repo
+        first saw the car, so the span it yields is bounded by how long the
+        record has existed, and on a ten-day-old ledger every such span is
+        under ten days whatever the market did. Blanking listed_since — which
+        is now also what an API index load gets, see find_index_dates() —
+        leaves a car with no measurable span, and no span is the honest
+        answer.
+        """
         gone = [
             {"likely": "delisted", "listed_since": "2026-08-10",
              "last_seen": "2026-08-20", "first_seen": "2026-08-15"},   # 10d, by listing date
             {"likely": "delisted", "listed_since": "",
-             "last_seen": "2026-08-20", "first_seen": "2026-08-16"},   # 4d, by first sighting
+             "last_seen": "2026-08-20", "first_seen": "2026-08-16"},   # no listing date: no span
             {"likely": "out of window", "listed_since": "2026-07-01",
              "last_seen": "2026-08-20", "first_seen": "2026-07-02"},   # not a sale
             {"likely": "delisted", "listed_since": "garbage",
              "last_seen": "2026-08-20", "first_seen": None},           # unparseable: skipped
         ]
         stats = T.sale_stats(gone)
-        self.assertEqual(stats["n_sold"], 2)
-        self.assertEqual(stats["median_days_to_sale"], 7)   # median of 10 and 4
+        self.assertEqual(stats["n_sold"], 1)
+        self.assertEqual(stats["median_days_to_sale"], 10)
 
     def test_market_line_reads_like_a_sentence(self):
         line = T.market_line({"median_days_listed": 34, "tracked_2d": 40,
@@ -912,7 +1369,10 @@ class TestShortlist(unittest.TestCase):
             sec = "\n".join(T.shortlist_section(live, gone, {}))
             self.assertIn("$42,000", sec)
             self.assertIn("my favourite", sec)
-            self.assertIn("GONE — likely sold or pulled", sec)
+            # not "sold or pulled": a listing ends four ways and three of them
+            # are not a sale, which every other surface here already says
+            self.assertIn("GONE — the listing ended", sec)
+            self.assertNotIn("sold", sec)
             self.assertIn("location n/a", sec)
             self.assertIn("not seen yet by the tracker `NOPE1`", sec)
         finally:
@@ -1823,10 +2283,10 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         # (target, source) entry short-circuits the second sort and this class
         # silently stops testing the thing it exists to test. It passed alone
         # and failed in the suite, which is exactly how that looks.
-        for g in ("EXHAUSTED",):
+        for g in ("EXHAUSTED", "FAILED_SCOPES"):
             getattr(T, g).clear()
         for g in ("PRICE_WINDOW", "MILES_WINDOW", "SOURCE_VINS", "SPENT",
-                  "OVERLAP", "TOTALS"):
+                  "OVERLAP", "TOTALS", "RAW_N"):
             getattr(T, g).clear()
         T.CALLS = 0
         T.FAILED_FETCHES = 0
@@ -1851,6 +2311,10 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
             unittest.mock.patch.object(T, "save_zip_cache", lambda *a, **k: None),
             unittest.mock.patch.object(T, "save_spend_history", lambda row, **k: {}),
             unittest.mock.patch.object(T, "save_overlap_history", lambda *a, **k: {}),
+            # …and the fetch log, or driving main() writes a data/fetch_log.json
+            # of stub numbers into the working tree — which daily.yml would then
+            # `git add data` and commit as a real day's record
+            unittest.mock.patch.object(T, "save_fetch_log", lambda *a, **k: {}),
             unittest.mock.patch.dict(os.environ, env, clear=True),
         ]
         for p_ in patches:

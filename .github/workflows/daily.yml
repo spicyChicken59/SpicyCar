@@ -9,12 +9,12 @@ on:
   # month against a 1,000-call tier, while the pre-flight guard reported 30/day
   # and approved every one, because it reads the PLAN and not the ledger.
   #
-  # Tracking.py now refuses such a run before spending anything, so a dispatch
-  # on an already-fetched day fails the job on purpose — that red X is the
-  # guard working, not a broken tracker. To regenerate REPORT.md and
-  # docs/data.json from the snapshot already on disk, run
-  # `python3 tools/rebuild_outputs.py` locally: free, and what a re-run is
-  # almost always actually for. Tick allow_refetch below to get past it.
+  # Tracking.py refuses such a run before spending anything (exit 3), and the
+  # job then does the free thing instead of painting itself red: it rebuilds
+  # REPORT.md and docs/data.json from the snapshot already on disk, which is
+  # what a re-run is almost always actually for. So a dispatch on an
+  # already-fetched day SUCCEEDS and costs nothing. Tick allow_refetch below
+  # only when a run died partway and left the day incomplete.
   workflow_dispatch:
     inputs:
       allow_refetch:
@@ -34,7 +34,14 @@ concurrency:
 jobs:
   track:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A dead or slow API is the case this has to survive. Every request waits
+    # up to 45s and is retried once, so a day where every call times out costs
+    # 32 calls x 2 attempts x 45s = 48 minutes of waiting — and a job killed at
+    # 15 minutes has BILLED everything it spent and written nothing, so the
+    # guard cannot even tell tomorrow's run that the day was attempted. 60
+    # leaves room for that worst case plus the commit; a healthy run finishes
+    # in under two.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
