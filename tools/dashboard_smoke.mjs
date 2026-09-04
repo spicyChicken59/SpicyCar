@@ -1934,6 +1934,167 @@ await step('the picks agree across both surfaces', async () => {
           `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
 });
 
+// --- the phone filter panel stays put --------------------------------------
+// The panel closes itself when the reader scrolls away to read the results —
+// open, it covers about a third of a phone screen. That rule watched
+// window.scrollY, which is not the same thing as the reader scrolling: the
+// browser's own scroll anchoring moves scrollY to hold the visible content
+// still whenever content ABOVE the viewport changes height, with no JS
+// involved. Nothing above the filter bar used to change height with the
+// filters. The decision panel does — it gains a tile per shopped model — and
+// the second model chip moved scrollY 370px with nothing on screen having
+// moved at all, closing the panel under the finger that was still selecting.
+// Both halves are pinned here, because the fix is only right if the original
+// behaviour survives it.
+await step('the phone filter panel', async () => {
+  plan('pressing model chips does not close the filter panel',
+       'and scrolling away from it still does');
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (WATCHED.length < 2) return skipRest('the watchlist holds fewer than two models today — no chips to press');
+  await open('');
+  await page.locator('#filter-toggle').click();
+  await page.waitForTimeout(200);
+  const isOpen = () => page.locator('#filters-card').evaluate((n) => n.classList.contains('is-open'));
+  if (!(await isOpen())) return skipRest('the filter panel did not open on this viewport');
+  const chips = Math.min(3, await page.locator('#f-model button').count());
+  const states = [];
+  for (let i = 0; i < chips; i++) {
+    await page.locator('#f-model button').nth(i).click();
+    await page.waitForTimeout(200);
+    states.push(await isOpen());
+  }
+  ok('pressing model chips does not close the filter panel',
+     chips > 0 && states.every(Boolean), `${chips} chips pressed, open after each: ${states.join(', ')}`);
+  // 500 is past the 360px the rule allows; the panel must give way to the
+  // results the reader has gone looking at.
+  await page.evaluate(() => window.scrollBy(0, 500));
+  await page.waitForTimeout(300);
+  ok('and scrolling away from it still does', !(await isOpen()));
+  await page.setViewportSize({ width: 1280, height: 1000 });
+});
+
+// --- the decision ----------------------------------------------------------
+// The first screen of this page was the masthead, a three-line dek, six brand
+// chips and two tiles that both read "$19,980 · Hyundai Ioniq 5" — the same
+// number twice, for a car this buyer is not buying. targets.json has always
+// known which cars the decision is actually between (buyer.shopping names three
+// trim ids across two models), and the panel puts them there.
+//
+// It publishes four things a reader would act on — an all-in total, a monthly
+// payment, a named car, and a gap between two models — so all four are
+// recomputed here from data.json rather than read back off the page. The check
+// that matters most is the third one: the first version of this panel led with
+// a $36,479 eDrive40 that was an ex-rental with an accident on it, which
+// buyer.picks excludes from every other surface on the page. A decision panel
+// that leads with a car the reader has ruled out in writing is worse than no
+// panel, and nothing on the page would have said so.
+await step('the decision panel', async () => {
+  plan('the decision panel names the models the config says you are shopping',
+       'the car it leads with passes the buyer\'s own pick rules',
+       'and it is the cheapest such car, all in',
+       'the gap it states is the difference between the two figures it shows',
+       'and it is not on a model page');
+  const buyer = SHEET.buyer || {};
+  const want = new Set(buyer.shopping || []);
+  if (!want.size) return skipRest('this sheet names no shopped trims (buyer.shopping is empty)');
+  const f = buyer.fees || null, P = buyer.picks || {};
+  const cap = P.max_miles || 50000;
+  const RENTAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+  const eligible = (x) => x.price != null && x.miles != null && x.miles <= cap
+    && !(P.exclude_accidents && x.accidents > 0)
+    && !(P.exclude_rental && RENTAL.test(x.usage || ''));
+  // heroTotal, recomputed: out the door where the sheet has a fee block, landed
+  // where it does not.
+  const total = (x) => {
+    if (x.price == null) return null;
+    const ship = x.local ? 0 : (x.ship || 0);
+    if (!f) return x.price + ship;
+    return Math.round(x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0) + ship);
+  };
+  const want_models = [];
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {})) {
+      const held = ((m || {}).listings || []).filter((x) => want.has(x.trim_id));
+      if (!held.length && !Object.keys((m || {}).trims || {}).some((id) => want.has(id))) continue;
+      want_models.push({ bk, mk, label: (m || {}).label || mk, held });
+    }
+  if (!want_models.length) return skipRest('no model on this sheet carries a shopped trim');
+  await open('');
+  const tiles = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => ({
+    label: (t.querySelector('.sc-tile__label') || {}).textContent || '',
+    value: (t.querySelector('.sc-tile__value') || {}).textContent || '',
+    subs: [...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.trim()),
+    vin: ((t.querySelector('[data-fkey^="hero:"]') || {}).getAttribute
+      ? t.querySelector('[data-fkey^="hero:"]').getAttribute('data-fkey').split(':')[1] : ''),
+  })));
+  const labels = tiles.map((t) => t.label.split(' — ')[0].trim());
+  ok('the decision panel names the models the config says you are shopping',
+     labels.length === want_models.length && want_models.every((w) => labels.includes(w.label)),
+     `config says ${JSON.stringify(want_models.map((w) => w.label))} · panel shows ${JSON.stringify(labels)}`);
+
+  const byLabel = new Map(want_models.map((w) => [w.label, w]));
+  const led = tiles.map((t) => {
+    const w = byLabel.get(t.label.split(' — ')[0].trim());
+    const x = w ? w.held.find((y) => y.vin === t.vin) : null;
+    return { t, w, x };
+  }).filter((r) => r.x);
+  if (!led.length) return skipRest('the panel led with no car today — every shopped model is filtered out');
+  const bad = led.filter((r) => !eligible(r.x));
+  ok('the car it leads with passes the buyer\'s own pick rules',
+     bad.length === 0,
+     bad.length ? bad.map((r) => `${r.x.vin}: ${r.x.miles} mi, ${r.x.accidents} accidents, usage "${r.x.usage || ''}"`).join(' | ')
+                : led.map((r) => `${r.w.label} ${r.x.vin} (${r.x.miles} mi, ${r.x.accidents || 0} acc)`).join(' · '));
+
+  const num = (t) => Number(String(t).replace(/[^0-9]/g, '')) || null;
+  const wrong = led.filter((r) => {
+    const fit = r.w.held.filter(eligible).map(total).filter((v) => v != null);
+    return !fit.length || Math.min(...fit) !== num(r.t.value) || total(r.x) !== num(r.t.value);
+  });
+  ok('and it is the cheapest such car, all in', wrong.length === 0,
+     wrong.length ? wrong.map((r) => `${r.w.label}: panel ${r.t.value}, cheapest eligible ${Math.min(...r.w.held.filter(eligible).map(total))}`).join(' | ')
+                  : led.map((r) => `${r.w.label} ${r.t.value}`).join(' · '));
+
+  const gapTxt = (await page.textContent('#hero-gap')) || '';
+  if (led.length !== 2) skip('the gap it states is the difference between the two figures it shows',
+                             `the panel led with ${led.length} car${led.length === 1 ? '' : 's'} today, so there is no gap to state`);
+  else {
+    // Both numbers in the sentence, because the panel states two gaps and the
+    // monthly one is the number a buyer actually decides on. Checked against
+    // the tiles rather than recomputed: the claim is that the sentence and the
+    // figures above it agree, and a second implementation of payFor() here
+    // would only prove the harness can amortise.
+    const vals = led.map((r) => num(r.t.value)).sort((a, b) => a - b);
+    const pays = led.map((r) => num((r.t.subs.find((n) => /\/mo\b/.test(n)) || '').split('/mo')[0]))
+      .filter((v) => v != null).sort((a, b) => a - b);
+    const saidTotal = num((gapTxt.match(/costs \$[\d,]+ more/) || [''])[0]);
+    const saidPay = num((gapTxt.match(/, \$[\d,]+ a month/) || [''])[0]);
+    const wantPay = pays.length === 2 ? pays[1] - pays[0] : null;
+    ok('the gap it states is the difference between the two figures it shows',
+       saidTotal === vals[1] - vals[0]
+         && (wantPay == null ? saidPay == null : saidPay === wantPay),
+       `panel says ${saidTotal} total / ${saidPay} a month; tiles differ by ${vals[1] - vals[0]} (${vals.join(' vs ')})`
+       + ` and ${wantPay} a month (${pays.join(' vs ')})`);
+  }
+
+  // The panel answers a watchlist-wide question and orderSections('model')
+  // never lists it, so nothing but an explicit hide keeps it off a model page.
+  // Reached by NAVIGATING from the watchlist, not by loading the model's URL:
+  // a fresh load starts with the card hidden in the markup and would pass
+  // whatever the code did. The leak this guards against is the one that only
+  // exists in a session that has already drawn the panel once.
+  const jump = page.locator('#hero-cars [data-fkey^="hero:"]').first();
+  if (!(await jump.count())) skip('and it is not on a model page', 'the panel led with no car to open today');
+  else {
+    const shown = await page.locator('#hero-card').evaluate((n) => !n.hidden);
+    await jump.click();
+    await page.waitForTimeout(400);
+    ok('and it is not on a model page',
+       shown && await page.locator('#hero-card').evaluate((n) => n.hidden),
+       `visible on the watchlist: ${shown}; then opened ${await page.textContent('#h1')}`);
+  }
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -2138,7 +2299,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 115;
+const EXPECTED = 122;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
