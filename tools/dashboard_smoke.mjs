@@ -1845,6 +1845,39 @@ await step('the picks agree across both surfaces', async () => {
           `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
 });
 
+// --- what it costs to open -------------------------------------------------
+// The page is one static file and one JSON file, and both grow every time a
+// car joins the watchlist or a feature lands. Nothing measured them, so "how
+// heavy is this page" was a number nobody had — and the raw byte counts, which
+// are what `ls` reports and what everyone quotes, are not what a reader waits
+// for: text is served compressed. Both figures are printed on every run so the
+// trend is visible in a CI log, and the budget is set on the COMPRESSED size,
+// which is the one the reader pays.
+//
+// Deliberately generous, and deliberately not a target to optimise towards: it
+// is a tripwire for a change that adds a megabyte, not a style rule. Raise it
+// on purpose, in the commit that needs it, the same way EXPECTED is raised.
+await step('what it costs to open', async () => {
+  plan('the page and its data stay inside their transfer budget');
+  const { gzipSync } = await import('node:zlib');
+  const BUDGET = { 'index.html': 200 * 1024, 'data.json': 250 * 1024 };
+  const rows = [];
+  for (const name of Object.keys(BUDGET)) {
+    const file = join(ROOT, name);
+    if (!existsSync(file)) continue;
+    const raw = readFileSync(file);
+    rows.push({ name, raw: raw.length, gz: gzipSync(raw, { level: 9 }).length, budget: BUDGET[name] });
+  }
+  if (!rows.length) return skipRest('neither file is beside this harness');
+  const over = rows.filter((r) => r.gz > r.budget);
+  const kb = (n) => `${(n / 1024).toFixed(0)}KB`;
+  ok('the page and its data stay inside their transfer budget', over.length === 0,
+     rows.map((r) => `${r.name} ${kb(r.raw)} raw, ${kb(r.gz)} compressed`
+                     + (r.gz > r.budget ? ` — OVER its ${kb(r.budget)} budget` : ''))
+         .join(' · ')
+     + ` · together ${kb(rows.reduce((a, r) => a + r.gz, 0))} on the wire`);
+});
+
 await browser.close();
 server.close();
 
@@ -1869,7 +1902,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 103;
+const EXPECTED = 104;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
