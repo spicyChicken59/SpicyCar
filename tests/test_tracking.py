@@ -2833,6 +2833,49 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         self.assertIn("rebuild_outputs.py", wf,
                       "and it must do the free thing the guard points at")
 
+    def test_the_record_is_committed_even_when_the_run_crashes(self):
+        """data/ is the half that cannot be re-made.
+
+        snapshots.csv holds rows the listings API will never serve again, and
+        spend.json is the only count of what the month has cost. Both were
+        thrown away by any run that crashed after the fetch loop, because the
+        commit step runs only on success — so a crash in build_outputs() burned
+        up to 32 calls and left no record that it had, and the next day's
+        pre-flight read a month that looked cheaper than it was.
+
+        Asserted on the workflow, because that is where the loss was: the
+        Python side already writes both files before either exit.
+        """
+        wf = (Path(__file__).parent.parent / ".github/workflows/daily.yml").read_text()
+        steps = wf.split("      - name: ")
+        record = [s for s in steps if "git add data\n" in s]
+        self.assertTrue(record, "no step stages data/ on its own")
+        self.assertIn("if: always()", record[0],
+                      "the record must be committed on the failure path too — that is "
+                      "the only path on which it was being lost")
+        # …and only data/. Staging the outputs unconditionally would push a
+        # REPORT.md describing a docs/data.json that was never written: main()
+        # writes them in that order.
+        self.assertNotIn("git add data docs", record[0],
+                         "an always() step must not stage the derived outputs")
+        outputs = [s for s in steps if "git add data docs REPORT.md" in s]
+        self.assertTrue(outputs, "the outputs are still committed on success")
+        self.assertNotIn("if: always()", outputs[0])
+
+    def test_the_spend_and_the_snapshot_are_written_before_the_outputs(self):
+        """The workflow assertion above is only worth anything if the files are
+        on disk by the time the crash happens."""
+        import inspect
+        # The statements, not any mention of them: main() carries a comment
+        # naming build_outputs above the line that writes the snapshot, and
+        # matching that would have this test pass on a reordering.
+        lines = [l.split("#")[0].strip() for l in inspect.getsource(T.main).splitlines()]
+        spend = next(i for i, l in enumerate(lines) if l.startswith("report_spend("))
+        write = next(i for i, l in enumerate(lines) if l.startswith("write_rows("))
+        build = next(i for i, l in enumerate(lines) if "= build_outputs(" in l)
+        self.assertLess(spend, build, "the month's spend must be on disk before the outputs are built")
+        self.assertLess(write, build, "and so must the snapshot")
+
     def test_the_message_names_the_free_way_out(self):
         _, _, out = self._drive([self._hist_row(T.TODAY)], lambda *a: [])
         self.assertIn("rebuild_outputs.py", out.text)

@@ -171,6 +171,13 @@
      card; 65-75 is the readable band. (The picks head sets its own width
      below — it used to appear in this list too, where it was dead code.) */
   #map-hint, #chart-hint, #list-hint, #scatter-hint, #gone-hint, #overview-hint { max-width: 58ch; }
+  /* The filter bar is sticky, so anything the browser scrolls TO — a Tab stop,
+     an in-page jump, a scrollIntoView — lands underneath it and the reader
+     cannot see what they just focused. --bar-h is written from the bar's own
+     height whenever it changes, because a constant is wrong by 144px between
+     an open desktop bar (206px) and a shut phone one (62px), and it must read
+     0 while the card is hidden or a bar-less view over-scrolls every jump. */
+  html { scroll-padding-top: calc(var(--bar-h, 0px) + 8px); }
 
   /* Side by side. The metric column is the row's label, so it is the one that
      must never wrap to two lines while a figure beside it sits on one — and it
@@ -479,6 +486,7 @@
     </div>
     <div class="sc-legend" id="map-legend" aria-hidden="true"></div>
     <div class="sc-map" id="map" role="group" tabindex="0" aria-label="Map of the cars for sale. Use left and right arrow keys to step through cars west to east, Enter to open, Escape to clear."></div>
+    <p class="sc-sr-only" id="map-say" role="status" aria-live="polite"></p>
     <div class="sc-sr-only" id="map-twin"></div>
   </section>
 
@@ -519,6 +527,7 @@
     </div>
     <div class="sc-legend" id="scatter-legend"></div>
     <div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div>
+    <p class="sc-sr-only" id="scatter-say" role="status" aria-live="polite"></p>
   </section>
 
   <section class="sc-card" id="overview-card" hidden>
@@ -546,7 +555,7 @@
   <section class="sc-card" id="gone-card" hidden>
     <div class="sc-card__head">
       <div>
-        <h2>Gone from the market</h2>
+        <h2 id="gone-title">Gone from the market</h2>
         <p class="sc-hint" id="gone-hint">Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.</p>
       </div>
     </div>
@@ -967,8 +976,12 @@
     svg.appendChild(hit);
     host.appendChild(svg);
     // aria-live because the crosshair is keyboard-driven — the arrow keys move
-    // it and the values have to be announced. The map's tooltip is hover-only
-    // and passes live:false, or it would announce on every pointer pixel.
+    // it and the values have to be announced. The map's and the scatter's
+    // tooltips pass live:false, because a pointer moves over them and a live
+    // tooltip would announce on every pixel; their KEYBOARD cursors carry
+    // their own sc-sr-only status node instead, written only from the arrow
+    // keys. This comment used to say the map's tooltip was hover-only, which
+    // was how that map's arrow keys shipped moving a cursor in silence.
     const TIP = SC.tooltip(host, { live: true, flip: 0.62, offsetX: 12, top: 6 });
     const tip = TIP.node;
 
@@ -1033,6 +1046,19 @@
     return;
   }
 
+  // Where the map's and the scatter's keyboard cursors say what they are
+  // standing on. Their own nodes rather than the tooltips', because a tooltip
+  // is also a pointer surface and a live one would announce on every pixel of
+  // a mouse move.
+  const MAP_SAY = $('map-say');
+  const SCATTER_SAY = $('scatter-say');
+  // The trim as a car's own name, for reading aloud — the tooltips show
+  // trim_label, which is the name of the QUERY, and for a model watched whole
+  // that name is the placeholder "all trims".
+  const carTrimText = (x) => {
+    const label = String(x.trim_label || '').trim();
+    return (/^all(\s+trims)?$/i.test(label) ? '' : label) || String(x.trim || '').trim();
+  };
   // ---------- the market map ----------
   // US states from the same pinned-CDN pattern the design system uses; the
   // topology is pre-projected (geoAlbersUsa, 975×610), and the dots use the
@@ -1395,10 +1421,26 @@
         en.dot.setAttribute('data-br', br);
         en.dot.setAttribute('r', (br * Math.max(VIEW.get().w / MAP_FULL.w, 0.12)).toFixed(2));
       };
+      // What the keyboard cursor is standing on, said out loud. The dot grows
+      // and the tooltip appears, and both are visual; a reader arrowing across
+      // 495 cars was told nothing at all. Written ONLY from here — never from
+      // fillTip(), which the pointer also calls — so moving a mouse stays
+      // silent. Composed as a sentence rather than copied from the tooltip,
+      // whose blocks concatenate without separators and read back as
+      // "2024$43,568".
+      const kbSay = (c) => {
+        if (!MAP_SAY) return;
+        MAP_SAY.textContent = c ? [
+          [c.m.label, carTrimText(c.x), c.x.year || ''].filter(Boolean).join(' '),
+          money(c.x.price), placeTxt(c.x),
+          c.x.miles != null ? `${num(c.x.miles)} miles` : null,
+          c.x.local ? 'drivable' : (c.x.ship ? `plus ${money(c.x.ship)} shipping` : null),
+        ].filter(Boolean).join(', ') : '';
+      };
       const kbFocus = (i) => {
         const ctl = MAP_CTL; if (!ctl || ctl.empty) return;
         if (ctl.kBig) { kbSize(ctl.kBig, 3.2); ctl.kBig = null; }
-        if (i < 0 || i >= ctl.kOrder.length) { ctl.kIdx = -1; hideTip(); return; }
+        if (i < 0 || i >= ctl.kOrder.length) { ctl.kIdx = -1; hideTip(); kbSay(null); return; }
         ctl.kIdx = i;
         const en = ctl.kOrder[i]; ctl.kBig = en;
         kbSize(en, 6);
@@ -1409,6 +1451,7 @@
           VIEW.set({ w: v.w, h: v.h, x: px - v.w / 2, y: py - v.h / 2 });
         const r = en.dot.getBoundingClientRect();
         fillTip(en.c, r.left + r.width / 2, r.top, false);
+        kbSay(en.c);
       };
       host.onkeydown = (e) => {
         if (e.target !== host) return;   // the zoom buttons live inside the host — their keys are their own
@@ -1828,13 +1871,25 @@
     // chart's contract, adapted to dots
     kOrder.sort((a, b) => (a.x.miles ?? 0) - (b.x.miles ?? 0));
     let kIdx = -1, kBig = null;
+    // Same rule as the map's: written only from the arrow keys, composed as a
+    // sentence rather than copied out of the tooltip, whose blocks concatenate
+    // without separators and read back as "2024$43,568".
+    const dotSay = (x) => {
+      if (!SCATTER_SAY) return;
+      SCATTER_SAY.textContent = x ? [
+        `${x.year || ''} ${carTrimText(x)}`.replace(/\s+/g, ' ').trim(),
+        money(x.price), x.miles != null ? `${num(x.miles)} miles` : null, placeTxt(x),
+        x.local ? 'drivable' : (x.ship ? `plus ${money(x.ship)} shipping` : null),
+      ].filter(Boolean).join(', ') : '';
+    };
     const focusDot = (i) => {
       if (kBig) { kBig.setAttribute('r', 4); kBig = null; }
-      if (i < 0 || i >= kOrder.length) { kIdx = -1; hideTip(); return; }
+      if (i < 0 || i >= kOrder.length) { kIdx = -1; hideTip(); dotSay(null); return; }
       kIdx = i;
       kBig = kOrder[i].dot; kBig.setAttribute('r', 6);
       const r = kBig.getBoundingClientRect();
       fillTip(kOrder[i].x, r.left + r.width / 2, r.top, false);
+      dotSay(kOrder[i].x);
     };
     host.onkeydown = (e) => {
       if (e.key === 'ArrowRight') { focusDot(kIdx < 0 ? 0 : Math.min(kOrder.length - 1, kIdx + 1)); e.preventDefault(); }
@@ -3068,11 +3123,23 @@
     // The tile advertised "N new" and then buried them: under any price-based
     // order the new arrivals sit wherever their price puts them, so the count
     // was unreachable. It now sorts the table to them.
+    // Scrolling is not arriving. These three links moved the viewport and left
+    // focus on the link, so a keyboard or screen-reader user pressed "74 new",
+    // was told nothing, and carried on tabbing through the filter bar they had
+    // just scrolled past. Focus lands on the heading of the card the link
+    // names — an ID rather than a queried h2, so rememberFocus() can restore it
+    // across the rerender — and preventScroll is mandatory, or the focus call
+    // cancels the smooth scroll it was supposed to accompany.
+    const land = (cardId, titleId) => {
+      $(cardId).scrollIntoView({ block: 'start', behavior: 'smooth' });
+      const h = $(titleId);
+      if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+    };
     const showNewest = (e) => {
       e.preventDefault();
       S.sort = 'newest'; $('f-sort').value = 'newest';
       rerender('sort');
-      $('list-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      land('list-card', 'list-title');
     };
     // "N price cuts" was dead text — the number a returning buyer opens the
     // page for, with no way to see WHICH cars. It now sorts the table by the
@@ -3082,14 +3149,14 @@
       e.preventDefault();
       S.sort = 'cut'; $('f-sort').value = 'cut';
       rerender('sort');
-      $('list-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      land('list-card', 'list-title');
     };
     // "K gone" linked nowhere while the departures card sat far below the
     // fold; the count is always readable in the daily>=2 branch, so the card
     // it summarizes is always rendered then — jump to it.
     const showGoneCard = (e) => {
       e.preventDefault();
-      $('gone-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      land('gone-card', 'gone-title');
     };
     // Tile 4 counts over `all` and says so in its own label — every gate on it
     // reads the record, never the filtered series.
@@ -4366,9 +4433,20 @@
     $('f-cpo').checked = S.cpo;
     $('filters-card').hidden = false;
     filterCount();
+    syncBarHeight();
   }
   // What the filters are doing, in words. One list, so the filter bar and the
   // chart's caption can never describe the same scope in different terms.
+  // The sticky bar's own height, published to CSS so scroll-padding-top can
+  // keep whatever is scrolled to out from under it. A constant is wrong by
+  // 144px between an open desktop bar and a shut phone one, and it has to read
+  // 0 while the card is hidden or every jump on a bar-less view over-scrolls.
+  // Called wherever the bar appears, opens, closes or is re-laid out.
+  function syncBarHeight() {
+    const card = $('filters-card');
+    const h = card && !card.hidden ? Math.round(card.getBoundingClientRect().height) : 0;
+    root.style.setProperty('--bar-h', h + 'px');
+  }
   function filterBits(overview) {
     const bits = [];
     if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
@@ -4555,6 +4633,7 @@
       if (!card.classList.contains('is-open')) return;
       card.classList.remove('is-open');
       $('filter-toggle').setAttribute('aria-expanded', 'false');
+      syncBarHeight();
       filterArmY = null;
       // focus must not die inside the display:none panel
       if (card.contains(document.activeElement)) $('filter-toggle').focus({ preventScroll: true });
@@ -4563,6 +4642,7 @@
       const card = $('filters-card'), open = card.classList.toggle('is-open');
       $('filter-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
       filterArmY = open ? window.scrollY : null;
+      syncBarHeight();
     });
     // Back to top — see the stylesheet note. Landing focus on #main after the
     // jump puts the keyboard where the eyes are, exactly like the skip link.
@@ -4607,6 +4687,7 @@
         if (!S.site || window.innerWidth === lastW) return;
         lastW = window.innerWidth;
         placeToggle();
+        syncBarHeight();   // the bar wraps differently at every band
         // The map is deliberately NOT rebuilt on resize, and the model view
         // below never reaches updateMapVisibility — so the halos' user-unit
         // radius must be re-derived here or a rotation leaves it ~2× off.

@@ -1950,6 +1950,104 @@ await step('the chart draws the window its chips name', async () => {
   }
 });
 
+// --- what a keyboard gets --------------------------------------------------
+// Three failures with one shape: the page moved, and told nobody.
+//
+// The map and the scatter both take arrow keys and both grow the dot under the
+// cursor and raise a tooltip — visual, and only visual. A reader arrowing
+// across 495 cars was told nothing at all. Each has its own sr-only status node
+// now, written ONLY from the arrow keys: the pointer shares the same tooltip,
+// and a live one would announce on every pixel of a mouse move, so the check
+// asserts BOTH directions or the fix could be "make the tooltip live" and pass.
+//
+// The KPI links scrolled the viewport and left focus on the link, so pressing
+// "74 new" tabbed you back through the filter bar you had just scrolled past.
+// And whatever the browser did scroll to landed under that bar, which is
+// sticky: scroll-padding-top now reads the bar's own measured height.
+await step('what a keyboard gets', async () => {
+  plan('the map says which car its arrow keys are on',
+       'and a mouse moving over the same dots stays silent',
+       'a jump link leaves focus in the card it jumped to',
+       'and nothing it jumps to lands under the sticky filter bar');
+  await open('');
+  const mapDots = await page.locator('#map .sc-dot').count();
+  if (!mapDots) skip('the map says which car its arrow keys are on', 'the map drew no dots today'),
+                skip('and a mouse moving over the same dots stays silent', 'the map drew no dots today');
+  else {
+    await page.locator('#map').focus();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(250);
+    const said = (await page.textContent('#map-say') || '').trim();
+    ok('the map says which car its arrow keys are on',
+       said.length > 0 && /\$[\d,]+/.test(said),
+       said ? `"${said.slice(0, 90)}"` : 'the status node stayed empty');
+    // …and the pointer must not write it. A mouse over a different dot leaves
+    // the announcement exactly where the keyboard left it.
+    const dots = page.locator('#map .sc-dot');
+    const n = await dots.count();
+    await dots.nth(Math.min(n - 1, 5)).dispatchEvent('pointerenter', { pointerType: 'mouse', clientX: 10, clientY: 10 });
+    await page.waitForTimeout(200);
+    const after = (await page.textContent('#map-say') || '').trim();
+    ok('and a mouse moving over the same dots stays silent', after === said,
+       after === said ? 'unchanged by the pointer' : `pointer rewrote it to "${after.slice(0, 70)}"`);
+    await page.keyboard.press('Escape');
+  }
+
+  // The three jump links, by name: the overview's kpi:mv:* links navigate to a
+  // model and are a different promise.
+  // On a MODEL page: the overview's tiles carry kpi:mv:* links, which navigate
+  // to a model and are a different promise.
+  const kpiHome = WATCHED.slice().sort((a, b) => b.cars - a.cars)[0];
+  if (kpiHome) await open(kpiHome.q);
+  const jumps = [['kpi:new', 'list-card'], ['kpi:cuts', 'list-card'], ['kpi:gone', 'gone-card']];
+  const landed = [];
+  for (const [key, card] of jumps) {
+    const link = page.locator(`[data-fkey="${key}"]`).first();
+    if (!(await link.count())) continue;
+    await link.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    landed.push({ key, card, inside: await page.evaluate((c) =>
+      !!(document.activeElement && document.activeElement.closest('#' + c)), card) });
+  }
+  if (!landed.length) skip('a jump link leaves focus in the card it jumped to',
+                           'this sheet renders none of the three jump links today');
+  else ok('a jump link leaves focus in the card it jumped to',
+          landed.every((l) => l.inside),
+          landed.map((l) => `${l.key} -> ${l.inside ? l.card : 'left behind on the link'}`).join(' · '));
+
+  // …and what it jumped to is not sitting behind the bar when it gets there.
+  // The bar is sticky, so scrollIntoView({block:'start'}) parks its target at
+  // the very top of the viewport — underneath it — unless scroll-padding-top
+  // knows how tall it currently is. Measured on a desktop, where the open bar
+  // is at its tallest (206px against a phone's shut 62px), which is exactly
+  // why a constant could not have done this job.
+  if (!kpiHome) skip('and nothing it jumps to lands under the sticky filter bar', 'no model to jump within');
+  else {
+    await open(kpiHome.q);
+    const link = page.locator('[data-fkey="kpi:new"]').first();
+    if (!(await link.count())) skip('and nothing it jumps to lands under the sticky filter bar',
+                                    'this model draws no "new" tile link today');
+    else {
+      await link.click();
+      await page.waitForTimeout(700);
+      const geom = await page.evaluate(() => {
+        const bar = document.getElementById('filters-card');
+        const h = document.getElementById('list-title');
+        if (!bar || bar.hidden || !h) return null;
+        const b = bar.getBoundingClientRect(), t = h.getBoundingClientRect();
+        return { barBottom: Math.round(b.bottom), titleTop: Math.round(t.top),
+                 pad: getComputedStyle(document.documentElement).scrollPaddingTop };
+      });
+      if (!geom) skip('and nothing it jumps to lands under the sticky filter bar', 'no sticky bar on this view');
+      else ok('and nothing it jumps to lands under the sticky filter bar',
+              geom.titleTop >= geom.barBottom,
+              `the listings heading lands at y=${geom.titleTop}, the bar ends at y=${geom.barBottom}`
+              + ` (scroll-padding-top ${geom.pad})`);
+    }
+  }
+});
+
 // --- when the CDN is down --------------------------------------------------
 // This page is one static file and a pinned design system, and the design
 // system is the half that comes over the wire from somebody else. Everything
@@ -2125,7 +2223,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 111;
+const EXPECTED = 115;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
