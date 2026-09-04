@@ -17,10 +17,10 @@
 
 **New today (2)** — first seen this run, best value first
 
-- **$57,790** · 2024 · 12,775 mi · + $746 shipping · Greensboro, NC · listed 2d ago
+- **$57,790** · 2024 · 12,775 mi · + $746 shipping · Greensboro, NC · listed 1d ago
   _8% under typical ($4,622 less)_
   [listing](https://hendrickcars.com/used/BMW/2024-BMW-i5-5d37bbfdac184f13ed91f8cbaf381990.htm) `WBY43FK06RCP17215`
-- **$53,811** · 2025 · 16,217 mi · + $1,111 shipping · Margate, FL · listed 1d ago
+- **$53,811** · 2025 · 16,217 mi · + $1,111 shipping · Margate, FL · listed 0d ago
   [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG05SCT74359) `WBY13HG05SCT74359`
 
 **Spicy picks** — under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for the model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile
@@ -99,13 +99,13 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 **Wisconsin (1)**
 - **$45,717** · 15,707 mi · no shipping · 2024 · Madison, WI · ~125 mi from Chicago
-  _cut 1x, then back up · CPO · 2 owners · no accidents_
+  _cut 1x, then back up · CPO · multi-use · 2 owners · no accidents_
   rosen nissan of madison llc — [listing](https://rosennissanmadison.com/certified/BMW/2024-BMW-i5-7106ba6eac1824b1018118ba11304b66.htm)
   `WBY33FK09RCP96469`
 
 **Cheapest beyond your states (shipping stated)**
 - **$36,479** · 35,129 mi · + $1,031 shipping = $37,510 · 2024 · Seffner, FL · ~1,000 mi from Chicago
-  _down 1x (-$510) · 1-owner · 1 accident_
+  _down 1x (-$510) · rental · 1-owner · 1 accident_
   EVO Motors — [listing](https://www.carfax.com/vehicle/WBY33FK02RCS81412)
   `WBY33FK02RCS81412`
 - **$36,997** · 51,313 mi · + $1,344 shipping = $38,341 · 2024 · Ontario, CA · ~1,750 mi from Chicago
@@ -113,15 +113,15 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   crown lexus — [listing](https://crownlexus.com/used/BMW/2024-BMW-i5-8f8c4b20ac180aac8449eac6ee9c2f25.htm)
   `WBY33FK01RCR76593`
 - **$36,999** · 17,263 mi · + $1,336 shipping = $38,335 · 2024 · San Diego, CA · ~1,725 mi from Chicago
-  _down 3x (-$869) · on market 55d · sits longer than 91% of the model · 1-owner · 1 accident_
+  _down 3x (-$869) · on market 55d · sits longer than 91% of the model · rental · 1-owner · 1 accident_
   Courtesy Chevrolet Center — [listing](https://www.autolist.com/bmw-i5#vin=WBY33FK08RCS83536)
   `WBY33FK08RCS83536`
 - **$38,498** · 20,224 mi · + $1,344 shipping = $39,842 · 2024 · Torrance, CA · ~1,750 mi from Chicago
-  _down 1x (-$200) · 1-owner · no accidents_
+  _down 1x (-$200) · rental · 1-owner · no accidents_
   South Bay Hyundai — [listing](https://www.carfax.com/vehicle/WBY33FK02RCS83564)
   `WBY33FK02RCS83564`
 - **$38,990** · 27,237 mi · + $1,336 shipping = $40,326 · 2024 · Seattle, WA · ~1,725 mi from Chicago
-  _down 1x (-$600) · 1-owner · no accidents_
+  _down 1x (-$600) · rental · 1-owner · no accidents_
   Carvana - Seattle — [listing](https://www.carvana.com/vehicle/4531340)
   `WBY33FK07RCS83186`
 
@@ -149,7 +149,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   Carvana — [listing](https://www.carvana.com/vehicle/4612575)
   `WBY13HG04SCT78578`
 - **$76,365** · 1,661 mi · no shipping · 2025 · Fort Wayne, IN · ~125 mi from Chicago
-  _on market 525d · sits longer than 99% of the model_
+  _on market 524d · sits longer than 99% of the model_
   BMW of Fort Wayne — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG08SCU89179)
   `WBY13HG08SCU89179`
 
@@ -166,7 +166,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   BMW MINI of Shawnee Mission — [listing](https://www.carfax.com/vehicle/WBY13HG06SCS41187)
   `WBY13HG06SCS41187`
 - **$49,163** · 17,493 mi · + $746 shipping = $49,909 · 2025 · Watertown, NY · ~600 mi from Chicago
-  _cut 1x, then back up · on market 178d · sits longer than 98% of the model · 1-owner · no accidents_
+  _cut 1x, then back up · on market 177d · sits longer than 98% of the model · 1-owner · no accidents_
   Bob Johnson Chrysler Dodge Jeep Ram — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG02SCS75188)
   `WBY13HG02SCS75188`
 - **$49,495** · 209 mi · + $1,097 shipping = $50,592 · 2025 · West Palm Beach, FL · ~1,125 mi from Chicago
@@ -195,7 +195,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   The Car Haus — [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK0XRCP79863)
   `WBY43FK0XRCP79863`
 - **$60,955** · 31,496 mi · no shipping · 2024 · Naperville, IL · ~25 mi from Chicago
-  _1-owner · no accidents_
+  _fleet · 1-owner · no accidents_
   Bill Jacobs BMW — [listing](https://www.carfax.com/vehicle/WBY43FK07RCP40096)
   `WBY43FK07RCP40096`
 - **$60,995** · 24,230 mi · no shipping · 2024 · Lake Bluff, IL · ~25 mi from Chicago
@@ -203,7 +203,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   knauz bmw — [listing](https://knauzbmw.com/certified/BMW/2024-BMW-i5-chicago-lake-bluff-27fe37ceac180d2b8c4af9b423d8f3c3.htm)
   `WBY43FK09RCP36406`
 - **$61,980** · 19,116 mi · no shipping · 2024 · Westmont, IL · ~25 mi from Chicago
-  _down 1x (-$377) · on market 51d · sits longer than 90% of the model · 1-owner · no accidents_
+  _down 1x (-$377) · on market 50d · sits longer than 90% of the model · 1-owner · no accidents_
   Ultimo Motors — [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK01RCP12942)
   `WBY43FK01RCP12942`
 - **$61,990** · 11,498 mi · no shipping · 2024 · Northfield, IL · ~25 mi from Chicago
@@ -255,7 +255,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   BMW of Downtown LA — [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK02RCP56898)
   `WBY43FK02RCP56898`
 - **$54,087** · 28,301 mi · + $1,238 shipping = $55,325 · 2024 · Peoria, AZ · ~1,450 mi from Chicago
-  _down 1x (-$1,000) · on market 43d · sits longer than 89% of the model · 2 owners · no accidents · ex-lease_
+  _down 1x (-$1,000) · on market 42d · sits longer than 89% of the model · 2 owners · no accidents · ex-lease_
   Acura of Peoria — [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK03RCP52259)
   `WBY43FK03RCP52259`
 
@@ -393,7 +393,7 @@ _The other half of the decision, beside the i5 eDrive40._
   baha auto group palos hills — [listing](https://www.bahaautopalos.com/pre-owned-cars/detail/x/1557343)
   `WBY53EJ02RCR61329`
 - **$56,995** · 54,840 mi · no shipping · 2023 · Midlothian, IL · ~25 mi from Chicago
-  _on market 40d · 1-owner · no accidents_
+  _on market 40d · fleet · 1-owner · no accidents_
   Auto Outlet Group — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ00PCL53385)
   `WBY53EJ00PCL53385`
 - **$59,598** · 42,044 mi · no shipping · 2023 · Naperville, IL · ~25 mi from Chicago
@@ -409,7 +409,7 @@ _The other half of the decision, beside the i5 eDrive40._
   Gravity Autos Chicago — [listing](https://www.carfax.com/vehicle/WBY53EJ06PCN52764)
   `WBY53EJ06PCN52764`
 - **$61,333** · 22,031 mi · no shipping · 2023 · Huntley, IL · ~25 mi from Chicago
-  _down 2x (-$408) · 1-owner · no accidents_
+  _down 2x (-$408) · fleet · 1-owner · no accidents_
   Huntley Ford — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ08PCL83735)
   `WBY53EJ08PCL83735`
 - **$61,598** · 31,724 mi · no shipping · 2023 · Naperville, IL · ~25 mi from Chicago
@@ -429,7 +429,7 @@ _The other half of the decision, beside the i5 eDrive40._
   guaranteed motor cars — [listing](https://www.guaranteedmotorcarslakevilla.com/pre-owned-cars/detail/x/1476136)
   `WBY53EJ07PCM72048`
 - **$64,421** · 35,847 mi · no shipping · 2023 · Elmhurst, IL · ~25 mi from Chicago
-  _down 1x (-$378) · 1-owner · no accidents_
+  _down 1x (-$378) · fleet · 1-owner · no accidents_
   BMW of Elmhurst — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ08PCN75396)
   `WBY53EJ08PCN75396`
 - **$65,367** · 32,890 mi · no shipping · 2023 · Downers Grove, IL · ~25 mi from Chicago
@@ -473,7 +473,7 @@ _The other half of the decision, beside the i5 eDrive40._
 
 **Cheapest beyond your states (shipping stated)**
 - **$49,295** · 38,496 mi · + $746 shipping = $50,041 · 2023 · Fredericksburg, VA · ~600 mi from Chicago
-  _on market 175d · sits longer than 92% of the model · 1-owner · no accidents_
+  _on market 175d · sits longer than 92% of the model · fleet · 1-owner · no accidents_
   Alpha Motor Sports — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ08PCN79299)
   `WBY53EJ08PCN79299`
 - **$52,000** · 12,144 mi · + $725 shipping = $52,725 · 2023 · Marietta, GA · ~575 mi from Chicago
@@ -485,7 +485,7 @@ _The other half of the decision, beside the i5 eDrive40._
   Import Masters — [listing](https://importmastersusa.net/electric-used/BMW/2023-BMW-i7-0f0cc5a1ac182133e602aabfae919a5d.htm)
   `WBY53EJ05PCN85531`
 - **$52,170** · 46,700 mi · + $849 shipping = $53,019 · 2023 · Great Neck, NY · ~725 mi from Chicago
-  _down 1x (-$425) · 2 owners · no accidents_
+  _down 1x (-$425) · multi-use · 2 owners · no accidents_
   Import Masters — [listing](https://importmastersusa.net/electric-used/BMW/2023-BMW-i7-dfe6811cac184e43b8a28a33e1819596.htm)
   `WBY53EJ09PCN85645`
 - **$53,719** · 62,418 mi · + $1,031 shipping = $54,750 · 2023 · Tampa, FL · ~1,000 mi from Chicago
@@ -523,7 +523,7 @@ _The other half of the decision, beside the i5 eDrive40._
   Luxury Motor Cars — [listing](https://www.carfax.com/vehicle/WBY83EH0XRCP71734)
   `WBY83EH0XRCP71734`
 - **$79,398** · 23,857 mi · + $1,124 shipping = $80,522 · 2024 · Fort Lauderdale, FL · ~1,175 mi from Chicago
-  _1-owner · no accidents_
+  _fleet · 1-owner · no accidents_
   TxTCharlie — [listing](https://www.carfax.com/vehicle/WBY83EH02RCP46293)
   `WBY83EH02RCP46293`
 - **$80,674** · 33,377 mi · + $725 shipping = $81,399 · 2024 · Manassas, VA · ~575 mi from Chicago

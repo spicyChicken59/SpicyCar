@@ -2166,9 +2166,16 @@
   // offer capped at 60 months does not finance 72 — quoting it at 72 would
   // invent a payment no lender has offered, and it is exactly the car the
   // ranking is about, so the cap is enforced rather than noted.
-  function termFor(x) {
+  // The term the READER asked for, before any promo cap is applied to it.
+  // termFor() answers "how long is this car financed"; this answers "how long
+  // did you say", and the difference between the two is exactly what the row
+  // has to disclose.
+  function chosenTerm() {
     const fin = financeCfg();
-    const want = S.term || (fin && fin.default_term) || 60;
+    return S.term || (fin && fin.default_term) || 60;
+  }
+  function termFor(x) {
+    const want = chosenTerm();
     return (x && x.apr_promo && x.apr_max_term) ? Math.min(want, x.apr_max_term) : want;
   }
   const feesCfg = () => ((S.site || {}).buyer || {}).fees || null;
@@ -2351,8 +2358,23 @@
     if (!x.apr_promo && !ranking) return null;
     const base = payAtFallback(x);
     const saves = base == null ? null : Math.round(base - pay);
-    const bits = [`${perMo(pay)} at ${x.apr}%`];
-    if (saves > 0) bits.push(`saves ${money(saves)}/mo`);
+    // The term, on the FACE of the note, whenever this car is not financed
+    // over the term the reader asked for. A promo capped at 60 months under a
+    // 72-month setting quoted "$818/mo at 2.99% · saves $82/mo" beside rows
+    // financed over 72, and the only thing that said the 60 was a title= —
+    // which no phone can reach and which the compare card's own disclosure
+    // sentence could not help with, because that card is hidden on a
+    // single-model page. Two rows priced over different numbers of months are
+    // not comparable per month, and the page was ranking them against each
+    // other.
+    const capped = termFor(x) !== chosenTerm();
+    const bits = [`${perMo(pay)} at ${x.apr}%` + (capped ? ` over ${termFor(x)} mo` : '')];
+    // …and the saving goes with it. `saves $82/mo` compares this car over 60
+    // months with the same car over 72, which is not a saving, it is a shorter
+    // loan — the promo is genuinely ahead on total interest and ambiguous per
+    // month, so at a capped term the page says nothing rather than something
+    // shaky. The promo strip states the same offer in interest, where it holds.
+    if (saves > 0 && !capped) bits.push(`saves ${money(saves)}/mo`);
     // payFor clamps a down payment that covers the whole car to a $0 payment.
     // The tooltip has to clamp with it: subtracting straight through printed
     // "60 months on -$4,200 financed" under a row reading $0/mo, which is not
@@ -3258,6 +3280,17 @@
     $('list-hint').textContent = `${shown.length < rows.length ? `first ${shown.length} of ` : ''}${rows.length === all ? `${all} tracked` : `${rows.length} of ${all} tracked`}${cover && cover > all ? ` — the API lists ${num(cover)} nationwide` : ''} · one row per VIN${order ? ` · ${order}` : ''} · asking price as listed, shipping stated per car.`
       + (pooled ? ` Every car across ${sc.what}, ranked together — the Car column says which is which.` : '')
       + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '')
+      // financeNote() had exactly one call site — the compare card's hint —
+      // and that card is hidden unless the reader has picked two trims. So on
+      // an ordinary model page sorted by monthly payment, three things it
+      // carries were rendered nowhere: how long ago the hand-entered fallback
+      // rate was last checked (the only staleness warning in the file — with
+      // stale_days at 400 the page would have ranked 137 cars on a
+      // year-old rate and said nothing), the promo's own term cap, and the
+      // "unless a promo applies" framing. Gated on the CARD, not on the sort,
+      // so a comparison does not print the same sentence twice and so the cap
+      // is explained under every sort rather than only the one that ranks on it.
+      + (financeCfg() && $('compare-card').hidden ? financeNote() : '')
       + costBasisNote();
     $('list-title').textContent = pooled ? 'Every car, side by side' : 'The listings';
     const table = $('list-table'); table.textContent = '';

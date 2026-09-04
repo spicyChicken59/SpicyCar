@@ -1845,6 +1845,68 @@ await step('the picks agree across both surfaces', async () => {
           `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
 });
 
+// --- the rate the page is ranking on ---------------------------------------
+// financeNote() carries three things nothing else on the page says: how long
+// ago the hand-entered fallback rate was last checked, the promo's own term
+// cap, and the "unless a promo applies" framing. It had exactly one call site,
+// the compare card's hint — and that card is hidden unless the reader has
+// picked two trims. So an ordinary model page sorted by monthly payment ranked
+// every car on a rate whose age was disclosed nowhere.
+//
+// The second half is the same disclosure on the row. A promo capped at 60
+// months, under a 72-month setting, quoted "$818/mo at 2.99% · saves $82/mo"
+// beside rows financed over 72 — two payments over different numbers of months,
+// ranked against each other, with the 60 living only in a title= no phone can
+// reach.
+await step('the rate the page is ranking on', async () => {
+  plan('a model page says what rate its payments assume',
+       'and a capped promo names its own term on the row itself');
+  const fin = (SHEET.buyer || {}).finance;
+  if (!fin) return skipRest('this sheet has no finance block');
+  const promo = (fin.promos || []).find((p) => p.active && p.apr != null);
+  const subject = WATCHED.find((w) => w.cars > 1);
+  if (!subject) return skipRest('no model on the watchlist holds cars today');
+  await open(subject.q);
+  await page.selectOption('#f-sort', 'payment');
+  await page.waitForTimeout(350);
+  const hidden = await page.locator('#compare-card').evaluate((n) => n.hidden);
+  const hint = (await page.textContent('#list-hint')) || '';
+  ok('a model page says what rate its payments assume',
+     hidden && /Payments assume \d+ months at [\d.]+%/.test(hint),
+     `compare card hidden: ${hidden} · hint says "${(hint.match(/Payments assume[^.]*\./) || ['nothing'])[0].slice(0, 90)}"`);
+
+  // The cap is only observable where a live promo is capped shorter than the
+  // longest term the sheet offers.
+  const longest = Math.max(...(fin.terms || [60]));
+  if (!promo || !promo.max_term || longest <= promo.max_term) {
+    return skip('and a capped promo names its own term on the row itself',
+                'no live promo is capped shorter than the longest term offered');
+  }
+  const [bk, mk] = String(promo.model).split('/');
+  const home = WATCHED.find((w) => w.bk === bk && w.mk === mk);
+  if (!home) return skip('and a capped promo names its own term on the row itself',
+                         `the promo names ${promo.model}, which is not on the watchlist today`);
+  await open(home.q);
+  await page.selectOption('#f-sort', 'payment');
+  await page.selectOption('#f-term', String(longest));
+  await page.waitForTimeout(350);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  // Every VISIBLE payment note quoting the promo rate, read as a reader reads
+  // it — the text, not the tooltip.
+  const notes = await page.locator('#list-table tbody .sc-note').evaluateAll(
+    (ns, apr) => ns.map((n) => n.textContent.trim()).filter((t) => t.includes(apr + '%')), String(promo.apr));
+  if (!notes.length) return skip('and a capped promo names its own term on the row itself',
+                                 `no row on ${home.id} is financed at ${promo.apr}% today`);
+  const named = notes.filter((t) => new RegExp(`over ${promo.max_term} mo`).test(t));
+  const stillSaving = notes.filter((t) => /saves \$/.test(t));
+  ok('and a capped promo names its own term on the row itself',
+     named.length === notes.length && stillSaving.length === 0,
+     `${notes.length} rows at ${promo.apr}% under a ${longest}-month setting · ${named.length} name their own `
+     + `${promo.max_term} months · ${stillSaving.length} still claim a monthly saving · first: "${notes[0].slice(0, 60)}"`);
+  await page.selectOption('#f-term', String(fin.default_term || 60));
+});
+
 // --- what it costs to open -------------------------------------------------
 // The page is one static file and one JSON file, and both grow every time a
 // car joins the watchlist or a feature lands. Nothing measured them, so "how
@@ -1902,7 +1964,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 104;
+const EXPECTED = 106;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

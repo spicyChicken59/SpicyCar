@@ -2140,6 +2140,17 @@ def flags(r):
     out = []
     if is_cpo(r):
         out.append("CPO")
+    # Right after the certified chip, which is the slot flagsCell() uses on the
+    # page — the report and the dashboard describe the same car from the same
+    # list, and two surfaces that order it differently are two surfaces that
+    # can be read as disagreeing. The page has marked rentals and fleet cars
+    # since the filter was written; flags() said nothing, so a car the buyer's
+    # own picks rule excludes read as clean in the one artefact that is
+    # committed to the repository.
+    u = str(r.get("usage", "")).lower()
+    if is_rental(r):
+        out.append("rental" if "rental" in u
+                   else "multi-use" if "multiple" in u else "fleet")
     owners = to_int(r.get("owners"))
     if owners == 1:
         out.append("1-owner")
@@ -2149,7 +2160,7 @@ def flags(r):
     if acc is not None:
         out.append("no accidents" if acc == 0
                    else f"{acc} accident{'s' if acc > 1 else ''}")
-    if "lease" in str(r.get("usage", "")).lower():
+    if "lease" in u:
         out.append("ex-lease")
     return out
 
@@ -2215,7 +2226,19 @@ def days_listed(r):
         since = date.fromisoformat(since_raw)
     except ValueError:
         return None
-    return (date.fromisoformat(TODAY) - since).days
+    # From the day this row was OBSERVED, not from the day the file is built.
+    # Every dispatch rebuilds (see the report footer), and a rebuild run a week
+    # later measured every listing against that week: the i5's median days on
+    # market moved 23 -> 30 and a car's "21d listed" became "28d listed" over
+    # identical rows, while `data through` correctly stayed put. The same drift
+    # walked stale_pct and the ">= 30d on market" tag with it. On a live fetch
+    # snapshot_date IS today, so nothing moves; on a slow-cadence trim it now
+    # agrees with the "as of" its own model block already prints.
+    as_of = str(r.get("snapshot_date") or TODAY)[:10]
+    try:
+        return (date.fromisoformat(as_of) - since).days
+    except ValueError:
+        return (date.fromisoformat(TODAY) - since).days
 
 
 def pick_display_rows(rows):

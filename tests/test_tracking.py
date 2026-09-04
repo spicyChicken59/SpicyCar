@@ -1187,6 +1187,94 @@ class TestDailySeries(unittest.TestCase):
         self.assertEqual([x["date"] for x in slow_only], [d2])
 
 
+class TestDaysListedAnchor(unittest.TestCase):
+    """Days on market is measured from the day the row was OBSERVED.
+
+    It used to be measured from the day the file was built, and since 9f1ff6a
+    every dispatch rebuilds — so a rebuild run a week after the fetch aged every
+    listing by a week over identical rows. The i5's published median moved 23 ->
+    30 and a car's "21d listed" became "28d listed", while `data through`
+    correctly stayed put beside them. stale_pct is that same field's percentile
+    and the report's ">= 30d on market" tag is its threshold, so both walked
+    with it.
+    """
+
+    @staticmethod
+    def row(day, since):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": "V" * 17, "snapshot_date": day,
+                  "price": 40000, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                  "state": "IL", "city": "Chicago", "listed_since": since})
+        return r
+
+    def test_a_rebuild_a_week_later_does_not_age_the_listing(self):
+        T.INDEX_DATES.clear()
+        r = self.row("2026-08-15", "2026-08-01")
+        was = T.TODAY
+        try:
+            T.TODAY = "2026-08-15"
+            same_day = T.days_listed(r)
+            T.TODAY = "2026-08-22"          # rebuilt a week later, same row
+            later = T.days_listed(r)
+        finally:
+            T.TODAY = was
+        self.assertEqual(same_day, 14)
+        self.assertEqual(later, 14, "the row did not sit on the market for another "
+                                    "week because we rebuilt the file")
+
+    def test_a_row_with_no_snapshot_day_still_answers(self):
+        T.INDEX_DATES.clear()
+        self.assertIsNotNone(T.days_listed({"listed_since": "2026-08-01"}))
+
+    def test_an_index_date_still_answers_nothing(self):
+        T.INDEX_DATES.clear()
+        T.INDEX_DATES.add("2026-08-09")
+        try:
+            self.assertIsNone(T.days_listed(self.row("2026-08-15", "2026-08-09")))
+        finally:
+            T.INDEX_DATES.clear()
+
+
+class TestFlagsNameARental(unittest.TestCase):
+    """The report and the dashboard describe the same car.
+
+    flagsCell() has marked rentals and fleet cars on the page since the filter
+    was written; flags() — which builds the committed REPORT.md's history line
+    and the export's `flags` — said nothing, so a car the buyer's own picks rule
+    excludes read as clean in the one artefact that gets committed.
+    """
+
+    @staticmethod
+    def row(usage, **kw):
+        r = {"usage": usage, "owners": 1, "accidents": 0}
+        r.update(kw)
+        return r
+
+    def test_a_rental_says_rental(self):
+        self.assertIn("rental", T.flags(self.row("Rental Use")))
+
+    def test_a_fleet_car_says_fleet(self):
+        self.assertIn("fleet", T.flags(self.row("Corporate Fleet")))
+
+    def test_multiple_use_says_multi_use(self):
+        self.assertIn("multi-use", T.flags(self.row("Multiple Use")))
+
+    def test_a_lease_is_not_a_rental(self):
+        got = T.flags(self.row("Lease"))
+        self.assertIn("ex-lease", got)
+        self.assertFalse(any(w in got for w in ("rental", "fleet", "multi-use")))
+
+    def test_a_personal_car_says_none_of_it(self):
+        got = T.flags(self.row("Personal Use"))
+        self.assertEqual([w for w in got if w in ("rental", "fleet", "multi-use")], [])
+
+    def test_the_word_sits_where_the_page_puts_it(self):
+        """Right after the certified chip, which is the slot flagsCell uses —
+        two surfaces reading the same list must not order it differently."""
+        got = T.flags(self.row("Rental Use", cpo="true"))
+        self.assertEqual(got.index("rental"), got.index("CPO") + 1)
+
+
 class TestDepartureEvidence(unittest.TestCase):
     """A departure counts as a car that left only where a query actually looked.
 
