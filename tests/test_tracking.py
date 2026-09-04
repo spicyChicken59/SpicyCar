@@ -487,11 +487,35 @@ class TestPicks(unittest.TestCase):
                         "no car at or above its model's typical value may be a pick")
 
     def test_per_model_cap_spreads_the_picks(self):
-        scored = (T.score_picks([listing(price=p) for p in (30000, 40000, 41000, 42000)], "A")
+        """Model A is given SIX cars so THREE of them sit under typical.
+
+        With four cars each, only one per model clears the median, so the cap
+        was never reached and deleting it left this green — the test asserted
+        `max(counts) <= 2` over a set that could not exceed 1. The point of the
+        cap is that a model with more good cars than the cap does not take the
+        whole page, so the fixture has to contain such a model.
+        """
+        scored = (T.score_picks([listing(price=p) for p in
+                                 (20000, 21000, 22000, 40000, 41000, 42000)], "A")
                   + T.score_picks([listing(price=p) for p in (30000, 40000, 41000, 42000)], "B"))
         picks = T.choose_picks(scored, 4, per_model=2)
         counts = Counter(p["model_label"] for p in picks)
-        self.assertLessEqual(max(counts.values()), 2)
+        self.assertEqual(counts["A"], 2,
+                         "A has three cars under typical and the cap is two")
+        self.assertTrue(counts["B"], "and the seat the cap freed goes to the other model")
+
+    def test_the_mileage_cap_is_the_configured_one(self):
+        """Read from PICKS, and pinned on both sides of its own boundary.
+
+        A test that hard-codes a number is a copy of the config, and passes on
+        a build where the code hard-codes a DIFFERENT number; a test that only
+        checks a car far over the line passes on any cap between the two.
+        """
+        mm = T.to_int(T.PICKS.get("max_miles")) or 50000
+        self.assertTrue(T.pick_eligible(listing(price=40000, miles=mm)),
+                        "a car exactly at the cap is inside it")
+        self.assertFalse(T.pick_eligible(listing(price=40000, miles=mm + 1)),
+                         "and one mile over is not")
 
     def test_picks_split_into_drivable_and_worth_the_ship(self):
         """Every car is scored against the whole model, then split: drivable
@@ -672,6 +696,176 @@ class TestBrokenEnvelope(unittest.TestCase):
         finally:
             T.requests.get, T.time.sleep = old_get, old_sleep
             T.FAILED_SCOPES.discard(("bmw-i5-m60", "National"))
+
+
+class TestLandedAndAdjusted(unittest.TestCase):
+    """The shipping term in adjusted(), which every landed price is built on.
+
+    Nothing pinned it: the existing coverage asserts the mileage adjustment is
+    OFF, which passes on code that drops the shipping term entirely. That term
+    is the one part of this function the shipped config actually exercises —
+    the picks are ranked on it and every "asking + shipping" line prints it.
+    """
+
+    def test_shipping_is_added(self):
+        self.assertEqual(T.adjusted(40000, 20000, 1200), 41200)
+        self.assertEqual(T.adjusted(40000, 20000, 0), 40000)
+
+    def test_no_price_is_no_answer(self):
+        self.assertIsNone(T.adjusted(None, 20000, 1200))
+
+    def test_the_mileage_term_is_signed_the_way_the_docstring_says(self):
+        """Off in the shipped config, so this patches it on rather than
+        asserting a dead branch stays dead: above the baseline COSTS, below it
+        credits, and a car with no mileage is not guessed at."""
+        with unittest.mock.patch.dict(T.BUYER, {"cents_per_mile": 0.30,
+                                                "mileage_baseline": 20000}, clear=False):
+            self.assertEqual(T.adjusted(40000, 30000, 0), 43000,
+                             "10,000 miles over the baseline at 30c is $3,000 more")
+            self.assertEqual(T.adjusted(40000, 10000, 0), 37000,
+                             "and 10,000 under it is $3,000 less")
+            self.assertEqual(T.adjusted(40000, None, 500), 40500,
+                             "a car with no mileage gets shipping and no guess")
+
+    def test_landed_reads_the_rows_own_shipping(self):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"price": 40000, "miles": 20000, "state": "CA", "lat": "", "lon": ""})
+        total, ship = T.landed(r)
+        self.assertEqual(total, 40000 + ship)
+        self.assertGreater(ship, 0, "a car outside the buyer's states pays a hauler")
+        r["state"] = list(T.STATES)[0]
+        total_local, ship_local = T.landed(r)
+        self.assertEqual((total_local, ship_local), (40000, 0),
+                         "and one inside them does not")
+
+
+class TestHistoryRoundTrip(unittest.TestCase):
+    """load_history() and write_rows(), which nothing drove.
+
+    Between them they are the whole persistence layer: every guard, every
+    reconstruction and every published series is built on what comes back out
+    of this file. Three of the normalisations in load_history() exist because
+    of specific incidents — a BOM that blanked 3,581 dates, a renamed target,
+    a lower-case state that fell out of scope — and none of them was asserted.
+    """
+
+    def _write(self, td, rows, header=None):
+        import csv as _csv
+        p = Path(td) / "s.csv"
+        with p.open("w", newline="", encoding="utf-8") as f:
+            w = _csv.DictWriter(f, fieldnames=header or T.FIELDS, extrasaction="ignore")
+            w.writeheader()
+            for r in rows:
+                w.writerow(r)
+        return p
+
+    def test_a_row_survives_the_round_trip_with_its_header_intact(self):
+        import csv as _csv, tempfile
+        row = {k: "" for k in T.FIELDS}
+        row.update({"target": "bmw-i5-edrive40", "vin": "V" * 17,
+                    "snapshot_date": "2026-08-01", "price": "40000", "state": "IL"})
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "out.csv"
+            was, T.SNAPSHOTS = T.SNAPSHOTS, p
+            try:
+                T.write_rows([row])
+                with p.open(newline="", encoding="utf-8") as f:
+                    head = next(_csv.reader(f))
+                self.assertEqual(head, list(T.FIELDS),
+                                 "the header is the file's contract — order included")
+                back = T.load_history()
+            finally:
+                T.SNAPSHOTS = was
+        self.assertEqual(len(back), 1)
+        self.assertEqual(back[0]["vin"], "V" * 17)
+        self.assertEqual(back[0]["snapshot_date"], "2026-08-01")
+
+    def test_a_byte_order_mark_does_not_blank_every_date(self):
+        """The incident this encoding exists for: a BOM turns the first header
+        into "\ufeffsnapshot_date", every row then reads its date as "", the
+        already-fetched guard sees no TODAY, and write_rows rewrites the whole
+        file with blank dates."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "s.csv"
+            body = ",".join(T.FIELDS) + "\n"
+            row = {k: "" for k in T.FIELDS}
+            row.update({"target": "bmw-i5-edrive40", "vin": "V" * 17,
+                        "snapshot_date": "2026-08-01", "state": "IL"})
+            body += ",".join(str(row[k]) for k in T.FIELDS) + "\n"
+            p.write_bytes(b"\xef\xbb\xbf" + body.encode("utf-8"))
+            was, T.SNAPSHOTS = T.SNAPSHOTS, p
+            try:
+                back = T.load_history()
+            finally:
+                T.SNAPSHOTS = was
+        self.assertEqual(back[0]["snapshot_date"], "2026-08-01",
+                         "a BOM must not eat the first column's name")
+
+    def test_a_renamed_target_and_a_lower_case_state_are_normalised(self):
+        """Both read from config rather than duplicated here, so the test
+        follows a rename instead of pinning one."""
+        import tempfile
+        if not T.LEGACY_IDS:
+            self.skipTest("no legacy target ids in this config")
+        old_id, new_id = next(iter(T.LEGACY_IDS.items()))
+        with tempfile.TemporaryDirectory() as td:
+            row = {k: "" for k in T.FIELDS}
+            row.update({"target": old_id, "vin": "V" * 17,
+                        "snapshot_date": "2026-08-01", "state": "il"})
+            p = self._write(td, [row])
+            was, T.SNAPSHOTS = T.SNAPSHOTS, p
+            try:
+                back = T.load_history()
+            finally:
+                T.SNAPSHOTS = was
+        self.assertEqual(back[0]["target"], new_id,
+                         "a row written under the old id still belongs to the target")
+        self.assertEqual(back[0]["state"], "IL",
+                         "in_scope() compares upper-case codes; a stray 'il' falls out of scope")
+
+    def test_a_missing_file_is_an_empty_record_not_a_crash(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            was, T.SNAPSHOTS = T.SNAPSHOTS, Path(td) / "nope.csv"
+            try:
+                self.assertEqual(T.load_history(), [])
+            finally:
+                T.SNAPSHOTS = was
+
+
+class TestSummarize(unittest.TestCase):
+    """The per-car price history every surface reads, and nothing tested it.
+
+    cuts, delta, days_tracked and first_seen come from here and are printed on
+    the report line, the row's movement chip, the sparkline's direction and the
+    "tracked Nd" tag. The only coverage was incidental — assertions about rows
+    that happened to have passed through it — so both the strict-inequality in
+    the cut counter and the sign of delta were free to flip.
+    """
+
+    def test_it_counts_only_the_steps_that_went_down(self):
+        hist = {("t", "V"): [("d1", 50000), ("d2", 50000), ("d3", 48000)]}
+        got = T.summarize(("t", "V"), hist)
+        self.assertEqual(got["cuts"], 1, "a flat day is not a cut")
+        self.assertEqual(got["delta"], -2000, "delta is last minus first, and it went down")
+        self.assertEqual(got["days_tracked"], 3)
+        self.assertEqual(got["first_seen"], "d1")
+
+    def test_a_flat_series_has_no_cuts_and_no_delta(self):
+        hist = {("t", "V"): [("d1", 50000), ("d2", 50000), ("d3", 50000)]}
+        got = T.summarize(("t", "V"), hist)
+        self.assertEqual((got["cuts"], got["delta"]), (0, 0))
+
+    def test_a_rise_is_a_positive_delta_and_not_a_cut(self):
+        hist = {("t", "V"): [("d1", 48000), ("d2", 50000)]}
+        got = T.summarize(("t", "V"), hist)
+        self.assertEqual((got["cuts"], got["delta"]), (0, 2000))
+
+    def test_a_car_with_no_history_answers_with_an_empty_series_only(self):
+        """The early return, which nothing asserted: callers spread this dict,
+        so an extra key here becomes a listing field nobody meant to export."""
+        self.assertEqual(T.summarize(("t", "MISSING"), {}), {"series": []})
 
 
 class TestDelisted(unittest.TestCase):
@@ -2024,6 +2218,20 @@ class TestDashboardContract(unittest.TestCase):
         return site, [(bk, mk, m) for bk, b in site["brands"].items()
                       for mk, m in b["models"].items()]
 
+    def test_the_published_sheet_still_covers_the_watchlist(self):
+        """The anchor every other test in this class needs.
+
+        They all iterate the sheet's own models, so a sheet with a model
+        DELETED satisfies each of them vacuously — the properties hold over
+        whatever is left. Derived from TARGETS rather than a literal list, so
+        it follows the config instead of duplicating it.
+        """
+        site, _ = self._models()
+        tids = {tid for b in site["brands"].values()
+                for m in b["models"].values() for tid in (m.get("trims") or {})}
+        self.assertEqual(set(T.TARGETS) - tids, set(),
+                         "docs/data.json no longer names every watched trim")
+
     def test_listings_are_one_row_per_vin(self):
         """pick_display_rows collapses a VIN two targets both matched into one
         row. Every count, median and pooled ranking on the dashboard takes that
@@ -2542,14 +2750,35 @@ class TestSpend(unittest.TestCase):
         self.assertEqual(row["off_plan"], {}, "a run that went to plan reports no exceptions")
 
     def test_retries_are_counted_because_they_are_billed(self):
-        """SPENT increments per REQUEST, not per intended fetch. A retry costs a
-        call whether or not it succeeds, and a ledger of intentions would hand
-        back headroom that a bad network day already ate."""
-        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
-        block = src[src.index("    for attempt in (1, 2):"):]
-        block = block[:block.index("\n\n")]
-        self.assertIn("SPENT[t[\"id\"]] = SPENT.get(t[\"id\"], 0) + 1", block,
-                      "the per-target counter must sit inside the retry loop, beside CALLS")
+        """SPENT increments per REQUEST, not per intended fetch.
+
+        A retry costs a call whether or not it succeeds, and a ledger of
+        intentions would hand back headroom that a bad network day already ate.
+        This used to assert that a particular line of source sat inside the
+        retry loop — which passes on code where the line is there and dead.
+        Run the loop instead and count what it charged.
+        """
+        tid = "bmw-i5-edrive40"
+        t = T.TARGETS[tid]
+        was_spent, was_calls = dict(T.SPENT), T.CALLS
+        try:
+            T.SPENT.clear()
+            T.CALLS = 0
+
+            class Boom:
+                status_code = 500
+                text = "upstream is unwell"
+
+            with unittest.mock.patch.object(T.requests, "get", lambda *a, **k: Boom()), \
+                 unittest.mock.patch.object(T.time, "sleep", lambda *a: None):
+                got = T.fetch("National", None, "price.asc", 1, t)
+            self.assertIsNone(got, "two failures in a row is a failed fetch")
+            self.assertEqual(T.CALLS, 2, "both attempts hit the network")
+            self.assertEqual(T.SPENT.get(tid), 2,
+                             "and both are charged to the target, or the budget "
+                             "hands back headroom a bad network day already ate")
+        finally:
+            T.SPENT.clear(); T.SPENT.update(was_spent); T.CALLS = was_calls
 
     def test_the_log_survives_a_corrupt_file(self):
         import tempfile
@@ -2711,12 +2940,44 @@ class TestEmailDelivery(unittest.TestCase):
 
     def test_configuring_both_secrets_turns_it_on(self):
         """The off state is the ABSENCE of config, not a hard-coded switch, so
-        setting the two secrets is all it takes to start sending."""
-        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
-        body = src[src.index("def send_email("):]
-        body = body[:body.index("\n\n\n")]
-        self.assertIn("if not (key and to):", body)
-        self.assertIn("api.resend.com", body, "the send path is still there")
+        setting the two secrets is all it takes to start sending.
+
+        This used to read the function's SOURCE for the two strings it expects.
+        That passes on code with the send path deleted below the line it greps,
+        on code that posts somewhere else, and on code that posts twice; it is
+        the failure mode this repository has shipped more than once. Drive it
+        instead: give it the two secrets, hand it a recording requests.post,
+        and check what actually went out.
+        """
+        posts = []
+
+        class Resp:
+            status_code = 200
+            text = "{}"
+
+        def record(url, **kw):
+            posts.append((url, kw))
+            return Resp()
+
+        with unittest.mock.patch.dict(os.environ,
+                                      {"RESEND_API_KEY": "k", "EMAIL_TO": "someone@example.com"},
+                                      clear=True), \
+             unittest.mock.patch.object(T.requests, "post", record):
+            T.send_email("body", subject="a subject")
+        self.assertEqual(len(posts), 1, "exactly one message, not zero and not two")
+        url, kw = posts[0]
+        self.assertIn("api.resend.com", url)
+        self.assertIn("a subject", json.dumps(kw.get("json") or {}),
+                      "the subject the caller passed is the subject that is sent")
+
+    def test_one_missing_secret_sends_nothing(self):
+        """Half-configured is off, and off is silent — not a crash, and not a
+        message to nobody."""
+        posts = []
+        with unittest.mock.patch.dict(os.environ, {"RESEND_API_KEY": "k"}, clear=True), \
+             unittest.mock.patch.object(T.requests, "post", lambda *a, **k: posts.append(a)):
+            T.send_email("body", subject="s")
+        self.assertEqual(posts, [])
 
 
 Exit = __import__("collections").namedtuple("Exit", "code text")
@@ -2882,6 +3143,33 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         self.assertIn("ALLOW_REFETCH", out.text)
         self.assertIn("Nothing is wrong", out.text,
                       "a saving must not read like a fault")
+
+    def test_an_exhausted_query_skips_the_rest_of_the_target(self):
+        """The saving that pays for the whole watchlist, and nothing ran it.
+
+        A short page means the query returned its scope's entire market, so the
+        second sort and the newest probe would re-fetch cars already in hand.
+        Both guards were pinned by nothing: deleting either costs real calls
+        against a 1,000-a-month tier and no test noticed.
+        """
+        tid = "bmw-i5-edrive40"
+        full = [{"vin": f"V{i:016d}", "price": 40000 + i, "year": 2024,
+                 "miles": 20000, "trim": "eDrive40", "state": "IL", "city": "Chicago"}
+                for i in range(T.PER_PAGE)]
+        short = full[:5]
+
+        def batches(t, source, sort, page):
+            return short if t["id"] == tid else full
+
+        seen, _, _ = self._drive([self._hist_row("2020-01-01")], batches)
+        mine = [q for q in seen if q[0] == tid]
+        self.assertTrue(mine, "the target was fetched at all")
+        sorts = {q[2] for q in mine}
+        self.assertEqual(sorts, {"price.asc"},
+                         "a short first page is the whole scope — the second sort "
+                         f"would re-fetch cars already in hand, but it asked {sorts}")
+        self.assertNotIn(T.NEWEST_SORT, sorts,
+                         "and so would the newest probe")
 
     def test_a_fresh_day_is_not_blocked(self):
         """The guard must not be a wall. A day not yet in the snapshot runs."""
@@ -3321,6 +3609,11 @@ class TestExitStats(unittest.TestCase):
         self.assertIn(hi, xs)
         # n=12 -> the 3rd and 10th order statistics (96.1% coverage)
         self.assertEqual((lo, hi), (sorted(xs)[2], sorted(xs)[9]))
+        # …and the CONFIDENCE itself, which nothing pinned: at n=30 the 0.95
+        # interval is the 10th and 21st order statistics, and a 0.90 one is the
+        # 11th and 20th. Without this the default could be quietly widened or
+        # narrowed and every published interval with it.
+        self.assertEqual(T.median_ci(list(range(30))), (9, 20))
 
     def test_the_interval_widens_as_the_sample_thins(self):
         wide = T.median_ci(list(range(100)))
@@ -3475,6 +3768,16 @@ class TestExitReporting(unittest.TestCase):
     def test_a_real_denominator_is_published(self):
         self.assertIn("cut in the days",
                       T.market_line(self._stats(exit_watched=20, exit_cut_while_watched=3)))
+
+    def test_the_denominator_floor_is_pinned_at_its_own_boundary(self):
+        """7 against 20 is a gap a mutant walks through: any floor between 8
+        and 20 passes both of the tests above. The floor is 12, so the pair
+        that pins it is 11 and 12 — and the only other thing holding that
+        literal was a grep over the source."""
+        self.assertNotIn("cut in the days",
+                         T.market_line(self._stats(exit_watched=11, exit_cut_while_watched=3)))
+        self.assertIn("cut in the days",
+                      T.market_line(self._stats(exit_watched=12, exit_cut_while_watched=3)))
 
     def test_the_wording_never_claims_a_sale(self):
         line = T.market_line(self._stats())
