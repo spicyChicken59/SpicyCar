@@ -715,6 +715,111 @@ class TestDelisted(unittest.TestCase):
                   "state": state, "city": "Chicago"})
         return r
 
+    def test_a_departure_carries_how_its_label_was_reached(self):
+        """`exact` is the row saying whether a query actually looked.
+
+        Downstream, sale_stats() counts a departure as a car that left only
+        where this is true — so it has to distinguish the three ways delisted()
+        arrives at a label, and it cannot be re-derived later: after the fact,
+        an offline guess and a logged certainty look identical on the row.
+        """
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        tid, d1, d2 = two["id"], "2026-08-01", "2026-08-02"
+        # a cheap car vanishes; the day's other rows reach far past its price,
+        # so on a ONE-window target this would be a confident delisting
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                               [r for r in rows if r["snapshot_date"] == d2],
+                                               T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertFalse(g["exact"],
+                         "two windows pooled into one day is a guess, and the row must say so")
+        self.assertFalse(T.departure_is_evidence(g))
+        self.assertEqual(T.sale_stats([g])["n_exits"], 0,
+                         "and nothing downstream may count it as a car that left")
+
+    def test_the_offline_path_never_calls_a_two_window_absence_a_delisting(self):
+        """The invariant that makes `exact` False unreachable in that branch.
+
+        Offline — no live windows, no fetch log — a two-window target's day is
+        one pooled maximum over two different cut-offs. A car ABOVE it was
+        above both, so "out of window" is provable; at or below it the record
+        cannot say, so the answer is "not checked". Neither is a delisting.
+        If that ever loosens, `exact = window_reconstructable(t)` is what stops
+        the loosened label from being counted as a car that left — and this is
+        what will tell you the day it starts mattering.
+        """
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        tid, d1, d2 = two["id"], "2026-08-01", "2026-08-02"
+        for price in (10000, 40000, 95000):     # below, inside, above the pooled max
+            rows = [self.row(tid, "G" * 17, d1, price),
+                    self.row(tid, "K" * 17, d1, 90000),
+                    self.row(tid, "K" * 17, d2, 90000)]
+            got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                                   [r for r in rows if r["snapshot_date"] == d2],
+                                                   T.build_history(rows))}
+            g = got["G" * 17]
+            self.assertNotEqual(g["likely"], "delisted",
+                                f"a ${price:,} absence on {tid} is not a departure the rows can prove")
+            self.assertEqual(T.sale_stats([g])["n_exits"], 0)
+
+    def test_a_reconstructed_departure_on_a_one_window_target_is_exact(self):
+        """…and the other side of the same line: a single-window target's
+        offline reconstruction IS defensible, and must be counted."""
+        one = next(t for t in T.TARGETS.values()
+                   if T.window_reconstructable(t) and not t.get("national_only"))
+        tid, d1, d2 = one["id"], "2026-08-01", "2026-08-02"
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                               [r for r in rows if r["snapshot_date"] == d2],
+                                               T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertEqual(g["likely"], "delisted")
+        self.assertTrue(g["exact"])
+        self.assertEqual(T.sale_stats([g])["n_exits"], 1)
+
+    def test_a_logged_departure_is_exact_even_on_a_two_window_target(self):
+        """The reason the gate reads the row and not the target's shape: the
+        run wrote down what each query reached, so a rebuild can be certain
+        about a target whose config alone could never be."""
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        tid, d1, d2 = two["id"], "2026-08-01", "2026-08-02"
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        facts = {tid: {k: {"window": 95000, "exhausted": False, "failed": False, "raw": 20}
+                       for k in ("States", "National")}}
+        with self.fetch_log(d2, facts):
+            got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                                   [r for r in rows if r["snapshot_date"] == d2],
+                                                   T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertEqual(g["likely"], "delisted")
+        self.assertTrue(g["exact"], "the log says both queries reached past it and neither returned it")
+        self.assertTrue(T.departure_is_evidence(g))
+
+    def test_an_unanswerable_day_is_never_exact(self):
+        """"Not checked" is the absence of an answer, and an absence must not
+        be counted as one — whatever the target's shape."""
+        one = next(t for t in T.TARGETS.values() if T.window_reconstructable(t))
+        tid, d1, d2 = one["id"], "2026-08-01", "2026-08-02"
+        facts = {tid: {k: {"window": None, "exhausted": False, "failed": True, "raw": 0}
+                       for k in ("States", "National")}}
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        with self.fetch_log(d2, facts):
+            got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                                   [r for r in rows if r["snapshot_date"] == d2],
+                                                   T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertEqual(g["likely"], "not checked")
+        self.assertFalse(g["exact"])
+
     @staticmethod
     def days_ago(n):
         return date.fromordinal(T.TODAY_ORD - n).isoformat()
@@ -1082,6 +1187,118 @@ class TestDailySeries(unittest.TestCase):
         self.assertEqual([x["date"] for x in slow_only], [d2])
 
 
+class TestDepartureEvidence(unittest.TestCase):
+    """A departure counts as a car that left only where a query actually looked.
+
+    exit_stats() and one_cohort() have always refused to price a departure from
+    a target whose two windows cannot be told apart from each other; sale_stats()
+    did not, so the market line published "listings ran at least ~Nd (N gone)"
+    and the report published "N gone since the last fetch" from exactly the
+    departures the same file declines to put a price on. All 55 i7 and all 38 i5
+    "delisted" rows on the audited sheet came from two-window targets.
+
+    The gate is NOT the target's shape, though. Since the fetch log exists, a
+    two-window target's departure can be exact — the run wrote down what each
+    query reached and whether it was exhaustive — and throwing that away would
+    withhold a number the record can defend. So delisted() stamps each row with
+    how its own label was reached, and this reads that.
+    """
+
+    @staticmethod
+    def row(exact=None, **kw):
+        g = {"likely": "delisted", "last_price": 40000, "listed_since": "2026-08-01",
+             "last_seen": "2026-08-15", "first_seen": "2026-08-01", "series": []}
+        if exact is not None:
+            g["exact"] = exact
+        g.update(kw)
+        return g
+
+    def test_a_guessed_departure_is_not_counted(self):
+        self.assertFalse(T.departure_is_evidence(self.row(exact=False)))
+        st = T.sale_stats([self.row(exact=False) for _ in range(9)])
+        # Both halves: the exit PRICE and the days-to-sale SPAN come from two
+        # separate loops, and the market line publishes them in one sentence
+        # ("listings ran at least ~6d (29 gone)"), so a gate on one and not the
+        # other would leave half the claim standing on guesses.
+        self.assertEqual(st["n_exits"], 0)
+        self.assertEqual(st["n_sold"], 0)
+        self.assertIsNone(st["median_days_to_sale"])
+
+    def test_a_departure_a_query_confirmed_is_counted(self):
+        self.assertTrue(T.departure_is_evidence(self.row(exact=True)))
+        st = T.sale_stats([self.row(exact=True) for _ in range(9)])
+        self.assertEqual(st["n_exits"], 9)
+        self.assertEqual(st["n_sold"], 9)
+
+    def test_a_two_window_target_can_still_be_exact(self):
+        """The reason this reads the row and not the target. A departure the
+        fetch log answered for is evidence whatever shape the target has, and
+        gating on the shape would discard it."""
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        self.assertTrue(T.departure_is_evidence(self.row(exact=True, trim_id=two["id"])),
+                        "the log said a query looked; the target's shape does not overrule that")
+        self.assertFalse(T.departure_is_evidence(self.row(exact=False, trim_id=two["id"])))
+
+    def test_an_older_sheet_falls_back_to_the_targets_shape(self):
+        """Rows written before delisted() carried its own provenance."""
+        one = next(t for t in T.TARGETS.values() if T.window_reconstructable(t))
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        self.assertTrue(T.departure_is_evidence(self.row(trim_id=one["id"])))
+        self.assertFalse(T.departure_is_evidence(self.row(trim_id=two["id"])))
+
+    def test_an_unknown_target_fails_closed(self):
+        """The gate exists to keep a number off the page, and "nothing on
+        record says which query found this car" is not a reason to publish."""
+        self.assertFalse(T.departure_is_evidence(self.row(trim_id="a-target-we-stopped-watching")))
+        self.assertFalse(T.departure_is_evidence(self.row()))
+        # …and asking is not allowed to raise, either: a partial target used to
+        # take sorts_pages() through t["depth"] and KeyError a whole rebuild
+        # over a car that left in July.
+        self.assertEqual(T.sorts_pages({}), ([], 1))
+
+
+class TestCutTag(unittest.TestCase):
+    """A cut that was undone is not a discount.
+
+    `cuts` counts the downward steps and `delta` is last minus first, so a
+    listing cut and then restored has cuts >= 1 and delta >= 0. The report
+    printed "down 1x ($0)" for exactly that — five lines of one day's report,
+    one of them for a car back at its exact opening price — and the same
+    sentence would have printed a POSITIVE delta as if it were a cut.
+
+    The aggregate definition is deliberately untouched: "was cut at some point"
+    is a true thing to count, and a second real drop landing above an earlier
+    low is still a price change the buyer wants to see. Only the wording moves.
+    """
+
+    def test_a_real_cut_still_reads_as_one(self):
+        self.assertEqual(T.cut_tag(2, -1500), "down 2x ($1,500 down)".replace(
+            "($1,500 down)", f"({T.money(-1500)})"))
+
+    def test_a_cut_that_was_undone_says_so(self):
+        self.assertEqual(T.cut_tag(1, 0), "cut 1x, then back up")
+        self.assertNotIn("$0", T.cut_tag(1, 0))
+
+    def test_a_price_now_above_where_it_started_says_that(self):
+        got = T.cut_tag(2, 849)
+        self.assertIn("above first seen", got)
+        self.assertNotIn("down", got)
+
+    def test_the_report_tag_uses_it(self):
+        """The two real series from the audited sheet, through the function the
+        report actually calls."""
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": "V" * 17, "price": 39998,
+                  "year": "2024", "miles": 20000, "state": "IL", "city": "Chicago"})
+        back_up = T.fmt_row(r, {"cuts": 1, "delta": 0, "days_tracked": 5,
+                                "series": [["2026-08-01", 39998]]})
+        self.assertIn("cut 1x, then back up", back_up)
+        self.assertNotIn("down 1x", back_up)
+        above = T.fmt_row(r, {"cuts": 2, "delta": 849, "days_tracked": 7,
+                              "series": [["2026-08-01", 42995]]})
+        self.assertIn("above first seen", above)
+
+
 class TestFetchDaysExport(unittest.TestCase):
     """The days each target actually fetched, which nothing else can be asked.
 
@@ -1322,7 +1539,11 @@ class TestIndexDate(unittest.TestCase):
         measured how long the TRACKER had watched: on a ten-day-old record no
         span could exceed ten days, so the published 'listings ran at least
         ~Nd' was a fact about this repo's start date."""
+        # exact=True: delisted() writes that down when a query actually
+        # looked and did not find the car. This test is about the SPAN, so the
+        # departures are given the provenance that lets them be counted at all.
         gone = [{"likely": "delisted", "last_price": 40000, "series": [],
+                 "exact": True,
                  "listed_since": "", "first_seen": "2026-08-30",
                  "last_seen": "2026-09-01"} for _ in range(6)]
         self.assertEqual(T.sale_stats(gone)["n_sold"], 0)
@@ -1380,13 +1601,13 @@ class TestMarketStats(unittest.TestCase):
         answer.
         """
         gone = [
-            {"likely": "delisted", "listed_since": "2026-08-10",
+            {"likely": "delisted", "exact": True, "listed_since": "2026-08-10",
              "last_seen": "2026-08-20", "first_seen": "2026-08-15"},   # 10d, by listing date
-            {"likely": "delisted", "listed_since": "",
+            {"likely": "delisted", "exact": True, "listed_since": "",
              "last_seen": "2026-08-20", "first_seen": "2026-08-16"},   # no listing date: no span
-            {"likely": "out of window", "listed_since": "2026-07-01",
+            {"likely": "out of window", "exact": True, "listed_since": "2026-07-01",
              "last_seen": "2026-08-20", "first_seen": "2026-07-02"},   # not a sale
-            {"likely": "delisted", "listed_since": "garbage",
+            {"likely": "delisted", "exact": True, "listed_since": "garbage",
              "last_seen": "2026-08-20", "first_seen": None},           # unparseable: skipped
         ]
         stats = T.sale_stats(gone)
@@ -2849,8 +3070,14 @@ class TestExitStats(unittest.TestCase):
     """
 
     @staticmethod
-    def _gone(n, price=40000, series_len=3, trim="t1"):
+    def _gone(n, price=40000, series_len=3, trim="t1", exact=True):
+        # `exact` is what delisted() writes down about how it reached the
+        # label: True when a query actually looked and did not find the car.
+        # These rows say True because this class is about the ARITHMETIC over
+        # defensible departures; the gate itself is tested separately, in
+        # TestDepartureEvidence.
         return [{"likely": "delisted", "trim_id": trim, "last_price": price,
+                 "exact": exact,
                  "first_seen": "2026-08-01", "last_seen": "2026-08-15",
                  "listed_since": "2026-08-01",
                  "series": [["2026-08-0%d" % (i + 1), price] for i in range(series_len)]}

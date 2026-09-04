@@ -11067,6 +11067,7 @@
      "gone": [
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK01RCP79925",
        "year": 2024,
        "trim": "eDrive40",
@@ -11102,6 +11103,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCR16860",
        "year": 2024,
        "trim": "eDrive40",
@@ -11139,6 +11141,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCR97679",
        "year": 2024,
        "trim": "eDrive40",
@@ -11176,6 +11179,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK02RCS84701",
        "year": 2024,
        "trim": "eDrive40",
@@ -11230,6 +11234,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY33FK03RCP55559",
        "year": 2024,
        "trim": "eDrive40",
@@ -11269,6 +11274,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY33FK09SCT65958",
        "year": 2025,
        "trim": "eDrive40",
@@ -11313,6 +11319,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK05RCP78684",
        "year": 2024,
        "trim": "M60",
@@ -11368,6 +11375,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK08RCR09560",
        "year": 2024,
        "trim": "M60",
@@ -11411,6 +11419,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG01SCT22551",
        "year": 2025,
        "trim": "xDrive40",
@@ -11450,6 +11459,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG02SCU72040",
        "year": 2025,
        "trim": "xDrive40",
@@ -11489,6 +11499,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK02RCR12518",
        "year": 2024,
        "trim": "M60",
@@ -11539,6 +11550,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK00RCR87752",
        "year": 2024,
        "trim": "M60",
@@ -11589,6 +11601,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK02RCR47202",
        "year": 2024,
        "trim": "eDrive40",
@@ -11638,6 +11651,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCR98802",
        "year": 2024,
        "trim": "eDrive40",
@@ -11695,6 +11709,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK07RCR64187",
        "year": 2024,
        "trim": "eDrive40",
@@ -11765,6 +11780,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK03RCR76661",
        "year": 2024,
        "trim": "eDrive40",
@@ -11823,6 +11839,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK08RCR50315",
        "year": 2024,
        "trim": "eDrive40",
@@ -11893,6 +11910,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG09SCT21003",
        "year": 2025,
        "trim": "xDrive40",
@@ -11947,6 +11965,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK05RCR42158",
        "year": 2024,
        "trim": "M60",
@@ -12002,6 +12021,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK02RCP44486",
        "year": 2024,
        "trim": "eDrive40",
@@ -12057,6 +12077,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCN91322",
        "year": 2024,
        "trim": "eDrive40",
@@ -12115,6 +12136,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK00RCP89054",
        "year": 2024,
        "trim": "eDrive40",
@@ -12169,6 +12191,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK01RCP92870",
        "year": 2024,
        "trim": "eDrive40",
@@ -12211,6 +12234,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK05RCR93025",
        "year": 2024,
        "trim": "eDrive40",
@@ -12269,6 +12293,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK01RCP14402",
        "year": 2024,
        "trim": "M60",
@@ -12319,6 +12344,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK03RCR76647",
        "year": 2024,
        "trim": "M60",
@@ -12358,6 +12384,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG09SCT67334",
        "year": 2025,
        "trim": "xDrive40",
@@ -12404,6 +12431,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG01SCT06284",
        "year": 2025,
        "trim": "xDrive40",
@@ -12446,6 +12474,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK06RCP40106",
        "year": 2024,
        "trim": "M60",
@@ -12496,6 +12525,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK09RCP40097",
        "year": 2024,
        "trim": "M60",
@@ -12546,6 +12576,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK07RCP82428",
        "year": 2024,
        "trim": "M60",
@@ -12597,6 +12628,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK0XRCS96353",
        "year": 2024,
        "trim": "eDrive40",
@@ -12640,6 +12672,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK01RCS84947",
        "year": 2024,
        "trim": "eDrive40",
@@ -12686,6 +12719,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG02SCU64018",
        "year": 2025,
        "trim": "xDrive40",
@@ -12724,6 +12758,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK09RCP87626",
        "year": 2024,
        "trim": "eDrive40",
@@ -12769,6 +12804,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK03RCS03415",
        "year": 2024,
        "trim": "eDrive40",
@@ -12815,6 +12851,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK0XRCP36412",
        "year": 2024,
        "trim": "eDrive40",
@@ -12858,6 +12895,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK00RCP40114",
        "year": 2024,
        "trim": "eDrive40",
@@ -12901,6 +12939,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK05SCT65228",
        "year": 2025,
        "trim": "eDrive40",
@@ -12939,6 +12978,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK09SCT13763",
        "year": 2025,
        "trim": "eDrive40",
@@ -12981,6 +13021,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG0XSCS54122",
        "year": 2025,
        "trim": "xDrive40",
@@ -13023,6 +13064,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG04SCS84975",
        "year": 2025,
        "trim": "xDrive40",
@@ -13066,6 +13108,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG06SCS12076",
        "year": 2025,
        "trim": "xDrive40",
@@ -13108,6 +13151,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK03RCR83131",
        "year": 2024,
        "trim": "M60",
@@ -13150,6 +13194,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK06RCR50334",
        "year": 2024,
        "trim": "M60",
@@ -13187,6 +13232,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK00RCP18604",
        "year": 2024,
        "trim": "M60",
@@ -13224,6 +13270,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK09RCP82409",
        "year": 2024,
        "trim": "eDrive40",
@@ -13262,6 +13309,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK03RCN91315",
        "year": 2024,
        "trim": "M60",
@@ -13300,6 +13348,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG08SCS11804",
        "year": 2025,
        "trim": "xDrive40",
@@ -13335,6 +13384,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK01RCR03812",
        "year": 2024,
        "trim": "M60",
@@ -22793,6 +22843,7 @@
      "gone": [
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCX99010",
        "year": 2026,
        "trim": "eDrive50",
@@ -22828,6 +22879,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ07TCY02731",
        "year": 2026,
        "trim": "eDrive50",
@@ -22863,6 +22915,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ08PCM68963",
        "year": 2023,
        "trim": "xDrive60",
@@ -22918,6 +22971,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ07PCN73574",
        "year": 2023,
        "trim": "xDrive60",
@@ -22977,6 +23031,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ08SCT90026",
        "year": 2025,
        "trim": "eDrive50",
@@ -23012,6 +23067,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ01TCY08282",
        "year": 2026,
        "trim": "eDrive50",
@@ -23047,6 +23103,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ0XTCW03575",
        "year": 2026,
        "trim": "eDrive50",
@@ -23084,6 +23141,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ0XTCY24206",
        "year": 2026,
        "trim": "eDrive50",
@@ -23135,6 +23193,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCY08398",
        "year": 2026,
        "trim": "eDrive50",
@@ -23170,6 +23229,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ03TCX77682",
        "year": 2026,
        "trim": "eDrive50",
@@ -23205,6 +23265,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ02TCY29478",
        "year": 2026,
        "trim": "eDrive50",
@@ -23260,6 +23321,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY83EH09TCW05857",
        "year": 2026,
        "trim": "M70",
@@ -23295,6 +23357,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06PCM72171",
        "year": 2023,
        "trim": "xDrive60",
@@ -23346,6 +23409,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN52422",
        "year": 2023,
        "trim": "xDrive60",
@@ -23381,6 +23445,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ0XPCM93203",
        "year": 2023,
        "trim": "xDrive60",
@@ -23435,6 +23500,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ03PCN21214",
        "year": 2023,
        "trim": "xDrive60",
@@ -23489,6 +23555,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN86294",
        "year": 2023,
        "trim": "xDrive60",
@@ -23528,6 +23595,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ09PCN87668",
        "year": 2023,
        "trim": "xDrive60",
@@ -23563,6 +23631,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ05PCN85481",
        "year": 2023,
        "trim": "xDrive60",
@@ -23613,6 +23682,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ02PCN64037",
        "year": 2023,
        "trim": "xDrive60",
@@ -23663,6 +23733,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ0XPCM83707",
        "year": 2023,
        "trim": "xDrive60",
@@ -23713,6 +23784,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ04PCN70972",
        "year": 2023,
        "trim": "xDrive60",
@@ -23752,6 +23824,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ03PCN79176",
        "year": 2023,
        "trim": "xDrive60",
@@ -23799,6 +23872,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ07PCN58265",
        "year": 2023,
        "trim": "xDrive60",
@@ -23846,6 +23920,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ06PCN81486",
        "year": 2023,
        "trim": "xDrive60",
@@ -23893,6 +23968,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ07PCN40932",
        "year": 2023,
        "trim": "xDrive60",
@@ -23931,6 +24007,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ07PCN85675",
        "year": 2023,
        "trim": "xDrive60",
@@ -23968,6 +24045,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ08PCN52216",
        "year": 2023,
        "trim": "xDrive60",
@@ -24003,6 +24081,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ01PCM51390",
        "year": 2023,
        "trim": "xDrive60",
@@ -24041,6 +24120,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ08RCP15272",
        "year": 2024,
        "trim": "xDrive60",
@@ -24095,6 +24175,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02PCN79329",
        "year": 2023,
        "trim": "xDrive60",
@@ -24132,6 +24213,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ0XPCN70751",
        "year": 2023,
        "trim": "xDrive60",
@@ -24170,6 +24252,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03RCP45201",
        "year": 2024,
        "trim": "xDrive60",
@@ -24208,6 +24291,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04PCN38877",
        "year": 2023,
        "trim": "xDrive60",
@@ -24245,6 +24329,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ07RCP97754",
        "year": 2024,
        "trim": "xDrive60",
@@ -24280,6 +24365,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02PCN56990",
        "year": 2023,
        "trim": "xDrive60",
@@ -24331,6 +24417,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04RCP46096",
        "year": 2024,
        "trim": "xDrive60",
@@ -24385,6 +24472,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06PCN49606",
        "year": 2023,
        "trim": "xDrive60",
@@ -24435,6 +24523,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04RCP47281",
        "year": 2024,
        "trim": "xDrive60",
@@ -24473,6 +24562,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ0XSCT72356",
        "year": 2025,
        "trim": "xDrive60",
@@ -24527,6 +24617,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05SCU51398",
        "year": 2025,
        "trim": "xDrive60",
@@ -24565,6 +24656,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ00SCV08221",
        "year": 2025,
        "trim": "xDrive60",
@@ -24619,6 +24711,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ00SCU33763",
        "year": 2025,
        "trim": "xDrive60",
@@ -24673,6 +24766,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02SCT24429",
        "year": 2025,
        "trim": "xDrive60",
@@ -24723,6 +24817,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04SCU98941",
        "year": 2025,
        "trim": "xDrive60",
@@ -24776,6 +24871,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ01TCY16141",
        "year": 2026,
        "trim": "eDrive50",
@@ -24827,6 +24923,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ0XTCY26716",
        "year": 2026,
        "trim": "eDrive50",
@@ -24878,6 +24975,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCX74849",
        "year": 2026,
        "trim": "eDrive50",
@@ -24925,6 +25023,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05TCX14006",
        "year": 2026,
        "trim": "xDrive60",
@@ -24976,6 +25075,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX44633",
        "year": 2026,
        "trim": "xDrive60",
@@ -25027,6 +25127,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ02TCX57620",
        "year": 2026,
        "trim": "eDrive50",
@@ -25074,6 +25175,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCY00298",
        "year": 2026,
        "trim": "eDrive50",
@@ -25121,6 +25223,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ00TCX62125",
        "year": 2026,
        "trim": "xDrive60",
@@ -25174,6 +25277,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ0XTCW52036",
        "year": 2026,
        "trim": "xDrive60",
@@ -25225,6 +25329,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03TCY16145",
        "year": 2026,
        "trim": "xDrive60",
@@ -25276,6 +25381,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02TCX83395",
        "year": 2026,
        "trim": "xDrive60",
@@ -25323,6 +25429,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX80595",
        "year": 2026,
        "trim": "xDrive60",
@@ -25358,6 +25465,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05TCY14753",
        "year": 2026,
        "trim": "xDrive60",
@@ -25405,6 +25513,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX51386",
        "year": 2026,
        "trim": "xDrive60",
@@ -25440,6 +25549,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ08TCY18571",
        "year": 2026,
        "trim": "xDrive60",
@@ -25475,6 +25585,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05TCX99025",
        "year": 2026,
        "trim": "xDrive60",
@@ -25510,6 +25621,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03TCY09714",
        "year": 2026,
        "trim": "xDrive60",
@@ -25561,6 +25673,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCY07286",
        "year": 2026,
        "trim": "xDrive60",
@@ -25612,6 +25725,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ07TCX97406",
        "year": 2026,
        "trim": "xDrive60",
@@ -25659,6 +25773,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX43398",
        "year": 2026,
        "trim": "xDrive60",
@@ -25706,6 +25821,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCX86147",
        "year": 2026,
        "trim": "xDrive60",
@@ -25757,6 +25873,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ08TCY20501",
        "year": 2026,
        "trim": "xDrive60",
@@ -25792,6 +25909,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03TCX96155",
        "year": 2026,
        "trim": "xDrive60",
@@ -25839,6 +25957,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ07TCX92626",
        "year": 2026,
        "trim": "xDrive60",
@@ -25874,6 +25993,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02TCX67004",
        "year": 2026,
        "trim": "xDrive60",
@@ -25921,6 +26041,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCX54136",
        "year": 2026,
        "trim": "xDrive60",
@@ -25972,6 +26093,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCY04551",
        "year": 2026,
        "trim": "xDrive60",
@@ -26023,6 +26145,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02TCY29324",
        "year": 2026,
        "trim": "xDrive60",
@@ -26074,6 +26197,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY83EH06TCX89008",
        "year": 2026,
        "trim": "M70",
@@ -26125,6 +26249,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY83EH03TCX46116",
        "year": 2026,
        "trim": "M70",
@@ -26172,6 +26297,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY83EH04TCY16500",
        "year": 2026,
        "trim": "M70",
@@ -26207,6 +26333,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ04PCM75330",
        "year": 2023,
        "trim": "xDrive60",
@@ -26257,6 +26384,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ08RCP84110",
        "year": 2024,
        "trim": "xDrive60",
@@ -26303,6 +26431,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN48291",
        "year": 2023,
        "trim": "xDrive60",
@@ -26349,6 +26478,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01PCM51499",
        "year": 2023,
        "trim": "xDrive60",
@@ -26396,6 +26526,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN68300",
        "year": 2023,
        "trim": "xDrive60",
@@ -26434,6 +26565,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ09PCN10895",
        "year": 2023,
        "trim": "xDrive60",
@@ -26480,6 +26612,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01RCP88659",
        "year": 2024,
        "trim": "xDrive60",
@@ -26523,6 +26656,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06PCN86140",
        "year": 2023,
        "trim": "xDrive60",
@@ -26569,6 +26703,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ0XPCN60057",
        "year": 2023,
        "trim": "xDrive60",
@@ -26616,6 +26751,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01PCN68242",
        "year": 2023,
        "trim": "xDrive60",
@@ -26667,6 +26803,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06PCN91029",
        "year": 2023,
        "trim": "xDrive60",
@@ -26710,6 +26847,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN75491",
        "year": 2023,
        "trim": "xDrive60",
@@ -26757,6 +26895,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN72316",
        "year": 2023,
        "trim": "xDrive60",
@@ -26802,6 +26941,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01PCN64238",
        "year": 2023,
        "trim": "xDrive60",
@@ -26840,6 +26980,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05PCM66846",
        "year": 2023,
        "trim": "xDrive60",
@@ -26880,6 +27021,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ03PCN77752",
        "year": 2023,
        "trim": "xDrive60",
@@ -26926,6 +27068,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN52373",
        "year": 2023,
        "trim": "xDrive60",
@@ -26973,6 +27116,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ08PCN73387",
        "year": 2023,
        "trim": "xDrive60",
@@ -27019,6 +27163,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00RCP17842",
        "year": 2024,
        "trim": "xDrive60",
@@ -27064,6 +27209,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN69253",
        "year": 2023,
        "trim": "xDrive60",
@@ -27107,6 +27253,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ02RCS36535",
        "year": 2024,
        "trim": "eDrive50",
@@ -27156,6 +27303,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCY34967",
        "year": 2026,
        "trim": "eDrive50",
@@ -27199,6 +27347,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ07TCX86112",
        "year": 2026,
        "trim": "eDrive50",
@@ -27242,6 +27391,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ08TCY07344",
        "year": 2026,
        "trim": "xDrive60",
@@ -27285,6 +27435,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05TCY02893",
        "year": 2026,
        "trim": "xDrive60",
@@ -27332,6 +27483,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ09TCX59367",
        "year": 2026,
        "trim": "xDrive60",
@@ -27379,6 +27531,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY83EH07TCW44754",
        "year": 2026,
        "trim": "M70",
@@ -27422,6 +27575,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05PCN91085",
        "year": 2023,
        "trim": "xDrive60",
@@ -27464,6 +27618,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05TCX32201",
        "year": 2026,
        "trim": "xDrive60",
@@ -27503,6 +27658,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06TCX54112",
        "year": 2026,
        "trim": "xDrive60",
@@ -31342,6 +31498,7 @@
      "gone": [
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB523CF04NCJ77130",
        "year": 2022,
        "trim": "xDrive50",
@@ -31385,6 +31542,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB523CF09NCJ68276",
        "year": 2022,
        "trim": "xDrive50",
@@ -31423,6 +31581,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB523CF09PCM38674",
        "year": 2023,
        "trim": "xDrive50",
@@ -31461,6 +31620,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF09PCM89429",
        "year": 2023,
        "trim": "xDrive50",
@@ -31507,6 +31667,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF07RCN15187",
        "year": 2024,
        "trim": "xDrive50",
@@ -31550,6 +31711,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WB523CF00RCN49973",
        "year": 2024,
        "trim": "xDrive50",
@@ -31597,6 +31759,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB533CF0XPCM02867",
        "year": 2023,
        "trim": "M60",
@@ -31643,6 +31806,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF00RCN72092",
        "year": 2024,
        "trim": "M60",
@@ -31689,6 +31853,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF06NCK45928",
        "year": 2022,
        "trim": "xDrive50",
@@ -31731,6 +31896,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF01RCN55393",
        "year": 2024,
        "trim": "xDrive50",
@@ -31773,6 +31939,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF0XNCK69231",
        "year": 2022,
        "trim": "xDrive50",
@@ -31815,6 +31982,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WB523CF04RCN15101",
        "year": 2024,
        "trim": "xDrive50",
@@ -31854,6 +32022,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WB523CF02RCN03805",
        "year": 2024,
        "trim": "xDrive50",
@@ -31892,6 +32061,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF07PCM04317",
        "year": 2023,
        "trim": "M60",
@@ -31934,6 +32104,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF01PCK81842",
        "year": 2023,
        "trim": "M60",
@@ -31976,6 +32147,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF07PCM42906",
        "year": 2023,
        "trim": "M60",
@@ -32018,6 +32190,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF06RCN92881",
        "year": 2024,
        "trim": "M60",
@@ -33193,6 +33366,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KN4DE6RU341878",
        "year": 2024,
        "trim": "SEL",
@@ -33239,6 +33413,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "7YAKM4DB5SY002064",
        "year": 2025,
        "trim": "SE Standard Range",
@@ -33285,6 +33460,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KR4DE5RU301604",
        "year": 2024,
        "trim": "Limited",
@@ -33331,6 +33507,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "KM8KN4AE9PU166463",
        "year": 2023,
        "trim": "SEL",
@@ -33373,6 +33550,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KMDAF0NU055213",
        "year": 2022,
        "trim": "SE",
@@ -33415,6 +33593,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KMDAF4NU113033",
        "year": 2022,
        "trim": "SE",
@@ -33457,6 +33636,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "KM8KMDDF3RU259991",
        "year": 2024,
        "trim": "SE",
@@ -35540,6 +35720,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAB5S11R6020544",
        "year": 2024,
        "trim": "Light Long Range",
@@ -35591,6 +35772,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDADFS55R6025300",
        "year": 2024,
        "trim": "Land",
@@ -35629,6 +35811,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "KNDAEFS55R6035368",
        "year": 2024,
        "trim": "GT-Line",
@@ -35668,6 +35851,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAA5S29R6024451",
        "year": 2024,
        "trim": "Light Short Range",
@@ -35703,6 +35887,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAB5S15R6020353",
        "year": 2024,
        "trim": "Light Long Range",
@@ -35749,6 +35934,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAEFS56R6019308",
        "year": 2024,
        "trim": "GT-Line",
@@ -35795,6 +35981,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAFFS50R6034867",
        "year": 2024,
        "trim": "Wind",
@@ -35842,6 +36029,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAB5S12R6031567",
        "year": 2024,
        "trim": "Light Long Range",
@@ -35881,6 +36069,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAA5S25R6038895",
        "year": 2024,
        "trim": "Light",
@@ -35920,6 +36109,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAA5S2XR6038892",
        "year": 2024,
        "trim": "Light",
@@ -35962,6 +36152,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "5XYAB5S11TG026414",
        "year": 2026,
        "trim": "Light Long Range",
@@ -36001,6 +36192,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAFFS57R6037958",
        "year": 2024,
        "trim": "Wind",
@@ -36043,6 +36235,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAB5S11R6035397",
        "year": 2024,
        "trim": "Light Long Range",
@@ -36081,6 +36274,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAA5S23R6033758",
        "year": 2024,
        "trim": "Light",
@@ -36116,6 +36310,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAA5S2XR6020893",
        "year": 2024,
        "trim": "Light",
@@ -37310,6 +37505,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU7CAGH8SA025343",
        "year": 2025,
        "trim": "Premium",
@@ -37348,6 +37544,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU2CAGH7SA027384",
        "year": 2025,
        "trim": "Premium Plus",
@@ -37386,6 +37583,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU2CAGH7SA027014",
        "year": 2025,
        "trim": "Premium Plus",
@@ -37424,6 +37622,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU7DAGH3SA024081",
        "year": 2025,
        "trim": "Premium",
@@ -37462,6 +37661,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU2CAGH5SA016383",
        "year": 2025,
        "trim": "Premium Plus",
@@ -37500,6 +37700,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU3DAGH1SA024899",
        "year": 2025,
        "trim": "Prestige",
@@ -40866,6 +41067,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA3PA002149",
        "year": 2023,
        "trim": "Touring",
@@ -40908,6 +41110,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA5RA007050",
        "year": 2024,
        "trim": "Touring",
@@ -40943,6 +41146,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA9RA001980",
        "year": 2024,
        "trim": "Touring",
@@ -40985,6 +41189,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA4PA002998",
        "year": 2023,
        "trim": "Touring",
@@ -41027,6 +41232,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA3PA005522",
        "year": 2023,
        "trim": "Touring",
@@ -41069,6 +41275,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEAXRA003382",
        "year": 2024,
        "trim": "Touring",
@@ -41107,6 +41314,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA8NA003080",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41150,6 +41358,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA8NA005122",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41192,6 +41401,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA7NA003636",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41231,6 +41441,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA6RA008899",
        "year": 2024,
        "trim": "Touring",
@@ -41270,6 +41481,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA6NA004065",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41312,6 +41524,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA7PA005714",
        "year": 2023,
        "trim": "Grand Touring",
@@ -41350,6 +41563,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA4NA001522",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41392,6 +41606,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA3NA004475",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41434,6 +41649,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBAXRA008870",
        "year": 2024,
        "trim": "Grand Touring",
@@ -41477,6 +41693,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA5RA008392",
        "year": 2024,
        "trim": "Touring",
@@ -41515,6 +41732,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA6PA005739",
        "year": 2023,
        "trim": "Touring",
@@ -41553,6 +41771,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA9RA003275",
        "year": 2024,
        "trim": "Touring",
@@ -41591,6 +41810,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEAXRA008579",
        "year": 2024,
        "trim": "Touring",
@@ -41629,6 +41849,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA0PA004389",
        "year": 2023,
        "trim": "Touring",
@@ -41667,6 +41888,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA3NA004640",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41705,6 +41927,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA1PA003557",
        "year": 2023,
        "trim": "Touring",
@@ -41743,6 +41966,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "50EA1TEA1RA001195",
        "year": 2024,
        "trim": "Touring",
@@ -41781,6 +42005,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "50EA1TEA8RA001663",
        "year": 2024,
        "trim": "Touring",

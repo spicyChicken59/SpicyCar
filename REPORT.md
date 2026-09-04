@@ -99,7 +99,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 **Wisconsin (1)**
 - **$45,717** · 15,707 mi · no shipping · 2024 · Madison, WI · ~125 mi from Chicago
-  _down 1x ($0) · CPO · 2 owners · no accidents_
+  _cut 1x, then back up · CPO · 2 owners · no accidents_
   rosen nissan of madison llc — [listing](https://rosennissanmadison.com/certified/BMW/2024-BMW-i5-7106ba6eac1824b1018118ba11304b66.htm)
   `WBY33FK09RCP96469`
 
@@ -166,7 +166,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   BMW MINI of Shawnee Mission — [listing](https://www.carfax.com/vehicle/WBY13HG06SCS41187)
   `WBY13HG06SCS41187`
 - **$49,163** · 17,493 mi · + $746 shipping = $49,909 · 2025 · Watertown, NY · ~600 mi from Chicago
-  _down 1x ($0) · on market 178d · sits longer than 98% of the model · 1-owner · no accidents_
+  _cut 1x, then back up · on market 178d · sits longer than 98% of the model · 1-owner · no accidents_
   Bob Johnson Chrysler Dodge Jeep Ram — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG02SCS75188)
   `WBY13HG02SCS75188`
 - **$49,495** · 209 mi · + $1,097 shipping = $50,592 · 2025 · West Palm Beach, FL · ~1,125 mi from Chicago
@@ -211,7 +211,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   fields bmw northfield — [listing](https://fieldsbmwnorthfield.com/certified/BMW/2024-BMW-i5-Chicago-0909f020ac1829bdac25aaf12b293a98.htm)
   `WBY43FK09RCP11490`
 - **$63,352** · 17,988 mi · no shipping · 2024 · Downers Grove, IL · ~25 mi from Chicago
-  _down 1x ($0) · 1-owner · no accidents_
+  _cut 1x, then back up · 1-owner · no accidents_
   Star Auto Works — [listing](https://www.carfax.com/vehicle/WBY43FK07RCR00896)
   `WBY43FK07RCR00896`
 
@@ -359,7 +359,7 @@ _The other half of the decision, beside the i5 eDrive40._
   irvine bmw — [listing](https://irvinebmw.com/certified/BMW/2024-BMW-i7-11fb6462ac181fb201976db0b091175e.htm)
   `WBY43EJ02RCS67624`
 - **$58,761** · 34,712 mi · + $1,371 shipping = $60,132 · 2024 · San Luis Obispo, CA · ~1,825 mi from Chicago
-  _down 1x ($0) · on market 54d · 1-owner · 1 accident · ex-lease_
+  _cut 1x, then back up · on market 54d · 1-owner · 1 accident · ex-lease_
   BMW of San Luis Obispo — [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ09RCR30039)
   `WBY43EJ09RCR30039`
 
@@ -441,7 +441,7 @@ _The other half of the decision, beside the i5 eDrive40._
   Gravity Autos Chicago — [listing](https://www.gravityautoschicago.com/inventory/2023-bmw-i7-xdrive60-WBY53EJ00PCN87641)
   `WBY53EJ00PCN87641`
 - **$65,734** · 7,257 mi · no shipping · 2023 · Burbank, IL · ~25 mi from Chicago
-  _down 2x ($0) · on market 58d_
+  _cut 2x, then back up · on market 58d_
   Driven Auto Sales — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ06PCM35508)
   `WBY53EJ06PCM35508`
 - **$65,800** · 11,332 mi · no shipping · 2023 · Lisle, IL · ~25 mi from Chicago

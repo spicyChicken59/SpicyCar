@@ -201,10 +201,18 @@ SOURCES = ([("States", {"retailListing.state": ",".join(SEARCH_STATES)})]
 
 
 def sorts_pages(t):
-    """Which sorts, and how many pages each, a target fetches per source."""
-    if t["depth"] == "full":
-        return list(t["sorts"]), int(t["pages"])
-    return [t["sorts"][0]], 1
+    """Which sorts, and how many pages each, a target fetches per source.
+
+    Reads with .get() so a partial or unknown target answers "no sorts" rather
+    than raising: this is called from honesty gates that run over rows whose
+    trim id may name a target the current watchlist no longer carries, and a
+    KeyError there would take down a rebuild over a car that left in July.
+    Byte-identical for every real target.
+    """
+    sorts = list(t.get("sorts") or [])
+    if t.get("depth") == "full":
+        return sorts, int(t.get("pages") or 1)
+    return sorts[:1], 1
 
 
 def sources_for(t):
@@ -1079,6 +1087,57 @@ def exit_stats(gone, trim_id, floor=6):
             "exit_days": st.get("median_days_to_sale")}
 
 
+def cut_tag(cuts, delta):
+    """What a price history did, in words that survive it going back up.
+
+    `cuts` counts the downward steps and `delta` is last minus first, so a
+    listing cut and then restored has cuts >= 1 and delta >= 0 — and the report
+    printed that as "down 1x ($0)", which reads as a discount of nothing rather
+    than as a car that is no cheaper than it started. Five lines of one day's
+    report said exactly that, one of them for a car back at its exact opening
+    price, and the same shape can print a POSITIVE delta as if it were a cut.
+
+    The aggregate definition of a cut is deliberately left alone: "was cut at
+    some point" is a true and useful thing to count, and a second real drop
+    that lands above an earlier low is still a price change the buyer wants to
+    see today. Only the sentence changes.
+    """
+    n = f"down {cuts}x"
+    if delta < 0:
+        return f"{n} ({money(delta)})"
+    if delta > 0:
+        return f"cut {cuts}x, now {money(delta)} above first seen"
+    return f"cut {cuts}x, then back up"
+
+
+def departure_is_evidence(g):
+    """Can this departure be told apart from fetch-window churn?
+
+    The same question exit_stats() and one_cohort() already ask before they
+    publish a price, asked here so the COUNT is held to the standard the price
+    is. A two-window target's "delisted" row may be a car that sold or a car
+    that a newer, cheaper arrival pushed out of the window this run — that is
+    the whole reason its exit price is withheld — so counting it as a car that
+    left the market, and pricing the market's velocity from it, publishes on
+    evidence the same file refuses to price.
+
+    window_reconstructable(), not departures_are_separable()'s configured sorts
+    list: eleven of fourteen targets are `light` depth and only ever open the
+    first of the two sorts their config names, and gating on the config would
+    withhold the phrase from every model on the sheet for a reason that does
+    not apply to any of them.
+    """
+    if "exact" in g:
+        return bool(g["exact"])
+    # A sheet written before delisted() carried its own provenance: fall back
+    # to the shape of the target, which is what the reconstruction could prove
+    # before the fetch log existed. An UNKNOWN target is not a defence — this
+    # gate exists to keep a number off the page, and "nothing on record says
+    # which query found this car" is not a reason to publish it.
+    t = TARGETS.get(g.get("trim_id"))
+    return bool(t) and window_reconstructable(t)
+
+
 def sale_stats(gone):
     """How fast this model's cars actually leave, from the ones that really
     left: days from the listing date (or first sighting, when the dealer
@@ -1087,6 +1146,10 @@ def sale_stats(gone):
     spans = []
     for g in gone:
         if g.get("likely") != "delisted":
+            continue
+        # …and a departure this target cannot separate from window churn is
+        # not evidence that a car left. See departure_is_evidence().
+        if not departure_is_evidence(g):
             continue
         # The listing date, and ONLY the listing date. first_seen used to stand
         # in for it, which measured how long the TRACKER had been watching: on a
@@ -1115,6 +1178,11 @@ def sale_stats(gone):
     exits, cuts = [], []
     for g in gone:
         if g.get("likely") != "delisted":
+            continue
+        # Same gate as the spans above, and for the same reason: an exit price
+        # is a claim about where cars stopped being advertised, and a car that
+        # merely fell out of this run's window did not stop being advertised.
+        if not departure_is_evidence(g):
             continue
         last = to_int(g.get("last_price"))
         if last is None:
@@ -1294,7 +1362,7 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
                     and series[-1][1] < series[-2][1]):
                 tags.append(f"▼ CUT {money(series[-2][1] - series[-1][1])} today")
             elif x.get("cuts"):
-                tags.append(f"down {x['cuts']}x ({money(x['delta'])})")
+                tags.append(cut_tag(x["cuts"], x.get("delta") or 0))
             if x.get("days_listed") is not None:
                 tags.append(f"on market {x['days_listed']}d")
             p = scored_by_vin.get(vin)
@@ -2178,7 +2246,7 @@ def fmt_row(r, s, entry=None):
     out = "- " + " · ".join(str(b) for b in bits)
     tags = []
     if s.get("cuts"):
-        tags.append(f"down {s['cuts']}x ({money(s['delta'])})")
+        tags.append(cut_tag(s["cuts"], s.get("delta") or 0))
     if s.get("days_tracked", 0) >= 21:
         tags.append(f"tracked {s['days_tracked']}d")
     if s.get("days_tracked") == 1:
@@ -2347,6 +2415,14 @@ def delisted(tids, all_rows, today_rows, hist):
         # departure — see fetch_log_row() for the three ways the reconstruction
         # used to turn silence into a confirmed sale.
         unknown = False
+        # How the label below was reached, carried out with it. A "delisted"
+        # from the live run or from the fetch log is a query that looked and
+        # did not find the car; a "delisted" reconstructed for a two-window
+        # target from rows alone is a guess the file's own exit_stats() refuses
+        # to price. Both used to read the same downstream, so the market line
+        # counted the second kind as cars that left. Recorded here rather than
+        # re-derived later, because this is the only place that knows.
+        exact = False
         logged = (log.get(van_day) or {}).get(tid) if van_day else None
         if van_day == TODAY and any((tid, k) in live_win
                                     or (tid, k) in EXHAUSTED
@@ -2364,6 +2440,7 @@ def delisted(tids, all_rows, today_rows, hist):
             unknown = (any((tid, k) in FAILED_SCOPES for k in keys)
                        and not (cutoff is not None and last_val is not None
                                 and last_val <= cutoff))
+            exact = True
         elif logged:
             # the run wrote down what each query did that day: reproduce it
             # exactly, so a rebuild cannot disagree with the run it rebuilds
@@ -2373,12 +2450,21 @@ def delisted(tids, all_rows, today_rows, hist):
                        if f and f.get("window") is not None]
             cutoff = max(cutoffs) if cutoffs else None
             exhausted = any(f.get("exhausted") for f in facts if f)
+            exact = True
         else:
             # An older day with no fetch log: reconstruct what the ROWS can
             # prove, and nothing more. Exhaustion is not among it — EXHAUSTED
             # is set from the RAW page length and the CSV only holds the rows
             # that survived the filters — so it is never inferred here.
             exhausted = False
+            # True only for a target whose one window the rows can rebuild. On
+            # a two-window target this branch cannot currently reach a
+            # "delisted" at all — above the pooled maximum is "out of window"
+            # and at or below it is "not checked" — so the False case is a
+            # guard rather than a live path, and
+            # test_the_offline_path_never_calls_a_two_window_absence_a_delisting
+            # is what says so out loud and will fail the day that changes.
+            exact = window_reconstructable(t)
             pooled = win_max.get((tid, van_day))
             if not window_reconstructable(t):
                 # A second sort or a newest probe put rows above the window
@@ -2420,6 +2506,9 @@ def delisted(tids, all_rows, today_rows, hist):
             likely = "delisted"
         out.append({
             "likely": likely,
+            # …and whether that label came from a query that actually looked.
+            # See `exact` above; departure_is_evidence() is its one consumer.
+            "exact": bool(exact) and likely != "not checked",
             "vin": vin, "year": to_int(r["year"]), "trim": r["trim"],
             "trim_id": tid, "trim_label": t["label"],
             "state": r["state"], "local": in_scope(r),
@@ -2535,7 +2624,8 @@ def brief_lines(m_entry, listings, prev_day):
     # previous fetch day, or a slower trim's departures never count
     gone = sum(1 for g in m_entry["gone"]
                if g["likely"] == "delisted" and g["prev_fetch_day"]
-               and g["last_seen"] == g["prev_fetch_day"])
+               and g["last_seen"] == g["prev_fetch_day"]
+               and departure_is_evidence(g))
     line = (f"- {len(listings)} on the market · "
             f"{sum(1 for x in listings if x['local'])} drivable")
     if prev_day:
@@ -2569,7 +2659,8 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         sec.append("")
     just_gone = [g for g in gone if g["trim_id"] == t["id"]
                  and g["likely"] == "delisted" and g["prev_fetch_day"]
-                 and g["last_seen"] == g["prev_fetch_day"]]
+                 and g["last_seen"] == g["prev_fetch_day"]
+                 and departure_is_evidence(g)]
     if just_gone:
         sec.append(f"**Gone since {just_gone[0]['last_seen']}**")
         for g in just_gone:
@@ -2823,7 +2914,8 @@ def build_outputs(today_rows, all_rows, hist):
                                               "shopping": shopping})
                 for g in m_entry["gone"]:
                     if (g["likely"] == "delisted" and g["prev_fetch_day"]
-                            and g["last_seen"] == g["prev_fetch_day"]):
+                            and g["last_seen"] == g["prev_fetch_day"]
+                            and departure_is_evidence(g)):
                         events["gone"].append({"vin": g["vin"],
                                                "label": f"{label} {g.get('trim_label') or ''}".strip(),
                                                "last_seen": g["last_seen"],
