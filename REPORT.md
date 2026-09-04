@@ -6,22 +6,14 @@
 - ▼ $752 cut · BMW i7 xDrive60 · now $60,396 · Dayton, OH · drivable `WBY53EJ04PCN58028`
 - ▼ $623 cut · BMW i7 xDrive60 · now $64,376 · Lake Villa, IL · drivable `WBY53EJ07PCM72048`
 - …and 20 more price changes in the sections below
-- 4 new on the shopped models · best 8% under typical ($57,790, Greensboro, NC)
+- 2 new on the shopped models
 - 8 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
 - Lowest asking **$36,479** (Seffner, FL) · + $1,031 shipping · = vs 2026-09-03
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
-- 133 on the market · 17 drivable · 30 price changes · 2 new · 6 gone
-
-**New today (2)** — first seen this run, best value first
-
-- **$57,790** · 2024 · 12,775 mi · + $746 shipping · Greensboro, NC · listed 1d ago
-  _8% under typical ($4,622 less)_
-  [listing](https://hendrickcars.com/used/BMW/2024-BMW-i5-5d37bbfdac184f13ed91f8cbaf381990.htm) `WBY43FK06RCP17215`
-- **$53,811** · 2025 · 16,217 mi · + $1,111 shipping · Margate, FL · listed 0d ago
-  [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG05SCT74359) `WBY13HG05SCT74359`
+- 133 on the market · 17 drivable · 30 price changes · 0 new · 6 gone
 
 **Spicy picks** — under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for the model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile
 

@@ -71,6 +71,7 @@
   ],
   "ship_road_factor": 1.18,
   "ship_calibrated": null,
+  "ship_calibration": null,
   "cents_per_mile": 0,
   "mileage_baseline": 20000,
   "shortlist": [],

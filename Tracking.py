@@ -2241,6 +2241,26 @@ def days_listed(r):
         return (date.fromisoformat(TODAY) - since).days
 
 
+def is_new_today(x):
+    """First seen on THIS snapshot, not merely seen once.
+
+    days_tracked is the length of a car's price series, and a series only grows
+    on days its target was fetched — so a car seen once on Monday still reads
+    days_tracked == 1 on Thursday, and on any Thursday when some other trim of
+    its model was due, the whole "New today" block re-announced it as "first
+    seen this run". Three cars first seen on 2026-09-01 were headlined as new
+    on a quiet 09-04 in exactly that way.
+
+    first_seen is the day of the first sighting, which is the thing the words
+    actually claim. Where the record has no first_seen at all, fall back to the
+    old test rather than announce nothing.
+    """
+    first = x.get("first_seen")
+    if first:
+        return str(first)[:10] == TODAY
+    return x.get("days_tracked") == 1
+
+
 def pick_display_rows(rows):
     """One row per VIN — the cheapest copy if a VIN was seen more than once."""
     by_vin = defaultdict(list)
@@ -2272,7 +2292,7 @@ def fmt_row(r, s, entry=None):
         tags.append(cut_tag(s["cuts"], s.get("delta") or 0))
     if s.get("days_tracked", 0) >= 21:
         tags.append(f"tracked {s['days_tracked']}d")
-    if s.get("days_tracked") == 1:
+    if is_new_today(s):
         tags.append("NEW")
     dl = days_listed(r)
     if dl is not None and dl >= 30:
@@ -2642,7 +2662,7 @@ def brief_lines(m_entry, listings, prev_day):
         out.append(f"- Nothing drivable ({scope_label()})")
     movers = sum(1 for x in listings if len(x["series"]) >= 2
                  and x["series"][-1][1] != x["series"][-2][1])
-    new = sum(1 for x in listings if x["days_tracked"] == 1) if prev else 0
+    new = sum(1 for x in listings if is_new_today(x)) if prev else 0
     # each trim vanishes on its own cadence — compare against the trim's own
     # previous fetch day, or a slower trim's departures never count
     gone = sum(1 for g in m_entry["gone"]
@@ -2804,6 +2824,15 @@ def build_outputs(today_rows, all_rows, hist):
             "ship_bands": BUYER.get("ship_bands") or None,
             "ship_road_factor": BUYER.get("ship_road_factor"),
             "ship_calibrated": BUYER.get("ship_calibrated"),
+            # ship_calibration() was written, tested three ways and then never
+            # called, so the README's promise that a malformed quote "is
+            # announced and skipped" described a code path no run could reach.
+            # It is None while buyer.ship_quotes is empty, which is exactly what
+            # it should be — nothing on any surface changes today — and the day
+            # a quote lands, the run says on its own log how far the bands are
+            # from it and the number is in the export rather than in a function
+            # nobody calls.
+            "ship_calibration": ship_calibration(),
             "cents_per_mile": BUYER.get("cents_per_mile"),
             "mileage_baseline": BUYER.get("mileage_baseline"),
             "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
@@ -2930,7 +2959,7 @@ def build_outputs(today_rows, all_rows, hist):
                         events["cuts"].append({"amount": s_[-2][1] - s_[-1][1],
                                                "x": x, "label": name,
                                                "shopping": shopping})
-                    if x["days_tracked"] == 1:
+                    if is_new_today(x):
                         p = by_vin.get(x["vin"])
                         events["new"].append({"x": x, "label": name,
                                               "pct": p["pick_pct"] if p else None,
@@ -2958,7 +2987,7 @@ def build_outputs(today_rows, all_rows, hist):
             if prev_day and m_entry["fetched_today"]:
                 by_vin = {p["vin"]: p for p in scored}
                 new_today = sorted(
-                    [x for x in m_entry["listings"] if x["days_tracked"] == 1],
+                    [x for x in m_entry["listings"] if is_new_today(x)],
                     key=lambda x: -(by_vin[x["vin"]]["pick_pct"]
                                     if x["vin"] in by_vin else -1.0))
                 if new_today:

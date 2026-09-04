@@ -1011,6 +1011,28 @@
     host.onblur = () => setActive(-1);
   }
 
+  // ---------- the design system has to be here ----------
+  // Everything below reaches for SC.geo, SC.spark, SC.toneRef and SC.tooltip
+  // at module scope, so a jsDelivr outage did not degrade this page — it threw
+  // a ReferenceError partway through the IIFE, before a single listener was
+  // wired, and left the reader a masthead over an empty white column with
+  // nothing to read and nothing in the notice.
+  //
+  // The guard sits HERE, and the position is the whole trick. At boot it is
+  // hundreds of lines too late — the throw has already happened. At the top of
+  // the file it is too early: fail() is hoisted, but it calls $ and el, which
+  // are const, so an early guard dies on "Cannot access '$' before
+  // initialization" and produces the same blank page by a different route.
+  // After el() and before the first SC.* reference is the one window where it
+  // works. All four names are exported by the pinned files (sc-charts.js,
+  // sc-map.js); a false positive would mean the pin moved.
+  if (typeof SC === 'undefined' || !SC.geo || !SC.spark || !SC.toneRef || !SC.tooltip) {
+    fail('The design-system scripts did not load from cdn.jsdelivr.net. '
+         + 'The data is fine — this page cannot draw without them.',
+         'Could not load the design system');
+    return;
+  }
+
   // ---------- the market map ----------
   // US states from the same pinned-CDN pattern the design system uses; the
   // topology is pre-projected (geoAlbersUsa, 975×610), and the dots use the
@@ -2094,12 +2116,27 @@
     return n === 1 ? `One snapshot day (${fmtDate(dates[0])})`
                    : `${n} snapshot day${n === 1 ? '' : 's'} · ${fmtDate(dates[0])}–${fmtDate(dates[n - 1])}`;
   }
+  // Which ranges the record can actually distinguish, and the clamp that keeps
+  // S.range inside them. Split out of rangeChips() because the CHIPS are drawn
+  // after the rows, and until this was hoisted the first paint of a visit
+  // rebuilt its series against a remembered '90' the record could not support
+  // — a saved range from a longer-lived sheet, or simply a profile older than
+  // the current record. The chips then settled to '30' underneath a chart
+  // already drawn on 90 days of a 10-day file. Hoisting only the clamp, not
+  // the chip rebuild: overviewTitles() runs on the chip-press path precisely
+  // to avoid rebuilding chips under the reader's finger.
+  function rangeOpts() {
+    return ['30', '90', 'all'].filter((id) => id === 'all' || spanDays() > +id);
+  }
+  function clampRange() {
+    const opts = rangeOpts();
+    if (opts.length >= 2 && !opts.includes(S.range)) S.range = opts[0];
+  }
   function rangeChips() {
     const host = $('chart-range');
-    // Offer only the ranges the record can actually distinguish.
-    const opts = ['30', '90', 'all'].filter((id) => id === 'all' || spanDays() > +id);
+    const opts = rangeOpts();
     if (opts.length < 2) { host.hidden = true; host.textContent = ''; return; }
-    if (!opts.includes(S.range)) S.range = opts[0];
+    clampRange();
     segment(host, opts, S.range, (id) => (id === 'all' ? 'all' : id + 'd'), false,   // lowercase like every other tab — this chip only renders once the record spans 30 days
       (id) => { S.range = id; savePrefs(); rerender('range'); }, 'range');
   }
@@ -2688,14 +2725,26 @@
     if (x.delta < 0) return el('div', null, el('span', { class: 'sc-delta sc-delta--good' }, `▼ ${money(-x.delta)}${cuts ? ` · ${cuts}` : ''}`));
     if (x.delta > 0) return el('div', null, el('span', { class: 'sc-delta sc-delta--bad' }, `▲ ${money(x.delta)} since first seen${cuts ? ` · ${cuts}` : ''}`));
     if (x.cuts) return el('div', null, el('span', { class: 'sc-delta sc-delta--flat' }, `cut, then back up · ${cuts}`));
-    if (x.days_tracked === 1 && daily.length >= 2) return el('div', null, el('span', { class: 'sc-chip sc-chip--spice' }, 'new'));
+    // isNew(), not a fourth copy of days_tracked === 1: this is the chip the
+    // table actually draws, and the tile above it counts isNew(). Two rules
+    // for one word is how twelve Lucids first seen on 2026-09-02 wore "new"
+    // on 09-04 under a tile that said 0.
+    if (isNew(x) && daily.length >= 2) return el('div', null, el('span', { class: 'sc-chip sc-chip--spice' }, 'new'));
     return null;
   }
   // First seen at the most recent snapshot. The tile counts these; the cards and
   // the table mark them, so the count the page advertises is actually findable.
   // Nothing is "new" on the first snapshot day, when every car is one day old.
   const trackedDays = () => Math.max(0, ...allModels().map(({ m }) => (m.daily || []).length));
-  const isNew = (x) => x.days_tracked === 1 && trackedDays() >= 2;
+  // First seen on THIS snapshot, not merely seen once. days_tracked is the
+  // length of a car's price series and a series only grows on days its target
+  // was fetched, so a car seen once on Monday still reads days_tracked === 1
+  // on Thursday — and the chip, the tile's count and the report all called it
+  // new again. Three cars first seen on 2026-09-01 wore the chip on 09-04.
+  // Mirrors Tracking.py's is_new_today(); an older sheet with no first_seen
+  // falls back to the old test rather than losing the chip entirely.
+  const isNew = (x) => (x.first_seen ? String(x.first_seen).slice(0, 10) === dataThrough()
+                                     : x.days_tracked === 1) && trackedDays() >= 2;
   const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Outside your states — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
   // The 721–1000px band gets neither the phone cards nor room for the full
@@ -2929,7 +2978,10 @@
     return {
       hasPrev: daily.length >= 2,
       cuts: listings.filter((x) => lastStep(x) < 0).length,
-      fresh: daily.length >= 2 ? listings.filter((x) => x.days_tracked === 1).length : 0,
+      // isNew's rule, not a second copy of the old one: the tile's count and
+      // the chips in the table below it have to be the same set, or a reader
+      // who counts them finds a different number.
+      fresh: daily.length >= 2 ? listings.filter(isNew).length : 0,
       // same rule as the report: real delistings at each trim's own previous fetch
       // gone respects hasPrev like the others: one snapshot day cannot
       // distinguish a departure, whatever a gone row claims
@@ -3512,6 +3564,7 @@
     return OV_SERIES;
   }
   function overviewRows() {
+    clampRange();   // before the memo below is built, not after the chips are drawn
     OV_SERIES = null;   // a new pass: the filters or the range may have moved
     const series = overviewSeries();
     return modelsInView().map(({ bk, mk, b, m }) => {
@@ -4603,12 +4656,20 @@
     window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', syncMarks);
   }
 
-  function fail(msg) {
+  // `where` names what failed. It used to be the string "Could not load
+  // data.json" unconditionally, followed by advice about serving the folder
+  // over HTTP — which is a wrong lead when the thing that did not load was the
+  // design system, and a blank page when nothing calls fail() at all.
+  function fail(msg, where) {
     $('h1').textContent = 'Snapshot unavailable';
     $('mast-right').textContent = 'No data';
     const n = $('notice'); n.textContent = '';
-    n.appendChild(el('div', { class: 'sc-notice' }, el('div', { class: 'sc-eyebrow' }, 'Could not load data.json'),
-      el('p', null, msg + ' '), el('p', null, 'This page reads ', el('code', null, 'data.json'), ' from the same folder, so it needs to be served over HTTP — GitHub Pages, or locally with ', el('code', null, 'python -m http.server'), ' from the docs folder.')));
+    const http = !where ? el('p', null, 'This page reads ', el('code', null, 'data.json'),
+      ' from the same folder, so it needs to be served over HTTP — GitHub Pages, or locally with ',
+      el('code', null, 'python -m http.server'), ' from the docs folder.') : null;
+    n.appendChild(el('div', { class: 'sc-notice' },
+      el('div', { class: 'sc-eyebrow' }, where || 'Could not load data.json'),
+      el('p', null, msg + ' '), http));
     n.hidden = false;
   }
 

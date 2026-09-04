@@ -1187,6 +1187,54 @@ class TestDailySeries(unittest.TestCase):
         self.assertEqual([x["date"] for x in slow_only], [d2])
 
 
+class TestNewToday(unittest.TestCase):
+    """"New today" means first seen on this snapshot.
+
+    days_tracked is the length of a car's price series and a series only grows
+    on days its target was fetched, so a car seen once on Monday still reads
+    days_tracked == 1 on Thursday. On any day when some OTHER trim of its model
+    was due, the whole "New today" block re-announced it — three cars first seen
+    on 2026-09-01 were headlined as "first seen this run" on a quiet 09-04 —
+    and the report's per-model "N new", the dashboard tile and the `new` chip
+    all counted it again with them.
+    """
+
+    def test_a_car_first_seen_today_is_new(self):
+        self.assertTrue(T.is_new_today({"first_seen": T.TODAY, "days_tracked": 1}))
+
+    def test_a_car_carried_forward_from_an_earlier_fetch_is_not(self):
+        """The exact shape: seen once, days ago, its trim not fetched since."""
+        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 1}),
+                         "one sighting is not one DAY when the trim runs on a cadence")
+
+    def test_a_car_seen_every_day_since_is_not_new_either(self):
+        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 40}))
+
+    def test_a_row_with_no_first_seen_falls_back(self):
+        """An older sheet: better the old test than no answer at all."""
+        self.assertTrue(T.is_new_today({"days_tracked": 1}))
+        self.assertFalse(T.is_new_today({"days_tracked": 3}))
+
+    def test_the_report_does_not_re_announce_an_old_car(self):
+        """End to end, through the block that prints the headline."""
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                      "state": "IL", "city": "Chicago"})
+            return r
+        old_day = "2026-01-02"
+        rows = [row("O" * 17, old_day, 40000),          # seen once, long ago
+                row("N" * 17, T.TODAY, 41000),          # first seen today
+                row("K" * 17, old_day, 42000), row("K" * 17, T.TODAY, 42000)]
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today, rows, T.build_history(rows))
+        block = report.split("**New today")[1].split("**Spicy picks")[0] if "**New today" in report else ""
+        self.assertIn("N" * 17, block, "the car first seen today is the one that is new")
+        self.assertNotIn("O" * 17, block,
+                         "a car last seen in January is not first seen this run")
+
+
 class TestDaysListedAnchor(unittest.TestCase):
     """Days on market is measured from the day the row was OBSERVED.
 
