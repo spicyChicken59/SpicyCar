@@ -2005,18 +2005,60 @@ def build_history(all_rows):
     return {k: sorted(v.items()) for k, v in per_day.items()}
 
 
+def build_local_history(all_rows):
+    """When a car's DRIVABLE answer changed, for the few cars where it did.
+
+    in_scope() reads the state field on the row, and a car's state field is not
+    a constant: a listing can be moved between a dealer group's lots, or
+    re-listed by a different store. Nine VINs in this record have changed state
+    and three have crossed the buyer's own border doing it — WBY33FK09SCT64650
+    was in Indiana on 2026-09-01 and is in Missouri now.
+
+    The dashboard rebuilds a day's drivable count from the cars themselves
+    whenever a filter is on, and the only state it holds per car is TODAY's, so
+    it counted that i5 as beyond the border on a day when it was an hour's
+    drive away. Python's daily_stats had it right — it reads the row as it was
+    on the day — and the two series are supposed to be one definition in two
+    languages, so the page needs the same fact.
+
+    Emitted only at CHANGE points, and only for a car that ever changed: three
+    of 1,209 VINs, about 150 bytes on an 876KB file. A car that never moved
+    says nothing and the page falls back to the flag it already has.
+    """
+    per_day = defaultdict(dict)
+    for r in all_rows:
+        per_day[(r["target"], r["vin"])][r["snapshot_date"]] = 1 if in_scope(r) else 0
+    out = {}
+    for key, days in per_day.items():
+        run, prev = [], None
+        for d in sorted(days):
+            if days[d] != prev:
+                run.append([d, days[d]])
+                prev = days[d]
+        if len(run) > 1:
+            out[key] = run
+    return out
+
+
+LOCAL_HISTORY = {}      # (target, vin) -> [[date, 0|1], ...] at each change
+
+
 def summarize(key, hist):
     series = hist.get(key, [])
     if not series:
         return {"series": []}
     prices = [p for _, p in series]
-    return {
+    out = {
         "series": series,
         "cuts": sum(1 for a, b in zip(prices, prices[1:]) if b < a),
         "delta": prices[-1] - prices[0],
         "days_tracked": len(series),
         "first_seen": series[0][0],
     }
+    moved = LOCAL_HISTORY.get(key)
+    if moved:
+        out["local_hist"] = moved
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -2404,6 +2446,7 @@ def delisted(tids, all_rows, today_rows, hist):
             "usage": r.get("usage", ""),
             "cpo": is_cpo(r),
             "series": s.get("series", []),
+            **({"local_hist": s["local_hist"]} if s.get("local_hist") else {}),
             "flags": flags(r),
         })
     out.sort(key=lambda x: (x["last_seen"], -(x["last_price"] or 0)),
@@ -2438,6 +2481,8 @@ def listing_entry(r, s):
         "cuts": s.get("cuts", 0), "delta": s.get("delta", 0),
         "days_tracked": s.get("days_tracked", 0),
         "series": s["series"],
+        # absent for the ~99.8% of cars that never crossed the border
+        **({"local_hist": s["local_hist"]} if s.get("local_hist") else {}),
     }
 
 
@@ -2587,6 +2632,12 @@ def compact_line(m_entry, label):
 def build_outputs(today_rows, all_rows, hist):
     INDEX_DATES.clear()
     INDEX_DATES.update(find_index_dates(all_rows))
+    # Populated HERE, beside INDEX_DATES, and not in main(): tools/rebuild_outputs.py
+    # and the tests call build_outputs() directly, and a global filled only on
+    # the live path is a global that is empty for every other caller — which is
+    # how a rebuild would have quietly dropped the very fact it exists to carry.
+    LOCAL_HISTORY.clear()
+    LOCAL_HISTORY.update(build_local_history(all_rows))
     if INDEX_DATES:
         print("  ! listed_since " + ", ".join(sorted(INDEX_DATES))
               + " looks like an API index load, not a listing date — "
@@ -2704,6 +2755,23 @@ def build_outputs(today_rows, all_rows, hist):
                 "daily_by_trim": {t["id"]: daily_stats(
                     [r for r in m_rows_all if r["target"] == t["id"]], m_days)
                     for t in trims},
+                # The days each TARGET actually fetched, which is not a thing
+                # the rest of this file can be reconstructed from. daily_stats
+                # carries a target forward to its most recent fetch, so its
+                # dates say nothing about when the fetch happened; and a car
+                # carries only one trim_id, so a target whose every current car
+                # is filed under a sibling target leaves no sightings of its
+                # own at all. The i5's nationwide CPO watch is exactly that: it
+                # fetched on 2026-09-03 and 09-04 and returned two certified
+                # cars, both of which the export files under eDrive40 — so the
+                # page, reading fetch days off the cars, believed the watch had
+                # not run since 09-01 and carried two DEPARTED certified cars
+                # forward into every day since. Its rebuilt row read 135 cars
+                # against a precomputed 133. Nine bytes a day per target ends
+                # the guessing.
+                "fetch_days": {t["id"]: sorted({r["snapshot_date"] for r in m_rows_all
+                                                if r["target"] == t["id"]})
+                               for t in trims},
                 "gone": m_gone,
             }
             b_entry["models"][mkey] = m_entry

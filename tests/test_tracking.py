@@ -1082,6 +1082,123 @@ class TestDailySeries(unittest.TestCase):
         self.assertEqual([x["date"] for x in slow_only], [d2])
 
 
+class TestFetchDaysExport(unittest.TestCase):
+    """The days each target actually fetched, which nothing else can be asked.
+
+    The dashboard rebuilds a day row from the cars themselves whenever a filter
+    is on, and to do that it has to know when each target last ran — a car is
+    carried forward only to its own target's latest fetch. It used to work that
+    out from the cars' sightings, which is wrong in one specific and live case:
+    a car carries ONE trim_id, so a target whose every current car is filed
+    under a sibling target leaves no sightings of its own at all. The i5's
+    nationwide CPO watch is exactly that. It fetched on 2026-09-03 and returned
+    two certified cars the export files under eDrive40; the page concluded the
+    watch had not run since 09-01 and carried two cars that DEPARTED on 09-01
+    forward into every day after. Its rebuilt model row read 135 against a
+    precomputed 133.
+    """
+
+    @staticmethod
+    def row(tid, vin, day, price, trim="M60"):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": tid, "vin": vin, "snapshot_date": day, "price": price,
+                  "year": "2024", "trim": trim, "miles": 20000,
+                  "state": "IL", "city": "Chicago"})
+        return r
+
+    def test_a_targets_fetch_days_are_its_own_snapshot_dates(self):
+        fast, slow = "bmw-i5-edrive40", "bmw-i5-m60"
+        d1, d2, d3 = "2026-08-01", "2026-08-02", "2026-08-03"
+        rows = [self.row(fast, "F" * 17, d, 40000, "eDrive40") for d in (d1, d2, d3)]
+        rows += [self.row(slow, "S" * 17, d, 60000) for d in (d1, d3)]
+        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        fd = site["brands"]["bmw"]["models"]["i5"]["fetch_days"]
+        self.assertEqual(fd[fast], [d1, d2, d3])
+        self.assertEqual(fd[slow], [d1, d3],
+                         "a target that did not run on a day must not claim it")
+
+    def test_a_target_whose_cars_are_filed_elsewhere_still_reports_its_days(self):
+        """The whole reason this is exported rather than inferred.
+
+        One VIN, matched by two targets. pick_display_rows keeps one copy per
+        VIN so the car appears in the export under a single trim_id — and the
+        OTHER target's fetch days would vanish with it if they were read off
+        the cars, which is what the page did.
+        """
+        watch, ordinary = "bmw-i5-cpo", "bmw-i5-edrive40"
+        d1, d2 = "2026-08-01", "2026-08-02"
+        both = "B" * 17
+        rows = [self.row(ordinary, both, d, 40000, "eDrive40") for d in (d1, d2)]
+        rows += [self.row(watch, both, d, 40000, "eDrive40") for d in (d1, d2)]
+        rows += [self.row(ordinary, "O" * 17, d, 41000, "eDrive40") for d in (d1, d2)]
+        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        m = site["brands"]["bmw"]["models"]["i5"]
+        filed = {x["vin"]: x["trim_id"] for x in m["listings"]}
+        self.assertEqual(len({filed[both]}), 1,
+                         "the shared VIN is filed under exactly one target")
+        self.assertEqual(m["fetch_days"][watch], [d1, d2],
+                         "the watch ran on both days and the export must say so, "
+                         "however its cars were filed")
+
+
+class TestLocalHistoryExport(unittest.TestCase):
+    """Whether a car was DRIVABLE on a given day, for the few that moved.
+
+    in_scope() reads the state field, and a state field is not a constant: a
+    listing can move between a dealer group's lots or be re-listed by another
+    store. Nine VINs in the real record have changed state and three have
+    crossed the buyer's border doing it. daily_stats reads the row as it was on
+    the day; the page held only today's flag and so counted an i5 that was in
+    Indiana on 2026-09-01 as beyond the border on that day, one drivable car
+    short. The two series are one definition in two languages, so the page gets
+    the same fact — at the change points only, for the cars that have any.
+    """
+
+    @staticmethod
+    def row(vin, day, state, price=40000):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                  "price": price, "year": "2024", "trim": "eDrive40",
+                  "miles": 20000, "state": state, "city": "Somewhere"})
+        return r
+
+    def test_a_car_that_never_moved_carries_nothing(self):
+        rows = [self.row("S" * 17, d, "IL") for d in ("2026-08-01", "2026-08-02")]
+        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        got = site["brands"]["bmw"]["models"]["i5"]["listings"][0]
+        self.assertNotIn("local_hist", got,
+                         "999 cars in 1000 must not pay bytes for this")
+
+    def test_a_car_that_crossed_the_border_carries_the_change(self):
+        vin = "M" * 17
+        rows = [self.row(vin, "2026-08-01", "IL"), self.row(vin, "2026-08-02", "IL"),
+                self.row(vin, "2026-08-03", "MO"), self.row(vin, "2026-08-04", "MO")]
+        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        got = site["brands"]["bmw"]["models"]["i5"]["listings"][0]
+        self.assertEqual(got["local_hist"], [["2026-08-01", 1], ["2026-08-03", 0]],
+                         "the change points, not a value a day")
+        self.assertFalse(got["local"], "and today's flag still says where it is now")
+
+    def test_a_move_that_does_not_cross_the_border_says_nothing(self):
+        """IL to OH is a move; both are states this buyer drives to, so the
+        answer the page asks for — drivable? — never changed."""
+        vin = "N" * 17
+        rows = [self.row(vin, "2026-08-01", "IL"), self.row(vin, "2026-08-02", "OH")]
+        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        got = site["brands"]["bmw"]["models"]["i5"]["listings"][0]
+        self.assertNotIn("local_hist", got)
+
+    def test_the_day_row_counts_the_car_where_it_was(self):
+        """The bug this exists for, end to end: daily_stats already got this
+        right, and the export is what lets the page agree with it."""
+        vin = "M" * 17
+        rows = [self.row(vin, "2026-08-01", "IL"), self.row(vin, "2026-08-02", "MO")]
+        rows += [self.row("K" * 17, d, "MO") for d in ("2026-08-01", "2026-08-02")]
+        by_day = {x["date"]: x for x in T.daily_stats(rows)}
+        self.assertEqual(by_day["2026-08-01"]["n_local"], 1)
+        self.assertEqual(by_day["2026-08-02"]["n_local"], 0)
+
+
 class TestReportFooter(unittest.TestCase):
     def test_a_rebuild_does_not_overwrite_the_days_cost_with_zero(self):
         """CALLS is this PROCESS's counter and an offline rebuild makes none, so

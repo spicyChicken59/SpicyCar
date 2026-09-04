@@ -1,0 +1,65 @@
+{
+ "2026-09-02": {
+  "actual": 18,
+  "banked": 8,
+  "exhausted": 3,
+  "failed": 0,
+  "off_plan": {
+   "bmw-i5-edrive40": [
+    10,
+    6
+   ],
+   "bmw-i7-edrive50": [
+    10,
+    6
+   ]
+  },
+  "planned": 26,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 5,
+  "unrun": 0
+ },
+ "2026-09-03": {
+  "actual": 24,
+  "banked": 8,
+  "exhausted": 6,
+  "failed": 0,
+  "off_plan": {
+   "bmw-i5-edrive40": [
+    10,
+    6
+   ],
+   "bmw-i7-edrive50": [
+    10,
+    6
+   ]
+  },
+  "planned": 32,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 8,
+  "unrun": 0
+ },
+ "2026-09-04": {
+  "actual": 18,
+  "banked": 8,
+  "exhausted": 3,
+  "failed": 0,
+  "off_plan": {
+   "bmw-i5-edrive40": [
+    10,
+    6
+   ],
+   "bmw-i7-edrive50": [
+    10,
+    6
+   ]
+  },
+  "planned": 26,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 5,
+  "unrun": 0
+ }
+}

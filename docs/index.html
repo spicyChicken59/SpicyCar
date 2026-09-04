@@ -1986,18 +1986,33 @@
     // fetch; this is the same rule expressed per car, so the rebuilt series and
     // the precomputed one still describe the same market: a car counts on a day
     // when its trim's latest fetch on or before that day is one it was seen on.
-    // A trim's FETCH days are the days its cars were actually seen — taken from
-    // the model's whole set, never the filtered one, or a Where chip would
-    // shrink the apparent cadence and carry cars across fetches that did happen.
-    // Read from the cars rather than from daily_by_trim because that series is
-    // itself carried forward now and would report every day as a fetch day.
-    const fetchSets = {};
-    for (const c of (m.listings || []).concat(m.gone || [])) {
-      const set = (fetchSets[c.trim_id] = fetchSets[c.trim_id] || new Set());
-      for (const pt of (c.series || [])) if (pt[1]) set.add(pt[0]);
-    }
+    // A trim's FETCH days come from the export, which is the only place they
+    // exist. They cannot be read off daily_by_trim, whose rows are themselves
+    // carried forward and would call every day a fetch day; and they cannot be
+    // reconstructed from the cars, which is what this did and which was wrong
+    // in a way nothing else on the page could see. A car carries ONE trim_id,
+    // so a target whose every current car is filed under a sibling target
+    // leaves no sightings of its own. The i5's nationwide CPO watch is exactly
+    // that — it ran on 2026-09-03 and returned two certified cars the export
+    // files under eDrive40 — so this believed the watch had not run since
+    // 09-01 and carried two cars that had DEPARTED on 09-01 forward into every
+    // day since. The rebuilt model row read 135 against a precomputed 133, and
+    // only the smoke check that presses a no-op filter ever noticed.
+    //
+    // Falling back to the sightings for a sheet written before fetch_days
+    // existed: the old behaviour is wrong in this one case and right in every
+    // other, which is better than no series at all.
     const fetchDays = {};
-    for (const k in fetchSets) fetchDays[k] = [...fetchSets[k]].sort();
+    if (m.fetch_days && Object.keys(m.fetch_days).length) {
+      for (const k in m.fetch_days) fetchDays[k] = (m.fetch_days[k] || []).slice().sort();
+    } else {
+      const fetchSets = {};
+      for (const c of (m.listings || []).concat(m.gone || [])) {
+        const set = (fetchSets[c.trim_id] = fetchSets[c.trim_id] || new Set());
+        for (const pt of (c.series || [])) if (pt[1]) set.add(pt[0]);
+      }
+      for (const k in fetchSets) fetchDays[k] = [...fetchSets[k]].sort();
+    }
     const allDays = [...new Set([...(m.daily || []).map((d) => d.date),
                                  ...Object.values(fetchDays).flat()])].sort();
     const latestFetch = (tid, day) => {
@@ -2006,6 +2021,21 @@
       let best = null;
       for (const d of days) { if (d <= day) best = d; else break; }
       return best;
+    };
+    // Was this car drivable ON that day, not is it drivable now. A listing can
+    // move between a dealer group's lots or be re-listed by a different store,
+    // and nine VINs in this record have changed state doing it — one i5 was in
+    // Indiana on 2026-09-01 and is in Missouri today. Python's day rows read
+    // the row as it was; this read today's flag and put that car outside the
+    // border on a day it was an hour's drive away. local_hist carries the
+    // change points for the handful of cars that have any; everything else
+    // falls back to the flag it already has.
+    const localOn = (x, day) => {
+      const h = x.local_hist;
+      if (!h || !h.length) return !!x.local;
+      let v = h[0][1];
+      for (const step of h) { if (step[0] <= day) v = step[1]; else break; }
+      return !!v;
     };
     const by = new Map();
     for (const x of uniq.values()) {
@@ -2021,7 +2051,7 @@
         let e = by.get(day);
         if (!e) by.set(day, e = { prices: [], local: 0 });
         e.prices.push(seen.get(f));
-        if (x.local) e.local++;
+        if (localOn(x, day)) e.local++;
       }
     }
     // Stop where the departure record stops. Past that line the file has only
