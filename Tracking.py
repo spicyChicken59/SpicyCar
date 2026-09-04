@@ -2955,7 +2955,15 @@ def build_outputs(today_rows, all_rows, hist):
                     s_ = x["series"]
                     tl = str(x.get("trim_label") or "")
                     name = label if tl.lower() in ("", "all", "all trims") else f"{label} {tl}"
-                    if len(s_) >= 2 and s_[-1][0] == TODAY and s_[-1][1] < s_[-2][1]:
+                    # `as_of`, not TODAY: the model's own last fetch day. Its
+                    # sibling detectors below and above (new, gone) are already
+                    # relative to the data, so on a day the tracker has not
+                    # fetched — a local rebuild — the "## Today" section lost
+                    # every price-cut bullet while still printing "79 new · 31
+                    # gone" and per-model lines counting 42 price changes. Per
+                    # MODEL, because a slow-cadence model's last fetch is its
+                    # own, which is the same rule new and gone follow.
+                    if len(s_) >= 2 and s_[-1][0] == as_of and s_[-1][1] < s_[-2][1]:
                         events["cuts"].append({"amount": s_[-2][1] - s_[-1][1],
                                                "x": x, "label": name,
                                                "shopping": shopping})

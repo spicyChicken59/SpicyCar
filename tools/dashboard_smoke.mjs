@@ -259,6 +259,12 @@ await step('the watchlist', async () => {
 // watchlist holds cars for: a model with none renders no list and no scatter,
 // so it is not a subject for these four, and a sheet holding none at all is a
 // thinner watchlist rather than a broken page.
+// The model these steps use. Discovered, never named: five blocks below opened
+// '?brand=bmw&m=i5' literally, so retiring the i5 — the thing this whole tool
+// exists to help decide — would have reported the dashboard as BROKEN rather
+// than as a changed watchlist. Every one of those blocks already carries its
+// own guard for a thin sheet; they just needed a subject that follows the
+// config instead of a URL written down in a test file.
 const carried = WATCHED.find((w) => w.cars);
 await step('a model page', async () => {
   plan('a model page opens', 'it lists cars', 'it plots price against miles', 'no compare card at rest');
@@ -1445,7 +1451,7 @@ await step('out the door', async () => {
     skip('every car carries tax, local and shipped alike', 'this sheet has no fees block');
     skip('the out-the-door total shows its own working', 'this sheet has no fees block');
   } else {
-    await open('?brand=bmw&m=i5');
+    await open(carried.q);
     await page.selectOption('#f-sort', 'otd');
     await page.waitForTimeout(350);
     const rows = await page.evaluate(() => {
@@ -1506,7 +1512,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
   try {
-    await open('?brand=bmw&m=i5');
+    await open(carried.q);
     const state = await page.evaluate(() => ({
       hidden: !!document.querySelector('#f-sort option[value="otd"]')?.hidden,
       // Two controls against a false pass. "landed" must survive, or the select
@@ -1528,7 +1534,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
   // whole out-the-door ranking vanishes from the real sheet and CI stays green.
   // Playwright will select a hidden option without complaint, so the existing
   // otd checks cannot notice either.
-  await open('?brand=bmw&m=i5');
+  await open(carried.q);
   const shownAgain = await page.evaluate(() => !!document.querySelector('#f-sort option[value="otd"]')?.hidden);
   const sheetHasFees = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).fees);
   ok('and offered again when the sheet has one',
@@ -1547,7 +1553,7 @@ await step('the finance note owns the promo term cap', async () => {
   if (!capped || !(longest > capped.max_term)) {
     return skipRest('no live promo caps the term below the longest one offered');
   }
-  await open('?brand=bmw&m=i5');
+  await open(carried.q);
   // #compare-hint carries the note, and the card only exists once two trims are
   // picked ON PURPOSE — a model that happens to have four is not comparing them.
   const chips = await page.$$('#f-trim button');
@@ -1581,7 +1587,7 @@ await step('a down payment larger than the car', async () => {
   plan('a covered car is not quoted a negative balance');
   const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
   if (!fin) return skipRest('this sheet has no finance block');
-  await open('?brand=bmw&m=i5');
+  await open(carried.q);
   // The sort must be SELECTED, not asked for in the query string: the page
   // parses brand/m/model/models/trims and nothing else, so `?sort=payment` left
   // S.sort at 'local' — where payNote renders only for PROMO cars. This check

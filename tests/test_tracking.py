@@ -834,6 +834,122 @@ class TestHistoryRoundTrip(unittest.TestCase):
                 T.SNAPSHOTS = was
 
 
+class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
+    """"## Today" describes the newest snapshot, not the wall clock.
+
+    Its new/gone detectors were already data-relative; the CUT detector was
+    gated on TODAY. So a rebuild run on a day the tracker had not fetched —
+    tools/rebuild_outputs.py, which is exactly what a dispatch runs — wrote a
+    report whose Today section had lost every price-cut bullet while still
+    printing "79 new · 31 gone" above it and per-model lines counting 42 price
+    changes below. Three surfaces, one day, two different stories.
+    """
+
+    @staticmethod
+    def row(vin, day, price):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                  "price": price, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                  "state": "IL", "city": "Chicago"})
+        return r
+
+    def test_a_cut_on_the_last_fetch_day_is_reported_after_the_fact(self):
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        before = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        rows = [self.row("V" * 17, before, 45000), self.row("V" * 17, yesterday, 43000),
+                self.row("K" * 17, before, 50000), self.row("K" * 17, yesterday, 50000)]
+        today_rows = [r for r in rows if r["snapshot_date"] == yesterday]
+        report, _, subject = T.build_outputs(today_rows, rows, T.build_history(rows))
+        self.assertIn("## Today", report,
+                      "the section is about the newest snapshot, whenever it was taken")
+        today = report.split("## Today")[1].split("\n## ")[0]
+        self.assertIn("▼", today,
+                      "a $2,000 cut at the last fetch is a cut whether or not the "
+                      "tracker has run again since")
+        self.assertIn("cut", subject.lower(),
+                      "and the subject line says so too")
+
+
+class TestWindowArithmetic(unittest.TestCase):
+    """Three lines of delisted() that decide every departure, and no test ran
+    any of them: which cut-off applies when a car is reachable through two
+    queries, and whether a car sitting exactly ON the cut-off is inside it.
+    """
+
+    def setUp(self):
+        self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
+        self._fs, self._log = set(T.FAILED_SCOPES), T.FETCH_LOG
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+
+    def tearDown(self):
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(self._pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(self._fs)
+        T.FETCH_LOG = self._log
+
+    @staticmethod
+    def row(tid, vin, day, price, state="IL"):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": tid, "vin": vin, "snapshot_date": day, "price": price,
+                  "year": "2024", "miles": 10000, "state": state, "city": "Chicago"})
+        return r
+
+    def _verdict(self, tid, price, state="IL"):
+        d1, d2 = "2026-08-01", T.TODAY
+        rows = [self.row(tid, "G" * 17, d1, price, state),
+                self.row(tid, "K" * 17, d1, 90000, state),
+                self.row(tid, "K" * 17, d2, 90000, state)]
+        today = [r for r in rows if r["snapshot_date"] == d2]
+        got = T.delisted({tid}, rows, today, T.build_history(rows))
+        return {g["vin"]: g for g in got}["G" * 17]["likely"]
+
+    def test_the_wider_of_two_windows_is_the_one_that_applies(self):
+        """A car in a searched state comes back through EITHER query, so it is
+        only out of window when it is above BOTH cut-offs — the max, not the
+        min. Taking the min calls a car gone that the National query would
+        have returned; taking the States one alone is the same mistake with a
+        different name.
+        """
+        tid = next(t["id"] for t in T.TARGETS.values()
+                   if not t.get("national_only") and t["id"] in T.TARGETS)
+        T.PRICE_WINDOW[(tid, "States")] = 45000
+        T.PRICE_WINDOW[(tid, "National")] = 70000
+        self.assertEqual(self._verdict(tid, 60000, "IL"), "delisted",
+                         "$60,000 is above the States cut-off and below the National "
+                         "one, and National could have returned it — so its absence "
+                         "is a real departure")
+        self.assertEqual(self._verdict(tid, 80000, "IL"), "out of window",
+                         "above BOTH cut-offs, neither query could have returned it")
+
+    def test_a_car_exactly_on_the_cut_off_is_inside_it(self):
+        """A genuinely arguable boundary, pinned deliberately.
+
+        The cut-off IS the value of a row the fetch returned, so the query
+        demonstrably reached that far — a car at the same value was in view and
+        did not come back. Equality therefore counts as in-view and its absence
+        is a departure. Written down because the alternative reads like a
+        harmless tightening: a later `>=` would silently reclassify every car
+        that ties the cheapest-N boundary as merely unfetched.
+        """
+        tid = next(t["id"] for t in T.TARGETS.values() if not t.get("national_only"))
+        T.PRICE_WINDOW[(tid, "States")] = 50000
+        T.PRICE_WINDOW[(tid, "National")] = 50000
+        self.assertEqual(self._verdict(tid, 50000, "IL"), "delisted")
+        self.assertEqual(self._verdict(tid, 50001, "IL"), "out of window")
+
+    def test_a_car_outside_the_searched_states_is_judged_on_national_alone(self):
+        """The States query can only return cars in those states, so it says
+        nothing about a car in Arizona — judging one against the States cut-off
+        tests it against a query that never had a chance of returning it."""
+        tid = next(t["id"] for t in T.TARGETS.values() if not t.get("national_only"))
+        T.PRICE_WINDOW[(tid, "States")] = 90000
+        T.PRICE_WINDOW[(tid, "National")] = 45000
+        self.assertEqual(self._verdict(tid, 60000, "AZ"), "out of window",
+                         "above National's cut-off, and States could never have "
+                         "returned an Arizona car whatever its window was")
+
+
 class TestSummarize(unittest.TestCase):
     """The per-car price history every surface reads, and nothing tested it.
 
