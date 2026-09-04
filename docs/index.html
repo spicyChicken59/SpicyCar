@@ -400,6 +400,18 @@
 
   <section class="sc-grid sc-grid--4" id="kpis" aria-label="Today at a glance"></section>
 
+  <section class="sc-card" id="promo-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2 id="promo-title">The promo, priced</h2>
+        <p class="sc-hint" id="promo-hint"></p>
+      </div>
+      <span class="sc-chip sc-chip--spice" id="promo-clock"></span>
+    </div>
+    <div class="sc-grid sc-grid--3" id="promo-tiles"></div>
+    <p class="sc-hint" id="promo-foot"></p>
+  </section>
+
   <section class="sc-card sc-filter-bar" id="filters-card" hidden>
     <div class="sc-filter-bar__head">
       <span class="sc-eyebrow">filters</span>
@@ -2130,6 +2142,19 @@
           x.apr_promo = !!gets;
           x.apr_label = gets ? promo.label : '';
           x.apr_max_term = gets ? promo.max_term : null;
+          // `cpo` is the FEED's generic "certified" flag, and the captive
+          // lender's certified rate is not: BMW Financial Services writes it at
+          // a BMW centre. Nine of the i5's twenty-two certified cars sit at a
+          // Chrysler-Jeep dealer, a Volvo dealer and a Nissan lot, and the page
+          // was quoting every one of them 2.99% and telling the reader it
+          // "saves $82/mo".
+          //
+          // This is a claim about the SELLER'S NAME and nothing more — a real
+          // BMW centre trading as "Braman Motors" would trip it, which is why
+          // it flags rather than excludes and why the wording says what was
+          // actually checked. A false flag costs a sentence; the silence it
+          // replaces cost a payment the buyer cannot get.
+          x.apr_seller_unnamed = !!gets && !/\bbmw\b/i.test(x.dealer || '');
         }
       }
     }
@@ -2359,6 +2384,9 @@
     const saves = base == null ? null : Math.round(base - pay);
     const bits = [`${perMo(pay)} at ${x.apr}%`];
     if (saves > 0) bits.push(`saves ${money(saves)}/mo`);
+    // The rate is only reachable where the lender writes it; say so on the row
+    // rather than let "saves $82/mo" stand over a Nissan lot.
+    if (x.apr_seller_unnamed) bits.push('seller is not named as a BMW centre');
     // payFor clamps a down payment that covers the whole car to a $0 payment.
     // The tooltip has to clamp with it: subtracting straight through printed
     // "60 months on -$4,200 financed" under a row reading $0/mo, which is not
@@ -2372,8 +2400,11 @@
     // out-the-door note has said so since fees shipped; this one did not, and
     // it is the note that renders under the payment sort.
     const f = feesCfg();
-    const unchecked = f && !f.checked
-      ? ` · includes ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and fees, ESTIMATE, rates not verified` : '';
+    const unchecked = (f && !f.checked
+      ? ` · includes ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and fees, ESTIMATE, rates not verified` : '')
+      + (x.apr_seller_unnamed
+        ? ` · this car is flagged certified, but the seller's name does not say BMW and ${x.apr_label || 'this rate'} is written at a BMW centre — confirm before counting on it`
+        : '');
     return el('span', { class: 'sc-note', title: (owed <= 0 ? on
       : x.apr_promo ? `${x.apr_label || 'Promotional rate'} — ${on}`
       : `${on} at the ordinary used rate`) + unchecked },
@@ -2829,6 +2860,112 @@
     if (d === 0) return el('div', { class: 'sc-delta sc-delta--flat' }, '= vs previous day');
     const good = goodWhenDown ? d < 0 : d > 0;
     return el('div', { class: 'sc-delta ' + (good ? 'sc-delta--good' : 'sc-delta--bad') }, `${d < 0 ? '▼' : '▲'} ${money(Math.abs(d))} vs ${fmtDate(prevDate)}`);
+  }
+
+  // ---------- the promo, priced ----------
+  // financeNote() already says "60 days left"; nothing said what those days are
+  // worth. A promotional APR is the whole reason this page ranks by payment at
+  // all, so the strip turns the offer into money on the cars actually in view:
+  // what it saves per month and over the term on the best candidate, what a
+  // non-promo car would have to cost to match that payment, and the date the
+  // twin becomes the truth.
+  //
+  // Three things it deliberately does NOT do.
+  //   It does not count down in the browser. days_left is the RUN's clock; a
+  //   tab left open over a weekend would age it. The date is absolute.
+  //   It does not guess a "last safe day to act". The only span this project
+  //   measures is how long DEALER listings ran, which is not how long a BUYER
+  //   needs to close, and subtracting one from the other would be a number
+  //   with no evidence under it.
+  //   It does not treat every certified car as promo-eligible — see
+  //   apr_seller_unnamed above.
+  function promoCandidates() {
+    const fin = financeCfg();
+    if (!fin) return null;
+    const live = (fin.promos || []).filter((p) => p.active && p.apr != null);
+    if (!live.length) return null;
+    // only the models in view, and only cars a promo actually reaches
+    const rows = (S.brand === 'all'
+      ? modelsInView().flatMap(({ m }) => applyShared(m.listings || []))
+      : applyShared(trimRows(model().listings || [])))
+      .filter((x) => x.apr_promo && hasPrice(x));
+    if (!rows.length) return null;
+    const named = rows.filter((x) => !x.apr_seller_unnamed);
+    const pool = named.length ? named : rows;
+    // the best candidate is the cheapest MONTHLY, which is the number the promo
+    // is about — drivable first, because that is the one you can act on, and a
+    // SHOPPED model first, because the watchlist carries comparison cars whose
+    // own promo is a different rate and not what this buyer is deciding on
+    const best = (arr) => arr.reduce((b, x) => {
+      const p = payFor(x);
+      return (p != null && (!b || p < b.pay)) ? { pay: p, x } : b;
+    }, null);
+    const shopping = new Set(((S.site || {}).buyer || {}).shopping || []);
+    const shopped = pool.filter((x) => shopping.has(x.trim_id));
+    const chosen = best(shopped.filter(isLocal)) || best(shopped)
+      || best(pool.filter(isLocal)) || best(pool);
+    if (!chosen) return null;
+    // The promo is the one THIS CAR is financed under, not the first live one:
+    // the iX carries 2.49% and the i5 2.99%, and picking the promo before the
+    // car put a 2.49% iX under a heading that said 2.99%.
+    const promo = live.find((p) => p.apr === chosen.x.apr && p.model === chosen.x.model_key)
+      || live.find((p) => p.apr === chosen.x.apr) || live[0];
+    return { promo, rows, named, best: chosen, unnamed: rows.length - named.length };
+  }
+  // What a car financed at the ordinary rate would have to COST to match a
+  // payment. financed() is linear in price — price x (1 + tax) + paperwork —
+  // so this inverts in closed form; no search, no approximation.
+  function priceForPayment(pay, apr, term) {
+    const f = feesCfg() || {};
+    const r = apr / 100 / 12;
+    const principal = r > 0 ? pay * (1 - Math.pow(1 + r, -term)) / r : pay * term;
+    const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+    return (principal + (S.down || 0) - fixed) / (1 + (f.tax_rate || 0));
+  }
+  function renderPromo() {
+    const card = $('promo-card');
+    const c = promoCandidates();
+    const fin = financeCfg();
+    if (!c || !c.best || fin.fallback_apr == null) { card.hidden = true; return; }
+    const { promo, best } = c;
+    const x = best.x, term = termFor(x);
+    const atPromo = best.pay, atFallback = payAtFallback(x);
+    if (atFallback == null) { card.hidden = true; return; }
+    const owed = financed(x) - (S.down || 0);
+    const interestAt = (pay) => Math.round(pay * term - owed);
+    const equiv = priceForPayment(atPromo, fin.fallback_apr, term);
+    const cheaper = Math.round(x.price - equiv);
+    $('promo-title').textContent = promo.label || 'The promo, priced';
+    $('promo-clock').textContent = promo.expires ? `ends ${fmtDateLong(promo.expires)}` : 'no end date';
+    $('promo-clock').title = promo.expires
+      ? 'Dated from the config, not counted down in this tab — days_left is the tracker run\'s clock.'
+      : 'This promo carries no end date in the config.';
+    $('promo-hint').textContent =
+      `What ${promo.apr}% is worth on the cheapest one you can actually get it on, over ${term} months`
+      + ` — against the ordinary ${fin.fallback_apr}% every other car finances at.`;
+    const host = $('promo-tiles'); host.textContent = '';
+    const tile = (label, value, sub, title) => host.appendChild(
+      el('div', { class: 'sc-tile', title: title || null },
+        el('div', { class: 'sc-tile__label' }, label),
+        el('div', { class: 'sc-tile__value sc-tile__value--sm' }, value),
+        el('div', { class: 'sc-tile__sub' }, sub)));
+    tile('Per month, and after it ends', `${perMo(atPromo)} → ${perMo(atFallback)}`,
+      `${x.year} ${x.trim_label || x.trim || ''} · ${money(x.price)} · ${placeTxt(x)}`.replace(/\s+/g, ' '),
+      `The same car at ${promo.apr}% and at ${fin.fallback_apr}%, ${term} months on ${money(owed)} financed.`);
+    tile('Over the whole term', money(interestAt(atFallback) - interestAt(atPromo)) + ' less interest',
+      `${money(interestAt(atPromo))} at ${promo.apr}% against ${money(interestAt(atFallback))} at ${fin.fallback_apr}%`,
+      'Total interest is payment x term minus the amount financed.');
+    tile('What it is worth on the sticker', money(Math.abs(cheaper)) + ' cheaper',
+      `a car at ${fin.fallback_apr}% would have to ask ${money(Math.round(equiv))} to match that payment`,
+      'financed() is linear in price, so this is the exact price that yields the same monthly figure at the ordinary rate.');
+    const bits = [];
+    if (c.unnamed) {
+      bits.push(`${c.unnamed} of the ${c.rows.length} certified ${c.unnamed === 1 ? 'car is' : 'cars are'} listed by a seller whose name does not say BMW`
+        + ` — ${promo.label || 'this rate'} is written at a BMW centre, so confirm before counting on it. They are excluded from the figures above.`);
+    }
+    bits.push(costBasisNote().trim());
+    $('promo-foot').textContent = bits.filter(Boolean).join(' ');
+    card.hidden = false;
   }
 
   // ---------- model view ----------
@@ -3555,6 +3692,7 @@
     updateEyebrow();
     renderOverviewChart(rows);   // filter-scoped like everything below it
     renderOverviewKpis(rows);
+    renderPromo();
     renderCompare();
     renderPicks(scopedScored(), pickCap());
     updateMapVisibility();
@@ -3944,8 +4082,8 @@
   // the order is readable in one place instead of emerging from .after() calls
   // scattered through two render paths.
   const SECTION_ORDER = {
-    overview: ['notice', 'kpis', 'filters-card', 'compare-card', 'shortlist', 'takeaway', 'list-card', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
-    model: ['notice', 'kpis', 'filters-card', 'compare-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
+    overview: ['notice', 'kpis', 'promo-card', 'filters-card', 'compare-card', 'shortlist', 'takeaway', 'list-card', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
+    model: ['notice', 'kpis', 'promo-card', 'filters-card', 'compare-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
   };
   // Supporting sections (the evidence and the reference material) wear the
   // smaller heading; the chapter starts get the wider gap above them.
@@ -4101,6 +4239,7 @@
     // and the KPIs while the lines above them kept answering about the nation.
     renderChart();
     renderKpis(rows);
+    renderPromo();
     renderCompare();
     renderPicks(scopedScored(rows), pickCap());
     renderScatter(rows);

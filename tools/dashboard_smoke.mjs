@@ -1787,6 +1787,68 @@ await step('the headline tiles name the right car', async () => {
      t2 ? `tile "${t2.label}" says ${t2.value.trim()} — "${t2.sub.trim()}"; cheapest drivable in the sheet is ${truth.local ? money(truth.local.price) + ' in ' + truth.local.state : 'none'}` : 'no such tile');
 });
 
+// ---- the promo, priced ------------------------------------------------------
+// financeNote() has always said "60 days left"; nothing said what those days
+// were worth. The strip turns the offer into money on a real car, so the thing
+// that has to hold is that the heading, the rate and the car are the SAME
+// offer: the first build picked the promo before the car and put a 2.49% iX
+// under a heading that read 2.99%.
+await step('the promo strip prices one real offer', async () => {
+  plan('the rate in the heading is the rate the car is financed at',
+       'and a certified car at a seller not named BMW is kept out of the figure',
+       'and the strip disappears when no promo is live');
+  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  const live = ((fin || {}).promos || []).filter((p) => p.active && p.apr != null);
+  if (!live.length) return skipRest('this sheet has no live promo');
+  await open('');
+  const shown = await page.evaluate(() => {
+    const c = document.getElementById('promo-card');
+    if (!c || c.hidden) return null;
+    return { title: document.getElementById('promo-title').textContent,
+             hint: document.getElementById('promo-hint').textContent,
+             tiles: [...document.querySelectorAll('#promo-tiles .sc-tile')].map((t) => t.textContent),
+             foot: document.getElementById('promo-foot').textContent };
+  });
+  if (!shown) return skipRest('no car in view is reachable by a live promo');
+  // the heading names a promo; the hint quotes its rate; both must be one offer
+  const promo = live.find((p) => (p.label || '') === shown.title.trim());
+  ok('the rate in the heading is the rate the car is financed at',
+     !!promo && shown.hint.includes(`What ${promo.apr}% is worth`)
+       && shown.tiles.some((t) => /\/mo →/.test(t)),
+     promo ? `"${shown.title}" quotes ${promo.apr}% — "${shown.hint.slice(0, 70)}…"`
+           : `heading "${shown.title}" matches no live promo (${live.map((p) => p.label).join(', ')})`);
+
+  // The feed's `cpo` is a generic certified flag; the captive lender's rate is
+  // written at its own franchise. Where the two differ the page must say so.
+  const unnamed = await page.evaluate(async () => {
+    const sheet = await (await fetch('data.json')).json();
+    let flagged = 0, unnamed = 0;
+    for (const b of Object.values(sheet.brands || {}))
+      for (const m of Object.values(b.models || {}))
+        for (const x of (m.listings || []))
+          if (x.cpo) { flagged++; if (!/\bbmw\b/i.test(x.dealer || '')) unnamed++; }
+    return { flagged, unnamed };
+  });
+  if (!unnamed.unnamed) skip('and a certified car at a seller not named BMW is kept out of the figure',
+                             'every certified car on this sheet is listed by a seller named BMW');
+  else ok('and a certified car at a seller not named BMW is kept out of the figure',
+          /does not say BMW/.test(shown.foot) && /excluded/.test(shown.foot),
+          `${unnamed.unnamed} of ${unnamed.flagged} certified cars — foot says "${shown.foot.slice(0, 110)}…"`);
+
+  // …and it is a promo card, not furniture: with every promo expired it goes.
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    for (const q of (((sheet.buyer || {}).finance || {}).promos || [])) { q.active = false; q.days_left = -1; }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open('');
+    ok('and the strip disappears when no promo is live',
+       await page.locator('#promo-card').isHidden(), 'every promo expired');
+  } finally { await ctx.unroute('**/data.json'); }
+});
+
 // ---- a percentage says what it is a percentage OF ---------------------------
 // "21% under typical" was printed bare on the rows, the phone cards and the
 // scatter tooltip. The compare card has carried the cohort in a title= since
@@ -1896,7 +1958,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 105;
+const EXPECTED = 108;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
