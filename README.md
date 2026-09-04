@@ -161,7 +161,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   **market-over-time chart** —
   colour is the brand, the dash is the model, the shopped models are drawn heavier, an
   interactive legend hides, shows and highlights any line, and 30d / 90d / All chips set a
-  remembered time window with the price scale fitted to it. Three **multi-select filters** work the
+  remembered time window with the price scale fitted to it. A **budget** — all in, or a month —
+  narrows every one of them and is remembered between visits; when it empties one of the models you
+  are shopping, the decision panel says which setting did it. Three **multi-select filters** work the
   same way — press any mix, none pressed means all of them: **Where** (each state plus "beyond",
   remembered between visits), **Models** on the watchlist, and **Trim** on a model page. Press two
   and the page becomes a **comparison**: a side-by-side card with a column each, one chart line per

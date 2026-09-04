@@ -1934,6 +1934,147 @@ await step('the picks agree across both surfaces', async () => {
           `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
 });
 
+// --- the budget ------------------------------------------------------------
+// The one filter that is a fact about the buyer rather than a way of reading
+// the page, which is why it persists like the term and the down payment. It is
+// also the only filter whose predicate is a DERIVED number — an out-the-door
+// total or a monthly payment, not a field on the row — so a car the sheet
+// cannot price for the chosen unit has no figure to compare and must not
+// quietly pass. That is the failure this pins: a budget that lets an unpriced
+// car through is a page claiming a car fits a budget it never measured.
+//
+// The totals are recomputed here from data.json, in the harness's own
+// arithmetic, so a check cannot agree with a bug in otd().
+await step('the budget', async () => {
+  plan('a budget keeps only the cars that fit it, and all of them',
+       'and the count line names it',
+       'a car the sheet cannot price is not let through a budget',
+       'the decision panel says which setting emptied a model',
+       'and the budget is still there on the next visit');
+  const f = (SHEET.buyer || {}).fees || null;
+  const allIn = (x) => {
+    if (x.price == null) return null;
+    const ship = x.local ? 0 : (x.ship || 0);
+    if (!f) return x.price + ship;
+    return Math.round(x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0) + ship);
+  };
+  const every = Object.values(SHEET.brands || {}).flatMap((b) =>
+    Object.values((b || {}).models || {}).flatMap((m) => (m || {}).listings || []));
+  const totals = every.map(allIn).filter((v) => v != null).sort((a, b) => a - b);
+  if (totals.length < 8) return skipRest('the sheet holds too few priced cars to set a meaningful budget');
+  await open('');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+  // The rows are checked on a MODEL page: the watchlist's list card is the
+  // model index, not a car per row, and only a comparison pools listings there.
+  const home = WATCHED.slice().sort((a, b) => b.cars - a.cars)[0];
+  if (!home || home.cars < 8) return skipRest('no model on this watchlist holds enough cars to budget against');
+  const held = ((SHEET.brands[home.bk] || {}).models[home.mk] || {}).listings || [];
+  const mine = held.map(allIn).filter((v) => v != null).sort((a, b) => a - b);
+  if (mine.length < 8) return skipRest(`${home.id} holds too few priced cars to budget against`);
+  // A budget a quarter of the way up THIS model's market: enough cars in,
+  // enough out, and both sides of the line are visible in one table.
+  const budget = mine[Math.floor(mine.length / 4)];
+  const want = new Set(held.filter((x) => allIn(x) != null && allIn(x) <= budget).map((x) => x.vin));
+  await open(home.q);
+  const setBudget = async (v, kind) => {
+    await page.fill('#f-budget', String(v));
+    await page.locator('#f-budget').press('Tab');
+    if (kind) await page.selectOption('#f-budget-kind', kind);
+    await page.waitForTimeout(400);
+  };
+  await setBudget(budget, 'otd');
+  // The listings table is the page's own answer to "which cars are left".
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+  const shown = await page.locator('#list-table tbody .sc-media__code')
+    .evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
+  // Both directions. A budget that lets an expensive car through is the
+  // obvious failure; a budget that drops a car it should have kept is the
+  // quiet one, and on a page whose whole job is "what can I buy" it is the
+  // worse of the two.
+  const over = shown.filter((v) => !want.has(v));
+  const missing = [...want].filter((v) => !shown.includes(v));
+  ok('a budget keeps only the cars that fit it, and all of them',
+     shown.length > 0 && over.length === 0 && missing.length === 0,
+     `budget ${budget} all in on ${home.id} · ${shown.length} rows shown, ${want.size} of ${mine.length} priced cars fit`
+     + (over.length ? ` · over budget: ${over.slice(0, 3).join(', ')}` : '')
+     + (missing.length ? ` · dropped: ${missing.slice(0, 3).join(', ')}` : ''));
+
+  // #filter-count is the page's one status line: it exists to say what the
+  // filters are doing, and a filter it does not name is one the reader cannot
+  // see the effect of.
+  const line = (await page.textContent('#filter-count')) || '';
+  const pretty = String(budget).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  ok('and the count line names it', line.includes(pretty) && /all in|landed|\/mo/.test(line), line.slice(0, 160));
+
+  // Every car in today's sheet has a price and an APR, so the branch that
+  // matters most here — a car with no figure to compare against the budget —
+  // has no subject in the live data. It is given one: data.json is served with
+  // one car's price removed. That car renders normally with no budget set (a
+  // dash where the price goes), and must not survive a budget it was never
+  // measured against. "Nothing is said about a car we cannot price" is the
+  // rule; letting it through is that rule broken by omission.
+  const guinea = held.find((x) => allIn(x) != null && allIn(x) <= budget);
+  if (!guinea) skip('a car the sheet cannot price is not let through a budget', 'no car under the test budget to blank');
+  else {
+    const raw = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+    for (const x of raw.brands[home.bk].models[home.mk].listings) {
+      if (x.vin === guinea.vin) { delete x.price; delete x.last_price; }
+    }
+    await ctx.route('**/data.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
+    try {
+      // Counted, not looked for in the table: a car with no price never
+      // reaches a row (the list is built from priced cars), but it is very
+      // much inside the set the filters are counting — #filter-count prints
+      // filtered().length, which is applyShared() and therefore the budget
+      // predicate itself. So the observable claim is the count: with the
+      // budget on, this car must be one fewer, not one more.
+      await open(home.q);
+      const n = async () => {
+        const t = (await page.textContent('#filter-count')) || '';
+        const m = t.match(/showing (?:all )?([\d,]+)/);
+        return m ? Number(m[1].replace(/,/g, '')) : null;
+      };
+      // Cleared first: the budget persists, so a reload arrives with the last
+      // one still set and "before" would not be a before.
+      await setBudget(0, 'otd');
+      const loose = await n();
+      await setBudget(budget, 'otd');
+      const tight = await n();
+      ok('a car the sheet cannot price is not let through a budget',
+         loose === held.length && tight === want.size - 1,
+         `${guinea.vin} blanked · ${loose} cars counted with no budget (${held.length} on this model),`
+         + ` ${tight} under ${budget} all in · ${want.size} would fit if it still had its price`);
+    } finally {
+      await ctx.unroute('**/data.json');
+    }
+  }
+
+  // A budget low enough to empty a shopped model: the panel must say the budget
+  // did it, not shrug about "your filters".
+  const shopped = new Set((SHEET.buyer || {}).shopping || []);
+  if (!shopped.size) skip('the decision panel says which setting emptied a model', 'this sheet names no shopped trims');
+  else {
+    await open('');
+    await setBudget(totals[1], 'otd');
+    const subs = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) =>
+      [...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.trim()).join(' | ')));
+    const empties = subs.filter((t) => /would fit your rules|matches your filters|no car on its watched/.test(t));
+    ok('the decision panel says which setting emptied a model',
+       empties.length > 0 && empties.every((t) => /none under \$/.test(t)),
+       empties.join(' // ') || 'no tile came up empty at the sheet\'s second-cheapest total');
+  }
+
+  await setBudget(budget, 'otd');
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(200);
+  await page.waitForTimeout(600);
+  const back = await page.locator('#f-budget').inputValue();
+  ok('and the budget is still there on the next visit', Number(back) === budget, `typed ${budget}, came back "${back}"`);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+});
+
 // --- the phone filter panel stays put --------------------------------------
 // The panel closes itself when the reader scrolls away to read the results —
 // open, it covers about a third of a phone screen. That rule watched
@@ -2299,7 +2440,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 122;
+const EXPECTED = 127;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

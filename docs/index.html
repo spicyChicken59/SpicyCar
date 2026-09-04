@@ -473,6 +473,13 @@
       <label class="sc-field" id="f-down-field" hidden>Down
         <input class="sc-input" id="f-down" type="number" min="0" step="500" inputmode="numeric">
       </label>
+      <label class="sc-field" id="f-budget-field">Budget
+        <input class="sc-input" id="f-budget" type="number" min="0" step="100" inputmode="numeric" placeholder="any">
+        <select class="sc-select" id="f-budget-kind" aria-label="What the budget is measured in">
+          <option value="otd">all in</option>
+          <option value="mo">a month</option>
+        </select>
+      </label>
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
       <label class="sc-check" title="Certified pre-owned only — the cars the promo financing applies to"><input type="checkbox" id="f-cpo"> CPO only</label>
@@ -615,7 +622,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0, stars: {} };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -649,10 +656,16 @@
       // Status, not just a flag: "ruled out" is a decision worth keeping, and a
       // car you have already phoned is not one to phone again.
       S.stars = (p.stars && typeof p.stars === 'object') ? p.stars : {};
-    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; }
+      // What you can spend. Persisted like the term and the down payment
+      // because it is the same kind of fact — a standing truth about the buyer,
+      // not a way of reading one page — and because retyping it every visit is
+      // how a control stops being used.
+      S.budget = Number.isFinite(p.budget) && p.budget > 0 ? p.budget : 0;
+      S.budgetKind = p.budgetKind === 'mo' ? 'mo' : 'otd';
+    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
   }
   // ---------- the comparison ----------
   // Which trims a model page is about, in the config's own order (a Set has
@@ -2031,7 +2044,7 @@
     // trims add to 137 vehicles on 2026-08-30 over a model row of 136. This
     // map is what keeps the pooled trim scope honest about it.
     const uniq = new Map();
-    for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter(passesShared)) {
+    for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter((x) => passesShared(x))) {
       const k = String(x.vin || '').toUpperCase();
       if (!k) continue;
       if (!uniq.has(k)) uniq.set(k, x);   // the live listing comes first and wins
@@ -2137,7 +2150,7 @@
     const pts = (daily || []).filter((d) => d.min_price !== null && d.min_price !== undefined).map((d) => ({ date: d.date, value: d.min_price }));
     // The one-point fallback has to obey the filters too, or a scope with no
     // history at all would be handed the nation's cheapest car as its answer.
-    if (!pts.length) { const b = lowestBy(trimRows(m.listings || []).filter(passesShared), 'price'); if (b) pts.push({ date: m.as_of || dataThrough(), value: b.price }); }
+    if (!pts.length) { const b = lowestBy(trimRows(m.listings || []).filter((x) => passesShared(x)), 'price'); if (b) pts.push({ date: m.as_of || dataThrough(), value: b.price }); }
     return pts;
   }
   // The DATA day: the newest snapshot date anywhere in the file. site.generated
@@ -2565,7 +2578,36 @@
   }
   // One car against the shared filters — the single predicate the tables, the
   // counts and the map's dot visibility all run, so they cannot drift apart.
-  function passesShared(x) {
+  // What a budget is measured against, and why there are only two answers.
+  // "All in" is the out-the-door total where the sheet has a fee block and the
+  // landed price where it does not — the same figure the decision panel leads
+  // with, so a budget and that panel can never disagree about what a car costs.
+  // "A month" is payFor(), the car's OWN rate over its own term, so a certified
+  // car on a promo can fit a budget that a cheaper car misses; that is the whole
+  // reason this page ranks by payment at all.
+  //
+  // A car whose figure cannot be computed does not quietly pass. Nothing on
+  // this page may claim a car fits a budget it was never measured against, and
+  // the alternative — keeping it and saying nothing — is exactly that claim
+  // made by omission. The count line names the budget, so the reader can see
+  // what narrowed the page.
+  function budgetFigure(x) {
+    if (!hasPrice(x)) return null;
+    return S.budgetKind === 'mo' ? payFor(x) : (feesCfg() ? otd(x) : landed(x));
+  }
+  function withinBudget(x) {
+    if (!S.budget) return true;
+    const v = budgetFigure(x);
+    return v != null && v <= S.budget;
+  }
+  // `skipBudget` exists for one caller: the decision panel, which needs to know
+  // whether a model is empty because of the budget or in spite of it, so it can
+  // say which. Every call site therefore passes the car in an arrow function
+  // rather than handing passesShared to .filter() directly — .filter supplies
+  // the INDEX as the second argument, and index 1 would have quietly turned the
+  // budget off for every car but the first.
+  function passesShared(x, skipBudget) {
+    if (!skipBudget && !withinBudget(x)) return false;
     if (!matchWhere(x)) return false;
     if (S.year !== 'all' && String(x.year) !== S.year) return false;
     if (S.miles && !(x.miles !== null && x.miles !== undefined && x.miles < S.miles)) return false;
@@ -2574,7 +2616,7 @@
     if (S.rental && isRental(x)) return false;
     return true;
   }
-  function applyShared(rows) { return rows.filter(passesShared); }   // the filters that make sense across models
+  function applyShared(rows) { return rows.filter((x) => passesShared(x)); }   // the filters that make sense across models
   const SORT_DESC = { days_listed: true, newest: true };
 
   // ---------- navigation ----------
@@ -3142,7 +3184,13 @@
       if (!Object.keys(m.trims || {}).some((id) => want.has(id))) continue;
       if (inView && !inView.has(bk + '/' + mk)) continue;
       const held = (m.listings || []).filter((x) => want.has(x.trim_id));
-      out.push({ bk, mk, m, held, pool: applyShared(held).filter(hasPrice) });
+      out.push({ bk, mk, m, held,
+        pool: applyShared(held).filter(hasPrice),
+        // The same set with the budget lifted, so an empty tile can tell the
+        // reader WHICH of their own settings emptied it. "No i7 matches your
+        // filters" and "24 i7s fit your rules, none under $50,000" are the
+        // same fact and only one of them is worth reading.
+        wider: held.filter((x) => passesShared(x, true) && hasPrice(x)) });
     }
     // The buyer's own order, not the alphabet and not the price: whichever
     // shopped trim they wrote down first is the car they are leading with.
@@ -3169,9 +3217,9 @@
     // "estimated" in its own label, and the full sentence sits directly under
     // the figures it qualifies, on the gap line below.
     $('hero-hint').textContent =
-      `The ${models.length === 1 ? 'model' : models.length === 2 ? 'two models' : models.length + ' models'} you are shopping`
-      + `${bits.length ? ` — ${bits.join(' · ')}` : ''}: the cheapest car of each`
-      + ` that meets your rules${allIn ? ', all in' : ', once shipping is added'}.`;
+      `The ${models.length === 1 ? 'model' : models.length === 2 ? 'two models' : models.length + ' models'} you are shopping:`
+      + ` the cheapest car of each that meets your rules${allIn ? ', all in' : ', once shipping is added'}.`
+      + (bits.length ? ` Filtered to ${bits.join(' · ')}.` : '');
     $('hero-hint').title = picksRule();
     const chosen = [];
     const P = pickParams();
@@ -3192,11 +3240,14 @@
       if (!best) {
         // Silence here would read as "this model has nothing", when what
         // happened is that the reader's own filters removed it. Say which.
+        const fitRules = o.wider.filter((x) => !pickExcuse(x, P)).length;
         host.appendChild(el('div', { class: 'sc-tile' }, label,
           el('div', { class: 'sc-tile__value sc-tile__value--sm' }, '—'),
-          el('div', { class: 'sc-tile__sub' }, o.held.length
-            ? `none of its ${o.held.length} watched car${o.held.length === 1 ? '' : 's'} matches your filters`
-            : 'no car on its watched trims today')));
+          el('div', { class: 'sc-tile__sub' },
+            !o.held.length ? 'no car on its watched trims today'
+            : S.budget && fitRules
+              ? `${fitRules} would fit your rules — none under ${money(S.budget)} ${S.budgetKind === 'mo' ? 'a month' : (feesCfg() ? 'all in' : 'landed')}`
+              : `none of its ${o.held.length} watched car${o.held.length === 1 ? '' : 's'} matches your filters`)));
         continue;
       }
       const x = best.x, pay = payFor(x), c = cohortOf(x, o.m.label);
@@ -3646,7 +3697,7 @@
     // departures carry: the notice, the tiles and the filter count all say the
     // scope is empty, and a line drawn from cars that have all gone would be
     // the one element on screen disagreeing with them.
-    const live = trimRows(t.listings || []).filter(passesShared);
+    const live = trimRows(t.listings || []).filter((x) => passesShared(x));
     $('chart-card').hidden = false;
     rangeChips();
     if (comparingTrims()) { renderChartByTrim(t, live); return; }
@@ -4740,6 +4791,7 @@
   function syncCostControls() {
     const fin = financeCfg();
     const sortSel = $('f-sort');
+    syncBudgetControl(fin);
     const payOpt = sortSel.querySelector('option[value="payment"]');
     // hidden AND disabled: hidden is a rendering hint some browsers have
     // ignored on <option>, disabled is a refusal. The fallbacks below are
@@ -4763,6 +4815,24 @@
     }
     sel.value = want;
     $('f-down').value = S.down || '';
+  }
+  // The budget's unit follows what the sheet can actually price. Without a
+  // finance block there is no payment to compare against, so "a month" is not
+  // offered and a stored budget in that unit is converted to nothing rather
+  // than silently reinterpreted as dollars: a $850 monthly budget read as an
+  // $850 all-in budget would empty the page and look like a bug in the data.
+  // Without a fee block "all in" is the landed price, and the option says so,
+  // because a total that quietly stops including tax is the kind of thing this
+  // page is not allowed to do.
+  function syncBudgetControl(fin) {
+    const kindSel = $('f-budget-kind');
+    const moOpt = kindSel.querySelector('option[value="mo"]');
+    if (moOpt) { moOpt.hidden = !fin; moOpt.disabled = !fin; }
+    if (!fin && S.budgetKind === 'mo') { S.budgetKind = 'otd'; S.budget = 0; }
+    const otdOpt = kindSel.querySelector('option[value="otd"]');
+    if (otdOpt) otdOpt.textContent = feesCfg() ? 'all in' : 'landed';
+    kindSel.value = S.budgetKind;
+    $('f-budget').value = S.budget || '';
   }
   function buildFilters() {
     const overview = S.brand === 'all';
@@ -4858,6 +4928,7 @@
     if (S.clean) bits.push('no accidents');
     if (S.cpo) bits.push('CPO only');
     if (S.rental) bits.push('no rentals');
+    if (S.budget) bits.push(S.budgetKind === 'mo' ? `under ${money(S.budget)}/mo` : `under ${money(S.budget)} all in`);
     return bits;
   }
   // The chip in the chart card's header. It read "whole market — not filtered"
@@ -5038,6 +5109,18 @@
     // the rows like a filter does — and they persist, because a reader who
     // finances at 48 months finances at 48 months tomorrow too.
     $('f-term').addEventListener('change', (e) => { S.term = Number(e.target.value) || null; savePrefs(); rerender('rows'); });
+    // A budget is a number people type digit by digit, so 'input' would filter
+    // the page to nothing at "8" on the way to "850". 'change' fires when the
+    // field is done being edited, exactly like Down above it.
+    $('f-budget').addEventListener('change', (e) => {
+      const v = Math.max(0, Math.round(Number(e.target.value) || 0));
+      S.budget = v; e.target.value = v || '';
+      savePrefs(); rerender('rows');
+    });
+    $('f-budget-kind').addEventListener('change', (e) => {
+      S.budgetKind = e.target.value === 'mo' ? 'mo' : 'otd';
+      savePrefs(); rerender('rows');
+    });
     $('f-down').addEventListener('change', (e) => {
       const v = Math.max(0, Math.round(Number(e.target.value) || 0));
       S.down = v; e.target.value = v || '';
