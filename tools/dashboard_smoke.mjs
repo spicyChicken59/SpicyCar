@@ -2,7 +2,7 @@
 //
 //   node tools/dashboard_smoke.mjs <design-system-checkout> [--shots <dir>]
 //
-// docs/index.html is 3,700 lines of markup, CSS and one IIFE, and until this
+// docs/index.html is thousands of lines of markup, CSS and one IIFE, and until this
 // existed not one of them could fail a build: the Python suite is a Tracking.py
 // suite, and the consumer linter reads the CSS namespace, not the behaviour. A
 // typo in the render path shipped green.
@@ -174,9 +174,11 @@ const oneLine = (e) => String((e && e.message) || e).replace(/\u001b\[[0-9;]*m/g
   .split('\n').slice(0, 3).join(' ').replace(/\s+/g, ' ').trim().slice(0, 160);
 async function step(label, body) {
   live = { label, planned: new Set(), said: new Set() };
+  let threw = false;
   try {
     await body();
   } catch (e) {
+    threw = true;
     const lost = unsaid();
     // Named where the step said what it owed; named after the step where it
     // threw before it could say, or after everything it owed was already in.
@@ -187,6 +189,18 @@ async function step(label, body) {
     const stray = [...live.said].filter((n) => live.planned.size && !live.planned.has(n));
     if (stray.length) record({ name: `${label} declares every check it reports`, pass: false,
                                detail: `unplanned: ${stray.join(' | ')}` });
+    // The other half of the same promise, and the one that was missing. A step
+    // that RETURNS NORMALLY having declared a check and never reported it used
+    // to lose that check without a word: it is not in the failures, not in the
+    // skips, not in the tally — and the EXPECTED backstop below only fires when
+    // nothing skipped, so one skip anywhere disarmed the only thing that could
+    // have noticed. An early `return` past half a step's checks is exactly how
+    // this file has lost coverage before. A dropped check is a failure of the
+    // suite, not a quiet absence: skipRest() is how a step says "no subject".
+    if (!threw) {
+      for (const n of unsaid()) record({ name: n, pass: false,
+        detail: `declared by "${label}" and never reported — say skip()/skipRest() if it had no subject` });
+    }
     live = null;
   }
 }
@@ -245,6 +259,12 @@ await step('the watchlist', async () => {
 // watchlist holds cars for: a model with none renders no list and no scatter,
 // so it is not a subject for these four, and a sheet holding none at all is a
 // thinner watchlist rather than a broken page.
+// The model these steps use. Discovered, never named: five blocks below opened
+// '?brand=bmw&m=i5' literally, so retiring the i5 — the thing this whole tool
+// exists to help decide — would have reported the dashboard as BROKEN rather
+// than as a changed watchlist. Every one of those blocks already carries its
+// own guard for a thin sheet; they just needed a subject that follows the
+// config instead of a URL written down in a test file.
 const carried = WATCHED.find((w) => w.cars);
 await step('a model page', async () => {
   plan('a model page opens', 'it lists cars', 'it plots price against miles', 'no compare card at rest');
@@ -1343,7 +1363,15 @@ if (!cases.length) {
 // months is not quoted at 72. Both are asserted against whatever the sheet says
 // today: the subject is discovered, never named, because a config that retires
 // the i5 must not read as a broken dashboard.
-{
+//
+// Inside step(), like everything else. These four lived in a bare block for
+// want of a wrapper, which meant one thrown locator here ended the whole run
+// with a Playwright stack trace where the results should be — the precise
+// failure the step() harness exists to end, sitting in the same file as the
+// comment describing it.
+await step('the monthly payment', async () => {
+  plan('a promo reaches certified cars and no others',
+       'a promo capped at 60 months is not quoted at 72');
   const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const fin = (site.buyer || {}).finance;
   const livePromo = ((fin || {}).promos || []).find((p) => p.active && p.apr != null);
@@ -1382,6 +1410,15 @@ if (!cases.length) {
     if (subject.cap && longest > subject.cap) {
       await page.selectOption('#f-term', String(longest));
       await page.waitForTimeout(350);
+      // Show all first. The table renders thirty rows, and at the LONGEST term
+      // the promo cars are exactly the ones that cannot use it — capped at 60,
+      // they quote a higher payment than the uncapped cars around them and sort
+      // straight out of the first page. On 2026-09-01 the i5 had enough
+      // certified cars that one survived anyway; on 2026-09-04 it had seven and
+      // none did, and this check read an empty string and called the dashboard
+      // broken. The subject was there the whole time, thirty rows down.
+      const all = page.locator('[data-fkey="more:list"]');
+      if (await all.count() && await all.isVisible()) { await all.click(); await page.waitForTimeout(500); }
       const title = await page.$$eval('#list-table tbody .sc-note', (ns, apr) => {
         const t = ns.map((n) => n.getAttribute('title') || '').find((t) => t.includes(apr + '%'));
         return t || '';
@@ -1395,7 +1432,7 @@ if (!cases.length) {
            'no live promo has a term cap shorter than the longest offered term');
     }
   }
-}
+});
 
 // ---- out-the-door ----
 // Tax is the largest number this page has never shown — roughly seven times the
@@ -1403,7 +1440,9 @@ if (!cases.length) {
 // Illinois charges the buyer's home rate wherever the car was bought. Checked
 // through the rendered page rather than the internals, and against the sheet's
 // own fee block, so it follows the config instead of a number written here.
-{
+await step('out the door', async () => {
+  plan('every car carries tax, local and shipped alike',
+       'the out-the-door total shows its own working');
   const fees = await page.evaluate(async () => {
     const r = await fetch('data.json');
     return ((await r.json()).buyer || {}).fees || null;
@@ -1412,7 +1451,7 @@ if (!cases.length) {
     skip('every car carries tax, local and shipped alike', 'this sheet has no fees block');
     skip('the out-the-door total shows its own working', 'this sheet has no fees block');
   } else {
-    await open('?brand=bmw&m=i5');
+    await open(carried.q);
     await page.selectOption('#f-sort', 'otd');
     await page.waitForTimeout(350);
     const rows = await page.evaluate(() => {
@@ -1451,7 +1490,7 @@ if (!cases.length) {
         && (verified ? /checked/.test(r.title) : /ESTIMATE/.test(r.title))),
       rows.length ? rows[0].title : 'no rows');
   }
-}
+});
 
 // ---- what the page refuses to offer -----------------------------------------
 // A sort the sheet cannot compute is the quietest kind of wrong: every row's key
@@ -1473,7 +1512,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
   try {
-    await open('?brand=bmw&m=i5');
+    await open(carried.q);
     const state = await page.evaluate(() => ({
       hidden: !!document.querySelector('#f-sort option[value="otd"]')?.hidden,
       // Two controls against a false pass. "landed" must survive, or the select
@@ -1495,7 +1534,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
   // whole out-the-door ranking vanishes from the real sheet and CI stays green.
   // Playwright will select a hidden option without complaint, so the existing
   // otd checks cannot notice either.
-  await open('?brand=bmw&m=i5');
+  await open(carried.q);
   const shownAgain = await page.evaluate(() => !!document.querySelector('#f-sort option[value="otd"]')?.hidden);
   const sheetHasFees = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).fees);
   ok('and offered again when the sheet has one',
@@ -1514,7 +1553,7 @@ await step('the finance note owns the promo term cap', async () => {
   if (!capped || !(longest > capped.max_term)) {
     return skipRest('no live promo caps the term below the longest one offered');
   }
-  await open('?brand=bmw&m=i5');
+  await open(carried.q);
   // #compare-hint carries the note, and the card only exists once two trims are
   // picked ON PURPOSE — a model that happens to have four is not comparing them.
   const chips = await page.$$('#f-trim button');
@@ -1548,7 +1587,7 @@ await step('a down payment larger than the car', async () => {
   plan('a covered car is not quoted a negative balance');
   const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
   if (!fin) return skipRest('this sheet has no finance block');
-  await open('?brand=bmw&m=i5');
+  await open(carried.q);
   // The sort must be SELECTED, not asked for in the query string: the page
   // parses brand/m/model/models/trims and nothing else, so `?sort=payment` left
   // S.sort at 'local' — where payNote renders only for PROMO cars. This check
@@ -1579,6 +1618,593 @@ await step('a down payment larger than the car', async () => {
   await page.dispatchEvent('#f-down', 'change');
 });
 
+// ---- the two ways of building a day row agree -------------------------------
+// The chart draws a precomputed series (Tracking.py's daily_stats) until a
+// filter is on, and then rebuilds the same days from every car's own price
+// history. Those are two implementations of one definition, in two languages,
+// and the file has always claimed they reconcile — so this presses filters that
+// exclude NOTHING and asserts the numbers do not move.
+//
+// It is the check that catches a fix applied to one side only. Both sides had
+// counted the cars FETCHED on a day rather than the cars known on it, so a
+// model whose trims run on different cadences halved its own row every other
+// day and swung its median by thousands; repairing Python alone would have left
+// the page telling one story unfiltered and another with a no-op filter on.
+await step('the rebuilt day rows match the precomputed ones', async () => {
+  plan('a filter that excludes nothing does not move a single day row');
+  const subject = WATCHED.find((w) => w.cars > 1);
+  if (!subject) return skipRest('no model on the watchlist holds cars today');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+  await open(subject.q);
+  const readRows = () => page.$$eval('#chart-table tbody tr',
+    (rs) => rs.map((r) => [...r.querySelectorAll('td')].map((td) => td.textContent.trim()).join('|')));
+  const before = await readRows();
+  // every Where chip pressed: each car sits in one of the buyer's states or
+  // outside them, so the selection is the whole market by construction
+  const chips = await page.$$('#f-where button');
+  for (const c of chips) { await c.click(); await page.waitForTimeout(60); }
+  await page.waitForTimeout(400);
+  const after = await readRows();
+  const rebuilt = await page.textContent('#chart-scope');
+  const same = before.length === after.length && before.every((r, i) => r === after[i]);
+  ok('a filter that excludes nothing does not move a single day row', same && before.length > 0,
+     before.length
+       ? (same ? `${before.length} day rows identical, chip now reads "${rebuilt.trim()}"`
+               : `first difference: precomputed "${before.find((r, i) => r !== after[i])}" vs rebuilt "${after[before.findIndex((r, i) => r !== after[i])]}"`)
+       : 'the chart table drew no rows');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+});
+
+// ---- an estimate says so where it is read -----------------------------------
+// "ESTIMATE" appeared exactly once in 4,482 lines: a title= attribute on the
+// out-the-door note, which renders only under the out-the-door sort. Hover-only,
+// sort-gated, invisible on a phone. Meanwhile every row printed
+// "+ $1,336 shipping = $66,224" as flat fact from band rates nobody has quoted,
+// and every monthly payment silently contained an unverified 9.25% tax.
+//
+// Asserted in BOTH directions against a stubbed sheet, because a check that
+// only looks for the word passes on an unconditional one — a page that cries
+// "estimate" over calibrated numbers is the same failure wearing the other
+// coat, and it is the direction a later edit takes.
+await step('an estimate says so where it is read', async () => {
+  plan('shipping is called an estimate on the row itself',
+       'the listings caption says which numbers nobody has checked',
+       'and a calibrated sheet drops the word');
+  const buyer = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}));
+  if (!((buyer.ship_bands || []).length)) return skipRest('this sheet prices no shipping through bands');
+  if (buyer.ship_calibrated || (buyer.fees || {}).checked)
+    return skipRest('this sheet is already calibrated — the uncalibrated wording has no subject');
+  const shopped = WATCHED.find((w) => w.cars);
+  if (!shopped) return skipRest('no model on the watchlist holds a car today');
+  await open(shopped.q);
+  // the shipping CELL, not the whole row: a row also carries a payment note
+  // and a location, and matching those would pass on a page that says nothing
+  // about shipping at all
+  const shipTexts = await page.$$eval('#list-scroll tbody tr',
+    (rows) => rows.map((r) => {
+      const cell = [...r.querySelectorAll('td')].find((td) => /landed|drivable|n\/a/.test(td.textContent));
+      return cell ? cell.textContent : '';
+    }).filter((t) => /landed/.test(t)).slice(0, 8));
+  ok('shipping is called an estimate on the row itself',
+     shipTexts.length > 0 && shipTexts.every((t) => /est\. shipping/.test(t)),
+     shipTexts.length ? `${shipTexts.length} rows priced for shipping, first says "${shipTexts[0].replace(/\s+/g, ' ').trim()}"`
+                      : 'no shipped car on this page');
+  const hint = await page.textContent('#list-hint');
+  ok('the listings caption says which numbers nobody has checked',
+     /estimate/i.test(hint) && /not verified|unverified/i.test(hint),
+     hint.slice(-190));
+
+  // …and with the two dates filled in, the hedge is gone.
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    if (sheet.buyer) {
+      sheet.buyer.ship_calibrated = '2026-09-01';
+      if (sheet.buyer.fees) sheet.buyer.fees.checked = '2026-09-01';
+    }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(shopped.q);
+    const after = await page.evaluate(() => ({
+      rows: [...document.querySelectorAll('#list-scroll tbody tr')].map((r) => {
+        const cell = [...r.querySelectorAll('td')].find((td) => /landed|drivable|n\/a/.test(td.textContent));
+        return cell ? cell.textContent : '';
+      }).filter((t) => /landed/.test(t)).slice(0, 8),
+      hint: document.getElementById('list-hint').textContent,
+    }));
+    ok('and a calibrated sheet drops the word',
+       after.rows.length > 0 && after.rows.every((t) => !/est\. shipping/.test(t))
+         && /calibrated/i.test(after.hint) && /checked/i.test(after.hint)
+         && !/not verified|unverified/i.test(after.hint),
+       after.hint.slice(-170));
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+});
+
+// ---- the table is actually in the order it says it is -----------------------
+// sortRows could ignore S.sort entirely and the suite still reported green: the
+// select was driven, the re-render was asserted, the ORDER never was. A sort
+// that does not sort is the quietest kind of wrong — the list does not move and
+// the reader takes the unchanged order for the answer to the question they just
+// asked.
+//
+// The oracle is monotonicity of the column the reader is looking at, read out of
+// the rendered rows, so it needs no fixture and cannot rot with the market.
+await step('the listings table honours the order it advertises', async () => {
+  const ORDERS = [['price', 'Asking', 'asc'], ['miles', 'Miles', 'asc'],
+                  ['days_listed', 'Longest on market', 'desc']];
+  plan(...ORDERS.map(([k]) => `sorting by ${k} really orders the rows by ${k}`));
+  const subject = WATCHED.find((w) => w.cars > 3);
+  if (!subject) return skipRest('no model on the watchlist holds enough cars to order');
+  await open(subject.q);
+  for (const [key, , dir] of ORDERS) {
+    await page.selectOption('#f-sort', key);
+    await page.waitForTimeout(350);
+    // read the VALUES from the rows, by the same key the sort claims to use
+    const vals = await page.evaluate((k) => {
+      const cells = (tr) => [...tr.querySelectorAll('td')];
+      return [...document.querySelectorAll('#list-scroll tbody tr')].map((tr) => {
+        const tds = cells(tr);
+        const num = (el) => { const m = (el ? el.textContent : '').match(/-?[\d,]+/); return m ? Number(m[0].replace(/,/g, '')) : null; };
+        if (k === 'price') return num(tds[1]);
+        if (k === 'miles') return num(tds[2]);
+        const loc = tds.find((td) => /d listed|since /.test(td.textContent));
+        const m = loc && loc.textContent.match(/(\d+)d listed/);
+        return m ? Number(m[1]) : null;
+      }).filter((v) => v !== null);
+    }, key);
+    const ordered = vals.every((v, i) => i === 0 || (dir === 'asc' ? v >= vals[i - 1] : v <= vals[i - 1]));
+    ok(`sorting by ${key} really orders the rows by ${key}`,
+       vals.length > 2 && ordered,
+       vals.length > 2 ? `${vals.length} rows: ${vals.slice(0, 6).join(' ')}${ordered ? '' : '  <- out of order'}`
+                       : `only ${vals.length} readable values`);
+  }
+  await page.selectOption('#f-sort', 'local');
+});
+
+// ---- the two numbers the page leads with ------------------------------------
+// The tiles are the first thing read and the last thing checked: tile 2 could
+// name a Florida car as "Lowest drivable asking · no shipping" and the suite
+// reported 92/92. Both tiles are asserted against the sheet itself — the
+// cheapest car, and the cheapest car in a state the buyer actually drives to.
+await step('the headline tiles name the right car', async () => {
+  plan('the lowest-asking tile is the cheapest car on the page',
+       'the lowest-drivable tile is the cheapest car the buyer can drive to');
+  const subject = WATCHED.find((w) => w.cars > 3);
+  if (!subject) return skipRest('no model on the watchlist holds enough cars');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+  await open(subject.q);
+  const truth = await page.evaluate(async (mk) => {
+    const sheet = await (await fetch('data.json')).json();
+    const m = sheet.brands[mk.bk].models[mk.mk];
+    const states = (sheet.buyer || {}).states || [];
+    const priced = (m.listings || []).filter((x) => x.price != null);
+    const local = priced.filter((x) => states.includes(String(x.state || '').toUpperCase()));
+    const low = (a) => a.reduce((b, x) => (!b || x.price < b.price ? x : b), null);
+    return { all: low(priced), local: low(local), states };
+  }, { bk: subject.bk, mk: subject.mk });
+  const tiles = await page.$$eval('#kpis .sc-tile', (ns) => ns.map((n) => ({
+    label: n.querySelector('.sc-tile__label').textContent,
+    value: n.querySelector('.sc-tile__value').textContent,
+    sub: (n.querySelector('.sc-tile__sub') || {}).textContent || '',
+  })));
+  const money = (n) => '$' + Number(n).toLocaleString('en-US');
+  const t1 = tiles.find((t) => /lowest asking/i.test(t.label));
+  const t2 = tiles.find((t) => /drivable/i.test(t.label));
+  ok('the lowest-asking tile is the cheapest car on the page',
+     !!(t1 && truth.all && t1.value.trim() === money(truth.all.price)),
+     t1 ? `tile "${t1.label}" says ${t1.value.trim()}, cheapest in the sheet is ${truth.all ? money(truth.all.price) : 'none'}` : 'no such tile');
+  ok('the lowest-drivable tile is the cheapest car the buyer can drive to',
+     !!(t2 && truth.local && t2.value.trim() === money(truth.local.price)
+        && truth.states.some((st) => t2.sub.includes(st))),
+     t2 ? `tile "${t2.label}" says ${t2.value.trim()} — "${t2.sub.trim()}"; cheapest drivable in the sheet is ${truth.local ? money(truth.local.price) + ' in ' + truth.local.state : 'none'}` : 'no such tile');
+});
+
+// ---- the two surfaces agree about the picks ---------------------------------
+// The dashboard held four drivable seats and reserved two of them for the
+// models being shopped; REPORT.md ranked by margin alone and reserved nothing.
+// Nothing published the rule — targets.json never mentioned it and the export
+// never carried it — so the page carried a hard-coded 2 and the two lists
+// disagreed about half the front page: the report's drivable picks were an
+// Ioniq 5, an Ioniq 5, an iX and an EV9, with neither car being decided on
+// among them. One rule now, buyer.picks.reserve_shopping, read by both.
+//
+// The SETS are asserted, not the order: the page leads with the shopped cars
+// on purpose, while the report keeps every list in margin order. Set equality
+// is the claim that both applied the same rule to the same market.
+await step('the picks agree across both surfaces', async () => {
+  plan('the drivable picks are the same cars in the report and on the page',
+       'and so are the worth-the-ship picks');
+  const reportPath = resolve(HERE, '..', 'REPORT.md');
+  if (!existsSync(reportPath)) return skipRest('no REPORT.md beside the dashboard');
+  const md = readFileSync(reportPath, 'utf8');
+  const whole = md.split('## Spicy picks across the watchlist')[1];
+  if (!whole) return skipRest('this report has no watchlist-wide picks section');
+  const vinsIn = (text) => [...new Set((text.match(/`[A-HJ-NPR-Z0-9]{17}`/g) || [])
+    .map((v) => v.slice(1, -1)))].sort();
+  const section = (head) => {
+    const cut = whole.split(head)[1];
+    return cut === undefined ? null : vinsIn(cut.split('###')[0]);
+  };
+  const wantLocal = section('### Drivable');
+  const wantShip = section('### Worth the ship');
+  await open('');
+  const groups = await page.evaluate(() => [...document.querySelectorAll('#takeaway .picks-group')]
+    .map((g) => ({
+      label: ((g.querySelector('.sc-eyebrow') || g.querySelector('summary') || {}).textContent || ''),
+      vins: [...new Set([...g.querySelectorAll('[data-fkey^="pick:"]')]
+        .map((a) => a.getAttribute('data-fkey').split(':')[1]))].sort(),
+    })));
+  const got = (needle) => (groups.find((g) => g.label.toLowerCase().includes(needle)) || {}).vins || null;
+  const same = (a, b) => a && b && a.length === b.length && a.every((v, i) => v === b[i]);
+  if (wantLocal === null) skip('the drivable picks are the same cars in the report and on the page',
+                              'the report names no drivable picks today');
+  else ok('the drivable picks are the same cars in the report and on the page',
+          same(wantLocal, got('drivable')),
+          `report ${JSON.stringify(wantLocal)} vs page ${JSON.stringify(got('drivable'))}`);
+  if (wantShip === null) skip('and so are the worth-the-ship picks',
+                              'the report names no worth-the-ship picks today');
+  else ok('and so are the worth-the-ship picks',
+          same(wantShip, got('worth the ship')),
+          `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
+});
+
+// --- "new" means new ---------------------------------------------------------
+// days_tracked is the length of a car's price series, and a series only grows
+// on days its target was fetched. So a car seen once on Wednesday still reads
+// days_tracked === 1 on Thursday — and the `new` chip, the "Since the previous
+// snapshot" tile and the report all called it new again, every day, until its
+// trim next ran. Twenty-two of the twenty-nine once-seen cars on the sheet this
+// was written against were in exactly that state.
+//
+// Data-driven both ways: the subject is any car the sheet says was first seen
+// before the newest snapshot, and the check also holds the tile's count to the
+// chips underneath it, which is the thing a reader can verify by counting.
+await step('a car is new only on the day it arrives', async () => {
+  plan('a car first seen before today does not wear the new chip',
+       'and the tile counts what the table shows');
+  const dt = SHEET.data_through;
+  const listingsOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {}).listings || [];
+  const staleIn = (w) => listingsOf(w).filter(
+    (x) => x.days_tracked === 1 && String(x.first_seen || '').slice(0, 10) !== dt);
+  // The model that HAS the subject, not the biggest one: a once-seen car whose
+  // first sighting predates the newest snapshot is what wore the chip wrongly,
+  // and the largest model is not reliably the one carrying any today.
+  const home = WATCHED.slice()
+    .sort((a, b) => (staleIn(b).length - staleIn(a).length) || (b.cars - a.cars))[0];
+  if (!home || !home.cars) return skipRest('no model on the watchlist holds cars today');
+  const held = listingsOf(home);
+  const stale = staleIn(home);
+  const today = held.filter((x) => String(x.first_seen || '').slice(0, 10) === dt);
+  await open(home.q);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  // The chip rides in the vehicle cell beside the title, so read it per row.
+  const chipped = await page.locator('#list-table tbody tr').evaluateAll((rows) => rows
+    .filter((r) => [...r.querySelectorAll('.sc-chip')].some((c) => c.textContent.trim() === 'new'))
+    .map((r) => { const c = r.querySelector('.sc-media__code'); return c ? c.textContent.trim() : ''; }));
+  if (!stale.length) skip('a car first seen before today does not wear the new chip',
+                          `every once-seen car on ${home.id} really was first seen on ${dt}`);
+  else {
+    const wrong = stale.filter((x) => chipped.includes(x.vin));
+    ok('a car first seen before today does not wear the new chip', wrong.length === 0,
+       `${stale.length} cars on ${home.id} were seen once, before ${dt} · ${wrong.length} still wear it`
+       + (wrong.length ? ` (e.g. ${wrong[0].vin}, first seen ${wrong[0].first_seen})` : ''));
+  }
+  // …and the tile above the table counts the same set. A count a reader cannot
+  // find in the rows below it is a count they cannot check.
+  const tile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))
+    ).find((t) => /new/.test(t)) || '';
+  const said = Number((tile.match(/(\d+)\s*new/) || [])[1]);
+  if (!Number.isFinite(said)) skip('and the tile counts what the table shows',
+                                   'no tile on this model names a count of new cars today');
+  else ok('and the tile counts what the table shows',
+          said === chipped.length && said === today.length,
+          `tile says ${said} · ${chipped.length} chips in the table · ${today.length} cars in the sheet first seen ${dt}`);
+});
+// --- the window the chart draws is the window it names ----------------------
+// The range chips are drawn after the rows, so on the first paint of a visit
+// the chart was built against whatever S.range the saved profile held — and
+// the chips then quietly settled to something narrower underneath it. A
+// remembered "90" on a record that cannot support 90 days drew ninety days of
+// history under a control reading 30d, and only a second interaction put the
+// two back in agreement.
+//
+// The committed sheet spans about a fortnight, so the chips do not even render
+// against it (a range the record cannot distinguish is not offered). The
+// subject is therefore made: data.json is served with one day row planted 40
+// days back, which is the shape this fails on and the shape the record will
+// have in a month.
+await step('the chart draws the window its chips name', async () => {
+  plan('a remembered range the record cannot support does not survive the first paint');
+  const raw = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const dt = raw.data_through;
+  const old = new Date(Date.parse(dt + 'T00:00:00Z') - 40 * 86400000).toISOString().slice(0, 10);
+  let planted = 0;
+  for (const b of Object.values(raw.brands || {}))
+    for (const m of Object.values((b || {}).models || {})) {
+      const daily = m.daily || [];
+      if (!daily.length) continue;
+      m.daily = [{ ...daily[0], date: old }, ...daily];
+      planted++;
+    }
+  if (!planted) return skipRest('no model in this sheet carries a day series to plant one in');
+  await ctx.route('**/data.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
+  try {
+    // A profile remembering the wider window, written before the page loads.
+    await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+    await page.evaluate(() => {
+      try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [], range: '90' })); } catch { /* private mode */ }
+    });
+    await open('');
+    const chip = ((await page.locator('#chart-range [aria-pressed="true"]').allTextContents())[0] || '').trim();
+    const dates = await page.locator('#chart-table tbody tr td:first-child')
+      .evaluateAll((ns) => ns.map((n) => n.textContent.trim()).filter((t) => /^\d{4}-\d{2}-\d{2}$/.test(t)));
+    if (!chip || !dates.length) return skipRest('the range chips did not render even with a 40-day span');
+    const days = chip === 'all' ? Infinity : Number(chip.replace(/\D/g, ''));
+    const cut = Date.parse(dt + 'T00:00:00Z') - days * 86400000;
+    const outside = dates.filter((d) => Date.parse(d + 'T00:00:00Z') < cut);
+    ok('a remembered range the record cannot support does not survive the first paint',
+       outside.length === 0,
+       `chip reads "${chip}" over ${dates.length} day rows (${dates[dates.length - 1]} … ${dates[0]})`
+       + (outside.length ? ` · ${outside.length} of them outside it, oldest ${outside[outside.length - 1]}` : ''));
+  } finally {
+    await ctx.unroute('**/data.json');
+    await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+  }
+});
+
+// --- what a keyboard gets --------------------------------------------------
+// Three failures with one shape: the page moved, and told nobody.
+//
+// The map and the scatter both take arrow keys and both grow the dot under the
+// cursor and raise a tooltip — visual, and only visual. A reader arrowing
+// across 495 cars was told nothing at all. Each has its own sr-only status node
+// now, written ONLY from the arrow keys: the pointer shares the same tooltip,
+// and a live one would announce on every pixel of a mouse move, so the check
+// asserts BOTH directions or the fix could be "make the tooltip live" and pass.
+//
+// The KPI links scrolled the viewport and left focus on the link, so pressing
+// "74 new" tabbed you back through the filter bar you had just scrolled past.
+// And whatever the browser did scroll to landed under that bar, which is
+// sticky: scroll-padding-top now reads the bar's own measured height.
+await step('what a keyboard gets', async () => {
+  plan('the map says which car its arrow keys are on',
+       'and a mouse moving over the same dots stays silent',
+       'a jump link leaves focus in the card it jumped to',
+       'and nothing it jumps to lands under the sticky filter bar');
+  await open('');
+  const mapDots = await page.locator('#map .sc-dot').count();
+  if (!mapDots) skip('the map says which car its arrow keys are on', 'the map drew no dots today'),
+                skip('and a mouse moving over the same dots stays silent', 'the map drew no dots today');
+  else {
+    await page.locator('#map').focus();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(250);
+    const said = (await page.textContent('#map-say') || '').trim();
+    ok('the map says which car its arrow keys are on',
+       said.length > 0 && /\$[\d,]+/.test(said),
+       said ? `"${said.slice(0, 90)}"` : 'the status node stayed empty');
+    // …and the pointer must not write it. A mouse over a different dot leaves
+    // the announcement exactly where the keyboard left it.
+    const dots = page.locator('#map .sc-dot');
+    const n = await dots.count();
+    await dots.nth(Math.min(n - 1, 5)).dispatchEvent('pointerenter', { pointerType: 'mouse', clientX: 10, clientY: 10 });
+    await page.waitForTimeout(200);
+    const after = (await page.textContent('#map-say') || '').trim();
+    ok('and a mouse moving over the same dots stays silent', after === said,
+       after === said ? 'unchanged by the pointer' : `pointer rewrote it to "${after.slice(0, 70)}"`);
+    await page.keyboard.press('Escape');
+  }
+
+  // The three jump links, by name: the overview's kpi:mv:* links navigate to a
+  // model and are a different promise.
+  // On a MODEL page: the overview's tiles carry kpi:mv:* links, which navigate
+  // to a model and are a different promise.
+  const kpiHome = WATCHED.slice().sort((a, b) => b.cars - a.cars)[0];
+  if (kpiHome) await open(kpiHome.q);
+  const jumps = [['kpi:new', 'list-card'], ['kpi:cuts', 'list-card'], ['kpi:gone', 'gone-card']];
+  const landed = [];
+  for (const [key, card] of jumps) {
+    const link = page.locator(`[data-fkey="${key}"]`).first();
+    if (!(await link.count())) continue;
+    await link.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    landed.push({ key, card, inside: await page.evaluate((c) =>
+      !!(document.activeElement && document.activeElement.closest('#' + c)), card) });
+  }
+  if (!landed.length) skip('a jump link leaves focus in the card it jumped to',
+                           'this sheet renders none of the three jump links today');
+  else ok('a jump link leaves focus in the card it jumped to',
+          landed.every((l) => l.inside),
+          landed.map((l) => `${l.key} -> ${l.inside ? l.card : 'left behind on the link'}`).join(' · '));
+
+  // …and what it jumped to is not sitting behind the bar when it gets there.
+  // The bar is sticky, so scrollIntoView({block:'start'}) parks its target at
+  // the very top of the viewport — underneath it — unless scroll-padding-top
+  // knows how tall it currently is. Measured on a desktop, where the open bar
+  // is at its tallest (206px against a phone's shut 62px), which is exactly
+  // why a constant could not have done this job.
+  if (!kpiHome) skip('and nothing it jumps to lands under the sticky filter bar', 'no model to jump within');
+  else {
+    await open(kpiHome.q);
+    const link = page.locator('[data-fkey="kpi:new"]').first();
+    if (!(await link.count())) skip('and nothing it jumps to lands under the sticky filter bar',
+                                    'this model draws no "new" tile link today');
+    else {
+      await link.click();
+      await page.waitForTimeout(700);
+      const geom = await page.evaluate(() => {
+        const bar = document.getElementById('filters-card');
+        const h = document.getElementById('list-title');
+        if (!bar || bar.hidden || !h) return null;
+        const b = bar.getBoundingClientRect(), t = h.getBoundingClientRect();
+        return { barBottom: Math.round(b.bottom), titleTop: Math.round(t.top),
+                 pad: getComputedStyle(document.documentElement).scrollPaddingTop };
+      });
+      if (!geom) skip('and nothing it jumps to lands under the sticky filter bar', 'no sticky bar on this view');
+      else ok('and nothing it jumps to lands under the sticky filter bar',
+              geom.titleTop >= geom.barBottom,
+              `the listings heading lands at y=${geom.titleTop}, the bar ends at y=${geom.barBottom}`
+              + ` (scroll-padding-top ${geom.pad})`);
+    }
+  }
+});
+
+// --- when the CDN is down --------------------------------------------------
+// This page is one static file and a pinned design system, and the design
+// system is the half that comes over the wire from somebody else. Everything
+// below the map block reaches for SC.geo, SC.spark, SC.toneRef and SC.tooltip
+// at module scope, so a jsDelivr outage did not degrade the page — it threw a
+// ReferenceError partway through the IIFE, before a single listener was wired,
+// and left a masthead over an empty white column: no data, no chart, and
+// nothing in the notice to say why. An unattended failure the reader cannot
+// even name is the worst kind this page can have.
+//
+// Asserted at both ends: the notice appears and names the right cause, and it
+// does NOT offer the "serve it over HTTP" advice, which is the answer to a
+// different question and was printed unconditionally.
+await step('when the design system does not load', async () => {
+  plan('a CDN outage says so instead of drawing a blank page',
+       'and does not blame data.json for it');
+  // The console errors this step provokes are the point of it, so they are
+  // taken back out of the run's tally afterwards — but only the ones that are
+  // about the blocked CDN. A genuine new error raised while the routes are
+  // swapped still counts, which is the difference between silencing a step and
+  // silencing a page.
+  const before = errors.length;
+  await ctx.route('**://cdn.jsdelivr.net/**', (r) =>
+    r.fulfill({ status: 503, contentType: 'text/plain', body: 'no' }));
+  try {
+    await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    const notice = await page.locator('#notice').evaluate((n) => ({
+      hidden: n.hidden, text: (n.textContent || '').replace(/\s+/g, ' ').trim(),
+    }));
+    ok('a CDN outage says so instead of drawing a blank page',
+       !notice.hidden && /design system/i.test(notice.text),
+       notice.hidden ? 'the notice stayed hidden — the page is blank and silent'
+                     : `"${notice.text.slice(0, 110)}"`);
+    ok('and does not blame data.json for it',
+       !notice.hidden && !/python -m http\.server/.test(notice.text),
+       /python -m http\.server/.test(notice.text)
+         ? 'it offered the serve-it-over-HTTP advice, which is the answer to a different failure'
+         : 'no data.json advice in the notice');
+  } finally {
+    const mine = /jsdelivr|design system|SC is not defined|503/i;
+    const raised = errors.splice(before);
+    for (const e of raised) if (!mine.test(e)) errors.push(e);
+    // Put the checkout back for every step after this one.
+    await ctx.unroute('**://cdn.jsdelivr.net/**');
+    await ctx.route('**://cdn.jsdelivr.net/**', (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.includes('us-atlas')) return route.fulfill({ contentType: 'application/json', body: ATLAS });
+      const file = join(DS, path.replace(/^\/gh\/spicyChicken59\/design-system@[^/]+\//, ''));
+      return existsSync(file)
+        ? route.fulfill({ path: file, contentType: TYPES[extname(file)] })
+        : route.fulfill({ status: 404, body: 'not in the checkout: ' + path });
+    });
+  }
+});
+
+// --- the rate the page is ranking on ---------------------------------------
+// financeNote() carries three things nothing else on the page says: how long
+// ago the hand-entered fallback rate was last checked, the promo's own term
+// cap, and the "unless a promo applies" framing. It had exactly one call site,
+// the compare card's hint — and that card is hidden unless the reader has
+// picked two trims. So an ordinary model page sorted by monthly payment ranked
+// every car on a rate whose age was disclosed nowhere.
+//
+// The second half is the same disclosure on the row. A promo capped at 60
+// months, under a 72-month setting, quoted "$818/mo at 2.99% · saves $82/mo"
+// beside rows financed over 72 — two payments over different numbers of months,
+// ranked against each other, with the 60 living only in a title= no phone can
+// reach.
+await step('the rate the page is ranking on', async () => {
+  plan('a model page says what rate its payments assume',
+       'and a capped promo names its own term on the row itself');
+  const fin = (SHEET.buyer || {}).finance;
+  if (!fin) return skipRest('this sheet has no finance block');
+  const promo = (fin.promos || []).find((p) => p.active && p.apr != null);
+  const subject = WATCHED.find((w) => w.cars > 1);
+  if (!subject) return skipRest('no model on the watchlist holds cars today');
+  await open(subject.q);
+  await page.selectOption('#f-sort', 'payment');
+  await page.waitForTimeout(350);
+  const hidden = await page.locator('#compare-card').evaluate((n) => n.hidden);
+  const hint = (await page.textContent('#list-hint')) || '';
+  ok('a model page says what rate its payments assume',
+     hidden && /Payments assume \d+ months at [\d.]+%/.test(hint),
+     `compare card hidden: ${hidden} · hint says "${(hint.match(/Payments assume[^.]*\./) || ['nothing'])[0].slice(0, 90)}"`);
+
+  // The cap is only observable where a live promo is capped shorter than the
+  // longest term the sheet offers.
+  const longest = Math.max(...(fin.terms || [60]));
+  if (!promo || !promo.max_term || longest <= promo.max_term) {
+    return skip('and a capped promo names its own term on the row itself',
+                'no live promo is capped shorter than the longest term offered');
+  }
+  const [bk, mk] = String(promo.model).split('/');
+  const home = WATCHED.find((w) => w.bk === bk && w.mk === mk);
+  if (!home) return skip('and a capped promo names its own term on the row itself',
+                         `the promo names ${promo.model}, which is not on the watchlist today`);
+  await open(home.q);
+  await page.selectOption('#f-sort', 'payment');
+  await page.selectOption('#f-term', String(longest));
+  await page.waitForTimeout(350);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  // Every VISIBLE payment note quoting the promo rate, read as a reader reads
+  // it — the text, not the tooltip.
+  const notes = await page.locator('#list-table tbody .sc-note').evaluateAll(
+    (ns, apr) => ns.map((n) => n.textContent.trim()).filter((t) => t.includes(apr + '%')), String(promo.apr));
+  if (!notes.length) return skip('and a capped promo names its own term on the row itself',
+                                 `no row on ${home.id} is financed at ${promo.apr}% today`);
+  const named = notes.filter((t) => new RegExp(`over ${promo.max_term} mo`).test(t));
+  const stillSaving = notes.filter((t) => /saves \$/.test(t));
+  ok('and a capped promo names its own term on the row itself',
+     named.length === notes.length && stillSaving.length === 0,
+     `${notes.length} rows at ${promo.apr}% under a ${longest}-month setting · ${named.length} name their own `
+     + `${promo.max_term} months · ${stillSaving.length} still claim a monthly saving · first: "${notes[0].slice(0, 60)}"`);
+  await page.selectOption('#f-term', String(fin.default_term || 60));
+});
+
+// --- what it costs to open -------------------------------------------------
+// The page is one static file and one JSON file, and both grow every time a
+// car joins the watchlist or a feature lands. Nothing measured them, so "how
+// heavy is this page" was a number nobody had — and the raw byte counts, which
+// are what `ls` reports and what everyone quotes, are not what a reader waits
+// for: text is served compressed. Both figures are printed on every run so the
+// trend is visible in a CI log, and the budget is set on the COMPRESSED size,
+// which is the one the reader pays.
+//
+// Deliberately generous, and deliberately not a target to optimise towards: it
+// is a tripwire for a change that adds a megabyte, not a style rule. Raise it
+// on purpose, in the commit that needs it, the same way EXPECTED is raised.
+await step('what it costs to open', async () => {
+  plan('the page and its data stay inside their transfer budget');
+  const { gzipSync } = await import('node:zlib');
+  const BUDGET = { 'index.html': 200 * 1024, 'data.json': 250 * 1024 };
+  const rows = [];
+  for (const name of Object.keys(BUDGET)) {
+    const file = join(ROOT, name);
+    if (!existsSync(file)) continue;
+    const raw = readFileSync(file);
+    rows.push({ name, raw: raw.length, gz: gzipSync(raw, { level: 9 }).length, budget: BUDGET[name] });
+  }
+  if (!rows.length) return skipRest('neither file is beside this harness');
+  const over = rows.filter((r) => r.gz > r.budget);
+  const kb = (n) => `${(n / 1024).toFixed(0)}KB`;
+  ok('the page and its data stay inside their transfer budget', over.length === 0,
+     rows.map((r) => `${r.name} ${kb(r.raw)} raw, ${kb(r.gz)} compressed`
+                     + (r.gz > r.budget ? ` — OVER its ${kb(r.budget)} budget` : ''))
+         .join(' · ')
+     + ` · together ${kb(rows.reduce((a, r) => a + r.gz, 0))} on the wire`);
+});
+
 await browser.close();
 server.close();
 
@@ -1603,7 +2229,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 92;
+const EXPECTED = 115;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

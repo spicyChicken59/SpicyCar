@@ -18,7 +18,8 @@
 including a nationwide watch on every certified (CPO) i5 under 30,000 miles, where the
 promo rate on certified EVs (2.99% on the i5) makes the financing the story — their siblings
 and rivals follow on their own cadence. Each car is priced as what it would actually cost to land in a
-specific buyer's driveway, and the result is published as a report, an email, and a dashboard.
+specific buyer's driveway, and the result is published as a dashboard, with a committed Markdown
+report beside it as the day's record. (An email path exists and is switched off: see below.)
 
 It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
 CSV in the repository is the ledger.
@@ -35,7 +36,9 @@ miles. SpicyCar shows both numbers, every day, on every car:
 
 ```
 asking            exactly as listed — every sort, tile and chart uses it
-+ shipping        0 if drivable · else max($350, miles_from_home × $0.65), stated on the car
++ shipping        0 if drivable · else max($350, banded(anchor miles × 1.18)), stated on the car
+                  $1.20/mi to 500 road miles, $0.70 to 1,000, $0.45 to 1,500, $0.30 beyond —
+                  marginal, like tax brackets. An ESTIMATE until real quotes calibrate it.
 ```
 
 The sum is never less than asking. Miles are shown next to every price, not priced in. Which cars
@@ -124,7 +127,7 @@ flowchart LR
   py --> csv[(data/snapshots.csv)]
   py --> rep[REPORT.md]
   py --> json[docs/data.json]
-  rep --> mail[Email via Resend]
+  rep -. off by choice .-> mail[Email via Resend]
   json --> dash[Dashboard<br>GitHub Pages]
   ds[SpicyChicken design system<br>its own Pages] -. styles + marks .-> dash
 ```
@@ -203,7 +206,7 @@ dashboard. It reaches nothing off the machine — the design-system checkout ans
 | `ship_min` | Floor under the banded estimate. No hauler quotes below this whatever the distance. |
 | `ship_per_mile` | Legacy flat rate, used only when `ship_bands` is empty: `max(ship_min, straight_line_distance × ship_per_mile)`. Note it does **not** apply `ship_road_factor` — a bands-less config behaves exactly as it did before bands existed, byte for byte, and that is deliberate. Leave the bands set and this is never read. |
 | `ship_cost` | Flat shipping, used when distance is unknown or neither bands nor `ship_per_mile` are set. |
-| `ship_quotes`, `ship_calibrated` | Real hauler quotes (`{"miles": …, "price": …, "route": …}` — the key is `price`, and `miles` is the miles the BROKER quoted, not the great-circle figure) the run scores the bands against, and the date a human last did that. A quote missing either number is announced and skipped rather than silently ignored. **Every shipping number on the page is an estimate until this is populated** — nothing fetches a quote, so the bands are a guess with a shape, not a price. |
+| `ship_quotes`, `ship_calibrated` | Real hauler quotes (`{"miles": …, "price": …, "route": …}` — the key is `price`, and `miles` is the miles the BROKER quoted, not the great-circle figure) the run scores the bands against, and the date a human last did that. A quote missing either number is announced on the run log and skipped rather than silently ignored, and the run exports what it found — `{n, mean_error, worst, calibrated}` under `buyer.ship_calibration`, or `null` while no quotes exist. **Every shipping number on the page is an estimate until this is populated** — nothing fetches a quote, so the bands are a guess with a shape, not a price. |
 | `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
 | `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full; every other model is a one-line comparison. |
 | `shortlist` | The specific cars being decided on, by VIN: `["WBY33FK09RCR29277", {"vin": "…", "note": "called dealer 8/25"}]`. They open the report and pin to the dashboard's front page with price, movement and your note — and say loudly when one is cut, or gone. |
@@ -237,12 +240,11 @@ any change — it shows today, the worst day in the next two weeks, and the mont
 
 ## Roadmap
 
-- Drill below state: county or metro.
 - ~~Compare two cars at once, not one at a time.~~ Shipped: press two model or two trim chips
   and the page becomes a comparison — a side-by-side card, a line each, and one pooled table.
 - ~~Distance-based "drivable" instead of state lines.~~ Tried, then removed on purpose: states are the buyer's own answer to "will I go get it?", and a straight-line radius makes road claims it cannot keep.
 - A second buyer profile — the config is already shaped for it.
-- Alerts worth waking for: email only when a new spicy pick appears or a watched VIN is cut.
+- Drill below state: county or metro.
 
 ## Author
 

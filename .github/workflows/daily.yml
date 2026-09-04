@@ -9,12 +9,12 @@ on:
   # month against a 1,000-call tier, while the pre-flight guard reported 30/day
   # and approved every one, because it reads the PLAN and not the ledger.
   #
-  # Tracking.py now refuses such a run before spending anything, so a dispatch
-  # on an already-fetched day fails the job on purpose — that red X is the
-  # guard working, not a broken tracker. To regenerate REPORT.md and
-  # docs/data.json from the snapshot already on disk, run
-  # `python3 tools/rebuild_outputs.py` locally: free, and what a re-run is
-  # almost always actually for. Tick allow_refetch below to get past it.
+  # Tracking.py refuses such a run before spending anything (exit 3), and the
+  # job then does the free thing instead of painting itself red: it rebuilds
+  # REPORT.md and docs/data.json from the snapshot already on disk, which is
+  # what a re-run is almost always actually for. So a dispatch on an
+  # already-fetched day SUCCEEDS and costs nothing. Tick allow_refetch below
+  # only when a run died partway and left the day incomplete.
   workflow_dispatch:
     inputs:
       allow_refetch:
@@ -34,7 +34,14 @@ concurrency:
 jobs:
   track:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A dead or slow API is the case this has to survive. Every request waits
+    # up to 45s and is retried once, so a day where every call times out costs
+    # 32 calls x 2 attempts x 45s = 48 minutes of waiting — and a job killed at
+    # 15 minutes has BILLED everything it spent and written nothing, so the
+    # guard cannot even tell tomorrow's run that the day was attempted. 60
+    # leaves room for that worst case plus the commit; a healthy run finishes
+    # in under two.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -64,6 +71,35 @@ jobs:
           elif [ "$rc" != "0" ]; then
             exit $rc
           fi
+      - name: Commit the record, whatever happened to the outputs
+        # data/ is the part that cannot be re-made. snapshots.csv holds rows
+        # the listings API will never serve again, and spend.json is the only
+        # count of what the month has cost — and both were thrown away by any
+        # run that crashed after the fetch loop, because the commit step below
+        # only runs on success. A crash in build_outputs() therefore burned up
+        # to 32 calls and left no record that it had: the next day's budget
+        # check read a month that looked cheaper than it was.
+        #
+        # Staged on its own, and data/ ONLY. A blanket always() on the step
+        # below would stage docs/ and REPORT.md too, and main() writes
+        # REPORT.md before docs/data.json — so a crash between those two lines
+        # would push a report describing a snapshot that is not there. data/ is
+        # safe on every path: a crash inside the fetch loop leaves it
+        # untouched, and a crash after write_rows commits a day whose fetching
+        # had already finished, which is also what lets tomorrow's guard exit 3
+        # and rebuild the outputs for free.
+        if: always()
+        run: |
+          git config user.name  "tracker"
+          git config user.email "actions@github.com"
+          git add data
+          git diff --staged --quiet && exit 0
+          git commit -m "record $(date -u +%F)"
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase origin main
+          done
+          git push
       - name: Commit outputs
         # The listings API is live-only: a rejected push would discard a
         # snapshot that can never be re-fetched. Rebase onto whatever landed

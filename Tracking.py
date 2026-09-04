@@ -3,14 +3,18 @@
 
 Two things are configured, separately:
 
-  buyer      who is purchasing: home zip, the states they will drive to for
-             a car (no shipping), and how they value miles and shipping.
+  buyer      who is purchasing: a PUBLIC anchor point distances measure from
+             (never a home address — published distances can be trilaterated),
+             the states they will drive to for a car (no shipping), and how
+             they value miles, shipping, tax and finance.
   watchlist  what to track: brand -> model -> trim. Each trim is a target
              (id "brand-model-trim").
 
-Every target is fetched twice on its day: once filtered to the buyer's
+Most targets are fetched twice on their day: once filtered to the buyer's
 states plus search_states (one call, the API takes a comma list) and once
-nationally. A target's cadence (1 = daily, 2 = every other day, ...)
+nationally. A `national_only` target — the nationwide certified watches —
+asks the country once and skips the States half, which is what makes a
+coast-to-coast watch affordable. A target's cadence (1 = daily, 2 = every other day, ...)
 spreads the comparison brands across days so the whole watchlist fits the
 API plan; buyer.shopping names the targets that lead the report in full,
 while the rest get one line each. A listing is
@@ -19,7 +23,12 @@ states, and nothing else: no coordinates involved, so listings the API
 could not geocode still land in the right bucket, and the buyer decides
 scope by naming states rather than by a radius. search_states widens the
 query net to neighbouring states worth watching from beyond. Coordinates
-price shipping, from the distance to home.
+price shipping, from the distance to the public anchor.
+
+What each query actually did is written to data/fetch_log.json, because the
+snapshot CSV records what was KEPT and says nothing about what was ASKED —
+and delisted() has to know the difference between a car a query looked for
+and missed, and one no query ever looked for. See fetch_log_row().
 """
 
 import csv
@@ -192,10 +201,18 @@ SOURCES = ([("States", {"retailListing.state": ",".join(SEARCH_STATES)})]
 
 
 def sorts_pages(t):
-    """Which sorts, and how many pages each, a target fetches per source."""
-    if t["depth"] == "full":
-        return list(t["sorts"]), int(t["pages"])
-    return [t["sorts"][0]], 1
+    """Which sorts, and how many pages each, a target fetches per source.
+
+    Reads with .get() so a partial or unknown target answers "no sorts" rather
+    than raising: this is called from honesty gates that run over rows whose
+    trim id may name a target the current watchlist no longer carries, and a
+    KeyError there would take down a rebuild over a car that left in July.
+    Byte-identical for every real target.
+    """
+    sorts = list(t.get("sorts") or [])
+    if t.get("depth") == "full":
+        return sorts, int(t.get("pages") or 1)
+    return sorts[:1], 1
 
 
 def sources_for(t):
@@ -839,8 +856,8 @@ def score_picks(listings, model_label):
     return out
 
 
-def choose_picks(scored, n, per_model=None):
-    out, per = [], Counter()
+def choose_picks(scored, n, per_model=None, seed=None):
+    out, per = [], Counter(seed or {})
     for p in sorted(scored, key=lambda p: -p["pick_pct"]):
         if p["pick_pct"] <= 0:
             break    # sorted, so nothing after this is under typical either
@@ -853,11 +870,48 @@ def choose_picks(scored, n, per_model=None):
     return out
 
 
-def split_picks(scored, n, per_model=None):
+def choose_picks_reserving(scored, n, per_model=None, reserve=0):
+    """choose_picks, with the first `reserve` drivable seats held for the models
+    actually being shopped.
+
+    A comparison car can sit further under its own typical price than any i5
+    ever will — an Ioniq 5 at 21% under a typical Ioniq 5 outranks every BMW on
+    the sheet — so ranking the drivable list by margin alone fills the front
+    page with cars this buyer is not shopping for. On today's data all four
+    drivable picks were an Ioniq 5, an Ioniq 5, an iX and an EV9, with neither
+    car being decided on among them.
+
+    The dashboard has done this since the multi-select release; this side never
+    did, and nothing in targets.json or the export said the rule existed — the
+    page carried a hard-coded 2. So the two surfaces disagreed about half the
+    front page while both claimed to apply the same rule. `buyer.picks
+    .reserve_shopping` is now that rule, in one place, read by both; set it to 0
+    and both rank purely by margin again.
+    """
+    if not reserve:
+        return choose_picks(scored, n, per_model)
+    shop = choose_picks([p for p in scored if p.get("shopping")],
+                        min(reserve, n), per_model)
+    if not shop:
+        return choose_picks(scored, n, per_model)
+    per, taken = Counter(), {p["vin"] for p in shop}
+    for p in shop:
+        per[p["model_label"]] += 1
+    rest = choose_picks([p for p in scored if p["vin"] not in taken],
+                        n - len(shop), per_model, per)
+    return shop + rest
+
+
+def split_picks(scored, n, per_model=None, reserve=0):
     """Two lists under the same rule: drivable picks, and worth-the-ship
     picks from everywhere else. Scoring stays within-model across the whole
-    market, so a drivable pick means the same thing as a national one."""
-    return (choose_picks([p for p in scored if p.get("local")], n, per_model),
+    market, so a drivable pick means the same thing as a national one.
+
+    Only the drivable list reserves seats: it is the short list a buyer can act
+    on this weekend, and it is the one the shopped cars keep falling out of.
+    """
+    return (choose_picks_reserving([p for p in scored if p.get("local")],
+                                   n, per_model, reserve),
             choose_picks([p for p in scored if not p.get("local")], n, per_model))
 
 
@@ -938,6 +992,30 @@ def departures_are_separable(t):
     return len(t.get("sorts") or []) <= 1
 
 
+def window_reconstructable(t):
+    """Can a fetch day's window be rebuilt from the snapshot rows alone?
+
+    Only when every row the target kept that day arrived through ONE query
+    shape on the window's own axis. Two things break that, and both put rows
+    into the CSV that sit ABOVE the cut-off being reconstructed:
+
+      a second sort  a price-dim target that also fetches miles.asc keeps the
+                     expensive delivery-mileage cars, and the widest kept price
+                     is then one of those, not the price.asc cut-off. This is
+                     the pooling departures_are_separable() describes.
+      newest         a createdAt.desc probe returns whatever listed today at
+                     any price, so one fresh six-figure car raises the widest
+                     kept value above every real window.
+
+    It asks sorts_pages(), not t["sorts"], because those are different lists:
+    a `light` target carries the two-sort default in its config and fetches
+    only the first of them. Eleven of the fourteen targets are light, so the
+    configured list says "two windows" about targets that only ever open one.
+    """
+    sorts, _ = sorts_pages(t)
+    return len(sorts) <= 1 and not t.get("newest")
+
+
 def median_ci(values, conf=0.95):
     """A distribution-free confidence interval for a median, from the order
     statistics. Returns (lo, hi) or None when the sample cannot support one.
@@ -1009,6 +1087,57 @@ def exit_stats(gone, trim_id, floor=6):
             "exit_days": st.get("median_days_to_sale")}
 
 
+def cut_tag(cuts, delta):
+    """What a price history did, in words that survive it going back up.
+
+    `cuts` counts the downward steps and `delta` is last minus first, so a
+    listing cut and then restored has cuts >= 1 and delta >= 0 — and the report
+    printed that as "down 1x ($0)", which reads as a discount of nothing rather
+    than as a car that is no cheaper than it started. Five lines of one day's
+    report said exactly that, one of them for a car back at its exact opening
+    price, and the same shape can print a POSITIVE delta as if it were a cut.
+
+    The aggregate definition of a cut is deliberately left alone: "was cut at
+    some point" is a true and useful thing to count, and a second real drop
+    that lands above an earlier low is still a price change the buyer wants to
+    see today. Only the sentence changes.
+    """
+    n = f"down {cuts}x"
+    if delta < 0:
+        return f"{n} ({money(delta)})"
+    if delta > 0:
+        return f"cut {cuts}x, now {money(delta)} above first seen"
+    return f"cut {cuts}x, then back up"
+
+
+def departure_is_evidence(g):
+    """Can this departure be told apart from fetch-window churn?
+
+    The same question exit_stats() and one_cohort() already ask before they
+    publish a price, asked here so the COUNT is held to the standard the price
+    is. A two-window target's "delisted" row may be a car that sold or a car
+    that a newer, cheaper arrival pushed out of the window this run — that is
+    the whole reason its exit price is withheld — so counting it as a car that
+    left the market, and pricing the market's velocity from it, publishes on
+    evidence the same file refuses to price.
+
+    window_reconstructable(), not departures_are_separable()'s configured sorts
+    list: eleven of fourteen targets are `light` depth and only ever open the
+    first of the two sorts their config names, and gating on the config would
+    withhold the phrase from every model on the sheet for a reason that does
+    not apply to any of them.
+    """
+    if "exact" in g:
+        return bool(g["exact"])
+    # A sheet written before delisted() carried its own provenance: fall back
+    # to the shape of the target, which is what the reconstruction could prove
+    # before the fetch log existed. An UNKNOWN target is not a defence — this
+    # gate exists to keep a number off the page, and "nothing on record says
+    # which query found this car" is not a reason to publish it.
+    t = TARGETS.get(g.get("trim_id"))
+    return bool(t) and window_reconstructable(t)
+
+
 def sale_stats(gone):
     """How fast this model's cars actually leave, from the ones that really
     left: days from the listing date (or first sighting, when the dealer
@@ -1018,7 +1147,20 @@ def sale_stats(gone):
     for g in gone:
         if g.get("likely") != "delisted":
             continue
-        start = g.get("listed_since") or g.get("first_seen")
+        # …and a departure this target cannot separate from window churn is
+        # not evidence that a car left. See departure_is_evidence().
+        if not departure_is_evidence(g):
+            continue
+        # The listing date, and ONLY the listing date. first_seen used to stand
+        # in for it, which measured how long the TRACKER had been watching: on a
+        # ten-day-old record no span could exceed ten days, so "listings ran at
+        # least ~5d" would have been a fact about this repo's start date. Cars
+        # whose listed_since is missing — or was withheld as an index load, see
+        # find_index_dates() — have no measurable span and are left out rather
+        # than given the tracker's own.
+        start = g.get("listed_since")
+        if not start:
+            continue
         try:
             spans.append(max(0, (date.fromisoformat(str(g.get("last_seen"))[:10])
                                  - date.fromisoformat(str(start)[:10])).days))
@@ -1036,6 +1178,11 @@ def sale_stats(gone):
     exits, cuts = [], []
     for g in gone:
         if g.get("likely") != "delisted":
+            continue
+        # Same gate as the spans above, and for the same reason: an exit price
+        # is a claim about where cars stopped being advertised, and a car that
+        # merely fell out of this run's window did not stop being advertised.
+        if not departure_is_evidence(g):
             continue
         last = to_int(g.get("last_price"))
         if last is None:
@@ -1215,7 +1362,7 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
                     and series[-1][1] < series[-2][1]):
                 tags.append(f"▼ CUT {money(series[-2][1] - series[-1][1])} today")
             elif x.get("cuts"):
-                tags.append(f"down {x['cuts']}x ({money(x['delta'])})")
+                tags.append(cut_tag(x["cuts"], x.get("delta") or 0))
             if x.get("days_listed") is not None:
                 tags.append(f"on market {x['days_listed']}d")
             p = scored_by_vin.get(vin)
@@ -1228,7 +1375,9 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
             g = gone_by_vin[vin]
             obj = g
             verdict = {
-                "delisted": "**GONE — likely sold or pulled**",
+                # not "sold or pulled": that names two of the four ways a
+                # listing ends, and the other two look identical from outside
+                "delisted": "**GONE — the listing ended**",
                 "out of window": "missing today — beyond the day's fetch "
                                  "cut-off, probably still for sale",
                 "not checked": "missing — not checked since it was last "
@@ -1312,6 +1461,17 @@ def window_dim(t):
 EXHAUSTED = set()      # (target id, source): a query came back short, so it returned
                        # that scope's ENTIRE result set — no cheapest-N cut-off applies
 FAILED_FETCHES = 0     # requests that still failed after the retry
+FAILED_SCOPES = set()  # (target id, source): a query that still failed after its retry.
+                       # fetch() returning None means "unknown", and delisted() has to be
+                       # told so: without this, a scope that never answered is judged by
+                       # whatever the OTHER scope returned, and every car only that query
+                       # could see is published as a departure. A dead National query on
+                       # bmw-i7-edrive50 turned 9 real departures into 93.
+RAW_N = Counter()      # (target id, source) -> RAW records the API returned today, before
+                       # normalize() dropped any. EXHAUSTED is set from this count, and the
+                       # offline reconstruction used to re-derive it from KEPT rows instead
+                       # — which is a different number for every filtered target (bmw-i5-cpo
+                       # keeps 6 of 40) and made every one of its days read as exhaustive.
 TOTALS = {}            # (target id, source) -> the API's own total result count,
                        # when the response envelope carries one — the honest
                        # denominator behind "N tracked"
@@ -1523,6 +1683,115 @@ def save_spend_history(row, path=SPEND_LOG, keep=400):
     return hist
 
 
+FETCH_LOG = Path("data/fetch_log.json")
+
+
+def fetch_log_row():
+    """What each query actually did today, per (target, source).
+
+    delisted() judges a vanished car against the fetch window of the day it
+    vanished. On the LIVE run that window is exact — PRICE_WINDOW / MILES_WINDOW
+    / EXHAUSTED are the run's own bookkeeping. On any later day, and on every
+    offline rebuild, it was re-derived from the snapshot rows instead, and the
+    re-derivation is wrong in three separate ways that all push the same way,
+    towards calling a car GONE:
+
+      pooled sources  win_max was keyed (target, day) over the rows of BOTH
+                      queries, so a car in a state the States query never asks
+                      about was judged against the States cut-off — routinely
+                      $5-8k higher than National's. Rebuilding the 2026-09-01
+                      outputs flipped 24 departures from "out of window" to
+                      "delisted" and took the report's headline from "9 gone
+                      since the last fetch" to "31".
+      kept vs raw     EXHAUSTED is set from the RAW page length, but the
+                      reconstruction re-derived it as "fewer than 20 rows kept".
+                      Every target filters after the fetch (cpo_only, max_miles,
+                      trim_match, years, min_price), so bmw-i5-cpo keeping 6 of
+                      40 raw records read as "this query saw the whole market"
+                      and made every absence a confirmed departure — on a
+                      single-sort target, which then publishes an exit price.
+      failed scopes   a query that failed after its retry left no trace at all,
+                      so the absence was judged against whatever the other
+                      query returned.
+
+    None of the three can be recovered from snapshots.csv, because the CSV keeps
+    what was KEPT and says nothing about what was ASKED. So the run writes down
+    what it did. One row per day, per target, per source: the window on the
+    target's own axis, whether the query was exhaustive, whether it failed, and
+    the raw record count behind those two. From the first day this exists, an
+    offline rebuild reproduces the live labels exactly instead of approximating
+    them; before it, delisted() falls back to what the rows can prove and says
+    "not checked" for the rest.
+    """
+    row = {}
+    for t in TARGETS.values():
+        tid = t["id"]
+        dim = window_dim(t)
+        live = PRICE_WINDOW if dim == "price" else MILES_WINDOW
+        for source_name, _ in sources_for(t):
+            key = (tid, source_name)
+            if key not in RAW_N and key not in FAILED_SCOPES:
+                continue          # not due today, or never asked
+            row.setdefault(tid, {})[source_name] = {
+                "window": live.get(key),
+                "dim": dim,
+                "exhausted": key in EXHAUSTED,
+                "failed": key in FAILED_SCOPES,
+                "raw": RAW_N.get(key, 0),
+            }
+    return row
+
+
+def save_fetch_log(row, path=None, keep=400):
+    """Today's fetch facts, merged into the log. A second run of the same day
+    MERGES rather than replaces: the two runs asked different questions and the
+    union is what the day actually saw."""
+    if not row:
+        return {}
+    # Resolved at CALL time, not bound as a default: a default argument freezes
+    # the module global at import, so anything that repoints FETCH_LOG (a test,
+    # a rebuild against another tree) would still read the committed file.
+    path = Path(path) if path else FETCH_LOG
+    try:
+        hist = json.loads(path.read_text()) if path.exists() else {}
+    except (OSError, ValueError):
+        hist = {}
+    if not isinstance(hist, dict):
+        hist = {}
+    day = hist.get(TODAY) if isinstance(hist.get(TODAY), dict) else {}
+    for tid, sources in row.items():
+        for src, fact in sources.items():
+            prior = (day.get(tid) or {}).get(src)
+            if isinstance(prior, dict):
+                # the widest window either run reached, and exhaustion/failure
+                # ORed: a scope that failed once and answered once did answer
+                w = [v for v in (prior.get("window"), fact.get("window")) if v is not None]
+                fact = {**fact,
+                        "window": max(w) if w else None,
+                        "exhausted": bool(prior.get("exhausted")) or fact["exhausted"],
+                        "failed": bool(prior.get("failed")) and fact["failed"],
+                        "raw": (to_int(prior.get("raw")) or 0) + fact["raw"]}
+            day.setdefault(tid, {})[src] = fact
+    hist[TODAY] = day
+    for d in sorted(hist)[:-keep]:
+        del hist[d]
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(hist, indent=1, sort_keys=True) + "\n")
+    except OSError as e:
+        print(f"  ! could not write {path}: {e}")
+    return hist
+
+
+def load_fetch_log(path=None):
+    path = Path(path) if path else FETCH_LOG
+    try:
+        log = json.loads(path.read_text()) if path.exists() else {}
+    except (OSError, ValueError):
+        return {}
+    return log if isinstance(log, dict) else {}
+
+
 OVERLAP_LOG = Path("data/source_overlap.json")
 
 
@@ -1617,24 +1886,42 @@ def fetch(source_name, source, sort, page, t):
                 try:
                     payload = r.json() or {}
                 except ValueError:
-                    payload = {}
-                batch = payload.get("data") or [] if isinstance(payload, dict) else []
-                tot = envelope_total(payload)
-                if tot is not None:
-                    key = (t["id"], source_name)
-                    TOTALS[key] = max(TOTALS.get(key, 0), tot)
-                elif batch and not ENVELOPE_WARNED:
-                    ENVELOPE_WARNED = True
-                    print("  ! no total count found in the response envelope — "
-                          f"keys were {sorted(payload)[:8]}")
-                if batch and not SAMPLE.exists():
-                    SAMPLE.write_text(json.dumps(batch[0], indent=2))
-                return batch
-            err = f"HTTP {r.status_code} {r.text[:200]}"
+                    payload = None
+                # An empty `data` list is a real answer: that query found
+                # nothing. A response with NO data list is not an answer at all
+                # — a maintenance page, an HTML error body, a renamed envelope —
+                # and it used to become one: `[]`, which the loop reads as a
+                # short page, which marks the scope EXHAUSTED, which tells
+                # delisted() the query saw the whole market and every car it
+                # did not return is gone. One bad deploy upstream would have
+                # published the entire watchlist as sold. It is a failure, and
+                # failures are retried and then recorded as unknown.
+                batch = payload.get("data") if isinstance(payload, dict) else None
+                if isinstance(batch, list):
+                    tot = envelope_total(payload)
+                    if tot is not None:
+                        key = (t["id"], source_name)
+                        TOTALS[key] = max(TOTALS.get(key, 0), tot)
+                    elif batch and not ENVELOPE_WARNED:
+                        ENVELOPE_WARNED = True
+                        print("  ! no total count found in the response envelope — "
+                              f"keys were {sorted(payload)[:8]}")
+                    if batch and not SAMPLE.exists():
+                        SAMPLE.write_text(json.dumps(batch[0], indent=2))
+                    RAW_N[(t["id"], source_name)] += len(batch)
+                    return batch
+                err = ("HTTP 200 with no `data` list in the envelope"
+                       + (f" — keys were {sorted(payload)[:8]}" if isinstance(payload, dict)
+                          else " — the body did not parse as JSON"))
+            else:
+                err = f"HTTP {r.status_code} {r.text[:200]}"
         print(f"  ! {t['id']} {source_name} {sort} p{page} (try {attempt}): {err}")
         if attempt == 1:
             time.sleep(2)
     FAILED_FETCHES += 1
+    # The scope is now UNKNOWN, not empty. Recorded per (target, source) so
+    # delisted() can refuse to judge an absence against a query that never ran.
+    FAILED_SCOPES.add((t["id"], source_name))
     return None
 
 
@@ -1786,18 +2073,60 @@ def build_history(all_rows):
     return {k: sorted(v.items()) for k, v in per_day.items()}
 
 
+def build_local_history(all_rows):
+    """When a car's DRIVABLE answer changed, for the few cars where it did.
+
+    in_scope() reads the state field on the row, and a car's state field is not
+    a constant: a listing can be moved between a dealer group's lots, or
+    re-listed by a different store. Nine VINs in this record have changed state
+    and three have crossed the buyer's own border doing it — WBY33FK09SCT64650
+    was in Indiana on 2026-09-01 and is in Missouri now.
+
+    The dashboard rebuilds a day's drivable count from the cars themselves
+    whenever a filter is on, and the only state it holds per car is TODAY's, so
+    it counted that i5 as beyond the border on a day when it was an hour's
+    drive away. Python's daily_stats had it right — it reads the row as it was
+    on the day — and the two series are supposed to be one definition in two
+    languages, so the page needs the same fact.
+
+    Emitted only at CHANGE points, and only for a car that ever changed: three
+    of 1,209 VINs, about 150 bytes on an 876KB file. A car that never moved
+    says nothing and the page falls back to the flag it already has.
+    """
+    per_day = defaultdict(dict)
+    for r in all_rows:
+        per_day[(r["target"], r["vin"])][r["snapshot_date"]] = 1 if in_scope(r) else 0
+    out = {}
+    for key, days in per_day.items():
+        run, prev = [], None
+        for d in sorted(days):
+            if days[d] != prev:
+                run.append([d, days[d]])
+                prev = days[d]
+        if len(run) > 1:
+            out[key] = run
+    return out
+
+
+LOCAL_HISTORY = {}      # (target, vin) -> [[date, 0|1], ...] at each change
+
+
 def summarize(key, hist):
     series = hist.get(key, [])
     if not series:
         return {"series": []}
     prices = [p for _, p in series]
-    return {
+    out = {
         "series": series,
         "cuts": sum(1 for a, b in zip(prices, prices[1:]) if b < a),
         "delta": prices[-1] - prices[0],
         "days_tracked": len(series),
         "first_seen": series[0][0],
     }
+    moved = LOCAL_HISTORY.get(key)
+    if moved:
+        out["local_hist"] = moved
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -1811,6 +2140,17 @@ def flags(r):
     out = []
     if is_cpo(r):
         out.append("CPO")
+    # Right after the certified chip, which is the slot flagsCell() uses on the
+    # page — the report and the dashboard describe the same car from the same
+    # list, and two surfaces that order it differently are two surfaces that
+    # can be read as disagreeing. The page has marked rentals and fleet cars
+    # since the filter was written; flags() said nothing, so a car the buyer's
+    # own picks rule excludes read as clean in the one artefact that is
+    # committed to the repository.
+    u = str(r.get("usage", "")).lower()
+    if is_rental(r):
+        out.append("rental" if "rental" in u
+                   else "multi-use" if "multiple" in u else "fleet")
     owners = to_int(r.get("owners"))
     if owners == 1:
         out.append("1-owner")
@@ -1820,17 +2160,105 @@ def flags(r):
     if acc is not None:
         out.append("no accidents" if acc == 0
                    else f"{acc} accident{'s' if acc > 1 else ''}")
-    if "lease" in str(r.get("usage", "")).lower():
+    if "lease" in u:
         out.append("ex-lease")
     return out
 
 
+INDEX_DATES = set()     # listed_since values that are a bulk index load, not a listing date
+
+
+def find_index_dates(all_rows, floor=20, ratio=10):
+    """The listed_since values that are the API's own index date, not a date
+    any car was listed on.
+
+    listed_since comes from the API's `createdAt`, and createdAt is when the
+    RECORD was created, which for a bulk load is the same instant for tens of
+    thousands of cars. On this sheet that day is 2026-08-09: 106 of the 321
+    rows of 2026-09-01 carry it, spread over 8 targets, 25 states and 85
+    different dealers, while 2026-08-08 carries one row and 2026-08-10 none.
+    Eighty-five dealers do not list on the same Tuesday and then stop.
+
+    What it did to the published numbers is not subtle. median_days_listed came
+    out at exactly (snapshot date - 2026-08-09) for six of the seven models,
+    every day, incrementing 14, 15, 16 … 23 — the signature of a constant, not
+    of a market. stale_pct is the same field's percentile, so every one of the
+    118 cars marked "sits longer than 60% of the model" was simply indexed
+    before the load, and how.html tells the reader that past 30 days "usually
+    means a dealer who will negotiate".
+
+    The test is deliberately a shape, not a date: a real listing date is a
+    per-car event, so it cannot outnumber both its neighbours by an order of
+    magnitude. Counted once per VIN, because a car sits in the sheet on every
+    day it was seen and would otherwise vote ten times.
+    """
+    seen, by_date = set(), Counter()
+    for r in all_rows:
+        d = str(r.get("listed_since") or "")[:10]
+        key = (r.get("target"), r.get("vin"))
+        if not d or key in seen:
+            continue
+        seen.add(key)
+        try:
+            date.fromisoformat(d)
+        except ValueError:
+            continue
+        by_date[d] += 1
+    out = set()
+    for d, n in by_date.items():
+        if n < floor:
+            continue
+        here = date.fromisoformat(d)
+        near = max((by_date.get(date.fromordinal(here.toordinal() + k).isoformat(), 0)
+                    for k in (-2, -1, 1, 2)), default=0)
+        if n >= ratio * max(near, 1):
+            out.add(d)
+    return out
+
+
 def days_listed(r):
+    since_raw = str(r.get("listed_since", ""))[:10]
+    # A bulk index date is not a listing date, and a number built on one is a
+    # fact about the API's loader. Nothing rather than something shaky.
+    if since_raw in INDEX_DATES:
+        return None
     try:
-        since = date.fromisoformat(str(r.get("listed_since", ""))[:10])
+        since = date.fromisoformat(since_raw)
     except ValueError:
         return None
-    return (date.fromisoformat(TODAY) - since).days
+    # From the day this row was OBSERVED, not from the day the file is built.
+    # Every dispatch rebuilds (see the report footer), and a rebuild run a week
+    # later measured every listing against that week: the i5's median days on
+    # market moved 23 -> 30 and a car's "21d listed" became "28d listed" over
+    # identical rows, while `data through` correctly stayed put. The same drift
+    # walked stale_pct and the ">= 30d on market" tag with it. On a live fetch
+    # snapshot_date IS today, so nothing moves; on a slow-cadence trim it now
+    # agrees with the "as of" its own model block already prints.
+    as_of = str(r.get("snapshot_date") or TODAY)[:10]
+    try:
+        return (date.fromisoformat(as_of) - since).days
+    except ValueError:
+        return (date.fromisoformat(TODAY) - since).days
+
+
+def is_new_today(x):
+    """First seen on THIS snapshot, not merely seen once.
+
+    days_tracked is the length of a car's price series, and a series only grows
+    on days its target was fetched — so a car seen once on Monday still reads
+    days_tracked == 1 on Thursday, and on any Thursday when some other trim of
+    its model was due, the whole "New today" block re-announced it as "first
+    seen this run". Three cars first seen on 2026-09-01 were headlined as new
+    on a quiet 09-04 in exactly that way.
+
+    first_seen is the day of the first sighting, which is the thing the words
+    actually claim. Where the record has no first_seen at all, fall back to the
+    old test rather than announce nothing.
+    """
+    first = x.get("first_seen")
+    if first:
+        return str(first)[:10] == TODAY
+    return x.get("days_tracked") == 1
 
 
 def pick_display_rows(rows):
@@ -1861,10 +2289,10 @@ def fmt_row(r, s, entry=None):
     out = "- " + " · ".join(str(b) for b in bits)
     tags = []
     if s.get("cuts"):
-        tags.append(f"down {s['cuts']}x ({money(s['delta'])})")
+        tags.append(cut_tag(s["cuts"], s.get("delta") or 0))
     if s.get("days_tracked", 0) >= 21:
         tags.append(f"tracked {s['days_tracked']}d")
-    if s.get("days_tracked") == 1:
+    if is_new_today(s):
         tags.append("NEW")
     dl = days_listed(r)
     if dl is not None and dl >= 30:
@@ -1887,10 +2315,42 @@ def fmt_row(r, s, entry=None):
 # --------------------------------------------------------------------------
 # Aggregates
 # --------------------------------------------------------------------------
-def daily_stats(rows):
-    by_day = defaultdict(list)
+def daily_stats(rows, days=None):
+    """One row per snapshot day, over the cars the tracker KNEW about that day.
+
+    Not the cars it fetched that day, which is what this used to count and is a
+    different series entirely. Trims of one model run on their own cadences —
+    the i5's eDrive40 daily, its xDrive40 and M60 every second day — so on half
+    the days only one target reported and the model's row halved with it:
+    127, 119, 71, 130, 73, 140, 79, 136, 80, 137. The chart above the table
+    draws that as "lowest and median asking price each day among the cars in
+    view", and the median duly swung $5,371 every other day out of pure
+    bookkeeping, on a page whose own listings table showed 137 cars throughout.
+
+    So each target is carried forward to its own most recent fetch, which is
+    exactly the rule current_rows() already applies to today and the rule the
+    page's "data through" line already describes. A day now holds what the
+    record actually knew on it.
+    """
+    by_target_day = defaultdict(lambda: defaultdict(list))
     for r in rows:
-        by_day[r["snapshot_date"]].append(r)
+        by_target_day[r["target"]][r["snapshot_date"]].append(r)
+    # `days` is the MODEL's day list, so a trim's own series is reported on the
+    # same days as the model it belongs to — otherwise the model row carries a
+    # slow trim forward while the trim's own row simply is not there, and the
+    # per-trim rows stop covering the model row they are supposed to decompose.
+    # A day before this target's first fetch holds nothing and is skipped
+    # rather than published as a market of zero cars.
+    days = sorted(set(days) if days else {r["snapshot_date"] for r in rows})
+    by_day = {}
+    for d in days:
+        held = []
+        for tid, per_day in by_target_day.items():
+            seen = [x for x in per_day if x <= d]
+            if seen:
+                held += per_day[max(seen)]
+        if held:
+            by_day[d] = held
     out = []
     for d in sorted(by_day):
         display = pick_display_rows(by_day[d])
@@ -1937,7 +2397,19 @@ def delisted(tids, all_rows, today_rows, hist):
     not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
     days_by_tid = defaultdict(set)
-    win_max, win_n = {}, Counter()      # (target, fetch day) -> window, on the target's own axis
+    log = load_fetch_log()
+    # win_max is the POOLED window: the widest value either query kept that day,
+    # which is exactly max(States cut-off, National cut-off). For a car in a
+    # queried state that is the right test — it comes back through either query,
+    # so it is only out of window when it is above both.
+    #
+    # nat_min is the National query's own window, bounded from BELOW: a kept row
+    # whose state is outside SEARCH_STATES can only have come back through the
+    # National query, so National's window provably reaches at least that far.
+    # For a car outside the queried states that lower bound is the only honest
+    # test there is — judging it against the pooled maximum tests it against the
+    # States cut-off, which never had a chance of returning it.
+    win_max, win_n, nat_min = {}, Counter(), {}
     for r in all_rows:
         if r["target"] in tids:
             d = r["snapshot_date"]
@@ -1945,8 +2417,13 @@ def delisted(tids, all_rows, today_rows, hist):
             win_n[(r["target"], d)] += 1
             dim = window_dim(TARGETS[r["target"]])
             p = to_int(r["price"] if dim == "price" else r["miles"])
-            if p is not None and p > win_max.get((r["target"], d), 0):
+            if p is None:
+                continue
+            if p > win_max.get((r["target"], d), 0):
                 win_max[(r["target"], d)] = p
+            if str(r.get("state", "")).strip().upper() not in SEARCH_STATES:
+                if p > nat_min.get((r["target"], d), 0):
+                    nat_min[(r["target"], d)] = p
     by_key = defaultdict(list)
     for r in all_rows:
         if r["target"] in tids and (r["target"], r["vin"]) not in today_vins:
@@ -1975,21 +2452,93 @@ def delisted(tids, all_rows, today_rows, hist):
         dim = window_dim(t)
         live_win = PRICE_WINDOW if dim == "price" else MILES_WINDOW
         last_val = last_price if dim == "price" else to_int(r["miles"])
+        # `unknown` means the day's queries cannot answer for this car at all:
+        # one of them failed, or nothing on record says how far it reached. It is
+        # NOT the same as "above the cut-off", and it must never read as a
+        # departure — see fetch_log_row() for the three ways the reconstruction
+        # used to turn silence into a confirmed sale.
+        unknown = False
+        # How the label below was reached, carried out with it. A "delisted"
+        # from the live run or from the fetch log is a query that looked and
+        # did not find the car; a "delisted" reconstructed for a two-window
+        # target from rows alone is a guess the file's own exit_stats() refuses
+        # to price. Both used to read the same downstream, so the market line
+        # counted the second kind as cars that left. Recorded here rather than
+        # re-derived later, because this is the only place that knows.
+        exact = False
+        logged = (log.get(van_day) or {}).get(tid) if van_day else None
         if van_day == TODAY and any((tid, k) in live_win
-                                    or (tid, k) in EXHAUSTED for k in keys):
+                                    or (tid, k) in EXHAUSTED
+                                    or (tid, k) in FAILED_SCOPES for k in keys):
             # live run, vanished at today's fetch: use its exact window
             cutoffs = [c for c in (live_win.get((tid, k)) for k in keys)
                        if c is not None]
             cutoff = max(cutoffs) if cutoffs else None
             exhausted = any((tid, k) in EXHAUSTED for k in keys)
+            # A scope that failed might have been the one that would have
+            # returned this car, so its absence proves nothing — UNLESS a
+            # scope that did answer already reached past the car's own value,
+            # in which case that query looked and did not find it, and the
+            # other one failing changes nothing about what this one saw.
+            unknown = (any((tid, k) in FAILED_SCOPES for k in keys)
+                       and not (cutoff is not None and last_val is not None
+                                and last_val <= cutoff))
+            exact = True
+        elif logged:
+            # the run wrote down what each query did that day: reproduce it
+            # exactly, so a rebuild cannot disagree with the run it rebuilds
+            facts = [logged.get(k) for k in keys]
+            unknown = any(f is None or f.get("failed") for f in facts)
+            cutoffs = [f["window"] for f in facts
+                       if f and f.get("window") is not None]
+            cutoff = max(cutoffs) if cutoffs else None
+            exhausted = any(f.get("exhausted") for f in facts if f)
+            exact = True
         else:
-            # older departure, or an offline rebuild: reconstruct the vanish
-            # day's window from the snapshots themselves
-            cutoff = win_max.get((tid, van_day))
-            exhausted = (van_day is not None
-                         and win_n[(tid, van_day)] < PER_PAGE)
+            # An older day with no fetch log: reconstruct what the ROWS can
+            # prove, and nothing more. Exhaustion is not among it — EXHAUSTED
+            # is set from the RAW page length and the CSV only holds the rows
+            # that survived the filters — so it is never inferred here.
+            exhausted = False
+            # True only for a target whose one window the rows can rebuild. On
+            # a two-window target this branch cannot currently reach a
+            # "delisted" at all — above the pooled maximum is "out of window"
+            # and at or below it is "not checked" — so the False case is a
+            # guard rather than a live path, and
+            # test_the_offline_path_never_calls_a_two_window_absence_a_delisting
+            # is what says so out loud and will fail the day that changes.
+            exact = window_reconstructable(t)
+            pooled = win_max.get((tid, van_day))
+            if not window_reconstructable(t):
+                # A second sort or a newest probe put rows above the window
+                # into the same day. The one thing the pooled maximum still
+                # proves is its own direction: it is at least as wide as every
+                # window, so a car above IT was above all of them. Anything at
+                # or below it is a question the record cannot answer.
+                cutoff = pooled
+                if not (last_val is not None and pooled is not None
+                        and last_val > pooled):
+                    unknown = True
+            elif "States" in keys:
+                # reachable through either query: the pooled maximum IS
+                # max(States cut-off, National cut-off), which is the test
+                cutoff = pooled
+            else:
+                # National only, and the queried states are the whole of what
+                # the States query can return — so a kept row from outside them
+                # came back through National, and National's window provably
+                # reaches at least that far. Above the pooled maximum the car
+                # was outside every window. Between the two the record cannot
+                # say, and neither may this.
+                cutoff = nat_min.get((tid, van_day))
+                if (cutoff is None or last_val is None
+                        or (last_val > cutoff
+                            and (pooled is None or last_val <= pooled))):
+                    unknown = True
         if van_day is None:
             likely = "not checked"      # not fetched again since last seen
+        elif unknown:
+            likely = "not checked"      # the day's queries cannot answer for it
         elif exhausted:
             likely = "delisted"         # a query that saw everything missed it
         elif cutoff is None or last_val is None:
@@ -2000,6 +2549,9 @@ def delisted(tids, all_rows, today_rows, hist):
             likely = "delisted"
         out.append({
             "likely": likely,
+            # …and whether that label came from a query that actually looked.
+            # See `exact` above; departure_is_evidence() is its one consumer.
+            "exact": bool(exact) and likely != "not checked",
             "vin": vin, "year": to_int(r["year"]), "trim": r["trim"],
             "trim_id": tid, "trim_label": t["label"],
             "state": r["state"], "local": in_scope(r),
@@ -2008,7 +2560,8 @@ def delisted(tids, all_rows, today_rows, hist):
             "last_price": last_price, "adj": adj,
             "city": r["city"], "dealer": r["dealer"],
             "url": r["url"], "last_seen": last_day,
-            "listed_since": r["listed_since"],
+            "listed_since": ("" if str(r["listed_since"])[:10] in INDEX_DATES
+                             else r["listed_since"]),
             "prev_fetch_day": prev_fetch,
             "first_seen": s.get("first_seen"),
             "days_tracked": s.get("days_tracked", 0),
@@ -2025,6 +2578,7 @@ def delisted(tids, all_rows, today_rows, hist):
             "usage": r.get("usage", ""),
             "cpo": is_cpo(r),
             "series": s.get("series", []),
+            **({"local_hist": s["local_hist"]} if s.get("local_hist") else {}),
             "flags": flags(r),
         })
     out.sort(key=lambda x: (x["last_seen"], -(x["last_price"] or 0)),
@@ -2051,11 +2605,16 @@ def listing_entry(r, s):
         "cpo": is_cpo(r), "owners": to_int(r.get("owners")),
         "accidents": to_int(r.get("accidents")),
         "usage": r.get("usage", ""), "flags": flags(r),
-        "listed_since": r["listed_since"], "days_listed": days_listed(r),
+        # withheld, not blanked by accident: see find_index_dates()
+        "listed_since": ("" if str(r["listed_since"])[:10] in INDEX_DATES
+                         else r["listed_since"]),
+        "days_listed": days_listed(r),
         "first_seen": s.get("first_seen"),
         "cuts": s.get("cuts", 0), "delta": s.get("delta", 0),
         "days_tracked": s.get("days_tracked", 0),
         "series": s["series"],
+        # absent for the ~99.8% of cars that never crossed the border
+        **({"local_hist": s["local_hist"]} if s.get("local_hist") else {}),
     }
 
 
@@ -2103,12 +2662,13 @@ def brief_lines(m_entry, listings, prev_day):
         out.append(f"- Nothing drivable ({scope_label()})")
     movers = sum(1 for x in listings if len(x["series"]) >= 2
                  and x["series"][-1][1] != x["series"][-2][1])
-    new = sum(1 for x in listings if x["days_tracked"] == 1) if prev else 0
+    new = sum(1 for x in listings if is_new_today(x)) if prev else 0
     # each trim vanishes on its own cadence — compare against the trim's own
     # previous fetch day, or a slower trim's departures never count
     gone = sum(1 for g in m_entry["gone"]
                if g["likely"] == "delisted" and g["prev_fetch_day"]
-               and g["last_seen"] == g["prev_fetch_day"])
+               and g["last_seen"] == g["prev_fetch_day"]
+               and departure_is_evidence(g))
     line = (f"- {len(listings)} on the market · "
             f"{sum(1 for x in listings if x['local'])} drivable")
     if prev_day:
@@ -2142,7 +2702,8 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         sec.append("")
     just_gone = [g for g in gone if g["trim_id"] == t["id"]
                  and g["likely"] == "delisted" and g["prev_fetch_day"]
-                 and g["last_seen"] == g["prev_fetch_day"]]
+                 and g["last_seen"] == g["prev_fetch_day"]
+                 and departure_is_evidence(g)]
     if just_gone:
         sec.append(f"**Gone since {just_gone[0]['last_seen']}**")
         for g in just_gone:
@@ -2203,6 +2764,18 @@ def compact_line(m_entry, label):
 
 
 def build_outputs(today_rows, all_rows, hist):
+    INDEX_DATES.clear()
+    INDEX_DATES.update(find_index_dates(all_rows))
+    # Populated HERE, beside INDEX_DATES, and not in main(): tools/rebuild_outputs.py
+    # and the tests call build_outputs() directly, and a global filled only on
+    # the live path is a global that is empty for every other caller — which is
+    # how a rebuild would have quietly dropped the very fact it exists to carry.
+    LOCAL_HISTORY.clear()
+    LOCAL_HISTORY.update(build_local_history(all_rows))
+    if INDEX_DATES:
+        print("  ! listed_since " + ", ".join(sorted(INDEX_DATES))
+              + " looks like an API index load, not a listing date — "
+                "days on market withheld for those cars")
     site = {
         "app": APP,
         "generated": TODAY,
@@ -2233,6 +2806,9 @@ def build_outputs(today_rows, all_rows, hist):
             "scope_label": scope_label(),
             "shopping": SHOPPING,
             "picks": {"count": PICKS.get("count", 4), "per_model": PICKS.get("per_model", 2),
+                      # the page hard-coded 2 and nothing published it; both
+                      # sides read this now, and 0 means "rank by margin alone"
+                      "reserve_shopping": to_int(PICKS.get("reserve_shopping")) or 0,
                       "max_miles": PICKS.get("max_miles", 50000),
                       "cents_per_mile": PICKS.get("cents_per_mile", 0.30),
                       "mileage_baseline": PICKS.get("mileage_baseline", 20000),
@@ -2248,6 +2824,15 @@ def build_outputs(today_rows, all_rows, hist):
             "ship_bands": BUYER.get("ship_bands") or None,
             "ship_road_factor": BUYER.get("ship_road_factor"),
             "ship_calibrated": BUYER.get("ship_calibrated"),
+            # ship_calibration() was written, tested three ways and then never
+            # called, so the README's promise that a malformed quote "is
+            # announced and skipped" described a code path no run could reach.
+            # It is None while buyer.ship_quotes is empty, which is exactly what
+            # it should be — nothing on any surface changes today — and the day
+            # a quote lands, the run says on its own log how far the bands are
+            # from it and the number is in the export rather than in a function
+            # nobody calls.
+            "ship_calibration": ship_calibration(),
             "cents_per_mile": BUYER.get("cents_per_mile"),
             "mileage_baseline": BUYER.get("mileage_baseline"),
             "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
@@ -2309,10 +2894,27 @@ def build_outputs(today_rows, all_rows, hist):
                                     **exit_stats(m_gone, t["id"])}
                           for t in trims},
                 "listings": [],
-                "daily": daily_stats(m_rows_all),
+                "daily": daily_stats(m_rows_all, m_days),
                 "daily_by_trim": {t["id"]: daily_stats(
-                    [r for r in m_rows_all if r["target"] == t["id"]])
+                    [r for r in m_rows_all if r["target"] == t["id"]], m_days)
                     for t in trims},
+                # The days each TARGET actually fetched, which is not a thing
+                # the rest of this file can be reconstructed from. daily_stats
+                # carries a target forward to its most recent fetch, so its
+                # dates say nothing about when the fetch happened; and a car
+                # carries only one trim_id, so a target whose every current car
+                # is filed under a sibling target leaves no sightings of its
+                # own at all. The i5's nationwide CPO watch is exactly that: it
+                # fetched on 2026-09-03 and 09-04 and returned two certified
+                # cars, both of which the export files under eDrive40 — so the
+                # page, reading fetch days off the cars, believed the watch had
+                # not run since 09-01 and carried two DEPARTED certified cars
+                # forward into every day since. Its rebuilt row read 135 cars
+                # against a precomputed 133. Nine bytes a day per target ends
+                # the guessing.
+                "fetch_days": {t["id"]: sorted({r["snapshot_date"] for r in m_rows_all
+                                                if r["target"] == t["id"]})
+                               for t in trims},
                 "gone": m_gone,
             }
             b_entry["models"][mkey] = m_entry
@@ -2339,6 +2941,10 @@ def build_outputs(today_rows, all_rows, hist):
                                  # watchlist.
                                  "one_trim": one_cohort(m_gone)}
             scored = score_picks(m_entry["listings"], label)
+            # which cars are being SHOPPED, carried on the pick itself — the
+            # reservation below is across models, so it cannot ask the loop
+            for p in scored:
+                p["shopping"] = shopping
             all_scored += scored
             if SHORTLIST:
                 for x in m_entry["listings"]:
@@ -2349,18 +2955,27 @@ def build_outputs(today_rows, all_rows, hist):
                     s_ = x["series"]
                     tl = str(x.get("trim_label") or "")
                     name = label if tl.lower() in ("", "all", "all trims") else f"{label} {tl}"
-                    if len(s_) >= 2 and s_[-1][0] == TODAY and s_[-1][1] < s_[-2][1]:
+                    # `as_of`, not TODAY: the model's own last fetch day. Its
+                    # sibling detectors below and above (new, gone) are already
+                    # relative to the data, so on a day the tracker has not
+                    # fetched — a local rebuild — the "## Today" section lost
+                    # every price-cut bullet while still printing "79 new · 31
+                    # gone" and per-model lines counting 42 price changes. Per
+                    # MODEL, because a slow-cadence model's last fetch is its
+                    # own, which is the same rule new and gone follow.
+                    if len(s_) >= 2 and s_[-1][0] == as_of and s_[-1][1] < s_[-2][1]:
                         events["cuts"].append({"amount": s_[-2][1] - s_[-1][1],
                                                "x": x, "label": name,
                                                "shopping": shopping})
-                    if x["days_tracked"] == 1:
+                    if is_new_today(x):
                         p = by_vin.get(x["vin"])
                         events["new"].append({"x": x, "label": name,
                                               "pct": p["pick_pct"] if p else None,
                                               "shopping": shopping})
                 for g in m_entry["gone"]:
                     if (g["likely"] == "delisted" and g["prev_fetch_day"]
-                            and g["last_seen"] == g["prev_fetch_day"]):
+                            and g["last_seen"] == g["prev_fetch_day"]
+                            and departure_is_evidence(g)):
                         events["gone"].append({"vin": g["vin"],
                                                "label": f"{label} {g.get('trim_label') or ''}".strip(),
                                                "last_seen": g["last_seen"],
@@ -2380,7 +2995,7 @@ def build_outputs(today_rows, all_rows, hist):
             if prev_day and m_entry["fetched_today"]:
                 by_vin = {p["vin"]: p for p in scored}
                 new_today = sorted(
-                    [x for x in m_entry["listings"] if x["days_tracked"] == 1],
+                    [x for x in m_entry["listings"] if is_new_today(x)],
                     key=lambda x: -(by_vin[x["vin"]]["pick_pct"]
                                     if x["vin"] in by_vin else -1.0))
                 if new_today:
@@ -2390,7 +3005,9 @@ def build_outputs(today_rows, all_rows, hist):
                     if len(new_today) > 8:
                         sec.append(f"- …and {len(new_today) - 8} more on the dashboard")
                     sec.append("")
-            local_picks, ship_picks = split_picks(scored, PICKS.get("count", 4))
+            local_picks, ship_picks = split_picks(
+                scored, PICKS.get("count", 4), None,
+                to_int(PICKS.get("reserve_shopping")) or 0)
             if local_picks or ship_picks:
                 sec += [f"**Spicy picks** — {picks_rule()}", ""]
                 if local_picks:
@@ -2425,7 +3042,8 @@ def build_outputs(today_rows, all_rows, hist):
               + today_sec
               + full)
     top_local, top_ship = split_picks(all_scored, PICKS.get("count", 4),
-                                      PICKS.get("per_model", 2))
+                                      PICKS.get("per_model", 2),
+                                      to_int(PICKS.get("reserve_shopping")) or 0)
     if top_local or top_ship:
         report += ["## Spicy picks across the watchlist", "",
                    f"_{picks_rule()}. Asking prices shown._", ""]
@@ -2443,9 +3061,15 @@ def build_outputs(today_rows, all_rows, hist):
                    f"the cheapest 20 in {'/'.join(SEARCH_STATES) or 'your states'} and the "
                    "cheapest 20 nationwide per model. Every car is on the dashboard._", ""]
         report += compact + [""]
+    # CALLS is this PROCESS's counter, and an offline rebuild makes none — so
+    # the footer printed "0 API calls today" over a day that had really spent
+    # 24, and every dispatch rebuilds. A rebuild says what it is instead of
+    # overwriting the day's cost with a zero.
+    spent = (f"{CALLS} API call{'s' if CALLS != 1 else ''} today" if CALLS
+             else "outputs rebuilt from the snapshot on disk — no calls made")
     report += ["---",
                f"_{len(hist)} vehicle histories across {len(days)} "
-               f"day{'s' if len(days) != 1 else ''} · {CALLS} API calls today._"]
+               f"day{'s' if len(days) != 1 else ''} · {spent}._"]
     return "\n".join(report), site, subject
 
 
@@ -2599,6 +3223,14 @@ def main():
     OVERLAP.update(source_overlap(rows))
     report_source_overlap(OVERLAP)
     save_overlap_history(OVERLAP)
+    # Written BEFORE the outputs are built, because build_outputs() -> delisted()
+    # reads it back: today's departures are then judged by the same recorded
+    # facts a rebuild will use tomorrow, so the two can never disagree.
+    save_fetch_log(fetch_log_row())
+    if FAILED_SCOPES:
+        print(f"  ! {len(FAILED_SCOPES)} quer{'y' if len(FAILED_SCOPES) == 1 else 'ies'} failed "
+              f"after retry — every car only they could see is 'not checked', not gone: "
+              + ", ".join(f"{tid} {src}" for tid, src in sorted(FAILED_SCOPES)))
     spend = spend_report(today_calls)
     report_spend(spend, save_spend_history(spend))
     print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "

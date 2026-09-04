@@ -171,6 +171,13 @@
      card; 65-75 is the readable band. (The picks head sets its own width
      below — it used to appear in this list too, where it was dead code.) */
   #map-hint, #chart-hint, #list-hint, #scatter-hint, #gone-hint, #overview-hint { max-width: 58ch; }
+  /* The filter bar is sticky, so anything the browser scrolls TO — a Tab stop,
+     an in-page jump, a scrollIntoView — lands underneath it and the reader
+     cannot see what they just focused. --bar-h is written from the bar's own
+     height whenever it changes, because a constant is wrong by 144px between
+     an open desktop bar (206px) and a shut phone one (62px), and it must read
+     0 while the card is hidden or a bar-less view over-scrolls every jump. */
+  html { scroll-padding-top: calc(var(--bar-h, 0px) + 8px); }
 
   /* Side by side. The metric column is the row's label, so it is the one that
      must never wrap to two lines while a figure beside it sits on one — and it
@@ -479,6 +486,7 @@
     </div>
     <div class="sc-legend" id="map-legend" aria-hidden="true"></div>
     <div class="sc-map" id="map" role="group" tabindex="0" aria-label="Map of the cars for sale. Use left and right arrow keys to step through cars west to east, Enter to open, Escape to clear."></div>
+    <p class="sc-sr-only" id="map-say" role="status" aria-live="polite"></p>
     <div class="sc-sr-only" id="map-twin"></div>
   </section>
 
@@ -519,6 +527,7 @@
     </div>
     <div class="sc-legend" id="scatter-legend"></div>
     <div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div>
+    <p class="sc-sr-only" id="scatter-say" role="status" aria-live="polite"></p>
   </section>
 
   <section class="sc-card" id="overview-card" hidden>
@@ -546,7 +555,7 @@
   <section class="sc-card" id="gone-card" hidden>
     <div class="sc-card__head">
       <div>
-        <h2>Gone from the market</h2>
+        <h2 id="gone-title">Gone from the market</h2>
         <p class="sc-hint" id="gone-hint">Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.</p>
       </div>
     </div>
@@ -743,7 +752,16 @@
   const hasPrice = (x) => x.price !== null && x.price !== undefined;
   // Asking plus the stated shipping estimate — never less than asking. Computed here so it never depends on the data's vintage.
   const landed = (x) => (hasPrice(x) ? x.price + (x.local ? 0 : (x.ship || 0)) : null);
-  const shipNote = (x) => (x.local ? 'drivable · no shipping' : (x.ship ? `+ ${money(x.ship)} shipping = ${money(landed(x))}` : 'shipping estimate n/a'));
+  // "est." is not decoration. Every shipping figure on this page comes from
+  // published open-carrier band rates that nobody has quoted (buyer.ship_bands,
+  // with buyer.ship_calibrated still null), and the page printed them as flat
+  // fact — "+ $1,336 shipping = $66,224" — while README and how.html both told
+  // the reader "the site says so". The word appears wherever the number does,
+  // and disappears the day three real quotes date buyer.ship_calibrated.
+  const shipCalibrated = () => !!(((S.site || {}).buyer || {}).ship_calibrated);
+  const shipWord = () => (shipCalibrated() ? 'shipping' : 'est. shipping');
+  const shipNote = (x) => (x.local ? 'drivable · no shipping'
+    : (x.ship ? `+ ${money(x.ship)} ${shipWord()} = ${money(landed(x))}` : 'shipping estimate n/a'));
   function lowestBy(arr, key) { let best = null; for (const x of arr) { const v = x[key]; if (v === null || v === undefined) continue; if (!best || v < best[key]) best = x; } return best; }
   function statesTxt() { return (((S.site || {}).buyer || {}).states || []).join('/') || 'your states'; }
   // What "drivable" means for this buyer, e.g. "IL/OH/IN/WI".
@@ -787,7 +805,12 @@
   const isRental = (x) => NON_PERSONAL.test(x.usage || '');
   function pickParams() {
     const p = ((S.site || {}).buyer || {}).picks || {};
-    return { count: p.count || 4, per_model: p.per_model || 2, reserve: p.reserve_shopping != null ? p.reserve_shopping : 2,
+    // 0, not 2: a sheet that does not name the rule does not get it applied
+    // invisibly. The hard-coded 2 here was the whole of the reservation's
+    // existence — targets.json never mentioned it and the export never carried
+    // it, so the report ranked by margin alone and the two disagreed about half
+    // the drivable picks.
+    return { count: p.count || 4, per_model: p.per_model || 2, reserve: p.reserve_shopping != null ? p.reserve_shopping : 0,
       max_miles: p.max_miles || 50000, cpm: p.cents_per_mile != null ? p.cents_per_mile : 0.30,
       base: p.mileage_baseline || 20000, no_acc: p.exclude_accidents !== false, no_rental: p.exclude_rental !== false };
   }
@@ -953,8 +976,12 @@
     svg.appendChild(hit);
     host.appendChild(svg);
     // aria-live because the crosshair is keyboard-driven — the arrow keys move
-    // it and the values have to be announced. The map's tooltip is hover-only
-    // and passes live:false, or it would announce on every pointer pixel.
+    // it and the values have to be announced. The map's and the scatter's
+    // tooltips pass live:false, because a pointer moves over them and a live
+    // tooltip would announce on every pixel; their KEYBOARD cursors carry
+    // their own sc-sr-only status node instead, written only from the arrow
+    // keys. This comment used to say the map's tooltip was hover-only, which
+    // was how that map's arrow keys shipped moving a cursor in silence.
     const TIP = SC.tooltip(host, { live: true, flip: 0.62, offsetX: 12, top: 6 });
     const tip = TIP.node;
 
@@ -997,6 +1024,41 @@
     host.onblur = () => setActive(-1);
   }
 
+  // ---------- the design system has to be here ----------
+  // Everything below reaches for SC.geo, SC.spark, SC.toneRef and SC.tooltip
+  // at module scope, so a jsDelivr outage did not degrade this page — it threw
+  // a ReferenceError partway through the IIFE, before a single listener was
+  // wired, and left the reader a masthead over an empty white column with
+  // nothing to read and nothing in the notice.
+  //
+  // The guard sits HERE, and the position is the whole trick. At boot it is
+  // hundreds of lines too late — the throw has already happened. At the top of
+  // the file it is too early: fail() is hoisted, but it calls $ and el, which
+  // are const, so an early guard dies on "Cannot access '$' before
+  // initialization" and produces the same blank page by a different route.
+  // After el() and before the first SC.* reference is the one window where it
+  // works. All four names are exported by the pinned files (sc-charts.js,
+  // sc-map.js); a false positive would mean the pin moved.
+  if (typeof SC === 'undefined' || !SC.geo || !SC.spark || !SC.toneRef || !SC.tooltip) {
+    fail('The design-system scripts did not load from cdn.jsdelivr.net. '
+         + 'The data is fine — this page cannot draw without them.',
+         'Could not load the design system');
+    return;
+  }
+
+  // Where the map's and the scatter's keyboard cursors say what they are
+  // standing on. Their own nodes rather than the tooltips', because a tooltip
+  // is also a pointer surface and a live one would announce on every pixel of
+  // a mouse move.
+  const MAP_SAY = $('map-say');
+  const SCATTER_SAY = $('scatter-say');
+  // The trim as a car's own name, for reading aloud — the tooltips show
+  // trim_label, which is the name of the QUERY, and for a model watched whole
+  // that name is the placeholder "all trims".
+  const carTrimText = (x) => {
+    const label = String(x.trim_label || '').trim();
+    return (/^all(\s+trims)?$/i.test(label) ? '' : label) || String(x.trim || '').trim();
+  };
   // ---------- the market map ----------
   // US states from the same pinned-CDN pattern the design system uses; the
   // topology is pre-projected (geoAlbersUsa, 975×610), and the dots use the
@@ -1359,10 +1421,26 @@
         en.dot.setAttribute('data-br', br);
         en.dot.setAttribute('r', (br * Math.max(VIEW.get().w / MAP_FULL.w, 0.12)).toFixed(2));
       };
+      // What the keyboard cursor is standing on, said out loud. The dot grows
+      // and the tooltip appears, and both are visual; a reader arrowing across
+      // 495 cars was told nothing at all. Written ONLY from here — never from
+      // fillTip(), which the pointer also calls — so moving a mouse stays
+      // silent. Composed as a sentence rather than copied from the tooltip,
+      // whose blocks concatenate without separators and read back as
+      // "2024$43,568".
+      const kbSay = (c) => {
+        if (!MAP_SAY) return;
+        MAP_SAY.textContent = c ? [
+          [c.m.label, carTrimText(c.x), c.x.year || ''].filter(Boolean).join(' '),
+          money(c.x.price), placeTxt(c.x),
+          c.x.miles != null ? `${num(c.x.miles)} miles` : null,
+          c.x.local ? 'drivable' : (c.x.ship ? `plus ${money(c.x.ship)} shipping` : null),
+        ].filter(Boolean).join(', ') : '';
+      };
       const kbFocus = (i) => {
         const ctl = MAP_CTL; if (!ctl || ctl.empty) return;
         if (ctl.kBig) { kbSize(ctl.kBig, 3.2); ctl.kBig = null; }
-        if (i < 0 || i >= ctl.kOrder.length) { ctl.kIdx = -1; hideTip(); return; }
+        if (i < 0 || i >= ctl.kOrder.length) { ctl.kIdx = -1; hideTip(); kbSay(null); return; }
         ctl.kIdx = i;
         const en = ctl.kOrder[i]; ctl.kBig = en;
         kbSize(en, 6);
@@ -1373,6 +1451,7 @@
           VIEW.set({ w: v.w, h: v.h, x: px - v.w / 2, y: py - v.h / 2 });
         const r = en.dot.getBoundingClientRect();
         fillTip(en.c, r.left + r.width / 2, r.top, false);
+        kbSay(en.c);
       };
       host.onkeydown = (e) => {
         if (e.target !== host) return;   // the zoom buttons live inside the host — their keys are their own
@@ -1792,13 +1871,25 @@
     // chart's contract, adapted to dots
     kOrder.sort((a, b) => (a.x.miles ?? 0) - (b.x.miles ?? 0));
     let kIdx = -1, kBig = null;
+    // Same rule as the map's: written only from the arrow keys, composed as a
+    // sentence rather than copied out of the tooltip, whose blocks concatenate
+    // without separators and read back as "2024$43,568".
+    const dotSay = (x) => {
+      if (!SCATTER_SAY) return;
+      SCATTER_SAY.textContent = x ? [
+        `${x.year || ''} ${carTrimText(x)}`.replace(/\s+/g, ' ').trim(),
+        money(x.price), x.miles != null ? `${num(x.miles)} miles` : null, placeTxt(x),
+        x.local ? 'drivable' : (x.ship ? `plus ${money(x.ship)} shipping` : null),
+      ].filter(Boolean).join(', ') : '';
+    };
     const focusDot = (i) => {
       if (kBig) { kBig.setAttribute('r', 4); kBig = null; }
-      if (i < 0 || i >= kOrder.length) { kIdx = -1; hideTip(); return; }
+      if (i < 0 || i >= kOrder.length) { kIdx = -1; hideTip(); dotSay(null); return; }
       kIdx = i;
       kBig = kOrder[i].dot; kBig.setAttribute('r', 6);
       const r = kBig.getBoundingClientRect();
       fillTip(kOrder[i].x, r.left + r.width / 2, r.top, false);
+      dotSay(kOrder[i].x);
     };
     host.onkeydown = (e) => {
       if (e.key === 'ArrowRight') { focusDot(kIdx < 0 ? 0 : Math.min(kOrder.length - 1, kIdx + 1)); e.preventDefault(); }
@@ -1963,14 +2054,81 @@
       if (!k) continue;
       if (!uniq.has(k)) uniq.set(k, x);   // the live listing comes first and wins
     }
+    // A day holds what the record KNEW on it, not what was fetched on it.
+    // Trims run on their own cadences, so counting sightings alone made a
+    // model's day rows halve on every off day — the i5 went 127, 119, 71, 130,
+    // 73, 140, 79, 136, 80, 137 while its listings table held 137 throughout,
+    // and the median line swung $5,371 every other day out of bookkeeping.
+    // Python's daily_stats() carries each TARGET forward to its own most recent
+    // fetch; this is the same rule expressed per car, so the rebuilt series and
+    // the precomputed one still describe the same market: a car counts on a day
+    // when its trim's latest fetch on or before that day is one it was seen on.
+    // A trim's FETCH days come from the export, which is the only place they
+    // exist. They cannot be read off daily_by_trim, whose rows are themselves
+    // carried forward and would call every day a fetch day; and they cannot be
+    // reconstructed from the cars, which is what this did and which was wrong
+    // in a way nothing else on the page could see. A car carries ONE trim_id,
+    // so a target whose every current car is filed under a sibling target
+    // leaves no sightings of its own. The i5's nationwide CPO watch is exactly
+    // that — it ran on 2026-09-03 and returned two certified cars the export
+    // files under eDrive40 — so this believed the watch had not run since
+    // 09-01 and carried two cars that had DEPARTED on 09-01 forward into every
+    // day since. The rebuilt model row read 135 against a precomputed 133, and
+    // only the smoke check that presses a no-op filter ever noticed.
+    //
+    // Falling back to the sightings for a sheet written before fetch_days
+    // existed: the old behaviour is wrong in this one case and right in every
+    // other, which is better than no series at all.
+    const fetchDays = {};
+    if (m.fetch_days && Object.keys(m.fetch_days).length) {
+      for (const k in m.fetch_days) fetchDays[k] = (m.fetch_days[k] || []).slice().sort();
+    } else {
+      const fetchSets = {};
+      for (const c of (m.listings || []).concat(m.gone || [])) {
+        const set = (fetchSets[c.trim_id] = fetchSets[c.trim_id] || new Set());
+        for (const pt of (c.series || [])) if (pt[1]) set.add(pt[0]);
+      }
+      for (const k in fetchSets) fetchDays[k] = [...fetchSets[k]].sort();
+    }
+    const allDays = [...new Set([...(m.daily || []).map((d) => d.date),
+                                 ...Object.values(fetchDays).flat()])].sort();
+    const latestFetch = (tid, day) => {
+      const days = fetchDays[tid];
+      if (!days || !days.length) return null;
+      let best = null;
+      for (const d of days) { if (d <= day) best = d; else break; }
+      return best;
+    };
+    // Was this car drivable ON that day, not is it drivable now. A listing can
+    // move between a dealer group's lots or be re-listed by a different store,
+    // and nine VINs in this record have changed state doing it — one i5 was in
+    // Indiana on 2026-09-01 and is in Missouri today. Python's day rows read
+    // the row as it was; this read today's flag and put that car outside the
+    // border on a day it was an hour's drive away. local_hist carries the
+    // change points for the handful of cars that have any; everything else
+    // falls back to the flag it already has.
+    const localOn = (x, day) => {
+      const h = x.local_hist;
+      if (!h || !h.length) return !!x.local;
+      let v = h[0][1];
+      for (const step of h) { if (step[0] <= day) v = step[1]; else break; }
+      return !!v;
+    };
     const by = new Map();
     for (const x of uniq.values()) {
-      for (const pt of (x.series || [])) {
-        if (!pt[1]) continue;
-        let e = by.get(pt[0]);
-        if (!e) by.set(pt[0], e = { prices: [], local: 0 });
-        e.prices.push(pt[1]);
-        if (x.local) e.local++;
+      const seen = new Map();
+      for (const pt of (x.series || [])) if (pt[1]) seen.set(pt[0], pt[1]);
+      if (!seen.size) continue;
+      // no per-trim record to carry along (an older sheet): fall back to the
+      // sightings themselves rather than inventing a shape
+      const days = fetchDays[x.trim_id] && fetchDays[x.trim_id].length ? allDays : [...seen.keys()];
+      for (const day of days) {
+        const f = fetchDays[x.trim_id] && fetchDays[x.trim_id].length ? latestFetch(x.trim_id, day) : day;
+        if (!f || !seen.has(f)) continue;
+        let e = by.get(day);
+        if (!e) by.set(day, e = { prices: [], local: 0 });
+        e.prices.push(seen.get(f));
+        if (localOn(x, day)) e.local++;
       }
     }
     // Stop where the departure record stops. Past that line the file has only
@@ -2013,12 +2171,27 @@
     return n === 1 ? `One snapshot day (${fmtDate(dates[0])})`
                    : `${n} snapshot day${n === 1 ? '' : 's'} · ${fmtDate(dates[0])}–${fmtDate(dates[n - 1])}`;
   }
+  // Which ranges the record can actually distinguish, and the clamp that keeps
+  // S.range inside them. Split out of rangeChips() because the CHIPS are drawn
+  // after the rows, and until this was hoisted the first paint of a visit
+  // rebuilt its series against a remembered '90' the record could not support
+  // — a saved range from a longer-lived sheet, or simply a profile older than
+  // the current record. The chips then settled to '30' underneath a chart
+  // already drawn on 90 days of a 10-day file. Hoisting only the clamp, not
+  // the chip rebuild: overviewTitles() runs on the chip-press path precisely
+  // to avoid rebuilding chips under the reader's finger.
+  function rangeOpts() {
+    return ['30', '90', 'all'].filter((id) => id === 'all' || spanDays() > +id);
+  }
+  function clampRange() {
+    const opts = rangeOpts();
+    if (opts.length >= 2 && !opts.includes(S.range)) S.range = opts[0];
+  }
   function rangeChips() {
     const host = $('chart-range');
-    // Offer only the ranges the record can actually distinguish.
-    const opts = ['30', '90', 'all'].filter((id) => id === 'all' || spanDays() > +id);
+    const opts = rangeOpts();
     if (opts.length < 2) { host.hidden = true; host.textContent = ''; return; }
-    if (!opts.includes(S.range)) S.range = opts[0];
+    clampRange();
     segment(host, opts, S.range, (id) => (id === 'all' ? 'all' : id + 'd'), false,   // lowercase like every other tab — this chip only renders once the record spans 30 days
       (id) => { S.range = id; savePrefs(); rerender('range'); }, 'range');
   }
@@ -2085,9 +2258,16 @@
   // offer capped at 60 months does not finance 72 — quoting it at 72 would
   // invent a payment no lender has offered, and it is exactly the car the
   // ranking is about, so the cap is enforced rather than noted.
-  function termFor(x) {
+  // The term the READER asked for, before any promo cap is applied to it.
+  // termFor() answers "how long is this car financed"; this answers "how long
+  // did you say", and the difference between the two is exactly what the row
+  // has to disclose.
+  function chosenTerm() {
     const fin = financeCfg();
-    const want = S.term || (fin && fin.default_term) || 60;
+    return S.term || (fin && fin.default_term) || 60;
+  }
+  function termFor(x) {
+    const want = chosenTerm();
     return (x && x.apr_promo && x.apr_max_term) ? Math.min(want, x.apr_max_term) : want;
   }
   const feesCfg = () => ((S.site || {}).buyer || {}).fees || null;
@@ -2190,6 +2370,29 @@
       + '.';
     return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
   }
+  // What the money on this page is made of, and which parts nobody has checked.
+  // The page prints a shipping estimate on every row, folds an unverified tax
+  // rate into every monthly payment, and offers an out-the-door total — and the
+  // only place any of that was called an estimate was a title= attribute on one
+  // note that renders under one sort, which is to say: invisible on a phone,
+  // invisible to a keyboard, invisible unless you were already suspicious.
+  // This sentence rides the captions that sit above the numbers themselves.
+  function costBasisNote() {
+    const b = (S.site || {}).buyer || {}, f = feesCfg();
+    const bits = [];
+    if ((b.ship_bands || []).length) {
+      bits.push(b.ship_calibrated
+        ? `Shipping from bands calibrated ${fmtDate(b.ship_calibrated)}.`
+        : 'Shipping is an estimate: published open-carrier band rates, not quotes anyone obtained.');
+    }
+    if (f) {
+      const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+      bits.push(f.checked
+        ? `Tax and fees checked ${fmtDate(f.checked)}.`
+        : `Out-the-door and monthly figures add ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and ${money(fixed)} of paperwork — rates not verified.`);
+    }
+    return bits.length ? ' ' + bits.join(' ') : '';
+  }
   // The out-the-door total, shown when it is the number being ranked on — the
   // same rule payNote follows, because a sort by a figure the reader cannot see
   // is a sort they have to take on trust. The title carries the breakdown, and
@@ -2247,8 +2450,23 @@
     if (!x.apr_promo && !ranking) return null;
     const base = payAtFallback(x);
     const saves = base == null ? null : Math.round(base - pay);
-    const bits = [`${perMo(pay)} at ${x.apr}%`];
-    if (saves > 0) bits.push(`saves ${money(saves)}/mo`);
+    // The term, on the FACE of the note, whenever this car is not financed
+    // over the term the reader asked for. A promo capped at 60 months under a
+    // 72-month setting quoted "$818/mo at 2.99% · saves $82/mo" beside rows
+    // financed over 72, and the only thing that said the 60 was a title= —
+    // which no phone can reach and which the compare card's own disclosure
+    // sentence could not help with, because that card is hidden on a
+    // single-model page. Two rows priced over different numbers of months are
+    // not comparable per month, and the page was ranking them against each
+    // other.
+    const capped = termFor(x) !== chosenTerm();
+    const bits = [`${perMo(pay)} at ${x.apr}%` + (capped ? ` over ${termFor(x)} mo` : '')];
+    // …and the saving goes with it. `saves $82/mo` compares this car over 60
+    // months with the same car over 72, which is not a saving, it is a shorter
+    // loan — the promo is genuinely ahead on total interest and ambiguous per
+    // month, so at a capped term the page says nothing rather than something
+    // shaky. The promo strip states the same offer in interest, where it holds.
+    if (saves > 0 && !capped) bits.push(`saves ${money(saves)}/mo`);
     // payFor clamps a down payment that covers the whole car to a $0 payment.
     // The tooltip has to clamp with it: subtracting straight through printed
     // "60 months on -$4,200 financed" under a row reading $0/mo, which is not
@@ -2257,9 +2475,16 @@
     const on = owed > 0
       ? `${termFor(x)} months on ${money(owed)} financed`
       : `paid outright — the down payment covers all ${money(financed(x))}`;
-    return el('span', { class: 'sc-note', title: owed <= 0 ? on
+    // The financed amount is price x (1 + tax_rate) + paperwork, so an
+    // unverified tax rate sits inside every payment the page ranks on. The
+    // out-the-door note has said so since fees shipped; this one did not, and
+    // it is the note that renders under the payment sort.
+    const f = feesCfg();
+    const unchecked = f && !f.checked
+      ? ` · includes ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and fees, ESTIMATE, rates not verified` : '';
+    return el('span', { class: 'sc-note', title: (owed <= 0 ? on
       : x.apr_promo ? `${x.apr_label || 'Promotional rate'} — ${on}`
-      : `${on} at the ordinary used rate` },
+      : `${on} at the ordinary used rate`) + unchecked },
       bits.join(' · '));
   }
   // The one scored pool for the view on screen. The pick cards, the map's rings
@@ -2555,14 +2780,26 @@
     if (x.delta < 0) return el('div', null, el('span', { class: 'sc-delta sc-delta--good' }, `▼ ${money(-x.delta)}${cuts ? ` · ${cuts}` : ''}`));
     if (x.delta > 0) return el('div', null, el('span', { class: 'sc-delta sc-delta--bad' }, `▲ ${money(x.delta)} since first seen${cuts ? ` · ${cuts}` : ''}`));
     if (x.cuts) return el('div', null, el('span', { class: 'sc-delta sc-delta--flat' }, `cut, then back up · ${cuts}`));
-    if (x.days_tracked === 1 && daily.length >= 2) return el('div', null, el('span', { class: 'sc-chip sc-chip--spice' }, 'new'));
+    // isNew(), not a fourth copy of days_tracked === 1: this is the chip the
+    // table actually draws, and the tile above it counts isNew(). Two rules
+    // for one word is how twelve Lucids first seen on 2026-09-02 wore "new"
+    // on 09-04 under a tile that said 0.
+    if (isNew(x) && daily.length >= 2) return el('div', null, el('span', { class: 'sc-chip sc-chip--spice' }, 'new'));
     return null;
   }
   // First seen at the most recent snapshot. The tile counts these; the cards and
   // the table mark them, so the count the page advertises is actually findable.
   // Nothing is "new" on the first snapshot day, when every car is one day old.
   const trackedDays = () => Math.max(0, ...allModels().map(({ m }) => (m.daily || []).length));
-  const isNew = (x) => x.days_tracked === 1 && trackedDays() >= 2;
+  // First seen on THIS snapshot, not merely seen once. days_tracked is the
+  // length of a car's price series and a series only grows on days its target
+  // was fetched, so a car seen once on Monday still reads days_tracked === 1
+  // on Thursday — and the chip, the tile's count and the report all called it
+  // new again. Three cars first seen on 2026-09-01 wore the chip on 09-04.
+  // Mirrors Tracking.py's is_new_today(); an older sheet with no first_seen
+  // falls back to the old test rather than losing the chip entirely.
+  const isNew = (x) => (x.first_seen ? String(x.first_seen).slice(0, 10) === dataThrough()
+                                     : x.days_tracked === 1) && trackedDays() >= 2;
   const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Outside your states — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
   // The 721–1000px band gets neither the phone cards nor room for the full
@@ -2661,7 +2898,12 @@
     const { x, m, bk, mk, gone } = hit;
     const daily = m.daily || [];
     const title = `${m.label || ''} · ${x.year || ''} ${x.trim_label || x.trim || ''}`.trim();
-    const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — likely sold or pulled'
+    // "sold or pulled" names two of the four things that end a listing; the
+    // other two — an auction, a move to a sister lot, an ad simply expiring —
+    // are indistinguishable from outside, which market_line() and exitNote()
+    // both say at length. The claim the data supports is that it stopped being
+    // advertised.
+    const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — the listing ended'
       : (x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale' : 'not checked recently')) : null;
     const price = gone ? x.last_price : x.price;
     const media = el('div', { class: 'sc-photo-card__media' }, thumbFor(gone ? null : x, true),
@@ -2791,7 +3033,10 @@
     return {
       hasPrev: daily.length >= 2,
       cuts: listings.filter((x) => lastStep(x) < 0).length,
-      fresh: daily.length >= 2 ? listings.filter((x) => x.days_tracked === 1).length : 0,
+      // isNew's rule, not a second copy of the old one: the tile's count and
+      // the chips in the table below it have to be the same set, or a reader
+      // who counts them finds a different number.
+      fresh: daily.length >= 2 ? listings.filter(isNew).length : 0,
       // same rule as the report: real delistings at each trim's own previous fetch
       // gone respects hasPrev like the others: one snapshot day cannot
       // distinguish a departure, whatever a gone row claims
@@ -2878,11 +3123,23 @@
     // The tile advertised "N new" and then buried them: under any price-based
     // order the new arrivals sit wherever their price puts them, so the count
     // was unreachable. It now sorts the table to them.
+    // Scrolling is not arriving. These three links moved the viewport and left
+    // focus on the link, so a keyboard or screen-reader user pressed "74 new",
+    // was told nothing, and carried on tabbing through the filter bar they had
+    // just scrolled past. Focus lands on the heading of the card the link
+    // names — an ID rather than a queried h2, so rememberFocus() can restore it
+    // across the rerender — and preventScroll is mandatory, or the focus call
+    // cancels the smooth scroll it was supposed to accompany.
+    const land = (cardId, titleId) => {
+      $(cardId).scrollIntoView({ block: 'start', behavior: 'smooth' });
+      const h = $(titleId);
+      if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+    };
     const showNewest = (e) => {
       e.preventDefault();
       S.sort = 'newest'; $('f-sort').value = 'newest';
       rerender('sort');
-      $('list-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      land('list-card', 'list-title');
     };
     // "N price cuts" was dead text — the number a returning buyer opens the
     // page for, with no way to see WHICH cars. It now sorts the table by the
@@ -2892,14 +3149,14 @@
       e.preventDefault();
       S.sort = 'cut'; $('f-sort').value = 'cut';
       rerender('sort');
-      $('list-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      land('list-card', 'list-title');
     };
     // "K gone" linked nowhere while the departures card sat far below the
     // fold; the count is always readable in the daily>=2 branch, so the card
     // it summarizes is always rendered then — jump to it.
     const showGoneCard = (e) => {
       e.preventDefault();
-      $('gone-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
+      land('gone-card', 'gone-title');
     };
     // Tile 4 counts over `all` and says so in its own label — every gate on it
     // reads the record, never the filtered series.
@@ -3141,7 +3398,19 @@
     const order = S.sort === 'local' ? 'drivable cars first, then by asking price' : null;
     $('list-hint').textContent = `${shown.length < rows.length ? `first ${shown.length} of ` : ''}${rows.length === all ? `${all} tracked` : `${rows.length} of ${all} tracked`}${cover && cover > all ? ` — the API lists ${num(cover)} nationwide` : ''} · one row per VIN${order ? ` · ${order}` : ''} · asking price as listed, shipping stated per car.`
       + (pooled ? ` Every car across ${sc.what}, ranked together — the Car column says which is which.` : '')
-      + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '');
+      + (mbits.length ? ` Market: ${mbits.join(' · ')}.` : '')
+      // financeNote() had exactly one call site — the compare card's hint —
+      // and that card is hidden unless the reader has picked two trims. So on
+      // an ordinary model page sorted by monthly payment, three things it
+      // carries were rendered nowhere: how long ago the hand-entered fallback
+      // rate was last checked (the only staleness warning in the file — with
+      // stale_days at 400 the page would have ranked 137 cars on a
+      // year-old rate and said nothing), the promo's own term cap, and the
+      // "unless a promo applies" framing. Gated on the CARD, not on the sort,
+      // so a comparison does not print the same sentence twice and so the cap
+      // is explained under every sort rather than only the one that ranks on it.
+      + (financeCfg() && $('compare-card').hidden ? financeNote() : '')
+      + costBasisNote();
     $('list-title').textContent = pooled ? 'Every car, side by side' : 'The listings';
     const table = $('list-table'); table.textContent = '';
     const scroll = $('list-scroll');
@@ -3210,11 +3479,14 @@
         exitNote(x),
         (x.msrp && x.msrp !== lastMsrp) ? el('span', { class: 'sc-note' }, `MSRP ${money(x.msrp)}`) : null);
       lastMsrp = x.msrp || lastMsrp;
+      // The desktop table builds this cell itself rather than through
+      // shipNote(), which is why the word "estimate" reached the phone cards
+      // and the pick cards but never the surface most readers use.
       const shipping = el('td', { class: 'sc-num' }, x.local
         ? el('span', { class: 'sc-note' }, 'none · drivable')
         : (x.ship
             ? el('span', null, el('span', { class: 'sc-figure' }, money(x.ship)),
-                 el('span', { class: 'sc-note' }, `${money(landed(x))} landed`))
+                 el('span', { class: 'sc-note' }, `${shipWord()} · ${money(landed(x))} landed`))
             : el('span', { class: 'sc-note' }, 'n/a')));
       const total = el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(landed(x))));
       const loc = el('td', { class: 'loc sc-nowrap' }, placeCell(x), el('br'), scopeChip(x),
@@ -3282,7 +3554,7 @@
     const nOow = gone.filter((g) => g.likely === 'out of window').length;
     const nNc = gone.length - nDel - nOow;
     const splitTxt = [
-      `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (sold or pulled)`,
+      `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
       nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
       nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null,
     ].filter(Boolean).join(' · ');
@@ -3359,6 +3631,7 @@
     return OV_SERIES;
   }
   function overviewRows() {
+    clampRange();   // before the memo below is built, not after the chips are drawn
     OV_SERIES = null;   // a new pass: the filters or the range may have moved
     const series = overviewSeries();
     return modelsInView().map(({ bk, mk, b, m }) => {
@@ -3616,7 +3889,7 @@
     // only row that names a winner.
     $('compare-hint').textContent = `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters`
       + `, each column its own market. Prices are not scored against each other — a cheaper car is not a better one — so at most one row marks a winner: “best value vs typical”, and only when every column’s best car had enough siblings of its own trim and year to be judged against them.`
-      + financeNote();
+      + financeNote() + costBasisNote();
     const P = pickParams();
     const stat = cols.map((c) => {
       const priced = c.rows.filter(hasPrice);
@@ -4160,9 +4433,20 @@
     $('f-cpo').checked = S.cpo;
     $('filters-card').hidden = false;
     filterCount();
+    syncBarHeight();
   }
   // What the filters are doing, in words. One list, so the filter bar and the
   // chart's caption can never describe the same scope in different terms.
+  // The sticky bar's own height, published to CSS so scroll-padding-top can
+  // keep whatever is scrolled to out from under it. A constant is wrong by
+  // 144px between an open desktop bar and a shut phone one, and it has to read
+  // 0 while the card is hidden or every jump on a bar-less view over-scrolls.
+  // Called wherever the bar appears, opens, closes or is re-laid out.
+  function syncBarHeight() {
+    const card = $('filters-card');
+    const h = card && !card.hidden ? Math.round(card.getBoundingClientRect().height) : 0;
+    root.style.setProperty('--bar-h', h + 'px');
+  }
   function filterBits(overview) {
     const bits = [];
     if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
@@ -4349,6 +4633,7 @@
       if (!card.classList.contains('is-open')) return;
       card.classList.remove('is-open');
       $('filter-toggle').setAttribute('aria-expanded', 'false');
+      syncBarHeight();
       filterArmY = null;
       // focus must not die inside the display:none panel
       if (card.contains(document.activeElement)) $('filter-toggle').focus({ preventScroll: true });
@@ -4357,6 +4642,7 @@
       const card = $('filters-card'), open = card.classList.toggle('is-open');
       $('filter-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
       filterArmY = open ? window.scrollY : null;
+      syncBarHeight();
     });
     // Back to top — see the stylesheet note. Landing focus on #main after the
     // jump puts the keyboard where the eyes are, exactly like the skip link.
@@ -4401,6 +4687,7 @@
         if (!S.site || window.innerWidth === lastW) return;
         lastW = window.innerWidth;
         placeToggle();
+        syncBarHeight();   // the bar wraps differently at every band
         // The map is deliberately NOT rebuilt on resize, and the model view
         // below never reaches updateMapVisibility — so the halos' user-unit
         // radius must be re-derived here or a rotation leaves it ~2× off.
@@ -4450,12 +4737,20 @@
     window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', syncMarks);
   }
 
-  function fail(msg) {
+  // `where` names what failed. It used to be the string "Could not load
+  // data.json" unconditionally, followed by advice about serving the folder
+  // over HTTP — which is a wrong lead when the thing that did not load was the
+  // design system, and a blank page when nothing calls fail() at all.
+  function fail(msg, where) {
     $('h1').textContent = 'Snapshot unavailable';
     $('mast-right').textContent = 'No data';
     const n = $('notice'); n.textContent = '';
-    n.appendChild(el('div', { class: 'sc-notice' }, el('div', { class: 'sc-eyebrow' }, 'Could not load data.json'),
-      el('p', null, msg + ' '), el('p', null, 'This page reads ', el('code', null, 'data.json'), ' from the same folder, so it needs to be served over HTTP — GitHub Pages, or locally with ', el('code', null, 'python -m http.server'), ' from the docs folder.')));
+    const http = !where ? el('p', null, 'This page reads ', el('code', null, 'data.json'),
+      ' from the same folder, so it needs to be served over HTTP — GitHub Pages, or locally with ',
+      el('code', null, 'python -m http.server'), ' from the docs folder.') : null;
+    n.appendChild(el('div', { class: 'sc-notice' },
+      el('div', { class: 'sc-eyebrow' }, where || 'Could not load data.json'),
+      el('p', null, msg + ' '), http));
     n.hidden = false;
   }
 
