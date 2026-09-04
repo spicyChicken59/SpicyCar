@@ -1404,6 +1404,15 @@ await step('the monthly payment', async () => {
     if (subject.cap && longest > subject.cap) {
       await page.selectOption('#f-term', String(longest));
       await page.waitForTimeout(350);
+      // Show all first. The table renders thirty rows, and at the LONGEST term
+      // the promo cars are exactly the ones that cannot use it — capped at 60,
+      // they quote a higher payment than the uncapped cars around them and sort
+      // straight out of the first page. On 2026-09-01 the i5 had enough
+      // certified cars that one survived anyway; on 2026-09-04 it had seven and
+      // none did, and this check read an empty string and called the dashboard
+      // broken. The subject was there the whole time, thirty rows down.
+      const all = page.locator('[data-fkey="more:list"]');
+      if (await all.count() && await all.isVisible()) { await all.click(); await page.waitForTimeout(500); }
       const title = await page.$$eval('#list-table tbody .sc-note', (ns, apr) => {
         const t = ns.map((n) => n.getAttribute('title') || '').find((t) => t.includes(apr + '%'));
         return t || '';
