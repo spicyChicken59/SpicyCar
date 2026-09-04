@@ -1787,6 +1787,42 @@ await step('the headline tiles name the right car', async () => {
      t2 ? `tile "${t2.label}" says ${t2.value.trim()} — "${t2.sub.trim()}"; cheapest drivable in the sheet is ${truth.local ? money(truth.local.price) + ' in ' + truth.local.state : 'none'}` : 'no such tile');
 });
 
+// ---- a percentage says what it is a percentage OF ---------------------------
+// "21% under typical" was printed bare on the rows, the phone cards and the
+// scatter tooltip. The compare card has carried the cohort in a title= since
+// the winner rule was written — because the cohort is exactly what decides
+// whether the comparison means anything — and every other surface dropped it.
+// It is visible now, with the cohort's size, because a title= is not readable
+// on a phone and not reachable from a keyboard.
+await step('a value percentage names its cohort', async () => {
+  plan('every "under typical" note says which cohort and how many cars',
+       'and a fallback cohort says it is a fallback');
+  const subject = WATCHED.find((w) => w.cars > 3);
+  if (!subject) return skipRest('no model on the watchlist holds enough cars');
+  await open(subject.q);
+  await page.selectOption('#f-sort', 'value');
+  await page.waitForTimeout(350);
+  const notes = await page.$$eval('#list-scroll tbody .sc-note',
+    (ns) => ns.map((n) => ({ text: n.textContent.replace(/\s+/g, ' ').trim(),
+                             basis: n.getAttribute('data-basis'),
+                             title: n.getAttribute('title') || '' }))
+             .filter((n) => /under typical/.test(n.text)));
+  if (!notes.length) return skipRest('no car on this page sits under its typical price');
+  const named = notes.filter((n) => /n=\d+/.test(n.text) && n.basis);
+  ok('every "under typical" note says which cohort and how many cars',
+     named.length === notes.length,
+     `${named.length} of ${notes.length} — first: "${notes[0].text}"`);
+  // …and where the cohort is NOT the car's own trim and year, the note must
+  // say so rather than let a blended median pass as a like-for-like median.
+  const fallback = notes.filter((n) => n.basis !== 'trim');
+  if (!fallback.length) skip('and a fallback cohort says it is a fallback',
+                             'every scored car on this page had its own trim and year to be judged against');
+  else ok('and a fallback cohort says it is a fallback',
+          fallback.every((n) => /too few/.test(n.title)),
+          `${fallback.length} fallback note(s), first title: "${fallback[0].title.slice(0, 90)}"`);
+  await page.selectOption('#f-sort', 'local');
+});
+
 // ---- the two surfaces agree about the picks ---------------------------------
 // The dashboard held four drivable seats and reserved two of them for the
 // models being shopped; REPORT.md ranked by margin alone and reserved nothing.
@@ -1860,7 +1896,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 103;
+const EXPECTED = 105;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

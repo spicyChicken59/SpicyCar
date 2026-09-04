@@ -833,11 +833,11 @@
     for (const k in byTY) if (byTY[k].length >= 3) tyMed[k] = median(byTY[k]);
     return pool.map((x) => {
       const y = String(x.year || ''), tr = String(x.trim || '').trim().toLowerCase();
-      let med = medAll, year = '', trim = '';
-      if (tyMed[tr + '|' + y] !== undefined) { med = tyMed[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); }
-      else if (yearMed[y] !== undefined) { med = yearMed[y]; year = y; }
+      let med = medAll, year = '', trim = '', basis = 'model', n = pool.length;
+      if (tyMed[tr + '|' + y] !== undefined) { med = tyMed[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); basis = 'trim'; n = byTY[tr + '|' + y].length; }
+      else if (yearMed[y] !== undefined) { med = yearMed[y]; year = y; basis = 'year'; n = byYear[y].length; }
       const v = vals.get(x);
-      return { x, modelLabel, year, trim, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
+      return { x, modelLabel, year, trim, basis, n, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
   // What the per-slot cap counts. Across the watchlist it is the model, so one
@@ -1695,7 +1695,10 @@
       tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + dotTone(x) }),
         el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
       const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
-      if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
+      if (x.pick_pct >= 0.02) {
+        const c = cohortOf(x, t.label);
+        bits.push(`${Math.round(x.pick_pct * 100)}% under typical` + (c ? ` (${c.short}, n=${c.n})` : ''));
+      }
       if (onShortlist(x)) bits.push('on your shortlist');
       tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
       const u = safeUrl(x.url);
@@ -2101,7 +2104,7 @@
   // all say the same number instead of a median that shifts under filters.
   function annotateValue(site) {
     for (const b of Object.values(site.brands || {})) for (const m of Object.values(b.models || {})) {
-      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; }
+      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; p.x.pick_basis = p.basis; p.x.pick_n = p.n; }
     }
   }
   // ---- what the car costs per month -------------------------------------
@@ -2241,6 +2244,39 @@
       + '.';
     return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
   }
+  // "21% under typical" is not a claim until it says WHAT typical, and out of
+  // how many cars. The same percentage means one thing against 23 cars of the
+  // car's own trim and model year and quite another against a whole model's
+  // blended median — on the iX that median is six M60s and one xDrive50, and a
+  // car 24% under it sits 18% ABOVE a typical xDrive50. The compare card has
+  // said so in a title= since the winner rule was written; every other surface
+  // printed the bare number. This is that sentence, once, for all of them.
+  function cohortOf(x, modelLabel) {
+    if (x.pick_pct == null || !x.pick_n) return null;
+    const label = modelLabel || x.model_label || '';
+    const name = [x.pick_year, x.pick_basis === 'trim' ? (x.pick_trim || '') : '', label]
+      .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    return {
+      basis: x.pick_basis, n: x.pick_n,
+      // the noun a reader can check: "2024 eDrive40 BMW i5", "2024 BMW i5", "BMW i5"
+      short: `${x.pick_basis === 'model' ? 'all ' : ''}${name || 'this model'}`,
+      words: x.pick_basis === 'trim'
+        ? `measured against ${x.pick_n} other ${name} listing${x.pick_n === 1 ? '' : 's'} — its own trim and model year`
+        : x.pick_basis === 'year'
+          ? `measured against ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'} — too few of its own trim that year to judge it against those`
+          : `measured against all ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'} — too few of its own model year to judge it against those`,
+    };
+  }
+  // The note itself: the percentage, then the cohort and its size, visible —
+  // not in a title= a phone cannot reach.
+  function valueNote(x, modelLabel, floor) {
+    if (x.pick_pct == null || x.pick_pct < (floor === undefined ? 0.05 : floor)) return null;
+    const c = cohortOf(x, modelLabel);
+    return el('span', { class: 'sc-note', title: c ? c.words : null, 'data-basis': c ? c.basis : null },
+      `${Math.round(x.pick_pct * 100)}% under typical`,
+      c ? el('span', { class: 'sc-faint' }, ` · ${c.short}, n=${c.n}`) : null);
+  }
+
   // What the money on this page is made of, and which parts nobody has checked.
   // The page prints a shipping estimate on every row, folds an unverified tax
   // rate into every monthly payment, and offers an out-the-door total — and the
@@ -2357,6 +2393,7 @@
   function scoredFrom(rows, label, shopping) {
     return rows.filter((x) => x.pick_pct != null)
       .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', trim: x.pick_trim || '',
+                     basis: x.pick_basis, n: x.pick_n,
                      under: x.pick_under, pct: x.pick_pct, shopping }))
       .sort((a, b) => b.pct - a.pct);
   }
@@ -2685,7 +2722,9 @@
           : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') },
                p.shopping ? 'shopping' : 'comparison'),
         isNew(b) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'new') : null),
-      el('span', { class: 'sc-note' }, `${money(p.under)} below a typical ${cohort} with similar mileage`),
+      el('span', { class: 'sc-note', title: (cohortOf(b, p.modelLabel) || {}).words || null },
+        `${money(p.under)} below a typical ${cohort} with similar mileage`
+        + (p.n ? ` · ${p.n} such listing${p.n === 1 ? '' : 's'}` : '')),
       el('p', null, `${facts}. ${where}.`), open));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
@@ -3125,7 +3164,7 @@
       // the phone twin of the table's cut-sort note — the sorted number must be visible here too
       S.sort === 'cut' && lastStep(x) < 0
         ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
-      x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
+      valueNote(x, null),
       otdNote(x), payNote(x), exitNote(x));   // the phone twins of the table's payment, out-the-door and exit-comp notes
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
@@ -3283,7 +3322,7 @@
         // read non-monotonic (or "cut, then back up") against this ordering.
         S.sort === 'cut' && lastStep(x) < 0
           ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
-        x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
+        valueNote(x, null),
         // The payment rides in the price cell rather than a column of its own:
         // the header set is already rationed by viewport band above, and a
         // number derived from the price belongs beside it. It shows always when

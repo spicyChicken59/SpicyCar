@@ -201,10 +201,18 @@ SOURCES = ([("States", {"retailListing.state": ",".join(SEARCH_STATES)})]
 
 
 def sorts_pages(t):
-    """Which sorts, and how many pages each, a target fetches per source."""
-    if t["depth"] == "full":
-        return list(t["sorts"]), int(t["pages"])
-    return [t["sorts"][0]], 1
+    """Which sorts, and how many pages each, a target fetches per source.
+
+    Read with .get() so a PARTIAL target does not raise. build_targets() fills
+    depth, sorts and pages for every real target, so this is byte-identical for
+    them; what it buys is that callers asking about a trim id the watchlist no
+    longer has — TARGETS.get(tid) is {} for a legacy row — get an answer
+    instead of a KeyError, and departures_are_separable() is one of those.
+    """
+    sorts = list(t.get("sorts") or [])
+    if t.get("depth") == "full":
+        return sorts, int(t.get("pages") or 1)
+    return sorts[:1], 1
 
 
 def sources_for(t):
@@ -833,15 +841,25 @@ def score_picks(listings, model_label):
     for x in pool:
         y = str(x.get("year") or "")
         tr = str(x.get("trim") or "").strip().lower()
+        # WHICH cohort, and HOW MANY cars are in it. "21% under typical" is not
+        # a claim until both are said: the same percentage means one thing
+        # against 23 cars of the same trim and model year and quite another
+        # against a whole model's blended median, which on the iX is six M60s
+        # and one xDrive50. The level and the count now ride on the pick, so
+        # every surface that prints the percentage can print what it is under.
         if (tr, y) in ty_med:
             med, p_year, p_trim = ty_med[(tr, y)], y, trim_disp(model_label, x.get("trim"))
+            basis, n = "trim", len(by_ty[(tr, y)])
         elif y in year_med:
             med, p_year, p_trim = year_med[y], y, ""
+            basis, n = "year", len(by_year[y])
         else:
             med, p_year, p_trim = med_all, "", ""
+            basis, n = "model", len(pool)
         v = values[id(x)]
         out.append({**x, "model_label": model_label,
                     "pick_year": p_year, "pick_trim": p_trim,
+                    "pick_basis": basis, "pick_n": n,
                     "pick_under": int(round(med - v)),
                     "pick_pct": (med - v) / med if med else 0.0})
     out.sort(key=lambda p: -p["pick_pct"])
@@ -917,8 +935,12 @@ def fmt_pick(p):
     line = "- " + " · ".join(b for b in bits if b)
     cohort = " ".join(b for b in (p.get("pick_year"), p["model_label"],
                                   p.get("pick_trim")) if b)
+    # the cohort's SIZE, because a percentage under a median of three cars and
+    # one under a median of twenty-three are different claims wearing one word
+    n = p.get("pick_n")
     line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {cohort} "
-             f"({money(p['pick_under'])} less)_")
+             f"({money(p['pick_under'])} less"
+             + (f", from {n} such car{'s' if n != 1 else ''}" if n else "") + ")_")
     if p.get("flags"):
         line += f" · _{' · '.join(p['flags'])}_"
     if p.get("url"):
@@ -980,8 +1002,22 @@ def departures_are_separable(t):
     exits, in dollars, next to a car being decided on — is withheld here. The
     gone list itself still shows every departure with its own `likely` label,
     because "this stopped being listed" is true whatever the cause.
+
+    WHICH TARGETS THOSE ARE was the part this got wrong, and it read the config
+    instead of the fetch. `sorts` is the CONFIGURED list; `sorts_pages()` is
+    what a run actually asks for, and a `light` target takes only the first of
+    them. Eleven of the fourteen targets are light, so this function called
+    them two-window targets while they have only ever opened one — and withheld
+    an exit price from every one of them for a reason that does not apply.
+    window_reconstructable() is the same question asked of the fetch, and it
+    also excludes the newest-first probe, which returns cars at any price and
+    would pollute the axis exactly as a second sort does.
+
+    That leaves the withholding where it belongs: bmw-i5-edrive40 and
+    bmw-i7-edrive50, the two shopped trims that really do open two windows plus
+    a newest probe, still publish nothing.
     """
-    return len(t.get("sorts") or []) <= 1
+    return window_reconstructable(t)
 
 
 def window_reconstructable(t):
