@@ -217,7 +217,14 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 9,
+       "exit_price": 61884,
+       "exit_lo": 53998,
+       "exit_hi": 65398,
+       "exit_watched": 8,
+       "exit_cut_seen": 3,
+       "exit_days": 12
       }
      },
      "listings": [
@@ -13545,7 +13552,14 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 33,
+       "exit_price": 61900,
+       "exit_lo": 59899,
+       "exit_hi": 67040,
+       "exit_watched": 28,
+       "exit_cut_seen": 3,
+       "exit_days": 6
       },
       "bmw-i7-m70": {
        "label": "M70",
@@ -33827,7 +33841,14 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 10,
+       "exit_price": 35616,
+       "exit_lo": 31080,
+       "exit_hi": 40193,
+       "exit_watched": 9,
+       "exit_cut_seen": 2,
+       "exit_days": 32
       }
      },
      "listings": [
@@ -36499,7 +36520,14 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 6,
+       "exit_price": 44477,
+       "exit_lo": 41796,
+       "exit_hi": 56150,
+       "exit_watched": 0,
+       "exit_cut_seen": 0,
+       "exit_days": 11
       }
      },
      "listings": [
@@ -37924,7 +37952,14 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
-       "market_total": null
+       "market_total": null,
+       "exit_n": 9,
+       "exit_price": 44898,
+       "exit_lo": 43794,
+       "exit_hi": 47388,
+       "exit_watched": 6,
+       "exit_cut_seen": 2,
+       "exit_days": 8
       }
      },
      "listings": [

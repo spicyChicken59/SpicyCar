@@ -405,7 +405,30 @@
 
   <div id="notice" hidden></div>
 
+  <section class="sc-card" id="hero-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2>The decision</h2>
+        <p class="sc-hint" id="hero-hint"></p>
+      </div>
+    </div>
+    <div class="sc-grid sc-grid--2" id="hero-cars"></div>
+    <p class="sc-note" id="hero-gap" hidden></p>
+  </section>
+
   <section class="sc-grid sc-grid--4" id="kpis" aria-label="Today at a glance"></section>
+
+  <section class="sc-card" id="promo-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2 id="promo-title">The promo, priced</h2>
+        <p class="sc-hint" id="promo-hint"></p>
+      </div>
+      <span class="sc-chip sc-chip--spice" id="promo-clock"></span>
+    </div>
+    <div class="sc-grid sc-grid--3" id="promo-tiles"></div>
+    <p class="sc-hint" id="promo-foot"></p>
+  </section>
 
   <section class="sc-card sc-filter-bar" id="filters-card" hidden>
     <div class="sc-filter-bar__head">
@@ -457,6 +480,13 @@
       <label class="sc-field" id="f-down-field" hidden>Down
         <input class="sc-input" id="f-down" type="number" min="0" step="500" inputmode="numeric">
       </label>
+      <label class="sc-field" id="f-budget-field">Budget
+        <input class="sc-input" id="f-budget" type="number" min="0" step="100" inputmode="numeric" placeholder="any">
+        <select class="sc-select" id="f-budget-kind" aria-label="What the budget is measured in">
+          <option value="otd">all in</option>
+          <option value="mo">a month</option>
+        </select>
+      </label>
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
       <label class="sc-check" title="Certified pre-owned only — the cars the promo financing applies to"><input type="checkbox" id="f-cpo"> CPO only</label>
@@ -471,6 +501,16 @@
       </div>
     </div>
     <div class="sc-table-scroll"><table class="sc-table sc-table--compact" id="compare-table"></table></div>
+  </section>
+
+  <section class="sc-card" id="finalists-card" hidden>
+    <div class="sc-card__head">
+      <div>
+        <h2>Your shortlist, side by side</h2>
+        <p class="sc-hint" id="finalists-hint"></p>
+      </div>
+    </div>
+    <div class="sc-table-scroll"><table class="sc-table sc-table--compact" id="finalists-table"></table></div>
   </section>
 
   <div id="shortlist" hidden></div>
@@ -591,7 +631,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0 };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -618,10 +658,23 @@
       const terms = (financeCfg() || {}).terms || [];
       S.term = terms.includes(p.term) ? p.term : null;
       S.down = Number.isFinite(p.down) && p.down >= 0 ? p.down : 0;
-    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; }
+      // The shortlist a reader builds in the browser. buyer.shortlist in
+      // targets.json is the committed one and stays the committed one; this is
+      // the working set — the cars under consideration this week — and it lives
+      // here because a config edit needs a commit and a decision does not.
+      // Status, not just a flag: "ruled out" is a decision worth keeping, and a
+      // car you have already phoned is not one to phone again.
+      S.stars = (p.stars && typeof p.stars === 'object') ? p.stars : {};
+      // What you can spend. Persisted like the term and the down payment
+      // because it is the same kind of fact — a standing truth about the buyer,
+      // not a way of reading one page — and because retyping it every visit is
+      // how a control stops being used.
+      S.budget = Number.isFinite(p.budget) && p.budget > 0 ? p.budget : 0;
+      S.budgetKind = p.budgetKind === 'mo' ? 'mo' : 'otd';
+    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range, term: S.term, down: S.down })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
   }
   // ---------- the comparison ----------
   // Which trims a model page is about, in the config's own order (a Set has
@@ -816,12 +869,41 @@
   }
   function pickValue(x, P) { return (!hasPrice(x) || x.miles == null) ? null : x.price + (x.local ? 0 : (x.ship || 0)) + (x.miles - P.base) * P.cpm; }
   function pickEligible(x, P) { return hasPrice(x) && x.miles != null && x.miles <= P.max_miles && !(P.no_acc && x.accidents > 0) && !(P.no_rental && isRental(x)); }
+  // The same predicate, inverted, in the buyer's own words. Every reason a car
+  // is out of the scored pool is a rule THEY wrote in targets.json, so a
+  // surface that has to explain an absence names the rule instead of printing
+  // a dash. Returns null for an eligible car. Shared by the shortlist table and
+  // the decision panel so the two can never give different reasons for the
+  // same car; the order matches pickEligible's, so the reason given is the
+  // first rule the car actually fails.
+  function pickExcuse(x, P) {
+    P = P || pickParams();
+    if (!hasPrice(x)) return 'no price';
+    if (x.miles == null) return 'mileage not published';
+    if (x.miles > P.max_miles) return `over your ${num(P.max_miles)}-mile cap`;
+    if (P.no_acc && x.accidents > 0) return 'an accident on record';
+    if (P.no_rental && isRental(x)) return 'rental or fleet history';
+    return null;
+  }
   // The trim, minus words the model label already carries — a cohort reads
   // "2023 BMW i7 xDrive60", never "BMW i7 i7 xDrive60".
   function trimDisp(modelLabel, trim) {
     const words = new Set(String(modelLabel).toLowerCase().split(/\s+/));
     return String(trim || '').split(/\s+/).filter((w) => w && !words.has(w.toLowerCase())).join(' ');
   }
+  // What to CALL this car's trim. trim_label is the target's name for the
+  // group it was fetched under, and for a model watched whole that name is
+  // "all trims" — so every Ioniq 5 pick card read "Hyundai Ioniq 5 · 2023 ·
+  // all trims · 17,314 mi" while the value note directly above it, which reads
+  // the API's own trim field, said "a typical 2023 Hyundai Ioniq 5 SEL". The
+  // page had the real trim the whole time and printed the placeholder over it.
+  // Tracking.py has refused that word since the shortlist heading was written
+  // (`tl.lower() in ("", "all", "all trims")`); this is the same rule, once,
+  // for every surface that names a car.
+  const carTrim = (x) => {
+    const label = String(x.trim_label || '').trim();
+    return (/^all(\s+trims)?$/i.test(label) ? '' : label) || String(x.trim || '').trim();
+  };
   // Scored against the tightest cohort with three or more eligible cars: the
   // car's own trim and model year first, then the model year, then the whole
   // model — otherwise a cheapest-trim 2023 i7 reads as half price because the
@@ -842,11 +924,11 @@
     for (const k in byTY) if (byTY[k].length >= 3) tyMed[k] = median(byTY[k]);
     return pool.map((x) => {
       const y = String(x.year || ''), tr = String(x.trim || '').trim().toLowerCase();
-      let med = medAll, year = '', trim = '';
-      if (tyMed[tr + '|' + y] !== undefined) { med = tyMed[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); }
-      else if (yearMed[y] !== undefined) { med = yearMed[y]; year = y; }
+      let med = medAll, year = '', trim = '', basis = 'model', n = pool.length;
+      if (tyMed[tr + '|' + y] !== undefined) { med = tyMed[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); basis = 'trim'; n = byTY[tr + '|' + y].length; }
+      else if (yearMed[y] !== undefined) { med = yearMed[y]; year = y; basis = 'year'; n = byYear[y].length; }
       const v = vals.get(x);
-      return { x, modelLabel, year, trim, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
+      return { x, modelLabel, year, trim, basis, n, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
   // What the per-slot cap counts. Across the watchlist it is the model, so one
@@ -1235,7 +1317,7 @@
         // was — a colour with no text channel is not an answer for a reader who
         // cannot separate the two hues, or for one using a screen reader.
         tip.appendChild(el('div', { class: 'sc-tooltip__date' },
-          [c.m.label, c.x.trim_label || c.x.trim, c.x.year || ''].filter(Boolean).join(' · ')));
+          [c.m.label, carTrim(c.x), c.x.year || ''].filter(Boolean).join(' · ')));
         tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + SC.toneRef(brandTone(c.bk)) }),
           el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
         const extras = [];
@@ -1760,7 +1842,10 @@
       tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + dotTone(x) }),
         el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
       const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
-      if (x.pick_pct >= 0.02) bits.push(`${Math.round(x.pick_pct * 100)}% under typical`);
+      if (x.pick_pct >= 0.02) {
+        const c = cohortOf(x, t.label);
+        bits.push(`${Math.round(x.pick_pct * 100)}% under typical` + (c ? ` (${c.short}, n=${c.n})` : ''));
+      }
       if (onShortlist(x)) bits.push('on your shortlist');
       tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, bits.join(' · ')));
       const u = safeUrl(x.url);
@@ -2049,7 +2134,7 @@
     // trims add to 137 vehicles on 2026-08-30 over a model row of 136. This
     // map is what keeps the pooled trim scope honest about it.
     const uniq = new Map();
-    for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter(passesShared)) {
+    for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter((x) => passesShared(x))) {
       const k = String(x.vin || '').toUpperCase();
       if (!k) continue;
       if (!uniq.has(k)) uniq.set(k, x);   // the live listing comes first and wins
@@ -2200,7 +2285,7 @@
     const pts = (daily || []).filter((d) => d.min_price !== null && d.min_price !== undefined).map((d) => ({ date: d.date, value: d.min_price }));
     // The one-point fallback has to obey the filters too, or a scope with no
     // history at all would be handed the nation's cheapest car as its answer.
-    if (!pts.length) { const b = lowestBy(trimRows(m.listings || []).filter(passesShared), 'price'); if (b) pts.push({ date: m.as_of || dataThrough(), value: b.price }); }
+    if (!pts.length) { const b = lowestBy(trimRows(m.listings || []).filter((x) => passesShared(x)), 'price'); if (b) pts.push({ date: m.as_of || dataThrough(), value: b.price }); }
     return pts;
   }
   // The DATA day: the newest snapshot date anywhere in the file. site.generated
@@ -2223,7 +2308,7 @@
   // all say the same number instead of a median that shifts under filters.
   function annotateValue(site) {
     for (const b of Object.values(site.brands || {})) for (const m of Object.values(b.models || {})) {
-      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; }
+      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; p.x.pick_basis = p.basis; p.x.pick_n = p.n; }
     }
   }
   // ---- what the car costs per month -------------------------------------
@@ -2249,6 +2334,19 @@
           x.apr_promo = !!gets;
           x.apr_label = gets ? promo.label : '';
           x.apr_max_term = gets ? promo.max_term : null;
+          // `cpo` is the FEED's generic "certified" flag, and the captive
+          // lender's certified rate is not: BMW Financial Services writes it at
+          // a BMW centre. Nine of the i5's twenty-two certified cars sit at a
+          // Chrysler-Jeep dealer, a Volvo dealer and a Nissan lot, and the page
+          // was quoting every one of them 2.99% and telling the reader it
+          // "saves $82/mo".
+          //
+          // This is a claim about the SELLER'S NAME and nothing more — a real
+          // BMW centre trading as "Braman Motors" would trip it, which is why
+          // it flags rather than excludes and why the wording says what was
+          // actually checked. A false flag costs a sentence; the silence it
+          // replaces cost a payment the buyer cannot get.
+          x.apr_seller_unnamed = !!gets && !/\bbmw\b/i.test(x.dealer || '');
         }
       }
     }
@@ -2370,6 +2468,39 @@
       + '.';
     return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
   }
+  // "21% under typical" is not a claim until it says WHAT typical, and out of
+  // how many cars. The same percentage means one thing against 23 cars of the
+  // car's own trim and model year and quite another against a whole model's
+  // blended median — on the iX that median is six M60s and one xDrive50, and a
+  // car 24% under it sits 18% ABOVE a typical xDrive50. The compare card has
+  // said so in a title= since the winner rule was written; every other surface
+  // printed the bare number. This is that sentence, once, for all of them.
+  function cohortOf(x, modelLabel) {
+    if (x.pick_pct == null || !x.pick_n) return null;
+    const label = modelLabel || x.model_label || '';
+    const name = [x.pick_year, x.pick_basis === 'trim' ? (x.pick_trim || '') : '', label]
+      .filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    return {
+      basis: x.pick_basis, n: x.pick_n,
+      // the noun a reader can check: "2024 eDrive40 BMW i5", "2024 BMW i5", "BMW i5"
+      short: `${x.pick_basis === 'model' ? 'all ' : ''}${name || 'this model'}`,
+      words: x.pick_basis === 'trim'
+        ? `measured against ${x.pick_n} other ${name} listing${x.pick_n === 1 ? '' : 's'} — its own trim and model year`
+        : x.pick_basis === 'year'
+          ? `measured against ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'} — too few of its own trim that year to judge it against those`
+          : `measured against all ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'} — too few of its own model year to judge it against those`,
+    };
+  }
+  // The note itself: the percentage, then the cohort and its size, visible —
+  // not in a title= a phone cannot reach.
+  function valueNote(x, modelLabel, floor) {
+    if (x.pick_pct == null || x.pick_pct < (floor === undefined ? 0.05 : floor)) return null;
+    const c = cohortOf(x, modelLabel);
+    return el('span', { class: 'sc-note', title: c ? c.words : null, 'data-basis': c ? c.basis : null },
+      `${Math.round(x.pick_pct * 100)}% under typical`,
+      c ? el('span', { class: 'sc-faint' }, ` · ${c.short}, n=${c.n}`) : null);
+  }
+
   // What the money on this page is made of, and which parts nobody has checked.
   // The page prints a shipping estimate on every row, folds an unverified tax
   // rate into every monthly payment, and offers an out-the-door total — and the
@@ -2467,6 +2598,9 @@
     // month, so at a capped term the page says nothing rather than something
     // shaky. The promo strip states the same offer in interest, where it holds.
     if (saves > 0 && !capped) bits.push(`saves ${money(saves)}/mo`);
+    // The rate is only reachable where the lender writes it; say so on the row
+    // rather than let a promo rate stand unqualified over a Nissan lot.
+    if (x.apr_seller_unnamed) bits.push('seller is not named as a BMW centre');
     // payFor clamps a down payment that covers the whole car to a $0 payment.
     // The tooltip has to clamp with it: subtracting straight through printed
     // "60 months on -$4,200 financed" under a row reading $0/mo, which is not
@@ -2480,8 +2614,11 @@
     // out-the-door note has said so since fees shipped; this one did not, and
     // it is the note that renders under the payment sort.
     const f = feesCfg();
-    const unchecked = f && !f.checked
-      ? ` · includes ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and fees, ESTIMATE, rates not verified` : '';
+    const unchecked = (f && !f.checked
+      ? ` · includes ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and fees, ESTIMATE, rates not verified` : '')
+      + (x.apr_seller_unnamed
+        ? ` · this car is flagged certified, but the seller's name does not say BMW and ${x.apr_label || 'this rate'} is written at a BMW centre — confirm before counting on it`
+        : '');
     return el('span', { class: 'sc-note', title: (owed <= 0 ? on
       : x.apr_promo ? `${x.apr_label || 'Promotional rate'} — ${on}`
       : `${on} at the ordinary used rate`) + unchecked },
@@ -2501,6 +2638,7 @@
   function scoredFrom(rows, label, shopping) {
     return rows.filter((x) => x.pick_pct != null)
       .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', trim: x.pick_trim || '',
+                     basis: x.pick_basis, n: x.pick_n,
                      under: x.pick_under, pct: x.pick_pct, shopping }))
       .sort((a, b) => b.pct - a.pct);
   }
@@ -2597,7 +2735,36 @@
   }
   // One car against the shared filters — the single predicate the tables, the
   // counts and the map's dot visibility all run, so they cannot drift apart.
-  function passesShared(x) {
+  // What a budget is measured against, and why there are only two answers.
+  // "All in" is the out-the-door total where the sheet has a fee block and the
+  // landed price where it does not — the same figure the decision panel leads
+  // with, so a budget and that panel can never disagree about what a car costs.
+  // "A month" is payFor(), the car's OWN rate over its own term, so a certified
+  // car on a promo can fit a budget that a cheaper car misses; that is the whole
+  // reason this page ranks by payment at all.
+  //
+  // A car whose figure cannot be computed does not quietly pass. Nothing on
+  // this page may claim a car fits a budget it was never measured against, and
+  // the alternative — keeping it and saying nothing — is exactly that claim
+  // made by omission. The count line names the budget, so the reader can see
+  // what narrowed the page.
+  function budgetFigure(x) {
+    if (!hasPrice(x)) return null;
+    return S.budgetKind === 'mo' ? payFor(x) : (feesCfg() ? otd(x) : landed(x));
+  }
+  function withinBudget(x) {
+    if (!S.budget) return true;
+    const v = budgetFigure(x);
+    return v != null && v <= S.budget;
+  }
+  // `skipBudget` exists for one caller: the decision panel, which needs to know
+  // whether a model is empty because of the budget or in spite of it, so it can
+  // say which. Every call site therefore passes the car in an arrow function
+  // rather than handing passesShared to .filter() directly — .filter supplies
+  // the INDEX as the second argument, and index 1 would have quietly turned the
+  // budget off for every car but the first.
+  function passesShared(x, skipBudget) {
+    if (!skipBudget && !withinBudget(x)) return false;
     if (!matchWhere(x)) return false;
     if (S.year !== 'all' && String(x.year) !== S.year) return false;
     if (S.miles && !(x.miles !== null && x.miles !== undefined && x.miles < S.miles)) return false;
@@ -2606,7 +2773,7 @@
     if (S.rental && isRental(x)) return false;
     return true;
   }
-  function applyShared(rows) { return rows.filter(passesShared); }   // the filters that make sense across models
+  function applyShared(rows) { return rows.filter((x) => passesShared(x)); }   // the filters that make sense across models
   const SORT_DESC = { days_listed: true, newest: true };
 
   // ---------- navigation ----------
@@ -2820,7 +2987,7 @@
   // the value chip in the corner; the reasoning and facts below.
   function pickCard(p) {
     const b = p.x;
-    const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
+    const facts = [p.modelLabel, b.year, carTrim(b), b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
     const url = safeUrl(b.url);
     // A 2% saving should not wear the same green as a 33% one.
@@ -2841,8 +3008,10 @@
           : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') },
                p.shopping ? 'shopping' : 'comparison'),
         isNew(b) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'new') : null),
-      el('span', { class: 'sc-note' }, `${money(p.under)} below a typical ${cohort} with similar mileage`),
-      el('p', null, `${facts}. ${where}.`), open));
+      el('span', { class: 'sc-note', title: (cohortOf(b, p.modelLabel) || {}).words || null },
+        `${money(p.under)} below a typical ${cohort} with similar mileage`
+        + (p.n ? ` · ${p.n} such listing${p.n === 1 ? '' : 's'}` : '')),
+      el('p', null, `${facts}. ${where}.`), el('p', null, starButton(b)), open));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
   // the rest of the country. Front page: across every model; model view: within it.
@@ -2897,7 +3066,7 @@
     }
     const { x, m, bk, mk, gone } = hit;
     const daily = m.daily || [];
-    const title = `${m.label || ''} · ${x.year || ''} ${x.trim_label || x.trim || ''}`.trim();
+    const title = `${m.label || ''} · ${x.year || ''} ${carTrim(x)}`.replace(/\s+/g, ' ').trim();
     // "sold or pulled" names two of the four things that end a listing; the
     // other two — an auction, a move to a sister lot, an ad simply expiring —
     // are indistinguishable from outside, which market_line() and exitNote()
@@ -2946,6 +3115,480 @@
     if (d === 0) return el('div', { class: 'sc-delta sc-delta--flat' }, '= vs previous day');
     const good = goodWhenDown ? d < 0 : d > 0;
     return el('div', { class: 'sc-delta ' + (good ? 'sc-delta--good' : 'sc-delta--bad') }, `${d < 0 ? '▼' : '▲'} ${money(Math.abs(d))} vs ${fmtDate(prevDate)}`);
+  }
+
+  // ---------- the working shortlist ----------
+  // Four states, in the order a decision actually moves through them, and the
+  // press cycles: none -> shortlisted -> called -> ruled out -> none. Ruled out
+  // is kept rather than cleared, because "I already looked at this one and said
+  // no" is the fact a returning reader most needs and the one a plain star
+  // throws away.
+  const STAR_STEPS = ['', 'short', 'called', 'out'];
+  const STAR_WORD = { short: 'shortlisted', called: 'called', out: 'ruled out' };
+  const STAR_CHIP = { short: 'sc-chip--spice', called: 'sc-chip--info', out: 'sc-chip--neutral' };
+  const starOf = (x) => S.stars[String(x.vin || '').toUpperCase()] || '';
+  const starred = () => Object.entries(S.stars).filter(([, v]) => v && v !== 'out').map(([k]) => k);
+  function cycleStar(x) {
+    const vin = String(x.vin || '').toUpperCase();
+    if (!vin) return;
+    const next = STAR_STEPS[(STAR_STEPS.indexOf(starOf(x)) + 1) % STAR_STEPS.length];
+    if (next) S.stars[vin] = next; else delete S.stars[vin];
+    savePrefs();
+    // Exactly two things on this page read a star: the buttons that carry one,
+    // and the shortlist table. Redrawing the rows the way a filter does misses
+    // the first — on the watchlist rerender('rows') rebuilds the listings and
+    // leaves #takeaway alone, so a star pressed on a PICK CARD changed the
+    // stored state, changed the shortlist table, and left the button you had
+    // just pressed still reading "☆ shortlist" until the next reload. (The
+    // smoke suite caught it saying "☆ shortlist → ☆ shortlist → ☆ shortlist".)
+    // Redrawing everything instead would rebuild the map, the chart and five
+    // hundred rows for a press that changed none of them, and would move the
+    // focus out from under the button. So: repaint every button that names this
+    // VIN, wherever on the page it is, and rebuild the one card that depends on
+    // the whole set.
+    for (const b of document.querySelectorAll(`[data-fkey="star:${vin}"]`)) {
+      const fresh = starButton(x);
+      b.textContent = fresh.textContent;
+      b.title = fresh.title;
+      b.setAttribute('aria-pressed', fresh.getAttribute('aria-pressed'));
+    }
+    renderFinalists();
+  }
+  function starButton(x) {
+    const st = starOf(x);
+    return el('button', {
+      class: 'sc-btn sc-btn--ghost sc-btn--sm', type: 'button',
+      'data-fkey': 'star:' + (x.vin || ''),
+      'aria-pressed': st ? 'true' : 'false',
+      title: st ? `${STAR_WORD[st]} — press to move to ${STAR_WORD[STAR_STEPS[(STAR_STEPS.indexOf(st) + 1) % STAR_STEPS.length]] || 'nothing'}`
+                : 'Shortlist this car — press again for called, then ruled out',
+      onclick: (e) => { e.preventDefault(); e.stopPropagation(); cycleStar(x); },
+    }, st === 'out' ? '✕ ruled out' : st === 'called' ? '☎ called' : st === 'short' ? '★ shortlisted' : '☆ shortlist');
+  }
+  // Every starred car the sheet still holds, live or departed — a car you were
+  // considering that has since left the market is the single most useful thing
+  // this page can tell you, so it stays in the table wearing that fact.
+  function finalists() {
+    const out = [];
+    for (const vin of starred()) {
+      const hit = findVin(vin);
+      if (hit) out.push({ vin, gone: hit.gone, x: hit.x, m: hit.m, bk: hit.bk, mk: hit.mk, status: S.stars[vin] });
+    }
+    return out.sort((a, b) => ((a.x.price ?? 1e12) - (b.x.price ?? 1e12)));
+  }
+  function renderFinalists() {
+    const card = $('finalists-card');
+    const rows = finalists();
+    // Emptied, not just hidden. A comparison of cars you have since ruled out
+    // is not a thing to leave lying in the document waiting for a print
+    // stylesheet, a find-in-page or the next reader of the DOM to surface it.
+    if (rows.length < 2) { card.hidden = true; $('finalists-table').textContent = ''; return; }
+    card.hidden = false;
+    // The table holds what is still in play; two things it deliberately leaves
+    // out have to be said out loud or the reader is quietly missing cars they
+    // marked themselves. A car you ruled out is kept in the profile (that is
+    // the point of the fourth state) but not compared, and a car the sheet no
+    // longer carries at all — departed long enough ago to have fallen out of
+    // `gone` — would otherwise just stop appearing, with nothing to say it ever
+    // did. Both are counted, neither is invented.
+    const outN = Object.values(S.stars).filter((v) => v === 'out').length;
+    const lostN = starred().filter((v) => !findVin(v)).length;
+    const goneN = rows.filter((r) => r.gone).length;
+    $('finalists-hint').textContent =
+      `${rows.length} cars you are deciding between, cheapest first — each priced on its own terms.`
+      + (goneN ? ` ${goneN} of them ${goneN === 1 ? 'has' : 'have'} left the market and ${goneN === 1 ? 'is' : 'are'} kept here for the comparison.` : '')
+      + (outN ? ` ${outN} more ruled out, still marked on ${outN === 1 ? 'its' : 'their'} own row.` : '')
+      + (lostN ? ` ${lostN} the sheet no longer carries at all.` : '')
+      + ' Press a car\'s button again to mark it called, then ruled out.'
+      + financeNote() + costBasisNote();
+    const table = $('finalists-table'); table.textContent = '';
+    table.appendChild(el('caption', { class: 'sc-sr-only' },
+      `Your shortlist, side by side — one column per car, ${rows.length} of them`));
+    const head = el('tr', null, el('th', { scope: 'col' }, 'Measure'));
+    for (const r of rows) {
+      head.appendChild(el('th', { class: 'sc-case', scope: 'col',
+        'aria-label': `${r.m.label || ''} ${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim() },
+        el('span', null, `${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim()),
+        el('span', { class: 'sc-note' }, r.m.label || r.mk),
+        el('span', { class: 'sc-nowrap' },
+          el('span', { class: 'sc-chip ' + (r.gone ? 'sc-chip--danger' : STAR_CHIP[r.status] || 'sc-chip--neutral') },
+             r.gone ? 'gone' : STAR_WORD[r.status] || 'shortlisted'), ' ',
+          el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'fin:' + r.vin,
+                    onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →'))));
+    }
+    table.appendChild(el('thead', null, head));
+    const body = el('tbody');
+    const row = (label, title, cell) => {
+      const tr = el('tr', null, el('th', { class: 'cmp-metric', scope: 'row', title: title || null }, label));
+      for (const r of rows) tr.appendChild(cell(r));
+      body.appendChild(tr);
+    };
+    // The compare card above marks a winner on exactly one row, and says so at
+    // length: across MODELS a price is not a score, so calling the cheapest one
+    // "best" would say the EV9 beat the i5 by being smaller. This table is a
+    // different question. Every car in it is one you starred yourself, so "which
+    // of these is cheapest" has a real answer — but the answer is still only
+    // what it literally is. Each row therefore names its own winner in its own
+    // words (lowest asking, fewest miles), and none of them says "best value":
+    // that sentence belongs to the one row measured against a cohort, and this
+    // table does not mark a winner on that row at all, because two cars scored
+    // against two different cohorts are not comparable on the percentage.
+    const cell = (v, sub, best, word) =>
+      el('td', { class: 'sc-num' + (best ? ' is-best' : '') },
+        el('span', { class: 'sc-figure' }, v),
+        sub ? el('span', { class: 'sc-note' }, sub) : null,
+        best ? el('span', { class: 'sc-note sc-text-good' }, word) : null);
+    // A bare "not scored" is exactly the kind of blank this page exists to
+    // refuse. Every reason a car falls out of the scored pool is a rule the
+    // buyer wrote themselves in targets.json — a mileage cap, no accidents, no
+    // ex-rentals — so the cell names the rule instead of shrugging. The last
+    // branch is the honest remainder: scorePicks needs three eligible cars in
+    // a cohort before it will call anything typical.
+    const whyUnscored = (r) => (r.gone ? 'gone — scored against the live market only'
+      : pickExcuse(r.x) || 'too few comparable cars to say');
+    // "3 cuts · $0 off" read as a discount on a car that was cut and then put
+    // back up. `cuts` counts the downward steps; `delta` is last minus first.
+    // When those two disagree the car did not end up cheaper, and on a shortlist
+    // that is the more interesting fact of the two.
+    const cutNote = (x) => {
+      if (!x.cuts) return 'no cuts seen';
+      const d = x.delta || 0, n = `${x.cuts} cut${x.cuts > 1 ? 's' : ''}`;
+      return d < 0 ? `${n} · ${money(-d)} off`
+        : d > 0 ? `${n}, then back up · ${money(d)} over its first price`
+        : `${n}, then back up · back to its first price`;
+    };
+    const lowest = (get) => {
+      let b = null;
+      for (const r of rows) { const v = get(r); if (v != null && (b == null || v < b)) b = v; }
+      return b;
+    };
+    const bestPrice = lowest((r) => (r.gone ? null : r.x.price));
+    row('Asking', 'The price as listed', (r) => cell(money(r.gone ? r.x.last_price : r.x.price),
+      r.gone ? `last seen ${fmtDate(r.x.last_seen)}` : shipNote(r.x),
+      !r.gone && r.x.price != null && r.x.price === bestPrice, 'lowest asking'));
+    if (feesCfg()) {
+      const bestOtd = lowest((r) => (r.gone ? null : otd(r.x)));
+      row('Out the door', 'Asking plus tax, paperwork and getting it here — an estimate until buyer.fees.checked is dated',
+        (r) => cell(r.gone ? '—' : money(otd(r.x)), r.gone ? '' : 'all in',
+          !r.gone && otd(r.x) != null && otd(r.x) === bestOtd, 'cheapest all in'));
+    }
+    if (financeCfg()) {
+      const bestPay = lowest((r) => (r.gone ? null : payFor(r.x)));
+      row('Per month', 'At this car\'s own rate — a certified car on a promo can beat a cheaper one that is not',
+        (r) => cell(r.gone ? '—' : perMo(payFor(r.x)),
+          r.gone ? '' : `${r.x.apr}%${r.x.apr_promo ? ' promo' : ''} · ${termFor(r.x)}mo`
+            + (r.x.apr_seller_unnamed ? ' · seller not named BMW' : ''),
+          !r.gone && payFor(r.x) != null && payFor(r.x) === bestPay, 'lowest payment'));
+    }
+    const bestMiles = lowest((r) => r.x.miles);
+    row('Miles', null, (r) => cell(r.x.miles != null ? num(r.x.miles) : '—', null,
+      r.x.miles != null && r.x.miles === bestMiles, 'fewest miles'));
+    row('Value vs typical', picksRule(), (r) => {
+      const c = cohortOf(r.x, r.m.label);
+      // Both directions here, unlike everywhere else on the page. The picks,
+      // the chips and the map rings only speak when a car sits UNDER typical,
+      // because that is what a pick IS — a car worth surfacing. On your own
+      // shortlist the opposite reading is the more valuable one: you are about
+      // to ring a dealer, and "6% over typical" is exactly what you would want
+      // to have known first. Printing a dash there hid the answer.
+      const p = r.x.pick_pct;
+      const word = p == null ? '—'
+        : Math.abs(p) < 0.005 ? 'at typical'
+        : p > 0 ? `${Math.round(p * 100)}% under`
+        : `${Math.round(-p * 100)}% over`;
+      return cmpCell(word, c ? `${c.short}, n=${c.n}` : whyUnscored(r), false,
+        c ? { kind: c.basis, title: c.words } : null);
+    });
+    row('Where', 'Drivable means listed in one of your states — no shipping',
+      (r) => cmpCell(placeCell(r.x), r.x.local ? 'drivable' : (r.x.distance != null ? `~${num(r.x.distance)} mi away` : 'distance n/a')));
+    row('On the market', 'Days since it was listed, where the feed gives a real listing date',
+      (r) => cmpCell(r.x.days_listed != null ? `${r.x.days_listed}d` : '—', cutNote(r.x)));
+    row('History', null, (r) => el('td', null, flagsCell(r.x)));
+    row('Price so far', 'The same series the chart draws for this car',
+      (r) => el('td', null, spark((r.x.series || []).map((q) => q[1]), 90, 26, (r.x.delta || 0) < 0)));
+    table.appendChild(body);
+    markClipped(table.closest('.sc-table-scroll'));
+  }
+  // ---------- the decision ----------
+  // The first screen of this page on a phone was: the masthead, a three-line
+  // dek, six brand chips, and then two tiles that both read "$19,980 · Hyundai
+  // Ioniq 5" — the same number twice, for a car this buyer is not buying. Every
+  // model on the watchlist is weighted equally by a page built for one person
+  // choosing between an i5 and an i7, and neither car was named above the fold.
+  //
+  // targets.json has always known which is which. buyer.shopping names three
+  // TRIM ids — bmw-i5-cpo, bmw-i5-edrive40, bmw-i7-edrive50 — and the picks,
+  // the chart's line weights and the promo strip already read it. This is that
+  // same list at the top of the page: one tile per shopped MODEL, holding the
+  // cheapest car of its shopped trims, so the fold answers the only question
+  // the tracker was built for.
+  //
+  // Ranked and headlined on the SAME number, and it is the all-in one. A
+  // $61,985 i7 in California and a $64,888 i7 in Ohio are not comparable on
+  // asking price — one of them owes $1,336 to a hauler — and the buyer is
+  // choosing between totals, not stickers. Where buyer.fees exists that total
+  // is the out-the-door figure; where it does not it falls back to landed
+  // (asking + shipping), which is the best the sheet can do without a tax rate.
+  // Both are estimates, so the tile says "estimated" on its own label and the
+  // hint carries costBasisNote() — the same sentence the listings caption got —
+  // rather than leaving the word in a title= no phone can reach.
+  function heroModels() {
+    const shopping = ((S.site || {}).buyer || {}).shopping || [];
+    const want = new Set(shopping);
+    if (!want.size) return [];
+    // A model-chip comparison is the reader saying what the page is about right
+    // now; the hero follows it rather than answering over the top of it. With
+    // no chips pressed, every shopped model is in.
+    const inView = S.models.size ? new Set(modelsInView().map(({ bk, mk }) => bk + '/' + mk)) : null;
+    const out = [];
+    for (const { bk, mk, m } of allModels()) {
+      if (!Object.keys(m.trims || {}).some((id) => want.has(id))) continue;
+      if (inView && !inView.has(bk + '/' + mk)) continue;
+      const held = (m.listings || []).filter((x) => want.has(x.trim_id));
+      out.push({ bk, mk, m, held,
+        pool: applyShared(held).filter(hasPrice),
+        // The same set with the budget lifted, so an empty tile can tell the
+        // reader WHICH of their own settings emptied it. "No i7 matches your
+        // filters" and "24 i7s fit your rules, none under $50,000" are the
+        // same fact and only one of them is worth reading.
+        wider: held.filter((x) => passesShared(x, true) && hasPrice(x)) });
+    }
+    // The buyer's own order, not the alphabet and not the price: whichever
+    // shopped trim they wrote down first is the car they are leading with.
+    const rank = (o) => Math.min(...Object.keys(o.m.trims || {})
+      .map((id) => shopping.indexOf(id)).filter((i) => i >= 0));
+    return out.sort((a, b) => rank(a) - rank(b));
+  }
+  // The comparable total, and the word for what is in it.
+  const heroTotal = (x) => (feesCfg() ? otd(x) : landed(x));
+  function renderHero() {
+    const card = $('hero-card'), host = $('hero-cars'), gap = $('hero-gap');
+    const models = heroModels();
+    host.textContent = '';
+    if (!models.length) { card.hidden = true; gap.hidden = true; return; }
+    card.hidden = false;
+    const allIn = !!feesCfg();
+    const bits = filterBits(true);
+    // One line, and a short one. This card exists to be the first screen on a
+    // phone, and the first draft spent five lines of it on the cost-basis
+    // disclosure before the reader reached a number — which pushed the numbers
+    // off the fold and defeated the whole feature. The disclosure is not
+    // dropped (that was the repair's entire point: an estimate must be labelled
+    // where it is READ, not in a title= no phone can reach) — each tile carries
+    // "estimated" in its own label, and the full sentence sits directly under
+    // the figures it qualifies, on the gap line below.
+    $('hero-hint').textContent =
+      `The ${models.length === 1 ? 'model' : models.length === 2 ? 'two models' : models.length + ' models'} you are shopping:`
+      + ` the cheapest car of each that meets your rules${allIn ? ', all in' : ', once shipping is added'}.`
+      + (bits.length ? ` Filtered to ${bits.join(' · ')}.` : '');
+    $('hero-hint').title = picksRule();
+    const chosen = [];
+    const P = pickParams();
+    for (const o of models) {
+      // The buyer's own eligibility rules, not just "cheapest". Without them
+      // this panel led with a $36,479 eDrive40 that was an ex-rental with an
+      // accident on it — a car buyer.picks excludes from every other surface on
+      // the page — and said nothing about either fact. "The decision" leading
+      // with a car the reader has already ruled out in writing is worse than
+      // showing them nothing.
+      const fit = o.pool.filter((x) => !pickExcuse(x, P));
+      const best = fit.reduce((b, x) => {
+        const v = heroTotal(x);
+        return (v != null && (!b || v < b.v)) ? { v, x } : b;
+      }, null);
+      chosen.push(best ? { o, x: best.x, total: best.v } : { o, x: null, total: null });
+      const label = el('div', { class: 'sc-tile__label' }, o.m.label || o.mk);
+      if (!best) {
+        // Silence here would read as "this model has nothing", when what
+        // happened is that the reader's own filters removed it. Say which.
+        const fitRules = o.wider.filter((x) => !pickExcuse(x, P)).length;
+        host.appendChild(el('div', { class: 'sc-tile' }, label,
+          el('div', { class: 'sc-tile__value sc-tile__value--sm' }, '—'),
+          el('div', { class: 'sc-tile__sub' },
+            !o.held.length ? 'no car on its watched trims today'
+            : S.budget && fitRules
+              ? `${fitRules} would fit your rules — none under ${money(S.budget)} ${S.budgetKind === 'mo' ? 'a month' : (feesCfg() ? 'all in' : 'landed')}`
+              : `none of its ${o.held.length} watched car${o.held.length === 1 ? '' : 's'} matches your filters`)));
+        continue;
+      }
+      const x = best.x, pay = payFor(x), c = cohortOf(x, o.m.label);
+      const ship = x.local ? 0 : (x.ship || 0);
+      // The cheapest car all in is often a thousand miles away — today's i5 is
+      // in Seffner, Florida — and "can I drive to one" is the buyer's other
+      // axis, the one with its own KPI tile below. So when the winner is not
+      // drivable, one extra line names the cheapest that is, and what it costs
+      // to keep the car within driving distance. When the winner IS drivable
+      // the line would say nothing the place line has not already said, and is
+      // not printed.
+      const localBest = x.local ? null : fit.filter(isLocal).reduce((b, y) => {
+        const v = heroTotal(y);
+        return (v != null && (!b || v < b.v)) ? { v, x: y } : b;
+      }, null);
+      // And say how many cheaper cars those rules took away, with the reasons —
+      // otherwise applying them is just a quieter way of hiding cars. Distinct
+      // reasons, in the order pickExcuse gives them, so the line stays short.
+      const cutOut = o.pool.filter((y) => {
+        const v = heroTotal(y);
+        return v != null && v < best.v && pickExcuse(y, P);
+      });
+      const reasons = [...new Set(cutOut.map((y) => pickExcuse(y, P)))];
+      host.appendChild(el('div', { class: 'sc-tile' },
+        el('div', { class: 'sc-tile__label' }, `${o.m.label || o.mk} — cheapest ${allIn ? 'all in, estimated' : 'landed, shipping estimated'}`),
+        el('div', { class: 'sc-tile__value' }, money(best.v)),
+        el('div', { class: 'sc-tile__sub' },
+          `${money(x.price)} asking${ship ? ` + ${money(ship)} est. shipping` : ''}`
+          + (allIn ? ` + tax and paperwork` : '')),
+        pay != null ? el('div', { class: 'sc-tile__sub' },
+          `${perMo(pay)} at ${x.apr}%${x.apr_promo ? ' promo' : ''} over ${termFor(x)} months`
+          + (x.apr_seller_unnamed ? ' · seller not named BMW' : '')) : null,
+        el('div', { class: 'sc-tile__sub' },
+          `${x.year || ''} ${carTrim(x)} · ${x.miles != null ? num(x.miles) + ' mi' : 'mileage not published'}`.replace(/\s+/g, ' ').trim()),
+        el('div', { class: 'sc-tile__sub' },
+          `${placeCell(x)} · ${x.local ? 'drivable' : (x.distance != null ? `~${num(x.distance)} mi away` : 'beyond your states')}`),
+        cutOut.length ? el('div', { class: 'sc-tile__sub', title: picksRule() },
+          `${cutOut.length} cheaper ${cutOut.length === 1 ? 'car is' : 'cars are'} ruled out by your own rules — ${reasons.join(', ')}`) : null,
+        localBest ? el('div', { class: 'sc-tile__sub' },
+          `cheapest you can drive to: ${money(localBest.v)}`
+          + `${localBest.x.state ? ` in ${localBest.x.state}` : ''}`
+          + ` · ${money(localBest.v - best.v)} more`) : null,
+        // Both directions, for the same reason the shortlist gives them: this
+        // tile leads with CHEAPEST, which is a different question from value,
+        // and a cheapest car that is also above its own cohort's typical price
+        // is the one fact a reader would most want before clicking through.
+        // Saying nothing there would let "cheapest" quietly imply "good".
+        c ? el('div', { class: 'sc-delta ' + (x.pick_pct > 0 ? 'sc-delta--good' : x.pick_pct < -0.005 ? 'sc-delta--bad' : 'sc-delta--flat'), title: c.words },
+              (x.pick_pct > 0.005 ? `${Math.round(x.pick_pct * 100)}% under` :
+               x.pick_pct < -0.005 ? `${Math.round(-x.pick_pct * 100)}% over` : 'level with')
+              + ` a typical ${c.short}, n=${c.n}`)
+          : null,
+        el('div', null, el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'hero:' + (x.vin || ''),
+          onclick: (e) => { e.preventDefault(); goTo(o.bk, o.mk); } },
+          `Open ${o.m.label || o.mk} →`))));
+    }
+    // The gap is the decision, so it is stated once, in both currencies the
+    // page prices in, and only between two priced cars. With one shopped model
+    // or a filtered-out one there is no comparison to make and nothing is said
+    // rather than a zero.
+    const have = chosen.filter((c) => c.x);
+    const basis = costBasisNote().trim()
+      + ' Best value is a different question, and the picks below answer it.';
+    if (have.length !== 2) { gap.hidden = !basis; gap.textContent = basis; return; }
+    const [a, b] = have.slice().sort((p, q) => p.total - q.total);
+    // Rounded first, then subtracted — the tiles show whole dollars a month
+    // (perMo rounds), so a reader subtracting $830 from $1,181 must land on the
+    // number this sentence prints. Differencing the raw payments first said
+    // $350 above two tiles that differed by $351.
+    const pa = payFor(a.x), pb = payFor(b.x);
+    const dm = (pa != null && pb != null) ? Math.round(pb) - Math.round(pa) : null;
+    gap.hidden = false;
+    gap.textContent = `${b.o.m.label} costs ${money(b.total - a.total)} more than ${a.o.m.label} on today's cheapest of each`
+      + (dm != null ? `, ${money(dm)} a month at each car's own rate. ` : '. ')
+      + basis;
+  }
+  // ---------- the promo, priced ----------
+  // financeNote() already says "60 days left"; nothing said what those days are
+  // worth. A promotional APR is the whole reason this page ranks by payment at
+  // all, so the strip turns the offer into money on the cars actually in view:
+  // what it saves per month and over the term on the best candidate, what a
+  // non-promo car would have to cost to match that payment, and the date the
+  // twin becomes the truth.
+  //
+  // Three things it deliberately does NOT do.
+  //   It does not count down in the browser. days_left is the RUN's clock; a
+  //   tab left open over a weekend would age it. The date is absolute.
+  //   It does not guess a "last safe day to act". The only span this project
+  //   measures is how long DEALER listings ran, which is not how long a BUYER
+  //   needs to close, and subtracting one from the other would be a number
+  //   with no evidence under it.
+  //   It does not treat every certified car as promo-eligible — see
+  //   apr_seller_unnamed above.
+  function promoCandidates() {
+    const fin = financeCfg();
+    if (!fin) return null;
+    const live = (fin.promos || []).filter((p) => p.active && p.apr != null);
+    if (!live.length) return null;
+    // only the models in view, and only cars a promo actually reaches
+    const rows = (S.brand === 'all'
+      ? modelsInView().flatMap(({ m }) => applyShared(m.listings || []))
+      : applyShared(trimRows(model().listings || [])))
+      .filter((x) => x.apr_promo && hasPrice(x));
+    if (!rows.length) return null;
+    const named = rows.filter((x) => !x.apr_seller_unnamed);
+    const pool = named.length ? named : rows;
+    // the best candidate is the cheapest MONTHLY, which is the number the promo
+    // is about — drivable first, because that is the one you can act on, and a
+    // SHOPPED model first, because the watchlist carries comparison cars whose
+    // own promo is a different rate and not what this buyer is deciding on
+    const best = (arr) => arr.reduce((b, x) => {
+      const p = payFor(x);
+      return (p != null && (!b || p < b.pay)) ? { pay: p, x } : b;
+    }, null);
+    const shopping = new Set(((S.site || {}).buyer || {}).shopping || []);
+    const shopped = pool.filter((x) => shopping.has(x.trim_id));
+    const chosen = best(shopped.filter(isLocal)) || best(shopped)
+      || best(pool.filter(isLocal)) || best(pool);
+    if (!chosen) return null;
+    // The promo is the one THIS CAR is financed under, not the first live one:
+    // the iX carries 2.49% and the i5 2.99%, and picking the promo before the
+    // car put a 2.49% iX under a heading that said 2.99%.
+    const promo = live.find((p) => p.apr === chosen.x.apr && p.model === chosen.x.model_key)
+      || live.find((p) => p.apr === chosen.x.apr) || live[0];
+    return { promo, rows, named, best: chosen, unnamed: rows.length - named.length };
+  }
+  // What a car financed at the ordinary rate would have to COST to match a
+  // payment. financed() is linear in price — price x (1 + tax) + paperwork —
+  // so this inverts in closed form; no search, no approximation.
+  function priceForPayment(pay, apr, term) {
+    const f = feesCfg() || {};
+    const r = apr / 100 / 12;
+    const principal = r > 0 ? pay * (1 - Math.pow(1 + r, -term)) / r : pay * term;
+    const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+    return (principal + (S.down || 0) - fixed) / (1 + (f.tax_rate || 0));
+  }
+  function renderPromo() {
+    const card = $('promo-card');
+    const c = promoCandidates();
+    const fin = financeCfg();
+    if (!c || !c.best || fin.fallback_apr == null) { card.hidden = true; return; }
+    const { promo, best } = c;
+    const x = best.x, term = termFor(x);
+    const atPromo = best.pay, atFallback = payAtFallback(x);
+    if (atFallback == null) { card.hidden = true; return; }
+    const owed = financed(x) - (S.down || 0);
+    const interestAt = (pay) => Math.round(pay * term - owed);
+    const equiv = priceForPayment(atPromo, fin.fallback_apr, term);
+    const cheaper = Math.round(x.price - equiv);
+    $('promo-title').textContent = promo.label || 'The promo, priced';
+    $('promo-clock').textContent = promo.expires ? `ends ${fmtDateLong(promo.expires)}` : 'no end date';
+    $('promo-clock').title = promo.expires
+      ? 'Dated from the config, not counted down in this tab — days_left is the tracker run\'s clock.'
+      : 'This promo carries no end date in the config.';
+    $('promo-hint').textContent =
+      `What ${promo.apr}% is worth on the cheapest one you can actually get it on, over ${term} months`
+      + ` — against the ordinary ${fin.fallback_apr}% every other car finances at.`;
+    const host = $('promo-tiles'); host.textContent = '';
+    const tile = (label, value, sub, title) => host.appendChild(
+      el('div', { class: 'sc-tile', title: title || null },
+        el('div', { class: 'sc-tile__label' }, label),
+        el('div', { class: 'sc-tile__value sc-tile__value--sm' }, value),
+        el('div', { class: 'sc-tile__sub' }, sub)));
+    tile('Per month, and after it ends', `${perMo(atPromo)} → ${perMo(atFallback)}`,
+      `${x.year} ${carTrim(x)} · ${money(x.price)} · ${placeTxt(x)}`.replace(/\s+/g, ' '),
+      `The same car at ${promo.apr}% and at ${fin.fallback_apr}%, ${term} months on ${money(owed)} financed.`);
+    tile('Over the whole term', money(interestAt(atFallback) - interestAt(atPromo)) + ' less interest',
+      `${money(interestAt(atPromo))} at ${promo.apr}% against ${money(interestAt(atFallback))} at ${fin.fallback_apr}%`,
+      'Total interest is payment x term minus the amount financed.');
+    tile('What it is worth on the sticker', money(Math.abs(cheaper)) + ' cheaper',
+      `a car at ${fin.fallback_apr}% would have to ask ${money(Math.round(equiv))} to match that payment`,
+      'financed() is linear in price, so this is the exact price that yields the same monthly figure at the ordinary rate.');
+    const bits = [];
+    if (c.unnamed) {
+      bits.push(`${c.unnamed} of the ${c.rows.length} certified ${c.unnamed === 1 ? 'car is' : 'cars are'} listed by a seller whose name does not say BMW`
+        + ` — ${promo.label || 'this rate'} is written at a BMW centre, so confirm before counting on it. They are excluded from the figures above.`);
+    }
+    bits.push(costBasisNote().trim());
+    $('promo-foot').textContent = bits.filter(Boolean).join(' ');
+    card.hidden = false;
   }
 
   // ---------- model view ----------
@@ -3230,7 +3873,7 @@
     // departures carry: the notice, the tiles and the filter count all say the
     // scope is empty, and a line drawn from cars that have all gone would be
     // the one element on screen disagreeing with them.
-    const live = trimRows(t.listings || []).filter(passesShared);
+    const live = trimRows(t.listings || []).filter((x) => passesShared(x));
     $('chart-card').hidden = false;
     rangeChips();
     if (comparingTrims()) { renderChartByTrim(t, live); return; }
@@ -3285,6 +3928,7 @@
         onShortlist(x) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'shortlist') : null),
       el('div', { class: 'sc-media__code' }, x.vin),
       compact ? flagsNote(x) : null,   // the History column is gone in this band — its facts stay pinned here
+      el('div', null, starButton(x)),
       (x.url || x.carfax) ? quietLinks(x) : null));
   }
 
@@ -3296,7 +3940,7 @@
       // the phone twin of the table's cut-sort note — the sorted number must be visible here too
       S.sort === 'cut' && lastStep(x) < 0
         ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
-      x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
+      valueNote(x, null),
       otdNote(x), payNote(x), exitNote(x));   // the phone twins of the table's payment, out-the-door and exit-comp notes
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
@@ -3305,6 +3949,7 @@
       x.days_tracked > 1 ? el('span', null, `tracked ${x.days_tracked}d`) : null,
       x.dealer ? el('span', null, x.dealer) : null,
       flagsCell(x),
+      el('span', null, starButton(x)),
       (x.url || x.carfax) ? quietLinks(x, true) : null);
     return el('div', { class: 'sc-media sc-media--card' }, thumbFor(x),
       named && x.model_label ? el('div', { class: 'sc-eyebrow sc-eyebrow--case' }, x.model_label) : null,
@@ -3465,7 +4110,7 @@
         // read non-monotonic (or "cut, then back up") against this ordering.
         S.sort === 'cut' && lastStep(x) < 0
           ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
-        x.pick_pct >= 0.05 ? el('span', { class: 'sc-note' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null,
+        valueNote(x, null),
         // The payment rides in the price cell rather than a column of its own:
         // the header set is already rationed by viewport band above, and a
         // number derived from the price belongs beside it. It shows always when
@@ -3698,8 +4343,11 @@
     const rows = overviewRows();
     updateEyebrow();
     renderOverviewChart(rows);   // filter-scoped like everything below it
+    renderHero();
     renderOverviewKpis(rows);
+    renderPromo();
     renderCompare();
+    renderFinalists();
     renderPicks(scopedScored(), pickCap());
     updateMapVisibility();
     // The comparison's own listings table: two models picked means the reader
@@ -4088,15 +4736,15 @@
   // the order is readable in one place instead of emerging from .after() calls
   // scattered through two render paths.
   const SECTION_ORDER = {
-    overview: ['notice', 'kpis', 'filters-card', 'compare-card', 'shortlist', 'takeaway', 'list-card', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
-    model: ['notice', 'kpis', 'filters-card', 'compare-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
+    overview: ['notice', 'hero-card', 'kpis', 'promo-card', 'filters-card', 'compare-card', 'finalists-card', 'shortlist', 'takeaway', 'list-card', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
+    model: ['notice', 'kpis', 'promo-card', 'filters-card', 'compare-card', 'finalists-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
   };
   // Supporting sections (the evidence and the reference material) wear the
   // smaller heading; the chapter starts get the wider gap above them.
   const SUPPORT = new Set(['scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card']);
   const CHAPTERS = {
-    overview: new Set(['compare-card', 'takeaway', 'map-card', 'next-callout']),
-    model: new Set(['compare-card', 'takeaway', 'list-card', 'scatter-card', 'notes-card', 'next-callout']),
+    overview: new Set(['hero-card', 'compare-card', 'finalists-card', 'takeaway', 'map-card', 'next-callout']),
+    model: new Set(['compare-card', 'finalists-card', 'takeaway', 'list-card', 'scatter-card', 'notes-card', 'next-callout']),
   };
   // Filtering to nothing used to make the picks, the scatter and the map simply
   // disappear — three sections gone, no message, the page just shorter. Say it
@@ -4209,6 +4857,7 @@
     PICKS_KEY = null;   // a full render never skips the picks — kills any overview↔model carry-over
     if (S.brand === 'all') { renderOverview(); return; }
     $('overview-card').hidden = true;
+    $('hero-card').hidden = true;    // overview-only: orderSections('model') never lists it, so nothing else would
     renderHeader();
     renderShortlist(false);      // front page only — model rows carry a chip instead
     renderNotes(model());
@@ -4245,7 +4894,9 @@
     // and the KPIs while the lines above them kept answering about the nation.
     renderChart();
     renderKpis(rows);
+    renderPromo();
     renderCompare();
+    renderFinalists();
     renderPicks(scopedScored(rows), pickCap());
     renderScatter(rows);
     updateMapVisibility();
@@ -4328,6 +4979,7 @@
   function syncCostControls() {
     const fin = financeCfg();
     const sortSel = $('f-sort');
+    syncBudgetControl(fin);
     const payOpt = sortSel.querySelector('option[value="payment"]');
     // hidden AND disabled: hidden is a rendering hint some browsers have
     // ignored on <option>, disabled is a refusal. The fallbacks below are
@@ -4351,6 +5003,24 @@
     }
     sel.value = want;
     $('f-down').value = S.down || '';
+  }
+  // The budget's unit follows what the sheet can actually price. Without a
+  // finance block there is no payment to compare against, so "a month" is not
+  // offered and a stored budget in that unit is converted to nothing rather
+  // than silently reinterpreted as dollars: a $850 monthly budget read as an
+  // $850 all-in budget would empty the page and look like a bug in the data.
+  // Without a fee block "all in" is the landed price, and the option says so,
+  // because a total that quietly stops including tax is the kind of thing this
+  // page is not allowed to do.
+  function syncBudgetControl(fin) {
+    const kindSel = $('f-budget-kind');
+    const moOpt = kindSel.querySelector('option[value="mo"]');
+    if (moOpt) { moOpt.hidden = !fin; moOpt.disabled = !fin; }
+    if (!fin && S.budgetKind === 'mo') { S.budgetKind = 'otd'; S.budget = 0; }
+    const otdOpt = kindSel.querySelector('option[value="otd"]');
+    if (otdOpt) otdOpt.textContent = feesCfg() ? 'all in' : 'landed';
+    kindSel.value = S.budgetKind;
+    $('f-budget').value = S.budget || '';
   }
   function buildFilters() {
     const overview = S.brand === 'all';
@@ -4457,6 +5127,7 @@
     if (S.clean) bits.push('no accidents');
     if (S.cpo) bits.push('CPO only');
     if (S.rental) bits.push('no rentals');
+    if (S.budget) bits.push(S.budgetKind === 'mo' ? `under ${money(S.budget)}/mo` : `under ${money(S.budget)} all in`);
     return bits;
   }
   // The chip in the chart card's header. It read "whole market — not filtered"
@@ -4604,8 +5275,28 @@
         const after = bar.getBoundingClientRect().top;
         window.scrollTo(0, Math.max(0, window.scrollY + (after - before)));
       } else if (scope === 'all') window.scrollTo(0, y);
+      rearmFilters();   // the page moved under the panel; the reader did not
     });
   }
+  // Where the phone filter bar sits IN THE VIEWPORT when the panel was opened,
+  // or last re-armed — not where the document is scrolled to. null = closed.
+  //
+  // This was window.scrollY, and the difference only began to matter once
+  // something above the bar changed height with the filters. The browser's own
+  // scroll anchoring moves scrollY to hold the visible content still when
+  // content above the viewport grows or shrinks — no JS involved — so the
+  // decision panel gaining a tile per shopped model looked exactly like the
+  // reader scrolling away from the panel. On a 390px phone the second model
+  // chip moved scrollY 370px with nothing on screen having moved at all, and
+  // the panel closed itself under the finger that was still selecting.
+  //
+  // The bar's own viewport position is what the rule is actually about, and it
+  // is the number scroll anchoring exists to keep constant. It can still drift
+  // between scroll events when a re-render changes the page above it, so
+  // rerender() re-arms it: at module scope for that reason and no other.
+  let filterArmY = null;
+  const barTop = () => $('filters-card').getBoundingClientRect().top;
+  const rearmFilters = () => { if (filterArmY != null) filterArmY = barTop(); };
   function wireFilters() {
     $('f-year').addEventListener('change', (e) => { S.year = e.target.value; rerender('rows'); });
     $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); rerender('rows'); });
@@ -4617,6 +5308,18 @@
     // the rows like a filter does — and they persist, because a reader who
     // finances at 48 months finances at 48 months tomorrow too.
     $('f-term').addEventListener('change', (e) => { S.term = Number(e.target.value) || null; savePrefs(); rerender('rows'); });
+    // A budget is a number people type digit by digit, so 'input' would filter
+    // the page to nothing at "8" on the way to "850". 'change' fires when the
+    // field is done being edited, exactly like Down above it.
+    $('f-budget').addEventListener('change', (e) => {
+      const v = Math.max(0, Math.round(Number(e.target.value) || 0));
+      S.budget = v; e.target.value = v || '';
+      savePrefs(); rerender('rows');
+    });
+    $('f-budget-kind').addEventListener('change', (e) => {
+      S.budgetKind = e.target.value === 'mo' ? 'mo' : 'otd';
+      savePrefs(); rerender('rows');
+    });
     $('f-down').addEventListener('change', (e) => {
       const v = Math.max(0, Math.round(Number(e.target.value) || 0));
       S.down = v; e.target.value = v || '';
@@ -4627,7 +5330,6 @@
     // row is normal, so a CHANGE never closes it; scrolling away to read the
     // results does (the scroll listener below) — open, the panel covers ~35%
     // of a phone screen, and it used to stay that way until re-tapped.
-    let filterArmY = null;   // lowest scrollY seen while the panel is open; null = closed
     const closeFilters = () => {
       const card = $('filters-card');
       if (!card.classList.contains('is-open')) return;
@@ -4641,7 +5343,7 @@
     $('filter-toggle').addEventListener('click', () => {
       const card = $('filters-card'), open = card.classList.toggle('is-open');
       $('filter-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
-      filterArmY = open ? window.scrollY : null;
+      filterArmY = open ? barTop() : null;
       syncBarHeight();
     });
     // Back to top — see the stylesheet note. Landing focus on #main after the
@@ -4658,8 +5360,9 @@
       const y = window.scrollY;
       topBtn.classList.toggle('is-on', y > window.innerHeight * 2);
       if (filterArmY != null && narrow() && $('filters-card').classList.contains('is-open')) {
-        if (y < filterArmY) filterArmY = y;             // scrolling UP re-arms from the higher position
-        else if (y - filterArmY > 360) closeFilters();  // > the open panel's own ~300px: reading results now
+        const top = barTop();
+        if (top > filterArmY) filterArmY = top;             // scrolling UP re-arms from the higher position
+        else if (filterArmY - top > 360) closeFilters();    // > the open panel's own ~300px: reading results now
       }
     }, { passive: true });
     // React to WIDTH changes only: on phones, scrolling collapses the URL bar,

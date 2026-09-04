@@ -140,9 +140,19 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
   every drivable listing grouped by state, and the five best-value
   cars beyond the buyer's states.
-- The dashboard — "the watchlist" opens on the number that decides things: **lowest drivable
-  asking**, then lowest nationwide, the market count and what moved since the last snapshot. Below
-  that: spicy picks, brand-coloured trend lines, a **model index** table, a **market map** — on the front page
+- The dashboard — "the watchlist" opens on **the decision**: one tile per model named in
+  `buyer.shopping`, each holding the cheapest car of its watched trims all in — asking plus
+  shipping plus tax and paperwork, because a California car and an Ohio car are not comparable on
+  the sticker — with the payment at that car's own rate, the cheapest one you could drive to
+  instead, how far it sits from typical for its own trim and year (in both directions), a count of
+  the cheaper cars your own rules excluded and why, and one line stating the gap between the two
+  models in dollars and per month. Then the tiles: **lowest drivable
+  asking**, lowest nationwide, the market count and what moved since the last snapshot, and — while
+  a promotional finance rate is live — what that rate is **worth** on the cheapest car that can
+  actually have it. Below
+  that: **your shortlist**, a table of the cars you starred yourself, side by side (four states per
+  star — none, shortlisted, called, ruled out — kept in the browser, because a config edit needs a
+  commit and a decision does not); spicy picks, brand-coloured trend lines, a **model index** table, a **market map** — on the front page
   and every model page: each car at its own coordinates, filled when drivable, hollow when it pays
   shipping, spicy picks ringed and shortlisted
   cars drawn in the accent, photos on hover (on a phone, tap previews and a second tap opens),
@@ -151,7 +161,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   **market-over-time chart** —
   colour is the brand, the dash is the model, the shopped models are drawn heavier, an
   interactive legend hides, shows and highlights any line, and 30d / 90d / All chips set a
-  remembered time window with the price scale fitted to it. Three **multi-select filters** work the
+  remembered time window with the price scale fitted to it. A **budget** — all in, or a month —
+  narrows every one of them and is remembered between visits; when it empties one of the models you
+  are shopping, the decision panel says which setting did it. Three **multi-select filters** work the
   same way — press any mix, none pressed means all of them: **Where** (each state plus "beyond",
   remembered between visits), **Models** on the watchlist, and **Trim** on a model page. Press two
   and the page becomes a **comparison**: a side-by-side card with a column each, one chart line per

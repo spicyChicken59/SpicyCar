@@ -1802,6 +1802,104 @@ await step('the headline tiles name the right car', async () => {
      t2 ? `tile "${t2.label}" says ${t2.value.trim()} — "${t2.sub.trim()}"; cheapest drivable in the sheet is ${truth.local ? money(truth.local.price) + ' in ' + truth.local.state : 'none'}` : 'no such tile');
 });
 
+// ---- the promo, priced ------------------------------------------------------
+// financeNote() has always said "60 days left"; nothing said what those days
+// were worth. The strip turns the offer into money on a real car, so the thing
+// that has to hold is that the heading, the rate and the car are the SAME
+// offer: the first build picked the promo before the car and put a 2.49% iX
+// under a heading that read 2.99%.
+await step('the promo strip prices one real offer', async () => {
+  plan('the rate in the heading is the rate the car is financed at',
+       'and a certified car at a seller not named BMW is kept out of the figure',
+       'and the strip disappears when no promo is live');
+  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  const live = ((fin || {}).promos || []).filter((p) => p.active && p.apr != null);
+  if (!live.length) return skipRest('this sheet has no live promo');
+  await open('');
+  const shown = await page.evaluate(() => {
+    const c = document.getElementById('promo-card');
+    if (!c || c.hidden) return null;
+    return { title: document.getElementById('promo-title').textContent,
+             hint: document.getElementById('promo-hint').textContent,
+             tiles: [...document.querySelectorAll('#promo-tiles .sc-tile')].map((t) => t.textContent),
+             foot: document.getElementById('promo-foot').textContent };
+  });
+  if (!shown) return skipRest('no car in view is reachable by a live promo');
+  // the heading names a promo; the hint quotes its rate; both must be one offer
+  const promo = live.find((p) => (p.label || '') === shown.title.trim());
+  ok('the rate in the heading is the rate the car is financed at',
+     !!promo && shown.hint.includes(`What ${promo.apr}% is worth`)
+       && shown.tiles.some((t) => /\/mo →/.test(t)),
+     promo ? `"${shown.title}" quotes ${promo.apr}% — "${shown.hint.slice(0, 70)}…"`
+           : `heading "${shown.title}" matches no live promo (${live.map((p) => p.label).join(', ')})`);
+
+  // The feed's `cpo` is a generic certified flag; the captive lender's rate is
+  // written at its own franchise. Where the two differ the page must say so.
+  const unnamed = await page.evaluate(async () => {
+    const sheet = await (await fetch('data.json')).json();
+    let flagged = 0, unnamed = 0;
+    for (const b of Object.values(sheet.brands || {}))
+      for (const m of Object.values(b.models || {}))
+        for (const x of (m.listings || []))
+          if (x.cpo) { flagged++; if (!/\bbmw\b/i.test(x.dealer || '')) unnamed++; }
+    return { flagged, unnamed };
+  });
+  if (!unnamed.unnamed) skip('and a certified car at a seller not named BMW is kept out of the figure',
+                             'every certified car on this sheet is listed by a seller named BMW');
+  else ok('and a certified car at a seller not named BMW is kept out of the figure',
+          /does not say BMW/.test(shown.foot) && /excluded/.test(shown.foot),
+          `${unnamed.unnamed} of ${unnamed.flagged} certified cars — foot says "${shown.foot.slice(0, 110)}…"`);
+
+  // …and it is a promo card, not furniture: with every promo expired it goes.
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    for (const q of (((sheet.buyer || {}).finance || {}).promos || [])) { q.active = false; q.days_left = -1; }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open('');
+    ok('and the strip disappears when no promo is live',
+       await page.locator('#promo-card').isHidden(), 'every promo expired');
+  } finally { await ctx.unroute('**/data.json'); }
+});
+
+// ---- a percentage says what it is a percentage OF ---------------------------
+// "21% under typical" was printed bare on the rows, the phone cards and the
+// scatter tooltip. The compare card has carried the cohort in a title= since
+// the winner rule was written — because the cohort is exactly what decides
+// whether the comparison means anything — and every other surface dropped it.
+// It is visible now, with the cohort's size, because a title= is not readable
+// on a phone and not reachable from a keyboard.
+await step('a value percentage names its cohort', async () => {
+  plan('every "under typical" note says which cohort and how many cars',
+       'and a fallback cohort says it is a fallback');
+  const subject = WATCHED.find((w) => w.cars > 3);
+  if (!subject) return skipRest('no model on the watchlist holds enough cars');
+  await open(subject.q);
+  await page.selectOption('#f-sort', 'value');
+  await page.waitForTimeout(350);
+  const notes = await page.$$eval('#list-scroll tbody .sc-note',
+    (ns) => ns.map((n) => ({ text: n.textContent.replace(/\s+/g, ' ').trim(),
+                             basis: n.getAttribute('data-basis'),
+                             title: n.getAttribute('title') || '' }))
+             .filter((n) => /under typical/.test(n.text)));
+  if (!notes.length) return skipRest('no car on this page sits under its typical price');
+  const named = notes.filter((n) => /n=\d+/.test(n.text) && n.basis);
+  ok('every "under typical" note says which cohort and how many cars',
+     named.length === notes.length,
+     `${named.length} of ${notes.length} — first: "${notes[0].text}"`);
+  // …and where the cohort is NOT the car's own trim and year, the note must
+  // say so rather than let a blended median pass as a like-for-like median.
+  const fallback = notes.filter((n) => n.basis !== 'trim');
+  if (!fallback.length) skip('and a fallback cohort says it is a fallback',
+                             'every scored car on this page had its own trim and year to be judged against');
+  else ok('and a fallback cohort says it is a fallback',
+          fallback.every((n) => /too few/.test(n.title)),
+          `${fallback.length} fallback note(s), first title: "${fallback[0].title.slice(0, 90)}"`);
+  await page.selectOption('#f-sort', 'local');
+});
+
 // ---- the two surfaces agree about the picks ---------------------------------
 // The dashboard held four drivable seats and reserved two of them for the
 // models being shopped; REPORT.md ranked by margin alone and reserved nothing.
@@ -1849,6 +1947,546 @@ await step('the picks agree across both surfaces', async () => {
   else ok('and so are the worth-the-ship picks',
           same(wantShip, got('worth the ship')),
           `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
+});
+
+// --- the budget ------------------------------------------------------------
+// The one filter that is a fact about the buyer rather than a way of reading
+// the page, which is why it persists like the term and the down payment. It is
+// also the only filter whose predicate is a DERIVED number — an out-the-door
+// total or a monthly payment, not a field on the row — so a car the sheet
+// cannot price for the chosen unit has no figure to compare and must not
+// quietly pass. That is the failure this pins: a budget that lets an unpriced
+// car through is a page claiming a car fits a budget it never measured.
+//
+// The totals are recomputed here from data.json, in the harness's own
+// arithmetic, so a check cannot agree with a bug in otd().
+await step('the budget', async () => {
+  plan('a budget keeps only the cars that fit it, and all of them',
+       'and the count line names it',
+       'a car the sheet cannot price is not let through a budget',
+       'the decision panel says which setting emptied a model',
+       'and the budget is still there on the next visit');
+  const f = (SHEET.buyer || {}).fees || null;
+  const allIn = (x) => {
+    if (x.price == null) return null;
+    const ship = x.local ? 0 : (x.ship || 0);
+    if (!f) return x.price + ship;
+    return Math.round(x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0) + ship);
+  };
+  const every = Object.values(SHEET.brands || {}).flatMap((b) =>
+    Object.values((b || {}).models || {}).flatMap((m) => (m || {}).listings || []));
+  const totals = every.map(allIn).filter((v) => v != null).sort((a, b) => a - b);
+  if (totals.length < 8) return skipRest('the sheet holds too few priced cars to set a meaningful budget');
+  await open('');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+  // The rows are checked on a MODEL page: the watchlist's list card is the
+  // model index, not a car per row, and only a comparison pools listings there.
+  const home = WATCHED.slice().sort((a, b) => b.cars - a.cars)[0];
+  if (!home || home.cars < 8) return skipRest('no model on this watchlist holds enough cars to budget against');
+  const held = ((SHEET.brands[home.bk] || {}).models[home.mk] || {}).listings || [];
+  const mine = held.map(allIn).filter((v) => v != null).sort((a, b) => a - b);
+  if (mine.length < 8) return skipRest(`${home.id} holds too few priced cars to budget against`);
+  // A budget a quarter of the way up THIS model's market: enough cars in,
+  // enough out, and both sides of the line are visible in one table.
+  const budget = mine[Math.floor(mine.length / 4)];
+  const want = new Set(held.filter((x) => allIn(x) != null && allIn(x) <= budget).map((x) => x.vin));
+  await open(home.q);
+  const setBudget = async (v, kind) => {
+    await page.fill('#f-budget', String(v));
+    await page.locator('#f-budget').press('Tab');
+    if (kind) await page.selectOption('#f-budget-kind', kind);
+    await page.waitForTimeout(400);
+  };
+  await setBudget(budget, 'otd');
+  // The listings table is the page's own answer to "which cars are left".
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+  const shown = await page.locator('#list-table tbody .sc-media__code')
+    .evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
+  // Both directions. A budget that lets an expensive car through is the
+  // obvious failure; a budget that drops a car it should have kept is the
+  // quiet one, and on a page whose whole job is "what can I buy" it is the
+  // worse of the two.
+  const over = shown.filter((v) => !want.has(v));
+  const missing = [...want].filter((v) => !shown.includes(v));
+  ok('a budget keeps only the cars that fit it, and all of them',
+     shown.length > 0 && over.length === 0 && missing.length === 0,
+     `budget ${budget} all in on ${home.id} · ${shown.length} rows shown, ${want.size} of ${mine.length} priced cars fit`
+     + (over.length ? ` · over budget: ${over.slice(0, 3).join(', ')}` : '')
+     + (missing.length ? ` · dropped: ${missing.slice(0, 3).join(', ')}` : ''));
+
+  // #filter-count is the page's one status line: it exists to say what the
+  // filters are doing, and a filter it does not name is one the reader cannot
+  // see the effect of.
+  const line = (await page.textContent('#filter-count')) || '';
+  const pretty = String(budget).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  ok('and the count line names it', line.includes(pretty) && /all in|landed|\/mo/.test(line), line.slice(0, 160));
+
+  // Every car in today's sheet has a price and an APR, so the branch that
+  // matters most here — a car with no figure to compare against the budget —
+  // has no subject in the live data. It is given one: data.json is served with
+  // one car's price removed. That car renders normally with no budget set (a
+  // dash where the price goes), and must not survive a budget it was never
+  // measured against. "Nothing is said about a car we cannot price" is the
+  // rule; letting it through is that rule broken by omission.
+  const guinea = held.find((x) => allIn(x) != null && allIn(x) <= budget);
+  if (!guinea) skip('a car the sheet cannot price is not let through a budget', 'no car under the test budget to blank');
+  else {
+    const raw = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+    for (const x of raw.brands[home.bk].models[home.mk].listings) {
+      if (x.vin === guinea.vin) { delete x.price; delete x.last_price; }
+    }
+    await ctx.route('**/data.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
+    try {
+      // Counted, not looked for in the table: a car with no price never
+      // reaches a row (the list is built from priced cars), but it is very
+      // much inside the set the filters are counting — #filter-count prints
+      // filtered().length, which is applyShared() and therefore the budget
+      // predicate itself. So the observable claim is the count: with the
+      // budget on, this car must be one fewer, not one more.
+      await open(home.q);
+      const n = async () => {
+        const t = (await page.textContent('#filter-count')) || '';
+        const m = t.match(/showing (?:all )?([\d,]+)/);
+        return m ? Number(m[1].replace(/,/g, '')) : null;
+      };
+      // Cleared first: the budget persists, so a reload arrives with the last
+      // one still set and "before" would not be a before.
+      await setBudget(0, 'otd');
+      const loose = await n();
+      await setBudget(budget, 'otd');
+      const tight = await n();
+      ok('a car the sheet cannot price is not let through a budget',
+         loose === held.length && tight === want.size - 1,
+         `${guinea.vin} blanked · ${loose} cars counted with no budget (${held.length} on this model),`
+         + ` ${tight} under ${budget} all in · ${want.size} would fit if it still had its price`);
+    } finally {
+      await ctx.unroute('**/data.json');
+    }
+  }
+
+  // A budget low enough to empty a shopped model: the panel must say the budget
+  // did it, not shrug about "your filters".
+  const shopped = new Set((SHEET.buyer || {}).shopping || []);
+  if (!shopped.size) skip('the decision panel says which setting emptied a model', 'this sheet names no shopped trims');
+  else {
+    await open('');
+    await setBudget(totals[1], 'otd');
+    const subs = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) =>
+      [...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.trim()).join(' | ')));
+    const empties = subs.filter((t) => /would fit your rules|matches your filters|no car on its watched/.test(t));
+    ok('the decision panel says which setting emptied a model',
+       empties.length > 0 && empties.every((t) => /none under \$/.test(t)),
+       empties.join(' // ') || 'no tile came up empty at the sheet\'s second-cheapest total');
+  }
+
+  await setBudget(budget, 'otd');
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(200);
+  await page.waitForTimeout(600);
+  const back = await page.locator('#f-budget').inputValue();
+  ok('and the budget is still there on the next visit', Number(back) === budget, `typed ${budget}, came back "${back}"`);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+});
+
+// --- the phone filter panel stays put --------------------------------------
+// The panel closes itself when the reader scrolls away to read the results —
+// open, it covers about a third of a phone screen. That rule watched
+// window.scrollY, which is not the same thing as the reader scrolling: the
+// browser's own scroll anchoring moves scrollY to hold the visible content
+// still whenever content ABOVE the viewport changes height, with no JS
+// involved. Nothing above the filter bar used to change height with the
+// filters. The decision panel does — it gains a tile per shopped model — and
+// the second model chip moved scrollY 370px with nothing on screen having
+// moved at all, closing the panel under the finger that was still selecting.
+// Both halves are pinned here, because the fix is only right if the original
+// behaviour survives it.
+await step('the phone filter panel', async () => {
+  plan('pressing model chips does not close the filter panel',
+       'and scrolling away from it still does');
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (WATCHED.length < 2) return skipRest('the watchlist holds fewer than two models today — no chips to press');
+  await open('');
+  await page.locator('#filter-toggle').click();
+  await page.waitForTimeout(200);
+  const isOpen = () => page.locator('#filters-card').evaluate((n) => n.classList.contains('is-open'));
+  if (!(await isOpen())) return skipRest('the filter panel did not open on this viewport');
+  const chips = Math.min(3, await page.locator('#f-model button').count());
+  const states = [];
+  for (let i = 0; i < chips; i++) {
+    await page.locator('#f-model button').nth(i).click();
+    await page.waitForTimeout(200);
+    states.push(await isOpen());
+  }
+  ok('pressing model chips does not close the filter panel',
+     chips > 0 && states.every(Boolean), `${chips} chips pressed, open after each: ${states.join(', ')}`);
+  // 500 is past the 360px the rule allows; the panel must give way to the
+  // results the reader has gone looking at.
+  await page.evaluate(() => window.scrollBy(0, 500));
+  await page.waitForTimeout(300);
+  ok('and scrolling away from it still does', !(await isOpen()));
+  await page.setViewportSize({ width: 1280, height: 1000 });
+});
+
+// --- the decision ----------------------------------------------------------
+// The first screen of this page was the masthead, a three-line dek, six brand
+// chips and two tiles that both read "$19,980 · Hyundai Ioniq 5" — the same
+// number twice, for a car this buyer is not buying. targets.json has always
+// known which cars the decision is actually between (buyer.shopping names three
+// trim ids across two models), and the panel puts them there.
+//
+// It publishes four things a reader would act on — an all-in total, a monthly
+// payment, a named car, and a gap between two models — so all four are
+// recomputed here from data.json rather than read back off the page. The check
+// that matters most is the third one: the first version of this panel led with
+// a $36,479 eDrive40 that was an ex-rental with an accident on it, which
+// buyer.picks excludes from every other surface on the page. A decision panel
+// that leads with a car the reader has ruled out in writing is worse than no
+// panel, and nothing on the page would have said so.
+await step('the decision panel', async () => {
+  plan('the decision panel names the models the config says you are shopping',
+       'the car it leads with passes the buyer\'s own pick rules',
+       'and it is the cheapest such car, all in',
+       'the gap it states is the difference between the two figures it shows',
+       'and it is not on a model page');
+  const buyer = SHEET.buyer || {};
+  const want = new Set(buyer.shopping || []);
+  if (!want.size) return skipRest('this sheet names no shopped trims (buyer.shopping is empty)');
+  const f = buyer.fees || null, P = buyer.picks || {};
+  const cap = P.max_miles || 50000;
+  const RENTAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+  const eligible = (x) => x.price != null && x.miles != null && x.miles <= cap
+    && !(P.exclude_accidents && x.accidents > 0)
+    && !(P.exclude_rental && RENTAL.test(x.usage || ''));
+  // heroTotal, recomputed: out the door where the sheet has a fee block, landed
+  // where it does not.
+  const total = (x) => {
+    if (x.price == null) return null;
+    const ship = x.local ? 0 : (x.ship || 0);
+    if (!f) return x.price + ship;
+    return Math.round(x.price * (1 + (f.tax_rate || 0))
+      + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0) + ship);
+  };
+  const want_models = [];
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {})) {
+      const held = ((m || {}).listings || []).filter((x) => want.has(x.trim_id));
+      if (!held.length && !Object.keys((m || {}).trims || {}).some((id) => want.has(id))) continue;
+      want_models.push({ bk, mk, label: (m || {}).label || mk, held });
+    }
+  if (!want_models.length) return skipRest('no model on this sheet carries a shopped trim');
+  await open('');
+  const tiles = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => ({
+    label: (t.querySelector('.sc-tile__label') || {}).textContent || '',
+    value: (t.querySelector('.sc-tile__value') || {}).textContent || '',
+    subs: [...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.trim()),
+    vin: ((t.querySelector('[data-fkey^="hero:"]') || {}).getAttribute
+      ? t.querySelector('[data-fkey^="hero:"]').getAttribute('data-fkey').split(':')[1] : ''),
+  })));
+  const labels = tiles.map((t) => t.label.split(' — ')[0].trim());
+  ok('the decision panel names the models the config says you are shopping',
+     labels.length === want_models.length && want_models.every((w) => labels.includes(w.label)),
+     `config says ${JSON.stringify(want_models.map((w) => w.label))} · panel shows ${JSON.stringify(labels)}`);
+
+  const byLabel = new Map(want_models.map((w) => [w.label, w]));
+  const led = tiles.map((t) => {
+    const w = byLabel.get(t.label.split(' — ')[0].trim());
+    const x = w ? w.held.find((y) => y.vin === t.vin) : null;
+    return { t, w, x };
+  }).filter((r) => r.x);
+  if (!led.length) return skipRest('the panel led with no car today — every shopped model is filtered out');
+  const bad = led.filter((r) => !eligible(r.x));
+  ok('the car it leads with passes the buyer\'s own pick rules',
+     bad.length === 0,
+     bad.length ? bad.map((r) => `${r.x.vin}: ${r.x.miles} mi, ${r.x.accidents} accidents, usage "${r.x.usage || ''}"`).join(' | ')
+                : led.map((r) => `${r.w.label} ${r.x.vin} (${r.x.miles} mi, ${r.x.accidents || 0} acc)`).join(' · '));
+
+  const num = (t) => Number(String(t).replace(/[^0-9]/g, '')) || null;
+  const wrong = led.filter((r) => {
+    const fit = r.w.held.filter(eligible).map(total).filter((v) => v != null);
+    return !fit.length || Math.min(...fit) !== num(r.t.value) || total(r.x) !== num(r.t.value);
+  });
+  ok('and it is the cheapest such car, all in', wrong.length === 0,
+     wrong.length ? wrong.map((r) => `${r.w.label}: panel ${r.t.value}, cheapest eligible ${Math.min(...r.w.held.filter(eligible).map(total))}`).join(' | ')
+                  : led.map((r) => `${r.w.label} ${r.t.value}`).join(' · '));
+
+  const gapTxt = (await page.textContent('#hero-gap')) || '';
+  if (led.length !== 2) skip('the gap it states is the difference between the two figures it shows',
+                             `the panel led with ${led.length} car${led.length === 1 ? '' : 's'} today, so there is no gap to state`);
+  else {
+    // Both numbers in the sentence, because the panel states two gaps and the
+    // monthly one is the number a buyer actually decides on. Checked against
+    // the tiles rather than recomputed: the claim is that the sentence and the
+    // figures above it agree, and a second implementation of payFor() here
+    // would only prove the harness can amortise.
+    const vals = led.map((r) => num(r.t.value)).sort((a, b) => a - b);
+    const pays = led.map((r) => num((r.t.subs.find((n) => /\/mo\b/.test(n)) || '').split('/mo')[0]))
+      .filter((v) => v != null).sort((a, b) => a - b);
+    const saidTotal = num((gapTxt.match(/costs \$[\d,]+ more/) || [''])[0]);
+    const saidPay = num((gapTxt.match(/, \$[\d,]+ a month/) || [''])[0]);
+    const wantPay = pays.length === 2 ? pays[1] - pays[0] : null;
+    ok('the gap it states is the difference between the two figures it shows',
+       saidTotal === vals[1] - vals[0]
+         && (wantPay == null ? saidPay == null : saidPay === wantPay),
+       `panel says ${saidTotal} total / ${saidPay} a month; tiles differ by ${vals[1] - vals[0]} (${vals.join(' vs ')})`
+       + ` and ${wantPay} a month (${pays.join(' vs ')})`);
+  }
+
+  // The panel answers a watchlist-wide question and orderSections('model')
+  // never lists it, so nothing but an explicit hide keeps it off a model page.
+  // Reached by NAVIGATING from the watchlist, not by loading the model's URL:
+  // a fresh load starts with the card hidden in the markup and would pass
+  // whatever the code did. The leak this guards against is the one that only
+  // exists in a session that has already drawn the panel once.
+  const jump = page.locator('#hero-cars [data-fkey^="hero:"]').first();
+  if (!(await jump.count())) skip('and it is not on a model page', 'the panel led with no car to open today');
+  else {
+    const shown = await page.locator('#hero-card').evaluate((n) => !n.hidden);
+    await jump.click();
+    await page.waitForTimeout(400);
+    ok('and it is not on a model page',
+       shown && await page.locator('#hero-card').evaluate((n) => n.hidden),
+       `visible on the watchlist: ${shown}; then opened ${await page.textContent('#h1')}`);
+  }
+});
+
+// --- the shortlist you build yourself --------------------------------------
+// Everything else on this page is the market's opinion: what is cheapest, what
+// is under typical, what the tracker thinks is worth a look. The shortlist is
+// the one surface that holds YOUR opinion, and it is kept in localStorage,
+// which means nothing in CI touches it and nothing in the Python suite can see
+// it. If the cycle breaks or the profile stops loading, the page still renders
+// perfectly and the buyer quietly loses the four cars they were deciding
+// between. So the membership and the round trip are asserted here, by driving
+// the actual buttons a reader presses.
+await step('the shortlist you build yourself', async () => {
+  plan('starring two cars puts exactly those two cars in the shortlist table',
+       'the star cycles through its four states',
+       'a car you rule out leaves the comparison but keeps its mark',
+       'and the shortlist survives a reload');
+  await open('');
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+  await open('');
+  const keys = await page.locator('button[data-fkey^="star:"]')
+    .evaluateAll((bs) => bs.map((b) => b.getAttribute('data-fkey')));
+  if (keys.length < 2) return skipRest('the watchlist offers fewer than two cars to star today');
+  // Press by data-fkey, never by position: every press re-renders, and the pick
+  // cards re-sort under it. The first version of this check pressed .nth(0)
+  // three times and starred three different cars.
+  const press = async (k) => {
+    await page.locator(`button[data-fkey="${k}"]`).first().click();
+    await page.waitForTimeout(120);
+  };
+  const vinOf = (k) => k.split(':')[1];
+  await press(keys[0]);
+  await press(keys[1]);
+  const inTable = async () => (await page.locator('#finalists-table thead [data-fkey^="fin:"]')
+    .evaluateAll((as) => as.map((a) => a.getAttribute('data-fkey').split(':')[1]))).sort();
+  const want = [vinOf(keys[0]), vinOf(keys[1])].sort();
+  const got = await inTable();
+  ok('starring two cars puts exactly those two cars in the shortlist table',
+     got.length === 2 && got.every((v, i) => v === want[i]),
+     `starred ${JSON.stringify(want)} · table holds ${JSON.stringify(got)}`);
+
+  // none -> shortlisted -> called -> ruled out -> none, and the button says
+  // which. A ruled-out car leaves the comparison but keeps its mark, so the
+  // table count is part of what the cycle means.
+  const label = async (k) => (await page.locator(`button[data-fkey="${k}"]`).first().textContent()).trim();
+  const seen = [await label(keys[0])];
+  const held = [await inTable()];
+  for (let i = 0; i < 3; i++) { await press(keys[0]); seen.push(await label(keys[0])); held.push(await inTable()); }
+  const cycled = /shortlisted/.test(seen[0]) && /called/.test(seen[1])
+              && /ruled out/.test(seen[2]) && /^☆/.test(seen[3]);
+  ok('the star cycles through its four states', cycled, seen.join(' → '));
+  // "Ruled out" is the state that has to do two things at once, and they pull
+  // against each other: the car must leave the comparison (you are not deciding
+  // between it and anything any more) while keeping its mark on its own row (so
+  // you do not open it again next week and start over). A plain star would lose
+  // the second; a fourth state that stayed in the table would defeat the first.
+  const v0 = vinOf(keys[0]);
+  const inAt = held.map((h) => h.includes(v0));
+  ok('a car you rule out leaves the comparison but keeps its mark',
+     inAt[0] && inAt[1] && !inAt[2] && !inAt[3] && /ruled out/.test(seen[2]),
+     `in the table at: shortlisted ${inAt[0]} · called ${inAt[1]} · ruled out ${inAt[2]} · cleared ${inAt[3]}`);
+
+  // Back to a two-car shortlist, then reload: the whole point of the feature is
+  // that it is still there tomorrow.
+  await press(keys[0]);
+  const before = await inTable();
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  const after = await inTable();
+  ok('and the shortlist survives a reload',
+     after.length === before.length && after.length === 2 && after.every((v, i) => v === before[i]),
+     `${JSON.stringify(before)} → ${JSON.stringify(after)}`);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+});
+
+// --- what the shortlist refuses to say -------------------------------------
+// The compare card above it marks a winner on exactly one row and says why at
+// length: across MODELS a price is not a score, so calling the cheapest one
+// "best value" would have the EV9 beat the i5 by being smaller. The shortlist
+// is a different question — every car in it was starred by the reader, so
+// "which of these is cheapest" is real — but the answer is still only what it
+// literally is, and the phrase "best value here" must not follow a price onto
+// this table. It did, in the first draft: under Asking, under Out the door,
+// under Per month and under Miles.
+//
+// The other two claims here are absences that were hiding an answer. A car
+// sitting ABOVE typical printed a dash, which on your own shortlist is the one
+// number you would most want before ringing the dealer; and a car whose price
+// was cut and then put back up printed "$0 off", which reads as a discount —
+// 22 cars in this sheet were in that state the day it was written.
+await step('the shortlist refuses to call a price a score', async () => {
+  plan('no row on the shortlist calls a price the best value',
+       'a car above typical says so rather than showing a dash',
+       'and a cut that was undone is not printed as a discount');
+  // A car that was cut and ended no cheaper: a fact about the data, computed
+  // here rather than read off the page, so the check cannot agree with a bug.
+  const cutback = Object.entries(SHEET.brands || {}).flatMap(([bk, b]) =>
+    Object.entries((b || {}).models || {}).flatMap(([mk, m]) =>
+      ((m || {}).listings || []).filter((x) => x.cuts && (x.delta || 0) >= 0)
+        .map((x) => ({ bk, mk, vin: x.vin, cuts: x.cuts, delta: x.delta || 0 }))))[0] || null;
+  // The dearest cars on one model page: whatever cohort scores them, the top of
+  // a distribution is above its own median, so this is where "% over" lives.
+  const biggest = WATCHED.slice().sort((a, b) => b.cars - a.cars)[0];
+  const home = cutback ? WATCHED.find((w) => w.bk === cutback.bk && w.mk === cutback.mk) : biggest;
+  if (!home || !home.cars) return skipRest('no model on the watchlist holds a car today');
+  const listings = ((SHEET.brands[home.bk] || {}).models[home.mk] || {}).listings || [];
+  const dearest = listings.filter((x) => x.price != null)
+    .sort((a, b) => b.price - a.price).slice(0, 3).map((x) => x.vin);
+  const wanted = [...new Set([...(cutback && cutback.bk === home.bk && cutback.mk === home.mk ? [cutback.vin] : []), ...dearest])];
+  if (wanted.length < 2) return skipRest(`${home.id} holds fewer than two priced cars today`);
+  await open(home.q);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+  await open(home.q);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count()) await more.click();
+  await page.waitForTimeout(200);
+  const starred = [];
+  for (const vin of wanted) {
+    const b = page.locator(`button[data-fkey="star:${vin}"]`).first();
+    if (!(await b.count())) continue;
+    await b.click(); await page.waitForTimeout(120);
+    starred.push(vin);
+  }
+  if (starred.length < 2) return skipRest(`only ${starred.length} of the wanted cars is on ${home.id}'s page today`);
+
+  // Read the table as a reader sees it: the row's own label, then each cell.
+  const grid = await page.locator('#finalists-table tbody tr').evaluateAll((trs) => trs.map((tr) => ({
+    label: (tr.children[0].textContent || '').trim(),
+    cells: [...tr.children].slice(1).map((td) => ({
+      figure: ((td.querySelector('.sc-figure') || {}).textContent || '').trim(),
+      notes: [...td.querySelectorAll('.sc-note')].map((n) => n.textContent.trim()),
+      best: td.classList.contains('is-best'),
+    })),
+  })));
+  const rowFor = (needle) => grid.find((r) => r.label.toLowerCase().includes(needle));
+  const allNotes = grid.flatMap((r) => r.cells.flatMap((c) => c.notes));
+  const winners = grid.flatMap((r) => r.cells.filter((c) => c.best).flatMap((c) => c.notes.slice(-1)));
+  const valueRow = rowFor('value vs typical');
+  ok('no row on the shortlist calls a price the best value',
+     !allNotes.some((n) => /best value/i.test(n))
+       && winners.length > 0
+       && winners.every((w) => /^(lowest asking|cheapest all in|lowest payment|fewest miles)$/.test(w))
+       && !!valueRow && valueRow.cells.every((c) => !c.best),
+     `${winners.length} winners marked: ${[...new Set(winners)].join(', ') || 'none'}`);
+
+  // Two ways the value row can be wrong, and this pins both: a scored car whose
+  // figure is a dash (the answer withheld), and an unscored car whose note is a
+  // shrug rather than the rule that excluded it.
+  if (!valueRow) skip('a car above typical says so rather than showing a dash', 'the shortlist drew no value row');
+  else {
+    const scored = valueRow.cells.filter((c) => c.notes.some((n) => /\bn=\d+/.test(n)));
+    const over = scored.filter((c) => /% over/.test(c.figure));
+    const withheld = scored.filter((c) => c.figure === '—');
+    const shrug = valueRow.cells.filter((c) => c.notes.some((n) => /^not scored$/i.test(n)));
+    if (!over.length && !withheld.length) {
+      skip('a car above typical says so rather than showing a dash',
+           `every scored car on this shortlist happens to sit under typical (${scored.length} scored)`);
+    } else {
+      ok('a car above typical says so rather than showing a dash',
+         over.length > 0 && withheld.length === 0 && shrug.length === 0,
+         `${over.length} say "% over", ${withheld.length} scored car(s) show a dash, ${shrug.length} say only "not scored"`);
+    }
+  }
+
+  const marketRow = rowFor('on the market');
+  if (!cutback || !starred.includes(cutback.vin) || !marketRow) {
+    skip('and a cut that was undone is not printed as a discount',
+         cutback ? 'the cut-then-restored car is not on this page today' : 'no car in this sheet was cut and then put back up');
+  } else {
+    const col = starred.indexOf(cutback.vin);
+    const heads = await page.locator('#finalists-table thead [data-fkey^="fin:"]')
+      .evaluateAll((as) => as.map((a) => a.getAttribute('data-fkey').split(':')[1]));
+    const at = heads.indexOf(cutback.vin);
+    const cell = at >= 0 ? marketRow.cells[at] : null;
+    const said = cell ? cell.notes.join(' ') : '';
+    ok('and a cut that was undone is not printed as a discount',
+       !!cell && /back up/.test(said) && !/\$0 off/.test(said) && !/-\$/.test(said),
+       `${cutback.vin} (${cutback.cuts} cuts, delta ${cutback.delta}) reads "${said}"`);
+    void col;
+  }
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+});
+
+// --- a car is called what it is --------------------------------------------
+// trim_label is the name of the TARGET a car was fetched under, and for a model
+// watched whole rather than split by trim that name is the placeholder "all
+// trims". Every surface that named a car reached for it first, so an Ioniq 5
+// pick card read "Hyundai Ioniq 5 · 2023 · all trims · 17,314 mi" — directly
+// under a value note that read "a typical 2023 Hyundai Ioniq 5 SEL", because
+// THAT line reads the API's own trim field. The page had the real trim the
+// whole time and printed the placeholder over it.
+//
+// Data-driven, like everything else here: the subject is whichever watched
+// model carries such a target today, and the check asserts both halves — the
+// placeholder is gone, and the thing that replaced it is the trim the sheet
+// actually holds for that car, not a blank.
+await step('a car is called what it is', async () => {
+  plan('no surface names a car "all trims"',
+       'and the trim it prints is the one the sheet holds');
+  const placeholder = /^(all|all trims)$/i;
+  const subject = (() => {
+    for (const [bk, b] of Object.entries(SHEET.brands || {}))
+      for (const [mk, m] of Object.entries((b || {}).models || {})) {
+        const ids = Object.entries((m || {}).trims || {})
+          .filter(([, t]) => placeholder.test(String((t || {}).label || '').trim()))
+          .map(([id]) => id);
+        if (!ids.length) continue;
+        const cars = ((m || {}).listings || []).filter((x) => ids.includes(x.trim_id) && (x.trim || '').trim());
+        if (cars.length) return { bk, mk, q: `?brand=${bk}&m=${mk}`, id: `${bk} ${mk}`, cars };
+      }
+    return null;
+  })();
+  if (!subject) return skipRest('no watched model is fetched whole rather than by trim today');
+  await open(subject.q);
+  // The picks are where the placeholder was loudest, and they render a card
+  // per car with the model, the year and the trim on one line.
+  const said = (await page.textContent('#takeaway')) || '';
+  ok('no surface names a car "all trims"', said.length > 0 && !/all trims/i.test(said),
+     `${subject.id}: ${said.length} characters of pick cards, `
+     + (/all trims/i.test(said) ? 'one of them still says "all trims"' : 'none of them says "all trims"'));
+  // …and it did not simply drop the word and leave a gap. Read the card's own
+  // FACT line, per VIN — anywhere-on-the-page would pass on the value note
+  // beside it, which reads the API trim by a different route and would have
+  // covered for a naming rule that returned nothing at all.
+  const byVin = new Map(subject.cars.map((x) => [x.vin, x.trim.trim()]));
+  const cards = await page.locator('#takeaway .sc-photo-card').evaluateAll((cs) => cs.map((c) => {
+    const a = c.querySelector('[data-fkey^="pick:"]');
+    const p = c.querySelector('.sc-photo-card__body p');
+    return { vin: a ? a.getAttribute('data-fkey').split(':')[1] : '',
+             facts: p ? p.textContent.trim() : '' };
+  }));
+  const named = cards.filter((c) => byVin.has(c.vin));
+  const naked = named.filter((c) => !c.facts.includes(byVin.get(c.vin)));
+  if (!named.length) skip('and the trim it prints is the one the sheet holds',
+                          `no pick card on ${subject.id} is one of the cars the sheet gives a trim`);
+  else ok('and the trim it prints is the one the sheet holds', naked.length === 0,
+          naked.length
+            ? naked.map((c) => `${c.vin} should say "${byVin.get(c.vin)}" — card reads "${c.facts.slice(0, 70)}"`).join(' | ')
+            : named.map((c) => `${byVin.get(c.vin)} in "${c.facts.slice(0, 48)}…"`).join(' · '));
 });
 
 // --- "new" means new ---------------------------------------------------------
@@ -2229,7 +2867,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 115;
+const EXPECTED = 141;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

@@ -20,31 +20,31 @@
 _Drivable (IL/OH/IN/WI):_
 
 - **$42,590** · BMW i5 · 2024 · 26,983 mi · drivable · no shipping · Indianapolis, IN
-  _spicy pick: 5% under typical for a 2024 BMW i5 eDrive40 ($2,336 less)_ · _2 owners · no accidents · ex-lease_
+  _spicy pick: 5% under typical for a 2024 BMW i5 eDrive40 ($2,336 less, from 39 such cars)_ · _2 owners · no accidents · ex-lease_
   [listing](https://www.carvana.com/vehicle/4620141) `WBY33FK09RCR29277`
 - **$53,990** · BMW i5 · 2025 · 11,770 mi · drivable · no shipping · Indianapolis, IN
-  _spicy pick: 3% under typical for a 2025 BMW i5 xDrive40 ($1,622 less)_ · _2 owners · no accidents · ex-lease_
+  _spicy pick: 3% under typical for a 2025 BMW i5 xDrive40 ($1,622 less, from 21 such cars)_ · _2 owners · no accidents · ex-lease_
   [listing](https://www.carvana.com/vehicle/4612575) `WBY13HG04SCT78578`
 - **$61,990** · BMW i5 · 2024 · 11,498 mi · drivable · no shipping · Northfield, IL
-  _spicy pick: 3% under typical for a 2024 BMW i5 M60 ($1,551 less)_ · _CPO · 1-owner · no accidents_
+  _spicy pick: 3% under typical for a 2024 BMW i5 M60 ($1,551 less, from 21 such cars)_ · _CPO · 1-owner · no accidents_
   [listing](https://fieldsbmwnorthfield.com/certified/BMW/2024-BMW-i5-Chicago-0909f020ac1829bdac25aaf12b293a98.htm) `WBY43FK09RCP11490`
 - **$47,359** · BMW i5 · 2024 · 15,722 mi · drivable · no shipping · Indianapolis, IN
-  _spicy pick: 2% under typical for a 2024 BMW i5 eDrive40 ($946 less)_ · _no accidents_
+  _spicy pick: 2% under typical for a 2024 BMW i5 eDrive40 ($946 less, from 39 such cars)_ · _no accidents_
   [listing](https://www.carfax.com/vehicle/WBY33FK09RCR14004) `WBY33FK09RCR14004`
 
 _Worth the ship:_
 
 - **$46,995** · BMW i5 · 2024 · 13,399 mi · + $951 shipping · Allston, MA
-  _spicy pick: 25% under typical for a 2024 BMW i5 M60 ($15,025 less)_ · _1-owner · no accidents_
+  _spicy pick: 25% under typical for a 2024 BMW i5 M60 ($15,025 less, from 21 such cars)_ · _1-owner · no accidents_
   [listing](https://bostonforeignmotor.com/used/BMW/2024-BMW-i5-d285e603ac182ab4c93744180d2b5d81.htm) `WBY43FK03RCR45219`
 - **$46,538** · BMW i5 · 2025 · 6,895 mi · + $808 shipping · Haddon Township, NJ
-  _spicy pick: 18% under typical for a 2025 BMW i5 xDrive40 ($9,728 less)_ · _1-owner · no accidents_
+  _spicy pick: 18% under typical for a 2025 BMW i5 xDrive40 ($9,728 less, from 21 such cars)_ · _1-owner · no accidents_
   [listing](https://www.carfax.com/vehicle/WBY13HG09SCS84860) `WBY13HG09SCS84860`
 - **$49,495** · BMW i5 · 2025 · 209 mi · + $1,097 shipping · West Palm Beach, FL
-  _spicy pick: 16% under typical for a 2025 BMW i5 xDrive40 ($8,488 less)_ · _1-owner · no accidents_
+  _spicy pick: 16% under typical for a 2025 BMW i5 xDrive40 ($8,488 less, from 21 such cars)_ · _1-owner · no accidents_
   [listing](https://www.carfax.com/vehicle/WBY13HG01SCS85680) `WBY13HG01SCS85680`
 - **$48,398** · BMW i5 · 2025 · 7,363 mi · + $725 shipping · Marietta, GA
-  _spicy pick: 15% under typical for a 2025 BMW i5 xDrive40 ($7,811 less)_
+  _spicy pick: 15% under typical for a 2025 BMW i5 xDrive40 ($7,811 less, from 21 such cars)_
   [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG09SCS35108) `WBY13HG09SCS35108`
 
 _133 vehicles across 4 trims · IL 7 · OH 2 · IN 6 · WI 2 · beyond 116_
@@ -269,31 +269,31 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 _Drivable (IL/OH/IN/WI):_
 
 - **$64,729** · BMW i7 · 2024 · 9,354 mi · drivable · no shipping · Greenwood, IN
-  _spicy pick: 4% under typical for a 2024 BMW i7 eDrive50 ($2,877 less)_ · _no accidents_
+  _spicy pick: 4% under typical for a 2024 BMW i7 eDrive50 ($2,877 less, from 25 such cars)_ · _no accidents_
   [listing](https://www.carfax.com/vehicle/WBY43EJ0XRCR70324) `WBY43EJ0XRCR70324`
 - **$65,734** · BMW i7 · 2023 · 7,257 mi · drivable · no shipping · Burbank, IL
-  _spicy pick: 3% under typical for a 2023 BMW i7 xDrive60 ($2,063 less)_
+  _spicy pick: 3% under typical for a 2023 BMW i7 xDrive60 ($2,063 less, from 19 such cars)_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ06PCM35508) `WBY53EJ06PCM35508`
 - **$65,800** · BMW i7 · 2023 · 11,332 mi · drivable · no shipping · Lisle, IL
-  _spicy pick: 1% under typical for a 2023 BMW i7 xDrive60 ($774 less)_ · _1-owner · no accidents · ex-lease_
+  _spicy pick: 1% under typical for a 2023 BMW i7 xDrive60 ($774 less, from 19 such cars)_ · _1-owner · no accidents · ex-lease_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ0XPCL71229) `WBY53EJ0XPCL71229`
 - **$60,899** · BMW i7 · 2023 · 28,546 mi · drivable · no shipping · Highland Park, IL
-  _spicy pick: 1% under typical for a 2023 BMW i7 xDrive60 ($511 less)_ · _1-owner · no accidents · ex-lease_
+  _spicy pick: 1% under typical for a 2023 BMW i7 xDrive60 ($511 less, from 19 such cars)_ · _1-owner · no accidents · ex-lease_
   [listing](https://www.carfax.com/vehicle/WBY53EJ06PCN52764) `WBY53EJ06PCN52764`
 
 _Worth the ship:_
 
 - **$52,000** · BMW i7 · 2023 · 12,144 mi · + $725 shipping · Marietta, GA
-  _spicy pick: 21% under typical for a 2023 BMW i7 xDrive60 ($13,606 less)_ · _1-owner · no accidents_
+  _spicy pick: 21% under typical for a 2023 BMW i7 xDrive60 ($13,606 less, from 19 such cars)_ · _1-owner · no accidents_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ04PCN85407) `WBY53EJ04PCN85407`
 - **$98,010** · BMW i7 · 2026 · 4 mi · + $1,336 shipping · Buena Park, CA
-  _spicy pick: 18% under typical for a 2026 BMW i7 eDrive50 ($20,064 less)_
+  _spicy pick: 18% under typical for a 2026 BMW i7 eDrive50 ($20,064 less, from 44 such cars)_
   [listing](http://details.vast.com/details/cars/ob-48ae10cec45c5264c0c05239af7ac2c3eda678223f9171ac63be6a3107cd3db63b027b96ef83ac88fd6ccb42933d4f3c6bf26f82a637df6dbf6160746a741de2f66d991e1addcf481e235bddea94cbce49163dc39de989fc30b1e5bf8ca4c0bfe6f839a7f35dd7485e5f317d45f3e9c1077a0b9396c762ca6b68a35bc690f63d2c96afd4105ab14f0577db54df3cc0a9e592a92ce597bd7ebaf00d7bc86d808c645d657119c959ac3fdc4e0ec117c503/?pl=83&context=1e0d811633d20dd94c351375e543927eda3d8b1a) `WBY43EJ09TCY06456`
 - **$56,898** · BMW i7 · 2023 · 7,414 mi · + $725 shipping · Marietta, GA
-  _spicy pick: 16% under typical for a 2023 BMW i7 xDrive60 ($10,127 less)_
+  _spicy pick: 16% under typical for a 2023 BMW i7 xDrive60 ($10,127 less, from 19 such cars)_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ04PCM43008) `WBY53EJ04PCM43008`
 - **$54,000** · BMW i7 · 2024 · 21,412 mi · + $725 shipping · Marietta, GA
-  _spicy pick: 14% under typical for a 2024 BMW i7 eDrive50 ($9,264 less)_ · _1-owner · no accidents · ex-lease_
+  _spicy pick: 14% under typical for a 2024 BMW i7 eDrive50 ($9,264 less, from 25 such cars)_ · _1-owner · no accidents · ex-lease_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01RCN97139) `WBY43EJ01RCN97139`
 
 _150 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 125_
@@ -538,31 +538,31 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 ### Drivable — IL/OH/IN/WI
 
 - **$42,590** · BMW i5 · 2024 · 26,983 mi · drivable · no shipping · Indianapolis, IN
-  _spicy pick: 5% under typical for a 2024 BMW i5 eDrive40 ($2,336 less)_ · _2 owners · no accidents · ex-lease_
+  _spicy pick: 5% under typical for a 2024 BMW i5 eDrive40 ($2,336 less, from 39 such cars)_ · _2 owners · no accidents · ex-lease_
   [listing](https://www.carvana.com/vehicle/4620141) `WBY33FK09RCR29277`
 - **$64,729** · BMW i7 · 2024 · 9,354 mi · drivable · no shipping · Greenwood, IN
-  _spicy pick: 4% under typical for a 2024 BMW i7 eDrive50 ($2,877 less)_ · _no accidents_
+  _spicy pick: 4% under typical for a 2024 BMW i7 eDrive50 ($2,877 less, from 25 such cars)_ · _no accidents_
   [listing](https://www.carfax.com/vehicle/WBY43EJ0XRCR70324) `WBY43EJ0XRCR70324`
 - **$22,550** · Hyundai Ioniq 5 · 2023 · 17,314 mi · drivable · no shipping · Cuyahoga Falls, OH
-  _spicy pick: 18% under typical for a 2023 Hyundai Ioniq 5 SEL ($4,638 less)_ · _1-owner · no accidents_
+  _spicy pick: 18% under typical for a 2023 Hyundai Ioniq 5 SEL ($4,638 less, from 5 such cars)_ · _1-owner · no accidents_
   [listing](https://www.autolist.com/hyundai-ioniq+5#vin=KM8KNDAF6PU187327) `KM8KNDAF6PU187327`
 - **$30,447** · Kia EV9 · 2024 · 15,183 mi · drivable · no shipping · Streetsboro, OH
-  _spicy pick: 15% under typical for a 2024 Kia EV9 Light ($4,936 less)_
+  _spicy pick: 15% under typical for a 2024 Kia EV9 Light ($4,936 less, from 9 such cars)_
   [listing](https://www.autolist.com/kia-ev9#vin=KNDAA5S23R6033811) `KNDAA5S23R6033811`
 
 ### Worth the ship — nationwide
 
 - **$27,025** · Kia EV9 · 2024 · 102 mi · + $1,124 shipping · Miami, FL
-  _spicy pick: 35% under typical for a 2024 Kia EV9 Light ($11,758 less)_
+  _spicy pick: 35% under typical for a 2024 Kia EV9 Light ($11,758 less, from 9 such cars)_
   [listing](https://www.autolist.com/kia-ev9#vin=KNDAA5S21R6033757) `KNDAA5S21R6033757`
 - **$46,995** · BMW i5 · 2024 · 13,399 mi · + $951 shipping · Allston, MA
-  _spicy pick: 25% under typical for a 2024 BMW i5 M60 ($15,025 less)_ · _1-owner · no accidents_
+  _spicy pick: 25% under typical for a 2024 BMW i5 M60 ($15,025 less, from 21 such cars)_ · _1-owner · no accidents_
   [listing](https://bostonforeignmotor.com/used/BMW/2024-BMW-i5-d285e603ac182ab4c93744180d2b5d81.htm) `WBY43FK03RCR45219`
 - **$52,000** · BMW i7 · 2023 · 12,144 mi · + $725 shipping · Marietta, GA
-  _spicy pick: 21% under typical for a 2023 BMW i7 xDrive60 ($13,606 less)_ · _1-owner · no accidents_
+  _spicy pick: 21% under typical for a 2023 BMW i7 xDrive60 ($13,606 less, from 19 such cars)_ · _1-owner · no accidents_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ04PCN85407) `WBY53EJ04PCN85407`
 - **$46,538** · BMW i5 · 2025 · 6,895 mi · + $808 shipping · Haddon Township, NJ
-  _spicy pick: 18% under typical for a 2025 BMW i5 xDrive40 ($9,728 less)_ · _1-owner · no accidents_
+  _spicy pick: 18% under typical for a 2025 BMW i5 xDrive40 ($9,728 less, from 21 such cars)_ · _1-owner · no accidents_
   [listing](https://www.carfax.com/vehicle/WBY13HG09SCS84860) `WBY13HG09SCS84860`
 
 ## Comparison

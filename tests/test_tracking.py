@@ -430,6 +430,40 @@ class TestPicks(unittest.TestCase):
                            "the biggest discount relative to its own model should win, "
                            "even though it is the more expensive car")
 
+    def test_a_pick_says_which_cohort_and_how_many(self):
+        """"21% under typical" is not a claim until it says what typical, and
+        out of how many. The same percentage means one thing against 23 cars of
+        the car's own trim and model year and quite another against a whole
+        model's blended median — on the iX that median is six M60s and one
+        xDrive50, and a car 24% under it sits 18% ABOVE a typical xDrive50."""
+        rows = ([listing(price=40000, miles=20000, trim="eDrive40", year=2024) for _ in range(4)]
+                + [listing(price=52000, miles=20000, trim="M60", year=2024) for _ in range(4)]
+                + [listing(price=60000, miles=20000, trim="M60", year=2023)])
+        by_vin = {}
+        for i, r in enumerate(rows):
+            r["vin"] = f"V{i:02d}"
+        scored = {p["vin"]: p for p in T.score_picks(rows, "BMW i5")}
+        # a car with three siblings of its own trim AND year is judged on those
+        own = scored["V00"]
+        self.assertEqual(own["pick_basis"], "trim")
+        self.assertEqual(own["pick_n"], 4, "its own trim-and-year cohort")
+        self.assertEqual(own["pick_trim"], "eDrive40")
+        self.assertEqual(own["pick_year"], "2024")
+        # the lone 2023 M60 has neither a trim-year nor a year cohort of three,
+        # so it falls back to the whole model — and says so
+        lone = scored["V08"]
+        self.assertEqual(lone["pick_basis"], "model")
+        self.assertEqual(lone["pick_n"], len(rows))
+        self.assertEqual(lone["pick_trim"], "", "no trim cohort to name")
+
+    def test_the_report_prints_the_cohort_size_beside_the_percentage(self):
+        rows = [listing(price=40000 + i * 100, miles=20000, trim="eDrive40",
+                        year=2024, vin=f"V{i:02d}", local=True) for i in range(5)]
+        p = T.score_picks(rows, "BMW i5")[0]
+        line = T.fmt_pick(p)
+        self.assertIn("% under typical for a 2024 BMW i5 eDrive40", line)
+        self.assertIn("from 5 such cars", line)
+
     def test_a_thin_pool_produces_no_picks(self):
         self.assertEqual(T.score_picks([listing(), listing()], "Two Cars"), [])
 
@@ -3749,13 +3783,46 @@ class TestExitStats(unittest.TestCase):
         and the dashboard told the reader a $54,000 i7 was "$64,834 below
         where this trim's listings ended".
         """
-        real = [t for t in T.TARGETS.values() if len(t.get("sorts") or []) > 1]
-        self.assertTrue(real, "the watchlist should still have a two-sort target")
+        # The rows must carry the target's OWN id. They used to be stamped
+        # "t1", so exit_stats filtered to zero matching rows and returned {} at
+        # the n < floor check before the gate was ever evaluated: deleting the
+        # gate left the whole suite green, and rebuilding under that mutant
+        # republished exit prices for the two-sort trims.
+        real = [t for t in T.TARGETS.values() if len(T.sorts_pages(t)[0]) > 1 or t.get("newest")]
+        self.assertTrue(real, "the watchlist should still have a two-window target")
         for t in real:
             self.assertFalse(T.departures_are_separable(t), t["id"])
-            self.assertEqual(T.exit_stats(self._gone(20), t["id"]), {},
-                             f"{t['id']} fetches {t.get('sorts')} — its departures cannot be "
-                             "told apart from window churn, so it must publish no exit price")
+            self.assertEqual(T.exit_stats(self._gone(20, trim=t["id"]), t["id"]), {},
+                             f"{t['id']} fetches {T.sorts_pages(t)[0]} plus {t.get('newest') or 0} "
+                             "newest page(s) — its departures cannot be told apart from window "
+                             "churn, so it must publish no exit price")
+        # …and the gate, not the floor, is what does that: the same twenty
+        # departures on a one-window target DO produce a median.
+        one = next(t for t in T.TARGETS.values() if T.departures_are_separable(t))
+        self.assertTrue(T.exit_stats(self._gone(20, trim=one["id"]), one["id"]),
+                        f"{one['id']} opens one window, so its exits are publishable")
+
+    def test_which_targets_can_be_told_apart_is_a_fact_about_the_fetch(self):
+        """`sorts` is the CONFIGURED list; sorts_pages() is what a run asks for.
+
+        Eleven of the fourteen targets are `light` depth: they carry the
+        two-sort default in config and fetch only the first of it. Reading the
+        config called them two-window targets and withheld an exit price from
+        every one of them for a reason that does not apply to them — while the
+        two trims that really do open two windows are the shopped ones, where
+        the withholding matters most and still holds.
+        """
+        light = T.TARGETS["bmw-i5-m60"]
+        self.assertEqual(light["depth"], "light")
+        self.assertEqual(len(light["sorts"]), 2, "config still names two sorts")
+        self.assertEqual(T.sorts_pages(light)[0], ["price.asc"], "one is fetched")
+        self.assertTrue(T.departures_are_separable(light))
+        for tid in ("bmw-i5-edrive40", "bmw-i7-edrive50"):
+            t = T.TARGETS[tid]
+            self.assertEqual(len(T.sorts_pages(t)[0]), 2)
+            self.assertTrue(t["newest"])
+            self.assertFalse(T.departures_are_separable(t),
+                             f"{tid} really does open two windows plus a newest probe")
 
     def test_the_published_sheet_carries_no_exit_price_it_cannot_defend(self):
         sheet = json.loads((Path(__file__).parent.parent / "docs/data.json").read_text())
