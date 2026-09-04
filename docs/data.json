@@ -71,6 +71,7 @@
   ],
   "ship_road_factor": 1.18,
   "ship_calibrated": null,
+  "ship_calibration": null,
   "cents_per_mile": 0,
   "mileage_baseline": 20000,
   "shortlist": [],
@@ -254,6 +255,7 @@
        "accidents": 1,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "1 accident"
        ],
@@ -438,6 +440,7 @@
        "accidents": 1,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "1 accident"
        ],
@@ -526,6 +529,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -618,6 +622,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -677,7 +682,7 @@
          38990
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.33
       },
       {
        "vin": "WBY33FK00RCP55213",
@@ -890,6 +895,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -933,7 +939,7 @@
          39877
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.21
       },
       {
        "vin": "WBY33FK00RCR12965",
@@ -1025,7 +1031,7 @@
          39995
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.6
       },
       {
        "vin": "WBY33FK06RCR47204",
@@ -1190,7 +1196,7 @@
          39998
         ]
        ],
-       "stale_pct": 0.13
+       "stale_pct": 0.16
       },
       {
        "vin": "WBY33FK01RCS76878",
@@ -1219,6 +1225,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -1466,6 +1473,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "2 owners",
         "no accidents"
        ],
@@ -1529,7 +1537,7 @@
          40990
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.73
       },
       {
        "vin": "WBY33FK04RCS86613",
@@ -1558,6 +1566,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -1621,7 +1630,7 @@
          40990
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.41
       },
       {
        "vin": "WBY33FK00SCT64147",
@@ -1650,6 +1659,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -1713,7 +1723,7 @@
          41588
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.6
       },
       {
        "vin": "WBY33FK06RCR93843",
@@ -1892,7 +1902,7 @@
          41733
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.21
       },
       {
        "vin": "WBY33FK0XRCP53727",
@@ -2192,6 +2202,7 @@
        "accidents": 1,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "1 accident"
        ],
@@ -2255,7 +2266,7 @@
          41990
         ]
        ],
-       "stale_pct": 0.44
+       "stale_pct": 0.46
       },
       {
        "vin": "WBY33FK06RCR50278",
@@ -2285,6 +2296,7 @@
        "usage": "Multiple Use",
        "flags": [
         "CPO",
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -2377,6 +2389,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -2469,6 +2482,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "2 owners",
         "no accidents"
        ],
@@ -2561,6 +2575,7 @@
        "accidents": 1,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
@@ -2624,7 +2639,7 @@
          42500
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.73
       },
       {
        "vin": "WBY33FK09RCR29277",
@@ -2717,7 +2732,7 @@
          42590
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.73
       },
       {
        "vin": "WBY33FK08RCR89549",
@@ -2746,6 +2761,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -2809,7 +2825,7 @@
          42970
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.41
       },
       {
        "vin": "WBY33FK03RCR30750",
@@ -2902,7 +2918,7 @@
          42987
         ]
        ],
-       "stale_pct": 0.65
+       "stale_pct": 0.66
       },
       {
        "vin": "WBY33FK07RCS39463",
@@ -2931,6 +2947,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -2994,7 +3011,7 @@
          42990
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.73
       },
       {
        "vin": "WBY33FK05RCS41308",
@@ -3023,6 +3040,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -3431,6 +3449,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -3578,7 +3597,7 @@
          43568
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.73
       },
       {
        "vin": "WBY33FK01RCP17182",
@@ -3687,6 +3706,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -3779,6 +3799,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -3931,7 +3952,7 @@
          43998
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.6
       },
       {
        "vin": "WBY33FK0XRCR64149",
@@ -4004,7 +4025,7 @@
          44441
         ]
        ],
-       "stale_pct": 0.13
+       "stale_pct": 0.16
       },
       {
        "vin": "WBY33FK04RCR29347",
@@ -4404,6 +4425,7 @@
        "usage": "Multiple Use",
        "flags": [
         "CPO",
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -4496,6 +4518,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -4569,7 +4592,7 @@
          0
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.73
       },
       {
        "vin": "WBY33FK06RCR88075",
@@ -4679,6 +4702,7 @@
        "accidents": 0,
        "usage": "Rental Use",
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ],
@@ -4806,7 +4830,7 @@
          46083
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.21
       },
       {
        "vin": "WBY33FK09RCP36448",
@@ -4887,7 +4911,7 @@
          46393
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.33
       },
       {
        "vin": "WBY33FK02SCU74990",
@@ -5071,7 +5095,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-20",
-       "days_listed": 15,
+       "days_listed": 14,
        "first_seen": "2026-08-23",
        "cuts": 1,
        "delta": -2000,
@@ -5193,7 +5217,7 @@
          46998
         ]
        ],
-       "stale_pct": 0.82
+       "stale_pct": 0.83
       },
       {
        "vin": "WBY33FK00RCR18216",
@@ -5274,7 +5298,7 @@
          47193
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.21
       },
       {
        "vin": "WBY33FK09RCR14004",
@@ -5438,7 +5462,7 @@
          47525
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.21
       },
       {
        "vin": "WBY33FK0XSCU70010",
@@ -5630,7 +5654,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 5,
        "first_seen": "2026-09-01",
        "cuts": 0,
        "delta": 0,
@@ -5674,6 +5698,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "no accidents"
        ],
        "listed_since": "",
@@ -6051,6 +6076,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -6147,7 +6173,7 @@
         "no accidents"
        ],
        "listed_since": "2026-03-10",
-       "days_listed": 178,
+       "days_listed": 177,
        "first_seen": "2026-08-23",
        "cuts": 1,
        "delta": 0,
@@ -6275,7 +6301,7 @@
          49197
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.38
       },
       {
        "vin": "WBY33FK05SCU88074",
@@ -6598,7 +6624,7 @@
          49897
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.38
       },
       {
        "vin": "WBY43FK02RCP20158",
@@ -6631,7 +6657,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-06",
-       "days_listed": 29,
+       "days_listed": 28,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
@@ -6699,7 +6725,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-24",
-       "days_listed": 11,
+       "days_listed": 10,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -555,
@@ -6726,7 +6752,7 @@
          50239
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.27
       },
       {
        "vin": "WBY43FK0XRCP79863",
@@ -6759,7 +6785,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-19",
-       "days_listed": 16,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
@@ -6794,7 +6820,7 @@
          50370
         ]
        ],
-       "stale_pct": 0.44
+       "stale_pct": 0.41
       },
       {
        "vin": "WBY33FK00RCR89528",
@@ -7285,6 +7311,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -7348,7 +7375,7 @@
          52876
         ]
        ],
-       "stale_pct": 0.68
+       "stale_pct": 0.7
       },
       {
        "vin": "WBY13HG03SCT44406",
@@ -7381,7 +7408,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 20,
+       "days_listed": 19,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
@@ -7416,7 +7443,7 @@
          53052
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.52
       },
       {
        "vin": "WBY13HG05SCT74359",
@@ -7446,7 +7473,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-09-03",
-       "days_listed": 1,
+       "days_listed": 0,
        "first_seen": "2026-09-03",
        "cuts": 0,
        "delta": 0,
@@ -7491,7 +7518,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 21,
+       "days_listed": 20,
        "first_seen": "2026-08-23",
        "cuts": 2,
        "delta": -992,
@@ -7522,7 +7549,7 @@
          53929
         ]
        ],
-       "stale_pct": 0.65
+       "stale_pct": 0.6
       },
       {
        "vin": "WBY13HG04SCT78578",
@@ -7556,7 +7583,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 24,
+       "days_listed": 23,
        "first_seen": "2026-08-23",
        "cuts": 2,
        "delta": -2000,
@@ -7591,7 +7618,7 @@
          53990
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.7
       },
       {
        "vin": "WBY43FK03RCP52259",
@@ -7625,7 +7652,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-07-23",
-       "days_listed": 43,
+       "days_listed": 42,
        "first_seen": "2026-08-23",
        "cuts": 1,
        "delta": -1000,
@@ -8029,11 +8056,12 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-22",
-       "days_listed": 13,
+       "days_listed": 12,
        "first_seen": "2026-08-23",
        "cuts": 2,
        "delta": -999,
@@ -8229,7 +8257,7 @@
          54999
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.6
       },
       {
        "vin": "WBY13HG02SCU85189",
@@ -8262,7 +8290,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 5,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -8314,7 +8342,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-03",
-       "days_listed": 32,
+       "days_listed": 31,
        "first_seen": "2026-08-23",
        "cuts": 1,
        "delta": -653,
@@ -8382,7 +8410,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 23,
+       "days_listed": 22,
        "first_seen": "2026-08-23",
        "cuts": 2,
        "delta": 0,
@@ -8489,7 +8517,7 @@
          55580
         ]
        ],
-       "stale_pct": 0.13
+       "stale_pct": 0.16
       },
       {
        "vin": "WBY33FK00RCR93000",
@@ -8614,7 +8642,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 20,
+       "days_listed": 19,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
@@ -8649,7 +8677,7 @@
          55784
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.52
       },
       {
        "vin": "WBY43FK06RCP53728",
@@ -8749,7 +8777,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-27",
-       "days_listed": 8,
+       "days_listed": 7,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -8768,7 +8796,7 @@
          56000
         ]
        ],
-       "stale_pct": 0.13
+       "stale_pct": 0.09
       },
       {
        "vin": "WBY13HG05SCS15079",
@@ -8869,7 +8897,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 20,
+       "days_listed": 19,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": 0,
@@ -8896,7 +8924,7 @@
          56297
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.52
       },
       {
        "vin": "WBY13HG06SCT75505",
@@ -8929,7 +8957,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 24,
+       "days_listed": 23,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
@@ -8964,7 +8992,7 @@
          56309
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.7
       },
       {
        "vin": "WBY43FK03RCR97028",
@@ -8996,7 +9024,7 @@
         "CPO"
        ],
        "listed_since": "2026-08-01",
-       "days_listed": 34,
+       "days_listed": 33,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 20,
@@ -9060,11 +9088,12 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
        "listed_since": "2026-08-19",
-       "days_listed": 16,
+       "days_listed": 15,
        "first_seen": "2026-08-23",
        "cuts": 1,
        "delta": 99,
@@ -9099,7 +9128,7 @@
          56887
         ]
        ],
-       "stale_pct": 0.44
+       "stale_pct": 0.41
       },
       {
        "vin": "WBY43FK05RCR34416",
@@ -9132,7 +9161,7 @@
         "1 accident"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 22,
+       "days_listed": 21,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
@@ -9167,7 +9196,7 @@
          56985
         ]
        ],
-       "stale_pct": 0.67
+       "stale_pct": 0.66
       },
       {
        "vin": "WBY43FK09RCR05226",
@@ -9373,7 +9402,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-09-02",
-       "days_listed": 2,
+       "days_listed": 1,
        "first_seen": "2026-09-03",
        "cuts": 0,
        "delta": 0,
@@ -9488,7 +9517,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 5,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -9665,6 +9694,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -9738,7 +9768,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-23",
-       "days_listed": 12,
+       "days_listed": 11,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -9769,7 +9799,7 @@
          60995
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.33
       },
       {
        "vin": "WBY13HG09SCU80068",
@@ -9866,7 +9896,7 @@
         "no accidents"
        ],
        "listed_since": "2026-07-15",
-       "days_listed": 51,
+       "days_listed": 50,
        "first_seen": "2026-08-23",
        "cuts": 1,
        "delta": -377,
@@ -9935,7 +9965,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-24",
-       "days_listed": 11,
+       "days_listed": 10,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -9966,7 +9996,7 @@
          61990
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.27
       },
       {
        "vin": "WBY43FK07RCR00896",
@@ -10202,7 +10232,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-26",
-       "days_listed": 9,
+       "days_listed": 8,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -499,
@@ -10225,7 +10255,7 @@
          64990
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.16
       },
       {
        "vin": "WBY43FK08RCS08565",
@@ -10259,7 +10289,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 20,
+       "days_listed": 19,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -282,
@@ -10286,7 +10316,7 @@
          65000
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.52
       },
       {
        "vin": "WBY33FK06RCR39314",
@@ -10410,7 +10440,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-27",
-       "days_listed": 8,
+       "days_listed": 7,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -10429,7 +10459,7 @@
          75970
         ]
        ],
-       "stale_pct": 0.13
+       "stale_pct": 0.09
       },
       {
        "vin": "WBY13HG08SCU89179",
@@ -10459,7 +10489,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2025-03-28",
-       "days_listed": 525,
+       "days_listed": 524,
        "first_seen": "2026-08-23",
        "cuts": 0,
        "delta": 0,
@@ -11074,6 +11104,7 @@
      "gone": [
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK01RCP79925",
        "year": 2024,
        "trim": "eDrive40",
@@ -11109,6 +11140,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCR16860",
        "year": 2024,
        "trim": "eDrive40",
@@ -11146,6 +11178,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCR97679",
        "year": 2024,
        "trim": "eDrive40",
@@ -11183,6 +11216,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK02RCS84701",
        "year": 2024,
        "trim": "eDrive40",
@@ -11231,12 +11265,14 @@
         ]
        ],
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY33FK03RCP55559",
        "year": 2024,
        "trim": "eDrive40",
@@ -11276,6 +11312,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY33FK09SCT65958",
        "year": 2025,
        "trim": "eDrive40",
@@ -11320,6 +11357,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK05RCP78684",
        "year": 2024,
        "trim": "M60",
@@ -11375,6 +11413,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK08RCR09560",
        "year": 2024,
        "trim": "M60",
@@ -11418,6 +11457,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG01SCT22551",
        "year": 2025,
        "trim": "xDrive40",
@@ -11457,6 +11497,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG02SCU72040",
        "year": 2025,
        "trim": "xDrive40",
@@ -11490,12 +11531,14 @@
        ],
        "flags": [
         "CPO",
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK02RCR12518",
        "year": 2024,
        "trim": "M60",
@@ -11546,6 +11589,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK00RCR87752",
        "year": 2024,
        "trim": "M60",
@@ -11590,12 +11634,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "1 accident"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK02RCR47202",
        "year": 2024,
        "trim": "eDrive40",
@@ -11645,6 +11691,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCR98802",
        "year": 2024,
        "trim": "eDrive40",
@@ -11702,6 +11749,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK07RCR64187",
        "year": 2024,
        "trim": "eDrive40",
@@ -11772,6 +11820,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK03RCR76661",
        "year": 2024,
        "trim": "eDrive40",
@@ -11830,6 +11879,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK08RCR50315",
        "year": 2024,
        "trim": "eDrive40",
@@ -11900,6 +11950,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG09SCT21003",
        "year": 2025,
        "trim": "xDrive40",
@@ -11954,6 +12005,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK05RCR42158",
        "year": 2024,
        "trim": "M60",
@@ -12009,6 +12061,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK02RCP44486",
        "year": 2024,
        "trim": "eDrive40",
@@ -12064,6 +12117,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK06RCN91322",
        "year": 2024,
        "trim": "eDrive40",
@@ -12122,6 +12176,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK00RCP89054",
        "year": 2024,
        "trim": "eDrive40",
@@ -12176,6 +12231,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK01RCP92870",
        "year": 2024,
        "trim": "eDrive40",
@@ -12218,6 +12274,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK05RCR93025",
        "year": 2024,
        "trim": "eDrive40",
@@ -12276,6 +12333,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK01RCP14402",
        "year": 2024,
        "trim": "M60",
@@ -12326,6 +12384,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK03RCR76647",
        "year": 2024,
        "trim": "M60",
@@ -12365,6 +12424,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG09SCT67334",
        "year": 2025,
        "trim": "xDrive40",
@@ -12411,6 +12471,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG01SCT06284",
        "year": 2025,
        "trim": "xDrive40",
@@ -12447,12 +12508,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK06RCP40106",
        "year": 2024,
        "trim": "M60",
@@ -12503,6 +12566,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK09RCP40097",
        "year": 2024,
        "trim": "M60",
@@ -12553,6 +12617,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK07RCP82428",
        "year": 2024,
        "trim": "M60",
@@ -12604,6 +12669,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK0XRCS96353",
        "year": 2024,
        "trim": "eDrive40",
@@ -12647,6 +12713,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK01RCS84947",
        "year": 2024,
        "trim": "eDrive40",
@@ -12687,12 +12754,14 @@
         ]
        ],
        "flags": [
+        "rental",
         "1-owner",
         "1 accident"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG02SCU64018",
        "year": 2025,
        "trim": "xDrive40",
@@ -12725,12 +12794,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK09RCP87626",
        "year": 2024,
        "trim": "eDrive40",
@@ -12776,6 +12847,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK03RCS03415",
        "year": 2024,
        "trim": "eDrive40",
@@ -12816,12 +12888,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK0XRCP36412",
        "year": 2024,
        "trim": "eDrive40",
@@ -12865,6 +12939,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK00RCP40114",
        "year": 2024,
        "trim": "eDrive40",
@@ -12908,6 +12983,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK05SCT65228",
        "year": 2025,
        "trim": "eDrive40",
@@ -12940,12 +13016,14 @@
         ]
        ],
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK09SCT13763",
        "year": 2025,
        "trim": "eDrive40",
@@ -12988,6 +13066,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG0XSCS54122",
        "year": 2025,
        "trim": "xDrive40",
@@ -13030,6 +13109,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG04SCS84975",
        "year": 2025,
        "trim": "xDrive40",
@@ -13073,6 +13153,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY13HG06SCS12076",
        "year": 2025,
        "trim": "xDrive40",
@@ -13109,12 +13190,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK03RCR83131",
        "year": 2024,
        "trim": "M60",
@@ -13157,6 +13240,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK06RCR50334",
        "year": 2024,
        "trim": "M60",
@@ -13194,6 +13278,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK00RCP18604",
        "year": 2024,
        "trim": "M60",
@@ -13231,6 +13316,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY33FK09RCP82409",
        "year": 2024,
        "trim": "eDrive40",
@@ -13269,6 +13355,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY43FK03RCN91315",
        "year": 2024,
        "trim": "M60",
@@ -13307,6 +13394,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY13HG08SCS11804",
        "year": 2025,
        "trim": "xDrive40",
@@ -13342,6 +13430,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43FK01RCR03812",
        "year": 2024,
        "trim": "M60",
@@ -13587,6 +13676,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -13791,6 +13881,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -14458,6 +14549,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -14912,6 +15004,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -15546,6 +15639,7 @@
        "accidents": 1,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "3 owners",
         "1 accident"
        ],
@@ -15815,6 +15909,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -16252,6 +16347,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -16501,6 +16597,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -16554,6 +16651,7 @@
        "usage": "Corporate Use",
        "flags": [
         "CPO",
+        "fleet",
         "1-owner",
         "1 accident"
        ],
@@ -17525,6 +17623,7 @@
        "accidents": 1,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
@@ -17821,6 +17920,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -17929,6 +18029,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -18400,6 +18501,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -18586,6 +18688,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -19095,6 +19198,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -21973,6 +22077,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -22017,6 +22122,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -22807,6 +22913,7 @@
      "gone": [
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCX99010",
        "year": 2026,
        "trim": "eDrive50",
@@ -22842,6 +22949,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ07TCY02731",
        "year": 2026,
        "trim": "eDrive50",
@@ -22877,6 +22985,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ08PCM68963",
        "year": 2023,
        "trim": "xDrive60",
@@ -22932,6 +23041,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ07PCN73574",
        "year": 2023,
        "trim": "xDrive60",
@@ -22991,6 +23101,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ08SCT90026",
        "year": 2025,
        "trim": "eDrive50",
@@ -23026,6 +23137,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ01TCY08282",
        "year": 2026,
        "trim": "eDrive50",
@@ -23061,6 +23173,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ0XTCW03575",
        "year": 2026,
        "trim": "eDrive50",
@@ -23098,6 +23211,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ0XTCY24206",
        "year": 2026,
        "trim": "eDrive50",
@@ -23149,6 +23263,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCY08398",
        "year": 2026,
        "trim": "eDrive50",
@@ -23184,6 +23299,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ03TCX77682",
        "year": 2026,
        "trim": "eDrive50",
@@ -23219,6 +23335,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ02TCY29478",
        "year": 2026,
        "trim": "eDrive50",
@@ -23274,6 +23391,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY83EH09TCW05857",
        "year": 2026,
        "trim": "M70",
@@ -23309,6 +23427,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06PCM72171",
        "year": 2023,
        "trim": "xDrive60",
@@ -23360,6 +23479,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN52422",
        "year": 2023,
        "trim": "xDrive60",
@@ -23395,6 +23515,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ0XPCM93203",
        "year": 2023,
        "trim": "xDrive60",
@@ -23449,6 +23570,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ03PCN21214",
        "year": 2023,
        "trim": "xDrive60",
@@ -23503,6 +23625,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN86294",
        "year": 2023,
        "trim": "xDrive60",
@@ -23542,6 +23665,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ09PCN87668",
        "year": 2023,
        "trim": "xDrive60",
@@ -23577,6 +23701,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ05PCN85481",
        "year": 2023,
        "trim": "xDrive60",
@@ -23627,6 +23752,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ02PCN64037",
        "year": 2023,
        "trim": "xDrive60",
@@ -23677,6 +23803,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ0XPCM83707",
        "year": 2023,
        "trim": "xDrive60",
@@ -23727,6 +23854,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ04PCN70972",
        "year": 2023,
        "trim": "xDrive60",
@@ -23766,6 +23894,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ03PCN79176",
        "year": 2023,
        "trim": "xDrive60",
@@ -23813,6 +23942,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ07PCN58265",
        "year": 2023,
        "trim": "xDrive60",
@@ -23860,6 +23990,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ06PCN81486",
        "year": 2023,
        "trim": "xDrive60",
@@ -23907,6 +24038,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ07PCN40932",
        "year": 2023,
        "trim": "xDrive60",
@@ -23945,6 +24077,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ07PCN85675",
        "year": 2023,
        "trim": "xDrive60",
@@ -23982,6 +24115,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ08PCN52216",
        "year": 2023,
        "trim": "xDrive60",
@@ -24017,6 +24151,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY53EJ01PCM51390",
        "year": 2023,
        "trim": "xDrive60",
@@ -24055,6 +24190,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ08RCP15272",
        "year": 2024,
        "trim": "xDrive60",
@@ -24109,6 +24245,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02PCN79329",
        "year": 2023,
        "trim": "xDrive60",
@@ -24146,6 +24283,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ0XPCN70751",
        "year": 2023,
        "trim": "xDrive60",
@@ -24184,6 +24322,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03RCP45201",
        "year": 2024,
        "trim": "xDrive60",
@@ -24222,6 +24361,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04PCN38877",
        "year": 2023,
        "trim": "xDrive60",
@@ -24259,6 +24399,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ07RCP97754",
        "year": 2024,
        "trim": "xDrive60",
@@ -24294,6 +24435,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02PCN56990",
        "year": 2023,
        "trim": "xDrive60",
@@ -24339,12 +24481,14 @@
        ],
        "flags": [
         "CPO",
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04RCP46096",
        "year": 2024,
        "trim": "xDrive60",
@@ -24393,12 +24537,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ]
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06PCN49606",
        "year": 2023,
        "trim": "xDrive60",
@@ -24449,6 +24595,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04RCP47281",
        "year": 2024,
        "trim": "xDrive60",
@@ -24487,6 +24634,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ0XSCT72356",
        "year": 2025,
        "trim": "xDrive60",
@@ -24541,6 +24689,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05SCU51398",
        "year": 2025,
        "trim": "xDrive60",
@@ -24579,6 +24728,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ00SCV08221",
        "year": 2025,
        "trim": "xDrive60",
@@ -24627,12 +24777,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ]
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ00SCU33763",
        "year": 2025,
        "trim": "xDrive60",
@@ -24687,6 +24839,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02SCT24429",
        "year": 2025,
        "trim": "xDrive60",
@@ -24731,12 +24884,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ]
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ04SCU98941",
        "year": 2025,
        "trim": "xDrive60",
@@ -24790,6 +24945,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ01TCY16141",
        "year": 2026,
        "trim": "eDrive50",
@@ -24841,6 +24997,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ0XTCY26716",
        "year": 2026,
        "trim": "eDrive50",
@@ -24892,6 +25049,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCX74849",
        "year": 2026,
        "trim": "eDrive50",
@@ -24939,6 +25097,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05TCX14006",
        "year": 2026,
        "trim": "xDrive60",
@@ -24990,6 +25149,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX44633",
        "year": 2026,
        "trim": "xDrive60",
@@ -25041,6 +25201,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ02TCX57620",
        "year": 2026,
        "trim": "eDrive50",
@@ -25088,6 +25249,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCY00298",
        "year": 2026,
        "trim": "eDrive50",
@@ -25135,6 +25297,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ00TCX62125",
        "year": 2026,
        "trim": "xDrive60",
@@ -25188,6 +25351,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ0XTCW52036",
        "year": 2026,
        "trim": "xDrive60",
@@ -25239,6 +25403,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03TCY16145",
        "year": 2026,
        "trim": "xDrive60",
@@ -25290,6 +25455,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02TCX83395",
        "year": 2026,
        "trim": "xDrive60",
@@ -25337,6 +25503,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX80595",
        "year": 2026,
        "trim": "xDrive60",
@@ -25372,6 +25539,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05TCY14753",
        "year": 2026,
        "trim": "xDrive60",
@@ -25419,6 +25587,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX51386",
        "year": 2026,
        "trim": "xDrive60",
@@ -25454,6 +25623,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ08TCY18571",
        "year": 2026,
        "trim": "xDrive60",
@@ -25489,6 +25659,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ05TCX99025",
        "year": 2026,
        "trim": "xDrive60",
@@ -25524,6 +25695,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03TCY09714",
        "year": 2026,
        "trim": "xDrive60",
@@ -25575,6 +25747,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCY07286",
        "year": 2026,
        "trim": "xDrive60",
@@ -25626,6 +25799,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ07TCX97406",
        "year": 2026,
        "trim": "xDrive60",
@@ -25673,6 +25847,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ06TCX43398",
        "year": 2026,
        "trim": "xDrive60",
@@ -25720,6 +25895,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCX86147",
        "year": 2026,
        "trim": "xDrive60",
@@ -25771,6 +25947,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ08TCY20501",
        "year": 2026,
        "trim": "xDrive60",
@@ -25806,6 +25983,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ03TCX96155",
        "year": 2026,
        "trim": "xDrive60",
@@ -25853,6 +26031,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ07TCX92626",
        "year": 2026,
        "trim": "xDrive60",
@@ -25888,6 +26067,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02TCX67004",
        "year": 2026,
        "trim": "xDrive60",
@@ -25935,6 +26115,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCX54136",
        "year": 2026,
        "trim": "xDrive60",
@@ -25986,6 +26167,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ09TCY04551",
        "year": 2026,
        "trim": "xDrive60",
@@ -26037,6 +26219,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY53EJ02TCY29324",
        "year": 2026,
        "trim": "xDrive60",
@@ -26088,6 +26271,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY83EH06TCX89008",
        "year": 2026,
        "trim": "M70",
@@ -26139,6 +26323,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY83EH03TCX46116",
        "year": 2026,
        "trim": "M70",
@@ -26186,6 +26371,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WBY83EH04TCY16500",
        "year": 2026,
        "trim": "M70",
@@ -26221,6 +26407,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ04PCM75330",
        "year": 2023,
        "trim": "xDrive60",
@@ -26271,6 +26458,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ08RCP84110",
        "year": 2024,
        "trim": "xDrive60",
@@ -26311,12 +26499,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN48291",
        "year": 2023,
        "trim": "xDrive60",
@@ -26363,6 +26553,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01PCM51499",
        "year": 2023,
        "trim": "xDrive60",
@@ -26410,6 +26601,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN68300",
        "year": 2023,
        "trim": "xDrive60",
@@ -26448,6 +26640,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ09PCN10895",
        "year": 2023,
        "trim": "xDrive60",
@@ -26494,6 +26687,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01RCP88659",
        "year": 2024,
        "trim": "xDrive60",
@@ -26537,6 +26731,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06PCN86140",
        "year": 2023,
        "trim": "xDrive60",
@@ -26583,6 +26778,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ0XPCN60057",
        "year": 2023,
        "trim": "xDrive60",
@@ -26630,6 +26826,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01PCN68242",
        "year": 2023,
        "trim": "xDrive60",
@@ -26681,6 +26878,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06PCN91029",
        "year": 2023,
        "trim": "xDrive60",
@@ -26724,6 +26922,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN75491",
        "year": 2023,
        "trim": "xDrive60",
@@ -26771,6 +26970,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN72316",
        "year": 2023,
        "trim": "xDrive60",
@@ -26816,6 +27016,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ01PCN64238",
        "year": 2023,
        "trim": "xDrive60",
@@ -26854,6 +27055,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05PCM66846",
        "year": 2023,
        "trim": "xDrive60",
@@ -26894,6 +27096,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ03PCN77752",
        "year": 2023,
        "trim": "xDrive60",
@@ -26940,6 +27143,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ02PCN52373",
        "year": 2023,
        "trim": "xDrive60",
@@ -26987,6 +27191,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ08PCN73387",
        "year": 2023,
        "trim": "xDrive60",
@@ -27027,12 +27232,14 @@
         ]
        ],
        "flags": [
+        "rental",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00RCP17842",
        "year": 2024,
        "trim": "xDrive60",
@@ -27078,6 +27285,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ00PCN69253",
        "year": 2023,
        "trim": "xDrive60",
@@ -27121,6 +27329,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ02RCS36535",
        "year": 2024,
        "trim": "eDrive50",
@@ -27170,6 +27379,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ09TCY34967",
        "year": 2026,
        "trim": "eDrive50",
@@ -27213,6 +27423,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WBY43EJ07TCX86112",
        "year": 2026,
        "trim": "eDrive50",
@@ -27256,6 +27467,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ08TCY07344",
        "year": 2026,
        "trim": "xDrive60",
@@ -27299,6 +27511,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05TCY02893",
        "year": 2026,
        "trim": "xDrive60",
@@ -27346,6 +27559,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ09TCX59367",
        "year": 2026,
        "trim": "xDrive60",
@@ -27393,6 +27607,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY83EH07TCW44754",
        "year": 2026,
        "trim": "M70",
@@ -27436,6 +27651,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05PCN91085",
        "year": 2023,
        "trim": "xDrive60",
@@ -27478,6 +27694,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ05TCX32201",
        "year": 2026,
        "trim": "xDrive60",
@@ -27517,6 +27734,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WBY53EJ06TCX54112",
        "year": 2026,
        "trim": "xDrive60",
@@ -27675,7 +27893,7 @@
         "1 accident"
        ],
        "listed_since": "2026-09-02",
-       "days_listed": 2,
+       "days_listed": 1,
        "first_seen": "2026-09-03",
        "cuts": 0,
        "delta": 0,
@@ -27716,7 +27934,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-23",
-       "days_listed": 12,
+       "days_listed": 11,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 0,
@@ -27772,7 +27990,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-06",
-       "days_listed": 29,
+       "days_listed": 28,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -898,
@@ -27828,7 +28046,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-16",
-       "days_listed": 19,
+       "days_listed": 18,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -898,
@@ -27881,7 +28099,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-25",
-       "days_listed": 41,
+       "days_listed": 40,
        "first_seen": "2026-08-28",
        "cuts": 1,
        "delta": -2700,
@@ -27930,7 +28148,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 5,
        "first_seen": "2026-08-31",
        "cuts": 0,
        "delta": 0,
@@ -27978,7 +28196,7 @@
         "1 accident"
        ],
        "listed_since": "2026-08-18",
-       "days_listed": 17,
+       "days_listed": 16,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -2000,
@@ -28031,7 +28249,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-16",
-       "days_listed": 50,
+       "days_listed": 49,
        "first_seen": "2026-08-26",
        "cuts": 2,
        "delta": -1492,
@@ -28251,6 +28469,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -28307,6 +28526,7 @@
        "accidents": 1,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
@@ -28364,7 +28584,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-04-28",
-       "days_listed": 129,
+       "days_listed": 128,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -147,
@@ -28417,7 +28637,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-04-01",
-       "days_listed": 156,
+       "days_listed": 155,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 0,
@@ -28470,7 +28690,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-06-25",
-       "days_listed": 71,
+       "days_listed": 70,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 775,
@@ -28526,7 +28746,7 @@
         "1 accident"
        ],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 5,
        "first_seen": "2026-08-31",
        "cuts": 0,
        "delta": 314,
@@ -28627,7 +28847,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-02",
-       "days_listed": 64,
+       "days_listed": 63,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 0,
@@ -28675,6 +28895,7 @@
        "accidents": 1,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
@@ -28732,7 +28953,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-05-12",
-       "days_listed": 115,
+       "days_listed": 114,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -703,
@@ -28785,7 +29006,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-31",
-       "days_listed": 35,
+       "days_listed": 34,
        "first_seen": "2026-08-31",
        "cuts": 0,
        "delta": 0,
@@ -28834,7 +29055,7 @@
         "1 accident"
        ],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 5,
        "first_seen": "2026-08-31",
        "cuts": 0,
        "delta": 0,
@@ -29046,11 +29267,12 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "2 owners",
         "no accidents"
        ],
        "listed_since": "2026-06-10",
-       "days_listed": 86,
+       "days_listed": 85,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -1000,
@@ -29102,11 +29324,12 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-05-23",
-       "days_listed": 104,
+       "days_listed": 103,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 399,
@@ -29322,7 +29545,7 @@
         "1 accident"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 20,
+       "days_listed": 19,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -924,
@@ -29374,11 +29597,12 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-26",
-       "days_listed": 9,
+       "days_listed": 8,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 0,
@@ -29490,7 +29714,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 22,
+       "days_listed": 21,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 170,
@@ -29602,7 +29826,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 6,
        "first_seen": "2026-08-31",
        "cuts": 0,
        "delta": 1298,
@@ -29650,7 +29874,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 5,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -786,
@@ -29702,6 +29926,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -29758,6 +29983,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -29870,6 +30096,7 @@
        "accidents": 1,
        "usage": "Commercial Use",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
@@ -29931,7 +30158,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-07",
-       "days_listed": 28,
+       "days_listed": 27,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 85,
@@ -29988,7 +30215,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-07-22",
-       "days_listed": 44,
+       "days_listed": 43,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -220,
@@ -30091,7 +30318,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-05-19",
-       "days_listed": 108,
+       "days_listed": 107,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 3752,
@@ -30195,7 +30422,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 21,
+       "days_listed": 20,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 0,
@@ -30251,7 +30478,7 @@
         "1 accident"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 21,
+       "days_listed": 20,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 225,
@@ -30420,7 +30647,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-07-03",
-       "days_listed": 63,
+       "days_listed": 62,
        "first_seen": "2026-08-26",
        "cuts": 0,
        "delta": 0,
@@ -30590,7 +30817,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-13",
-       "days_listed": 22,
+       "days_listed": 21,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -966,
@@ -30642,6 +30869,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -30702,7 +30930,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-21",
-       "days_listed": 14,
+       "days_listed": 13,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": 0,
@@ -30754,11 +30982,12 @@
        "accidents": 1,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
        "listed_since": "2026-08-23",
-       "days_listed": 12,
+       "days_listed": 11,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -555,
@@ -30814,7 +31043,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 6,
        "first_seen": "2026-08-31",
        "cuts": 0,
        "delta": 0,
@@ -30861,7 +31090,7 @@
         "CPO"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 23,
+       "days_listed": 22,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": -491,
@@ -30913,11 +31142,12 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-26",
-       "days_listed": 9,
+       "days_listed": 8,
        "first_seen": "2026-08-26",
        "cuts": 1,
        "delta": 0,
@@ -31193,6 +31423,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -31356,6 +31587,7 @@
      "gone": [
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB523CF04NCJ77130",
        "year": 2022,
        "trim": "xDrive50",
@@ -31399,6 +31631,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB523CF09NCJ68276",
        "year": 2022,
        "trim": "xDrive50",
@@ -31437,6 +31670,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB523CF09PCM38674",
        "year": 2023,
        "trim": "xDrive50",
@@ -31475,6 +31709,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF09PCM89429",
        "year": 2023,
        "trim": "xDrive50",
@@ -31515,12 +31750,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF07RCN15187",
        "year": 2024,
        "trim": "xDrive50",
@@ -31564,6 +31801,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WB523CF00RCN49973",
        "year": 2024,
        "trim": "xDrive50",
@@ -31611,6 +31849,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "WB533CF0XPCM02867",
        "year": 2023,
        "trim": "M60",
@@ -31657,6 +31896,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF00RCN72092",
        "year": 2024,
        "trim": "M60",
@@ -31703,6 +31943,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF06NCK45928",
        "year": 2022,
        "trim": "xDrive50",
@@ -31745,6 +31986,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF01RCN55393",
        "year": 2024,
        "trim": "xDrive50",
@@ -31781,12 +32023,14 @@
         ]
        ],
        "flags": [
+        "rental",
         "2 owners",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB523CF0XNCK69231",
        "year": 2022,
        "trim": "xDrive50",
@@ -31829,6 +32073,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WB523CF04RCN15101",
        "year": 2024,
        "trim": "xDrive50",
@@ -31868,6 +32113,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "WB523CF02RCN03805",
        "year": 2024,
        "trim": "xDrive50",
@@ -31906,6 +32152,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF07PCM04317",
        "year": 2023,
        "trim": "M60",
@@ -31948,6 +32195,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF01PCK81842",
        "year": 2023,
        "trim": "M60",
@@ -31990,6 +32238,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF07PCM42906",
        "year": 2023,
        "trim": "M60",
@@ -32026,12 +32275,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WB533CF06RCN92881",
        "year": 2024,
        "trim": "M60",
@@ -32070,7 +32321,7 @@
       }
      ],
      "market": {
-      "median_days_listed": 22,
+      "median_days_listed": 21,
       "tracked_2d": 64,
       "cut_share": 0.47,
       "median_cut": 744,
@@ -32172,7 +32423,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 5,
        "first_seen": "2026-08-29",
        "cuts": 0,
        "delta": 0,
@@ -32216,11 +32467,12 @@
        "accidents": 1,
        "usage": "Commercial Use",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 4,
        "first_seen": "2026-08-29",
        "cuts": 0,
        "delta": 1,
@@ -32265,7 +32517,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-07",
-       "days_listed": 28,
+       "days_listed": 26,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -32318,7 +32570,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-15",
-       "days_listed": 51,
+       "days_listed": 49,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -114,
@@ -32370,11 +32622,12 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 23,
+       "days_listed": 21,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -250,
@@ -32430,7 +32683,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-11",
-       "days_listed": 24,
+       "days_listed": 22,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -400,
@@ -32486,7 +32739,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 5,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -1400,
@@ -32539,7 +32792,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-14",
-       "days_listed": 21,
+       "days_listed": 19,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -130,
@@ -32595,7 +32848,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-10",
-       "days_listed": 25,
+       "days_listed": 23,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -400,
@@ -32651,7 +32904,7 @@
         "1 accident"
        ],
        "listed_since": "2026-07-19",
-       "days_listed": 47,
+       "days_listed": 45,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -400,
@@ -32704,7 +32957,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-29",
-       "days_listed": 37,
+       "days_listed": 35,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -222,
@@ -32757,7 +33010,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-29",
-       "days_listed": 37,
+       "days_listed": 35,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -442,
@@ -32866,7 +33119,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 5,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -32907,7 +33160,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-07",
-       "days_listed": 59,
+       "days_listed": 57,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -522,
@@ -32956,7 +33209,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-06-25",
-       "days_listed": 71,
+       "days_listed": 69,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -114,
@@ -33011,7 +33264,7 @@
         "CPO"
        ],
        "listed_since": "2026-06-13",
-       "days_listed": 83,
+       "days_listed": 81,
        "first_seen": "2026-08-29",
        "cuts": 0,
        "delta": 0,
@@ -33055,11 +33308,12 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 5,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -33100,7 +33354,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-07-02",
-       "days_listed": 64,
+       "days_listed": 62,
        "first_seen": "2026-08-29",
        "cuts": 0,
        "delta": 0,
@@ -33207,6 +33461,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KN4DE6RU341878",
        "year": 2024,
        "trim": "SEL",
@@ -33253,6 +33508,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "7YAKM4DB5SY002064",
        "year": 2025,
        "trim": "SE Standard Range",
@@ -33299,6 +33555,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KR4DE5RU301604",
        "year": 2024,
        "trim": "Limited",
@@ -33345,6 +33602,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "KM8KN4AE9PU166463",
        "year": 2023,
        "trim": "SEL",
@@ -33381,12 +33639,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "1 accident"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KMDAF0NU055213",
        "year": 2022,
        "trim": "SE",
@@ -33429,6 +33689,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KM8KMDAF4NU113033",
        "year": 2022,
        "trim": "SE",
@@ -33471,6 +33732,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "KM8KMDDF3RU259991",
        "year": 2024,
        "trim": "SE",
@@ -33513,7 +33775,7 @@
       }
      ],
      "market": {
-      "median_days_listed": 26,
+      "median_days_listed": 24,
       "tracked_2d": 17,
       "cut_share": 0.65,
       "median_cut": 400,
@@ -33770,6 +34032,7 @@
        "accidents": 1,
        "usage": "Commercial Use",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
@@ -33830,6 +34093,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -33890,6 +34154,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -34231,6 +34496,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -35211,6 +35477,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -35561,6 +35828,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAB5S11R6020544",
        "year": 2024,
        "trim": "Light Long Range",
@@ -35612,6 +35880,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDADFS55R6025300",
        "year": 2024,
        "trim": "Land",
@@ -35650,6 +35919,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "KNDAEFS55R6035368",
        "year": 2024,
        "trim": "GT-Line",
@@ -35689,6 +35959,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAA5S29R6024451",
        "year": 2024,
        "trim": "Light Short Range",
@@ -35724,6 +35995,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAB5S15R6020353",
        "year": 2024,
        "trim": "Light Long Range",
@@ -35764,12 +36036,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAEFS56R6019308",
        "year": 2024,
        "trim": "GT-Line",
@@ -35816,6 +36090,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAFFS50R6034867",
        "year": 2024,
        "trim": "Wind",
@@ -35863,6 +36138,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAB5S12R6031567",
        "year": 2024,
        "trim": "Light Long Range",
@@ -35902,6 +36178,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAA5S25R6038895",
        "year": 2024,
        "trim": "Light",
@@ -35941,6 +36218,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAA5S2XR6038892",
        "year": 2024,
        "trim": "Light",
@@ -35983,6 +36261,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "5XYAB5S11TG026414",
        "year": 2026,
        "trim": "Light Long Range",
@@ -36022,6 +36301,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "KNDAFFS57R6037958",
        "year": 2024,
        "trim": "Wind",
@@ -36058,12 +36338,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAB5S11R6035397",
        "year": 2024,
        "trim": "Light Long Range",
@@ -36102,6 +36384,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAA5S23R6033758",
        "year": 2024,
        "trim": "Light",
@@ -36137,6 +36420,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "KNDAA5S2XR6020893",
        "year": 2024,
        "trim": "Light",
@@ -36373,7 +36657,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-27",
-       "days_listed": 8,
+       "days_listed": 7,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -36421,7 +36705,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-25",
-       "days_listed": 10,
+       "days_listed": 9,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -36608,6 +36892,7 @@
        "accidents": 0,
        "usage": "Commercial Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -36656,11 +36941,12 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-21",
-       "days_listed": 14,
+       "days_listed": 13,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -36804,7 +37090,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 20,
+       "days_listed": 19,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -36848,6 +37134,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -36892,11 +37179,12 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-31",
-       "days_listed": 4,
+       "days_listed": 3,
        "first_seen": "2026-08-30",
        "cuts": 0,
        "delta": 0,
@@ -37085,7 +37373,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-15",
-       "days_listed": 20,
+       "days_listed": 19,
        "first_seen": "2026-09-03",
        "cuts": 0,
        "delta": 0,
@@ -37129,7 +37417,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 6,
        "first_seen": "2026-09-03",
        "cuts": 0,
        "delta": 0,
@@ -37169,6 +37457,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -37265,6 +37554,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ],
@@ -37338,6 +37628,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU7CAGH8SA025343",
        "year": 2025,
        "trim": "Premium",
@@ -37370,12 +37661,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU2CAGH7SA027384",
        "year": 2025,
        "trim": "Premium Plus",
@@ -37414,6 +37707,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU2CAGH7SA027014",
        "year": 2025,
        "trim": "Premium Plus",
@@ -37452,6 +37746,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU7DAGH3SA024081",
        "year": 2025,
        "trim": "Premium",
@@ -37490,6 +37785,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU2CAGH5SA016383",
        "year": 2025,
        "trim": "Premium Plus",
@@ -37522,12 +37818,14 @@
         ]
        ],
        "flags": [
+        "multi-use",
         "2 owners",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "WAU3DAGH1SA024899",
        "year": 2025,
        "trim": "Prestige",
@@ -37566,7 +37864,7 @@
       }
      ],
      "market": {
-      "median_days_listed": 10,
+      "median_days_listed": 9,
       "tracked_2d": 18,
       "cut_share": 0.22,
       "median_cut": 674,
@@ -37696,7 +37994,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-24",
-       "days_listed": 11,
+       "days_listed": 9,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -37837,11 +38135,12 @@
        "accidents": 1,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
        "listed_since": "2026-08-23",
-       "days_listed": 12,
+       "days_listed": 10,
        "first_seen": "2026-08-28",
        "cuts": 1,
        "delta": -200,
@@ -37889,7 +38188,7 @@
         "1 accident"
        ],
        "listed_since": "2026-09-01",
-       "days_listed": 3,
+       "days_listed": 1,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -38236,6 +38535,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -38288,11 +38588,12 @@
        "accidents": 0,
        "usage": "Taxi Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-07-31",
-       "days_listed": 35,
+       "days_listed": 33,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -38344,7 +38645,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-08",
-       "days_listed": 27,
+       "days_listed": 25,
        "first_seen": "2026-08-28",
        "cuts": 0,
        "delta": 0,
@@ -38393,7 +38694,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-28",
-       "days_listed": 7,
+       "days_listed": 5,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -38437,7 +38738,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-30",
-       "days_listed": 5,
+       "days_listed": 3,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -38481,7 +38782,7 @@
         "no accidents"
        ],
        "listed_since": "2026-07-09",
-       "days_listed": 57,
+       "days_listed": 55,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -38530,7 +38831,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-29",
-       "days_listed": 6,
+       "days_listed": 4,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -38570,11 +38871,12 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-05-14",
-       "days_listed": 113,
+       "days_listed": 111,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -2657,
@@ -38622,11 +38924,12 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "2 owners",
         "no accidents"
        ],
        "listed_since": "2026-08-16",
-       "days_listed": 19,
+       "days_listed": 17,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -38831,6 +39134,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -38883,11 +39187,12 @@
        "accidents": 0,
        "usage": "Commercial Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-19",
-       "days_listed": 16,
+       "days_listed": 14,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -1000,
@@ -38987,11 +39292,12 @@
        "accidents": 1,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ],
        "listed_since": "2026-05-16",
-       "days_listed": 111,
+       "days_listed": 109,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -39043,7 +39349,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-26",
-       "days_listed": 9,
+       "days_listed": 7,
        "first_seen": "2026-08-28",
        "cuts": 0,
        "delta": 0,
@@ -39245,7 +39551,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-09-01",
-       "days_listed": 3,
+       "days_listed": 1,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -39393,7 +39699,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-08",
-       "days_listed": 27,
+       "days_listed": 25,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -400,
@@ -39445,7 +39751,7 @@
         "no accidents"
        ],
        "listed_since": "2026-04-24",
-       "days_listed": 133,
+       "days_listed": 131,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -200,
@@ -39493,6 +39799,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -39597,11 +39904,12 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-08-14",
-       "days_listed": 21,
+       "days_listed": 19,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -39649,6 +39957,7 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -39706,7 +40015,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 23,
+       "days_listed": 21,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -39758,7 +40067,7 @@
         "no accidents"
        ],
        "listed_since": "2026-06-25",
-       "days_listed": 71,
+       "days_listed": 69,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -39855,7 +40164,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-26",
-       "days_listed": 9,
+       "days_listed": 7,
        "first_seen": "2026-08-28",
        "cuts": 0,
        "delta": 0,
@@ -39944,7 +40253,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-06-09",
-       "days_listed": 87,
+       "days_listed": 85,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -40138,7 +40447,7 @@
         "1 accident"
        ],
        "listed_since": "2026-08-20",
-       "days_listed": 15,
+       "days_listed": 13,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": 0,
@@ -40190,7 +40499,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-27",
-       "days_listed": 8,
+       "days_listed": 6,
        "first_seen": "2026-08-28",
        "cuts": 0,
        "delta": 0,
@@ -40238,7 +40547,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-20",
-       "days_listed": 15,
+       "days_listed": 13,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -321,
@@ -40291,7 +40600,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-27",
-       "days_listed": 8,
+       "days_listed": 6,
        "first_seen": "2026-08-28",
        "cuts": 0,
        "delta": 0,
@@ -40440,6 +40749,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -40493,7 +40803,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-08-31",
-       "days_listed": 4,
+       "days_listed": 2,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -40537,7 +40847,7 @@
         "no accidents"
        ],
        "listed_since": "2026-08-12",
-       "days_listed": 23,
+       "days_listed": 21,
        "first_seen": "2026-08-28",
        "cuts": 1,
        "delta": -1022,
@@ -40581,11 +40891,12 @@
        "accidents": 0,
        "usage": "Corporate Fleet",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
        "listed_since": "2026-06-11",
-       "days_listed": 85,
+       "days_listed": 83,
        "first_seen": "2026-08-24",
        "cuts": 1,
        "delta": -1000,
@@ -40638,7 +40949,7 @@
         "ex-lease"
        ],
        "listed_since": "2026-08-23",
-       "days_listed": 12,
+       "days_listed": 10,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -40686,6 +40997,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ],
@@ -40735,7 +41047,7 @@
        "usage": "",
        "flags": [],
        "listed_since": "2026-09-01",
-       "days_listed": 3,
+       "days_listed": 1,
        "first_seen": "2026-09-02",
        "cuts": 0,
        "delta": 0,
@@ -40779,7 +41091,7 @@
         "no accidents"
        ],
        "listed_since": "2025-10-22",
-       "days_listed": 317,
+       "days_listed": 315,
        "first_seen": "2026-08-24",
        "cuts": 0,
        "delta": 0,
@@ -40901,6 +41213,7 @@
      "gone": [
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA3PA002149",
        "year": 2023,
        "trim": "Touring",
@@ -40943,6 +41256,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA5RA007050",
        "year": 2024,
        "trim": "Touring",
@@ -40978,6 +41292,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA9RA001980",
        "year": 2024,
        "trim": "Touring",
@@ -41020,6 +41335,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA4PA002998",
        "year": 2023,
        "trim": "Touring",
@@ -41062,6 +41378,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA3PA005522",
        "year": 2023,
        "trim": "Touring",
@@ -41098,12 +41415,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "1 accident"
        ]
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEAXRA003382",
        "year": 2024,
        "trim": "Touring",
@@ -41136,12 +41455,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA8NA003080",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41185,6 +41506,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA8NA005122",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41227,6 +41549,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA7NA003636",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41266,6 +41589,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA6RA008899",
        "year": 2024,
        "trim": "Touring",
@@ -41305,6 +41629,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA6NA004065",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41341,12 +41666,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA7PA005714",
        "year": 2023,
        "trim": "Grand Touring",
@@ -41385,6 +41712,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA4NA001522",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41427,6 +41755,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA3NA004475",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41463,12 +41792,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBAXRA008870",
        "year": 2024,
        "trim": "Grand Touring",
@@ -41512,6 +41843,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA5RA008392",
        "year": 2024,
        "trim": "Touring",
@@ -41550,6 +41882,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA6PA005739",
        "year": 2023,
        "trim": "Touring",
@@ -41588,6 +41921,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA9RA003275",
        "year": 2024,
        "trim": "Touring",
@@ -41626,6 +41960,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEAXRA008579",
        "year": 2024,
        "trim": "Touring",
@@ -41664,6 +41999,7 @@
       },
       {
        "likely": "not checked",
+       "exact": false,
        "vin": "50EA1TEA0PA004389",
        "year": 2023,
        "trim": "Touring",
@@ -41702,6 +42038,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1GBA3NA004640",
        "year": 2022,
        "trim": "Grand Touring",
@@ -41740,6 +42077,7 @@
       },
       {
        "likely": "delisted",
+       "exact": true,
        "vin": "50EA1TEA1PA003557",
        "year": 2023,
        "trim": "Touring",
@@ -41778,6 +42116,7 @@
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "50EA1TEA1RA001195",
        "year": 2024,
        "trim": "Touring",
@@ -41810,12 +42149,14 @@
         ]
        ],
        "flags": [
+        "fleet",
         "1-owner",
         "no accidents"
        ]
       },
       {
        "likely": "out of window",
+       "exact": true,
        "vin": "50EA1TEA8RA001663",
        "year": 2024,
        "trim": "Touring",
@@ -41854,7 +42195,7 @@
       }
      ],
      "market": {
-      "median_days_listed": 15,
+      "median_days_listed": 13,
       "tracked_2d": 51,
       "cut_share": 0.53,
       "median_cut": 400,

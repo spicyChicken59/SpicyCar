@@ -521,11 +521,35 @@ class TestPicks(unittest.TestCase):
                         "no car at or above its model's typical value may be a pick")
 
     def test_per_model_cap_spreads_the_picks(self):
-        scored = (T.score_picks([listing(price=p) for p in (30000, 40000, 41000, 42000)], "A")
+        """Model A is given SIX cars so THREE of them sit under typical.
+
+        With four cars each, only one per model clears the median, so the cap
+        was never reached and deleting it left this green — the test asserted
+        `max(counts) <= 2` over a set that could not exceed 1. The point of the
+        cap is that a model with more good cars than the cap does not take the
+        whole page, so the fixture has to contain such a model.
+        """
+        scored = (T.score_picks([listing(price=p) for p in
+                                 (20000, 21000, 22000, 40000, 41000, 42000)], "A")
                   + T.score_picks([listing(price=p) for p in (30000, 40000, 41000, 42000)], "B"))
         picks = T.choose_picks(scored, 4, per_model=2)
         counts = Counter(p["model_label"] for p in picks)
-        self.assertLessEqual(max(counts.values()), 2)
+        self.assertEqual(counts["A"], 2,
+                         "A has three cars under typical and the cap is two")
+        self.assertTrue(counts["B"], "and the seat the cap freed goes to the other model")
+
+    def test_the_mileage_cap_is_the_configured_one(self):
+        """Read from PICKS, and pinned on both sides of its own boundary.
+
+        A test that hard-codes a number is a copy of the config, and passes on
+        a build where the code hard-codes a DIFFERENT number; a test that only
+        checks a car far over the line passes on any cap between the two.
+        """
+        mm = T.to_int(T.PICKS.get("max_miles")) or 50000
+        self.assertTrue(T.pick_eligible(listing(price=40000, miles=mm)),
+                        "a car exactly at the cap is inside it")
+        self.assertFalse(T.pick_eligible(listing(price=40000, miles=mm + 1)),
+                         "and one mile over is not")
 
     def test_picks_split_into_drivable_and_worth_the_ship(self):
         """Every car is scored against the whole model, then split: drivable
@@ -708,6 +732,292 @@ class TestBrokenEnvelope(unittest.TestCase):
             T.FAILED_SCOPES.discard(("bmw-i5-m60", "National"))
 
 
+class TestLandedAndAdjusted(unittest.TestCase):
+    """The shipping term in adjusted(), which every landed price is built on.
+
+    Nothing pinned it: the existing coverage asserts the mileage adjustment is
+    OFF, which passes on code that drops the shipping term entirely. That term
+    is the one part of this function the shipped config actually exercises —
+    the picks are ranked on it and every "asking + shipping" line prints it.
+    """
+
+    def test_shipping_is_added(self):
+        self.assertEqual(T.adjusted(40000, 20000, 1200), 41200)
+        self.assertEqual(T.adjusted(40000, 20000, 0), 40000)
+
+    def test_no_price_is_no_answer(self):
+        self.assertIsNone(T.adjusted(None, 20000, 1200))
+
+    def test_the_mileage_term_is_signed_the_way_the_docstring_says(self):
+        """Off in the shipped config, so this patches it on rather than
+        asserting a dead branch stays dead: above the baseline COSTS, below it
+        credits, and a car with no mileage is not guessed at."""
+        with unittest.mock.patch.dict(T.BUYER, {"cents_per_mile": 0.30,
+                                                "mileage_baseline": 20000}, clear=False):
+            self.assertEqual(T.adjusted(40000, 30000, 0), 43000,
+                             "10,000 miles over the baseline at 30c is $3,000 more")
+            self.assertEqual(T.adjusted(40000, 10000, 0), 37000,
+                             "and 10,000 under it is $3,000 less")
+            self.assertEqual(T.adjusted(40000, None, 500), 40500,
+                             "a car with no mileage gets shipping and no guess")
+
+    def test_landed_reads_the_rows_own_shipping(self):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"price": 40000, "miles": 20000, "state": "CA", "lat": "", "lon": ""})
+        total, ship = T.landed(r)
+        self.assertEqual(total, 40000 + ship)
+        self.assertGreater(ship, 0, "a car outside the buyer's states pays a hauler")
+        r["state"] = list(T.STATES)[0]
+        total_local, ship_local = T.landed(r)
+        self.assertEqual((total_local, ship_local), (40000, 0),
+                         "and one inside them does not")
+
+
+class TestHistoryRoundTrip(unittest.TestCase):
+    """load_history() and write_rows(), which nothing drove.
+
+    Between them they are the whole persistence layer: every guard, every
+    reconstruction and every published series is built on what comes back out
+    of this file. Three of the normalisations in load_history() exist because
+    of specific incidents — a BOM that blanked 3,581 dates, a renamed target,
+    a lower-case state that fell out of scope — and none of them was asserted.
+    """
+
+    def _write(self, td, rows, header=None):
+        import csv as _csv
+        p = Path(td) / "s.csv"
+        with p.open("w", newline="", encoding="utf-8") as f:
+            w = _csv.DictWriter(f, fieldnames=header or T.FIELDS, extrasaction="ignore")
+            w.writeheader()
+            for r in rows:
+                w.writerow(r)
+        return p
+
+    def test_a_row_survives_the_round_trip_with_its_header_intact(self):
+        import csv as _csv, tempfile
+        row = {k: "" for k in T.FIELDS}
+        row.update({"target": "bmw-i5-edrive40", "vin": "V" * 17,
+                    "snapshot_date": "2026-08-01", "price": "40000", "state": "IL"})
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "out.csv"
+            was, T.SNAPSHOTS = T.SNAPSHOTS, p
+            try:
+                T.write_rows([row])
+                with p.open(newline="", encoding="utf-8") as f:
+                    head = next(_csv.reader(f))
+                self.assertEqual(head, list(T.FIELDS),
+                                 "the header is the file's contract — order included")
+                back = T.load_history()
+            finally:
+                T.SNAPSHOTS = was
+        self.assertEqual(len(back), 1)
+        self.assertEqual(back[0]["vin"], "V" * 17)
+        self.assertEqual(back[0]["snapshot_date"], "2026-08-01")
+
+    def test_a_byte_order_mark_does_not_blank_every_date(self):
+        """The incident this encoding exists for: a BOM turns the first header
+        into "\ufeffsnapshot_date", every row then reads its date as "", the
+        already-fetched guard sees no TODAY, and write_rows rewrites the whole
+        file with blank dates."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "s.csv"
+            body = ",".join(T.FIELDS) + "\n"
+            row = {k: "" for k in T.FIELDS}
+            row.update({"target": "bmw-i5-edrive40", "vin": "V" * 17,
+                        "snapshot_date": "2026-08-01", "state": "IL"})
+            body += ",".join(str(row[k]) for k in T.FIELDS) + "\n"
+            p.write_bytes(b"\xef\xbb\xbf" + body.encode("utf-8"))
+            was, T.SNAPSHOTS = T.SNAPSHOTS, p
+            try:
+                back = T.load_history()
+            finally:
+                T.SNAPSHOTS = was
+        self.assertEqual(back[0]["snapshot_date"], "2026-08-01",
+                         "a BOM must not eat the first column's name")
+
+    def test_a_renamed_target_and_a_lower_case_state_are_normalised(self):
+        """Both read from config rather than duplicated here, so the test
+        follows a rename instead of pinning one."""
+        import tempfile
+        if not T.LEGACY_IDS:
+            self.skipTest("no legacy target ids in this config")
+        old_id, new_id = next(iter(T.LEGACY_IDS.items()))
+        with tempfile.TemporaryDirectory() as td:
+            row = {k: "" for k in T.FIELDS}
+            row.update({"target": old_id, "vin": "V" * 17,
+                        "snapshot_date": "2026-08-01", "state": "il"})
+            p = self._write(td, [row])
+            was, T.SNAPSHOTS = T.SNAPSHOTS, p
+            try:
+                back = T.load_history()
+            finally:
+                T.SNAPSHOTS = was
+        self.assertEqual(back[0]["target"], new_id,
+                         "a row written under the old id still belongs to the target")
+        self.assertEqual(back[0]["state"], "IL",
+                         "in_scope() compares upper-case codes; a stray 'il' falls out of scope")
+
+    def test_a_missing_file_is_an_empty_record_not_a_crash(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            was, T.SNAPSHOTS = T.SNAPSHOTS, Path(td) / "nope.csv"
+            try:
+                self.assertEqual(T.load_history(), [])
+            finally:
+                T.SNAPSHOTS = was
+
+
+class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
+    """"## Today" describes the newest snapshot, not the wall clock.
+
+    Its new/gone detectors were already data-relative; the CUT detector was
+    gated on TODAY. So a rebuild run on a day the tracker had not fetched —
+    tools/rebuild_outputs.py, which is exactly what a dispatch runs — wrote a
+    report whose Today section had lost every price-cut bullet while still
+    printing "79 new · 31 gone" above it and per-model lines counting 42 price
+    changes below. Three surfaces, one day, two different stories.
+    """
+
+    @staticmethod
+    def row(vin, day, price):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                  "price": price, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                  "state": "IL", "city": "Chicago"})
+        return r
+
+    def test_a_cut_on_the_last_fetch_day_is_reported_after_the_fact(self):
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        before = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        rows = [self.row("V" * 17, before, 45000), self.row("V" * 17, yesterday, 43000),
+                self.row("K" * 17, before, 50000), self.row("K" * 17, yesterday, 50000)]
+        today_rows = [r for r in rows if r["snapshot_date"] == yesterday]
+        report, _, subject = T.build_outputs(today_rows, rows, T.build_history(rows))
+        self.assertIn("## Today", report,
+                      "the section is about the newest snapshot, whenever it was taken")
+        today = report.split("## Today")[1].split("\n## ")[0]
+        self.assertIn("▼", today,
+                      "a $2,000 cut at the last fetch is a cut whether or not the "
+                      "tracker has run again since")
+        self.assertIn("cut", subject.lower(),
+                      "and the subject line says so too")
+
+
+class TestWindowArithmetic(unittest.TestCase):
+    """Three lines of delisted() that decide every departure, and no test ran
+    any of them: which cut-off applies when a car is reachable through two
+    queries, and whether a car sitting exactly ON the cut-off is inside it.
+    """
+
+    def setUp(self):
+        self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
+        self._fs, self._log = set(T.FAILED_SCOPES), T.FETCH_LOG
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+
+    def tearDown(self):
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(self._pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(self._fs)
+        T.FETCH_LOG = self._log
+
+    @staticmethod
+    def row(tid, vin, day, price, state="IL"):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": tid, "vin": vin, "snapshot_date": day, "price": price,
+                  "year": "2024", "miles": 10000, "state": state, "city": "Chicago"})
+        return r
+
+    def _verdict(self, tid, price, state="IL"):
+        d1, d2 = "2026-08-01", T.TODAY
+        rows = [self.row(tid, "G" * 17, d1, price, state),
+                self.row(tid, "K" * 17, d1, 90000, state),
+                self.row(tid, "K" * 17, d2, 90000, state)]
+        today = [r for r in rows if r["snapshot_date"] == d2]
+        got = T.delisted({tid}, rows, today, T.build_history(rows))
+        return {g["vin"]: g for g in got}["G" * 17]["likely"]
+
+    def test_the_wider_of_two_windows_is_the_one_that_applies(self):
+        """A car in a searched state comes back through EITHER query, so it is
+        only out of window when it is above BOTH cut-offs — the max, not the
+        min. Taking the min calls a car gone that the National query would
+        have returned; taking the States one alone is the same mistake with a
+        different name.
+        """
+        tid = next(t["id"] for t in T.TARGETS.values()
+                   if not t.get("national_only") and t["id"] in T.TARGETS)
+        T.PRICE_WINDOW[(tid, "States")] = 45000
+        T.PRICE_WINDOW[(tid, "National")] = 70000
+        self.assertEqual(self._verdict(tid, 60000, "IL"), "delisted",
+                         "$60,000 is above the States cut-off and below the National "
+                         "one, and National could have returned it — so its absence "
+                         "is a real departure")
+        self.assertEqual(self._verdict(tid, 80000, "IL"), "out of window",
+                         "above BOTH cut-offs, neither query could have returned it")
+
+    def test_a_car_exactly_on_the_cut_off_is_inside_it(self):
+        """A genuinely arguable boundary, pinned deliberately.
+
+        The cut-off IS the value of a row the fetch returned, so the query
+        demonstrably reached that far — a car at the same value was in view and
+        did not come back. Equality therefore counts as in-view and its absence
+        is a departure. Written down because the alternative reads like a
+        harmless tightening: a later `>=` would silently reclassify every car
+        that ties the cheapest-N boundary as merely unfetched.
+        """
+        tid = next(t["id"] for t in T.TARGETS.values() if not t.get("national_only"))
+        T.PRICE_WINDOW[(tid, "States")] = 50000
+        T.PRICE_WINDOW[(tid, "National")] = 50000
+        self.assertEqual(self._verdict(tid, 50000, "IL"), "delisted")
+        self.assertEqual(self._verdict(tid, 50001, "IL"), "out of window")
+
+    def test_a_car_outside_the_searched_states_is_judged_on_national_alone(self):
+        """The States query can only return cars in those states, so it says
+        nothing about a car in Arizona — judging one against the States cut-off
+        tests it against a query that never had a chance of returning it."""
+        tid = next(t["id"] for t in T.TARGETS.values() if not t.get("national_only"))
+        T.PRICE_WINDOW[(tid, "States")] = 90000
+        T.PRICE_WINDOW[(tid, "National")] = 45000
+        self.assertEqual(self._verdict(tid, 60000, "AZ"), "out of window",
+                         "above National's cut-off, and States could never have "
+                         "returned an Arizona car whatever its window was")
+
+
+class TestSummarize(unittest.TestCase):
+    """The per-car price history every surface reads, and nothing tested it.
+
+    cuts, delta, days_tracked and first_seen come from here and are printed on
+    the report line, the row's movement chip, the sparkline's direction and the
+    "tracked Nd" tag. The only coverage was incidental — assertions about rows
+    that happened to have passed through it — so both the strict-inequality in
+    the cut counter and the sign of delta were free to flip.
+    """
+
+    def test_it_counts_only_the_steps_that_went_down(self):
+        hist = {("t", "V"): [("d1", 50000), ("d2", 50000), ("d3", 48000)]}
+        got = T.summarize(("t", "V"), hist)
+        self.assertEqual(got["cuts"], 1, "a flat day is not a cut")
+        self.assertEqual(got["delta"], -2000, "delta is last minus first, and it went down")
+        self.assertEqual(got["days_tracked"], 3)
+        self.assertEqual(got["first_seen"], "d1")
+
+    def test_a_flat_series_has_no_cuts_and_no_delta(self):
+        hist = {("t", "V"): [("d1", 50000), ("d2", 50000), ("d3", 50000)]}
+        got = T.summarize(("t", "V"), hist)
+        self.assertEqual((got["cuts"], got["delta"]), (0, 0))
+
+    def test_a_rise_is_a_positive_delta_and_not_a_cut(self):
+        hist = {("t", "V"): [("d1", 48000), ("d2", 50000)]}
+        got = T.summarize(("t", "V"), hist)
+        self.assertEqual((got["cuts"], got["delta"]), (0, 2000))
+
+    def test_a_car_with_no_history_answers_with_an_empty_series_only(self):
+        """The early return, which nothing asserted: callers spread this dict,
+        so an extra key here becomes a listing field nobody meant to export."""
+        self.assertEqual(T.summarize(("t", "MISSING"), {}), {"series": []})
+
+
 class TestDelisted(unittest.TestCase):
     def setUp(self):
         self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
@@ -748,6 +1058,111 @@ class TestDelisted(unittest.TestCase):
                   "price": price, "year": "2024", "miles": miles,
                   "state": state, "city": "Chicago"})
         return r
+
+    def test_a_departure_carries_how_its_label_was_reached(self):
+        """`exact` is the row saying whether a query actually looked.
+
+        Downstream, sale_stats() counts a departure as a car that left only
+        where this is true — so it has to distinguish the three ways delisted()
+        arrives at a label, and it cannot be re-derived later: after the fact,
+        an offline guess and a logged certainty look identical on the row.
+        """
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        tid, d1, d2 = two["id"], "2026-08-01", "2026-08-02"
+        # a cheap car vanishes; the day's other rows reach far past its price,
+        # so on a ONE-window target this would be a confident delisting
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                               [r for r in rows if r["snapshot_date"] == d2],
+                                               T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertFalse(g["exact"],
+                         "two windows pooled into one day is a guess, and the row must say so")
+        self.assertFalse(T.departure_is_evidence(g))
+        self.assertEqual(T.sale_stats([g])["n_exits"], 0,
+                         "and nothing downstream may count it as a car that left")
+
+    def test_the_offline_path_never_calls_a_two_window_absence_a_delisting(self):
+        """The invariant that makes `exact` False unreachable in that branch.
+
+        Offline — no live windows, no fetch log — a two-window target's day is
+        one pooled maximum over two different cut-offs. A car ABOVE it was
+        above both, so "out of window" is provable; at or below it the record
+        cannot say, so the answer is "not checked". Neither is a delisting.
+        If that ever loosens, `exact = window_reconstructable(t)` is what stops
+        the loosened label from being counted as a car that left — and this is
+        what will tell you the day it starts mattering.
+        """
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        tid, d1, d2 = two["id"], "2026-08-01", "2026-08-02"
+        for price in (10000, 40000, 95000):     # below, inside, above the pooled max
+            rows = [self.row(tid, "G" * 17, d1, price),
+                    self.row(tid, "K" * 17, d1, 90000),
+                    self.row(tid, "K" * 17, d2, 90000)]
+            got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                                   [r for r in rows if r["snapshot_date"] == d2],
+                                                   T.build_history(rows))}
+            g = got["G" * 17]
+            self.assertNotEqual(g["likely"], "delisted",
+                                f"a ${price:,} absence on {tid} is not a departure the rows can prove")
+            self.assertEqual(T.sale_stats([g])["n_exits"], 0)
+
+    def test_a_reconstructed_departure_on_a_one_window_target_is_exact(self):
+        """…and the other side of the same line: a single-window target's
+        offline reconstruction IS defensible, and must be counted."""
+        one = next(t for t in T.TARGETS.values()
+                   if T.window_reconstructable(t) and not t.get("national_only"))
+        tid, d1, d2 = one["id"], "2026-08-01", "2026-08-02"
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                               [r for r in rows if r["snapshot_date"] == d2],
+                                               T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertEqual(g["likely"], "delisted")
+        self.assertTrue(g["exact"])
+        self.assertEqual(T.sale_stats([g])["n_exits"], 1)
+
+    def test_a_logged_departure_is_exact_even_on_a_two_window_target(self):
+        """The reason the gate reads the row and not the target's shape: the
+        run wrote down what each query reached, so a rebuild can be certain
+        about a target whose config alone could never be."""
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        tid, d1, d2 = two["id"], "2026-08-01", "2026-08-02"
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        facts = {tid: {k: {"window": 95000, "exhausted": False, "failed": False, "raw": 20}
+                       for k in ("States", "National")}}
+        with self.fetch_log(d2, facts):
+            got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                                   [r for r in rows if r["snapshot_date"] == d2],
+                                                   T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertEqual(g["likely"], "delisted")
+        self.assertTrue(g["exact"], "the log says both queries reached past it and neither returned it")
+        self.assertTrue(T.departure_is_evidence(g))
+
+    def test_an_unanswerable_day_is_never_exact(self):
+        """"Not checked" is the absence of an answer, and an absence must not
+        be counted as one — whatever the target's shape."""
+        one = next(t for t in T.TARGETS.values() if T.window_reconstructable(t))
+        tid, d1, d2 = one["id"], "2026-08-01", "2026-08-02"
+        facts = {tid: {k: {"window": None, "exhausted": False, "failed": True, "raw": 0}
+                       for k in ("States", "National")}}
+        rows = [self.row(tid, "G" * 17, d1, 40000),
+                self.row(tid, "K" * 17, d1, 90000),
+                self.row(tid, "K" * 17, d2, 90000)]
+        with self.fetch_log(d2, facts):
+            got = {g["vin"]: g for g in T.delisted({tid}, rows,
+                                                   [r for r in rows if r["snapshot_date"] == d2],
+                                                   T.build_history(rows))}
+        g = got["G" * 17]
+        self.assertEqual(g["likely"], "not checked")
+        self.assertFalse(g["exact"])
 
     @staticmethod
     def days_ago(n):
@@ -1116,6 +1531,254 @@ class TestDailySeries(unittest.TestCase):
         self.assertEqual([x["date"] for x in slow_only], [d2])
 
 
+class TestNewToday(unittest.TestCase):
+    """"New today" means first seen on this snapshot.
+
+    days_tracked is the length of a car's price series and a series only grows
+    on days its target was fetched, so a car seen once on Monday still reads
+    days_tracked == 1 on Thursday. On any day when some OTHER trim of its model
+    was due, the whole "New today" block re-announced it — three cars first seen
+    on 2026-09-01 were headlined as "first seen this run" on a quiet 09-04 —
+    and the report's per-model "N new", the dashboard tile and the `new` chip
+    all counted it again with them.
+    """
+
+    def test_a_car_first_seen_today_is_new(self):
+        self.assertTrue(T.is_new_today({"first_seen": T.TODAY, "days_tracked": 1}))
+
+    def test_a_car_carried_forward_from_an_earlier_fetch_is_not(self):
+        """The exact shape: seen once, days ago, its trim not fetched since."""
+        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 1}),
+                         "one sighting is not one DAY when the trim runs on a cadence")
+
+    def test_a_car_seen_every_day_since_is_not_new_either(self):
+        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 40}))
+
+    def test_a_row_with_no_first_seen_falls_back(self):
+        """An older sheet: better the old test than no answer at all."""
+        self.assertTrue(T.is_new_today({"days_tracked": 1}))
+        self.assertFalse(T.is_new_today({"days_tracked": 3}))
+
+    def test_the_report_does_not_re_announce_an_old_car(self):
+        """End to end, through the block that prints the headline."""
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                      "state": "IL", "city": "Chicago"})
+            return r
+        old_day = "2026-01-02"
+        rows = [row("O" * 17, old_day, 40000),          # seen once, long ago
+                row("N" * 17, T.TODAY, 41000),          # first seen today
+                row("K" * 17, old_day, 42000), row("K" * 17, T.TODAY, 42000)]
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today, rows, T.build_history(rows))
+        block = report.split("**New today")[1].split("**Spicy picks")[0] if "**New today" in report else ""
+        self.assertIn("N" * 17, block, "the car first seen today is the one that is new")
+        self.assertNotIn("O" * 17, block,
+                         "a car last seen in January is not first seen this run")
+
+
+class TestDaysListedAnchor(unittest.TestCase):
+    """Days on market is measured from the day the row was OBSERVED.
+
+    It used to be measured from the day the file was built, and since 9f1ff6a
+    every dispatch rebuilds — so a rebuild run a week after the fetch aged every
+    listing by a week over identical rows. The i5's published median moved 23 ->
+    30 and a car's "21d listed" became "28d listed", while `data through`
+    correctly stayed put beside them. stale_pct is that same field's percentile
+    and the report's ">= 30d on market" tag is its threshold, so both walked
+    with it.
+    """
+
+    @staticmethod
+    def row(day, since):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": "V" * 17, "snapshot_date": day,
+                  "price": 40000, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                  "state": "IL", "city": "Chicago", "listed_since": since})
+        return r
+
+    def test_a_rebuild_a_week_later_does_not_age_the_listing(self):
+        T.INDEX_DATES.clear()
+        r = self.row("2026-08-15", "2026-08-01")
+        was = T.TODAY
+        try:
+            T.TODAY = "2026-08-15"
+            same_day = T.days_listed(r)
+            T.TODAY = "2026-08-22"          # rebuilt a week later, same row
+            later = T.days_listed(r)
+        finally:
+            T.TODAY = was
+        self.assertEqual(same_day, 14)
+        self.assertEqual(later, 14, "the row did not sit on the market for another "
+                                    "week because we rebuilt the file")
+
+    def test_a_row_with_no_snapshot_day_still_answers(self):
+        T.INDEX_DATES.clear()
+        self.assertIsNotNone(T.days_listed({"listed_since": "2026-08-01"}))
+
+    def test_an_index_date_still_answers_nothing(self):
+        T.INDEX_DATES.clear()
+        T.INDEX_DATES.add("2026-08-09")
+        try:
+            self.assertIsNone(T.days_listed(self.row("2026-08-15", "2026-08-09")))
+        finally:
+            T.INDEX_DATES.clear()
+
+
+class TestFlagsNameARental(unittest.TestCase):
+    """The report and the dashboard describe the same car.
+
+    flagsCell() has marked rentals and fleet cars on the page since the filter
+    was written; flags() — which builds the committed REPORT.md's history line
+    and the export's `flags` — said nothing, so a car the buyer's own picks rule
+    excludes read as clean in the one artefact that gets committed.
+    """
+
+    @staticmethod
+    def row(usage, **kw):
+        r = {"usage": usage, "owners": 1, "accidents": 0}
+        r.update(kw)
+        return r
+
+    def test_a_rental_says_rental(self):
+        self.assertIn("rental", T.flags(self.row("Rental Use")))
+
+    def test_a_fleet_car_says_fleet(self):
+        self.assertIn("fleet", T.flags(self.row("Corporate Fleet")))
+
+    def test_multiple_use_says_multi_use(self):
+        self.assertIn("multi-use", T.flags(self.row("Multiple Use")))
+
+    def test_a_lease_is_not_a_rental(self):
+        got = T.flags(self.row("Lease"))
+        self.assertIn("ex-lease", got)
+        self.assertFalse(any(w in got for w in ("rental", "fleet", "multi-use")))
+
+    def test_a_personal_car_says_none_of_it(self):
+        got = T.flags(self.row("Personal Use"))
+        self.assertEqual([w for w in got if w in ("rental", "fleet", "multi-use")], [])
+
+    def test_the_word_sits_where_the_page_puts_it(self):
+        """Right after the certified chip, which is the slot flagsCell uses —
+        two surfaces reading the same list must not order it differently."""
+        got = T.flags(self.row("Rental Use", cpo="true"))
+        self.assertEqual(got.index("rental"), got.index("CPO") + 1)
+
+
+class TestDepartureEvidence(unittest.TestCase):
+    """A departure counts as a car that left only where a query actually looked.
+
+    exit_stats() and one_cohort() have always refused to price a departure from
+    a target whose two windows cannot be told apart from each other; sale_stats()
+    did not, so the market line published "listings ran at least ~Nd (N gone)"
+    and the report published "N gone since the last fetch" from exactly the
+    departures the same file declines to put a price on. All 55 i7 and all 38 i5
+    "delisted" rows on the audited sheet came from two-window targets.
+
+    The gate is NOT the target's shape, though. Since the fetch log exists, a
+    two-window target's departure can be exact — the run wrote down what each
+    query reached and whether it was exhaustive — and throwing that away would
+    withhold a number the record can defend. So delisted() stamps each row with
+    how its own label was reached, and this reads that.
+    """
+
+    @staticmethod
+    def row(exact=None, **kw):
+        g = {"likely": "delisted", "last_price": 40000, "listed_since": "2026-08-01",
+             "last_seen": "2026-08-15", "first_seen": "2026-08-01", "series": []}
+        if exact is not None:
+            g["exact"] = exact
+        g.update(kw)
+        return g
+
+    def test_a_guessed_departure_is_not_counted(self):
+        self.assertFalse(T.departure_is_evidence(self.row(exact=False)))
+        st = T.sale_stats([self.row(exact=False) for _ in range(9)])
+        # Both halves: the exit PRICE and the days-to-sale SPAN come from two
+        # separate loops, and the market line publishes them in one sentence
+        # ("listings ran at least ~6d (29 gone)"), so a gate on one and not the
+        # other would leave half the claim standing on guesses.
+        self.assertEqual(st["n_exits"], 0)
+        self.assertEqual(st["n_sold"], 0)
+        self.assertIsNone(st["median_days_to_sale"])
+
+    def test_a_departure_a_query_confirmed_is_counted(self):
+        self.assertTrue(T.departure_is_evidence(self.row(exact=True)))
+        st = T.sale_stats([self.row(exact=True) for _ in range(9)])
+        self.assertEqual(st["n_exits"], 9)
+        self.assertEqual(st["n_sold"], 9)
+
+    def test_a_two_window_target_can_still_be_exact(self):
+        """The reason this reads the row and not the target. A departure the
+        fetch log answered for is evidence whatever shape the target has, and
+        gating on the shape would discard it."""
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        self.assertTrue(T.departure_is_evidence(self.row(exact=True, trim_id=two["id"])),
+                        "the log said a query looked; the target's shape does not overrule that")
+        self.assertFalse(T.departure_is_evidence(self.row(exact=False, trim_id=two["id"])))
+
+    def test_an_older_sheet_falls_back_to_the_targets_shape(self):
+        """Rows written before delisted() carried its own provenance."""
+        one = next(t for t in T.TARGETS.values() if T.window_reconstructable(t))
+        two = next(t for t in T.TARGETS.values() if not T.window_reconstructable(t))
+        self.assertTrue(T.departure_is_evidence(self.row(trim_id=one["id"])))
+        self.assertFalse(T.departure_is_evidence(self.row(trim_id=two["id"])))
+
+    def test_an_unknown_target_fails_closed(self):
+        """The gate exists to keep a number off the page, and "nothing on
+        record says which query found this car" is not a reason to publish."""
+        self.assertFalse(T.departure_is_evidence(self.row(trim_id="a-target-we-stopped-watching")))
+        self.assertFalse(T.departure_is_evidence(self.row()))
+        # …and asking is not allowed to raise, either: a partial target used to
+        # take sorts_pages() through t["depth"] and KeyError a whole rebuild
+        # over a car that left in July.
+        self.assertEqual(T.sorts_pages({}), ([], 1))
+
+
+class TestCutTag(unittest.TestCase):
+    """A cut that was undone is not a discount.
+
+    `cuts` counts the downward steps and `delta` is last minus first, so a
+    listing cut and then restored has cuts >= 1 and delta >= 0. The report
+    printed "down 1x ($0)" for exactly that — five lines of one day's report,
+    one of them for a car back at its exact opening price — and the same
+    sentence would have printed a POSITIVE delta as if it were a cut.
+
+    The aggregate definition is deliberately untouched: "was cut at some point"
+    is a true thing to count, and a second real drop landing above an earlier
+    low is still a price change the buyer wants to see. Only the wording moves.
+    """
+
+    def test_a_real_cut_still_reads_as_one(self):
+        self.assertEqual(T.cut_tag(2, -1500), "down 2x ($1,500 down)".replace(
+            "($1,500 down)", f"({T.money(-1500)})"))
+
+    def test_a_cut_that_was_undone_says_so(self):
+        self.assertEqual(T.cut_tag(1, 0), "cut 1x, then back up")
+        self.assertNotIn("$0", T.cut_tag(1, 0))
+
+    def test_a_price_now_above_where_it_started_says_that(self):
+        got = T.cut_tag(2, 849)
+        self.assertIn("above first seen", got)
+        self.assertNotIn("down", got)
+
+    def test_the_report_tag_uses_it(self):
+        """The two real series from the audited sheet, through the function the
+        report actually calls."""
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": "V" * 17, "price": 39998,
+                  "year": "2024", "miles": 20000, "state": "IL", "city": "Chicago"})
+        back_up = T.fmt_row(r, {"cuts": 1, "delta": 0, "days_tracked": 5,
+                                "series": [["2026-08-01", 39998]]})
+        self.assertIn("cut 1x, then back up", back_up)
+        self.assertNotIn("down 1x", back_up)
+        above = T.fmt_row(r, {"cuts": 2, "delta": 849, "days_tracked": 7,
+                              "series": [["2026-08-01", 42995]]})
+        self.assertIn("above first seen", above)
+
+
 class TestFetchDaysExport(unittest.TestCase):
     """The days each target actually fetched, which nothing else can be asked.
 
@@ -1356,7 +2019,11 @@ class TestIndexDate(unittest.TestCase):
         measured how long the TRACKER had watched: on a ten-day-old record no
         span could exceed ten days, so the published 'listings ran at least
         ~Nd' was a fact about this repo's start date."""
+        # exact=True: delisted() writes that down when a query actually
+        # looked and did not find the car. This test is about the SPAN, so the
+        # departures are given the provenance that lets them be counted at all.
         gone = [{"likely": "delisted", "last_price": 40000, "series": [],
+                 "exact": True,
                  "listed_since": "", "first_seen": "2026-08-30",
                  "last_seen": "2026-09-01"} for _ in range(6)]
         self.assertEqual(T.sale_stats(gone)["n_sold"], 0)
@@ -1414,13 +2081,13 @@ class TestMarketStats(unittest.TestCase):
         answer.
         """
         gone = [
-            {"likely": "delisted", "listed_since": "2026-08-10",
+            {"likely": "delisted", "exact": True, "listed_since": "2026-08-10",
              "last_seen": "2026-08-20", "first_seen": "2026-08-15"},   # 10d, by listing date
-            {"likely": "delisted", "listed_since": "",
+            {"likely": "delisted", "exact": True, "listed_since": "",
              "last_seen": "2026-08-20", "first_seen": "2026-08-16"},   # no listing date: no span
-            {"likely": "out of window", "listed_since": "2026-07-01",
+            {"likely": "out of window", "exact": True, "listed_since": "2026-07-01",
              "last_seen": "2026-08-20", "first_seen": "2026-07-02"},   # not a sale
-            {"likely": "delisted", "listed_since": "garbage",
+            {"likely": "delisted", "exact": True, "listed_since": "garbage",
              "last_seen": "2026-08-20", "first_seen": None},           # unparseable: skipped
         ]
         stats = T.sale_stats(gone)
@@ -1700,6 +2367,20 @@ class TestDashboardContract(unittest.TestCase):
         site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
         return site, [(bk, mk, m) for bk, b in site["brands"].items()
                       for mk, m in b["models"].items()]
+
+    def test_the_published_sheet_still_covers_the_watchlist(self):
+        """The anchor every other test in this class needs.
+
+        They all iterate the sheet's own models, so a sheet with a model
+        DELETED satisfies each of them vacuously — the properties hold over
+        whatever is left. Derived from TARGETS rather than a literal list, so
+        it follows the config instead of duplicating it.
+        """
+        site, _ = self._models()
+        tids = {tid for b in site["brands"].values()
+                for m in b["models"].values() for tid in (m.get("trims") or {})}
+        self.assertEqual(set(T.TARGETS) - tids, set(),
+                         "docs/data.json no longer names every watched trim")
 
     def test_listings_are_one_row_per_vin(self):
         """pick_display_rows collapses a VIN two targets both matched into one
@@ -2219,14 +2900,35 @@ class TestSpend(unittest.TestCase):
         self.assertEqual(row["off_plan"], {}, "a run that went to plan reports no exceptions")
 
     def test_retries_are_counted_because_they_are_billed(self):
-        """SPENT increments per REQUEST, not per intended fetch. A retry costs a
-        call whether or not it succeeds, and a ledger of intentions would hand
-        back headroom that a bad network day already ate."""
-        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
-        block = src[src.index("    for attempt in (1, 2):"):]
-        block = block[:block.index("\n\n")]
-        self.assertIn("SPENT[t[\"id\"]] = SPENT.get(t[\"id\"], 0) + 1", block,
-                      "the per-target counter must sit inside the retry loop, beside CALLS")
+        """SPENT increments per REQUEST, not per intended fetch.
+
+        A retry costs a call whether or not it succeeds, and a ledger of
+        intentions would hand back headroom that a bad network day already ate.
+        This used to assert that a particular line of source sat inside the
+        retry loop — which passes on code where the line is there and dead.
+        Run the loop instead and count what it charged.
+        """
+        tid = "bmw-i5-edrive40"
+        t = T.TARGETS[tid]
+        was_spent, was_calls = dict(T.SPENT), T.CALLS
+        try:
+            T.SPENT.clear()
+            T.CALLS = 0
+
+            class Boom:
+                status_code = 500
+                text = "upstream is unwell"
+
+            with unittest.mock.patch.object(T.requests, "get", lambda *a, **k: Boom()), \
+                 unittest.mock.patch.object(T.time, "sleep", lambda *a: None):
+                got = T.fetch("National", None, "price.asc", 1, t)
+            self.assertIsNone(got, "two failures in a row is a failed fetch")
+            self.assertEqual(T.CALLS, 2, "both attempts hit the network")
+            self.assertEqual(T.SPENT.get(tid), 2,
+                             "and both are charged to the target, or the budget "
+                             "hands back headroom a bad network day already ate")
+        finally:
+            T.SPENT.clear(); T.SPENT.update(was_spent); T.CALLS = was_calls
 
     def test_the_log_survives_a_corrupt_file(self):
         import tempfile
@@ -2388,12 +3090,44 @@ class TestEmailDelivery(unittest.TestCase):
 
     def test_configuring_both_secrets_turns_it_on(self):
         """The off state is the ABSENCE of config, not a hard-coded switch, so
-        setting the two secrets is all it takes to start sending."""
-        src = (Path(__file__).parent.parent / "Tracking.py").read_text()
-        body = src[src.index("def send_email("):]
-        body = body[:body.index("\n\n\n")]
-        self.assertIn("if not (key and to):", body)
-        self.assertIn("api.resend.com", body, "the send path is still there")
+        setting the two secrets is all it takes to start sending.
+
+        This used to read the function's SOURCE for the two strings it expects.
+        That passes on code with the send path deleted below the line it greps,
+        on code that posts somewhere else, and on code that posts twice; it is
+        the failure mode this repository has shipped more than once. Drive it
+        instead: give it the two secrets, hand it a recording requests.post,
+        and check what actually went out.
+        """
+        posts = []
+
+        class Resp:
+            status_code = 200
+            text = "{}"
+
+        def record(url, **kw):
+            posts.append((url, kw))
+            return Resp()
+
+        with unittest.mock.patch.dict(os.environ,
+                                      {"RESEND_API_KEY": "k", "EMAIL_TO": "someone@example.com"},
+                                      clear=True), \
+             unittest.mock.patch.object(T.requests, "post", record):
+            T.send_email("body", subject="a subject")
+        self.assertEqual(len(posts), 1, "exactly one message, not zero and not two")
+        url, kw = posts[0]
+        self.assertIn("api.resend.com", url)
+        self.assertIn("a subject", json.dumps(kw.get("json") or {}),
+                      "the subject the caller passed is the subject that is sent")
+
+    def test_one_missing_secret_sends_nothing(self):
+        """Half-configured is off, and off is silent — not a crash, and not a
+        message to nobody."""
+        posts = []
+        with unittest.mock.patch.dict(os.environ, {"RESEND_API_KEY": "k"}, clear=True), \
+             unittest.mock.patch.object(T.requests, "post", lambda *a, **k: posts.append(a)):
+            T.send_email("body", subject="s")
+        self.assertEqual(posts, [])
 
 
 Exit = __import__("collections").namedtuple("Exit", "code text")
@@ -2510,12 +3244,82 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         self.assertIn("rebuild_outputs.py", wf,
                       "and it must do the free thing the guard points at")
 
+    def test_the_record_is_committed_even_when_the_run_crashes(self):
+        """data/ is the half that cannot be re-made.
+
+        snapshots.csv holds rows the listings API will never serve again, and
+        spend.json is the only count of what the month has cost. Both were
+        thrown away by any run that crashed after the fetch loop, because the
+        commit step runs only on success — so a crash in build_outputs() burned
+        up to 32 calls and left no record that it had, and the next day's
+        pre-flight read a month that looked cheaper than it was.
+
+        Asserted on the workflow, because that is where the loss was: the
+        Python side already writes both files before either exit.
+        """
+        wf = (Path(__file__).parent.parent / ".github/workflows/daily.yml").read_text()
+        steps = wf.split("      - name: ")
+        record = [s for s in steps if "git add data\n" in s]
+        self.assertTrue(record, "no step stages data/ on its own")
+        self.assertIn("if: always()", record[0],
+                      "the record must be committed on the failure path too — that is "
+                      "the only path on which it was being lost")
+        # …and only data/. Staging the outputs unconditionally would push a
+        # REPORT.md describing a docs/data.json that was never written: main()
+        # writes them in that order.
+        self.assertNotIn("git add data docs", record[0],
+                         "an always() step must not stage the derived outputs")
+        outputs = [s for s in steps if "git add data docs REPORT.md" in s]
+        self.assertTrue(outputs, "the outputs are still committed on success")
+        self.assertNotIn("if: always()", outputs[0])
+
+    def test_the_spend_and_the_snapshot_are_written_before_the_outputs(self):
+        """The workflow assertion above is only worth anything if the files are
+        on disk by the time the crash happens."""
+        import inspect
+        # The statements, not any mention of them: main() carries a comment
+        # naming build_outputs above the line that writes the snapshot, and
+        # matching that would have this test pass on a reordering.
+        lines = [l.split("#")[0].strip() for l in inspect.getsource(T.main).splitlines()]
+        spend = next(i for i, l in enumerate(lines) if l.startswith("report_spend("))
+        write = next(i for i, l in enumerate(lines) if l.startswith("write_rows("))
+        build = next(i for i, l in enumerate(lines) if "= build_outputs(" in l)
+        self.assertLess(spend, build, "the month's spend must be on disk before the outputs are built")
+        self.assertLess(write, build, "and so must the snapshot")
+
     def test_the_message_names_the_free_way_out(self):
         _, _, out = self._drive([self._hist_row(T.TODAY)], lambda *a: [])
         self.assertIn("rebuild_outputs.py", out.text)
         self.assertIn("ALLOW_REFETCH", out.text)
         self.assertIn("Nothing is wrong", out.text,
                       "a saving must not read like a fault")
+
+    def test_an_exhausted_query_skips_the_rest_of_the_target(self):
+        """The saving that pays for the whole watchlist, and nothing ran it.
+
+        A short page means the query returned its scope's entire market, so the
+        second sort and the newest probe would re-fetch cars already in hand.
+        Both guards were pinned by nothing: deleting either costs real calls
+        against a 1,000-a-month tier and no test noticed.
+        """
+        tid = "bmw-i5-edrive40"
+        full = [{"vin": f"V{i:016d}", "price": 40000 + i, "year": 2024,
+                 "miles": 20000, "trim": "eDrive40", "state": "IL", "city": "Chicago"}
+                for i in range(T.PER_PAGE)]
+        short = full[:5]
+
+        def batches(t, source, sort, page):
+            return short if t["id"] == tid else full
+
+        seen, _, _ = self._drive([self._hist_row("2020-01-01")], batches)
+        mine = [q for q in seen if q[0] == tid]
+        self.assertTrue(mine, "the target was fetched at all")
+        sorts = {q[2] for q in mine}
+        self.assertEqual(sorts, {"price.asc"},
+                         "a short first page is the whole scope — the second sort "
+                         f"would re-fetch cars already in hand, but it asked {sorts}")
+        self.assertNotIn(T.NEWEST_SORT, sorts,
+                         "and so would the newest probe")
 
     def test_a_fresh_day_is_not_blocked(self):
         """The guard must not be a wall. A day not yet in the snapshot runs."""
@@ -2883,8 +3687,14 @@ class TestExitStats(unittest.TestCase):
     """
 
     @staticmethod
-    def _gone(n, price=40000, series_len=3, trim="t1"):
+    def _gone(n, price=40000, series_len=3, trim="t1", exact=True):
+        # `exact` is what delisted() writes down about how it reached the
+        # label: True when a query actually looked and did not find the car.
+        # These rows say True because this class is about the ARITHMETIC over
+        # defensible departures; the gate itself is tested separately, in
+        # TestDepartureEvidence.
         return [{"likely": "delisted", "trim_id": trim, "last_price": price,
+                 "exact": exact,
                  "first_seen": "2026-08-01", "last_seen": "2026-08-15",
                  "listed_since": "2026-08-01",
                  "series": [["2026-08-0%d" % (i + 1), price] for i in range(series_len)]}
@@ -2949,6 +3759,11 @@ class TestExitStats(unittest.TestCase):
         self.assertIn(hi, xs)
         # n=12 -> the 3rd and 10th order statistics (96.1% coverage)
         self.assertEqual((lo, hi), (sorted(xs)[2], sorted(xs)[9]))
+        # …and the CONFIDENCE itself, which nothing pinned: at n=30 the 0.95
+        # interval is the 10th and 21st order statistics, and a 0.90 one is the
+        # 11th and 20th. Without this the default could be quietly widened or
+        # narrowed and every published interval with it.
+        self.assertEqual(T.median_ci(list(range(30))), (9, 20))
 
     def test_the_interval_widens_as_the_sample_thins(self):
         wide = T.median_ci(list(range(100)))
@@ -3136,6 +3951,16 @@ class TestExitReporting(unittest.TestCase):
     def test_a_real_denominator_is_published(self):
         self.assertIn("cut in the days",
                       T.market_line(self._stats(exit_watched=20, exit_cut_while_watched=3)))
+
+    def test_the_denominator_floor_is_pinned_at_its_own_boundary(self):
+        """7 against 20 is a gap a mutant walks through: any floor between 8
+        and 20 passes both of the tests above. The floor is 12, so the pair
+        that pins it is 11 and 12 — and the only other thing holding that
+        literal was a grep over the source."""
+        self.assertNotIn("cut in the days",
+                         T.market_line(self._stats(exit_watched=11, exit_cut_while_watched=3)))
+        self.assertIn("cut in the days",
+                      T.market_line(self._stats(exit_watched=12, exit_cut_while_watched=3)))
 
     def test_the_wording_never_claims_a_sale(self):
         line = T.market_line(self._stats())
