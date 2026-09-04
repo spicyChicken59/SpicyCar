@@ -2425,6 +2425,64 @@ await step('the shortlist refuses to call a price a score', async () => {
   await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
 });
 
+// --- a car is called what it is --------------------------------------------
+// trim_label is the name of the TARGET a car was fetched under, and for a model
+// watched whole rather than split by trim that name is the placeholder "all
+// trims". Every surface that named a car reached for it first, so an Ioniq 5
+// pick card read "Hyundai Ioniq 5 · 2023 · all trims · 17,314 mi" — directly
+// under a value note that read "a typical 2023 Hyundai Ioniq 5 SEL", because
+// THAT line reads the API's own trim field. The page had the real trim the
+// whole time and printed the placeholder over it.
+//
+// Data-driven, like everything else here: the subject is whichever watched
+// model carries such a target today, and the check asserts both halves — the
+// placeholder is gone, and the thing that replaced it is the trim the sheet
+// actually holds for that car, not a blank.
+await step('a car is called what it is', async () => {
+  plan('no surface names a car "all trims"',
+       'and the trim it prints is the one the sheet holds');
+  const placeholder = /^(all|all trims)$/i;
+  const subject = (() => {
+    for (const [bk, b] of Object.entries(SHEET.brands || {}))
+      for (const [mk, m] of Object.entries((b || {}).models || {})) {
+        const ids = Object.entries((m || {}).trims || {})
+          .filter(([, t]) => placeholder.test(String((t || {}).label || '').trim()))
+          .map(([id]) => id);
+        if (!ids.length) continue;
+        const cars = ((m || {}).listings || []).filter((x) => ids.includes(x.trim_id) && (x.trim || '').trim());
+        if (cars.length) return { bk, mk, q: `?brand=${bk}&m=${mk}`, id: `${bk} ${mk}`, cars };
+      }
+    return null;
+  })();
+  if (!subject) return skipRest('no watched model is fetched whole rather than by trim today');
+  await open(subject.q);
+  // The picks are where the placeholder was loudest, and they render a card
+  // per car with the model, the year and the trim on one line.
+  const said = (await page.textContent('#takeaway')) || '';
+  ok('no surface names a car "all trims"', said.length > 0 && !/all trims/i.test(said),
+     `${subject.id}: ${said.length} characters of pick cards, `
+     + (/all trims/i.test(said) ? 'one of them still says "all trims"' : 'none of them says "all trims"'));
+  // …and it did not simply drop the word and leave a gap. Read the card's own
+  // FACT line, per VIN — anywhere-on-the-page would pass on the value note
+  // beside it, which reads the API trim by a different route and would have
+  // covered for a naming rule that returned nothing at all.
+  const byVin = new Map(subject.cars.map((x) => [x.vin, x.trim.trim()]));
+  const cards = await page.locator('#takeaway .sc-photo-card').evaluateAll((cs) => cs.map((c) => {
+    const a = c.querySelector('[data-fkey^="pick:"]');
+    const p = c.querySelector('.sc-photo-card__body p');
+    return { vin: a ? a.getAttribute('data-fkey').split(':')[1] : '',
+             facts: p ? p.textContent.trim() : '' };
+  }));
+  const named = cards.filter((c) => byVin.has(c.vin));
+  const naked = named.filter((c) => !c.facts.includes(byVin.get(c.vin)));
+  if (!named.length) skip('and the trim it prints is the one the sheet holds',
+                          `no pick card on ${subject.id} is one of the cars the sheet gives a trim`);
+  else ok('and the trim it prints is the one the sheet holds', naked.length === 0,
+          naked.length
+            ? naked.map((c) => `${c.vin} should say "${byVin.get(c.vin)}" — card reads "${c.facts.slice(0, 70)}"`).join(' | ')
+            : named.map((c) => `${byVin.get(c.vin)} in "${c.facts.slice(0, 48)}…"`).join(' · '));
+});
+
 // --- what it costs to open -------------------------------------------------
 // The page is one static file and one JSON file, and both grow every time a
 // car joins the watchlist or a feature lands. Nothing measured them, so "how
@@ -2482,7 +2540,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 128;
+const EXPECTED = 130;
 if (!skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

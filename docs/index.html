@@ -882,6 +882,19 @@
     const words = new Set(String(modelLabel).toLowerCase().split(/\s+/));
     return String(trim || '').split(/\s+/).filter((w) => w && !words.has(w.toLowerCase())).join(' ');
   }
+  // What to CALL this car's trim. trim_label is the target's name for the
+  // group it was fetched under, and for a model watched whole that name is
+  // "all trims" — so every Ioniq 5 pick card read "Hyundai Ioniq 5 · 2023 ·
+  // all trims · 17,314 mi" while the value note directly above it, which reads
+  // the API's own trim field, said "a typical 2023 Hyundai Ioniq 5 SEL". The
+  // page had the real trim the whole time and printed the placeholder over it.
+  // Tracking.py has refused that word since the shortlist heading was written
+  // (`tl.lower() in ("", "all", "all trims")`); this is the same rule, once,
+  // for every surface that names a car.
+  const carTrim = (x) => {
+    const label = String(x.trim_label || '').trim();
+    return (/^all(\s+trims)?$/i.test(label) ? '' : label) || String(x.trim || '').trim();
+  };
   // Scored against the tightest cohort with three or more eligible cars: the
   // car's own trim and model year first, then the model year, then the whole
   // model — otherwise a cheapest-trim 2023 i7 reads as half price because the
@@ -1256,7 +1269,7 @@
         // was — a colour with no text channel is not an answer for a reader who
         // cannot separate the two hues, or for one using a screen reader.
         tip.appendChild(el('div', { class: 'sc-tooltip__date' },
-          [c.m.label, c.x.trim_label || c.x.trim, c.x.year || ''].filter(Boolean).join(' · ')));
+          [c.m.label, carTrim(c.x), c.x.year || ''].filter(Boolean).join(' · ')));
         tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + SC.toneRef(brandTone(c.bk)) }),
           el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
         const extras = [];
@@ -2848,7 +2861,7 @@
   // the value chip in the corner; the reasoning and facts below.
   function pickCard(p) {
     const b = p.x;
-    const facts = [p.modelLabel, b.year, b.trim_label || b.trim, b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
+    const facts = [p.modelLabel, b.year, carTrim(b), b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
     const url = safeUrl(b.url);
     // A 2% saving should not wear the same green as a 33% one.
@@ -2927,7 +2940,7 @@
     }
     const { x, m, bk, mk, gone } = hit;
     const daily = m.daily || [];
-    const title = `${m.label || ''} · ${x.year || ''} ${x.trim_label || x.trim || ''}`.trim();
+    const title = `${m.label || ''} · ${x.year || ''} ${carTrim(x)}`.replace(/\s+/g, ' ').trim();
     // "sold or pulled" names two of the four things that end a listing; the
     // other two — an auction, a move to a sister lot, an ad simply expiring —
     // are indistinguishable from outside, which market_line() and exitNote()
@@ -3026,14 +3039,6 @@
       onclick: (e) => { e.preventDefault(); e.stopPropagation(); cycleStar(x); },
     }, st === 'out' ? '✕ ruled out' : st === 'called' ? '☎ called' : st === 'short' ? '★ shortlisted' : '☆ shortlist');
   }
-  // "all trims" is targets.json's word for a model watched whole rather than
-  // split by trim, and Tracking.py already refuses to print it inside a car's
-  // name (`tl.lower() in ("", "all", "all trims")` where it builds the shortlist
-  // heading). This header did not, and every Ioniq 5 came out "2024 all trims".
-  const trimName = (x) => {
-    const t = String(x.trim_label || x.trim || '').trim();
-    return /^all(\s+trims)?$/i.test(t) ? '' : t;
-  };
   // Every starred car the sheet still holds, live or departed — a car you were
   // considering that has since left the market is the single most useful thing
   // this page can tell you, so it stays in the table wearing that fact.
@@ -3076,8 +3081,8 @@
     const head = el('tr', null, el('th', { scope: 'col' }, 'Measure'));
     for (const r of rows) {
       head.appendChild(el('th', { class: 'sc-case', scope: 'col',
-        'aria-label': `${r.m.label || ''} ${r.x.year || ''} ${trimName(r.x)}`.replace(/\s+/g, ' ').trim() },
-        el('span', null, `${r.x.year || ''} ${trimName(r.x)}`.replace(/\s+/g, ' ').trim()),
+        'aria-label': `${r.m.label || ''} ${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim() },
+        el('span', null, `${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim()),
         el('span', { class: 'sc-note' }, r.m.label || r.mk),
         el('span', { class: 'sc-nowrap' },
           el('span', { class: 'sc-chip ' + (r.gone ? 'sc-chip--danger' : STAR_CHIP[r.status] || 'sc-chip--neutral') },
@@ -3311,7 +3316,7 @@
           `${perMo(pay)} at ${x.apr}%${x.apr_promo ? ' promo' : ''} over ${termFor(x)} months`
           + (x.apr_seller_unnamed ? ' · seller not named BMW' : '')) : null,
         el('div', { class: 'sc-tile__sub' },
-          `${x.year || ''} ${trimName(x)} · ${x.miles != null ? num(x.miles) + ' mi' : 'mileage not published'}`.replace(/\s+/g, ' ').trim()),
+          `${x.year || ''} ${carTrim(x)} · ${x.miles != null ? num(x.miles) + ' mi' : 'mileage not published'}`.replace(/\s+/g, ' ').trim()),
         el('div', { class: 'sc-tile__sub' },
           `${placeCell(x)} · ${x.local ? 'drivable' : (x.distance != null ? `~${num(x.distance)} mi away` : 'beyond your states')}`),
         cutOut.length ? el('div', { class: 'sc-tile__sub', title: picksRule() },
@@ -3442,7 +3447,7 @@
         el('div', { class: 'sc-tile__value sc-tile__value--sm' }, value),
         el('div', { class: 'sc-tile__sub' }, sub)));
     tile('Per month, and after it ends', `${perMo(atPromo)} → ${perMo(atFallback)}`,
-      `${x.year} ${x.trim_label || x.trim || ''} · ${money(x.price)} · ${placeTxt(x)}`.replace(/\s+/g, ' '),
+      `${x.year} ${carTrim(x)} · ${money(x.price)} · ${placeTxt(x)}`.replace(/\s+/g, ' '),
       `The same car at ${promo.apr}% and at ${fin.fallback_apr}%, ${term} months on ${money(owed)} financed.`);
     tile('Over the whole term', money(interestAt(atFallback) - interestAt(atPromo)) + ' less interest',
       `${money(interestAt(atPromo))} at ${promo.apr}% against ${money(interestAt(atFallback))} at ${fin.fallback_apr}%`,
