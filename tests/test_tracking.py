@@ -744,6 +744,41 @@ class TestPicks(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# "New" is new to the tracker. A car listed a fortnight before the tracker
+# first saw it entered a fetch window, not the market.
+# --------------------------------------------------------------------------
+class TestReachNotArrival(unittest.TestCase):
+    def test_a_fortnight_on_the_market_before_first_sight_is_reach(self):
+        """Fourteen days, on both sides of the line: a car listed thirteen
+        days before the tracker saw it may simply have been seen promptly on
+        a two-day cadence with a slow index behind it; fourteen is a car that
+        sat outside the window."""
+        self.assertTrue(T.reach_not_arrival({"listed_since": "2026-08-20", "first_seen": "2026-09-03"}))
+        self.assertFalse(T.reach_not_arrival({"listed_since": "2026-08-21", "first_seen": "2026-09-03"}))
+        self.assertTrue(T.reach_not_arrival({"listed_since": "2026-03-18", "first_seen": "2026-09-05"}))
+
+    def test_an_undated_car_is_not_called_reach(self):
+        """No listing date, no claim — the same silence days_listed keeps."""
+        self.assertFalse(T.reach_not_arrival({"first_seen": "2026-09-05"}))
+        self.assertFalse(T.reach_not_arrival({"listed_since": "", "first_seen": "2026-09-05"}))
+        self.assertFalse(T.reach_not_arrival({"listed_since": "not a date", "first_seen": "2026-09-05"}))
+
+    def test_the_new_lines_count_reach_beside_new(self):
+        x_far = {"vin": "F1", "price": 44000, "city": "Plano", "state": "TX", "local": False,
+                 "listed_since": "2026-06-01", "first_seen": T.TODAY, "days_listed": 96, "ship": 1000}
+        x_now = {"vin": "N1", "price": 45000, "city": "Chicago", "state": "IL", "local": True,
+                 "listed_since": T.TODAY, "first_seen": T.TODAY, "days_listed": 0}
+        sec, subject = T.build_today({"cuts": [], "gone": [],
+                                      "new": [{"x": x_far, "label": "BMW i7", "pct": None, "shopping": True},
+                                              {"x": x_now, "label": "BMW i7", "pct": None, "shopping": True}]})
+        text = "\n".join(sec)
+        self.assertIn("2 new on the shopped models (1 listed 14+ days before the tracker saw it — reach, not arrival)", text)
+        self.assertIn("2 new", subject)
+        self.assertIn("on market 96d, new to the tracker — reach, not arrival", T.fmt_new(x_far))
+        self.assertNotIn("reach", T.fmt_new(x_now))
+
+
+# --------------------------------------------------------------------------
 # Seen at two prices is not cut. A VIN surfacing through a group's storefronts
 # at two fixed prices on alternate days read as four cuts and four restorations,
 # and every downward step of it was counted as a cut a dealer took.
