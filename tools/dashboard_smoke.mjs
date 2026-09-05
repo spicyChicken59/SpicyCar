@@ -2988,6 +2988,26 @@ await step('one tap lands on the car', async () => {
   else ok('and the list was opened out when the row sat past the cap', landed.found && landed.moreHidden === true, `row ${subject.idx + 1}: show-all hidden ${landed.moreHidden}`);
 });
 
+// --- spice is for events; the key is for models ----------------------------
+// Two design-system rules the page had drifted from. A role ("shopping",
+// "comparison") is configuration, and it wore the spice chip in three places
+// beside the promo clock and the "new" chips — with everything spicy, nothing
+// was the look-here moment. And the decision tiles named a model with no line
+// key while the chart and the compare header drew one, from two different
+// builders; there is one builder now, and the tiles wear it when two or more
+// models are in view.
+await step('spice is for events, the key is for models', async () => {
+  plan('no role chip wears spice', 'and each decision tile carries its model\'s line key');
+  await open('');
+  const spicy = await page.$$eval('.sc-chip--spice', (cs) => cs.map((c) => c.textContent.trim()).filter((t) => /^(shopping|comparison)$/.test(t)));
+  ok('no role chip wears spice', spicy.length === 0, spicy.length ? `${spicy.length} role chip(s) in spice` : 'shopping/comparison chips wear brand or neutral');
+  const keys = await page.$$eval('#hero-cars .sc-tile .sc-tile__label .cmp-swatch svg line', (ls) => ls.map((l) => ({ dash: l.getAttribute('stroke-dasharray') || '', stroke: l.getAttribute('style') || '' })));
+  const tiles = await page.locator('#hero-cars .sc-tile').count();
+  if (tiles < 2) skip('and each decision tile carries its model\'s line key', `${tiles} decision tile(s) — one model needs no key`);
+  else ok('and each decision tile carries its model\'s line key', keys.length === tiles && new Set(keys.map((k) => k.stroke + '|' + k.dash)).size === keys.length,
+          `${keys.length} keys on ${tiles} tiles: ${keys.map((k) => `${k.stroke.replace('stroke:', '')} ${k.dash || 'solid'}`).join(' · ')}`);
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -3604,7 +3624,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 171;
+const EXPECTED = 173;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

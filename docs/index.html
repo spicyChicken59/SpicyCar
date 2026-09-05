@@ -3183,7 +3183,7 @@
     return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
       el('div', { class: 'sc-nowrap' },
         p.shopping === undefined ? null
-          : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') },
+          : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') },
                p.shopping ? 'shopping' : 'comparison'),
         isNew(b) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'new') : null),
       el('span', { class: 'sc-note', title: (cohortOf(b, p.modelLabel) || {}).words || null },
@@ -3564,6 +3564,22 @@
   }
   // The comparable total, and the word for what is in it.
   const heroTotal = (x) => (feesCfg() ? otd(x) : landed(x));
+  // The line key a model wears wherever it is named beside a chart's line —
+  // hue is the brand's slot, dash the model within it, weight whether it is
+  // being shopped — built here once. The compare header drew its own and the
+  // decision tiles had none, so a reader matching a tile to the chart's line
+  // had two swatch shapes and one label to go on. Design rule 6 is kept: the
+  // key is an aria-hidden mark and the name stays in text.
+  //
+  // "shopping" chips wear the brand chip, not spice: spice is for events —
+  // "new", a cut — and a role is configuration; with the role chips in spice
+  // beside the promo clock and the "new" chips, nothing on the page was the
+  // one look-here moment.
+  function keyLine(tone, dash, heavy) {
+    return el('span', { class: 'cmp-swatch' }, svgEl('svg', { width: 22, height: 8, viewBox: '0 0 22 8', 'aria-hidden': 'true' },
+      svgEl('line', { x1: 1, y1: 4, x2: 21, y2: 4, style: 'stroke:' + SC.toneRef(tone), 'stroke-width': heavy ? 3 : 2,
+                      'stroke-dasharray': dash || null, 'stroke-linecap': 'round' })));
+  }
   // heroTotal for a day in the record: the car as it was priced and placed
   // THAT day, with today's shipping estimate — shipping is a band on the
   // distance, and the distance does not move unless the listing did, which
@@ -3749,7 +3765,9 @@
       });
       const reasons = [...new Set(cutOut.map((y) => pickExcuse(y, P)))];
       host.appendChild(el('div', { class: 'sc-tile' },
-        el('div', { class: 'sc-tile__label' }, `${o.m.label || o.mk} — cheapest ${allIn ? 'all in, estimated' : 'landed, shipping estimated'}`),
+        // the key only where hue or dash tells two models apart — on one model it says nothing
+        el('div', { class: 'sc-tile__label' }, models.length >= 2 ? keyLine(brandTone(o.bk), modelDash(o.bk, o.mk), true) : null, ' ',
+          `${o.m.label || o.mk} — cheapest ${allIn ? 'all in, estimated' : 'landed, shipping estimated'}`),
         el('div', { class: 'sc-tile__value' }, money(best.v)),
         el('div', { class: 'sc-tile__sub' },
           `${money(x.price)} asking${ship ? ` + ${money(ship)} est. shipping` : ''}`
@@ -5017,13 +5035,11 @@
     for (const v of stat) {
       head.appendChild(el('th', { class: 'sc-case', scope: 'col',
         'aria-label': `${v.c.label}${v.c.sub ? ', ' + v.c.sub : ''}` },
-        el('span', { class: 'cmp-swatch' }, svgEl('svg', { width: 22, height: 8, viewBox: '0 0 22 8', 'aria-hidden': 'true' },
-          svgEl('line', { x1: 1, y1: 4, x2: 21, y2: 4, style: 'stroke:' + SC.toneRef(v.c.tone), 'stroke-width': v.c.shopping ? 3 : 2,
-                          'stroke-dasharray': v.c.dash || null, 'stroke-linecap': 'round' }))),
+        keyLine(v.c.tone, v.c.dash, v.c.shopping),
         el('span', null, v.c.label),
         el('span', { class: 'sc-note' }, v.c.sub),
         el('span', { class: 'sc-nowrap' },
-          el('span', { class: 'sc-chip ' + (v.c.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, v.c.shopping ? 'shopping' : 'comparison'), ' ',
+          el('span', { class: 'sc-chip ' + (v.c.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') }, v.c.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'cmp:' + v.c.key,
             onclick: (e) => { e.preventDefault(); v.c.go(); } }, v.c.goTxt))));
     }
@@ -5125,7 +5141,7 @@
         el('div', { class: 'sc-media__title' }, r.label),
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),
         oBandSlim ? el('div', { class: 'sc-note' }, `data through ${dataTxt}`) : null,
-        el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--spice' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
+        el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'open:' + r.bk + '/' + r.mk, onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
       const data = oBandSlim ? null : el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, dataTxt));
       const trend = oBandSlim ? null : el('td', null, spark(r.trend, 80, 26, false, brandTone(r.bk)));
