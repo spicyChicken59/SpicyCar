@@ -351,6 +351,33 @@ class TestNormalize(unittest.TestCase):
                          "the i7 M70 is spelled with xDrive, so the query "
                          "alone cannot keep it out — trim_exclude must")
 
+    def test_trim_exclude_keeps_a_target_off_its_sibling(self):
+        """Two live targets are separated from a sibling by trim_exclude and
+        nothing else. bmw-ix-m matches '' — every iX — and relies on excluding
+        'xdrive'; lucid-air-touring matches 'touring', which the Grand Touring
+        also contains, and relies on excluding 'grand'. Lose the branch and
+        each target quietly absorbs the sibling's whole market under its own
+        name, its median and its picks included. The trim gates run before
+        year and price, so a record only has to carry the trim words."""
+        import copy
+
+        def rec_with(trim):
+            r = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items() if not k.startswith("_")})
+            r["vehicle"]["trim"] = trim
+            r["vehicle"]["series"] = trim
+            return r
+        self.assertIsNone(T.normalize(rec_with("xDrive50"), target("bmw-ix-m"), self.dropped))
+        self.assertEqual(self.dropped["trim excluded"], 1, "an xDrive is not an M, whatever else it is")
+        self.assertIsNone(T.normalize(rec_with("Grand Touring"), target("lucid-air-touring"), self.dropped))
+        self.assertEqual(self.dropped["trim excluded"], 2, "'touring' is inside 'Grand Touring'; only the exclusion tells them apart")
+        # …and the same words pass the trim gates of the target they belong to,
+        # so the drop is the exclusion's doing and not a mismatch on the way in.
+        kept = Counter()
+        T.normalize(rec_with("xDrive50"), target("bmw-ix-xdrive"), kept)
+        T.normalize(rec_with("Grand Touring"), target("lucid-air-grand-touring"), kept)
+        self.assertEqual(kept["trim excluded"], 0)
+        self.assertEqual(kept["trim mismatch"], 0)
+
     def test_cpo_watch_drops_the_uncertified(self):
         # the clean fixture is cpo: false as shipped
         self.assertIsNone(self.cpo_norm(lambda r: None))
@@ -1579,6 +1606,45 @@ class TestNewToday(unittest.TestCase):
                          "a car last seen in January is not first seen this run")
 
 
+class TestOneCarTwoTargets(unittest.TestCase):
+    """A car two targets both return has two records and one row.
+
+    The listings table is one row per VIN (the cheapest copy), the record is
+    one series per (target, vin), and the row used to carry only the chosen
+    copy's series. The nationwide CPO watch and the ordinary eDrive40 target
+    match the same certified cars, so the day the watch first returned a car
+    the ordinary target had listed for ten days, the row read days_tracked 1,
+    first_seen today, no cuts and no delta — and "New today" announced it.
+    Four VINs sat under two targets on 2026-09-01 alone.
+    """
+
+    def setUp(self):
+        self.days = [date.fromordinal(T.TODAY_ORD - 9 + i).isoformat() for i in range(10)]
+        self.vin = "WBY" + "1" * 14
+
+        def row(target, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": target, "vin": self.vin, "snapshot_date": day, "price": price,
+                      "year": "2024", "trim": "eDrive40", "miles": 12000, "state": "IL", "city": "Chicago"})
+            return r
+        self.rows = [row("bmw-i5-edrive40", d, 45998) for d in self.days] + [row("bmw-i5-cpo", self.days[-1], 45000)]
+        today = [r for r in self.rows if r["snapshot_date"] == T.TODAY]
+        _, site, _ = T.build_outputs(today, self.rows, T.build_history(self.rows))
+        self.entry = next(x for x in site["brands"]["bmw"]["models"]["i5"]["listings"] if x["vin"] == self.vin)
+
+    def test_the_history_follows_the_car_not_the_copy_that_won(self):
+        e = self.entry
+        self.assertEqual(e["price"], 45000, "the cheapest copy is still the row")
+        self.assertEqual(e["trim_id"], "bmw-i5-cpo", "…and it keeps that copy's target")
+        self.assertEqual(e["first_seen"], self.days[0], "first seen the day the CAR was, not the day this copy was")
+        self.assertEqual(e["days_tracked"], 10)
+        self.assertEqual(len(e["series"]), 10)
+        self.assertEqual(e["series"][-1][1], 45000, "each day at the lowest of its copies")
+        self.assertEqual(e["delta"], 45000 - 45998)
+        self.assertEqual(e["cuts"], 1)
+        self.assertFalse(T.is_new_today(e), "a car listed for ten days is not new because a second query found it")
+
+
 class TestDaysListedAnchor(unittest.TestCase):
     """Days on market is measured from the day the row was OBSERVED.
 
@@ -2686,6 +2752,36 @@ class TestFinance(unittest.TestCase):
         self.assertEqual(out["stale_days"], None)
         del today
 
+    def test_terms_and_the_cpo_boundary_round_trip(self):
+        """`cpo_only` defaults to True because the safe leak is the promo
+        reaching too few cars, never too many — and the page trusts the
+        exported boolean for arithmetic, so it is asserted by identity: a
+        mutant returning a real False passes any truthiness check on the
+        i7 promo below and quietly rates every uncertified i5 at 2.99%."""
+        cfg = {"fallback_apr": 6.9, "terms": [36, 48, 60, 72], "default_term": 48, "promos": [
+            {"model": "bmw/i5", "apr": 2.99},                     # unstated: certified only
+            {"model": "bmw/i7", "apr": 3.49, "cpo_only": False},  # stated: every i7
+        ]}
+        with unittest.mock.patch.dict(T.BUYER, {"finance": cfg}, clear=False):
+            out = T.finance_export()
+        self.assertEqual(out["terms"], [36, 48, 60, 72])
+        self.assertEqual(out["default_term"], 48)
+        by = {p["model"]: p for p in out["promos"]}
+        self.assertIs(by["bmw/i5"]["cpo_only"], True)
+        self.assertIs(by["bmw/i7"]["cpo_only"], False)
+
+    def test_a_promo_that_ends_today_still_applies_today(self):
+        """The offer runs THROUGH its end date. `active` is the only field
+        that separates >= from >: days_left is 0 either way, so a page counting
+        down to zero would still rank on a rate the export had already switched
+        off."""
+        today = date.fromordinal(T.TODAY_ORD).isoformat()
+        cfg = {"fallback_apr": 6.9, "promos": [{"model": "bmw/i5", "apr": 2.99, "expires": today}]}
+        with unittest.mock.patch.dict(T.BUYER, {"finance": cfg}, clear=False):
+            p = T.finance_export()["promos"][0]
+        self.assertTrue(p["active"], "a promo that ends today applies today")
+        self.assertEqual(p["days_left"], 0)
+
     def test_a_bad_date_does_not_take_the_run_down(self):
         """targets.json is hand-edited. A typo in an expiry must degrade to a
         standing offer, not raise inside build_outputs at 11:00 UTC."""
@@ -3642,6 +3738,30 @@ class TestFees(unittest.TestCase):
         for k in ("tax_rate", "doc_fee", "title", "registration", "ev_surcharge"):
             self.assertIsInstance(f[k], (int, float))
             self.assertGreaterEqual(f[k], 0)
+
+    def test_every_fee_round_trips_from_the_config(self):
+        """Type checks let a key collapse to zero or to its neighbour's value
+        and still pass — `"tax_rate": ... or 0` is one dropped `to_float` away
+        from taxing nothing, on every total the page prints. A block of
+        DISTINCT synthetic values, so any collapse shows on sight, and not the
+        shipped numbers: pinning 9.25% here would turn the test into a mirror
+        of targets.json that has to be edited whenever the county moves."""
+        block = {"tax_rate": 0.11, "tax_note": "n", "doc_fee": 311, "title": 171,
+                 "registration": 155, "ev_surcharge": 123, "finance_shipping": True,
+                 "checked": "2026-01-02"}
+        with unittest.mock.patch.dict(T.BUYER, {"fees": block}, clear=False):
+            f = T.fees_export()
+        for k, v in block.items():
+            self.assertEqual(f[k], v, f"{k} did not round-trip")
+        self.assertIs(f["finance_shipping"], True)
+
+    def test_the_shipped_rate_charges_something(self):
+        """The one fact about the SHIPPED block worth holding without pinning
+        it: a zero rate means the page quietly stopped charging tax."""
+        f = T.fees_export()
+        if f is None:
+            self.skipTest("no fees configured")
+        self.assertGreater(f["tax_rate"], 0)
 
     def test_shipping_is_not_financed_by_default(self):
         f = T.fees_export()
