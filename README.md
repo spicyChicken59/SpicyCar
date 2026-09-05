@@ -145,8 +145,11 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   shipping plus tax and paperwork, because a California car and an Ohio car are not comparable on
   the sticker — with the payment at that car's own rate, the cheapest one you could drive to
   instead, how far it sits from typical for its own trim and year (in both directions), a count of
-  the cheaper cars your own rules excluded and why, and one line stating the gap between the two
-  models in dollars and per month. Then the tiles: **lowest drivable
+  the cheaper cars your own rules excluded and why, the same floor day by day (a sparkline of the
+  cheapest rule-fit car on each day the trims were fetched — never carried forward, never under five
+  cars — with how many cars held it and since when), and one line stating the gap between the two
+  models in dollars and per month, and over the days both were fetched: its range, its first and
+  last value, and how much of the change was each side's own floor moving. Then the tiles: **lowest drivable
   asking**, lowest nationwide, the market count and what moved since the last snapshot, and — while
   a promotional finance rate is live — what that rate is **worth** on the cheapest car that can
   actually have it. Below
