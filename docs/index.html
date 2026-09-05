@@ -3568,9 +3568,10 @@
       // to ring a dealer, and "6% over typical" is exactly what you would want
       // to have known first. Printing a dash there hid the answer.
       // "about typical" covers the whole of the cohort's interval, not a
-      // half-percent band around its median: 3% under a median of nine is
-      // inside that median's own sampling error, and printing "3% under"
-      // there would be the page reading noise as a discount.
+      // half-percent band around its median: 3% under a median of nine can
+      // sit inside that median's own sampling error — it depends on the
+      // cohort's spread, not on nine — and printing "3% under" there would
+      // be the page reading noise as a discount.
       const p = r.x.pick_pct, st = r.x.pick_stand;
       const word = p == null ? '—'
         : st === 'under' ? `${Math.round(p * 100)}% under`

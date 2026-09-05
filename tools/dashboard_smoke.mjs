@@ -3042,7 +3042,22 @@ await step('under typical only outside its own interval', async () => {
     if (spare) for (const x of model0.listings.filter((x) => eligible(x) && !drop.has(x.vin) && yearOf(x) === spare).sort((a, b) => b.price - a.price).slice(0, -4)) drop.add(x.vin);
     const planted = JSON.parse(JSON.stringify(model0));
     planted.listings = planted.listings.filter((x) => !drop.has(x.vin));
-    const scores2 = scoreModel(planted);
+    // …and one survivor priced to stand under the YEAR's interval by a
+    // notable margin, so the page has to print a note for it and say which
+    // cohort it was judged against. Without this the five survivors could
+    // all sit quietly inside the year's interval and a page that fell them
+    // through to the whole model instead would pass unnoticed.
+    let scores2 = scoreModel(planted), witness = null;
+    {
+      const cheapest = keep.map((v) => planted.listings.find((c) => c.vin === v)).sort((a, b) => valueOf(a) - valueOf(b))[0];
+      for (let i = 0; i < 4 && cheapest; i++) {
+        const sc = scores2.get(cheapest.vin);
+        if (sc && sc.basis === 'year' && sc.stand === 'under' && sc.pct >= 0.05) { witness = cheapest.vin; break; }
+        if (!sc) break;
+        cheapest.price = Math.round(cheapest.price - Math.max(500, (valueOf(cheapest) - sc.lo) + 0.06 * sc.lo));
+        scores2 = scoreModel(planted);
+      }
+    }
     const yearsLeft = new Map();
     for (const x of planted.listings.filter(eligible)) yearsLeft.set(yearOf(x), (yearsLeft.get(yearOf(x)) || 0) + 1);
     const wantChips = [...yearsLeft.entries()].filter(([, n]) => n >= 6).map(([y]) => y).sort();
@@ -3059,9 +3074,12 @@ await step('under typical only outside its own interval', async () => {
       const yearNoted = rows2.filter((r) => keep.includes(r.vin) && r.basis === 'year');
       const chips = (await page.$$eval('#scatter-legend .sc-legend__chip--select', (bs) => bs.map((b) => b.dataset.y))).sort();
       const chipsRight = JSON.stringify(chips) === JSON.stringify(wantChips);
-      ok('and five cars are not a cohort: the survivors are judged against the year', wrong2.length === 0 && trimNoted.length === 0 && keep.every((v) => scores2.get(v) && scores2.get(v).basis === 'year') && chipsRight,
+      const witnessRow = witness && rows2.find((r) => r.vin === witness);
+      if (!witness) skip('and five cars are not a cohort: the survivors are judged against the year', `${key} cut to five, but no survivor can be priced to stand under the year's interval`);
+      else ok('and five cars are not a cohort: the survivors are judged against the year', wrong2.length === 0 && trimNoted.length === 0 && !!witnessRow && witnessRow.basis === 'year' && chipsRight,
          wrong2.length ? wrong2.slice(0, 3).join(' | ') : !chipsRight ? `scatter year chips ${JSON.stringify(chips)}; years with six eligible cars ${JSON.stringify(wantChips)}`
-           : `${key} cut from ${xs.length} to 5: ${trimNoted.length} survivor(s) still judged against the trim, ${yearNoted.length} noted against the year, ${rows2.length} rows all by the rule; ${spare ? `${spare} cut to four and its line gone, ` : ''}year lines ${JSON.stringify(chips)}`);
+           : !witnessRow || witnessRow.basis !== 'year' ? `${witness.slice(-6)} priced under the year's edge: ${witnessRow ? (witnessRow.note ? `note "${witnessRow.note}" with basis ${witnessRow.basis}` : 'no note') : 'row missing'}`
+           : `${key} cut from ${xs.length} to 5: ${trimNoted.length} survivor(s) still judged against the trim, ${witness.slice(-6)} noted "${witnessRow.note}" against the year, ${rows2.length} rows all by the rule; ${spare ? `${spare} cut to four and its line gone, ` : ''}year lines ${JSON.stringify(chips)}`);
     } finally { await ctx.unroute('**/data.json'); }
   }
   // Served, on the front page: the first shopped tile's floor car with its

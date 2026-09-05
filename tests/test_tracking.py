@@ -550,10 +550,12 @@ class TestPicks(unittest.TestCase):
         """A thin drivable pool must not promote above-median cars to picks —
         and "under typical" means under the low edge of the cohort's own
         interval, not under its median. Nine cars: the 95% interval on the
-        median is the 2nd and 8th values, $44,000–$47,000. The $40,000 car is
-        below it and is a pick; the $44,000 car is 3% under the median, and
-        3% is inside the sampling error of a median of nine, so the page
-        cannot tell it from typical and it is not a pick."""
+        median is the 2nd and 8th VALUES, $45,000–$48,000 (every fixture car
+        carries $1,000 of shipping). The $40,000 car is below it and is a
+        pick; the $44,000 car is 3% under the median, and in THIS cohort's
+        spread 3% sits inside the sampling error of the median — it depends
+        on the spread, not on nine — so the page cannot tell it from typical
+        and it is not a pick."""
         scored = T.score_picks([listing(price=p) for p in
                                 (40000, 44000, 44500, 45000, 45500, 46000, 46500, 47000, 48000)], "M")
         by = {p["price"]: p for p in scored}
@@ -655,11 +657,13 @@ class TestPicks(unittest.TestCase):
 
     def test_the_days_best_new_car_is_measured_against_its_interval(self):
         """End to end: nine eDrive40s, eight seen yesterday and one first seen
-        today at $44,200 — 3% under the median of nine and inside its 95%
-        interval ($44,200–$47,000). The "## Today" line counts the new car and
-        must not call it the day's best value, because 3% is inside the
-        sampling error of that median; a page saying "best 3% under typical"
-        there would be reading noise as a bargain."""
+        today at $44,200 — 3% under the median of nine and exactly ON the low
+        edge of its 95% interval ($44,200–$47,000). On the edge counts as
+        inside: the word needs strictly below, and this fixture is one of the
+        pins of that strict "<" — re-pin it to $44,300 and the kill is lost.
+        The "## Today" line counts the new car and must not call it the day's
+        best value; a page saying "best 3% under typical" there would be
+        reading noise as a bargain."""
         def row(vin, day, price):
             r = {k: "" for k in T.FIELDS}
             r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
