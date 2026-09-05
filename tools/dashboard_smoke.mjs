@@ -3879,6 +3879,65 @@ await step('arrivals, not reach', async () => {
   await serve((pm) => { let first = true; for (const x of pm.listings) if (isNewOn(x)) { x.listed_since = first ? thirteen : dt; x.days_listed = first ? 13 : 0; first = false; } }, 'and thirteen days is not a fortnight', `${subject.w.label} with one new car listed ${thirteen}`);
 });
 
+// --- the decision card folds its evidence on a phone ------------------------
+// The card is the first screen on a phone, and each shopped tile grew ten
+// lines of evidence under four of headline until the card ran to two screens
+// and the gap line sat a screen and a half down. On a phone the evidence
+// folds behind one disclosure per tile — closed, counted, the way the
+// nationwide picks fold — and the headline, the typical stand and the link
+// stay out; the gap keeps its first sentence and folds the record behind it.
+// A desktop has the room and folds nothing.
+await step('the decision card folds its evidence on a phone', async () => {
+  plan('each shopped tile keeps its headline, its stand and its link out of a closed fold that holds the evidence',
+       'and the card fits one phone screen',
+       'and the fold opens to the evidence',
+       'and the gap line keeps the decision out and folds the record',
+       'and a desktop folds nothing');
+  const want = new Set(((SHEET.buyer || {}).shopping) || []);
+  if (!want.size) return skipRest('this sheet names no shopped trims');
+  await page.setViewportSize({ width: 390, height: 844 });
+  try {
+    await open('');
+    const read = () => page.evaluate(() => {
+      const tiles = [...document.querySelectorAll('#hero-cars .sc-tile')].filter((t) => t.querySelector('[data-fkey^="hero:"]')).map((t) => {
+        const d = t.querySelectorAll('details.hero-fold');
+        const fold = d[0];
+        return { folds: d.length, open: fold ? fold.open : null, summary: fold ? fold.querySelector('summary').textContent.trim() : '',
+                 inside: fold ? fold.querySelectorAll('.sc-tile__sub, .sc-tile__spark').length : 0,
+                 standOut: !!t.querySelector('.sc-delta') && !t.querySelector('details .sc-delta'),
+                 linkOut: !t.querySelector('details [data-fkey^="hero:"]'),
+                 headline: [...t.children].filter((c) => c.classList.contains('sc-tile__sub')).length };
+      });
+      const gap = document.getElementById('hero-gap');
+      const gfold = gap && gap.querySelector('details.hero-fold');
+      const card = document.getElementById('hero-card');
+      return { tiles, cardH: Math.round(card.getBoundingClientRect().height), inner: window.innerHeight,
+               gapHead: gap ? (gap.childNodes[0] && gap.childNodes[0].nodeType === 3 ? gap.childNodes[0].textContent : '') : '',
+               gapFold: gfold ? { open: gfold.open, summary: gfold.querySelector('summary').textContent.trim(), text: gfold.textContent.replace(/\s+/g, ' ').trim() } : null };
+    });
+    const r = await read();
+    const t = r.tiles;
+    if (!t.length) return skipRest('no shopped tile carries a car today');
+    const bad = t.filter((x) => x.folds !== 1 || x.open !== false || !/^the evidence · \d+ lines?$/.test(x.summary) || x.inside < 2 || !x.standOut || !x.linkOut || x.headline < 3);
+    ok('each shopped tile keeps its headline, its stand and its link out of a closed fold that holds the evidence', bad.length === 0,
+       bad.length ? JSON.stringify(bad[0]) : t.map((x) => `"${x.summary}" over ${x.inside} evidence nodes, ${x.headline} headline lines out`).join(' · '));
+    ok('and the card fits one phone screen', r.cardH <= r.inner + 60, `card ${r.cardH}px on an ${r.inner}px screen (it ran to 1,754px unfolded)`);
+    const before = r.cardH;
+    await page.locator('#hero-cars details.hero-fold summary').first().click();
+    await page.waitForTimeout(200);
+    const r2 = await read();
+    ok('and the fold opens to the evidence', r2.tiles[0].open === true && r2.cardH > before + 80, `open: ${r2.tiles[0].open}, card ${before}px → ${r2.cardH}px`);
+    const gapOk = /costs \$[\d,]+ more than .* on today's cheapest of each/.test(r.gapHead) && !!r.gapFold && r.gapFold.open === false
+      && /^over the record, and what the money buys$/.test(r.gapFold.summary) && /Over the \d+ fetch days|For that, |buys \d+ of|Shipping|Out-the-door/.test(r.gapFold.text);
+    ok('and the gap line keeps the decision out and folds the record', gapOk, `head "${r.gapHead.slice(0, 90)}" · fold ${r.gapFold ? `"${r.gapFold.summary}" over ${r.gapFold.text.length} characters` : 'missing'}`);
+  } finally {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+  }
+  await open('');
+  const desk = await page.evaluate(() => ({ folds: document.querySelectorAll('#hero-card details.hero-fold').length, subs: document.querySelectorAll('#hero-cars .sc-tile .sc-tile__sub').length }));
+  ok('and a desktop folds nothing', desk.folds === 0 && desk.subs > 6, `${desk.folds} folds, ${desk.subs} evidence lines in the open`);
+});
+
 // --- a headline figure carries its own date --------------------------------
 // The masthead says "data through Sep 4"; the watchlist's first tile can lead
 // with a car from a model on a slower cadence, last fetched two days before,
@@ -4731,7 +4790,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 215;
+const EXPECTED = 224;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
