@@ -2141,7 +2141,10 @@ LOCAL_HISTORY = {}      # (target, vin) -> [[date, 0|1], ...] at each change
 
 
 def summarize(key, hist):
-    series = hist.get(key, [])
+    return summarize_series(hist.get(key, []), LOCAL_HISTORY.get(key))
+
+
+def summarize_series(series, moved=None):
     if not series:
         return {"series": []}
     prices = [p for _, p in series]
@@ -2152,10 +2155,38 @@ def summarize(key, hist):
         "days_tracked": len(series),
         "first_seen": series[0][0],
     }
-    moved = LOCAL_HISTORY.get(key)
     if moved:
         out["local_hist"] = moved
     return out
+
+
+def summarize_vin(vin, tids, hist, key):
+    """One car's history across every target that returned it.
+
+    The listings table is one row per VIN — pick_display_rows keeps the
+    cheapest copy — but the record is keyed (target, vin), and summarize()
+    read only the chosen copy's key. A certified eDrive40 the ordinary target
+    had watched for ten days and the nationwide CPO watch first returned
+    yesterday was therefore filed under the CPO copy — a dollar cheaper, or
+    merely the copy that won the tie — with days_tracked 1, first_seen
+    yesterday, no cuts and no delta, and "New today" announced a car the page
+    had listed for a week and a half. Four VINs sat under two targets on
+    2026-09-01 alone.
+
+    The series is merged by day, taking the day's lowest price across the
+    copies — the rule build_history already applies within one key — and
+    first_seen, days_tracked, cuts and delta are derived from the merged
+    series, so they describe the car. Everything else on the row — price,
+    url, dealer, cpo, trim_id — still comes from the single chosen copy: a
+    fact is never paired with another copy's. local_hist stays the chosen
+    copy's own, because a listing's state is a fact about that listing.
+    """
+    per_day = {}
+    for tid in tids:
+        for d, p in hist.get((tid, vin), []):
+            cur = per_day.get(d)
+            per_day[d] = p if cur is None else min(cur, p)
+    return summarize_series(sorted(per_day.items()), LOCAL_HISTORY.get(key))
 
 
 # --------------------------------------------------------------------------
@@ -2959,7 +2990,9 @@ def build_outputs(today_rows, all_rows, hist):
                 continue
 
             display = pick_display_rows(m_rows)
-            listings = [listing_entry(r, summarize((r["target"], r["vin"]), hist))
+            # Across the model's targets, not the chosen copy's alone: see
+            # summarize_vin. `display` is already one row per VIN.
+            listings = [listing_entry(r, summarize_vin(r["vin"], tids, hist, (r["target"], r["vin"])))
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
             m_entry["market"] = {**market_stats(m_entry["listings"]),
