@@ -1948,7 +1948,8 @@ await step('a value percentage names its cohort', async () => {
 // is the claim that both applied the same rule to the same market.
 await step('the picks agree across both surfaces', async () => {
   plan('the drivable picks are the same cars in the report and on the page',
-       'and so are the worth-the-ship picks');
+       'and so are the worth-the-ship picks',
+       'and the two surfaces state one rule for the list');
   const reportPath = resolve(HERE, '..', 'REPORT.md');
   if (!existsSync(reportPath)) return skipRest('no REPORT.md beside the dashboard');
   const md = readFileSync(reportPath, 'utf8');
@@ -1981,6 +1982,16 @@ await step('the picks agree across both surfaces', async () => {
   else ok('and so are the worth-the-ship picks',
           same(wantShip, got('worth the ship')),
           `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
+  // The rule sentence, once: the report prints picks_rule() and the page
+  // picksRule(), and the two drifted apart the day the interval clause was
+  // added to one of them. Compared word for word after the page's trailing
+  // "Asking prices shown." and the report's capitalisation are set aside.
+  const norm = (t) => t.replace(/\s+/g, ' ').replace(/\.?\s*Asking prices shown\.?$/i, '').trim().replace(/^./, (c) => c.toLowerCase()).replace(/\.$/, '');
+  const reportRule = (md.match(/\*\*Spicy picks\*\* — ([^\n]+)/) || [])[1] || (md.match(/^_(under [^\n]+?)\. Asking prices shown\._/m) || [])[1] || '';
+  const pageRule = await page.getAttribute('#hero-hint', 'title');
+  if (!reportRule || !pageRule) skip('and the two surfaces state one rule for the list', `${reportRule ? 'the page' : 'the report'} prints no rule sentence`);
+  else ok('and the two surfaces state one rule for the list', norm(reportRule) === norm(pageRule),
+          norm(reportRule) === norm(pageRule) ? `"${norm(pageRule).slice(0, 110)}…"` : `report: "${norm(reportRule)}" · page: "${norm(pageRule)}"`);
 });
 
 // --- the budget ------------------------------------------------------------
@@ -2890,6 +2901,347 @@ await step('what the premium buys', async () => {
   } finally { await ctx.unroute('**/data.json'); }
 });
 
+// --- under typical only outside its own interval -----------------------------
+// "5% under typical, n=9" used to print as if the median were a fixed point.
+// A median of nine cars has a distribution-free 95% interval of its own, and
+// a car inside it cannot be told from typical; the page now says "under"
+// only below the interval's low edge, and six cars make a cohort because
+// five is the largest sample with no interval at all. Recomputed here from
+// data.json with the harness's own interval — Pascal's triangle, where the
+// page walks the binomial multiplicatively, so a shared slip cannot agree
+// with itself. Then two served sheets: the cohort's best car moved to its
+// median (the note and the pick must go), and a cohort cut to five cars
+// (the survivors must be judged against the year, and say so).
+await step('under typical only outside its own interval', async () => {
+  plan('a note prints only for a car below the 95% interval of its cohort\'s median',
+       'and names the interval the order statistics give',
+       'a car moved to its cohort\'s median loses the note and the pick',
+       'and five cars are not a cohort: the survivors are judged against the year',
+       'and a floor car in a cohort of eight is about typical on every surface',
+       'and a margin that rounds to nothing is not a stand',
+       'the compare card\'s winner row prints only a car that stands under',
+       'and the pick walk skips a typical car with a big margin rather than stopping at it');
+  const P0 = (SHEET.buyer || {}).picks || {};
+  const P = { max_miles: P0.max_miles || 50000, cpm: P0.cents_per_mile != null ? P0.cents_per_mile : 0.30, base: P0.mileage_baseline || 20000,
+              no_acc: P0.exclude_accidents !== false, no_rental: P0.exclude_rental !== false };
+  const RENTAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+  const eligible = (x) => x.price != null && x.miles != null && x.miles <= P.max_miles && !(P.no_acc && x.accidents > 0) && !(P.no_rental && RENTAL.test(x.usage || ''));
+  const valueOf = (x) => x.price + (x.local ? 0 : (x.ship || 0)) + (x.miles - P.base) * P.cpm;
+  const ciOf = (vals) => {
+    const xs = vals.slice().sort((a, b) => a - b), n = xs.length;
+    if (n < 6) return null;
+    let row = [1n];
+    for (let i = 0; i < n; i++) { const nx = [1n]; for (let j = 1; j < row.length; j++) nx.push(row[j - 1] + row[j]); nx.push(1n); row = nx; }
+    const total = 1n << BigInt(n);
+    let k = 0;
+    for (let t = 1; t <= n >> 1; t++) { let cov = 0n; for (let i = t; i <= n - t; i++) cov += row[i]; if (cov * 20n >= total * 19n) k = t; else break; }
+    return k ? [xs[k - 1], xs[n - k]] : null;
+  };
+  const med = (vals) => { const a = vals.slice().sort((p, q) => p - q), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+  // every eligible car of one model: its cohort, interval and stand
+  const scoreModel = (m) => {
+    const pool = (m.listings || []).filter(eligible);
+    if (pool.length < 6) return new Map();
+    const by = (key) => { const g = new Map(); for (const x of pool) { const k = key(x); if (k == null) continue; (g.get(k) || g.set(k, []).get(k)).push(valueOf(x)); } return g; };
+    const byTY = by((x) => (x.trim ? `${String(x.trim).trim().toLowerCase()}|${x.year || ''}` : null)), byY = by((x) => String(x.year || ''));
+    const all = pool.map(valueOf);
+    const out = new Map();
+    for (const x of pool) {
+      const ty = x.trim ? `${String(x.trim).trim().toLowerCase()}|${x.year || ''}` : null, y = String(x.year || '');
+      let vals, basis;
+      if (ty && byTY.get(ty).length >= 6) { vals = byTY.get(ty); basis = 'trim'; }
+      else if (byY.get(y).length >= 6) { vals = byY.get(y); basis = 'year'; }
+      else { vals = all; basis = 'model'; }
+      const [lo, hi] = ciOf(vals), v = valueOf(x), m0 = med(vals);
+      const pct = (m0 - v) / m0;   // a stand needs the edge AND a margin that rounds to a digit
+      out.set(x.vin, { v, lo, hi, n: vals.length, basis, pct, stand: v < lo && pct >= 0.005 ? 'under' : v > hi && -pct >= 0.005 ? 'over' : 'typical' });
+    }
+    return out;
+  };
+  const dollars = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const readRows = () => page.$$eval('#list-table tbody tr', (trs) => trs.map((tr) => {
+    const b = tr.querySelector('[data-fkey^="star:"]');
+    const note = [...tr.querySelectorAll('.sc-note')].find((n) => /under typical/.test(n.textContent));
+    return { vin: b ? b.getAttribute('data-fkey').split(':')[1] : '', note: note ? note.textContent.replace(/\s+/g, ' ').trim() : '',
+             basis: note ? note.getAttribute('data-basis') : null, title: note ? (note.getAttribute('title') || '') : '' };
+  }));
+  // the rows, against the rule: a note iff under AND at least 5% (the note's own notability floor)
+  const audit = (rows, scores) => {
+    const wrong = [];
+    for (const r of rows) {
+      const sc = scores.get(r.vin);
+      const want = !!sc && sc.stand === 'under' && sc.pct >= 0.05;
+      if (want !== !!r.note) wrong.push(`${r.vin.slice(-6)}: ${r.note ? `"${r.note}"` : 'no note'} but the sheet says ${sc ? `${sc.stand}, ${(sc.pct * 100).toFixed(1)}% (${sc.basis}, n=${sc.n})` : 'unscored'}`);
+      else if (r.note && r.basis !== sc.basis) wrong.push(`${r.vin.slice(-6)}: basis ${r.basis} vs ${sc.basis}`);
+    }
+    return wrong;
+  };
+  const subject = WATCHED.slice().sort((a, b) => b.cars - a.cars)[0];
+  if (!subject) return skipRest('no model on the watchlist');
+  const model0 = SHEET.brands[subject.bk].models[subject.mk];
+  const scores = scoreModel(model0);
+  const sortByValue = async () => { await page.selectOption('#f-sort', 'value'); await page.waitForTimeout(350); };
+  const showAll = async () => { if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); } };
+  await open(subject.q); await sortByValue();
+  const rows = await readRows();
+  const noted = rows.filter((r) => r.note);
+  // The skip is the harness's call, not the page's: a page that printed no
+  // note at all on a sheet where the rule owes eighteen is the failure, not a
+  // day without a subject.
+  if (!rows.some((r) => { const sc = scores.get(r.vin); return sc && sc.stand === 'under' && sc.pct >= 0.05; })) return skipRest(`no car on ${subject.label}'s first rows sits under its cohort's interval by 5% today`);
+  const wrong = audit(rows, scores);
+  ok('a note prints only for a car below the 95% interval of its cohort\'s median', wrong.length === 0,
+     wrong.length ? wrong.slice(0, 3).join(' | ') : `${noted.length} of ${rows.length} rows noted, every one below its cohort's low edge; ${[...scores.values()].filter((s) => s.stand === 'typical' && s.pct >= 0.05).length} car(s) 5%+ under a median yet inside its interval, rightly silent`);
+  const badTitle = noted.filter((r) => { const sc = scores.get(r.vin); return !r.title.includes(`typical value ${dollars(sc.lo)}–${dollars(sc.hi)} at 95%`); });
+  ok('and names the interval the order statistics give', badTitle.length === 0,
+     badTitle.length ? `${badTitle[0].vin.slice(-6)}: title "${badTitle[0].title.slice(0, 120)}" · harness ${dollars(scores.get(badTitle[0].vin).lo)}–${dollars(scores.get(badTitle[0].vin).hi)}`
+                     : noted.length ? `first: "${noted[0].title.slice(noted[0].title.indexOf('typical value'))}"` : 'no note to read');
+  // Served: the best-margin car of a trim cohort, its price raised until its
+  // value is that cohort's median. Prices untouched elsewhere.
+  const target = [...scores.entries()].filter(([, s]) => s.stand === 'under' && s.basis === 'trim').sort((a, b) => b[1].pct - a[1].pct)[0];
+  if (!target) skip('a car moved to its cohort\'s median loses the note and the pick', 'no trim-cohort car stands under today');
+  else {
+    const [vin, sc] = target;
+    const x = model0.listings.find((c) => c.vin === vin);
+    const medOld = sc.v + (sc.pct * sc.v) / (1 - sc.pct);   // v = med(1 - pct)
+    const price = Math.round(medOld - (x.local ? 0 : (x.ship || 0)) - (x.miles - P.base) * P.cpm);
+    const planted = JSON.parse(JSON.stringify(model0));
+    planted.listings.find((c) => c.vin === vin).price = price;
+    const after = scoreModel(planted).get(vin);
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.bk].models[subject.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(subject.q); await sortByValue(); await showAll();
+      const row = (await readRows()).find((r) => r.vin === vin);
+      const picked = await page.locator(`#takeaway [data-fkey^="pick:${vin}:"]`).count();   // the card's links are pick:VIN:media and pick:VIN:open
+      ok('a car moved to its cohort\'s median loses the note and the pick', after && after.stand === 'typical' && !!row && !row.note && picked === 0,
+         `${vin.slice(-6)} at ${dollars(price)} (was ${dollars(x.price)}, ${(sc.pct * 100).toFixed(1)}% under): harness says ${after ? after.stand : 'unscored'}; row ${row ? (row.note ? `still says "${row.note}"` : 'says nothing') : 'missing'}; pick cards ${picked}`);
+    } finally { await ctx.unroute('**/data.json'); }
+  }
+  // Served: the smallest trim-and-year cohort of six or more cut to five by
+  // dropping its dearest cars, leaving the year with six or more.
+  const cohorts = new Map();
+  for (const x of model0.listings.filter(eligible)) if (x.trim) { const k = `${String(x.trim).trim().toLowerCase()}|${x.year || ''}`; (cohorts.get(k) || cohorts.set(k, []).get(k)).push(x); }
+  const yearCount = (y) => model0.listings.filter((x) => eligible(x) && String(x.year || '') === y).length;
+  const small = [...cohorts.entries()].filter(([k, xs]) => xs.length >= 6 && yearCount(k.split('|')[1]) - (xs.length - 5) >= 6).sort((a, b) => a[1].length - b[1].length)[0];
+  if (!small) skip('and five cars are not a cohort: the survivors are judged against the year', `${subject.label} has no trim cohort that can be cut to five and leave its year with six`);
+  else {
+    const [key, xs] = small;
+    const drop = new Set(xs.slice().sort((a, b) => b.price - a.price).slice(0, xs.length - 5).map((x) => x.vin));
+    const keep = xs.filter((x) => !drop.has(x.vin)).map((x) => x.vin);
+    // …and, where another model year can spare it, that year cut to four, so
+    // the scatter's dashed "typical value" line for it has to go too: a line
+    // labelled typical over four cars is the same unsupported median.
+    const yearOf = (x) => String(x.year || '');
+    const spare = [...new Set(model0.listings.filter((x) => eligible(x) && !drop.has(x.vin)).map(yearOf))]
+      .filter((y) => y !== key.split('|')[1] && model0.listings.filter((x) => eligible(x) && !drop.has(x.vin) && yearOf(x) === y).length >= 5)
+      .sort((a, b) => model0.listings.filter((x) => eligible(x) && yearOf(x) === a).length - model0.listings.filter((x) => eligible(x) && yearOf(x) === b).length)[0];
+    if (spare) for (const x of model0.listings.filter((x) => eligible(x) && !drop.has(x.vin) && yearOf(x) === spare).sort((a, b) => b.price - a.price).slice(0, -4)) drop.add(x.vin);
+    const planted = JSON.parse(JSON.stringify(model0));
+    planted.listings = planted.listings.filter((x) => !drop.has(x.vin));
+    // …and one survivor priced to stand under the YEAR's interval by a
+    // notable margin, so the page has to print a note for it and say which
+    // cohort it was judged against. Without this the five survivors could
+    // all sit quietly inside the year's interval and a page that fell them
+    // through to the whole model instead would pass unnoticed.
+    let scores2 = scoreModel(planted), witness = null;
+    {
+      const cheapest = keep.map((v) => planted.listings.find((c) => c.vin === v)).sort((a, b) => valueOf(a) - valueOf(b))[0];
+      for (let i = 0; i < 4 && cheapest; i++) {
+        const sc = scores2.get(cheapest.vin);
+        if (sc && sc.basis === 'year' && sc.stand === 'under' && sc.pct >= 0.05) { witness = cheapest.vin; break; }
+        if (!sc) break;
+        cheapest.price = Math.round(cheapest.price - Math.max(500, (valueOf(cheapest) - sc.lo) + 0.06 * sc.lo));
+        scores2 = scoreModel(planted);
+      }
+    }
+    const yearsLeft = new Map();
+    for (const x of planted.listings.filter(eligible)) yearsLeft.set(yearOf(x), (yearsLeft.get(yearOf(x)) || 0) + 1);
+    const wantChips = [...yearsLeft.entries()].filter(([, n]) => n >= 6).map(([y]) => y).sort();
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.bk].models[subject.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(subject.q); await sortByValue(); await showAll();
+      const rows2 = await readRows();
+      const wrong2 = audit(rows2, scores2);
+      const trimNoted = rows2.filter((r) => keep.includes(r.vin) && r.basis === 'trim');
+      const yearNoted = rows2.filter((r) => keep.includes(r.vin) && r.basis === 'year');
+      const chips = (await page.$$eval('#scatter-legend .sc-legend__chip--select', (bs) => bs.map((b) => b.dataset.y))).sort();
+      const chipsRight = JSON.stringify(chips) === JSON.stringify(wantChips);
+      const witnessRow = witness && rows2.find((r) => r.vin === witness);
+      if (!witness) skip('and five cars are not a cohort: the survivors are judged against the year', `${key} cut to five, but no survivor can be priced to stand under the year's interval`);
+      else ok('and five cars are not a cohort: the survivors are judged against the year', wrong2.length === 0 && trimNoted.length === 0 && !!witnessRow && witnessRow.basis === 'year' && chipsRight,
+         wrong2.length ? wrong2.slice(0, 3).join(' | ') : !chipsRight ? `scatter year chips ${JSON.stringify(chips)}; years with six eligible cars ${JSON.stringify(wantChips)}`
+           : !witnessRow || witnessRow.basis !== 'year' ? `${witness.slice(-6)} priced under the year's edge: ${witnessRow ? (witnessRow.note ? `note "${witnessRow.note}" with basis ${witnessRow.basis}` : 'no note') : 'row missing'}`
+           : `${key} cut from ${xs.length} to 5: ${trimNoted.length} survivor(s) still judged against the trim, ${witness.slice(-6)} noted "${witnessRow.note}" against the year, ${rows2.length} rows all by the rule; ${spare ? `${spare} cut to four and its line gone, ` : ''}year lines ${JSON.stringify(chips)}`);
+    } finally { await ctx.unroute('**/data.json'); }
+  }
+  // Served, on the front page: the first shopped tile's floor car with its
+  // trim-and-year cohort cut to eight — the largest cohort whose interval is
+  // still the whole sample — so nothing in it can stand under. The seven
+  // kept are its DEAREST siblings, raised by half again, so the floor car
+  // sits a long way under the cohort's median and a page that picked on the
+  // margin alone would make it a pick; the rule makes it nothing. The tile's
+  // delta must read "about typical … n=8" and go flat, the car must be on no
+  // pick card, its shortlist row must say "about typical", and — served onto
+  // the config shortlist, whose front-page card is where the chip lives —
+  // its card must wear no chip.
+  const heroTiles = () => page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => ({
+    label: ((t.querySelector('.sc-tile__label') || {}).textContent || '').split(' — ')[0].trim(),
+    vin: ((t.querySelector('[data-fkey^="hero:"]') || { getAttribute: () => '' }).getAttribute('data-fkey') || '').split(':')[1] || '',
+    delta: ((t.querySelector('.sc-delta') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+    flat: !!t.querySelector('.sc-delta--flat') })));
+  await open('');
+  const tile = (await heroTiles()).find((t) => t.vin);
+  const heroModel = tile && WATCHED.find((w) => w.label === tile.label);
+  const hm = heroModel && SHEET.brands[heroModel.bk].models[heroModel.mk];
+  const hx = hm && hm.listings.find((c) => c.vin === tile.vin);
+  const sameCohort = (c) => hx && c.trim && String(c.trim).trim().toLowerCase() === String(hx.trim || '').trim().toLowerCase() && String(c.year || '') === String(hx.year || '');
+  const kin = hx && hx.trim ? hm.listings.filter((c) => eligible(c) && sameCohort(c)) : [];
+  if (!hx || kin.length < 8) skip('and a floor car in a cohort of eight is about typical on every surface', `the leading tile's car has ${kin.length} cars in its trim-and-year cohort; eight are needed`);
+  else {
+    const dropH = new Set(kin.filter((c) => c.vin !== hx.vin).sort((a, b) => a.price - b.price).slice(0, kin.length - 8).map((c) => c.vin));
+    const plantedH = JSON.parse(JSON.stringify(hm));
+    plantedH.listings = plantedH.listings.filter((c) => !dropH.has(c.vin));
+    for (const c of plantedH.listings) if (c.vin !== hx.vin && sameCohort(c) && eligible(c)) c.price = Math.round(c.price * 1.5);
+    const scH = scoreModel(plantedH).get(hx.vin);
+    const labelWords = new Set(String(heroModel.label).toLowerCase().split(/\s+/));
+    const short = `${hx.year} ${String(hx.trim).split(/\s+/).filter((w) => w && !labelWords.has(w.toLowerCase())).join(' ')} ${heroModel.label}`.replace(/\s+/g, ' ').trim();
+    const wantDelta = `about typical for a ${short}, n=8`;
+    const clearStars = () => page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[heroModel.bk].models[heroModel.mk] = plantedH;
+      sheet.buyer = { ...(sheet.buyer || {}), shortlist: [{ vin: hx.vin, note: '' }] };   // the config shortlist, whose front-page card wears the chip
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(''); await clearStars(); await open('');
+      const t2 = (await heroTiles()).find((t) => t.label === tile.label) || {};
+      const picked = await page.locator(`#takeaway [data-fkey^="pick:${hx.vin}:"]`).count();
+      await open(heroModel.q); await sortByValue(); await showAll();
+      const other = (await readRows()).find((r) => r.vin && r.vin !== hx.vin);
+      for (const v of [hx.vin, other && other.vin].filter(Boolean)) { await page.click(`button[data-fkey="star:${v}"]`); await page.waitForTimeout(150); }
+      const cell = await page.evaluate((vin) => {
+        const tbl = document.getElementById('finalists-table'); if (!tbl) return null;
+        const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.querySelector(`[data-fkey="fin:${vin}"]`));
+        const row = [...tbl.querySelectorAll('tbody tr')].find((tr) => /value vs typical/i.test(tr.children[0].textContent));
+        if (col < 0 || !row) return null;
+        const td = row.children[col];
+        return { figure: ((td.querySelector('.sc-figure') || {}).textContent || '').trim(), notes: [...td.querySelectorAll('.sc-note')].map((n) => n.textContent.trim()) };
+      }, hx.vin);
+      await open('');
+      const card = await page.evaluate((vin) => {
+        const a = document.querySelector(`[data-fkey="sl:${vin}:open"]`), c = a && a.closest('.sc-photo-card');
+        return c ? { found: true, chip: ((c.querySelector('.sc-photo-card__chip') || {}).textContent || '').trim() } : { found: false, chip: '' };
+      }, hx.vin);
+      ok('and a floor car in a cohort of eight is about typical on every surface',
+         !!scH && scH.stand === 'typical' && scH.pct >= 0.15 && t2.flat === true && t2.delta === wantDelta && picked === 0
+           && !!cell && cell.figure === 'about typical' && cell.notes.some((n) => /\bn=8\b/.test(n)) && card.found && card.chip === '',
+         `${hx.vin.slice(-6)} with ${kin.length} → 8 in ${short}: harness ${scH ? `${scH.stand}, ${(scH.pct * 100).toFixed(0)}% under the median` : 'unscored'} · tile "${t2.delta}" (flat ${t2.flat}) · pick cards ${picked} · shortlist row ${cell ? `"${cell.figure}" ${JSON.stringify(cell.notes)}` : 'missing'} · card ${card.found ? (card.chip ? `chip "${card.chip}"` : 'no chip') : 'missing'}`);
+    } finally { await ctx.unroute('**/data.json'); await clearStars(); }
+  }
+  // Served: the subject's largest trim cohort rewritten so every car's VALUE
+  // is the same to the dollar and one car's is $100 less. That car is below
+  // the interval's low edge — the word "under" would hold — and 0.1% under
+  // the median, which every surface would print as "0% under typical". The
+  // rule calls it typical; its shortlist row must say so.
+  const big = [...cohorts.entries()].filter(([, xs]) => xs.length >= 9).sort((a, b) => b[1].length - a[1].length)[0];
+  if (!big) skip('and a margin that rounds to nothing is not a stand', `${subject.label} has no trim cohort of nine`);
+  else {
+    const [keyT, xs] = big;
+    const V = 100000, targetVin = xs[0].vin, otherVin = xs[1].vin;
+    const planted = JSON.parse(JSON.stringify(model0));
+    for (const c of planted.listings) if (xs.some((x) => x.vin === c.vin)) c.price = Math.round((c.vin === targetVin ? V - 100 : V) - (c.local ? 0 : (c.ship || 0)) - (c.miles - P.base) * P.cpm);
+    const scT = scoreModel(planted).get(targetVin);
+    const clearStars2 = () => page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.bk].models[subject.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(subject.q); await clearStars2(); await open(subject.q); await sortByValue(); await showAll();
+      for (const v of [targetVin, otherVin]) { await page.click(`button[data-fkey="star:${v}"]`); await page.waitForTimeout(150); }
+      const cell = await page.evaluate((vin) => {
+        const tbl = document.getElementById('finalists-table'); if (!tbl) return null;
+        const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.querySelector(`[data-fkey="fin:${vin}"]`));
+        const row = [...tbl.querySelectorAll('tbody tr')].find((tr) => /value vs typical/i.test(tr.children[0].textContent));
+        if (col < 0 || !row) return null;
+        return ((row.children[col].querySelector('.sc-figure') || {}).textContent || '').trim();
+      }, targetVin);
+      ok('and a margin that rounds to nothing is not a stand', !!scT && scT.v < scT.lo && scT.pct > 0 && scT.pct < 0.005 && scT.stand === 'typical' && cell === 'about typical',
+         `${keyT} rewritten to one value, ${targetVin.slice(-6)} $100 under it: harness ${scT ? `${scT.stand}, ${(scT.pct * 100).toFixed(2)}% under, ${scT.v < scT.lo ? 'below' : 'not below'} the edge` : 'unscored'} · shortlist row "${cell || '(missing)'}"`);
+    } finally { await ctx.unroute('**/data.json'); await clearStars2(); }
+  }
+  // The compare card's "Best value vs typical" row, two trims of the subject
+  // side by side: each column prints its first car that stands under, by
+  // margin, or a dash — never the first car by margin, which on today's M70
+  // column is a typical car 8% under its median.
+  const trimIds = Object.keys(model0.trims || {}).filter((id) => model0.listings.some((x) => x.trim_id === id));
+  const byTrim = (id) => [...scores.entries()].filter(([vin]) => (model0.listings.find((x) => x.vin === vin) || {}).trim_id === id);
+  const pairT = trimIds.map((id) => ({ id, label: (model0.trims[id] || {}).label || id, unders: byTrim(id).filter(([, sc]) => sc.stand === 'under').sort((a, b) => b[1].pct - a[1].pct), all: byTrim(id).sort((a, b) => b[1].pct - a[1].pct) }))
+    .filter((t) => t.all.length).sort((a, b) => (a.unders.length ? 1 : 0) - (b.unders.length ? 1 : 0) || b.all.length - a.all.length).slice(0, 2);
+  if (pairT.length < 2) skip('the compare card\'s winner row prints only a car that stands under', `${subject.label} has fewer than two scored trims`);
+  else {
+    await open(`${subject.q}&trims=${pairT.map((t) => t.id).join(',')}`);
+    const cells = await page.evaluate(() => {
+      const tbl = document.getElementById('compare-table'); if (!tbl) return null;
+      const heads = [...tbl.querySelectorAll('thead th')].slice(1).map((th) => th.getAttribute('aria-label') || th.textContent.trim());
+      const row = [...tbl.querySelectorAll('tbody tr')].find((tr) => /best value vs typical/i.test(tr.querySelector('th').textContent));
+      return row ? [...row.querySelectorAll('td')].map((td, i) => ({ head: heads[i], figure: ((td.querySelector('.sc-figure') || {}).textContent || '').trim() })) : null;
+    });
+    const wrongT = pairT.map((t) => {
+      const c = (cells || []).find((c) => c.head.includes(t.label));
+      const want = t.unders.length ? `${Math.round(t.unders[0][1].pct * 100)}% under` : '—';
+      return c && c.figure === want ? null : `${t.label}: cell ${c ? `"${c.figure}"` : 'missing'} · harness "${want}"${t.unders.length ? '' : ` (first by margin ${t.all[0][0].slice(-6)} is ${t.all[0][1].stand} at ${(t.all[0][1].pct * 100).toFixed(1)}%)`}`;
+    }).filter(Boolean);
+    ok('the compare card\'s winner row prints only a car that stands under', !!cells && wrongT.length === 0,
+       wrongT.length ? wrongT.join(' | ') : pairT.map((t) => `${t.label}: ${t.unders.length ? `${Math.round(t.unders[0][1].pct * 100)}% under` : `— (first by margin is ${t.all[0][1].stand})`}`).join(' · '));
+  }
+  // Served: the subject's largest trim cohort cut to nine cars, two of them
+  // rewritten to sit ON the low edge with a 70% margin — typical by the rule,
+  // and first in margin order — one drivable and one not, so both pick lists
+  // meet a typical car before any real pick. A walk that stopped there would
+  // draw no pick card at all; the rule skips, and the best car that stands
+  // under still gets its card.
+  if (!big) skip('and the pick walk skips a typical car with a big margin rather than stopping at it', `${subject.label} has no trim cohort of nine`);
+  else {
+    const [keyT, xs] = big;
+    const keep9 = xs.slice(0, 9), dropped = new Set(xs.slice(9).map((x) => x.vin));
+    const planted = JSON.parse(JSON.stringify(model0));
+    planted.listings = planted.listings.filter((c) => !dropped.has(c.vin));
+    const H = 150000, L = 40000;
+    // miles pinned to the baseline so each value is its price plus shipping
+    // to the dollar — a half-cent of mileage adjustment would put one edge
+    // car fifty cents below the other and make it genuinely under
+    keep9.forEach((x, i) => { const c = planted.listings.find((c) => c.vin === x.vin); c.local = i === 0; c.state = i === 0 ? ((SHEET.buyer || {}).states || ['IL'])[0] : 'CA'; c.ship = i === 0 ? 0 : 1000; c.miles = P.base; c.price = (i < 2 ? L : H) - (c.local ? 0 : c.ship); });
+    const sc2 = scoreModel(planted);
+    const edge = keep9.slice(0, 2).map((x) => sc2.get(x.vin));
+    const unders = [...sc2.entries()].filter(([, s]) => s.stand === 'under').sort((a, b) => b[1].pct - a[1].pct);
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.bk].models[subject.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(subject.q);
+      const picked = await page.locator('#takeaway [data-fkey^="pick:"]').evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute('data-fkey').split(':')[1]))]);
+      const edgeVins = keep9.slice(0, 2).map((x) => x.vin);
+      const bestUnder = unders[0] ? unders[0][0] : null;
+      ok('and the pick walk skips a typical car with a big margin rather than stopping at it',
+         edge.every((s) => s && s.stand === 'typical' && s.pct > 0.5) && !!bestUnder && (unders[0][1].pct < edge[0].pct) && picked.includes(bestUnder) && !edgeVins.some((v) => picked.includes(v)),
+         `${keyT} cut to nine, ${edgeVins.map((v) => v.slice(-6)).join('/')} on the edge at ${edge[0] ? (edge[0].pct * 100).toFixed(0) : '?'}% (${edge.map((s) => (s ? s.stand : 'unscored')).join('/')}); best under ${bestUnder ? bestUnder.slice(-6) : 'none'} at ${unders[0] ? (unders[0][1].pct * 100).toFixed(0) : '?'}% · pick cards ${JSON.stringify(picked.map((v) => v.slice(-6)))}`);
+    } finally { await ctx.unroute('**/data.json'); }
+  }
+});
+
 // --- a headline figure carries its own date --------------------------------
 // The masthead says "data through Sep 4"; the watchlist's first tile can lead
 // with a car from a model on a slower cadence, last fetched two days before,
@@ -3323,26 +3675,41 @@ await step('a car is called what it is', async () => {
   if (!subject) return skipRest('no watched model is fetched whole rather than by trim today');
   await open(subject.q);
   // The picks are where the placeholder was loudest, and they render a card
-  // per car with the model, the year and the trim on one line.
-  const said = (await page.textContent('#takeaway')) || '';
+  // per car with the model, the year and the trim on one line. But a model
+  // whose cars all sit inside their cohort's interval draws no pick card at
+  // all — the Ioniq 5's twelve eligible cars are one cohort, and none stands
+  // under it — and the rule is about every surface, so the list rows, which
+  // name the car the same way, are read instead on such a day.
+  const picksText = ((await page.locator('#takeaway').evaluate((h) => (h.hidden ? '' : h.textContent))) || '').trim();
+  const usingPicks = picksText.length > 0;
+  if (!usingPicks && await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+  const said = usingPicks ? picksText : ((await page.textContent('#list-table tbody')) || '');
+  const surface = usingPicks ? 'pick cards' : 'list rows (this model draws no pick card today)';
   ok('no surface names a car "all trims"', said.length > 0 && !/all trims/i.test(said),
-     `${subject.id}: ${said.length} characters of pick cards, `
+     `${subject.id}: ${said.length} characters of ${surface}, `
      + (/all trims/i.test(said) ? 'one of them still says "all trims"' : 'none of them says "all trims"'));
   // …and it did not simply drop the word and leave a gap. Read the card's own
   // FACT line, per VIN — anywhere-on-the-page would pass on the value note
   // beside it, which reads the API trim by a different route and would have
   // covered for a naming rule that returned nothing at all.
   const byVin = new Map(subject.cars.map((x) => [x.vin, x.trim.trim()]));
-  const cards = await page.locator('#takeaway .sc-photo-card').evaluateAll((cs) => cs.map((c) => {
-    const a = c.querySelector('[data-fkey^="pick:"]');
-    const p = c.querySelector('.sc-photo-card__body p');
-    return { vin: a ? a.getAttribute('data-fkey').split(':')[1] : '',
-             facts: p ? p.textContent.trim() : '' };
-  }));
+  const cards = usingPicks
+    ? await page.locator('#takeaway .sc-photo-card').evaluateAll((cs) => cs.map((c) => {
+        const a = c.querySelector('[data-fkey^="pick:"]');
+        const p = c.querySelector('.sc-photo-card__body p');
+        return { vin: a ? a.getAttribute('data-fkey').split(':')[1] : '',
+                 facts: p ? p.textContent.trim() : '' };
+      }))
+    : await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((tr) => {
+        const b = tr.querySelector('[data-fkey^="star:"]');
+        const t = tr.querySelector('.sc-media__title');
+        return { vin: b ? b.getAttribute('data-fkey').split(':')[1] : '',
+                 facts: t ? t.textContent.trim() : '' };
+      }));
   const named = cards.filter((c) => byVin.has(c.vin));
   const naked = named.filter((c) => !c.facts.includes(byVin.get(c.vin)));
   if (!named.length) skip('and the trim it prints is the one the sheet holds',
-                          `no pick card on ${subject.id} is one of the cars the sheet gives a trim`);
+                          `no ${usingPicks ? 'pick card' : 'list row'} on ${subject.id} is one of the cars the sheet gives a trim`);
   else ok('and the trim it prints is the one the sheet holds', naked.length === 0,
           naked.length
             ? naked.map((c) => `${c.vin} should say "${byVin.get(c.vin)}" — card reads "${c.facts.slice(0, 70)}"`).join(' | ')
@@ -3727,7 +4094,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 178;
+const EXPECTED = 187;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

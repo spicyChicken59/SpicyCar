@@ -803,6 +803,34 @@
     const a = [...arr].sort((x, y) => x - y), m = a.length >> 1;
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   };
+  // The distribution-free 95% interval for a median, from the order
+  // statistics — Tracking.py's median_ci, edge for edge: the largest k with
+  // P(k <= B <= n-k) >= 19/20 for B ~ Bin(n, 1/2), and the k-th value from
+  // each end. Integer arithmetic throughout (BigInt), because the report
+  // computes the same interval and the two must agree at every n; a float
+  // sum here against a float division there could part by an ulp at a
+  // coverage within rounding of 0.95. Null under six values, where no such
+  // interval exists at all — even min-to-max covers only 93.75% at five.
+  const medianCI = (arr) => {
+    const xs = arr.filter((v) => v != null).sort((a, b) => a - b), n = xs.length;
+    if (n < 6) return null;
+    const N = BigInt(n), total = 1n << N;
+    const c = [1n];                                       // c[i] = C(n, i), exactly
+    for (let i = 0; i < n; i++) c.push(c[i] * (N - BigInt(i)) / BigInt(i + 1));
+    let best = null;
+    for (let k = 1; k <= n >> 1; k++) {
+      let covered = 0n; for (let i = k; i <= n - k; i++) covered += c[i];
+      if (covered * 20n >= total * 19n) best = k; else break;
+    }
+    return best == null ? null : [xs[best - 1], xs[n - best]];
+  };
+  // Six cars make a cohort, and for the reason exit_stats gives in the
+  // builder: five is the largest n at which no distribution-free interval for
+  // a median exists, so a median of three, four or five cars has no honest
+  // error bar — and "21% under typical" is a claim about that median. The
+  // builder carries the same six as COHORT_FLOOR; the two must agree or the
+  // report and the page score different cars.
+  const COHORT_FLOOR = 6;
   // A PRINTED median truncates, because the builder writes int(median(...))
   // in daily_stats and scopedDaily mirrors it with Math.trunc — so the tile,
   // the compare cell and the chart's table row for the same day show one
@@ -962,27 +990,46 @@
   // car's own trim and model year first, then the model year, then the whole
   // model — otherwise a cheapest-trim 2023 i7 reads as half price because the
   // blended median carries M70s and 2026 cars. Mirrors Tracking.py.
+  // Every eligible car, scored against the tightest cohort with COHORT_FLOOR
+  // or more eligible cars: its own trim and model year, then the model year,
+  // then the whole model. Each score carries the cohort's 95% interval for
+  // its median (lo, hi) and where the car STANDS against it: 'under' only
+  // when its value sits below the low edge, 'over' only above the high edge,
+  // 'typical' anywhere inside. A car 5% under a median of nine cars whose
+  // interval spans 14% is not under typical — it is indistinguishable from
+  // it — and no surface may say otherwise, however positive pct is. The
+  // percentage stays the best estimate of the margin; the stand is whether
+  // the data can defend the word. At six, seven and eight cars the interval
+  // is the whole sample, so no car in such a cohort is ever called under or
+  // over: that is the arithmetic, not a policy. A stand also asks for a
+  // margin that rounds to at least 1%: the interval makes the WORD
+  // defensible, and the rounded percentage is the NUMBER every surface
+  // prints beside it — on a cohort tight enough, a car $100 below the low
+  // edge would print "0% under typical", a claim with no content. Same
+  // rules as score_picks in the builder, which the report runs.
   function scorePicks(listings, modelLabel) {
     const P = pickParams(), pool = listings.filter((x) => pickEligible(x, P));
-    if (pool.length < 3) return [];
+    if (pool.length < COHORT_FLOOR) return [];
     const vals = new Map(pool.map((x) => [x, pickValue(x, P)]));
-    const medAll = median([...vals.values()]);
     const byYear = {}, byTY = {};
     for (const x of pool) {
       const y = String(x.year || ''), tr = String(x.trim || '').trim().toLowerCase();
       (byYear[y] = byYear[y] || []).push(vals.get(x));
       if (tr) (byTY[tr + '|' + y] = byTY[tr + '|' + y] || []).push(vals.get(x));
     }
-    const yearMed = {}, tyMed = {};
-    for (const y in byYear) if (byYear[y].length >= 3) yearMed[y] = median(byYear[y]);
-    for (const k in byTY) if (byTY[k].length >= 3) tyMed[k] = median(byTY[k]);
+    const stats = (vs) => { const ci = medianCI(vs); return { med: median(vs), lo: ci[0], hi: ci[1], n: vs.length }; };
+    const stAll = stats([...vals.values()]), yearSt = {}, tySt = {};
+    for (const y in byYear) if (byYear[y].length >= COHORT_FLOOR) yearSt[y] = stats(byYear[y]);
+    for (const k in byTY) if (byTY[k].length >= COHORT_FLOOR) tySt[k] = stats(byTY[k]);
     return pool.map((x) => {
       const y = String(x.year || ''), tr = String(x.trim || '').trim().toLowerCase();
-      let med = medAll, year = '', trim = '', basis = 'model', n = pool.length;
-      if (tyMed[tr + '|' + y] !== undefined) { med = tyMed[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); basis = 'trim'; n = byTY[tr + '|' + y].length; }
-      else if (yearMed[y] !== undefined) { med = yearMed[y]; year = y; basis = 'year'; n = byYear[y].length; }
+      let st = stAll, year = '', trim = '', basis = 'model';
+      if (tySt[tr + '|' + y]) { st = tySt[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); basis = 'trim'; }
+      else if (yearSt[y]) { st = yearSt[y]; year = y; basis = 'year'; }
       const v = vals.get(x);
-      return { x, modelLabel, year, trim, basis, n, under: Math.round(med - v), pct: med ? (med - v) / med : 0 };
+      return { x, modelLabel, year, trim, basis, n: st.n, lo: st.lo, hi: st.hi,
+               stand: v < st.lo && (st.med - v) / st.med >= 0.005 ? 'under' : v > st.hi && (v - st.med) / st.med >= 0.005 ? 'over' : 'typical',
+               under: Math.round(st.med - v), pct: st.med ? (st.med - v) / st.med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
   // What the per-slot cap counts. Across the watchlist it is the model, so one
@@ -995,7 +1042,10 @@
     const out = [], per = Object.assign({}, seed && seed.per);
     const taken = new Set((seed && seed.taken) || []);
     for (const p of scored.slice().sort((a, b) => b.pct - a.pct)) {
-      if (p.pct <= 0) break;   // a pick must actually sit under typical
+      // Under the low edge of its cohort's interval, not merely under the
+      // median. Sorted by margin, and a car inside a wide interval can carry
+      // a bigger margin than one below a narrow edge — so skip, not break.
+      if (p.stand !== 'under') continue;
       if (taken.has(p.x.vin)) continue;
       const k = capKey(p);
       if (perModel && (per[k] || 0) >= perModel) continue;
@@ -1036,7 +1086,7 @@
   }
   function picksRule() {
     const P = pickParams();
-    return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $${P.cpm.toFixed(2)} a mile. Asking prices shown.`;
+    return `Under ${num(P.max_miles)} miles${P.no_acc ? ', no reported accidents' : ''}${P.no_rental ? ', no rental or fleet history' : ''}; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $${P.cpm.toFixed(2)} a mile. A car is under typical only when its value sits below the 95% interval of its cohort's median: ${COHORT_FLOOR} cars make a cohort, and nine are the fewest that can put a car outside it. Asking prices shown.`;
   }
 
   // The sparkline and the tick solver live in sc-charts.js now. Both had bugs
@@ -1834,13 +1884,16 @@
     for (const tick of xt.ticks) {
       svg.appendChild(svgEl('text', { x: xOf(tick), y: H - m.b + 20, 'text-anchor': 'middle' }, document.createTextNode(miK(tick) + (tick === xt.ticks[xt.ticks.length - 1] ? ' mi' : ''))));
     }
-    // typical-value lines: per model-year cohort with 3+ eligible cars, from
-    // the FULL model market (stable under filters, matching the row scores)
+    // typical-value lines: per model-year cohort with COHORT_FLOOR or more
+    // eligible cars — the same floor the scores use, because a dashed line
+    // labelled "typical" over three cars is the same unsupported median the
+    // rows refuse to print a percentage against — from the FULL model market
+    // (stable under filters, matching the row scores)
     const P = pickParams();
     const pool = (t.listings || []).filter((x) => pickEligible(x, P));
     const byYear = {};
     for (const x of pool) { const y = String(x.year || ''); (byYear[y] = byYear[y] || []).push(pickValue(x, P)); }
-    const cohorts = Object.entries(byYear).filter(([, vs]) => vs.length >= 3)
+    const cohorts = Object.entries(byYear).filter(([, vs]) => vs.length >= COHORT_FLOOR)
       .map(([y, vs]) => ({ year: y, med: median(vs) })).sort((a, b) => a.year < b.year ? -1 : 1);
     const priceAt = (med, mi) => med - (mi - P.base) * P.cpm;
     // The year, made visible: hovering a year's line, its label, or its legend
@@ -1905,7 +1958,7 @@
       tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + dotTone(x) }),
         el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
       const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
-      if (x.pick_pct >= 0.02) {
+      if (x.pick_stand === 'under' && x.pick_pct >= 0.02) {
         const c = cohortOf(x, t.label);
         bits.push(`${Math.round(x.pick_pct * 100)}% under typical` + (c ? ` (${c.short}, n=${c.n})` : ''));
       }
@@ -2454,7 +2507,7 @@
   // all say the same number instead of a median that shifts under filters.
   function annotateValue(site) {
     for (const b of Object.values(site.brands || {})) for (const m of Object.values(b.models || {})) {
-      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; p.x.pick_basis = p.basis; p.x.pick_n = p.n; }
+      for (const p of scorePicks(m.listings || [], m.label || '')) { p.x.pick_pct = p.pct; p.x.pick_under = p.under; p.x.pick_year = p.year; p.x.pick_trim = p.trim; p.x.pick_basis = p.basis; p.x.pick_n = p.n; p.x.pick_lo = p.lo; p.x.pick_hi = p.hi; p.x.pick_stand = p.stand; }
     }
   }
   // ---- what the car costs per month -------------------------------------
@@ -2633,17 +2686,30 @@
       basis: x.pick_basis, n: x.pick_n,
       // the noun a reader can check: "2024 eDrive40 BMW i5", "2024 BMW i5", "BMW i5"
       short: `${x.pick_basis === 'model' ? 'all ' : ''}${name || 'this model'}`,
-      words: x.pick_basis === 'trim'
-        ? `measured against ${x.pick_n} other ${name} listing${x.pick_n === 1 ? '' : 's'} — its own trim and model year`
+      // The count includes the car itself — score_picks counts the cohort,
+      // not the car's siblings — so it is "the 21 listings, this one included"
+      // and never "21 other". Then the interval the word "typical" rests on.
+      words: (x.pick_basis === 'trim'
+        ? `measured against the ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'}, this one included — its own trim and model year`
         : x.pick_basis === 'year'
-          ? `measured against ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'} — too few of its own trim that year to judge it against those`
-          : `measured against all ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'} — too few of its own model year to judge it against those`,
+          ? `measured against the ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'}, this one included — too few of its own trim that year to judge it against those`
+          : `measured against all ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'}, this one included — too few of its own model year to judge it against those`)
+        // "value", and it says what a value is: asking plus shipping with
+        // miles priced in, which on the 2026 eDrive50 sits wholly below the
+        // cohort's asking prices — a reader holding an asking price against
+        // this range would call a typical car dear
+        + (x.pick_lo != null && x.pick_hi != null ? ` · typical value ${money(x.pick_lo)}–${money(x.pick_hi)} at 95% — asking plus shipping, miles priced in` : ''),
     };
   }
   // The note itself: the percentage, then the cohort and its size, visible —
-  // not in a title= a phone cannot reach.
+  // not in a title= a phone cannot reach. Only for a car that stands UNDER
+  // its cohort's interval — on today's sheet a 2025 eDrive40 7% under the
+  // median of nine sits on that interval's low edge and gets no note at all;
+  // whether a margin clears the edge depends on the cohort's spread, never
+  // on n alone — and, of those, only a margin worth a line: the floor is
+  // notability, the stand is honesty, and the two are different questions.
   function valueNote(x, modelLabel, floor) {
-    if (x.pick_pct == null || x.pick_pct < (floor === undefined ? 0.05 : floor)) return null;
+    if (x.pick_stand !== 'under' || x.pick_pct == null || x.pick_pct < (floor === undefined ? 0.05 : floor)) return null;
     const c = cohortOf(x, modelLabel);
     return el('span', { class: 'sc-note', title: c ? c.words : null, 'data-basis': c ? c.basis : null },
       `${Math.round(x.pick_pct * 100)}% under typical`,
@@ -2787,7 +2853,7 @@
   function scoredFrom(rows, label, shopping) {
     return rows.filter((x) => x.pick_pct != null)
       .map((x) => ({ x, modelLabel: label, year: x.pick_year || '', trim: x.pick_trim || '',
-                     basis: x.pick_basis, n: x.pick_n,
+                     basis: x.pick_basis, n: x.pick_n, lo: x.pick_lo, hi: x.pick_hi, stand: x.pick_stand,
                      under: x.pick_under, pct: x.pick_pct, shopping }))
       .sort((a, b) => b.pct - a.pct);
   }
@@ -3264,7 +3330,7 @@
       el('div', { class: 'sc-photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
         el('span', { class: 'sc-photo-card__price-sub' }, gone ? `last seen ${fmtDate(x.last_seen)}` : shipNote(x))),
       gone ? el('span', { class: 'sc-chip sc-photo-card__chip ' + (x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
-           : (x.pick_pct > 0 ? el('span', { class: 'sc-chip sc-chip--good sc-photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
+           : (x.pick_stand === 'under' ? el('span', { class: 'sc-chip sc-chip--good sc-photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
     return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
       el('div', { class: 'sc-media__title' }, title),
       gone ? null : el('div', { class: 'sc-media__sub' }, `${x.miles != null ? num(x.miles) + ' mi · ' : ''}${placeTxt(x)}`),
@@ -3501,11 +3567,16 @@
       // shortlist the opposite reading is the more valuable one: you are about
       // to ring a dealer, and "6% over typical" is exactly what you would want
       // to have known first. Printing a dash there hid the answer.
-      const p = r.x.pick_pct;
+      // "about typical" covers the whole of the cohort's interval, not a
+      // half-percent band around its median: 3% under a median of nine can
+      // sit inside that median's own sampling error — it depends on the
+      // cohort's spread, not on nine — and printing "3% under" there would
+      // be the page reading noise as a discount.
+      const p = r.x.pick_pct, st = r.x.pick_stand;
       const word = p == null ? '—'
-        : Math.abs(p) < 0.005 ? 'at typical'
-        : p > 0 ? `${Math.round(p * 100)}% under`
-        : `${Math.round(-p * 100)}% over`;
+        : st === 'under' ? `${Math.round(p * 100)}% under`
+        : st === 'over' ? `${Math.round(-p * 100)}% over`
+        : 'about typical';
       return cmpCell(word, c ? `${c.short}, n=${c.n}` : whyUnscored(r), false,
         c ? { kind: c.basis, title: c.words } : null);
     });
@@ -3811,10 +3882,10 @@
         // and a cheapest car that is also above its own cohort's typical price
         // is the one fact a reader would most want before clicking through.
         // Saying nothing there would let "cheapest" quietly imply "good".
-        c ? el('div', { class: 'sc-delta ' + (x.pick_pct > 0 ? 'sc-delta--good' : x.pick_pct < -0.005 ? 'sc-delta--bad' : 'sc-delta--flat'), title: c.words },
-              (x.pick_pct > 0.005 ? `${Math.round(x.pick_pct * 100)}% under` :
-               x.pick_pct < -0.005 ? `${Math.round(-x.pick_pct * 100)}% over` : 'level with')
-              + ` a typical ${c.short}, n=${c.n}`)
+        c ? el('div', { class: 'sc-delta ' + (x.pick_stand === 'under' ? 'sc-delta--good' : x.pick_stand === 'over' ? 'sc-delta--bad' : 'sc-delta--flat'), title: c.words },
+              x.pick_stand === 'under' ? `${Math.round(x.pick_pct * 100)}% under a typical ${c.short}, n=${c.n}`
+              : x.pick_stand === 'over' ? `${Math.round(-x.pick_pct * 100)}% over a typical ${c.short}, n=${c.n}`
+              : `about typical for a ${c.short}, n=${c.n}`)
           : null,
         el('div', null, el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'hero:' + (x.vin || ''),
           onclick: (e) => { e.preventDefault(); goTo(o.bk, o.mk, x.vin); } },
@@ -5024,7 +5095,7 @@
         landed: landedRows.length ? Math.min(...landedRows) : null,
         med: medInt(priced.map((x) => x.price)), medMiles: median(c.rows.map((x) => x.miles).filter((v) => v != null)),
         medDays: days.length ? median(days) : null,
-        top: scored.length ? scored[0] : null,
+        top: scored.find((p) => p.stand === 'under') || null,   // the best car the interval can defend, or nothing
         // The cheapest MONTHLY, which is not the cheapest landed whenever a
         // promo is in play — that divergence is the entire reason this row
         // exists beside "Cheapest landed" rather than instead of it.
@@ -5036,15 +5107,15 @@
     });
     // The winner is only markable when every column's best car was scored
     // against ITS OWN TRIM AND YEAR. scorePicks takes the tightest cohort with
-    // three eligible cars and falls back to the model year, then to the whole
+    // six eligible cars and falls back to the model year, then to the whole
     // model — and `trim` is empty exactly when it fell back. On the iX that
     // fallback is not hypothetical: the 2024 cohort is six M60s and one
     // xDrive50, so the xDrive column's top car scored 24% under a mostly-M60
     // median while sitting 17.9% ABOVE a typical xDrive. Marking that is the
     // apples-to-oranges the hint above promises not to do, so when any column
     // fell back, no column is marked and the numbers stand on their own.
-    const comparableCohorts = stat.every((v) => v.top && v.top.pct > 0 && v.top.trim);
-    const bestPct = Math.max(...stat.map((v) => (v.top && v.top.pct > 0 ? v.top.pct : -1)));
+    const comparableCohorts = stat.every((v) => v.top && v.top.trim);
+    const bestPct = Math.max(...stat.map((v) => (v.top ? v.top.pct : -1)));
     const table = $('compare-table'); table.textContent = '';
     // The header cell stacks a swatch, a label, a year span, a role chip and a
     // link — and a screen reader in table mode repeats the whole stack on all
@@ -5123,13 +5194,13 @@
     row('Best value vs typical', picksRule(),
       stat.map((v) => {
         const t = v.top;
-        const basis = !(t && t.pct > 0) ? null
+        const basis = !t ? null
           : t.trim ? { kind: 'trim', title: `Measured against a typical ${t.year} ${v.c.sub || ''} ${t.trim}`.replace(/\s+/g, ' ') }
           : t.year ? { kind: 'year', title: `Measured against a typical ${t.year} of this model — too few of its own trim and year to judge it against those` }
           : { kind: 'model', title: 'Measured against the whole model — too few cars of its own year to judge it against those' };
-        return cmpCell(t && t.pct > 0 ? `${Math.round(t.pct * 100)}% under` : '—',
-          t && t.pct > 0 ? `${t.x.year} · ${money(t.x.price)} · ${placeTxt(t.x)}` : 'nothing under typical',
-          !!(comparableCohorts && t.pct === bestPct), basis);
+        return cmpCell(t ? `${Math.round(t.pct * 100)}% under` : '—',
+          t ? `${t.x.year} · ${money(t.x.price)} · ${placeTxt(t.x)}` : 'nothing under typical',
+          !!(comparableCohorts && t && t.pct === bestPct), basis);
       }));
     // Counted over every car in the column, not the filtered ones — the same
     // rule (and now the same label) as the movement tile above it, which has
