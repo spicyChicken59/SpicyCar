@@ -874,6 +874,14 @@ def score_picks(listings, model_label):
         by_year[y].append(values[id(x)])
         if tr:
             by_ty[(tr, y)].append(values[id(x)])
+    # the trims behind each cohort, for the comparability guard below
+    trim_set_all, trim_set_year, trim_set = set(), defaultdict(set), defaultdict(set)
+    for x in pool:
+        tr = str(x.get("trim") or "").strip().lower()
+        y = str(x.get("year") or "")
+        trim_set_all.add(tr)
+        trim_set_year[y].add(tr)
+        trim_set[(tr, y)].add(tr)
     st_all = cohort_stats(list(values.values()))
     year_st = {y: cohort_stats(vs) for y, vs in by_year.items() if len(vs) >= COHORT_FLOOR}
     ty_st = {k: cohort_stats(vs) for k, vs in by_ty.items() if len(vs) >= COHORT_FLOOR}
@@ -895,11 +903,32 @@ def score_picks(listings, model_label):
             st, p_year, p_trim, basis = st_all, "", "", "model"
         med, lo, hi, n = st
         v = values[id(x)]
+        # …and the fallback cohorts must still be COMPARABLE. The interval
+        # asks whether the median is stable; it cannot ask whether the cars
+        # behind it are the same kind of car. Four 2022 iX xDrive50s were
+        # printed "26–40% under typical for a BMW iX, n=21" against a pool of
+        # ten M60s and eleven xDrive50s — the M60 is a different car at a
+        # different price, so the percentage measured the pool's trim mix, not
+        # the car. A 2024 Ioniq 5 SE read "18% under" against SEs and SELs,
+        # and a Kia EV9 Light Long Range "15% under" a 2024 pool of Light,
+        # Land, GT-Line and Light Long Range — one model year, four cars.
+        #
+        # So a cohort speaks only when every car in it wears the scored car's
+        # trim. That is automatic on the trim basis and an accident on the
+        # other two, and it is the guard the compare card has always applied
+        # to its winner (`comparableCohorts`, docs/index.html) — one shape,
+        # now on every surface. A mixed cohort is not "about typical", which
+        # is an affirmative claim the interval earns and this does not: it is
+        # `mixed`, and the page says too few comparable cars to say.
+        cohort_trims = (trim_set[(tr, y)] if basis == "trim"
+                        else trim_set_year[y] if basis == "year" else trim_set_all)
+        mixed = bool(cohort_trims - {tr})
         out.append({**x, "model_label": model_label,
                     "pick_year": p_year, "pick_trim": p_trim,
                     "pick_basis": basis, "pick_n": n,
                     "pick_lo": lo, "pick_hi": hi,
-                    "pick_stand": ("under" if v < lo and (med - v) / med >= 0.005
+                    "pick_stand": ("mixed" if mixed
+                                   else "under" if v < lo and (med - v) / med >= 0.005
                                    else "over" if v > hi and (v - med) / med >= 0.005
                                    else "typical"),
                     # floor(x + .5), not round(): Python rounds half to even and
@@ -1217,7 +1246,8 @@ def exit_stats(gone, trim_id, floor=6):
     if (st.get("n_exits") or 0) < floor:
         return {}
     exits = [to_int(g.get("last_price")) for g in rows
-             if g.get("likely") == "delisted" and to_int(g.get("last_price")) is not None]
+             if g.get("likely") == "delisted" and not g.get("still_listed")
+             and to_int(g.get("last_price")) is not None]
     ci = median_ci(exits)
     return {"exit_n": st["n_exits"],
             "exit_price": st["median_exit_price"],
@@ -1268,6 +1298,10 @@ def departure_is_evidence(g):
     withhold the phrase from every model on the sheet for a reason that does
     not apply to any of them.
     """
+    # A car still listed under another of the model's targets did not leave
+    # the market, whatever the query that lost it can prove — see delisted().
+    if g.get("still_listed"):
+        return False
     if "exact" in g:
         return bool(g["exact"])
     # A sheet written before delisted() carried its own provenance: fall back
@@ -1368,7 +1402,8 @@ def one_cohort(gone):
     """
     labels = set()
     for g in gone:
-        if g.get("likely") != "delisted" or to_int(g.get("last_price")) is None:
+        if (g.get("likely") != "delisted" or g.get("still_listed")
+                or to_int(g.get("last_price")) is None):
             continue
         # A departure this target cannot separate from window churn is not
         # evidence about anything, so it cannot make a cohort either.
@@ -1535,6 +1570,7 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
         elif vin in gone_by_vin:
             g = gone_by_vin[vin]
             obj = g
+            still = g.get("still_listed")
             verdict = {
                 # not "sold or pulled": that names two of the four ways a
                 # listing ends, and the other two look identical from outside
@@ -1544,6 +1580,11 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
                 "not checked": "missing — not checked since it was last "
                                "seen, so nothing is known yet",
             }.get(g["likely"], "missing today")
+            if still:
+                verdict = (f"left the {g.get('trim_label') or 'watch'} — the same VIN is "
+                           f"listed as {still['trim'] or 'another trim'}"
+                           + (f" at {money(still['price'])}" if still["price"] else "")
+                           + (", still certified" if still.get("cpo") else ", not certified"))
             line = (f"- {verdict} · last seen {g['last_seen']} at "
                     f"{money(g['last_price'])} · {g.get('trim_label') or ''} · "
                     f"{place(g)}")
@@ -2635,10 +2676,45 @@ def delisted(tids, all_rows, today_rows, hist):
     still be listed — 'delisted' means gone from the tracked market, which
     is the market the promo financing applies to.
 
+    That reading is right and the WORDS built on it were wrong. "GONE — the
+    listing ended" printed over WBY13HG00SCU51722 on 2026-09-05 while the
+    same VIN sat live in the listings table of the same page as an xDrive40:
+    it left the certified watch, not the market.
+
+    What it is NOT is one listing that changed queries. The snapshot CSV has
+    both records on the same day: on 2026-09-03 the CPO query returned
+    $54,476 certified and the xDrive40 query $50,986, and on T19677 the two
+    even carry different dealer strings ("BMW of South Miami" against "BMW of
+    Miami South and Mini of Miami South"). Two records of one car, and one of
+    them stopped coming back. So the row names the other record as a separate
+    thing — its trim, its price today, and whether it is certified — and
+    never implies the departed listing was cut to it. The certification is
+    the point, not a detail: the 2.99% promo is cpo_only, so a VIN that
+    survives uncertified is a car whose payment just moved from $925 to
+    $1,017 a month, and "still listed" alone would report that as good news.
+
+    Only against a record seen on the model's own latest fetch day: eleven of
+    fourteen targets run a slower cadence than their siblings, so "live on
+    the sheet" can mean a sighting as old as the departure itself.
+
+    The row keeps `likely` — leaving the certified pool is real news, and the
+    label is what makes it findable. What it must not do is feed a count or a
+    price that means "left the market", so departure_is_evidence() refuses it
+    and the counts follow.
+
     Each entry carries its own trim's previous fetch day, because trims of
     one model can run on different cadences and the model's yesterday is
     not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
+    # …and the same VINs without their target, so a departure from ONE query
+    # can be told from a departure from the market: the model's own live rows
+    # are the whole of what "still listed" can mean here, since a VIN decodes
+    # to one model and cannot surface under another.
+    live_day = max((r["snapshot_date"] for r in today_rows), default=None)
+    live_by_vin = {}
+    for r in today_rows:
+        if r["snapshot_date"] == live_day:
+            live_by_vin.setdefault(r["vin"], r)
     days_by_tid = defaultdict(set)
     log = load_fetch_log()
     # win_max is the POOLED window: the widest value either query kept that day,
@@ -2790,8 +2866,18 @@ def delisted(tids, all_rows, today_rows, hist):
             likely = "out of window"    # beyond that day's fetch cut-off (price or miles)
         else:
             likely = "delisted"
+        live = live_by_vin.get(vin)
+        # The other record of this car, as its own record: the trim it is
+        # listed under, what THAT listing asks, and whether it is certified —
+        # never a continuation of the departed one. Emitted only when true,
+        # which is two rows of 254 on this record: a key repeated 252 times
+        # to say "no" is 5KB of sheet for nothing.
+        still = ({"trim_id": live["target"], "trim": (live.get("trim") or "").strip(),
+                  "price": to_int(live.get("price")),
+                  "cpo": bool(to_int(live.get("cpo")))} if live else None)
         out.append({
             "likely": likely,
+            **({"still_listed": still} if still else {}),
             # …and whether that label came from a query that actually looked.
             # See `exact` above; departure_is_evidence() is its one consumer.
             "exact": bool(exact) and likely != "not checked",
@@ -2958,6 +3044,23 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         for g in just_gone:
             sec.append(f"- {money(g['last_price'])} · {g['year']} · "
                        f"{g['city']}, {g['state']} · {seen_label(g)} `{g['vin']}`")
+        sec.append("")
+    # …and the cars that left this watch without leaving the market. They are
+    # no departure, so no count and no exit price carries them, but for a
+    # certified watch this is the news itself: the car a 2.99% rate applied to
+    # yesterday is a car it does not apply to today, and it is still for sale.
+    left_watch = [g for g in gone if g["trim_id"] == t["id"] and g.get("still_listed")]
+    if left_watch:
+        sec.append(f"**Left this watch, the car still listed ({len(left_watch)})**")
+        for g in left_watch:
+            st = g["still_listed"]
+            sec.append(f"- {money(g['last_price'])} · {g['year']} · "
+                       f"{g['city']}, {g['state']} · last returned by this watch "
+                       f"{g['last_seen']} — the same VIN is listed as "
+                       f"{st['trim'] or 'another trim'}"
+                       + (f" at {money(st['price'])}" if st["price"] else "")
+                       + (", still certified" if st.get("cpo") else ", not certified")
+                       + f" `{g['vin']}`")
         sec.append("")
     if STATES and not any(x["local"] for x in tl):
         sec += [f"_Nothing drivable ({scope_label()})._", ""]

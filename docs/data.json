@@ -11878,6 +11878,12 @@
       },
       {
        "likely": "delisted",
+       "still_listed": {
+        "trim_id": "bmw-i5-xdrive40",
+        "trim": "xDrive40",
+        "price": 51476,
+        "cpo": false
+       },
        "exact": true,
        "vin": "WBY13HG00SCU51722",
        "year": 2025,
@@ -12037,6 +12043,12 @@
       },
       {
        "likely": "out of window",
+       "still_listed": {
+        "trim_id": "bmw-i5-xdrive40",
+        "trim": "xDrive40",
+        "price": 56000,
+        "cpo": false
+       },
        "exact": true,
        "vin": "WBY13HG08SCT19677",
        "year": 2025,
@@ -14041,9 +14053,9 @@
       "two_priced": 10,
       "n_sold": 10,
       "median_days_to_sale": 20,
-      "n_exits": 24,
-      "median_exit_price": 54281,
-      "exit_watched": 22,
+      "n_exits": 23,
+      "median_exit_price": 54087,
+      "exit_watched": 21,
       "exit_cut_while_watched": 9,
       "one_trim": false
      }

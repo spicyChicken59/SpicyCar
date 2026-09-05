@@ -744,6 +744,254 @@ class TestPicks(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# A cohort of mixed trims prices the mix, not the car.
+# --------------------------------------------------------------------------
+class TestCohortMustBeComparable(unittest.TestCase):
+    """The interval asks whether a median is stable. It cannot ask whether the
+    cars behind it are the same kind of car — and four 2022 iX xDrive50s were
+    printed "26-40% under typical for a BMW iX, n=21" against a pool of ten
+    M60s and eleven xDrive50s. The M60 is a different car at a different
+    price, so the percentage measured the pool's trim mix.
+
+    The first rule tried here pivoted on the cohort's median model YEAR, and a
+    skeptic broke it in three ways worth keeping: on the iX pool year and trim
+    are collinear, so it fixed those four by accident; it was structurally
+    blind to a cohort that is all one year and four trims (the Kia EV9); and
+    it left the two cars it promoted to the top of the front page carrying the
+    identical defect. Trim is the confound, so trim is the test."""
+
+    def _pool(self, spec):
+        """spec: (trim, year, price, n) — n identical cars, so every cohort
+        that reaches six does so on purpose."""
+        rows = []
+        for trim, year, price, n in spec:
+            for i in range(n):
+                rows.append(listing(price=price + i, miles=20000, trim=trim,
+                                    year=year, vin=f"{trim[:3]}{year}{i:012d}"))
+        return rows
+
+    def test_a_model_wide_cohort_of_two_trims_says_nothing(self):
+        """The shipped iX shape: no trim-and-year cohort reaches six and no
+        model year does either, so every car falls to the model pool — which
+        holds two trims priced $40,000 apart."""
+        pool = self._pool([("xDrive50", 2022, 38000, 4), ("M60", 2023, 78000, 5),
+                           ("xDrive50", 2024, 62000, 3), ("M60", 2025, 92000, 3)])
+        scored = {p["vin"]: p for p in T.score_picks(pool, "BMW iX")}
+        cheap = scored["xDr2022000000000000"]
+        self.assertEqual(cheap["pick_basis"], "model", "the fixture must exercise the fallback")
+        self.assertEqual(cheap["pick_stand"], "mixed")
+        self.assertGreater(cheap["pick_pct"], 0.2, "…and it really is far under that blended median")
+        self.assertEqual(T.choose_picks(list(scored.values()), 4), [],
+                         "a percentage the page will not print may not choose a pick either")
+
+    def test_one_model_year_and_four_trims_is_still_mixed(self):
+        """The Kia EV9 shape, and the case a year-median rule cannot see: every
+        car is a 2024, so no car is below its cohort's median year, and the
+        year cohort is Light, Land, GT-Line and Light Long Range."""
+        pool = self._pool([("Light", 2024, 30000, 3), ("Land", 2024, 42000, 3),
+                           ("GT-Line", 2024, 52000, 3), ("Light Long Range", 2024, 35000, 3)])
+        scored = {p["vin"]: p for p in T.score_picks(pool, "Kia EV9")}
+        car = scored["Lig2024000000000000"]
+        self.assertEqual(car["pick_basis"], "year", "one year, twelve cars: the YEAR cohort is the fallback")
+        self.assertEqual(car["pick_stand"], "mixed")
+        self.assertTrue(all(p["pick_stand"] == "mixed" for p in scored.values()),
+                        "no car in a four-trim cohort can be judged by it")
+
+    def test_a_trim_cohort_is_comparable_by_construction(self):
+        """Six of one trim and year is the cohort the guard was built to keep:
+        the sheet's own i5 and i7 picks, which must be untouched."""
+        pool = self._pool([("eDrive40", 2024, 40000, 8), ("M60", 2024, 70000, 8)])
+        cheap = min(T.score_picks(pool, "BMW i5"), key=lambda p: p["price"])
+        self.assertEqual(cheap["pick_basis"], "trim")
+        self.assertNotEqual(cheap["pick_stand"], "mixed")
+
+    def test_a_fallback_cohort_of_one_trim_still_speaks(self):
+        """The guard is about comparability, not about the basis. A model that
+        sells one trim has a model-wide pool that is trim-clean, and a car
+        under its interval is under it."""
+        pool = self._pool([("Touring", 2022, 30000, 1), ("Touring", 2023, 44000, 4),
+                           ("Touring", 2024, 46000, 3), ("Touring", 2025, 48000, 3)])
+        scored = sorted(T.score_picks(pool, "Lucid Air"), key=lambda p: p["price"])
+        self.assertEqual(scored[0]["pick_basis"], "model", "no year reaches six")
+        self.assertEqual(scored[0]["pick_stand"], "under",
+                         "one trim across four years is still one kind of car")
+        self.assertEqual([p["price"] for p in T.choose_picks(scored, 4)], [30000],
+                         "…and it is still a pick")
+
+    def test_the_report_prints_no_percentage_for_a_mixed_cohort(self):
+        """Every surface reads the stand, so the report follows without a
+        second rule: no spicy pick, no "under typical" tag."""
+        x = {**listing(price=38000, vin="M" * 17), "pick_pct": 0.40, "pick_under": 23986,
+             "pick_stand": "mixed", "pick_n": 21, "pick_basis": "model"}
+        self.assertNotIn("under typical", T.fmt_new(x, x))
+        self.assertEqual(T.choose_picks([x], 4), [])
+
+
+# --------------------------------------------------------------------------
+# A departure from one query is not a departure from the market.
+# --------------------------------------------------------------------------
+class TestStillListedIsNotGone(unittest.TestCase):
+    """A CPO watch's market is "certified cars under the mileage cap", so a car
+    that loses its badge leaves THAT watch for real — the builder has always
+    said so in delisted()'s own docstring. What was wrong was the words built
+    on it: REPORT.md printed "**Gone since 2026-09-03**" over
+    WBY13HG00SCU51722 while the same VIN sat live sixty lines below, asking
+    $51,476 as an xDrive40, and the page said "GONE — the listing ended" over
+    a car in its own listings table. The row now carries what actually
+    happened, and leaves every count and every price that means "left the
+    market"."""
+
+    def _rows(self, days, target, vin, price, trim, **kw):
+        out = []
+        for d in days:
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": target, "vin": vin, "snapshot_date": d, "price": price,
+                      "year": "2025", "trim": trim, "miles": 2590, "state": "PA",
+                      "city": "Fort Washington", **kw})
+            out.append(r)
+        return out
+
+    def _model(self, cpo_days, x_days):
+        """One VIN under two targets of one model: a certified watch that stops
+        returning it, and an ordinary trim that keeps listing it."""
+        vin = "W" * 17
+        rows = (self._rows(cpo_days, "bmw-i5-cpo", vin, 54476, "xDrive40", cpo="1")
+                + self._rows(x_days, "bmw-i5-xdrive40", vin, 51476, "xDrive40"))
+        today = [r for r in rows if r["snapshot_date"] == max(d["snapshot_date"] for d in rows)]
+        return vin, rows, today
+
+    def test_a_gone_row_whose_vin_is_live_names_where_it_went(self):
+        d1, d2 = date.fromordinal(T.TODAY_ORD - 2).isoformat(), date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        vin, rows, today = self._model([d1, d2], [d1, d2, T.TODAY])
+        g = T.delisted({"bmw-i5-cpo", "bmw-i5-xdrive40"}, rows, today, T.build_history(rows))
+        row = next(r for r in g if r["vin"] == vin)
+        self.assertEqual(row["still_listed"], {"trim_id": "bmw-i5-xdrive40", "trim": "xDrive40",
+                                               "price": 51476, "cpo": False})
+        self.assertFalse(T.departure_is_evidence(row),
+                         "a car still listed is not evidence that a car left the market")
+
+    def test_a_real_departure_carries_no_such_key(self):
+        """Emitted only when true: 252 of the record's 254 gone rows are real
+        departures, and a key repeated to say "no" is 5KB of sheet for nothing."""
+        d1, d2 = date.fromordinal(T.TODAY_ORD - 2).isoformat(), date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        vin, rows, _ = self._model([d1, d2], [d1, d2])
+        other = self._rows([d1, d2, T.TODAY], "bmw-i5-xdrive40", "V" * 17, 44000, "xDrive40")
+        rows += other
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        g = T.delisted({"bmw-i5-cpo", "bmw-i5-xdrive40"}, rows, today, T.build_history(rows))
+        row = next(r for r in g if r["vin"] == vin)
+        self.assertNotIn("still_listed", row, "a car that left the market carries no forwarding address")
+
+    def test_it_leaves_the_exit_price_and_the_departure_counts(self):
+        """The exit median is "where cars of this trim stopped being
+        advertised". A car that is still advertised cannot be in it, whatever
+        its label — and one such car among eight would move the median."""
+        base = [{"vin": f"D{i:016d}", "likely": "delisted", "exact": True, "trim_id": "t",
+                 "trim": "xDrive40", "last_price": 50000 + 500 * i, "last_seen": "2026-09-03",
+                 "listed_since": "2026-08-01", "prev_fetch_day": "2026-09-03"} for i in range(8)]
+        # …and its trim label differs, because one_cohort() asks whether the
+        # cars behind the median are ONE cohort: counting a car that never
+        # left would make this pool look mixed and withhold the price
+        # altogether, which is the same lie wearing silence.
+        live = {"vin": "L" * 17, "likely": "delisted", "exact": True, "trim_id": "t",
+                "trim": "M60", "last_price": 90000, "last_seen": "2026-09-03",
+                "listed_since": "2026-08-01", "prev_fetch_day": "2026-09-03",
+                "still_listed": {"trim_id": "u", "trim": "eDrive40", "price": 88000}}
+        old_t = dict(T.TARGETS)
+        T.TARGETS["t"] = {"id": "t", "sorts": ["price.asc"], "depth": "light"}
+        try:
+            with_live = T.exit_stats(base + [live], "t")
+            without = T.exit_stats(base, "t")
+        finally:
+            T.TARGETS.clear(); T.TARGETS.update(old_t)
+        self.assertEqual(with_live["exit_n"], without["exit_n"],
+                         "the still-listed car is not an exit")
+        self.assertEqual(with_live["exit_price"], without["exit_price"])
+        # the interval is computed from its own list, not from sale_stats
+        self.assertEqual((with_live["exit_lo"], with_live["exit_hi"]),
+                         (without["exit_lo"], without["exit_hi"]),
+                         "…and not an order statistic of the interval either")
+        self.assertIsNotNone(without["exit_lo"], "the fixture must publish an interval to compare")
+        self.assertTrue(T.one_cohort(base + [live]),
+                        "one still-listed M60 does not make eight xDrive40 exits a mixed pool")
+        self.assertEqual(T.sale_stats(base + [live])["n_exits"], T.sale_stats(base)["n_exits"])
+
+    def test_the_surviving_record_must_be_from_the_model_s_latest_fetch_day(self):
+        """Eleven of fourteen targets run a slower cadence than their
+        siblings, so "live on the sheet" can mean a sighting as old as the
+        departure itself. Only a record from the day the model was last
+        fetched can say what the car is listed at now."""
+        d1, d2 = date.fromordinal(T.TODAY_ORD - 2).isoformat(), date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        vin = "W" * 17
+        # the certified watch runs again today and does not return the car;
+        # the xDrive40 target has not run since d2, so its sighting is stale
+        rows = (self._rows([d1, d2, T.TODAY], "bmw-i5-cpo", "C" * 17, 60000, "M60", cpo="1")
+                + self._rows([d1, d2], "bmw-i5-cpo", vin, 54476, "xDrive40", cpo="1")
+                + self._rows([d1, d2], "bmw-i5-xdrive40", vin, 51476, "xDrive40"))
+        tids = {"bmw-i5-cpo", "bmw-i5-xdrive40"}
+        today = T.current_rows(rows, tids)
+        g = T.delisted(tids, rows, today, T.build_history(rows))
+        row = next(r for r in g if r["vin"] == vin)
+        self.assertNotIn("still_listed", row,
+                         "a two-day-old sighting cannot say what the car asks today")
+        # …and the same shape with the xDrive40 target fetching today does
+        rows2 = rows + self._rows([T.TODAY], "bmw-i5-xdrive40", vin, 51476, "xDrive40")
+        g2 = T.delisted(tids, rows2, T.current_rows(rows2, tids), T.build_history(rows2))
+        self.assertEqual(next(r for r in g2 if r["vin"] == vin)["still_listed"]["price"], 51476)
+
+    def test_the_certification_is_the_point_not_a_detail(self):
+        """The promo is cpo_only, so a VIN that survives UNCERTIFIED is a car
+        whose payment moved — "still listed" alone would report that as good
+        news. Both readings are printed."""
+        base = {"vin": "W" * 17, "likely": "delisted", "exact": True, "trim_id": "bmw-i5-cpo",
+                "trim_label": "CPO under 30k mi", "last_price": 54476, "last_seen": "2026-09-03",
+                "year": 2025, "city": "Fort Washington", "state": "PA", "prev_fetch_day": "2026-09-03"}
+        lost = {**base, "still_listed": {"trim_id": "t", "trim": "xDrive40", "price": 51476, "cpo": False}}
+        kept = {**base, "still_listed": {"trim_id": "t", "trim": "xDrive40", "price": 51476, "cpo": True}}
+        t = {"id": "bmw-i5-cpo", "label": "CPO under 30k mi", "note": "", "years": [2025]}
+        a, b = [], []
+        T.trim_detail(a, t, [], {}, {}, [lost], "2026-09-03")
+        T.trim_detail(b, t, [], {}, {}, [kept], "2026-09-03")
+        self.assertIn("not certified", "\n".join(a))
+        self.assertIn("still certified", "\n".join(b))
+
+    def test_the_shortlist_does_not_shout_gone_over_a_car_it_shows_live(self):
+        """The sharpest form of the bug: one file, two claims. With the VIN on
+        the shortlist the report showed the car live at $51,476 and, fourteen
+        lines later, "**Shortlist: GONE**" with the subject line to match."""
+        g = {"vin": "W" * 17, "likely": "delisted", "exact": True, "trim_id": "bmw-i5-cpo",
+             "trim_label": "CPO under 30k mi", "last_price": 54476, "last_seen": "2026-09-03",
+             "prev_fetch_day": "2026-09-03", "year": 2025, "city": "Fort Washington", "state": "PA",
+             "still_listed": {"trim_id": "t", "trim": "xDrive40", "price": 51476, "cpo": False}}
+        self.assertFalse(T.departure_is_evidence(g))
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"W" * 17: ""})
+        try:
+            sec, subject = T.build_today({"cuts": [], "new": [], "gone": []})
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(old)
+        self.assertNotIn("Shortlist: GONE", "\n".join(sec))
+        self.assertNotIn("GONE", subject)
+
+    def test_the_report_names_the_watch_instead_of_announcing_a_departure(self):
+        """End to end: the trim block must not head a "Gone since" list with
+        this car, and must say where it went."""
+        d1, d2 = date.fromordinal(T.TODAY_ORD - 2).isoformat(), date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        vin, rows, today = self._model([d1, d2], [d1, d2, T.TODAY])
+        gone = T.delisted({"bmw-i5-cpo", "bmw-i5-xdrive40"}, rows, today, T.build_history(rows))
+        row = next(g for g in gone if g["vin"] == vin)
+        row["still_listed"] = {"trim_id": "bmw-i5-xdrive40", "trim": "xDrive40", "price": 51476}
+        sec = []
+        T.trim_detail(sec, {"id": "bmw-i5-cpo", "label": "CPO under 30k mi", "note": "", "years": [2025]},
+                      [], {}, T.build_history(rows), [row], d2)
+        text = "\n".join(sec)
+        self.assertIn("Left this watch, the car still listed (1)", text)
+        self.assertIn("the same VIN is listed as xDrive40 at $51,476, not certified", text)
+        self.assertNotIn("Gone since", text)
+        self.assertNotIn("asking", text, "the departed listing was never cut to that price")
+
+
+# --------------------------------------------------------------------------
 # "New" is new to the tracker. A car listed a fortnight before the tracker
 # first saw it entered a fetch window, not the market.
 # --------------------------------------------------------------------------

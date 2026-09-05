@@ -3256,7 +3256,7 @@ await step('under typical only outside its own interval', async () => {
   plan('a note prints only for a car below the 95% interval of its cohort\'s median',
        'and names the interval the order statistics give',
        'a car moved to its cohort\'s median loses the note and the pick',
-       'and five cars are not a cohort: the survivors are judged against the year',
+       'and five cars are not a cohort: the survivors stop being judged by their trim',
        'and a floor car in a cohort of eight is about typical on every surface',
        'and a margin that rounds to nothing is not a stand',
        'the compare card\'s winner row prints only a car that stands under',
@@ -3285,16 +3285,24 @@ await step('under typical only outside its own interval', async () => {
     const by = (key) => { const g = new Map(); for (const x of pool) { const k = key(x); if (k == null) continue; (g.get(k) || g.set(k, []).get(k)).push(valueOf(x)); } return g; };
     const byTY = by((x) => (x.trim ? `${String(x.trim).trim().toLowerCase()}|${x.year || ''}` : null)), byY = by((x) => String(x.year || ''));
     const all = pool.map(valueOf);
+    // …and the cohort's trims, since a cohort of mixed trims prices the mix
+    // and says nothing at all — the same guard the scorer applies.
+    const trimsOf = (rows) => new Set(rows.map((c) => String(c.trim || '').trim().toLowerCase()));
+    const trimAll = trimsOf(pool), trimYear = new Map();
+    for (const x of pool) { const y = String(x.year || ''); if (!trimYear.has(y)) trimYear.set(y, trimsOf(pool.filter((c) => String(c.year || '') === y))); }
     const out = new Map();
     for (const x of pool) {
-      const ty = x.trim ? `${String(x.trim).trim().toLowerCase()}|${x.year || ''}` : null, y = String(x.year || '');
-      let vals, basis;
-      if (ty && byTY.get(ty).length >= 6) { vals = byTY.get(ty); basis = 'trim'; }
-      else if (byY.get(y).length >= 6) { vals = byY.get(y); basis = 'year'; }
-      else { vals = all; basis = 'model'; }
+      const tr = String(x.trim || '').trim().toLowerCase();
+      const ty = x.trim ? `${tr}|${x.year || ''}` : null, y = String(x.year || '');
+      let vals, basis, cohortTrims;
+      if (ty && byTY.get(ty).length >= 6) { vals = byTY.get(ty); basis = 'trim'; cohortTrims = new Set([tr]); }
+      else if (byY.get(y).length >= 6) { vals = byY.get(y); basis = 'year'; cohortTrims = trimYear.get(y); }
+      else { vals = all; basis = 'model'; cohortTrims = trimAll; }
+      const mixed = [...cohortTrims].some((t) => t !== tr);
       const [lo, hi] = ciOf(vals), v = valueOf(x), m0 = med(vals);
       const pct = (m0 - v) / m0;   // a stand needs the edge AND a margin that rounds to a digit
-      out.set(x.vin, { v, lo, hi, n: vals.length, basis, pct, stand: v < lo && pct >= 0.005 ? 'under' : v > hi && -pct >= 0.005 ? 'over' : 'typical' });
+      out.set(x.vin, { v, lo, hi, n: vals.length, basis, pct, mixed,
+                       stand: mixed ? 'mixed' : v < lo && pct >= 0.005 ? 'under' : v > hi && -pct >= 0.005 ? 'over' : 'typical' });
     }
     return out;
   };
@@ -3366,7 +3374,10 @@ await step('under typical only outside its own interval', async () => {
   const cohorts = new Map();
   for (const x of model0.listings.filter(eligible)) if (x.trim) { const k = `${String(x.trim).trim().toLowerCase()}|${x.year || ''}`; (cohorts.get(k) || cohorts.set(k, []).get(k)).push(x); }
   const yearCount = (y) => model0.listings.filter((x) => eligible(x) && String(x.year || '') === y).length;
-  const small = [...cohorts.entries()].filter(([k, xs]) => xs.length >= 6 && yearCount(k.split('|')[1]) - (xs.length - 5) >= 6).sort((a, b) => a[1].length - b[1].length)[0];
+  // Nine, not six: at six, seven and eight the interval is the whole sample,
+  // so no car in such a cohort can stand under it and the before-half of the
+  // check would have no note to lose. The smallest cohort that CAN speak.
+  const small = [...cohorts.entries()].filter(([k, xs]) => xs.length >= 9 && yearCount(k.split('|')[1]) - (xs.length - 5) >= 6).sort((a, b) => a[1].length - b[1].length)[0];
   if (!small) skip('and five cars are not a cohort: the survivors are judged against the year', `${subject.label} has no trim cohort that can be cut to five and leave its year with six`);
   else {
     const [key, xs] = small;
@@ -3387,16 +3398,41 @@ await step('under typical only outside its own interval', async () => {
     // cohort it was judged against. Without this the five survivors could
     // all sit quietly inside the year's interval and a page that fell them
     // through to the whole model instead would pass unnoticed.
+    // The witness is one survivor priced low enough to be noted while its
+    // trim cohort is whole — and the same car on the same price with the
+    // cohort cut to five must go quiet, because it falls to the year, and a
+    // year cohort can only be trim-clean when no car of that year carries a
+    // trim at all (a clean one of six or more would BE the trim cohort). The
+    // check is that before/after on two served sheets, so both halves are
+    // the harness's own doing and neither depends on the day's prices.
+    const whole = JSON.parse(JSON.stringify(model0));   // cohort intact, witness discounted
     let scores2 = scoreModel(planted), witness = null;
     {
       const cheapest = keep.map((v) => planted.listings.find((c) => c.vin === v)).sort((a, b) => valueOf(a) - valueOf(b))[0];
-      for (let i = 0; i < 4 && cheapest; i++) {
-        const sc = scores2.get(cheapest.vin);
-        if (sc && sc.basis === 'year' && sc.stand === 'under' && sc.pct >= 0.05) { witness = cheapest.vin; break; }
+      for (let i = 0; i < 5 && cheapest; i++) {
+        const w = whole.listings.find((c) => c.vin === cheapest.vin);
+        if (w) w.price = cheapest.price;
+        const b0 = scoreModel(whole).get(cheapest.vin), sc = scores2.get(cheapest.vin);
+        if (b0 && b0.basis === 'trim' && b0.stand === 'under' && b0.pct >= 0.05 && sc && sc.stand !== 'under') { witness = cheapest.vin; break; }
         if (!sc) break;
-        cheapest.price = Math.round(cheapest.price - Math.max(500, (valueOf(cheapest) - sc.lo) + 0.06 * sc.lo));
+        cheapest.price = Math.round(cheapest.price - Math.max(800, (valueOf(cheapest) - sc.lo) + 0.08 * sc.lo));
         scores2 = scoreModel(planted);
       }
+    }
+    const before = scoreModel(whole);
+    // …and the page must actually print that note on the whole-cohort sheet,
+    // or the "and now it does not" half proves nothing.
+    let noteBefore = '';
+    if (witness) {
+      await ctx.route('**/data.json', async (route) => {
+        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        sheet.brands[subject.bk].models[subject.mk] = whole;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      try {
+        await open(subject.q); await sortByValue(); await showAll();
+        noteBefore = ((await readRows()).find((r) => r.vin === witness) || {}).note || '';
+      } finally { await ctx.unroute('**/data.json'); }
     }
     const yearsLeft = new Map();
     for (const x of planted.listings.filter(eligible)) yearsLeft.set(yearOf(x), (yearsLeft.get(yearOf(x)) || 0) + 1);
@@ -3415,11 +3451,15 @@ await step('under typical only outside its own interval', async () => {
       const chips = (await page.$$eval('#scatter-legend .sc-legend__chip--select', (bs) => bs.map((b) => b.dataset.y))).sort();
       const chipsRight = JSON.stringify(chips) === JSON.stringify(wantChips);
       const witnessRow = witness && rows2.find((r) => r.vin === witness);
-      if (!witness) skip('and five cars are not a cohort: the survivors are judged against the year', `${key} cut to five, but no survivor can be priced to stand under the year's interval`);
-      else ok('and five cars are not a cohort: the survivors are judged against the year', wrong2.length === 0 && trimNoted.length === 0 && !!witnessRow && witnessRow.basis === 'year' && chipsRight,
+      const w0 = witness && before.get(witness), w1 = witness && scores2.get(witness);
+      if (!witness) skip('and five cars are not a cohort: the survivors stop being judged by their trim', `${key} cut to five, but no survivor carried a note to lose`);
+      else ok('and five cars are not a cohort: the survivors stop being judged by their trim',
+         wrong2.length === 0 && trimNoted.length === 0 && !!noteBefore && !!witnessRow && !witnessRow.note && w1.basis !== 'trim' && chipsRight,
          wrong2.length ? wrong2.slice(0, 3).join(' | ') : !chipsRight ? `scatter year chips ${JSON.stringify(chips)}; years with six eligible cars ${JSON.stringify(wantChips)}`
-           : !witnessRow || witnessRow.basis !== 'year' ? `${witness.slice(-6)} priced under the year's edge: ${witnessRow ? (witnessRow.note ? `note "${witnessRow.note}" with basis ${witnessRow.basis}` : 'no note') : 'row missing'}`
-           : `${key} cut from ${xs.length} to 5: ${trimNoted.length} survivor(s) still judged against the trim, ${witness.slice(-6)} noted "${witnessRow.note}" against the year, ${rows2.length} rows all by the rule; ${spare ? `${spare} cut to four and its line gone, ` : ''}year lines ${JSON.stringify(chips)}`);
+           : !witnessRow ? `${witness.slice(-6)}: row missing`
+           : witnessRow.note ? `${witness.slice(-6)} still says "${witnessRow.note}" on a ${w1.basis} cohort of ${w1.n}`
+           : !noteBefore ? `${witness.slice(-6)} carried no note even with its ${w0.n}-car trim cohort whole`
+           : `${key} cut from ${xs.length} to 5: ${trimNoted.length} survivor(s) still judged against the trim; ${witness.slice(-6)} read "${noteBefore}" with its own trim's ${w0.n} whole and now falls to a ${w1.basis} cohort of ${w1.n} (${w1.mixed ? 'mixed trims' : w1.stand}) and says nothing; ${spare ? `${spare} cut to four and its line gone, ` : ''}year lines ${JSON.stringify(chips)}`);
     } finally { await ctx.unroute('**/data.json'); }
   }
   // Served, on the front page: the first shopped tile's floor car with its
@@ -3936,6 +3976,188 @@ await step('the decision card folds its evidence on a phone', async () => {
   await open('');
   const desk = await page.evaluate(() => ({ folds: document.querySelectorAll('#hero-card details.hero-fold').length, subs: document.querySelectorAll('#hero-cars .sc-tile .sc-tile__sub').length }));
   ok('and a desktop folds nothing', desk.folds === 0 && desk.subs > 6, `${desk.folds} folds, ${desk.subs} evidence lines in the open`);
+});
+
+// --- a departure from one query is not a departure from the market ----------
+// A CPO watch's market is "certified cars under the mileage cap", so a car
+// that loses its badge leaves that watch for real. The page announced it as
+// "GONE — the listing ended" while the same VIN sat live in the listings
+// table of the same page, asking $51,476 as an xDrive40. The builder now
+// marks such a row with the trim it is listed under today; here the counts
+// and the words are recomputed from the sheet, and then a served sheet turns
+// a real confirmed departure into a still-listed one, which must leave the
+// movement tile's count and say where the car went instead.
+await step('a departure from one query is not a departure from the market', async () => {
+  plan('the gone card counts a car still listed apart from the departures',
+       'and the row says which watch it left and what it asks now',
+       'the movement tile counts only cars that left the market',
+       'and a served departure that is still listed leaves that count and changes its words');
+  const money = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const still = (g) => (g.still_listed && (g.still_listed.trim || g.still_listed.trim_id) ? g.still_listed : null);
+  const subject = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] }))
+    .map((o) => ({ ...o, gone: (o.m.gone || []), n: (o.m.gone || []).filter(still).length }))
+    .filter((o) => o.n > 0).sort((a, b) => b.n - a.n)[0];
+  const anyModel = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] })).find((o) => (o.m.gone || []).some((g) => g.likely === 'delisted') && (o.m.daily || []).length >= 2);
+  // the page's own de-duplication: one row per VIN, first wins
+  const rowsOf = (m) => { const seen = new Set(), out = []; for (const g of (m.gone || [])) { const k = String(g.vin || '').toUpperCase(); if (k && seen.has(k)) continue; if (k) seen.add(k); out.push(g); } return out; };
+  const hintOf = (m) => {
+    const gone = rowsOf(m);
+    const nDel = gone.filter((g) => g.likely === 'delisted' && !still(g)).length;
+    const nStill = gone.filter(still).length;
+    const nOow = gone.filter((g) => !still(g) && g.likely === 'out of window').length;
+    const nNc = gone.length - nDel - nStill - nOow;
+    return [`${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
+            nStill ? `${nStill} left a watch while the ${nStill === 1 ? 'car is' : 'cars are'} still listed above` : null,
+            nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
+            nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null].filter(Boolean).join(' · ');
+  };
+  const goneCount = (m) => { const daily = m.daily || []; if (daily.length < 2) return 0; const prev = daily[daily.length - 2].date;
+    return rowsOf(m).filter((g) => g.likely === 'delisted' && !still(g) && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : g.last_seen === prev)).length; };
+  const read = async () => page.evaluate(() => {
+    const hint = (document.getElementById('gone-hint') || {}).textContent || '';
+    const rows = [...document.querySelectorAll('#gone-table tbody tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim());
+    const tile = [...document.querySelectorAll('#kpis .sc-tile')].map((t) => t.textContent.replace(/\s+/g, ' ')).find((t) => /since the previous/i.test(t)) || '';
+    return { hint: hint.replace(/\s+/g, ' ').trim(), rows, tile };
+  });
+  const showAllGone = async () => { if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await page.waitForTimeout(300); } };
+  if (!subject) {
+    skip('the gone card counts a car still listed apart from the departures', 'no model on the sheet has a car that left a watch while still listed');
+    skip('and the row says which watch it left and what it asks now', 'no such car');
+  } else {
+    await open(subject.w.q); await showAllGone();
+    const r = await read();
+    ok('the gone card counts a car still listed apart from the departures', r.hint.includes(hintOf(subject.m)),
+       `page: "${r.hint.slice(-160)}" · sheet: "${hintOf(subject.m).slice(-160)}"`);
+    const g0 = rowsOf(subject.m).filter(still)[0], st = still(g0);
+    const wantNote = `left the ${g0.trim_label || 'watch'} — the same VIN is listed as ${st.trim || 'another trim'}` + (st.price != null ? ` at ${money(st.price)}` : '') + (st.cpo ? ', still certified' : ', not certified');
+    const row = r.rows.find((t) => t.includes(String(g0.vin)));
+    ok('and the row says which watch it left and what it asks now', !!row && row.includes(wantNote) && !/GONE|the listing ended/.test(row),
+       row ? `"${row.slice(-150)}" · wanted "${wantNote}"` : `no row for ${String(g0.vin).slice(-6)} among ${r.rows.length}`);
+    ok('the movement tile counts only cars that left the market', new RegExp(`${goneCount(subject.m)} gone`).test(r.tile),
+       `tile "${(r.tile.match(/\d+ gone/) || ['(no gone clause)'])[0]}" · sheet ${goneCount(subject.m)} (${goneCount(subject.m) + subject.n} counting the cars still listed)`);
+  }
+  // Served: a real confirmed departure of another model is given a forwarding
+  // address, so the count must drop by one and the row must stop saying GONE.
+  if (!anyModel) skip('and a served departure that is still listed leaves that count and changes its words', 'no model holds a confirmed departure and two day rows');
+  else {
+    const planted = JSON.parse(JSON.stringify(anyModel.m));
+    const victim = rowsOf(planted).find((g) => g.likely === 'delisted' && !still(g) && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : true));
+    if (!victim) skip('and a served departure that is still listed leaves that count and changes its words', 'no countable departure to re-label');
+    else {
+      const before = goneCount(planted);
+      planted.gone.find((g) => g.vin === victim.vin).still_listed = { trim_id: 'planted-trim', trim: 'eDrive40', price: 12345, cpo: false };
+      const after = goneCount(planted);
+      await ctx.route('**/data.json', async (route) => {
+        const r2 = await route.fetch(); const sheet = JSON.parse(await r2.text());
+        sheet.brands[anyModel.w.bk].models[anyModel.w.mk] = planted;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      try {
+        await open(anyModel.w.q); await showAllGone();
+        const r2 = await read();
+        const row = r2.rows.find((t) => t.includes(String(victim.vin)));
+        ok('and a served departure that is still listed leaves that count and changes its words',
+           after === before - 1 && new RegExp(`${after} gone`).test(r2.tile) && !!row && row.includes('the same VIN is listed as eDrive40 at $12,345, not certified') && r2.hint.includes('left a watch while'),
+           `${String(victim.vin).slice(-6)} given a forwarding address: count ${before} → ${after}, tile "${(r2.tile.match(/\d+ gone/) || ['(none)'])[0]}", row ${row ? `"${row.slice(-110)}"` : 'missing'}`);
+      } finally { await ctx.unroute('**/data.json'); }
+    }
+  }
+});
+
+// --- a cohort of mixed trims prices the mix, not the car ---------------------
+// The interval asks whether a median is stable; it cannot ask whether the cars
+// behind it are the same kind of car. Four 2022 iX xDrive50s read "26–40%
+// under typical for a BMW iX, n=21" against a pool of ten M60s and eleven
+// xDrive50s, and a Kia EV9 Light Long Range "15% under" a 2024 pool of four
+// trims. A cohort now speaks only when every car in it wears the scored car's
+// trim. Recomputed here from data.json; then a served sheet gives one model a
+// clean pool of one trim, which must speak, and takes a trim cohort down to
+// five so its cars fall to a mixed pool and go quiet.
+await step('a cohort of mixed trims prices the mix, not the car', async () => {
+  plan('no row, chip or pick claims a percentage against a cohort of mixed trims',
+       'and the ones that do say so name their own trim and year',
+       'a mixed cohort is not ranked first by a number the page will not print',
+       'and a served pool of one trim still speaks');
+  const P0 = (SHEET.buyer || {}).picks || {};
+  const P = { max_miles: P0.max_miles || 50000, cpm: P0.cents_per_mile != null ? P0.cents_per_mile : 0.30, base: P0.mileage_baseline || 20000,
+              no_acc: P0.exclude_accidents !== false, no_rental: P0.exclude_rental !== false };
+  const RENTAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+  const eligible = (x) => x.price != null && x.miles != null && x.miles <= P.max_miles && !(P.no_acc && x.accidents > 0) && !(P.no_rental && RENTAL.test(x.usage || ''));
+  const trimOf = (x) => String(x.trim || '').trim().toLowerCase(), yearOf = (x) => String(x.year || '');
+  // the cohort a car would be judged by, and whether it is one trim
+  const cohortOf = (m, x) => {
+    const pool = (m.listings || []).filter(eligible);
+    if (pool.length < 6) return null;
+    const ty = pool.filter((c) => trimOf(c) === trimOf(x) && yearOf(c) === yearOf(x));
+    const yr = pool.filter((c) => yearOf(c) === yearOf(x));
+    const use = ty.length >= 6 ? ty : yr.length >= 6 ? yr : pool;
+    const basis = ty.length >= 6 ? 'trim' : yr.length >= 6 ? 'year' : 'model';
+    return { basis, n: use.length, mixed: use.some((c) => trimOf(c) !== trimOf(x)) };
+  };
+  const models = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] }));
+  const mixedCars = models.flatMap((o) => (o.m.listings || []).filter(eligible).map((x) => ({ o, x, c: cohortOf(o.m, x) })).filter((r) => r.c && r.c.mixed));
+  if (!mixedCars.length) return skipRest('no eligible car on the sheet would be judged by a cohort of mixed trims');
+  // the model with the MOST such cars, so the sort check has something to
+  // order: on a model with one mixed car it would pass whatever the rule did
+  const byModel = new Map();
+  for (const r of mixedCars) byModel.set(r.o, (byModel.get(r.o) || 0) + 1);
+  const subject = [...byModel.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const readNotes = () => page.evaluate(() => {
+    const rows = [...document.querySelectorAll('#list-table tbody tr')].map((tr) => {
+      const b = tr.querySelector('[data-fkey^="star:"]');
+      const note = [...tr.querySelectorAll('.sc-note')].map((n) => n.textContent.replace(/\s+/g, ' ').trim()).find((t) => /typical/.test(t)) || '';
+      return { vin: b ? b.getAttribute('data-fkey').split(':')[1] : '', note };
+    });
+    const picks = [...document.querySelectorAll('#takeaway .sc-photo-card')].map((c) => ({
+      vin: ((c.querySelector('[data-fkey^="pick:"]') || { getAttribute: () => '' }).getAttribute('data-fkey') || '').split(':')[1] || '',
+      note: ((c.querySelector('.sc-note') || {}).textContent || '').replace(/\s+/g, ' ').trim() }));
+    const chips = [...document.querySelectorAll('.sc-photo-card__chip')].map((c) => c.textContent.trim()).filter((t) => /typical/.test(t));
+    return { rows, picks, chips };
+  });
+  const showAll = async () => { if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); } };
+  await open(subject.w.q); await showAll();
+  const r = await readNotes();
+  const byVin = new Map((subject.m.listings || []).map((x) => [x.vin, x]));
+  const wrong = r.rows.filter((row) => { const x = byVin.get(row.vin); if (!x || !row.note) return false; const c = cohortOf(subject.m, x); return c && c.mixed; });
+  ok('no row, chip or pick claims a percentage against a cohort of mixed trims', wrong.length === 0,
+     wrong.length ? `${wrong[0].vin.slice(-6)} says "${wrong[0].note}" against a mixed cohort` : `${r.rows.filter((x) => x.note).length} of ${r.rows.length} rows on ${subject.w.label} carry a percentage, none on a mixed cohort (${mixedCars.filter((m) => m.o === subject).length} eligible cars there would be judged by one)`);
+  // every pick on the FRONT page names a trim and a year, because a clean
+  // cohort of the fallback kind is rare and a mixed one now says nothing
+  await open('');
+  const front = await readNotes();
+  const named = front.picks.filter((p) => p.note);
+  const anyMixed = named.filter((p) => { for (const o of models) { const x = (o.m.listings || []).find((c) => c.vin === p.vin); if (x) { const c = cohortOf(o.m, x); return c && c.mixed; } } return false; });
+  ok('and the ones that do say so name their own trim and year', named.length > 0 && anyMixed.length === 0,
+     anyMixed.length ? `${anyMixed[0].vin.slice(-6)}: "${anyMixed[0].note}"` : named.map((p) => p.note.replace(/^.*below a typical /, '').slice(0, 42)).join(' · '));
+  // the value sort must not put a mixed car first on a number it will not print
+  await open(subject.w.q);
+  await page.selectOption('#f-sort', 'value'); await page.waitForTimeout(350);
+  const sorted = await readNotes();
+  // Only the ELIGIBLE cars are scored at all — an ineligible one carries no
+  // percentage and sorts with the mixed, which is right and is not what this
+  // check is about. Classify the rows the page actually judged.
+  const cls = sorted.rows.map((row) => { const x = byVin.get(row.vin); if (!x || !eligible(x)) return null; const c = cohortOf(subject.m, x); return c ? (c.mixed ? 'mixed' : 'judged') : null; });
+  const firstMixed = cls.indexOf('mixed'), lastJudged = cls.lastIndexOf('judged');
+  const mixedShown = cls.filter((v) => v === 'mixed').length;
+  if (!mixedShown || lastJudged === -1) skip('a mixed cohort is not ranked first by a number the page will not print', `${subject.w.label} shows ${mixedShown} mixed and ${cls.filter((v) => v === 'judged').length} judged cars under the value sort — nothing to order`);
+  else ok('a mixed cohort is not ranked first by a number the page will not print', firstMixed > lastJudged,
+     `${mixedShown} mixed of ${cls.filter(Boolean).length} scored cars on ${subject.w.label}: the first sits at row ${firstMixed}, after the last judged car at row ${lastJudged} of ${sorted.rows.length}`);
+  // Served: the subject's pool rewritten to one trim, which must speak again.
+  const planted = JSON.parse(JSON.stringify(subject.m));
+  for (const x of planted.listings) x.trim = 'OneTrim';
+  const wantSpeak = (planted.listings || []).filter(eligible).length >= 9;
+  await ctx.route('**/data.json', async (route) => {
+    const r2 = await route.fetch(); const sheet = JSON.parse(await r2.text());
+    sheet.brands[subject.w.bk].models[subject.w.mk] = planted;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(subject.w.q); await showAll();
+    const r3 = await readNotes();
+    const noted = r3.rows.filter((x) => x.note).length;
+    ok('and a served pool of one trim still speaks', wantSpeak ? noted > 0 : noted === 0,
+       `${subject.w.label} with every car one trim: ${noted} of ${r3.rows.length} rows carry a percentage${noted ? ` (e.g. "${(r3.rows.find((x) => x.note) || {}).note}")` : ''}`);
+  } finally { await ctx.unroute('**/data.json'); }
 });
 
 // --- a headline figure carries its own date --------------------------------
@@ -4790,7 +5012,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 224;
+const EXPECTED = 232;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

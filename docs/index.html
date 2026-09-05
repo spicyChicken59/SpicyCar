@@ -1058,6 +1058,25 @@
       (byYear[y] = byYear[y] || []).push(vals.get(x));
       if (tr) (byTY[tr + '|' + y] = byTY[tr + '|' + y] || []).push(vals.get(x));
     }
+    // The trims behind each cohort, for the comparability guard below: the
+    // interval asks whether a median is stable, and cannot ask whether the
+    // cars behind it are the same kind of car. Four 2022 iX xDrive50s read
+    // "26-40% under typical for a BMW iX, n=21" against a pool of ten M60s
+    // and eleven xDrive50s - a different car at a different price, so the
+    // percentage measured the pool's trim mix rather than the car. Same on a
+    // Kia EV9 Light Long Range against a 2024 pool of four trims, where the
+    // years are identical and only the trims differ. A cohort speaks only
+    // when every car in it wears the scored car's trim: automatic on the
+    // trim basis, an accident on the other two, and the guard the compare
+    // card has always applied to its winner (comparableCohorts) - one shape,
+    // now on every surface.
+    const trimSetAll = new Set(), trimSetYear = {}, trimSetTY = {};
+    for (const x of pool) {
+      const tr = String(x.trim || '').trim().toLowerCase(), y = String(x.year || '');
+      trimSetAll.add(tr);
+      (trimSetYear[y] = trimSetYear[y] || new Set()).add(tr);
+      (trimSetTY[tr + '|' + y] = trimSetTY[tr + '|' + y] || new Set()).add(tr);
+    }
     const stats = (vs) => { const ci = medianCI(vs); return { med: median(vs), lo: ci[0], hi: ci[1], n: vs.length }; };
     const stAll = stats([...vals.values()]), yearSt = {}, tySt = {};
     for (const y in byYear) if (byYear[y].length >= COHORT_FLOOR) yearSt[y] = stats(byYear[y]);
@@ -1067,9 +1086,11 @@
       let st = stAll, year = '', trim = '', basis = 'model';
       if (tySt[tr + '|' + y]) { st = tySt[tr + '|' + y]; year = y; trim = trimDisp(modelLabel, x.trim); basis = 'trim'; }
       else if (yearSt[y]) { st = yearSt[y]; year = y; basis = 'year'; }
+      const cohortTrims = basis === 'trim' ? trimSetTY[tr + '|' + y] : basis === 'year' ? trimSetYear[y] : trimSetAll;
+      const mixed = [...cohortTrims].some((t) => t !== tr);
       const v = vals.get(x);
       return { x, modelLabel, year, trim, basis, n: st.n, lo: st.lo, hi: st.hi,
-               stand: v < st.lo && (st.med - v) / st.med >= 0.005 ? 'under' : v > st.hi && (v - st.med) / st.med >= 0.005 ? 'over' : 'typical',
+               stand: mixed ? 'mixed' : v < st.lo && (st.med - v) / st.med >= 0.005 ? 'under' : v > st.hi && (v - st.med) / st.med >= 0.005 ? 'over' : 'typical',
                under: Math.round(st.med - v), pct: st.med ? (st.med - v) / st.med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
@@ -2190,6 +2211,28 @@
   // comparison would have skipped the view most exposed to the duplicate.
   // Live listings need no such pass: pick_display_rows already made them
   // VIN-unique.
+  // A departure from one query is not a departure from the market. A CPO
+  // watch's market is "certified cars under the mileage cap", so a car that
+  // loses its badge leaves that watch for real — and the page announced it
+  // as "GONE — the listing ended" while the same VIN sat live in the
+  // listings table two cards down as an xDrive40.
+  //
+  // It is not one listing that changed queries: the record holds both on the
+  // same day, at different prices and sometimes under different dealer
+  // names. So this names the OTHER record as its own — its trim, its price,
+  // and whether it is certified — and never implies the departed listing was
+  // cut to it. The certification carries the decision: the promo is
+  // cpo_only, so a VIN that survives uncertified is a car whose payment just
+  // moved by $92 a month, and "still listed" alone would report that as good
+  // news. See delisted() for the builder's half and the freshness rule.
+  const stillListed = (g) => g && g.still_listed && (g.still_listed.trim || g.still_listed.trim_id) ? g.still_listed : null;
+  const stillTxt = (g, label) => {
+    const st = stillListed(g);
+    if (!st) return null;
+    return `left the ${label || g.trim_label || 'watch'} — the same VIN is listed as ${st.trim || 'another trim'}`
+      + (st.price != null ? ` at ${money(st.price)}` : '')
+      + (st.cpo ? ', still certified' : ', not certified');
+  };
   function goneRows(m) {
     const rows = trimRows(m.gone || []);
     const seen = new Set(), out = [];
@@ -2245,7 +2288,7 @@
     }
     const spans = [], seen = new Set();
     for (const g of gone) {
-      if (g.likely !== 'delisted' || g.exact !== true || !g.listed_since) continue;
+      if (g.likely !== 'delisted' || g.exact !== true || stillListed(g) || !g.listed_since) continue;
       const k = String(g.vin || '').toUpperCase();
       if (k && seen.has(k)) continue;
       if (k) seen.add(k);
@@ -2737,7 +2780,10 @@
       // The count includes the car itself — score_picks counts the cohort,
       // not the car's siblings — so it is "the 21 listings, this one included"
       // and never "21 other". Then the interval the word "typical" rests on.
-      words: (x.pick_basis === 'trim'
+      mixed: x.pick_stand === 'mixed',
+      words: (x.pick_stand === 'mixed'
+        ? `the ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'} it would be measured against are not all one trim — a cohort of mixed trims prices the mix, not the car`
+        : x.pick_basis === 'trim'
         ? `measured against the ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'}, this one included — its own trim and model year`
         : x.pick_basis === 'year'
           ? `measured against the ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'}, this one included — too few of its own trim that year to judge it against those`
@@ -2746,7 +2792,7 @@
         // miles priced in, which on the 2026 eDrive50 sits wholly below the
         // cohort's asking prices — a reader holding an asking price against
         // this range would call a typical car dear
-        + (x.pick_lo != null && x.pick_hi != null ? ` · typical value ${money(x.pick_lo)}–${money(x.pick_hi)} at 95% — asking plus shipping, miles priced in` : ''),
+        + (x.pick_stand !== 'mixed' && x.pick_lo != null && x.pick_hi != null ? ` · typical value ${money(x.pick_lo)}–${money(x.pick_hi)} at 95% — asking plus shipping, miles priced in` : ''),
     };
   }
   // The note itself: the percentage, then the cohort and its size, visible —
@@ -2970,7 +3016,10 @@
       landed: (x) => landed(x) ?? big,
       otd: (x) => otd(x) ?? big,
       payment: (x) => payFor(x) ?? big,
-      value: (x) => (x.pick_pct == null ? big : -x.pick_pct),
+      // A car whose cohort cannot be compared is not ranked by a percentage
+      // the page refuses to print: putting it first would make the claim with
+      // position instead of words. It sorts with the unscored.
+      value: (x) => (x.pick_pct == null || x.pick_stand === 'mixed' ? big : -x.pick_pct),
       miles: (x) => x.miles ?? big,
       delta: (x) => (x.delta ?? 0),
       cut: (x) => lastStep(x),
@@ -3427,13 +3476,13 @@
     // are indistinguishable from outside, which market_line() and exitNote()
     // both say at length. The claim the data supports is that it stopped being
     // advertised.
-    const goneLine = gone ? (x.likely === 'delisted' ? 'GONE — the listing ended'
-      : (x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale' : 'not checked recently')) : null;
+    const goneLine = gone ? (stillTxt(x) || (x.likely === 'delisted' ? 'GONE — the listing ended'
+      : (x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale' : 'not checked recently'))) : null;
     const price = gone ? x.last_price : x.price;
     const media = el('div', { class: 'sc-photo-card__media' }, thumbFor(gone ? null : x, true),
       el('div', { class: 'sc-photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
         el('span', { class: 'sc-photo-card__price-sub' }, gone ? `last seen ${fmtDate(x.last_seen)}` : shipNote(x))),
-      gone ? el('span', { class: 'sc-chip sc-photo-card__chip ' + (x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
+      gone ? el('span', { class: 'sc-chip sc-photo-card__chip ' + (stillListed(x) ? 'sc-chip--info' : x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
            : (x.pick_stand === 'under' ? el('span', { class: 'sc-chip sc-chip--good sc-photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
     return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
       el('div', { class: 'sc-media__title' }, title),
@@ -3679,12 +3728,14 @@
       // cohort's spread, not on nine — and printing "3% under" there would
       // be the page reading noise as a discount.
       const p = r.x.pick_pct, st = r.x.pick_stand;
-      const word = p == null ? '—'
+      const word = p == null || st === 'mixed' ? '—'
         : st === 'under' ? `${Math.round(p * 100)}% under`
         : st === 'over' ? `${Math.round(-p * 100)}% over`
         : 'about typical';
-      return cmpCell(word, c ? `${c.short}, n=${c.n}` : whyUnscored(r), false,
-        c ? { kind: c.basis, title: c.words } : null);
+      const sub = !c ? whyUnscored(r)
+        : c.mixed ? `too few comparable ${c.short} listings to say`
+        : `${c.short}, n=${c.n}`;
+      return cmpCell(word, sub, false, c ? { kind: c.basis, title: c.words } : null);
     });
     row('Where', 'Drivable means listed in one of your states — no shipping',
       (r) => cmpCell(placeCell(r.x), r.x.local ? 'drivable' : (r.x.distance != null ? `~${num(r.x.distance)} mi away` : 'distance n/a')));
@@ -4024,6 +4075,7 @@
         c ? el('div', { class: 'sc-delta ' + (x.pick_stand === 'under' ? 'sc-delta--good' : x.pick_stand === 'over' ? 'sc-delta--bad' : 'sc-delta--flat'), title: c.words },
               x.pick_stand === 'under' ? `${Math.round(x.pick_pct * 100)}% under a typical ${c.short}, n=${c.n}`
               : x.pick_stand === 'over' ? `${Math.round(-x.pick_pct * 100)}% over a typical ${c.short}, n=${c.n}`
+              : x.pick_stand === 'mixed' ? `too few comparable ${c.short} listings to say — the ${c.n} it would be judged against are not all one trim`
               : `about typical for a ${c.short}, n=${c.n}`)
           : null,
         el('div', null, el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'hero:' + (x.vin || ''),
@@ -4350,7 +4402,7 @@
       // same rule as the report: real delistings at each trim's own previous fetch
       // gone respects hasPrev like the others: one snapshot day cannot
       // distinguish a departure, whatever a gone row claims
-      gone: daily.length < 2 ? 0 : departed.filter((g) => g.likely === 'delisted'
+      gone: daily.length < 2 ? 0 : departed.filter((g) => g.likely === 'delisted' && !stillListed(g)
         && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : (prev && g.last_seen === prev.date))).length,
     };
   }
@@ -4397,7 +4449,7 @@
     }
     const still = priceOn(prevCar.c, today.date);
     if (still != null) return still > prevCar.v ? `the ${money(prevCar.v)} car was raised to ${money(still)}` : null;
-    const confirmed = (t.gone || []).some((g) => g.vin === prevCar.c.x.vin && g.likely === 'delisted' && g.exact === true);
+    const confirmed = (t.gone || []).some((g) => g.vin === prevCar.c.x.vin && g.likely === 'delisted' && g.exact === true && !stillListed(g));
     return `the ${money(prevCar.v)} car ${confirmed ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
   }
   function renderKpis(rows) {
@@ -4924,12 +4976,15 @@
     // Confirmed departures lead the table; the fetch artifacts ('out of
     // window' / 'not checked') follow. The sort is stable, so each half
     // keeps its most-recent-first order.
-    gone.sort((a, b) => (a.likely === 'delisted' ? 0 : 1) - (b.likely === 'delisted' ? 0 : 1));
-    const nDel = gone.filter((g) => g.likely === 'delisted').length;
-    const nOow = gone.filter((g) => g.likely === 'out of window').length;
-    const nNc = gone.length - nDel - nOow;
+    const isDep = (g) => g.likely === 'delisted' && !stillListed(g);
+    gone.sort((a, b) => (isDep(a) ? 0 : 1) - (isDep(b) ? 0 : 1));
+    const nDel = gone.filter(isDep).length;
+    const nStill = gone.filter(stillListed).length;
+    const nOow = gone.filter((g) => !stillListed(g) && g.likely === 'out of window').length;
+    const nNc = gone.length - nDel - nStill - nOow;
     const splitTxt = [
       `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
+      nStill ? `${nStill} left a watch while the ${nStill === 1 ? 'car is' : 'cars are'} still listed above` : null,
       nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
       nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null,
     ].filter(Boolean).join(' · ');
@@ -4970,7 +5025,8 @@
     const body = el('tbody');
     for (const g of shownG) {
       const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
-      const likely = g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null;
+      const likely = stillListed(g) ? el('span', { class: 'sc-note' }, stillTxt(g))
+        : g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null;
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
           gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · ${seenLabel(g) || 'seen 0 days'}${drop}`) : null,
@@ -5577,7 +5633,9 @@
       el('div', { class: 'sc-callout__label' }, 'the car in hand'),
       el('div', { class: 'sc-grid picks-grid' }, shortlistCard(S.vinAsk, '')),
       el('p', { class: 'sc-hint' }, hit.gone
-        ? `This car has left the model's rows — last seen ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}${hit.x.likely === 'delisted' ? ', and its listing ended' : ', and it may only have fallen outside a fetch window'}.`
+        ? (stillListed(hit.x)
+            ? `${stillTxt(hit.x, hit.x.trim_label)} — that watch last returned it ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}.`
+            : `This car has left the model's rows — last seen ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}${hit.x.likely === 'delisted' ? ', and its listing ended' : ', and it may only have fallen outside a fetch window'}.`)
         : `Its row is in the list below, ${t.label || S.model}'s own; the star keeps it.`)));
     n.hidden = false;
   }
