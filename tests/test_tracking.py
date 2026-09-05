@@ -5118,6 +5118,32 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         line = T.market_line(st)
         self.assertIn("typical car 15d on market (12 of 20 dated)", line)
 
+    # -- a car with no state is in neither bucket --------------------------
+
+    def test_a_car_with_no_state_is_not_counted_as_drivable_or_beyond(self):
+        """in_scope() asks whether the listing's state is one of the buyer's,
+        so a blank state falls out of "drivable" — and every count that opposes
+        drivable to "beyond your states" then swept it into the second, which
+        is the one thing the sheet cannot say about it. Three live cars carry
+        no state today and eight VINs do over the record."""
+        cars = [self._car("A" * 17, [50000], local=True, state="IL"),
+                self._car("B" * 17, [50000], local=False, state="CA"),
+                self._car("C" * 17, [50000], local=False, state="")]
+        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, None)
+                    if "on the market" in l)
+        self.assertIn("3 on the market · 1 drivable · 1 with no state", line,
+                      "one is drivable, one is beyond, and the third is in "
+                      "neither — saying so is the whole point")
+
+    def test_a_pool_the_sheet_can_place_says_nothing_about_it(self):
+        """The clause only appears when there is something to say. A count
+        that always fires is a count nobody reads."""
+        cars = [self._car("A" * 17, [50000], local=True, state="IL"),
+                self._car("B" * 17, [50000], local=False, state="CA")]
+        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, None)
+                    if "on the market" in l)
+        self.assertEqual(line, "- 2 on the market · 1 drivable")
+
     # -- the record's vocabulary, checked on the record it prints ----------
 
     def test_the_record_never_claims_a_shipping_figure_was_stated(self):

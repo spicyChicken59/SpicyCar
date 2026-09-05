@@ -13,7 +13,7 @@
 
 - Lowest asking **$36,479** (Seffner, FL) · + $1,031 shipping · = vs 2026-09-04
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
-- 134 on the market · 18 drivable · 33 price changes (4 more moved, seen at two prices, not counted) · 7 new · 10 gone
+- 134 on the market · 18 drivable · 1 with no state · 33 price changes (4 more moved, seen at two prices, not counted) · 7 new · 10 gone
 
 **New today (7)** — first seen this run, 1 of them listed 14+ days before the tracker saw it — reach, not arrival; best value first
 

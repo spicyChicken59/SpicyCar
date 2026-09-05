@@ -867,6 +867,19 @@
   // the i7 tile read $72,548 over a table row reading $72,547.
   const medInt = (arr) => { const m = median(arr); return m == null ? null : Math.trunc(m); };
   const isLocal = (x) => !!x.local;
+  // A car the sheet carries no state for. in_scope() asks whether the state is
+  // one of the buyer's, so a blank state falls out of "drivable" and into
+  // everything opposed to it — and the page then told the reader the car was
+  // "beyond your states", which is the one thing the sheet cannot say about
+  // it. Three live cars are in this state today (an i5 at $47,990, an iX at
+  // $33,990, a Lucid Air at $37,990) and eight VINs over the record. They keep
+  // their flat shipping estimate, because a car that cannot be confirmed
+  // drivable must be priced as though it ships; what they lose is the claim
+  // about where they are. "No state", not "no location" — the map hint already
+  // counts cars with no COORDINATES that way, and these are a different set:
+  // scope here is state membership and nothing else, so the state is the field
+  // whose absence decides it.
+  const unplaced = (x) => !isLocal(x) && !String(x.state || '').trim();
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
   const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
@@ -3361,7 +3374,12 @@
   // falls back to the old test rather than losing the chip entirely.
   const isNew = (x) => (x.first_seen ? String(x.first_seen).slice(0, 10) === dataThrough()
                                      : x.days_tracked === 1) && trackedDays() >= 2;
-  const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Outside your states — shipping added' }, (x.state || '—').toUpperCase());
+  // The chip already shows "—" for a car the sheet cannot place; its title said
+  // "Outside your states", which is the claim that dash exists to refuse.
+  const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'),
+    title: x.local ? 'Drivable — no shipping'
+      : unplaced(x) ? 'State not given — priced as though it ships'
+      : 'Outside your states — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
   // The decision card is the first screen on a phone, and each shopped tile
   // grew ten lines of evidence under its four lines of headline — the floor
@@ -4048,7 +4066,7 @@
         el('div', { class: 'sc-tile__sub' },
           `${x.year || ''} ${carTrim(x)} · ${x.miles != null ? num(x.miles) + ' mi' : 'mileage not published'}`.replace(/\s+/g, ' ').trim()),
         el('div', { class: 'sc-tile__sub' },
-          `${placeCell(x)} · ${x.local ? 'drivable' : (x.distance != null ? `~${num(x.distance)} mi away` : 'beyond your states')}`),
+          `${placeCell(x)} · ${x.local ? 'drivable' : unplaced(x) ? 'state not given' : (x.distance != null ? `~${num(x.distance)} mi away` : 'beyond your states')}`),
         // The same number, day by day, and who held it: see floorLedger. The
         // caption counts identities rather than moves, because the floor on
         // this record has never moved by a price changing — every move so far
@@ -4519,10 +4537,11 @@
         : 'Nothing drivable under these filters'));
     host.appendChild(tile2);
 
-    const local = rows.filter(isLocal).length;
+    const local = rows.filter(isLocal).length, noLoc = rows.filter(unplaced).length;
     const tile3 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'),
       el('div', { class: 'sc-tile__value' }, String(rows.length)),
-      el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local} beyond your states`
+      el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local - noLoc} beyond your states`
+        + (noLoc ? ` · ${noLoc} with no state` : '')
         + (med != null ? ` · median ${money(med)}` : '')));
     // The median above pools two markets whenever dealer stock is in the scope,
     // so the tile says so on its face, with each side's own count and median.
@@ -5085,7 +5104,7 @@
       const best = lowestBy(priced, 'price'), bestLocal = lowestBy(priced.filter(isLocal), 'price');
       const photo = (best && best.image) ? best : (bestLocal && bestLocal.image ? bestLocal : rows.find((x) => x.image) || null);
       return { bk, mk, m, brand: b.label || bk, label: m.label || mk, shopping: !!m.shopping, cadence: m.cadence || 1, as_of: m.as_of, next_due: m.next_due,
-        n: rows.length, n_local: rows.filter(isLocal).length, best, bestLocal, photo, photos: rows.filter((x) => x.image).map((x) => x.image).slice(0, 8),
+        n: rows.length, n_local: rows.filter(isLocal).length, n_unplaced: rows.filter(unplaced).length, best, bestLocal, photo, photos: rows.filter((x) => x.image).map((x) => x.image).slice(0, 8),
         median: medInt(priced.map((x) => x.price)),
         // the same series the chart above this table draws — while this read
         // m.daily it painted the nation's shape beside a scoped price, and on
@@ -5173,6 +5192,7 @@
   function renderOverviewKpis(rows) {
     // tiles
     const total = rows.reduce((a, r) => a + r.n, 0), localTotal = rows.reduce((a, r) => a + r.n_local, 0);
+    const noLocTotal = rows.reduce((a, r) => a + (r.n_unplaced || 0), 0);
     const bestRow = rows.filter((r) => r.best).reduce((a, r) => (!a || r.best.price < a.best.price ? r : a), null);
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
     const host = $('kpis'); host.textContent = '';
@@ -5192,7 +5212,9 @@
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}${asOfNote(bestRow)}` : 'No priced listings')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
-      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond your states · ${rows.length} model${rows.length === 1 ? '' : 's'}`)));
+      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal - noLocTotal} beyond your states`
+        + (noLocTotal ? ` · ${noLocTotal} with no state` : '')
+        + ` · ${rows.length} model${rows.length === 1 ? '' : 's'}`)));
     // Tile 4 — the returning buyer's daily question, answered on the front
     // page: what moved since the last check? Counted per model against its
     // own previous snapshot (models run on different cadences), by the same
