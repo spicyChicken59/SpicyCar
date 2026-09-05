@@ -1441,7 +1441,7 @@ await step('the monthly payment', async () => {
 });
 
 // ---- out-the-door ----
-// Tax is the largest number this page has never shown — roughly seven times the
+// Tax is the largest number this page has never shown — roughly six times the
 // median shipping estimate it always has — and it lands on EVERY car, because
 // Illinois charges the buyer's home rate wherever the car was bought. Checked
 // through the rendered page rather than the internals, and against the sheet's
@@ -1553,7 +1553,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
 await step('the finance note owns the promo term cap', async () => {
   plan('a note that claims 72 months says which promos are capped shorter',
        'and claims no cap when the term already fits inside one');
-  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  const fin = (SHEET.buyer || {}).finance || null;   // the sheet in hand — a relative fetch from about:blank (an --only run) has no base URL
   const capped = fin && (fin.promos || []).find((p) => p.active && p.max_term);
   const longest = fin && Math.max(...(fin.terms || [60]));
   if (!capped || !(longest > capped.max_term)) {
@@ -1590,8 +1590,8 @@ await step('the finance note owns the promo term cap', async () => {
 // and print "60 months on -$4,200 financed" underneath it. Two numbers from one
 // principal must not disagree about its sign.
 await step('a down payment larger than the car', async () => {
-  plan('a covered car is not quoted a negative balance');
-  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  plan('a covered car is not quoted a negative balance', 'and the finance note says what was put down');
+  const fin = (SHEET.buyer || {}).finance || null;   // the sheet in hand — a relative fetch from about:blank (an --only run) has no base URL
   if (!fin) return skipRest('this sheet has no finance block');
   await open(carried.q);
   // The sort must be SELECTED, not asked for in the query string: the page
@@ -1607,6 +1607,12 @@ await step('a down payment larger than the car', async () => {
   // the check passes on rows that were never given a down payment at all.
   await page.dispatchEvent('#f-down', 'change');
   await page.waitForTimeout(400);
+  // The sentence that claims to state the assumptions has to state this one:
+  // a "$0/mo" cell under "assume 60 months at 6.9%" is a table contradicting
+  // its own caption when the $400,000 that made it zero goes unsaid.
+  const hintDown = (await page.textContent('#list-hint')) || '';
+  ok('and the finance note says what was put down', /\$400,000 down/.test(hintDown),
+     (hintDown.match(/Payments assume[^.]*\./) || ['no finance sentence in #list-hint'])[0]);
   const notes = await page.$$eval('#list-scroll tbody .sc-note',
     (ns) => ns.map((n) => ({ text: n.textContent, title: n.getAttribute('title') || '' }))
               .filter((n) => /\/mo|month/.test(n.text + n.title)));
@@ -1818,7 +1824,7 @@ await step('the promo strip prices one real offer', async () => {
   plan('the rate in the heading is the rate the car is financed at',
        'and a certified car at a seller not named BMW is kept out of the figure',
        'and the strip disappears when no promo is live');
-  const fin = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}).finance || null);
+  const fin = (SHEET.buyer || {}).finance || null;   // the sheet in hand — a relative fetch from about:blank (an --only run) has no base URL
   const live = ((fin || {}).promos || []).filter((p) => p.active && p.apr != null);
   if (!live.length) return skipRest('this sheet has no live promo');
   await open('');
@@ -2432,8 +2438,8 @@ await step('dealer stock is a market of its own', async () => {
   const m = split.match(/^(\d+) of (\d+) are delivery-mileage stock — under (\d+) mi, median \$([\d,]+) — and the (\d+) used cars sit at \$([\d,]+)$/);
   ok('a scope holding dealer stock says so beside its median',
      !!m && +m[1] === subject.fresh.length && +m[2] === subject.priced.length && +m[3] === NEW
-       && digits(m[4]) === String(med(subject.fresh.map((x) => x.price))) && +m[5] === subject.used.length
-       && digits(m[6]) === String(med(subject.used.map((x) => x.price))),
+       && digits(m[4]) === String(Math.trunc(med(subject.fresh.map((x) => x.price)))) && +m[5] === subject.used.length
+       && digits(m[6]) === String(Math.trunc(med(subject.used.map((x) => x.price)))),
      split ? `${subject.tid}: "${split}" — sheet says ${subject.fresh.length} of ${subject.priced.length} under ${NEW} mi at ${med(subject.fresh.map((x) => x.price))}, ${subject.used.length} used at ${med(subject.used.map((x) => x.price))}`
            : `${subject.tid}: no split line on the tile — ${before.join(' | ')}`);
   await page.check('#f-hidenew');
@@ -2448,9 +2454,116 @@ await step('dealer stock is a market of its own', async () => {
   const medLine = after.find((t) => /median \$/.test(t)) || '';
   const wantMed = med(subject.priced.filter((x) => !(x.miles != null && x.miles < NEW)).map((x) => x.price));
   ok('and the median that remains is the used cars\' own',
-     !after.some((t) => /delivery-mileage stock/.test(t)) && digits((medLine.match(/median \$([\d,]+)/) || [])[1]) === String(wantMed),
+     !after.some((t) => /delivery-mileage stock/.test(t)) && digits((medLine.match(/median \$([\d,]+)/) || [])[1]) === String(Math.trunc(wantMed)),
      `${after.join(' | ')} — expected median ${wantMed} and no split line`);
   await page.uncheck('#f-hidenew');
+});
+
+// --- one car, one number ----------------------------------------------------
+// Five small things a reader can see, from the audit's remaining list, pinned
+// together. A flat delta names the day it is level with (trims run on
+// cadences, so "previous day" was two to four snapshot days back as often as
+// one). A printed median truncates like the builder's, so the tile and the
+// chart's table row agree. The year select lists only years with a car in
+// view. "tracked 6d" became "seen 6 of 12 days", because it counts sightings.
+// And the map's hint counts the cars the drawing cannot place instead of
+// dropping them — it read two short of the count line above it.
+await step('one car, one number', async () => {
+  plan('a flat delta names the day it is level with',
+       'the tile median and the chart table\'s newest median agree',
+       'every year in the select has a car in view',
+       'a car\'s sightings are counted, not aged',
+       'the map hint adds up to the count line');
+  const mm = SHEET.brands[carried.bk].models[carried.mk];
+  const digits = (t) => String(t || '').replace(/[^0-9]/g, '');
+  const prices = (mm.listings || []).filter((x) => x.price != null).map((x) => x.price);
+  // Planted, not found. A day whose floor equals its cheapest car and did not
+  // move is a coincidence on a live sheet; a median that lands on .5 needs an
+  // even count and an odd gap between the middle two; and a watched year with
+  // no car in view only exists on a sheet whose targets outrun the market. So
+  // one served sheet carries all three: the last two day rows level with the
+  // cheapest car, the two middle prices set a dollar apart with the day row's
+  // median truncated to match, and a year no car carries added to the watch.
+  if ((mm.daily || []).length < 2 || prices.length < 4) skipRest(`${carried.label} has fewer than two day rows or four priced cars to plant on`);
+  else {
+    const cheapest = Math.min(...prices);
+    let plantedMedian = null;
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch();
+      const sheet = JSON.parse(await r.text());
+      const m = sheet.brands[carried.bk].models[carried.mk];
+      const d = m.daily;
+      d[d.length - 1].min_price = cheapest; d[d.length - 2].min_price = cheapest;
+      const priced = m.listings.filter((x) => x.price != null).sort((a, b) => a.price - b.price);
+      if (priced.length % 2) { const dearest = priced.pop(); m.listings = m.listings.filter((x) => x !== dearest); }   // an even count, the dearest car dropped
+      // every price re-laid around the middle pair, so the median is exactly
+      // the pair's mean — the floor stays the floor, the order stays the order
+      const mid = priced.length / 2;
+      priced.forEach((x, i) => { x.price = i < mid - 1 ? cheapest + i : i === mid - 1 ? cheapest + 10000 : i === mid ? cheapest + 10001 : cheapest + 10001 + i; });
+      plantedMedian = cheapest + 10000;
+      d[d.length - 1].median_price = plantedMedian;
+      m.years = [...(m.years || []), '2019'];
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(carried.q);
+      const delta = ((await page.locator('#kpis .sc-tile').first().locator('.sc-delta').first().textContent().catch(() => '')) || '').trim();
+      ok('a flat delta names the day it is level with',
+         /^= vs [A-Z][a-z]{2} \d/.test(delta) && !/previous day/.test(delta), `tile 1 says "${delta || '(no delta)'}"`);
+      const tileMed = digits(((await page.locator('#kpis .sc-tile').nth(2).textContent()).match(/median \$([\d,]+)/) || [])[1]);
+      const rowMed = digits(await page.locator('#chart-table tbody tr').first().locator('td').last().textContent().catch(() => ''));
+      ok('the tile median and the chart table\'s newest median agree', tileMed && tileMed === rowMed && tileMed === String(plantedMedian),
+         `planted a median of ${plantedMedian}.5: tile says ${tileMed || '(none)'}, the newest table row says ${rowMed || '(none)'}`);
+      const opts = await page.$$eval('#f-year option', (os) => os.map((o) => o.value).filter((v) => v !== 'all'));
+      const years = new Set((mm.listings || []).map((x) => x.year).filter((y) => y != null).map(String));
+      ok('every year in the select has a car in view', opts.length > 0 && opts.every((y) => years.has(y)) && !opts.includes('2019'),
+         `watched 2019 with no car; select offers ${JSON.stringify(opts)}; cars carry ${JSON.stringify([...years].sort())}`);
+    } finally {
+      await ctx.unroute('**/data.json');
+    }
+  }
+  // Sightings over their span, car by car: the row's star button carries the
+  // VIN, so each label is checked against the car's own series — "6 of 12"
+  // has to be six sightings across twelve days, not a doubled count.
+  const seenOf = (x) => {
+    const n = x.days_tracked || 0;
+    if (!n) return null;
+    const s = x.series || [];
+    const span = s.length > 1 ? Math.round((Date.parse(s[s.length - 1][0] + 'T00:00:00Z') - Date.parse(s[0][0] + 'T00:00:00Z')) / 86400000) + 1 : 1;
+    return n === 1 ? 'seen once' : `seen ${n} of ${Math.max(span, n)} days`;
+  };
+  const byVin = new Map((mm.listings || []).map((x) => [x.vin, x]));
+  await open(carried.q);
+  const rows = await page.$$eval('#list-table tbody tr', (trs) => trs.map((tr) => {
+    const b = tr.querySelector('[data-fkey^="star:"]');
+    const m = tr.innerText.match(/seen (?:once|\d+ of \d+ days)|tracked \d+d/);
+    return { vin: b ? b.getAttribute('data-fkey').slice(5) : '', label: m ? m[0] : '' };
+  }));
+  const wrongRows = rows.filter((r) => byVin.has(r.vin) && (byVin.get(r.vin).days_tracked > 1) && r.label !== seenOf(byVin.get(r.vin)));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(carried.q);
+  const phoneText = await page.locator('#list-card').innerText();
+  const phoneLabels = [...phoneText.matchAll(/seen (?:once|\d+ of \d+ days)/g)].map((m) => m[0]);
+  const expected = new Set((mm.listings || []).map(seenOf).filter(Boolean));
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  ok('a car\'s sightings are counted, not aged',
+     rows.length > 0 && wrongRows.length === 0 && phoneLabels.length > 0 && !/tracked \d+d/.test(phoneText) && phoneLabels.every((l) => expected.has(l)),
+     wrongRows.length ? wrongRows.slice(0, 3).map((r) => `${r.vin}: row says "${r.label}", series says "${seenOf(byVin.get(r.vin))}"`).join(' | ')
+       : `${rows.length} desktop rows and ${phoneLabels.length} phone labels agree with their series, e.g. "${(rows.find((r) => r.label) || {}).label}"`);
+  await open('');
+  const hint = (await page.textContent('#map-hint')) || '';
+  const on = +(hint.match(/^([\d,]+) cars/) || [, '0'])[1].replace(/,/g, '');
+  const beyond = +(hint.match(/([\d,]+) more beyond/) || [, '0'])[1].replace(/,/g, '');
+  const noLoc = +(hint.match(/([\d,]+) with no location/) || [, '0'])[1].replace(/,/g, '');
+  const count = (await page.textContent('#filter-count')) || '';
+  const shown = +((count.match(/showing (?:all )?([\d,]+)/) || [, '0'])[1].replace(/,/g, ''));
+  // …and the unplaced are the cars with no coordinates, named as such — not
+  // folded into "beyond the lower 48", which is a geographic claim the sheet
+  // does not make for them.
+  const coordless = Object.values(SHEET.brands || {}).flatMap((b) => Object.values((b || {}).models || {}))
+    .flatMap((m) => (m || {}).listings || []).filter((x) => x.lat == null || x.lon == null).length;
+  ok('the map hint adds up to the count line', shown > 0 && on + beyond + noLoc === shown && noLoc === coordless,
+     `map: ${on} on + ${beyond} beyond + ${noLoc} unplaced = ${on + beyond + noLoc}; count line: "${count.trim()}"; ${coordless} cars carry no coordinates`);
 });
 
 // --- the shortlist you build yourself --------------------------------------
@@ -3069,7 +3182,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 149;
+const EXPECTED = 155;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

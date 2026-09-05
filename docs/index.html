@@ -796,6 +796,12 @@
     const a = [...arr].sort((x, y) => x - y), m = a.length >> 1;
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   };
+  // A PRINTED median truncates, because the builder writes int(median(...))
+  // in daily_stats and scopedDaily mirrors it with Math.trunc — so the tile,
+  // the compare cell and the chart's table row for the same day show one
+  // number. On an even count the raw median is x.5 and money() rounded it up:
+  // the i7 tile read $72,548 over a table row reading $72,547.
+  const medInt = (arr) => { const m = median(arr); return m == null ? null : Math.trunc(m); };
   const isLocal = (x) => !!x.local;
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
   const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/';
@@ -883,8 +889,8 @@
     const priced = rows.filter(hasPrice);
     const fresh = priced.filter(isNewStock), used = priced.filter((x) => x.miles != null && !isNewStock(x));
     return { n: priced.length, nNew: fresh.length, nUsed: used.length, unknown: priced.length - fresh.length - used.length,
-      medNew: fresh.length >= 5 ? median(fresh.map((x) => x.price)) : null,
-      medUsed: used.length >= 5 ? median(used.map((x) => x.price)) : null };
+      medNew: fresh.length >= 5 ? medInt(fresh.map((x) => x.price)) : null,
+      medUsed: used.length >= 5 ? medInt(used.map((x) => x.price)) : null };
   }
   function stockSplit(rows) {
     const c = stockCounts(rows);
@@ -1242,13 +1248,20 @@
     const card = $('map-card');
     const mode = S.brand === 'all' ? 'overview' : 'model';
     const key = mapKey();
-    const cars = [];
+    // Two lists: the cars the drawing can place, and the ones it cannot — a
+    // listing with no coordinates is still under the filters, and dropping it
+    // here left the hint and the table twin one or two short of the count line
+    // above them ("493 cars under the current filters" beside "showing all
+    // 495 cars"). The card's empty guard and the frame fit stay keyed on the
+    // placeable cars; the unplaced ones ride along as entries with no dot.
+    const cars = [], unplaced = [];
+    const take = (x, bk, mk, m) => ((x.lat != null && x.lon != null) ? cars : unplaced).push({ x, bk, mk, m });
     if (mode === 'overview') {
       for (const { bk, mk, m } of allModels())
-        for (const x of (m.listings || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk, mk, m });
+        for (const x of (m.listings || [])) take(x, bk, mk, m);
     } else {
       const m = model();
-      for (const x of (m.listings || [])) if (x.lat != null && x.lon != null) cars.push({ x, bk: S.brand, mk: S.model, m });
+      for (const x of (m.listings || [])) take(x, S.brand, S.model, m);
     }
     // VIN order, so dot z-order and the collocation spirals never depend on the
     // table's sort — a scoped update and a full render draw the identical map
@@ -1368,7 +1381,6 @@
             onclick: (ev) => { ev.preventDefault(); openCar(c); } }, `Open ${c.m.label} →`));
           tip.classList.add('sc-tooltip--tap');
         } else tip.classList.remove('sc-tooltip--tap');
-        const rect = host.getBoundingClientRect();
         tip.classList.add('is-on');
         TIP.place({ clientX, clientY });
       };
@@ -1378,7 +1390,6 @@
           tip.classList.remove('sc-tooltip--tap');
           tip.appendChild(el('div', { class: 'sc-tooltip__date' }, homeName()));
           tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, 'Home anchor — distances and shipping estimates measure from here.'));
-          const rect = host.getBoundingClientRect();
           tip.classList.add('is-on');
           TIP.place({ clientX, clientY }, { offsetY: -34 });   // the home marker's tooltip is one line, so it sits closer
         };
@@ -1393,7 +1404,8 @@
           halos.push(ahit);
         }
       }
-      const entries = [];   // one per car with coordinates; dot stays null beyond the lower 48
+      const entries = [];   // one per car; dot stays null beyond the lower 48 and for a car with no location
+      for (const c of unplaced) entries.push({ c, dot: null, ring: null, noloc: true });
       const seen = {};
       for (const c of cars) {
         const [px, py] = albers48(c.x.lon, c.x.lat);
@@ -1613,12 +1625,12 @@
     const sets = pickSets(scopedScored(), pickCap());
     ctl.picked.clear();
     for (const p of [...sets.local, ...sets.far]) ctl.picked.add(p.x.vin);
-    let onMap = 0, offMap = 0, anyShort = false, addedRing = false;
+    let onMap = 0, offMap = 0, noLoc = 0, anyShort = false, addedRing = false;
     const visible = [], kOrder = [];
     for (const e of ctl.entries) {
       const vis = entryVisible(e);
       if (vis) { visible.push({ x: e.c.x }); if (onShortlist(e.c.x)) anyShort = true; }
-      if (!e.dot) { if (vis) offMap++; continue; }
+      if (!e.dot) { if (vis) { if (e.noloc) noLoc++; else offMap++; } continue; }
       e.dot.classList.toggle('is-off', !vis);
       if (e.hit) e.hit.classList.toggle('is-off', !vis);
       if (vis) { onMap++; kOrder.push(e); }
@@ -1685,13 +1697,17 @@
     if (anyShort) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-accent)' }), 'shortlist'));
     const noPointer = window.matchMedia('(hover: none)').matches;
     const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+    // The count line's own total, split the way the drawing splits it: on
+    // the map, beyond its edge, and — not "beyond the lower 48", which is a
+    // geographic claim — simply without a location.
+    const more = [offMap ? `${offMap} more beyond the lower 48` : '', noLoc ? `${noLoc} with no location` : ''].filter(Boolean);
     $('map-hint').textContent = `${onMap} cars under the current filters`
-      + (offMap ? ` (${offMap} more beyond the lower 48)` : '')
+      + (more.length ? ` (${more.join(', ')})` : '')
       + (mode === 'model' ? ' — tap a dot for the car' : ', colored by brand — tap a dot for the car')
       + (noPointer
           ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
           : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
-    renderMapTwin(ctl, visible, onMap, offMap);
+    renderMapTwin(ctl, visible, onMap, offMap, noLoc);
   }
 
   // The halos' user-unit radius is a function of the svg's on-screen width,
@@ -1724,7 +1740,7 @@
   // reader always reads the same cars, and the caption the same counts, as
   // the dots and the hint. Deliberately NOT a live region: filter changes
   // announce through the filter-count line, not by re-reading a table.
-  function renderMapTwin(ctl, visible, onMap, offMap) {
+  function renderMapTwin(ctl, visible, onMap, offMap, noLoc) {
     const mount = $('map-twin'); if (!mount) return;
     const byState = new Map();
     for (const { x } of visible) {
@@ -1749,8 +1765,8 @@
       });
     // The caption owns the same total the rows sum to — beyond-lower-48 cars
     // have state rows here even though the drawing cannot place them.
-    const caption = `The market on the map: ${onMap + offMap} cars under the current filters, grouped by state`
-      + (offMap ? ` — ${onMap} drawn on the map, ${offMap} beyond the lower 48` : '')
+    const caption = `The market on the map: ${onMap + offMap + (noLoc || 0)} cars under the current filters, grouped by state`
+      + (offMap || noLoc ? ` — ${onMap} drawn on the map` + (offMap ? `, ${offMap} beyond the lower 48` : '') + (noLoc ? `, ${noLoc} with no location` : '') : '')
       + '. Drivable cars need no shipping.';
     // The twin says the same words whenever a pass leaves the visible set (and
     // the picks) unchanged — a resize re-render, a filter that only touched
@@ -1861,7 +1877,6 @@
     let lastPtr = 'mouse', armed = null;
     const hideTip = () => { tip.classList.remove('is-on', 'sc-tooltip--tap'); armed = null; };
     const clampTip = () => {
-      const rect = host.getBoundingClientRect();
       TIP.clamp();
     };
     const fillTip = (x, clientX, clientY, tap) => {
@@ -1888,7 +1903,6 @@
         tip.appendChild(el('a', { class: 'sc-tooltip__link', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
         tip.classList.add('sc-tooltip--tap');
       } else tip.classList.remove('sc-tooltip--tap');
-      const rect = host.getBoundingClientRect();
       tip.classList.add('is-on');
       TIP.place({ clientX, clientY });
     };
@@ -2555,7 +2569,10 @@
       bits.push(`${p.label || p.model} expired ${fmtDate(p.expires)} — those cars now price at the ordinary rate`);
     }
     const stale = fin.stale_days;
-    const rate = `Payments assume ${S.term || fin.default_term} months at ${fin.fallback_apr}% unless a promo applies`
+    // …and the down payment, when there is one. The sentence claims to state
+    // the assumptions, and a "$0/mo" cell under one that omits the $60,000
+    // down that made it zero is a sentence contradicting its own table.
+    const rate = `Payments assume ${S.term || fin.default_term} months at ${fin.fallback_apr}%${S.down > 0 ? `, ${money(S.down)} down,` : ''} unless a promo applies`
       + (stale != null && stale > 120 ? `; that rate was last checked ${stale} days ago and is probably stale` : '')
       + '.';
     return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
@@ -3202,10 +3219,29 @@
     for (const [k, label] of cols) grid.appendChild(el('div', null, el('div', { class: 'sc-eyebrow' }, label), el('ul', null, ...n[k].map((s) => el('li', null, s)))));
     card.hidden = false;
   }
+  // "tracked 6d" read as six days elapsed. It is six SIGHTINGS: days_tracked
+  // is the length of the price series, and a series grows only on days the
+  // car's trim was fetched — every second day for the xDrive40 and the M60 —
+  // so the same twelve-day-old car read "tracked 12d" on one trim and
+  // "tracked 6d" on another. The count is kept (a slower cadence must not be
+  // able to inflate it) and the label says what it counts: sightings, over the
+  // span from the first to the last, which the series already carries.
+  function seenLabel(x) {
+    const n = x.days_tracked || 0;
+    if (!n) return null;
+    const s = x.series || [];
+    const span = s.length > 1
+      ? Math.round((Date.parse(s[s.length - 1][0] + 'T00:00:00Z') - Date.parse(s[0][0] + 'T00:00:00Z')) / 86400000) + 1
+      : 1;
+    return n === 1 ? 'seen once' : `seen ${n} of ${Math.max(span, n)} days`;
+  }
   function deltaEl(cur, before, prevDate, goodWhenDown, nDays) {
     if (cur == null || before == null) return el('div', { class: 'sc-delta sc-delta--flat' }, nDays < 2 ? 'first snapshot' : 'no prior value');
     const d = cur - before;
-    if (d === 0) return el('div', { class: 'sc-delta sc-delta--flat' }, '= vs previous day');
+    // The day it is level WITH, not "previous day": trims run on cadences, so
+    // the previous row is two to four snapshot days back as often as one, and
+    // the ▲▼ branch below already names it.
+    if (d === 0) return el('div', { class: 'sc-delta sc-delta--flat' }, '= vs ' + fmtDate(prevDate));
     const good = goodWhenDown ? d < 0 : d > 0;
     return el('div', { class: 'sc-delta ' + (good ? 'sc-delta--good' : 'sc-delta--bad') }, `${d < 0 ? '▼' : '▲'} ${money(Math.abs(d))} vs ${fmtDate(prevDate)}`);
   }
@@ -3827,7 +3863,7 @@
     const today = daily[daily.length - 1] || null, prev = daily.length >= 2 ? daily[daily.length - 2] : null;
     const priced = rows.filter(hasPrice);
     const best = lowestBy(priced, 'price');
-    const med = median(priced.map((x) => x.price));
+    const med = medInt(priced.map((x) => x.price));
     const filteredView = rows.length !== all.length;
     // Is the view narrowed? For tiles 1 and 2 that has to be the filter bar's
     // own question, not a row count: `all` is trimRows(...) too, so the trim
@@ -4086,7 +4122,7 @@
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
       x.stale_pct >= 0.75 ? el('span', null, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
-      x.days_tracked > 1 ? el('span', null, `tracked ${x.days_tracked}d`) : null,
+      x.days_tracked > 1 ? el('span', null, seenLabel(x)) : null,
       x.dealer ? el('span', null, x.dealer) : null,
       flagsCell(x),
       el('span', null, starButton(x)),
@@ -4281,12 +4317,12 @@
         // the Listed column's facts, when the band dropped that column
         bandSlim ? el('span', { class: 'sc-note' },
           (x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : ''))
-          + (x.days_tracked ? ` · tracked ${x.days_tracked}d` : '')) : null,
+          + (x.days_tracked ? ` · ${seenLabel(x)}` : '')) : null,
         bandSlim && x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null);
       const listed = bandSlim ? null : el('td', { class: 'sc-nowrap col-listed' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
         x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
-        x.days_tracked ? el('span', { class: 'sc-note' }, `tracked ${x.days_tracked}d`) : null);
+        x.days_tracked ? el('span', { class: 'sc-note' }, seenLabel(x)) : null);
       const trend = bandSlim ? null : el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
       if (trend) trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');
       body.appendChild(el('tr', null,
@@ -4309,7 +4345,7 @@
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, g.miles != null ? `${num(g.miles)} mi` : '— mi'),
       el('span', null, `last seen ${fmtDate(g.last_seen)}`),
-      el('span', null, `tracked ${g.days_tracked || 0}d${drop}`),
+      el('span', null, `${seenLabel(g) || 'seen 0 days'}${drop}`),
       g.likely && g.likely !== 'delisted'
         ? el('span', null, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null,
       (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
@@ -4384,14 +4420,14 @@
       const likely = g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null;
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
-          gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · tracked ${g.days_tracked || 0}d${drop}`) : null,
+          gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · ${seenLabel(g) || 'seen 0 days'}${drop}`) : null,
           gCompact ? likely : null))),
         el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(g.last_price)), (g.flags || []).length ? el('span', { class: 'sc-note' }, g.flags.join(' · ')) : null),
         el('td', { class: 'sc-num' }, g.miles != null ? num(g.miles) : '—'),
         el('td', { class: 'sc-num' }, g.local ? el('span', { class: 'sc-note' }, 'none') : (g.ship ? money(g.ship) : '—')),
         el('td', { class: 'loc sc-nowrap' }, placeCell(g), el('br'), scopeChip(g)),
         gCompact ? null : el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), likely,
-          gSlim ? el('span', { class: 'sc-note' }, `tracked ${g.days_tracked || 0}d${drop}`) : null),
+          gSlim ? el('span', { class: 'sc-note' }, `${seenLabel(g) || 'seen 0 days'}${drop}`) : null),
         gSlim ? null : el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
     table.appendChild(body);
@@ -4427,7 +4463,7 @@
       const photo = (best && best.image) ? best : (bestLocal && bestLocal.image ? bestLocal : rows.find((x) => x.image) || null);
       return { bk, mk, m, brand: b.label || bk, label: m.label || mk, shopping: !!m.shopping, cadence: m.cadence || 1, as_of: m.as_of, next_due: m.next_due,
         n: rows.length, n_local: rows.filter(isLocal).length, best, bestLocal, photo, photos: rows.filter((x) => x.image).map((x) => x.image).slice(0, 8),
-        median: median(priced.map((x) => x.price)),
+        median: medInt(priced.map((x) => x.price)),
         // the same series the chart above this table draws — while this read
         // m.daily it painted the nation's shape beside a scoped price, and on
         // 21 of 28 state-model pairs it sloped the opposite way to the line
@@ -4679,7 +4715,6 @@
     $('compare-hint').textContent = `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters`
       + `, each column its own market. Prices are not scored against each other — a cheaper car is not a better one — so at most one row marks a winner: “best value vs typical”, and only when every column’s best car had enough siblings of its own trim and year to be judged against them.`
       + financeNote() + costBasisNote();
-    const P = pickParams();
     const stat = cols.map((c) => {
       const priced = c.rows.filter(hasPrice);
       const drive = priced.filter(isLocal);
@@ -4688,7 +4723,7 @@
       const days = c.rows.map((x) => x.days_listed).filter((v) => v != null);
       return { c, priced, best: lowestBy(priced, 'price'), bestLocal: lowestBy(drive, 'price'),
         landed: landedRows.length ? Math.min(...landedRows) : null,
-        med: median(priced.map((x) => x.price)), medMiles: median(c.rows.map((x) => x.miles).filter((v) => v != null)),
+        med: medInt(priced.map((x) => x.price)), medMiles: median(c.rows.map((x) => x.miles).filter((v) => v != null)),
         medDays: days.length ? median(days) : null,
         top: scored.length ? scored[0] : null,
         // The cheapest MONTHLY, which is not the cheapest landed whenever a
@@ -5242,13 +5277,7 @@
         () => toggleIn(S.where, key, fw.querySelector(`[data-fkey="where:${key}"]`), 'rows', { persist: true }));
     }
     syncSortField();
-    const fy = $('f-year'); fy.textContent = '';
-    fy.appendChild(el('option', { value: 'all' }, 'All years'));
-    const pool = overview ? modelsInView().map(({ m }) => m) : [t];
-    const years = [...new Set(pool.flatMap((m) => [...(m.years || []), ...(m.listings || []).map((x) => String(x.year))]))].filter(Boolean).sort();
-    for (const y of years) fy.appendChild(el('option', { value: y }, y));
-    if (S.year !== 'all' && !years.includes(S.year)) S.year = 'all';   // a stale year would blank the select and silently empty the list
-    fy.value = S.year;
+    fillYearSelect(overview ? modelsInView().map(({ m }) => m) : [t], false);
     $('f-miles').value = String(S.miles);
     $('f-sort').value = S.sort;
     $('f-clean').checked = S.clean;
@@ -5258,6 +5287,27 @@
     $('filters-card').hidden = false;
     filterCount();
     syncBarHeight();
+  }
+  // The year select lists the years of the cars IN VIEW — not the years a
+  // target is configured to watch. m.years is what the tracker asks the API
+  // for, and a watched year with no car on the market today was a dead option
+  // that emptied the list with no reader-visible reason. yearSpan() still
+  // reads m.years, because "watching 2024–2026" is a fact about the watch.
+  //
+  // `keep`: on a model-chip press the select is refilled under the reader's
+  // hand, and a year they picked must not snap back to "all" because the
+  // newly pooled models happen to hold none of it — the option stays, marked,
+  // and the empty list says the rest.
+  function fillYearSelect(pool, keep) {
+    const fy = $('f-year'); fy.textContent = '';
+    fy.appendChild(el('option', { value: 'all' }, 'All years'));
+    const years = [...new Set(pool.flatMap((m) => (m.listings || []).map((x) => x.year).filter((y) => y != null).map(String)))].sort();
+    for (const y of years) fy.appendChild(el('option', { value: y }, y));
+    if (S.year !== 'all' && !years.includes(S.year)) {
+      if (keep) fy.appendChild(el('option', { value: S.year }, `${S.year} — none in view`));
+      else S.year = 'all';   // a stale year would blank the select and silently empty the list
+    }
+    fy.value = S.year;
   }
   // What the filters are doing, in words. One list, so the filter bar and the
   // chart's caption can never describe the same scope in different terms.
@@ -5404,7 +5454,7 @@
       // A model chip changes what the page IS — the title says "i5 vs iX", not
       // "the watchlist" — but never rebuilds the filter bar, so the chip the
       // reader is standing on keeps its focus and its place in the tab order.
-      case 'models': overviewTitles(overviewRows()); updateRowsOverview(); break;
+      case 'models': fillYearSelect(modelsInView().map(({ m }) => m), true); overviewTitles(overviewRows()); updateRowsOverview(); break;
       case 'rows': overview ? updateRowsOverview() : updateRows(filtered(), fk); break;
       // The comparison has a listings table on the watchlist too, so these two
       // can no longer assume a model page — filtered() would ask for
