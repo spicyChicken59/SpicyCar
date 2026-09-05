@@ -4967,7 +4967,8 @@ await step('the rate the page is ranking on', async () => {
 // two of them.
 await step('a share names the cars it is a share of', async () => {
   plan('the wide table names the pool the share was taken from',
-       'the narrow band does too', 'and so does the phone card');
+       'the narrow band does too', 'and so does the phone card',
+       'and a trim view cannot read it against its own denominator');
   const subject = WATCHED.find((w) => ((SHEET.brands[w.bk].models[w.mk].listings) || [])
     .some((x) => x.stale_pct != null && x.stale_pct >= 0.6 && x.stale_of));
   if (!subject) return skipRest('no car on this sheet has outlasted 60% of its dated pool');
@@ -4976,8 +4977,11 @@ await step('a share names the cars it is a share of', async () => {
   const notes = async () => page.locator('#list-table, #list-cards').locator('.sc-note, .sc-media__foot span')
     .evaluateAll((ns) => ns.map((n) => n.textContent.trim()).filter((t) => /longer than \d+% of the/.test(t)));
   const judge = (label, seen) => {
-    const named = seen.filter((t) => /longer than \d+% of the \d+ dated cars\b/.test(t));
-    const model = seen.filter((t) => /of the model\b/.test(t));
+    const named = seen.filter((t) => /longer than \d+% of the model's \d+ dated cars\b/.test(t));
+    // "of the model" as the whole claim — not the "of the model's 85 dated
+    // cars" that replaced it, which \b alone happily matches before the
+    // apostrophe and quietly failed every row.
+    const model = seen.filter((t) => /of the model(?!'s)\b/.test(t));
     ok(label, seen.length > 0 && named.length === seen.length && model.length === 0,
        `${seen.length} notes · ${named.length} name their pool · ${model.length} still claim the model`
        + (seen.length ? ` · first: "${seen[0].slice(0, 70)}"` : ''));
@@ -4992,6 +4996,78 @@ await step('a share names the cars it is a share of', async () => {
   await open(subject.q);
   judge('and so does the phone card', await notes());
   await page.setViewportSize({ width: 1280, height: 1000 });
+
+  // The share is the MODEL's — market_stats runs once per model over every
+  // listing on it — while the market sentence beside it is recomputed for the
+  // rows in view. On a trim view those are different pools, and the row used
+  // to print a bare integer that the sentence one line above contradicted.
+  const trim = (SHEET.brands[subject.bk].models[subject.mk].listings || [])
+    .find((x) => x.stale_pct != null && x.stale_pct >= 0.6 && x.stale_of && x.trim_id);
+  if (!trim) return skip('and a trim view cannot read it against its own denominator',
+                         'no dated, long-sitting car on this model carries a trim');
+  await open(`${subject.q}&trims=${encodeURIComponent(trim.trim_id)}`);
+  const seen = await notes();
+  const hint = (await page.textContent('#list-hint')) || '';
+  const viewDated = (hint.match(/\((\d+) of \d+ dated\)/) || [])[1];
+  const rowPools = [...new Set(seen.map((t) => (t.match(/of the model's (\d+) dated/) || [])[1]))];
+  ok('and a trim view cannot read it against its own denominator',
+     seen.length > 0 && seen.every((t) => /of the model's \d+ dated cars/.test(t)),
+     `the view says ${viewDated || 'no'} dated · the rows say the model's ${rowPools.join('/')} `
+     + `· ${seen.length} notes, all naming whose pool it is`);
+});
+
+// ---- the cut sort's own note may not call a sawtooth flip a cut -------------
+// Sorting by "cut at the latest snapshot" prints the number the sort ran on
+// beside each row, because the movement badge shows the LIFETIME change and
+// would otherwise disagree with the ordering. It was printed off lastStep()
+// alone, so a car seen at two prices got "cut $8,010 at the latest snapshot"
+// directly under its own movement note reading "seen at $66,699 and $74,709" —
+// the page contradicting itself twice in one cell. Seven cars were in that
+// state on the day it was found.
+await step('the cut sort does not call a sawtooth flip a cut', async () => {
+  plan('no car seen at two prices carries a cut note',
+       'and a car that really was cut still carries one');
+  // The page's own rule, reproduced: two distinct prices, each seen at least
+  // twice, with a step in each direction.
+  const sawtooth = (x) => {
+    const ps = (x.series || []).map((p) => p[1]).filter(Boolean);
+    const d = [...new Set(ps)].sort((a, b) => a - b);
+    if (d.length !== 2 || ps.length < 4) return false;
+    if (d.some((v) => ps.filter((q) => q === v).length < 2)) return false;
+    const steps = ps.slice(1).map((v, i) => v - ps[i]).filter(Boolean);
+    return steps.some((v) => v < 0) && steps.some((v) => v > 0);
+  };
+  const down = (x) => (x.series || []).length >= 2
+    && x.series[x.series.length - 1][1] < x.series[x.series.length - 2][1];
+  const subject = WATCHED.find((w) => {
+    const L = SHEET.brands[w.bk].models[w.mk].listings || [];
+    return L.some((x) => sawtooth(x) && down(x)) && L.some((x) => !sawtooth(x) && down(x));
+  });
+  if (!subject) return skipRest('no model on this sheet holds both a sawtooth down-day and a real cut');
+  await open(subject.q);
+  await page.selectOption('#f-sort', 'cut');
+  await page.waitForTimeout(350);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(600); }
+  // Read each row whole, so the VIN and the note are judged together.
+  const rows = await page.locator('#list-table tbody tr').evaluateAll(
+    (rs) => rs.map((r) => r.innerText.replace(/\s+/g, ' ')));
+  const L = SHEET.brands[subject.bk].models[subject.mk].listings || [];
+  const tail = (v) => String(v || '').slice(-6).toUpperCase();
+  const rowFor = (x) => rows.find((t) => t.toUpperCase().includes(tail(x.vin)));
+  const saws = L.filter((x) => sawtooth(x) && down(x)).map(rowFor).filter(Boolean);
+  const reals = L.filter((x) => !sawtooth(x) && down(x)).map(rowFor).filter(Boolean);
+  const CUT = /cut \$[\d,]+ at the latest snapshot/;
+  if (!saws.length) return skipRest('no sawtooth car is on screen under this sort');
+  ok('no car seen at two prices carries a cut note',
+     saws.every((t) => !CUT.test(t)),
+     `${saws.length} sawtooth rows on screen · ${saws.filter((t) => CUT.test(t)).length} still claim a cut`
+     + ` · first: "${saws[0].slice(0, 90)}"`);
+  if (!reals.length) return skip('and a car that really was cut still carries one',
+                                 'no ordinary cut is on screen under this sort');
+  ok('and a car that really was cut still carries one',
+     reals.some((t) => CUT.test(t)),
+     `${reals.length} ordinary cut rows on screen · ${reals.filter((t) => CUT.test(t)).length} carry the note`);
 });
 
 // ---- the departures card holds absences, most of which are not departures ---
@@ -5004,7 +5080,8 @@ await step('a share names the cars it is a share of', async () => {
 // split say which of them left.
 await step('the departures card counts absences, not departures', async () => {
   plan('the button offers the absences, not a count of departures',
-       'and the truncated caption says the same');
+       'and the truncated caption says the same',
+       'and so do the heading over it and the link that jumps to it');
   const subject = WATCHED.map((w) => ({ ...w, gone: ((SHEET.brands[w.bk].models[w.mk].gone) || []).length }))
     .sort((a, b) => b.gone - a.gone)[0];
   if (!subject || subject.gone < 2) return skipRest('no model on this sheet has lost enough cars to truncate');
@@ -5012,8 +5089,11 @@ await step('the departures card counts absences, not departures', async () => {
   const more = page.locator('[data-fkey="more:gone"]');
   if (!await more.count()) return skipRest(`${subject.id} shows all ${subject.gone} of its absences at once`);
   const label = (await more.textContent()).trim();
+  // The noun matters: "Show all 114 missing from the latest snapshot" is a
+  // sentence fragment, which is how the first pass at this left it.
   ok('the button offers the absences, not a count of departures',
-     /missing from the latest snapshot/.test(label) && !/\bdepartures\b/.test(label), `button says "${label}"`);
+     /^Show all \d+ vehicles missing from the latest snapshot$/.test(label)
+     && !/\bdepartures\b/.test(label), `button says "${label}"`);
   const hint = (await page.textContent('#gone-hint')) || '';
   // The hint still NAMES departures — "confirmed departures first" is the sort
   // order, which is true — so this asks only that the noun for the whole set
@@ -5021,6 +5101,18 @@ await step('the departures card counts absences, not departures', async () => {
   ok('and the truncated caption says the same',
      /missing from the latest snapshot/.test(hint) && !/departed vehicles/.test(hint),
      `hint says "${hint.slice(0, 120)}"`);
+
+  // The caption and the button were fixed first and the two labels around them
+  // were not, so the card carried its own denial in three places: a heading
+  // reading "Gone from the market", a movement-tile link titled "Jump to the
+  // departed-vehicles list", and a caption saying 76 of the 114 had not gone.
+  const head = ((await page.textContent('#gone-title')) || '').trim();
+  const jump = await page.locator('[data-fkey="kpi:gone"]')
+    .evaluateAll((ns) => ns.map((n) => n.getAttribute('title') || '(no title)'));
+  ok('and so do the heading over it and the link that jumps to it',
+     !/\bgone\b/i.test(head) && !/departed/i.test(head)
+     && jump.length > 0 && jump.every((t) => !/departed/i.test(t)),
+     `heading "${head}" · ${jump.length} jump link(s) titled ${JSON.stringify(jump)}`);
 });
 
 // --- what it costs to open -------------------------------------------------
@@ -5080,7 +5172,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 237;
+const EXPECTED = 241;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

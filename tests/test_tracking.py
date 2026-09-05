@@ -4958,14 +4958,21 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         other figure had set those cars aside."""
         cars = [self._car("A" * 17, [50000, 49000]),
                 self._car("B" * 17, [50000, 51000]),
-                self._car("C" * 17, [54999, 55849, 54999, 55849])]
+                self._car("C" * 17, [54999, 55849, 54999, 55849]),
+                # …and one that is flat at its second price today. It is a
+                # sawtooth car, and it did NOT move between the last two
+                # fetches, so it was never in the count this clause subtracts
+                # from. Counting it would print "2 more" where one was lost —
+                # which is exactly what shipped: 10 on a model where four had
+                # moved, 15 on one where eight had.
+                self._car("D" * 17, [54999, 55849, 54999, 55849, 55849])]
         out = T.brief_lines({"daily": [], "gone": []}, cars, "2026-09-04")
         line = next(l for l in out if "price change" in l)
         self.assertIn("2 price changes", line,
                       "the cut and the raise count; the sawtooth does not")
-        self.assertIn("(1 more seen at two prices, not counted)", line,
-                      "and the reader is told what was set aside, not left to "
-                      "wonder why the totals differ")
+        self.assertIn("(1 more moved, seen at two prices, not counted)", line,
+                      "one sawtooth car moved and was set aside; the flat one "
+                      "was never in the figure to be subtracted from it")
 
     def test_the_note_is_absent_when_there_is_nothing_to_note(self):
         """Saying "0 more seen at two prices" on a clean pool is noise, and a
@@ -5015,6 +5022,43 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
         self.assertIn("1 more cut today", "\n".join(sec))
 
+    def test_the_overflow_line_promises_only_the_sections_that_exist(self):
+        """"…listed in the sections below" was false for 23 of the 50 it
+        counted. events["cuts"] is accumulated over every model fetched today,
+        and only the SHOPPED models get "### trim" sections — the watchlist's
+        other five are one line each under "## Comparison", which lists no cuts
+        at all. The reader who went looking found nothing."""
+        cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
+                       "state": "IL", "local": False},
+                 "label": "T", "amount": 900 - i, "shopping": 1 if i < 4 else 0}
+                for i in range(7)]
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        text = "\n".join(sec)
+        self.assertIn("4 more cuts today, 1 of them listed in the sections below", text,
+                      "three of the four biggest are shown, so one shopped cut "
+                      "is left in the overflow and three unshopped ones are not")
+
+    def test_the_overflow_line_drops_the_clause_when_every_cut_is_shopped(self):
+        """The common case says the plain thing — a count qualified when it
+        needs no qualification is a count the reader stops trusting."""
+        cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
+                       "state": "IL", "local": False},
+                 "label": "T", "amount": 500 + i, "shopping": 1} for i in range(5)]
+        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []})[0])
+        self.assertIn("2 more cuts today, listed in the sections below", text)
+        self.assertNotIn("of them", text)
+
+    def test_the_overflow_line_says_so_when_no_section_covers_it(self):
+        """All four biggest are shopped, so the whole overflow is on models the
+        record only summarises. Pointing at sections that hold none of them is
+        the failure this replaces."""
+        cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
+                       "state": "IL", "local": False},
+                 "label": "T", "amount": 900 - i, "shopping": 1 if i < 3 else 0}
+                for i in range(6)]
+        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []})[0])
+        self.assertIn("3 more cuts today on models the sections below do not cover", text)
+
     # -- the stale tag names what it compared against -----------------------
 
     def test_the_stale_share_carries_the_pool_it_is_a_share_of(self):
@@ -5035,7 +5079,11 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                "miles": 20000, "year": "2024", "trim": "T", "city": "Chicago",
                "state": "IL", "target": "t"}
         out = T.fmt_row(row, {}, cars[3])
-        self.assertIn("sits longer than 75% of the 4 dated cars", out)
+        # "the model's", because market_stats runs once per model over every
+        # listing on it while the page's market sentence is recomputed for the
+        # rows in view. On a trim view the two sat one line apart saying 92 and
+        # 113, both true, reading as a contradiction.
+        self.assertIn("sits longer than 75% of the model's 4 dated cars", out)
 
     def test_an_undated_pool_falls_back_to_the_word_it_can_defend(self):
         """No dated cars means no stale_pct at all, but an entry carried over
@@ -5069,6 +5117,36 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         st = T.market_stats(cars)
         line = T.market_line(st)
         self.assertIn("typical car 15d on market (12 of 20 dated)", line)
+
+    # -- the record's vocabulary, checked on the record it prints ----------
+
+    def test_the_record_never_claims_a_shipping_figure_was_stated(self):
+        """Every shipping number on this site comes out of ship_for(), a model
+        of road factor and distance bands whose constants are uncalibrated —
+        buyer.ship_calibrated is null and the page says "estimate" for exactly
+        that reason. "Shipping stated per car" was the comparison footnote
+        promising a quote. It survived a pass that changed the same two words
+        in a heading eleven lines away, which is why this reads the whole
+        generated record rather than the one line that was fixed."""
+        report = self._report()
+        self.assertNotIn("shipping stated", report)
+        self.assertIn("with a shipping estimate per car", report)
+
+    def test_the_record_never_calls_a_list_sorted_by_asking_the_cheapest(self):
+        """Same reason, same pass, other word: "the cheapest 20" is a claim
+        about landed cost made by a list ordered on asking price."""
+        report = self._report()
+        for phrase in ("cheapest 20", "Cheapest beyond", "five cheapest"):
+            self.assertNotIn(phrase, report, f"the record still says {phrase!r}")
+
+    def _report(self):
+        """The real record, built from the committed history — the only place
+        these strings can be caught, since each is a literal inside a branch
+        that only a full build reaches."""
+        rows = T.load_history()
+        latest = max(r["snapshot_date"] for r in rows)
+        today = [r for r in rows if r["snapshot_date"] == latest]
+        return T.build_outputs(today, rows, T.build_history(rows))[0]
 
     # -- the out-of-state list is sorted by asking, so it says asking -------
 
