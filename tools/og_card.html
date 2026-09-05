@@ -49,18 +49,12 @@
     width: 1200px; height: 630px; box-sizing: border-box;
     padding: 78px 84px 56px;
     display: flex; flex-direction: column;
+    /* Flat ink. A radial spice tint used to sit behind the mark — a
+       decorative gradient, which DESIGN_SYSTEM.md §2's hard rule forbids
+       outright ("no decorative gradients, flat fills only"), and one the page
+       itself never breaks. The card's one heat moment is the chick's own comb,
+       which is spice by construction (§9); it needs no glow thrown behind it. */
     background: var(--sc-ink);
-    /* The one spice note the brand allows, thrown from behind the mark so the
-       lockup at the foot is not competing with it. Semantic token, not a
-       primitive and not a literal: #og-card carries .sc-on-ink, so --sc-accent
-       is spice-400 in BOTH colour schemes (DESIGN_SYSTEM.md §2, "the on-ink
-       context") — which is what an ink card needs, since the page-level
-       --sc-accent flips to spice-700 under prefers-color-scheme: light and
-       would go muddy on this ground. color-mix is the sheet's own idiom for a
-       tint; a raw rgba() here is the exact HYGIENE finding
-       tools/consumer_lint_ci.mjs blocks on the pages. */
-    background-image: radial-gradient(900px 700px at 4% -6%,
-      color-mix(in srgb, var(--sc-accent) 22%, transparent), transparent 56%);
     color: var(--sc-on-ink);
     font-family: var(--sc-font-body);
   }
@@ -78,7 +72,10 @@
     font-size: 42px; line-height: 1.32; margin: auto 0; max-width: 1000px;
     color: var(--sc-on-ink);
   }
-  #og-card .card-say b { font-weight: 600; color: var(--sc-accent); }   /* == spice-400 on ink, both schemes */
+  /* Bold, in the text colour. §2: spice never colours body text — the
+     emphasis is the weight, the same way a .sc-figure is emphasis beside a
+     chart without wearing the chart's hue. */
+  #og-card .card-say b { font-weight: 700; }
   #og-card .card-foot {
     display: flex; justify-content: flex-end; align-items: center;
     border-top: 1px solid var(--sc-ink-line-strong); padding-top: 24px;

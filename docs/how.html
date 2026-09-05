@@ -278,8 +278,15 @@
 
 <footer class="sc-foot">
   <span>Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
-  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
-    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
+  <!-- The watermark, in the form DESIGN_SYSTEM.md §9 fixes for every page: the
+       mono mark at 20px (sized by the sheet, no inline height) beside the
+       wordmark set in the display face. The horizontal lockup that stood here
+       is the cover asset — README headers and decks — and a footer wearing it
+       was one project's footer wearing a different mark from every other. The
+       footer is ink in both schemes, so the cream mono form needs no flip. -->
+  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-mono-cream.svg" alt="">
+    <span class="sc-watermark__name">SpicyChicken</span>
   </a>
 </footer>
 </body>

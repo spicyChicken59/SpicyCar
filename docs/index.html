@@ -614,8 +614,15 @@
 
 <footer class="sc-foot">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
-  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author" aria-label="SpicyChicken">
-    <img class="sc-lockup" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-lockup-cream.svg" alt="SpicyChicken">
+  <!-- The watermark, in the form DESIGN_SYSTEM.md §9 fixes for every page: the
+       mono mark at 20px (sized by the sheet, no inline height) beside the
+       wordmark set in the display face. The horizontal lockup that stood here
+       is the cover asset — README headers and decks — and a footer wearing it
+       was one project's footer wearing a different mark from every other. The
+       footer is ink in both schemes, so the cream mono form needs no flip. -->
+  <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
+    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-mono-cream.svg" alt="">
+    <span class="sc-watermark__name">SpicyChicken</span>
   </a>
 </footer>
 
@@ -3202,7 +3209,13 @@
     const host = $('shortlist'); host.textContent = '';
     const map = shortlistMap(), vins = Object.keys(map);
     if (!show || !vins.length) { host.hidden = true; return; }
-    host.appendChild(el('div', { class: 'sc-callout sc-callout--spice' },
+    // Core, not spice. The front page already has its one spice callout —
+    // #next-callout, the page's one next action (DESIGN_SYSTEM.md §6: "exactly
+    // one spice action per view") — and a second spice block above the fold
+    // made the two compete: if everything is spicy, nothing is. The shortlist
+    // is the reader's own standing decision, which is what a core callout is
+    // for; the star chips on the cars inside it keep their heat.
+    host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
       el('div', { class: 'sc-callout__label sc-with-mark' }, 'shortlist', markImg()),
       el('div', { class: 'sc-grid picks-grid' }, ...vins.map((v) => shortlistCard(v, map[v]))),
       el('p', { class: 'sc-hint' }, 'The specific cars being decided on, watched by VIN — your shortlist, pinned to the front page.')));
@@ -4995,12 +5008,18 @@
       return;
     }
     if (shown > 0 || !total) { n.hidden = true; return; }
+    // The reader's own selection returning nothing is not a failure, and it
+    // does not get the failure's furniture: .sc-notice is the 2px danger
+    // border and eyebrow the dead-link branch above earns, and it was also
+    // wrapping these two, so pressing an empty trim chip painted a red box
+    // over a page that had done exactly what it was asked. §6: nothing to show
+    // is one sentence in muted text, no graphic, no apology — with the way out
+    // riding inside it, as before.
     if (trimsEmpty) {
-      n.appendChild(el('div', { class: 'sc-notice' },
-        el('div', { class: 'sc-eyebrow' }, picked.length > 1 ? 'no cars in these trims right now' : 'no cars in this trim right now'),
-        el('p', null, `The watchlist holds ${num(total)} ${trimName} cars, but none of them are ${picked.map((id) => trimLabel(t, id)).join(' + ')}, `
+      n.appendChild(el('p', { class: 'sc-empty' },
+        `${picked.length > 1 ? 'No cars in these trims right now' : 'No cars in this trim right now'}: the watchlist holds ${num(total)} ${trimName} cars, but none of them are ${picked.map((id) => trimLabel(t, id)).join(' + ')}, `
           + 'so the picks, the map and the price chart below have nothing to draw. ',
-          showAllTrims(), '.')));
+          showAllTrims(), '.'));
       n.hidden = false;
       return;
     }
@@ -5015,9 +5034,8 @@
     // and on the overview there is no model to measure so `total` already is
     // what Clear restores (modelsInView keeps the model selection either way).
     const restorable = t ? trimRows(t.listings || []).length : total;
-    n.appendChild(el('div', { class: 'sc-notice' },
-      el('div', { class: 'sc-eyebrow' }, 'nothing matches these filters'),
-      el('p', null, `All ${num(restorable)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
+    n.appendChild(el('p', { class: 'sc-empty' },
+      `All ${num(restorable)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
         el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
           S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false; S.hideNew = false;
@@ -5026,7 +5044,7 @@
           // and clearing it here would land them on the watchlist with no way
           // back — this path replaces the history entry rather than pushing one.
           savePrefs(); buildFilters(); rerender(S.brand === 'all' ? 'rows' : 'trim');
-        } }, 'Clear the filters'), '.')));
+        } }, 'Clear the filters'), '.'));
     n.hidden = false;
   }
   function orderSections(view) {
@@ -5654,8 +5672,13 @@
     // chick marks — <img src>, which no stylesheet can swap. Re-pointing two
     // attributes also means a flip can no longer throw away the reader's map
     // zoom, which a full re-render could.
-    const syncMarks = () => {
-      const light = isLightTheme();
+    // `forceLight` is for print: sc.css prints in the light tokens whatever
+    // the theme, but an <img src> is not a stylesheet, so a page in "auto" on
+    // a dark OS printed the dark-surface forms of both marks onto white paper
+    // (sc-theme.js flips data-theme for print only when the theme is PINNED
+    // dark, and the observer below already covers that case).
+    const syncMarks = (forceLight) => {
+      const light = forceLight === undefined ? isLightTheme() : forceLight;
       for (const img of document.querySelectorAll('img[data-mark]')) {
         const kind = img.getAttribute('data-mark');
         img.src = ASSETS + (kind === 'color'
@@ -5663,8 +5686,10 @@
           : (light ? 'sc-mark-mono-ink.svg' : 'sc-mark-mono-cream.svg'));
       }
     };
-    new MutationObserver(syncMarks).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', syncMarks);
+    new MutationObserver(() => syncMarks()).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => syncMarks());
+    window.addEventListener('beforeprint', () => syncMarks(true));
+    window.addEventListener('afterprint', () => syncMarks());
   }
 
   // `where` names what failed. It used to be the string "Could not load
