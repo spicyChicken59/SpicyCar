@@ -175,7 +175,7 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   model; on every model, its own picks, a hand-written *know the model* card, a **price-vs-miles
   scatter** (picks ringed, a dashed typical-value line per model year, dots coloured by trim),
   trim/year/mileage
-  filters plus hide-accidents and hide-rentals; sort by asking, asking + shipping, or best value
+  filters plus hide-accidents, hide-rentals and hide-delivery-mileage-stock (under 100 miles is dealer stock, a market of its own — the market tile names the split); sort by asking, asking + shipping, or best value
   vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
   and a price sparkline — the top thirty shown, one press for all; and the "gone" list, twelve
   most recent first.

@@ -3261,9 +3261,23 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         steps = wf.split("      - name: ")
         record = [s for s in steps if "git add data\n" in s]
         self.assertTrue(record, "no step stages data/ on its own")
-        self.assertIn("if: always()", record[0],
+        cond = re.search(r"^\s*if: (.*)$", record[0], re.M)
+        self.assertTrue(cond, "the record step must carry a condition, or it runs nowhere special")
+        self.assertIn("always()", cond.group(1),
                       "the record must be committed on the failure path too — that is "
                       "the only path on which it was being lost")
+        # …and NOT on the success path. A bare always() ran this step on every
+        # good day as well, ahead of the outputs step, and split each snapshot
+        # into two commits — "record" then "snapshot" — for a day that had lost
+        # nothing. The gate has to read the tracker step's own conclusion, so
+        # the step it names must exist under that id.
+        self.assertIn("steps.tracker.conclusion != 'success'", cond.group(1),
+                      "the record step must stand down when the tracker succeeded — "
+                      "the outputs step commits data/ on that path")
+        tracker = [s for s in steps if s.startswith("Run tracker\n")]
+        self.assertTrue(tracker, "the tracker step is not where the gate expects it")
+        self.assertTrue(re.search(r"^\s+id: tracker$", tracker[0], re.M),
+                        "the gate names steps.tracker, so the run step must carry that id")
         # …and only data/. Staging the outputs unconditionally would push a
         # REPORT.md describing a docs/data.json that was never written: main()
         # writes them in that order.
