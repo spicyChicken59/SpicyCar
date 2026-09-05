@@ -451,7 +451,7 @@ def fees_export():
     drivable ones — the Phoenix car and the Naperville car are taxed the same.
 
     Tax is the largest single number the dashboard has never shown: at the
-    configured rate it is roughly $4,600 on a $50,000 car, seven times the
+    configured rate it is roughly $4,600 on a $50,000 car, about six times the
     median shipping estimate the page has always displayed prominently. It also
     behaves differently from shipping, which is the reason it can change a
     ranking rather than merely raise every total: tax SCALES with price while
@@ -678,7 +678,7 @@ def ship_for(r):
         It reorders three of them.
 
     What it does buy is an absolute number worth quoting. "Bring it from
-    Phoenix for about $1,180" is a sentence this model can now say and the flat
+    Phoenix for about $1,240" is a sentence this model can now say and the flat
     one could not, and it is the number the fly-and-drive comparison has to be
     right about to mean anything.
 
@@ -700,15 +700,13 @@ def ship_for(r):
     banded = band_cost(road)
     if banded is not None:
         return int(round(max(floor, banded)))
-    rate = None
-    if rate is None:
-        # No bands configured: the flat rate this replaced, unchanged, so a
-        # config without ship_bands keeps behaving exactly as it did.
-        rate = to_float(BUYER.get("ship_per_mile"))
-        if not rate:
-            return to_int(BUYER.get("ship_cost")) or 0
-        road = d
-    return int(round(max(floor, road * rate)))
+    # No bands configured: the flat rate this replaced, unchanged, so a config
+    # without ship_bands keeps behaving exactly as it did. Straight-line miles
+    # here, not road miles: SHIP_ROAD_FACTOR is part of the banded model.
+    rate = to_float(BUYER.get("ship_per_mile"))
+    if not rate:
+        return to_int(BUYER.get("ship_cost")) or 0
+    return int(round(max(floor, d * rate)))
 
 
 def ship_calibration():
@@ -861,7 +859,12 @@ def score_picks(listings, model_label):
         out.append({**x, "model_label": model_label,
                     "pick_year": p_year, "pick_trim": p_trim,
                     "pick_basis": basis, "pick_n": n,
-                    "pick_under": int(round(med - v)),
+                    # floor(x + .5), not round(): Python rounds half to even and
+                    # JavaScript rounds half up, and the page recomputes this
+                    # figure — two picks read "$1,936 less" here and "$1,937
+                    # less" there over an exact .5 residual. Same for negatives:
+                    # Math.round(-1485.5) is -1485, which is floor(-1485.0).
+                    "pick_under": int(math.floor(med - v + 0.5)),
                     "pick_pct": (med - v) / med if med else 0.0})
     out.sort(key=lambda p: -p["pick_pct"])
     return out
@@ -2301,6 +2304,30 @@ def days_listed(r):
         return (date.fromisoformat(TODAY) - since).days
 
 
+def seen_label(s):
+    """'seen 21 of 42 days', never 'tracked 21d'.
+
+    days_tracked is the length of the price series, and a series grows only on
+    days the car's target was fetched — every second day for half the targets
+    — so "tracked 21d" read as three weeks on a car that had been listed for
+    six. The count is kept, because a slower cadence must not be able to
+    inflate it, and the label says what it counts: sightings, over the span
+    from the first to the last. The dashboard's seenLabel() is the same rule.
+    """
+    n = s.get("days_tracked", 0) or 0
+    series = s.get("series") or []
+    if n == 1:
+        return "seen once"
+    if len(series) < 2:
+        return f"seen {n} days"
+    try:
+        span = (date.fromisoformat(str(series[-1][0])[:10])
+                - date.fromisoformat(str(series[0][0])[:10])).days + 1
+    except (TypeError, ValueError):
+        return f"seen {n} days"
+    return f"seen {n} of {max(span, n)} days"
+
+
 def is_new_today(x):
     """First seen on THIS snapshot, not merely seen once.
 
@@ -2351,7 +2378,7 @@ def fmt_row(r, s, entry=None):
     if s.get("cuts"):
         tags.append(cut_tag(s["cuts"], s.get("delta") or 0))
     if s.get("days_tracked", 0) >= 21:
-        tags.append(f"tracked {s['days_tracked']}d")
+        tags.append(seen_label(s))
     if is_new_today(s):
         tags.append("NEW")
     dl = days_listed(r)
@@ -2414,15 +2441,12 @@ def daily_stats(rows, days=None):
     out = []
     for d in sorted(by_day):
         display = pick_display_rows(by_day[d])
-        adjs = [a for a, _ in (landed(r) for r in display) if a is not None]
         prices = [p for p in (to_int(r["price"]) for r in display) if p]
         out.append({
             "date": d,
             "n": len(display),
             "n_local": sum(1 for r in display if in_scope(r)),
             "min_price": min(prices) if prices else None,
-            "min_adj": min(adjs) if adjs else None,
-            "median_adj": int(median(adjs)) if adjs else None,
             "median_price": int(median(prices)) if prices else None,
         })
     return out
@@ -2617,7 +2641,7 @@ def delisted(tids, all_rows, today_rows, hist):
             "state": r["state"], "local": in_scope(r),
             "distance": row_distance(r), "ship": ship,
             "miles": to_int(r["miles"]),
-            "last_price": last_price, "adj": adj,
+            "last_price": last_price,
             "city": r["city"], "dealer": r["dealer"],
             "url": r["url"], "last_seen": last_day,
             "listed_since": ("" if str(r["listed_since"])[:10] in INDEX_DATES
@@ -2648,7 +2672,13 @@ def delisted(tids, all_rows, today_rows, hist):
 
 def listing_entry(r, s):
     t = TARGETS[r["target"]]
-    adj, ship = landed(r)
+    # landed() also returns the mileage-adjusted value, and it is NOT exported:
+    # nothing on the page reads it, it cost 19KB of data.json, and it is the
+    # one number here that includes buyer.cents_per_mile while the page's own
+    # landed() is price plus shipping — a copy that would silently diverge from
+    # every figure on screen the day that knob is turned on. The reader only
+    # ever sees asking.
+    _, ship = landed(r)
     return {
         "vin": r["vin"], "year": to_int(r["year"]), "trim": r["trim"],
         "trim_id": t["id"], "trim_label": t["label"],
@@ -2658,7 +2688,7 @@ def listing_entry(r, s):
         "lat": to_float(r.get("lat")), "lon": to_float(r.get("lon")),
         "distance": row_distance(r), "ship": ship,
         "miles": to_int(r["miles"]), "price": to_int(r["price"]),
-        "adj": adj, "msrp": to_int(r.get("msrp")),
+        "msrp": to_int(r.get("msrp")),
         "dealer": r["dealer"], "city": r["city"],
         "url": r["url"], "image": r.get("image", ""),
         "carfax": r.get("carfax", ""), "color": r.get("color", ""),
@@ -2739,7 +2769,7 @@ def brief_lines(m_entry, listings, prev_day):
 
 
 def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
-    """Movers, departures, in-state cars by state, best value out of state."""
+    """Movers, departures, in-state cars by state, five cheapest out of state."""
     best = next((x for x in tl if x["price"] is not None), None)
     head = f"### {t['label']} — {len(tl)} vehicles"
     tot = TOTALS.get((t["id"], "National"))
@@ -2768,8 +2798,7 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         sec.append(f"**Gone since {just_gone[0]['last_seen']}**")
         for g in just_gone:
             sec.append(f"- {money(g['last_price'])} · {g['year']} · "
-                       f"{g['city']}, {g['state']} · tracked "
-                       f"{g['days_tracked']}d `{g['vin']}`")
+                       f"{g['city']}, {g['state']} · {seen_label(g)} `{g['vin']}`")
         sec.append("")
     if STATES and not any(x["local"] for x in tl):
         sec += [f"_Nothing drivable ({scope_label()})._", ""]

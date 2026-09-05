@@ -138,8 +138,8 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 ## What you get each day
 
 - `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
-  every drivable listing grouped by state, and the five best-value
-  cars beyond the buyer's states.
+  every drivable listing grouped by state, and the five cheapest
+  cars beyond the buyer's states, with shipping stated.
 - The dashboard — "the watchlist" opens on **the decision**: one tile per model named in
   `buyer.shopping`, each holding the cheapest car of its watched trims all in — asking plus
   shipping plus tax and paperwork, because a California car and an Ohio car are not comparable on

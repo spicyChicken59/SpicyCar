@@ -1645,6 +1645,63 @@ class TestOneCarTwoTargets(unittest.TestCase):
         self.assertFalse(T.is_new_today(e), "a car listed for ten days is not new because a second query found it")
 
 
+class TestSeenLabel(unittest.TestCase):
+    """"tracked 21d" read as three weeks; it was twenty-one sightings on a
+    target fetched every second day, six weeks on the market. The label now
+    says what the count counts, and over what span."""
+
+    def test_sightings_over_the_span_they_cover(self):
+        series = [[f"2026-08-{d:02d}", 40000] for d in (1, 3, 5, 7, 9, 11)]
+        self.assertEqual(T.seen_label({"days_tracked": 6, "series": series}), "seen 6 of 11 days")
+
+    def test_one_sighting_is_once_and_no_series_is_just_the_count(self):
+        self.assertEqual(T.seen_label({"days_tracked": 1, "series": [["2026-08-01", 1]]}), "seen once")
+        self.assertEqual(T.seen_label({"days_tracked": 3}), "seen 3 days")
+
+    def test_the_report_row_carries_it(self):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": "V", "year": "2024", "trim": "eDrive40",
+                  "price": 45000, "miles": 20000, "state": "IL", "city": "Chicago", "snapshot_date": T.TODAY})
+        series = [[f"2026-07-{d:02d}", 45000] for d in range(1, 22)]     # 21 sightings on 21 days
+        line = T.fmt_row(r, {"series": series, "days_tracked": 21, "first_seen": series[0][0]})
+        self.assertIn("seen 21 of 21 days", line)
+        self.assertNotIn("tracked", line)
+
+
+class TestPickUnderRoundsLikeThePage(unittest.TestCase):
+    """The page recomputes "$X less" with Math.round, which rounds half up;
+    Python's round() rounds half to even, so an exact .5 residual printed
+    $1,936 in the report and $1,937 on the page for the same car."""
+
+    def test_an_exact_half_rounds_up(self):
+        rows = [listing(price=p, vin=f"V{p}") for p in (40000, 40001, 40002, 40003)]   # median 40001.5
+        by = {p["vin"]: p for p in T.score_picks(rows, "Four Cars")}
+        self.assertEqual(by["V40001"]["pick_under"], 1, "40001.5 - 40001 = .5 rounds up, as Math.round does")
+        self.assertEqual(by["V40000"]["pick_under"], 2)
+
+
+class TestUnreadValueIsNotExported(unittest.TestCase):
+    """The mileage-adjusted value is the one figure that includes
+    buyer.cents_per_mile while the page's landed() is asking plus shipping —
+    a copy nothing reads, 19KB of data.json, that would silently disagree with
+    every number on screen the day that knob is turned on."""
+
+    def test_listing_daily_and_departure_rows_carry_no_adj(self):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": "bmw-i5-edrive40", "vin": "V", "year": "2024", "trim": "eDrive40",
+                  "price": 45000, "miles": 20000, "state": "IL", "city": "Chicago", "snapshot_date": T.TODAY})
+        self.assertNotIn("adj", T.listing_entry(r, {"series": []}))
+        day = T.daily_stats([r])[0]
+        self.assertNotIn("min_adj", day)
+        self.assertNotIn("median_adj", day)
+        self.assertIn("median_price", day, "the price median stays; only the adjusted copies go")
+        gone = dict(r, vin="G", snapshot_date=date.fromordinal(T.TODAY_ORD - 3).isoformat())
+        _, site, _ = T.build_outputs([r], [r, gone], T.build_history([r, gone]))
+        departed = site["brands"]["bmw"]["models"]["i5"]["gone"]
+        self.assertTrue(departed, "the fixture's second car must come out as a departure")
+        self.assertTrue(all("adj" not in g for g in departed))
+
+
 class TestDaysListedAnchor(unittest.TestCase):
     """Days on market is measured from the day the row was OBSERVED.
 
@@ -2343,12 +2400,16 @@ class TestConfig(unittest.TestCase):
     def test_the_i7_certified_watch_cannot_reach_a_certified_i7(self):
         """Stood down because it cannot work, not because it was expensive.
 
-        Zero rows in ten days of fetching, at 30 calls a month. The query takes
-        the 40 lowest-mileage i7s nationally on miles.asc and then filters to
-        certified under 30,000 miles — but the lowest-mileage i7s in the
-        country are 2026 cars at 1-14 miles, which are new inventory and not
-        certified. The first certified i7 sits below a 40-record window, so no
-        number of pages of miles.asc reaches one.
+        Stood down before it ever ran, on a prediction rather than a
+        measurement — added 2026-09-01 with offset 1 on cadence 2, first due
+        2026-09-02, stood down the same day: 0 rows, 0 calls, and the 30 calls
+        a month is a plan figure, not a spend. The mechanism is what is
+        measured: the query takes the 40 lowest-mileage i7s nationally on
+        miles.asc and then filters to certified under 30,000 miles, and in the
+        i7 rows observed the whole 40-record window is 2026 new inventory at
+        1-4 miles, none certified. Deeper pagination would eventually reach a
+        certified car, but not for 30 calls a month while the ordinary eDrive50
+        query already holds certified sub-30k i7s.
 
         This test exists so it cannot be switched back on without the fix. The
         i5 watch is left alone: it works, on a narrower year range.
@@ -2831,7 +2892,8 @@ class TestSourceOverlap(unittest.TestCase):
 
     Half of most targets' calls go to asking the buyer's eight states the same
     question the national query just asked, and the obvious saving — make the
-    benchmark models national_only — is worth about 180 calls a month. Whether
+    benchmark models national_only — is worth about 120 calls a month, the
+    States half of the eleven non-shopping targets at today's cadences. Whether
     it is FREE is a different question: National sorted by price returns the
     twenty cheapest in the country, which on a model whose cheap end sits in
     California can be twenty cars none of them drivable, while the States query
