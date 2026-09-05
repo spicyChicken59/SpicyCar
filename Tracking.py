@@ -2454,10 +2454,39 @@ def is_cpo(r):
     return str(r.get("cpo", "")).lower() in ("1", "true", "y")
 
 
+def seller_named(r, brand):
+    """Does the seller's own name carry the brand word?
+
+    Manufacturer certification is issued by the manufacturer's own stores, so
+    a car flagged certified at a dealership whose name says Acura or Nissan is
+    a claim worth confirming before it is counted on — and on this record 21 of
+    46 certified cars are exactly that, including the cheapest car in the
+    certified watch, at "niello acura". The dashboard has said so since the
+    promo strip was built; the report printed a bare CPO.
+
+    Whole word, not substring, and the brand KEY rather than its label — the
+    same test docs/index.html's sellerNamed() makes with /\bbmw\b/i, so the two
+    surfaces cannot disagree about which sellers count. The word set below is
+    that regex without importing one: every run of non-alphanumeric characters
+    is a separator, which is where \b falls for these names — "bmw of
+    chicago" and "bmw-of-chicago" match, "bmwofchicago" and "3bmw" do not,
+    exactly as the page has them. An empty dealer name fails it, which is the
+    conservative direction: a certification nobody is named for is exactly the
+    one to confirm.
+    """
+    b = str(brand or "").strip().lower()
+    name = str(r.get("dealer") or "")
+    words = set("".join(c if c.isalnum() else " " for c in name).lower().split())
+    return bool(b) and b in words
+
+
 def flags(r):
     out = []
     if is_cpo(r):
-        out.append("CPO")
+        t = TARGETS.get(r.get("target")) or {}
+        brand = t.get("brand")
+        out.append("CPO" if not brand or seller_named(r, brand)
+                   else f"CPO (seller not named {t.get('brand_label') or str(brand).upper()})")
     # Right after the certified chip, which is the slot flagsCell() uses on the
     # page — the report and the dashboard describe the same car from the same
     # list, and two surfaces that order it differently are two surfaces that

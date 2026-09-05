@@ -2059,7 +2059,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "",
        "days_listed": null,
@@ -2154,7 +2154,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "multi-use",
         "2 owners",
         "no accidents"
@@ -2252,7 +2252,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "",
        "days_listed": null,
@@ -4262,7 +4262,7 @@
        "accidents": 0,
        "usage": "Multiple Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "multi-use",
         "2 owners",
         "no accidents"
@@ -5972,7 +5972,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "2026-09-03",
        "days_listed": 2,
@@ -6019,7 +6019,7 @@
        "accidents": 0,
        "usage": "Personal Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "1-owner",
         "no accidents"
        ],
@@ -7050,7 +7050,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "2026-08-28",
        "days_listed": 8,
@@ -7763,7 +7763,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "",
        "days_listed": null,
@@ -8595,7 +8595,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "2026-08-01",
        "days_listed": 35,
@@ -8739,7 +8739,7 @@
        "accidents": 0,
        "usage": "Personal Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "1-owner",
         "no accidents"
        ],
@@ -10093,7 +10093,7 @@
        "accidents": 0,
        "usage": "Corporate Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "fleet",
         "1-owner",
         "no accidents"
@@ -11566,7 +11566,7 @@
         ]
        ],
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "1-owner",
         "no accidents"
        ]
@@ -12574,7 +12574,7 @@
         ]
        ],
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ]
       },
       {
@@ -13604,7 +13604,7 @@
         ]
        ],
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ]
       },
       {
@@ -13986,7 +13986,7 @@
         ]
        ],
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ]
       },
       {
@@ -14023,7 +14023,7 @@
         ]
        ],
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ]
       },
       {
@@ -16832,7 +16832,7 @@
        "accidents": 0,
        "usage": "Lease",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "1-owner",
         "no accidents",
         "ex-lease"
@@ -17148,7 +17148,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "2026-07-29",
        "days_listed": 38,
@@ -19287,7 +19287,7 @@
        "accidents": 0,
        "usage": "Vehicle Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "no accidents"
        ],
        "listed_since": "",
@@ -19590,7 +19590,7 @@
        "accidents": 0,
        "usage": "Lease Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "no accidents",
         "ex-lease"
        ],
@@ -19651,7 +19651,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "",
        "days_listed": null,
@@ -25184,7 +25184,7 @@
         ]
        ],
        "flags": [
-        "CPO",
+        "CPO (seller not named BMW)",
         "1-owner",
         "no accidents"
        ]
@@ -28241,7 +28241,7 @@
         ]
        ],
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ]
       },
       {
@@ -28504,7 +28504,7 @@
         ]
        ],
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ]
       },
       {
@@ -31599,7 +31599,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "",
        "days_listed": null,
@@ -32316,7 +32316,7 @@
        "accidents": null,
        "usage": "",
        "flags": [
-        "CPO"
+        "CPO (seller not named BMW)"
        ],
        "listed_since": "2026-08-12",
        "days_listed": 22,
@@ -35137,7 +35137,7 @@
         ]
        ],
        "flags": [
-        "CPO"
+        "CPO (seller not named Hyundai)"
        ]
       },
       {
@@ -39100,7 +39100,7 @@
        "accidents": 0,
        "usage": "Personal Use",
        "flags": [
-        "CPO",
+        "CPO (seller not named Audi)",
         "1-owner",
         "no accidents"
        ],

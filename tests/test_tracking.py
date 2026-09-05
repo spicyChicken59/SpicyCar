@@ -2409,6 +2409,74 @@ class TestFlagsNameARental(unittest.TestCase):
         self.assertEqual(got.index("rental"), got.index("CPO") + 1)
 
 
+class TestACertificationIsIssuedBySomeone(unittest.TestCase):
+    """Manufacturer certification is issued by the manufacturer's own stores,
+    so a car flagged certified at a dealership named for another marque is a
+    claim to confirm rather than count on. On this record 21 of 46 certified
+    cars are exactly that — including the cheapest car in the certified watch,
+    a $64,491 i5 at "niello acura", printed with a bare CPO directly under a
+    note saying the 2.99% certified promo is the reason to watch these.
+
+    The dashboard has flagged it since the promo strip was built, in these
+    words. The committed record said nothing, which is the drift this repo
+    keeps finding: a rule enforced on the surface someone is reading and not
+    on the one that is kept."""
+
+    TID = "bmw-i5-edrive40"
+
+    def row(self, dealer, **kw):
+        r = {"usage": "Personal Use", "owners": 1, "accidents": 0,
+             "cpo": "true", "target": self.TID, "dealer": dealer}
+        r.update(kw)
+        return r
+
+    def test_a_bmw_store_gets_the_bare_badge(self):
+        self.assertIn("CPO", T.flags(self.row("irvine bmw")))
+        self.assertNotIn("CPO (seller not named BMW)", T.flags(self.row("irvine bmw")))
+
+    def test_another_marque_says_so(self):
+        self.assertIn("CPO (seller not named BMW)", T.flags(self.row("niello acura")))
+
+    def test_the_brand_must_be_a_whole_word(self):
+        """The page tests /\\bbmw\\b/i. A dealership called "bmwofchicago" is
+        not evidence of anything — and one called "bmw-of-chicago" is, because
+        a hyphen is where that boundary falls."""
+        self.assertIn("CPO (seller not named BMW)", T.flags(self.row("bmwofchicago")))
+        self.assertIn("CPO", T.flags(self.row("bmw-of-chicago")))
+        self.assertNotIn("CPO (seller not named BMW)", T.flags(self.row("bmw-of-chicago")))
+
+    def test_a_seller_with_no_name_is_the_one_to_confirm(self):
+        """Conservative direction: a certification nobody is named for is
+        exactly the case the caveat exists for."""
+        self.assertIn("CPO (seller not named BMW)", T.flags(self.row("")))
+
+    def test_an_uncertified_car_wears_neither(self):
+        got = T.flags(self.row("niello acura", cpo=""))
+        self.assertEqual([w for w in got if w.startswith("CPO")], [])
+
+    def test_the_caveat_keeps_the_page_ordering(self):
+        """Still the first flag, still ahead of the rental word — the slot
+        flagsCell() uses, so the two surfaces read the same way."""
+        got = T.flags(self.row("niello acura", usage="Rental Use"))
+        self.assertEqual(got[0], "CPO (seller not named BMW)")
+        self.assertEqual(got[1], "rental")
+
+    def test_the_record_carries_it_where_a_reader_meets_it(self):
+        """End to end, on the committed record: no certified row may print a
+        bare CPO when its own seller line names another marque."""
+        rows = T.load_history()
+        latest = max(r["snapshot_date"] for r in rows)
+        report = T.build_outputs([r for r in rows if r["snapshot_date"] == latest],
+                                 rows, T.build_history(rows))[0]
+        lines = report.splitlines()
+        bare = [i for i, l in enumerate(lines)
+                if "· CPO ·" in l or l.rstrip("_").endswith("· CPO")]
+        for i in bare:
+            seller = " ".join(lines[i + 1:i + 3]).lower()
+            self.assertIn("bmw", seller,
+                          f"line {i + 1} wears a bare CPO over {seller[:60]!r}")
+
+
 class TestDepartureEvidence(unittest.TestCase):
     """A departure counts as a car that left only where a query actually looked.
 

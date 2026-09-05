@@ -5016,6 +5016,32 @@ await step('a share names the cars it is a share of', async () => {
      + `· ${seen.length} notes, all naming whose pool it is`);
 });
 
+// ---- a certified badge names who issued it ---------------------------------
+// Manufacturer certification is issued by the manufacturer's own stores, so a
+// car flagged certified at a dealership named for another marque is a claim to
+// confirm rather than count on. 21 of the 46 certified cars on this sheet are
+// exactly that. The listings table has said so since the promo strip was
+// built; the departures card renders the builder's own `flags` array, which
+// printed a bare "CPO" — the same badge, the same reader, one surface short.
+await step('a certified badge on a departed car names who issued it', async () => {
+  plan('a departed certified car at another marque says so');
+  const caveat = (g) => (g.flags || []).some((f) => /seller not named/i.test(f));
+  const subject = WATCHED.find((w) => ((SHEET.brands[w.bk].models[w.mk] || {}).gone || []).some(caveat));
+  if (!subject) return skipRest('no departed car on this sheet is certified at a seller of another marque');
+  const car = (SHEET.brands[subject.bk].models[subject.mk].gone || []).find(caveat);
+  await open(subject.q);
+  const more = page.locator('[data-fkey="more:gone"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(600); }
+  const row = await page.locator('#gone-table tbody tr, #gone-cards > *').evaluateAll((rs, tail) => {
+    const hit = rs.find((r) => r.innerText.toUpperCase().includes(tail));
+    return hit ? hit.innerText.replace(/\s+/g, ' ') : '';
+  }, String(car.vin).slice(-6).toUpperCase());
+  if (!row) return skipRest(`${car.vin} is not on screen in the departures card`);
+  ok('a departed certified car at another marque says so',
+     /CPO \(seller not named [A-Za-z]+\)/.test(row),
+     `row reads "${row.slice(0, 150)}"`);
+});
+
 // ---- the record and the page tell one story about one model ---------------
 // Both read the same data.json and print the same market sentence, and they
 // have drifted apart three times: a threshold on one side only, a word fixed
@@ -5282,7 +5308,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 246;
+const EXPECTED = 247;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
