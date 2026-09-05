@@ -11881,7 +11881,8 @@
        "still_listed": {
         "trim_id": "bmw-i5-xdrive40",
         "trim": "xDrive40",
-        "price": 51476
+        "price": 51476,
+        "cpo": false
        },
        "exact": true,
        "vin": "WBY13HG00SCU51722",
@@ -12045,7 +12046,8 @@
        "still_listed": {
         "trim_id": "bmw-i5-xdrive40",
         "trim": "xDrive40",
-        "price": 56000
+        "price": 56000,
+        "cpo": false
        },
        "exact": true,
        "vin": "WBY13HG08SCT19677",
