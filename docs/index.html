@@ -494,6 +494,9 @@
           <option value="mo">a month</option>
         </select>
       </label>
+      <label class="sc-field" id="f-vin-field">VIN
+        <input class="sc-input sc-case" id="f-vin" type="text" autocomplete="off" spellcheck="false" maxlength="17" placeholder="last 6, or all 17" aria-label="Open a car by VIN — the full VIN or its last six characters">
+      </label>
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
       <label class="sc-check" title="Certified pre-owned only — the cars the promo financing applies to"><input type="checkbox" id="f-cpo"> CPO only</label>
@@ -646,7 +649,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -907,6 +910,18 @@
   }
   const onShortlist = (x) => String(x.vin || '').toUpperCase() in shortlistMap();
   // Find one VIN anywhere on the watchlist — among live listings first, then the gone lists.
+  // Every car whose VIN ends in `tail`, live rows first and departed ones
+  // after, one entry per VIN. A full VIN is its own tail, so one resolver
+  // serves the windshield sticker and the last six characters a reader
+  // remembers from it.
+  function findVinTail(tail) {
+    const out = [];
+    for (const gone of [false, true]) for (const { bk, mk, m } of allModels()) for (const x of (gone ? m.gone : m.listings) || []) {
+      const v = String(x.vin || '').toUpperCase();
+      if (v.endsWith(tail) && !out.some((o) => String(o.x.vin || '').toUpperCase() === v)) out.push({ x, m, bk, mk, gone });
+    }
+    return out;
+  }
   function findVin(vin) {
     for (const { bk, mk, m } of allModels()) {
       const x = (m.listings || []).find((l) => String(l.vin || '').toUpperCase() === vin);
@@ -3062,6 +3077,7 @@
       q.set('brand', S.brand);
       if (S.model) q.set('m', S.model);
       if (S.trims.size) q.set('trims', selectedTrims(model()).join(','));
+      if (S.vinAsk) q.set('vin', S.vinAsk);   // the car in hand rides with its model page and leaves with it
     } else if (S.models.size) {
       q.set('models', modelsInView().map(({ bk, mk }) => modelSlug(bk, mk)).join(','));
     }
@@ -3094,6 +3110,24 @@
       for (const [bk, b] of Object.entries(S.site.brands)) if (own(b.models, wantM)) { S.brand = bk; S.model = wantM; }
       if (!S.model) urlMiss = { asked: wantM, kind: 'car' };
     }
+    // ?vin= — a car in hand. At a dealer the buyer has seventeen characters
+    // on a windshield and a page that could only be walked by model. The
+    // full VIN or its tail (six characters or more) is resolved over live
+    // rows, then departed ones, and honoured only when exactly one car
+    // answers: that car's model opens with the car itself in the notice
+    // slot and its row landed on. Two answers say so and stop — a tail that
+    // fits two cars is not a car — and none goes through the same dead-link
+    // notice a model nobody tracks does. Either way the address bar is
+    // rewritten, so a bad link is never re-shared. Fewer than six characters
+    // is not looked up at all: the last four are a plate, not a car.
+    S.vinAsk = null;
+    const wantVin = String(q.get('vin') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (wantVin) {
+      const hits = wantVin.length >= 6 ? findVinTail(wantVin) : [];
+      if (hits.length === 1) { const h = hits[0]; S.brand = h.bk; S.model = h.mk; S.models = new Set(); S.trims = new Set(); S.vinAsk = String(h.x.vin).toUpperCase(); urlMiss = null; }
+      else if (hits.length > 1) urlMiss = { asked: wantVin, kind: 'vins', count: hits.length };
+      else urlMiss = { asked: wantVin, kind: 'vin' };
+    }
     // The selection, restored against the live watchlist. A link that names
     // four cars of which one has since been dropped is neither a clean hit nor
     // a dead link: keep the three that still exist, say which one went, and let
@@ -3120,7 +3154,7 @@
     // all 136 of its cars on screen, and saying "showing the whole watchlist
     // instead" there describes a page the reader is not looking at.
     if (missed.length && !urlMiss) urlMiss = { asked: missed.join(', '), kind: (S.brand !== 'all' || S.models.size) ? 'part' : 'car' };
-    S.year = 'all'; S.showAllList = S.showAllGone = false;
+    S.year = 'all'; S.showAllList = S.showAllGone = false;   // vinAsk is set above and kept: it is what this link is for
     // A model the link put in the comparison must be visible in it, whatever a
     // legend chip pressed earlier in this visit switched off.
     for (const k of S.models) S.hidden.delete(k);
@@ -3132,7 +3166,7 @@
   function pickBrand(id) {
     S.brand = id;
     if (id !== 'all') S.model = Object.keys(S.site.brands[id].models)[0];
-    S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false;
+    S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; S.vinAsk = null;
     syncUrl(); rerender('nav');
   }
   // Opening one car out of a comparison is a drill-down, not an exit: the model
@@ -3140,7 +3174,7 @@
   // button, which this pushes a state for — returns to the comparison the
   // reader built instead of to a watchlist they have to rebuild it from.
   function goTo(bk, mk, vin) {
-    S.brand = bk; S.model = mk; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav');
+    S.brand = bk; S.model = mk; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; S.vinAsk = null; syncUrl(); rerender('nav');
     if (!(vin && landOnCar(vin))) window.scrollTo(0, 0);
   }
   // One tap lands on the car, not the model. Every tile that names a car
@@ -4232,7 +4266,7 @@
     ]);
     segment($('tabs-brand'), ['all', ...brandIds], S.brand, brandLabel, true, pickBrand, 'tab-brand');
     segment($('tabs'), modelIds, S.model, (id) => brand.models[id].label || id, true,
-      (id) => { S.model = id; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); }, 'tab-model');
+      (id) => { S.model = id; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; S.vinAsk = null; syncUrl(); rerender('nav'); }, 'tab-model');
   }
 
   // Since-the-previous-snapshot movement, one rule for both views: a cut is a
@@ -5461,6 +5495,26 @@
     n.appendChild(el('p', { class: 'sc-hint', 'data-since': since }, `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.`));
     n.hidden = false;
   }
+  // The car in hand: a link or the VIN field named one car and its model
+  // page opened underneath. The car itself goes in the notice slot, drawn as
+  // the shortlist card already draws a car — price, movement, the star, the
+  // links — with the departed form where the row is a gone one, so a VIN off
+  // a windshield lands on its own facts rather than on a table to walk. Only
+  // when nothing else claims the slot: an emptied selection or a dead part of
+  // the link says its own thing there first.
+  function renderVinInHand(t) {
+    if (!S.vinAsk) return;
+    const n = $('notice');
+    const hit = findVin(S.vinAsk);
+    if (!hit || hit.mk !== S.model || !n.hidden) return;
+    n.appendChild(el('div', { class: 'sc-callout sc-callout--core', 'data-vin-in-hand': S.vinAsk },
+      el('div', { class: 'sc-callout__label' }, 'the car in hand'),
+      el('div', { class: 'sc-grid picks-grid' }, shortlistCard(S.vinAsk, '')),
+      el('p', { class: 'sc-hint' }, hit.gone
+        ? `This car has left the model's rows — last seen ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}${hit.x.likely === 'delisted' ? ', and its listing ended' : ', and it may only have fallen outside a fetch window'}.`
+        : `Its row is in the list below, ${t.label || S.model}'s own; the star keeps it.`)));
+    n.hidden = false;
+  }
   function renderEmptyNotice(shown, total) {
     const n = $('notice');
     n.textContent = '';
@@ -5502,8 +5556,15 @@
       const stranded = miss.kind === 'part' && trimsEmpty;
       n.appendChild(el('div', { class: 'sc-notice' },
         el('div', { class: 'sc-eyebrow' }, miss.kind === 'brand' ? 'that brand is not tracked'
-          : miss.kind === 'part' ? 'part of that comparison is gone' : 'that car is no longer tracked'),
-        el('p', null, miss.kind === 'part'
+          : miss.kind === 'part' ? 'part of that comparison is gone'
+          : miss.kind === 'vins' ? 'that VIN fits more than one car'
+          : miss.kind === 'vin' ? 'no car on the sheet has that VIN' : 'that car is no longer tracked'),
+        el('p', null, miss.kind === 'vins'
+          // a tail that fits two cars is not a car: say how many, ask for more
+          ? `${miss.count} cars on the sheet end in “${miss.asked}” — add characters and try again. Showing the whole watchlist.`
+          : miss.kind === 'vin'
+          ? `No car the tracker has seen ends in “${miss.asked}”${miss.asked.length < 6 ? ' — six characters at least, or the full seventeen' : ''}. Showing the whole watchlist.`
+          : miss.kind === 'part'
           // the rest of the link opened; only the missing part is reported, and
           // the address bar has already been rewritten to what is actually shown
           ? 'The link also asked for “' + miss.asked + '”, which is not on the watchlist any more — '
@@ -5628,6 +5689,7 @@
     // silently skipped the notice: pressing "CPO under 30k mi 0" on the i5 left
     // 136 cars' worth of page as dashes with nothing said and no way back.
     renderEmptyNotice(rows.length, (t.listings || []).length);
+    renderVinInHand(t);
     const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
     renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
     filterCount();
@@ -6056,6 +6118,17 @@
     $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); rerender('rows'); });
     $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender('sort'); });
     $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender('rows'); });
+    // The VIN field is a link the reader types: it goes through the address
+    // bar and applyUrl, so a typed VIN and a shared ?vin= link are one path,
+    // one resolver and one set of notices.
+    $('f-vin').addEventListener('change', (e) => {
+      const v = String(e.target.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (!v) return;
+      history.pushState(null, '', location.pathname + '?vin=' + encodeURIComponent(v));
+      applyUrl(); buildFilters(); rerender('nav');
+      if (S.vinAsk) landOnCar(S.vinAsk);
+      e.target.value = '';
+    });
     $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender('rows'); });
     $('f-cpo').addEventListener('change', (e) => { S.cpo = e.target.checked; rerender('rows'); });
     $('f-hidenew').addEventListener('change', (e) => { S.hideNew = e.target.checked; rerender('rows'); });
@@ -6236,6 +6309,7 @@
       window.addEventListener('popstate', () => { applyUrl(); rerender('nav'); });
       buildFilters();
       render();
+      if (S.vinAsk) landOnCar(S.vinAsk);
     })
     .catch((e) => fail(String(e.message || e)));
 })();

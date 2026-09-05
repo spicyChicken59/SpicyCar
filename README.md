@@ -188,7 +188,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   filters plus hide-accidents, hide-rentals and hide-delivery-mileage-stock (under 100 miles is dealer stock, a market of its own — the market tile names the split); sort by asking, asking + shipping, or best value
   vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
   and a price sparkline — the top thirty shown, one press for all; and the "gone" list, twelve
-  most recent first.
+  most recent first. A VIN field (and `?vin=`) opens one car by its full VIN or its last six
+  characters — the model page with the car at the top and its row landed on; a tail that fits two
+  cars says so and opens nothing, and a VIN nobody has seen goes through the dead-link notice.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home. The `via` column records which queries returned each row (`National:miles.asc|States:price.asc`), because a target fetching two sorts has two windows and without it a car pushed out of one cannot be told from a car that left the market. Blank on every row written before the column existed — that provenance is genuinely unrecoverable, which is why exit prices are currently withheld for multi-sort targets.
 
 ## Run it yourself
