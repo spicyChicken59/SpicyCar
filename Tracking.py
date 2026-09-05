@@ -1099,6 +1099,12 @@ def market_stats(listings):
         "tracked_2d": len(tracked),
         "cut_share": round(len(cut_cars) / counted, 2) if counted else None,
         "median_cut": int(median(drops)) if drops else None,
+        # …and how many steps that median is over. The share beside it counts
+        # CARS (117 on the i5) and the median counts downward STEPS (139), a
+        # mismatch one sentence hid by giving the median no denominator at
+        # all. It is also the honest answer to "could a $1 move be propping
+        # this up": a median of $600 over 139 steps cannot be.
+        "n_cuts": len(drops),
         "net_down": len(net_down),
         "restored": len(restored),
         "median_net_drop": int(median(-x["delta"] for x in net_down)) if net_down else None,
@@ -1430,9 +1436,15 @@ def market_line(stats):
             if stats.get("restored"):
                 held += f" · {stats['restored']} cut and put back"
             bits.append(held)
-        cut = f"{stats['cut_share']:.0%} cut while tracked"
+        # …with the denominator the page has always printed. The share counts
+        # CARS and the median counts downward STEPS: two different figures in
+        # one clause, and until now only one of them said what it was over.
+        counted = stats.get("tracked_2d", 0) - stats.get("two_priced", 0)
+        cut = f"{stats['cut_share']:.0%} of {counted} cut while tracked"
         if stats.get("median_cut"):
             cut += f", median {money(stats['median_cut'])}"
+            if stats.get("n_cuts"):
+                cut += f" of {stats['n_cuts']} cut{'s' if stats['n_cuts'] != 1 else ''}"
         if stats.get("two_priced"):
             cut += f" · {stats['two_priced']} seen at two prices, not counted"
         bits.append(cut)
@@ -3026,8 +3038,16 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
     sec += [head, ""]
     if t["note"]:
         sec += [f"_{t['note']}_", ""]
-    movers = [x for x in tl if len(x["series"]) >= 2
-              and x["series"][-1][1] != x["series"][-2][1]]
+    # Largest move first, not cheapest car first. A $1 tick and a $7,500 cut
+    # read alike in a list ordered by asking price, and the answer to that is
+    # to make scale visible rather than to delete the tick: it is exactly what
+    # happened, and no threshold on this record can be defended — the sizes
+    # below $200 run 1, 1, 1, 1, 1, 1, 10, 40, 44, 49, 49, 50, 58, 59, 76, 80,
+    # 80, 80, 80, 85 nine times, 95, 99, 100 five times, so $100 falls at the
+    # densest point of the tail rather than at a gap.
+    movers = sorted([x for x in tl if len(x["series"]) >= 2
+                     and x["series"][-1][1] != x["series"][-2][1]],
+                    key=lambda x: -abs(x["series"][-1][1] - x["series"][-2][1]))
     if movers:
         sec.append("**Price changes**")
         for x in movers:

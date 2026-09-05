@@ -744,6 +744,84 @@ class TestPicks(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# A small cut is a cut. The median of them carries its own count.
+# --------------------------------------------------------------------------
+class TestASmallCutIsStillACut(unittest.TestCase):
+    """A $1 move printed among the i7's price changes suggested a threshold —
+    below $100, say, a move is a tick rather than a change. Every version of
+    that failed on this record, and the reasons are worth keeping:
+
+    the count it would change ("N ask less than when first seen") is arithmetic
+    on two prices the page is DISPLAYING, so a threshold would make the page
+    contradict its own two numbers; a Lucid Air that walked down $585 in four
+    monotone $85 and $415 steps would vanish from the movement tile on the day
+    it moved, with no sawtooth to excuse it; the sizes below $200 run 1, 1, 1,
+    1, 1, 1, 10, 40, 44, 49, 49, 50, 58, 59, 76, 80, 80, 80, 80, 85 nine times,
+    95, 99, then 100 five times, so $100 sits at the densest point of the tail
+    rather than at a gap; a second "not counted" bucket would overlap the
+    two-price one (two cars are in both) and double-subtract the denominator;
+    a row would draw a falling sparkline under a tag reporting no fall; and the
+    $1 line that started it is an UPWARD move, which no cut figure counts at
+    all.
+
+    What the record was actually missing is the denominator the house rule
+    asks for. The share counts CARS and the median counts downward STEPS, and
+    one sentence carried both with only one of them named."""
+
+    def _car(self, vin, prices, **kw):
+        d0 = T.TODAY_ORD - len(prices)
+        return {**listing(price=prices[-1], vin=vin),
+                "series": [[date.fromordinal(d0 + i).isoformat(), p] for i, p in enumerate(prices)],
+                "days_tracked": len(prices),
+                "cuts": sum(1 for a, b in zip(prices, prices[1:]) if b < a),
+                "delta": prices[-1] - prices[0], **kw}
+
+    def test_a_lone_sub_100_cut_is_still_a_cut_everywhere(self):
+        """The real WBY33FK06RCR50278 shape: flat at $41,990, then $41,891 —
+        one $99 cut. It is in the share's numerator, in the steps behind the
+        median, and in the cars asking less than when first seen."""
+        cars = [self._car("N" * 17, [41990] * 4 + [41891])]
+        cars += [self._car(f"F{i:016d}", [50000, 50000, 50000 - 400 * (i + 1)]) for i in range(4)]
+        st = T.market_stats(cars)
+        self.assertEqual(st["tracked_2d"], 5)
+        self.assertEqual(st["cut_share"], 1.0, "five cars, five cut: the $99 one counts")
+        self.assertEqual(st["n_cuts"], 5, "and its step is one of the five behind the median")
+        self.assertEqual(st["median_cut"], 800, "median of 99, 400, 800, 1200, 1600")
+        self.assertEqual(st["net_down"], 5)
+        self.assertEqual(st["two_priced"], 0)
+        line = T.market_line(st)
+        self.assertIn("median $800 of 5 cuts", line)
+        self.assertEqual(line.count("not counted"), 0,
+                         "one exclusion bucket exists and it is the two-price one")
+
+    def test_the_median_names_steps_while_the_share_names_cars(self):
+        """One car with three cuts makes the two denominators differ, which is
+        the whole reason the median needed its own."""
+        cars = [self._car("M" * 17, [60000, 59000, 58000, 57000])]
+        cars += [self._car(f"F{i:016d}", [50000, 50000]) for i in range(4)]
+        st = T.market_stats(cars)
+        self.assertEqual((st["tracked_2d"], st["n_cuts"]), (5, 3))
+        self.assertIn("20% of 5 cut while tracked, median $1,000 of 3 cuts", T.market_line(st))
+
+    def test_the_price_change_list_leads_with_the_biggest_move(self):
+        """The $1 line stays — it is what happened — and lands last, so scale
+        is visible without anything being deleted."""
+        tl = [{"vin": "A" * 17, "city": "Chicago", "state": "IL", "price": 73373, "local": False,
+               "series": [["2026-09-03", 73372], ["2026-09-05", 73373]]},
+              {"vin": "B" * 17, "city": "Plano", "state": "TX", "price": 44000, "local": False,
+               "series": [["2026-09-03", 51500], ["2026-09-05", 44000]]}]
+        rows = {r["vin"]: {**{k: "" for k in T.FIELDS}, "vin": r["vin"], "price": r["price"],
+                           "miles": 20000, "year": "2024", "trim": "T", "city": r["city"],
+                           "state": r["state"], "target": "t"} for r in tl}
+        sec = []
+        T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
+                      tl, rows, {}, [], "2026-09-03")
+        lines = [l for l in sec if l.startswith("- $")]
+        self.assertTrue(lines[0].startswith("- $51,500"), f"biggest first, got {lines[0]}")
+        self.assertIn("$73,372", lines[1], "and the $1 move is kept, at the bottom")
+
+
+# --------------------------------------------------------------------------
 # A cohort of mixed trims prices the mix, not the car.
 # --------------------------------------------------------------------------
 class TestCohortMustBeComparable(unittest.TestCase):
@@ -1076,7 +1154,7 @@ class TestTwoPrices(unittest.TestCase):
         self.assertEqual(st["net_down"], 1)
         self.assertEqual(st["restored"], 0, "a car seen at two prices is not 'cut and put back'")
         line = T.market_line(st)
-        self.assertIn("20% cut while tracked", line)
+        self.assertIn("20% of 5 cut while tracked", line)
         self.assertIn("1 seen at two prices, not counted", line)
 
     def test_the_report_names_the_two_prices_instead_of_counting_cuts(self):
@@ -2181,8 +2259,8 @@ class TestCutsThatStuck(unittest.TestCase):
         line = T.market_line({"median_days_listed": None, "tracked_2d": 131, "cut_share": 0.66, "median_cut": 600,
                               "net_down": 69, "restored": 17, "median_net_drop": 900})
         self.assertIn("69 of 131 ask less than when first seen, median $900 less · 17 cut and put back", line)
-        self.assertIn("66% cut while tracked", line, "the share of cars with any downward step still follows")
-        self.assertLess(line.index("69 of 131"), line.index("66% cut"))
+        self.assertIn("66% of 131 cut while tracked", line, "the share of cars with any downward step still follows")
+        self.assertLess(line.index("69 of 131"), line.index("66% of 131 cut"))
 
 
 class TestSeenLabel(unittest.TestCase):
@@ -2734,7 +2812,8 @@ class TestMarketStats(unittest.TestCase):
                                               "net_down": 0,
                                               "restored": 0,
                                               "median_net_drop": None,
-                                              "two_priced": 0})
+                                              "two_priced": 0,
+                                              "n_cuts": 0})
 
     def test_days_to_sale_counts_only_real_delistings(self):
         """…and only cars with a real listing date to count from.
@@ -2764,9 +2843,15 @@ class TestMarketStats(unittest.TestCase):
 
     def test_market_line_reads_like_a_sentence(self):
         line = T.market_line({"median_days_listed": 34, "tracked_2d": 40,
-                              "cut_share": 0.41, "median_cut": 1050})
+                              "cut_share": 0.41, "median_cut": 1050, "n_cuts": 46})
         self.assertIn("typical car 34d on market", line)
-        self.assertIn("41% cut while tracked, median $1,050", line)
+        self.assertIn("41% of 40 cut while tracked, median $1,050 of 46 cuts", line)
+        # …and a sheet written before the step count existed still reads: the
+        # suffix rides on the key, never on a guess.
+        self.assertIn("median $1,050", T.market_line({"median_days_listed": 34, "tracked_2d": 40,
+                                                      "cut_share": 0.41, "median_cut": 1050}))
+        self.assertNotIn(" of ", T.market_line({"tracked_2d": 40, "cut_share": 0.41,
+                                                "median_cut": 1050}).split("median $1,050")[1])
         self.assertEqual(T.market_line({"median_days_listed": None,
                                         "tracked_2d": 2, "cut_share": 0.5,
                                         "median_cut": None}), "",
