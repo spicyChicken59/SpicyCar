@@ -744,6 +744,93 @@ class TestPicks(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# Seen at two prices is not cut. A VIN surfacing through a group's storefronts
+# at two fixed prices on alternate days read as four cuts and four restorations,
+# and every downward step of it was counted as a cut a dealer took.
+# --------------------------------------------------------------------------
+class TestTwoPrices(unittest.TestCase):
+    def series(self, prices, start="2026-08-20"):
+        d0 = date.fromisoformat(start)
+        return [[date.fromordinal(d0.toordinal() + i).isoformat(), p] for i, p in enumerate(prices)]
+
+    def test_a_sawtooth_is_two_prices(self):
+        """The shape that started this: 54,999 / 55,849 in turn for days.
+        Two distinct prices, each seen at least twice, a step each way."""
+        self.assertEqual(T.two_prices(self.series([54999, 55849, 54999, 55849, 54999])), [54999, 55849])
+
+    def test_a_cut_that_held_is_not(self):
+        """Down once and staying down is a cut, however long the record."""
+        self.assertIsNone(T.two_prices(self.series([55849, 55849, 54999, 54999, 54999])))
+
+    def test_a_single_blip_is_not(self):
+        """One day at the other price is a wobble, and the record already has
+        a name for a cut that was put back: it stays in the restored count
+        rather than being called a second price the car is sold at."""
+        self.assertIsNone(T.two_prices(self.series([54000, 54000, 54898, 54000, 54000])))
+        self.assertIsNone(T.two_prices(self.series([45416, 44441, 44441, 44441])), "one sighting of the high price")
+
+    def test_three_prices_are_a_history_not_a_pair(self):
+        self.assertIsNone(T.two_prices(self.series([46000, 45500, 46000, 45000, 46000])))
+
+    def test_two_price_cars_leave_every_cut_figure_and_are_counted_apart(self):
+        """market_stats: the sawtooth car is not a cut car, its steps are not
+        in the median cut, it is neither 'ask less' nor 'cut and put back',
+        and the denominator of the share excludes it — the sentence says how
+        many were set aside so the share is still read against a count."""
+        saw = {**listing(), "vin": "SAW", "days_tracked": 5, "cuts": 2, "delta": 0,
+               "series": self.series([54999, 55849, 54999, 55849, 54999])}
+        cut = {**listing(), "vin": "CUT", "days_tracked": 3, "cuts": 1, "delta": -1000,
+               "series": self.series([50000, 50000, 49000])}
+        # four held cars, because the sentence prints its cut figures only
+        # over five tracked cars — the sawtooth is set aside, the four remain
+        held = [{**listing(), "vin": f"HELD{i}", "days_tracked": 3, "cuts": 0, "delta": 0,
+                 "series": self.series([48000 + i, 48000 + i, 48000 + i])} for i in range(4)]
+        st = T.market_stats([saw, cut] + held)
+        self.assertEqual(st["two_priced"], 1)
+        self.assertEqual(st["tracked_2d"], 6)
+        self.assertEqual(st["cut_share"], 0.2, "one cut car of the five counted, not one of six")
+        self.assertEqual(st["median_cut"], 1000, "the sawtooth's $850 steps are not cuts")
+        self.assertEqual(st["net_down"], 1)
+        self.assertEqual(st["restored"], 0, "a car seen at two prices is not 'cut and put back'")
+        line = T.market_line(st)
+        self.assertIn("20% cut while tracked", line)
+        self.assertIn("1 seen at two prices, not counted", line)
+
+    def test_the_report_names_the_two_prices_instead_of_counting_cuts(self):
+        s = {"cuts": 4, "delta": 0, "days_tracked": 13,
+             "series": self.series([54999, 55849] * 6 + [54999])}
+        x = {**listing(), "vin": "WBY33FK05RCP99465", "price": 54999, **s}
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"WBY33FK05RCP99465": ""})
+        try:
+            text = "\n".join(T.shortlist_section({"WBY33FK05RCP99465": (x, "BMW i5")}, {}, {}))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(old)
+        self.assertIn("seen at $54,999 and $55,849", text)
+        self.assertNotIn("cut 4x", text)
+        self.assertNotIn("down 4x", text)
+
+    def test_a_two_price_cars_downward_day_is_not_a_cut_event(self):
+        """End to end through the builder: a sawtooth car's down day on the
+        newest snapshot must not be announced as a cut today."""
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                      "state": "IL", "city": "Chicago"})
+            return r
+        days = [date.fromordinal(T.TODAY_ORD - 4 + i).isoformat() for i in range(5)]
+        saw = [row("S" * 17, d, p) for d, p in zip(days, [54999, 55849, 54999, 55849, 54999])]
+        cut = [row("C" * 17, d, p) for d, p in zip(days, [50000, 50000, 50000, 50000, 49000])]
+        rows = saw + cut
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today, rows, T.build_history(rows))
+        today_sec = report.split("## Today")[1].split("\n## ")[0]
+        self.assertIn("$1,000 cut", today_sec)
+        self.assertNotIn("$850", today_sec, "the sawtooth's down day is its other price, not a cut")
+
+
+# --------------------------------------------------------------------------
 # The public anchor. Distances must come from a committed city-centre point,
 # resolved without any network call — a private home zip would let anyone
 # trilaterate the house from the published distances.
@@ -2363,7 +2450,8 @@ class TestMarketStats(unittest.TestCase):
                                               "median_cut": None,
                                               "net_down": 0,
                                               "restored": 0,
-                                              "median_net_drop": None})
+                                              "median_net_drop": None,
+                                              "two_priced": 0})
 
     def test_days_to_sale_counts_only_real_delistings(self):
         """…and only cars with a real listing date to count from.

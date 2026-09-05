@@ -5,7 +5,7 @@
 - ▼ $2,583 cut · BMW i7 xDrive60 · now $64,324 · Peoria, IL · drivable `WBY53EJ0XPCN62780`
 - ▼ $752 cut · BMW i7 xDrive60 · now $60,396 · Dayton, OH · drivable `WBY53EJ04PCN58028`
 - ▼ $623 cut · BMW i7 xDrive60 · now $64,376 · Lake Villa, IL · drivable `WBY53EJ07PCM72048`
-- …and 38 more price changes in the sections below
+- …and 33 more price changes in the sections below
 - 8 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
@@ -40,7 +40,7 @@ _Worth the ship:_
   [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG09SCS35108) `WBY13HG09SCS35108`
 
 _133 vehicles across 4 trims · IL 7 · OH 2 · IN 6 · WI 2 · beyond 116_
-_typical car 17d on market · 69 of 131 ask less than when first seen, median $900 less · 17 cut and put back · 66% cut while tracked, median $600_
+_typical car 17d on market · 64 of 131 ask less than when first seen, median $995 less · 9 cut and put back · 62% cut while tracked, median $581 · 13 seen at two prices, not counted_
 
 ### CPO under 30k mi — none found
 
@@ -83,7 +83,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 **Wisconsin (1)**
 - **$45,717** · 15,707 mi · no shipping · 2024 · Madison, WI · ~125 mi from Chicago
-  _cut 1x, then back up · CPO · multi-use · 2 owners · no accidents_
+  _seen at $45,717 and $46,216 · CPO · multi-use · 2 owners · no accidents_
   rosen nissan of madison llc — [listing](https://rosennissanmadison.com/certified/BMW/2024-BMW-i5-7106ba6eac1824b1018118ba11304b66.htm)
   `WBY33FK09RCP96469`
 
@@ -150,7 +150,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   BMW MINI of Shawnee Mission — [listing](https://www.carfax.com/vehicle/WBY13HG06SCS41187)
   `WBY13HG06SCS41187`
 - **$49,163** · 17,493 mi · + $746 shipping = $49,909 · 2025 · Watertown, NY · ~600 mi from Chicago
-  _cut 1x, then back up · on market 177d · sits longer than 98% of the model · 1-owner · no accidents_
+  _seen at $48,988 and $49,163 · on market 177d · sits longer than 98% of the model · 1-owner · no accidents_
   Bob Johnson Chrysler Dodge Jeep Ram — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG02SCS75188)
   `WBY13HG02SCS75188`
 - **$49,495** · 209 mi · + $1,097 shipping = $50,592 · 2025 · West Palm Beach, FL · ~1,125 mi from Chicago
@@ -195,7 +195,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   fields bmw northfield — [listing](https://fieldsbmwnorthfield.com/certified/BMW/2024-BMW-i5-Chicago-0909f020ac1829bdac25aaf12b293a98.htm)
   `WBY43FK09RCP11490`
 - **$63,352** · 17,988 mi · no shipping · 2024 · Downers Grove, IL · ~25 mi from Chicago
-  _cut 1x, then back up · 1-owner · no accidents_
+  _seen at $62,975 and $63,352 · 1-owner · no accidents_
   Star Auto Works — [listing](https://www.carfax.com/vehicle/WBY43FK07RCR00896)
   `WBY43FK07RCR00896`
 
@@ -275,7 +275,7 @@ _Worth the ship:_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01RCN97139) `WBY43EJ01RCN97139`
 
 _150 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 125_
-_typical car 25d on market · 28 of 148 ask less than when first seen, median $866 less · 12 cut and put back · 27% cut while tracked, median $611 · listings ran at least ~6d (29 gone)_
+_typical car 25d on market · 21 of 148 ask less than when first seen, median $951 less · 5 cut and put back · 19% cut while tracked, median $755 · 14 seen at two prices, not counted · listings ran at least ~6d (29 gone)_
 
 ### eDrive50 — 91 vehicles · lowest asking $54,000 (Marietta, GA)
 
@@ -313,7 +313,7 @@ _The other half of the decision, beside the i5 eDrive40._
 
 **Cheapest beyond your states (shipping stated)**
 - **$54,000** · 21,412 mi · + $725 shipping = $54,725 · 2024 · Marietta, GA · ~575 mi from Chicago
-  _down 2x (-$898) · on market 31d · 1-owner · no accidents · ex-lease_
+  _seen at $54,000 and $54,898 · on market 31d · 1-owner · no accidents · ex-lease_
   Drive A Dream — [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01RCN97139)
   `WBY43EJ01RCN97139`
 - **$55,987** · 33,651 mi · + $725 shipping = $56,712 · 2024 · Alpharetta, GA · ~575 mi from Chicago
@@ -379,7 +379,7 @@ _The other half of the decision, beside the i5 eDrive40._
   Gravity Autos Chicago — [listing](https://www.carfax.com/vehicle/WBY53EJ06PCN52764)
   `WBY53EJ06PCN52764`
 - **$61,333** · 22,031 mi · no shipping · 2023 · Huntley, IL · ~25 mi from Chicago
-  _down 2x (-$408) · fleet · 1-owner · no accidents_
+  _seen at $61,333 and $61,741 · fleet · 1-owner · no accidents_
   Huntley Ford — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ08PCL83735)
   `WBY53EJ08PCL83735`
 - **$61,598** · 31,724 mi · no shipping · 2023 · Naperville, IL · ~25 mi from Chicago
@@ -407,15 +407,15 @@ _The other half of the decision, beside the i5 eDrive40._
   Star Auto Works — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ00PCN31750)
   `WBY53EJ00PCN31750`
 - **$65,649** · 14,417 mi · no shipping · 2023 · Highland Park, IL · ~25 mi from Chicago
-  _down 2x (-$377) · 1-owner · no accidents · ex-lease_
+  _seen at $65,649 and $66,026 · 1-owner · no accidents · ex-lease_
   Gravity Autos Chicago — [listing](https://www.gravityautoschicago.com/inventory/2023-bmw-i7-xdrive60-WBY53EJ00PCN87641)
   `WBY53EJ00PCN87641`
 - **$65,734** · 7,257 mi · no shipping · 2023 · Burbank, IL · ~25 mi from Chicago
-  _cut 2x, then back up · on market 58d_
+  _seen at $65,357 and $65,734 · on market 58d_
   Driven Auto Sales — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ06PCM35508)
   `WBY53EJ06PCM35508`
 - **$65,800** · 11,332 mi · no shipping · 2023 · Lisle, IL · ~25 mi from Chicago
-  _down 2x (-$561) · on market 307d · sits longer than 95% of the model · 1-owner · no accidents · ex-lease_
+  _seen at $65,800 and $66,361 · on market 307d · sits longer than 95% of the model · 1-owner · no accidents · ex-lease_
   Diamond Motorworks — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ0XPCL71229)
   `WBY53EJ0XPCL71229`
 
@@ -431,7 +431,7 @@ _The other half of the decision, beside the i5 eDrive40._
 
 **Indiana (1)**
 - **$48,909** · 90,715 mi · no shipping · 2023 · Indianapolis, IN · ~150 mi from Chicago
-  _down 2x (-$282) · on market 41d · 2 owners · 1 accident · ex-lease_
+  _seen at $48,909 and $49,191 · on market 41d · 2 owners · 1 accident · ex-lease_
   Northside Auto — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ03PCM54209)
   `WBY53EJ03PCM54209`
 
@@ -447,7 +447,7 @@ _The other half of the decision, beside the i5 eDrive40._
   Alpha Motor Sports — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ08PCN79299)
   `WBY53EJ08PCN79299`
 - **$52,000** · 12,144 mi · + $725 shipping = $52,725 · 2023 · Marietta, GA · ~575 mi from Chicago
-  _down 2x (-$898) · 1-owner · no accidents_
+  _seen at $52,000 and $52,898 · 1-owner · no accidents_
   Drive A Dream — [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ04PCN85407)
   `WBY53EJ04PCN85407`
 - **$52,170** · 53,300 mi · + $849 shipping = $53,019 · 2023 · Great Neck, NY · ~725 mi from Chicago
