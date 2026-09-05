@@ -447,8 +447,10 @@ class TestPicks(unittest.TestCase):
         median); the dear model has one genuine bargain (29% under). The bargain
         must win despite costing more than twice as much.
         """
-        cheap = [listing(price=p, miles=20000) for p in (19000, 19500, 20000, 20500)]
-        dear = [listing(price=p, miles=20000) for p in (50000, 70000, 72000, 74000)]
+        cheap = [listing(price=p, miles=20000)
+                 for p in (19000, 19500, 19800, 20000, 20000, 20200, 20500, 20800, 21000)]
+        dear = [listing(price=p, miles=20000)
+                for p in (50000, 70000, 70500, 71000, 72000, 72500, 73000, 73500, 74000)]
         best_cheap = T.score_picks(cheap, "Cheap Model")[0]
         best_dear = T.score_picks(dear, "Dear Model")[0]
         self.assertLess(best_cheap["pick_pct"], 0.10)
@@ -463,42 +465,47 @@ class TestPicks(unittest.TestCase):
         the car's own trim and model year and quite another against a whole
         model's blended median — on the iX that median is six M60s and one
         xDrive50, and a car 24% under it sits 18% ABOVE a typical xDrive50."""
-        rows = ([listing(price=40000, miles=20000, trim="eDrive40", year=2024) for _ in range(4)]
-                + [listing(price=52000, miles=20000, trim="M60", year=2024) for _ in range(4)]
+        rows = ([listing(price=40000, miles=20000, trim="eDrive40", year=2024) for _ in range(6)]
+                + [listing(price=52000, miles=20000, trim="M60", year=2024) for _ in range(6)]
                 + [listing(price=60000, miles=20000, trim="M60", year=2023)])
         by_vin = {}
         for i, r in enumerate(rows):
             r["vin"] = f"V{i:02d}"
         scored = {p["vin"]: p for p in T.score_picks(rows, "BMW i5")}
-        # a car with three siblings of its own trim AND year is judged on those
+        # a car with five siblings of its own trim AND year is judged on those
         own = scored["V00"]
         self.assertEqual(own["pick_basis"], "trim")
-        self.assertEqual(own["pick_n"], 4, "its own trim-and-year cohort")
+        self.assertEqual(own["pick_n"], 6, "its own trim-and-year cohort, itself included")
         self.assertEqual(own["pick_trim"], "eDrive40")
         self.assertEqual(own["pick_year"], "2024")
-        # the lone 2023 M60 has neither a trim-year nor a year cohort of three,
+        # the lone 2023 M60 has neither a trim-year nor a year cohort of six,
         # so it falls back to the whole model — and says so
-        lone = scored["V08"]
+        lone = scored["V12"]
         self.assertEqual(lone["pick_basis"], "model")
         self.assertEqual(lone["pick_n"], len(rows))
         self.assertEqual(lone["pick_trim"], "", "no trim cohort to name")
 
     def test_the_report_prints_the_cohort_size_beside_the_percentage(self):
         rows = [listing(price=40000 + i * 100, miles=20000, trim="eDrive40",
-                        year=2024, vin=f"V{i:02d}", local=True) for i in range(5)]
+                        year=2024, vin=f"V{i:02d}", local=True) for i in range(9)]
         p = T.score_picks(rows, "BMW i5")[0]
         line = T.fmt_pick(p)
         self.assertIn("% under typical for a 2024 BMW i5 eDrive40", line)
-        self.assertIn("from 5 such cars", line)
+        self.assertIn("from 9 such cars", line)
 
     def test_a_thin_pool_produces_no_picks(self):
         self.assertEqual(T.score_picks([listing(), listing()], "Two Cars"), [])
+        # Five is the largest n at which no distribution-free interval for a
+        # median exists, so five cars have a median with no error bar and are
+        # not a cohort; six are the first sample that is its own interval.
+        self.assertEqual(T.score_picks([listing(price=40000 + i) for i in range(5)], "Five"), [])
+        self.assertEqual(len(T.score_picks([listing(price=40000 + i) for i in range(6)], "Six")), 6)
 
     def test_scoring_uses_the_model_year_cohort_when_it_is_big_enough(self):
         """A 2023 car must be judged against 2023 prices, not a median that
         blends in far dearer 2026 cars."""
-        old = [listing(price=p, year="2023") for p in (58000, 60000, 62000)]
-        new = [listing(price=p, year="2026") for p in (118000, 120000, 122000)]
+        old = [listing(price=p, year="2023") for p in (58000, 59000, 60000, 60000, 61000, 62000)]
+        new = [listing(price=p, year="2026") for p in (118000, 119000, 120000, 120000, 121000, 122000)]
         scored = T.score_picks(old + new, "i7")
         mid_old = next(p for p in scored if p["price"] == 60000)
         self.assertLess(abs(mid_old["pick_pct"]), 0.05,
@@ -509,9 +516,9 @@ class TestPicks(unittest.TestCase):
         """A cheapest-trim car must be judged against its own trim, not a
         median blended with the model's six-figure flagship trim."""
         base = [listing(price=p, year="2023", trim="eDrive50")
-                for p in (58000, 60000, 62000)]
+                for p in (58000, 59000, 60000, 60000, 61000, 62000)]
         flag = [listing(price=p, year="2023", trim="M70")
-                for p in (118000, 120000, 122000)]
+                for p in (118000, 119000, 120000, 120000, 121000, 122000)]
         scored = T.score_picks(base + flag, "BMW i7")
         mid = next(p for p in scored if p["price"] == 60000)
         self.assertLess(abs(mid["pick_pct"]), 0.05,
@@ -521,7 +528,7 @@ class TestPicks(unittest.TestCase):
 
     def test_a_thin_trim_falls_back_to_the_year_cohort(self):
         pool = ([listing(price=p, year="2023", trim="xDrive60")
-                 for p in (60000, 62000)]              # two: no trim cohort
+                 for p in (60000, 60500, 61000, 61500, 62000)]   # five: no trim cohort
                 + [listing(price=61000, year="2023", trim="eDrive50")])
         scored = T.score_picks(pool, "BMW i7")
         self.assertTrue(all(p["pick_trim"] == "" for p in scored))
@@ -532,7 +539,7 @@ class TestPicks(unittest.TestCase):
         self.assertEqual(T.trim_disp("BMW i5", "eDrive40"), "eDrive40")
 
     def test_a_thin_year_falls_back_to_the_model_median(self):
-        pool = ([listing(price=p, year="2024") for p in (40000, 42000, 44000)]
+        pool = ([listing(price=p, year="2024") for p in (40000, 41000, 42000, 42000, 43000, 44000)]
                 + [listing(price=39000, year="2022")])
         scored = T.score_picks(pool, "M")
         lone = next(p for p in scored if p["price"] == 39000)
@@ -540,25 +547,119 @@ class TestPicks(unittest.TestCase):
         self.assertGreater(lone["pick_pct"], 0, "still judged against the model")
 
     def test_a_pick_must_sit_under_typical(self):
-        """A thin drivable pool must not promote above-median cars to picks."""
-        scored = T.score_picks([listing(price=p) for p in (40000, 44000, 48000)], "M")
+        """A thin drivable pool must not promote above-median cars to picks —
+        and "under typical" means under the low edge of the cohort's own
+        interval, not under its median. Nine cars: the 95% interval on the
+        median is the 2nd and 8th values, $44,000–$47,000. The $40,000 car is
+        below it and is a pick; the $44,000 car is 3% under the median, and
+        3% is inside the sampling error of a median of nine, so the page
+        cannot tell it from typical and it is not a pick."""
+        scored = T.score_picks([listing(price=p) for p in
+                                (40000, 44000, 44500, 45000, 45500, 46000, 46500, 47000, 48000)], "M")
+        by = {p["price"]: p for p in scored}
+        self.assertEqual((by[44000]["pick_lo"], by[44000]["pick_hi"]), (45000, 48000),
+                         "the interval is on the VALUES, which carry $1,000 of shipping")
+        self.assertGreater(by[44000]["pick_pct"], 0, "under the median…")
+        self.assertEqual(by[44000]["pick_stand"], "typical", "…but not distinguishable from it")
+        self.assertEqual(by[40000]["pick_stand"], "under")
         picks = T.choose_picks(scored, 4)
-        self.assertTrue(picks, "the genuinely-under-typical car is still a pick")
+        self.assertEqual([p["price"] for p in picks], [40000],
+                         "one pick: the car the interval can defend, and not the 3%-under car")
         self.assertTrue(all(p["pick_pct"] > 0 for p in picks),
                         "no car at or above its model's typical value may be a pick")
 
+    def test_six_to_eight_cars_can_call_nothing_under_or_over(self):
+        """At six, seven and eight cars the 95% interval on the median is the
+        whole sample — min to max — so the cheapest car of eight sits ON the
+        low edge, not below it, and the word "under" has no support. The same
+        eight plus one more car is the first sample whose interval leaves the
+        extremes outside it."""
+        cheap_and_seven = [listing(price=30000)] + [listing(price=p) for p in
+                                                    (44000, 44500, 45000, 45500, 46000, 46500, 47000)]
+        eight = {p["price"]: p for p in T.score_picks(cheap_and_seven, "M")}
+        self.assertEqual((eight[30000]["pick_lo"], eight[30000]["pick_hi"]), (31000, 48000),
+                         "min to max, in values")
+        self.assertEqual(eight[30000]["pick_stand"], "typical",
+                         "a third under the median of eight, and still not a claim")
+        self.assertEqual(T.choose_picks(list(eight.values()), 4), [])
+        nine = {p["price"]: p for p in T.score_picks(cheap_and_seven + [listing(price=47500)], "M")}
+        self.assertEqual(nine[30000]["pick_stand"], "under")
+        self.assertEqual([p["price"] for p in T.choose_picks(list(nine.values()), 4)], [30000])
+
+    def test_a_car_above_its_interval_stands_over(self):
+        """Both directions, because the shortlist row and the decision tile
+        print "over" as well: a car is over typical only above the high edge,
+        and a car just above the median is "typical", not "1% over"."""
+        scored = {p["price"]: p for p in T.score_picks([listing(price=p) for p in
+                  (40000, 44000, 44500, 45000, 45500, 46000, 46500, 47000, 60000)], "M")}
+        self.assertEqual(scored[60000]["pick_stand"], "over")
+        self.assertEqual(scored[46000]["pick_stand"], "typical")
+        self.assertLess(scored[46000]["pick_pct"], 0, "above the median, and still typical")
+
+    def test_the_report_prints_the_margin_only_where_the_interval_supports_it(self):
+        """The page and the report gate on the same word. A new car 3% under a
+        median of nine sits inside that median's own interval, so the "New
+        today" line prints the car and not a percentage; the same car below
+        the low edge prints both."""
+        x = listing(price=44200, vin="N" * 17, city="Plano", state="TX", first_seen=T.TODAY)
+        inside = {**x, "pick_pct": 0.029, "pick_under": 1300, "pick_stand": "typical"}
+        below = {**x, "pick_pct": 0.029, "pick_under": 1300, "pick_stand": "under"}
+        self.assertNotIn("under typical", T.fmt_new(x, inside))
+        self.assertIn("3% under typical ($1,300 less)", T.fmt_new(x, below))
+        # …and the shortlist's tag, which reads the same stand
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear()
+        T.SHORTLIST.update({"N" * 17: ""})
+        try:
+            live = {"N" * 17: (x, "BMW i5")}
+            self.assertNotIn("under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: inside})))
+            self.assertIn("3% under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: below})))
+        finally:
+            T.SHORTLIST.clear()
+            T.SHORTLIST.update(old)
+
+    def test_the_days_best_new_car_is_measured_against_its_interval(self):
+        """End to end: nine eDrive40s, eight seen yesterday and one first seen
+        today at $44,200 — 3% under the median of nine and inside its 95%
+        interval ($44,200–$47,000). The "## Today" line counts the new car and
+        must not call it the day's best value, because 3% is inside the
+        sampling error of that median; a page saying "best 3% under typical"
+        there would be reading noise as a bargain."""
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                      "state": "IL", "city": "Chicago"})
+            return r
+        old_day = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        prices = (44000, 44500, 45000, 45500, 46000, 46500, 47000, 47500)
+        rows = [row(f"OLD{i:014d}", d, p) for i, p in enumerate(prices) for d in (old_day, T.TODAY)]
+        rows.append(row("N" * 17, T.TODAY, 44200))
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today, rows, T.build_history(rows))
+        today_sec = report.split("## Today")[1].split("\n## ")[0]
+        self.assertIn("1 new on the shopped models", today_sec)
+        self.assertNotIn("under typical", today_sec, "no percentage the interval cannot defend")
+        block = report.split("**New today")[1].split("**Spicy picks")[0]
+        self.assertIn("N" * 17, block)
+        self.assertNotIn("under typical", block)
+
     def test_per_model_cap_spreads_the_picks(self):
-        """Model A is given SIX cars so THREE of them sit under typical.
+        """Model A is given FIFTEEN cars so THREE of them sit under the low
+        edge of its interval.
 
         With four cars each, only one per model clears the median, so the cap
         was never reached and deleting it left this green — the test asserted
         `max(counts) <= 2` over a set that could not exceed 1. The point of the
         cap is that a model with more good cars than the cap does not take the
-        whole page, so the fixture has to contain such a model.
+        whole page, so the fixture has to contain such a model. Fifteen, because
+        the interval's low edge is the 4th value there and the 3rd at anything
+        from twelve to fourteen — two under, not three.
         """
         scored = (T.score_picks([listing(price=p) for p in
-                                 (20000, 21000, 22000, 40000, 41000, 42000)], "A")
-                  + T.score_picks([listing(price=p) for p in (30000, 40000, 41000, 42000)], "B"))
+                                 (20000, 21000, 22000) + tuple(40000 + 500 * i for i in range(12))], "A")
+                  + T.score_picks([listing(price=p) for p in
+                                   (30000,) + tuple(40000 + 500 * i for i in range(8))], "B"))
         picks = T.choose_picks(scored, 4, per_model=2)
         counts = Counter(p["model_label"] for p in picks)
         self.assertEqual(counts["A"], 2,
@@ -581,10 +682,10 @@ class TestPicks(unittest.TestCase):
     def test_picks_split_into_drivable_and_worth_the_ship(self):
         """Every car is scored against the whole model, then split: drivable
         picks on one side, everything else on the other, no overlap."""
-        pool = [listing(price=30000, local=True, state="IL"),
-                listing(price=40000, local=True, state="WI"),
-                listing(price=31000, local=False, state="CA"),
-                listing(price=41000, local=False, state="TX")]
+        pool = ([listing(price=30000, local=True, state="IL"),
+                 listing(price=31000, local=False, state="CA")]
+                + [listing(price=40000 + 500 * i, local=(i % 2 == 0), state="WI" if i % 2 == 0 else "TX")
+                   for i in range(10)])
         local, ship = T.split_picks(T.score_picks(pool, "M"), 4)
         self.assertTrue(local and ship)
         self.assertTrue(all(p["local"] for p in local))
@@ -595,8 +696,8 @@ class TestPicks(unittest.TestCase):
     def test_a_drivable_pick_is_scored_against_the_whole_market(self):
         """The drivable list must not get its own median — a merely-average
         local car scores the same whether or not remote cars exist."""
-        locals_ = [listing(price=p, local=True) for p in (40000, 41000, 42000)]
-        remotes = [listing(price=p, local=False, ship=1200) for p in (30000, 30500)]
+        locals_ = [listing(price=p, local=True) for p in (40000, 41000, 42000, 42500, 43000, 43500)]
+        remotes = [listing(price=p, local=False, ship=1200) for p in (30000, 30500, 31000)]
         scored_all = T.score_picks(locals_ + remotes, "M")
         by_price = {p["price"]: p for p in scored_all if p["local"]}
         self.assertLess(by_price[42000]["pick_pct"], 0.05,
@@ -1704,10 +1805,11 @@ class TestPickUnderRoundsLikeThePage(unittest.TestCase):
     $1,936 in the report and $1,937 on the page for the same car."""
 
     def test_an_exact_half_rounds_up(self):
-        rows = [listing(price=p, vin=f"V{p}") for p in (40000, 40001, 40002, 40003)]   # median 40001.5
-        by = {p["vin"]: p for p in T.score_picks(rows, "Four Cars")}
-        self.assertEqual(by["V40001"]["pick_under"], 1, "40001.5 - 40001 = .5 rounds up, as Math.round does")
-        self.assertEqual(by["V40000"]["pick_under"], 2)
+        rows = [listing(price=p, vin=f"V{p}") for p in range(40000, 40006)]   # median 40002.5
+        by = {p["vin"]: p for p in T.score_picks(rows, "Six Cars")}
+        self.assertEqual(by["V40002"]["pick_under"], 1, "40002.5 - 40002 = .5 rounds up, as Math.round does")
+        self.assertEqual(by["V40001"]["pick_under"], 2)
+        self.assertEqual(by["V40003"]["pick_under"], 0, "and -.5 rounds to 0, as Math.round(-0.5) does")
 
 
 class TestUnreadValueIsNotExported(unittest.TestCase):

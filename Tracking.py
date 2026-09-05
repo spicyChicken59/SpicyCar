@@ -816,17 +816,50 @@ def trim_disp(model_label, trim):
     return " ".join(w for w in str(trim or "").split() if w.lower() not in words)
 
 
+# Six, not three, and for the reason exit_stats gives: five is the largest n
+# at which NO distribution-free 95% interval for a median exists, so a cohort
+# of three, four or five cars has a median with no honest error bar — and "21%
+# under typical" is a claim about that median. Every surface that prints the
+# percentage gates it on the interval score_picks ships, so a cohort that
+# cannot carry an interval cannot carry a percentage either: the car falls
+# through to the next cohort up, or to silence. docs/index.html carries the
+# same six under the same name; the two must agree or the report and the
+# page score different cars.
+COHORT_FLOOR = 6
+
+
+def cohort_stats(values):
+    """(median, low edge, high edge, n) of one cohort's values. Only called
+    at COHORT_FLOOR and above, where the interval always exists."""
+    lo, hi = median_ci(values)
+    return median(values), lo, hi, len(values)
+
+
 def score_picks(listings, model_label):
     """Every eligible car of one model, scored against the tightest cohort
-    with three or more eligible cars: its own trim and model year first,
-    then the model year, then the whole model. Without the cohorts a 2023
-    eDrive50 i7 reads as half price simply because the blended median
-    carries six-figure M70s and 2026 cars."""
+    with COHORT_FLOOR or more eligible cars: its own trim and model year
+    first, then the model year, then the whole model. Without the cohorts a
+    2023 eDrive50 i7 reads as half price simply because the blended median
+    carries six-figure M70s and 2026 cars.
+
+    Each score carries its cohort's 95% interval for the median (pick_lo,
+    pick_hi) and where the car STANDS against it: "under" only when its
+    value sits below the low edge, "over" only above the high edge,
+    "typical" anywhere inside. A car 5% under a median of nine cars whose
+    interval spans 14% is not under typical — it is indistinguishable from
+    it — and no surface may say otherwise, however positive pick_pct is.
+    The percentage stays the best estimate of the margin; the stand is
+    whether the data can defend the word. The interval is two-sided, as
+    exit_stats ships it, so each edge is a 97.5% one-sided bound — a shade
+    conservative for a one-directional word, and the same interval the
+    exit note already suppresses on. At six, seven and eight cars the
+    interval is the whole sample, so no car in such a cohort is ever called
+    under or over: that is the arithmetic, not a policy.
+    """
     pool = [x for x in listings if pick_eligible(x)]
-    if len(pool) < 3:
+    if len(pool) < COHORT_FLOOR:
         return []
     values = {id(x): pick_value(x) for x in pool}
-    med_all = median(values.values())
     by_year, by_ty = defaultdict(list), defaultdict(list)
     for x in pool:
         y = str(x.get("year") or "")
@@ -834,8 +867,9 @@ def score_picks(listings, model_label):
         by_year[y].append(values[id(x)])
         if tr:
             by_ty[(tr, y)].append(values[id(x)])
-    year_med = {y: median(vs) for y, vs in by_year.items() if len(vs) >= 3}
-    ty_med = {k: median(vs) for k, vs in by_ty.items() if len(vs) >= 3}
+    st_all = cohort_stats(list(values.values()))
+    year_st = {y: cohort_stats(vs) for y, vs in by_year.items() if len(vs) >= COHORT_FLOOR}
+    ty_st = {k: cohort_stats(vs) for k, vs in by_ty.items() if len(vs) >= COHORT_FLOOR}
     out = []
     for x in pool:
         y = str(x.get("year") or "")
@@ -846,19 +880,19 @@ def score_picks(listings, model_label):
         # against a whole model's blended median, which on the iX is six M60s
         # and one xDrive50. The level and the count now ride on the pick, so
         # every surface that prints the percentage can print what it is under.
-        if (tr, y) in ty_med:
-            med, p_year, p_trim = ty_med[(tr, y)], y, trim_disp(model_label, x.get("trim"))
-            basis, n = "trim", len(by_ty[(tr, y)])
-        elif y in year_med:
-            med, p_year, p_trim = year_med[y], y, ""
-            basis, n = "year", len(by_year[y])
+        if (tr, y) in ty_st:
+            st, p_year, p_trim, basis = ty_st[(tr, y)], y, trim_disp(model_label, x.get("trim")), "trim"
+        elif y in year_st:
+            st, p_year, p_trim, basis = year_st[y], y, "", "year"
         else:
-            med, p_year, p_trim = med_all, "", ""
-            basis, n = "model", len(pool)
+            st, p_year, p_trim, basis = st_all, "", "", "model"
+        med, lo, hi, n = st
         v = values[id(x)]
         out.append({**x, "model_label": model_label,
                     "pick_year": p_year, "pick_trim": p_trim,
                     "pick_basis": basis, "pick_n": n,
+                    "pick_lo": lo, "pick_hi": hi,
+                    "pick_stand": "under" if v < lo else "over" if v > hi else "typical",
                     # floor(x + .5), not round(): Python rounds half to even and
                     # JavaScript rounds half up, and the page recomputes this
                     # figure — two picks read "$1,936 less" here and "$1,937
@@ -873,8 +907,12 @@ def score_picks(listings, model_label):
 def choose_picks(scored, n, per_model=None, seed=None):
     out, per = [], Counter(seed or {})
     for p in sorted(scored, key=lambda p: -p["pick_pct"]):
-        if p["pick_pct"] <= 0:
-            break    # sorted, so nothing after this is under typical either
+        # Under the low edge of its cohort's interval, not merely under the
+        # median. The list is sorted by margin, and a car inside a wide
+        # interval can carry a bigger margin than one below a narrow edge,
+        # so this skips rather than breaks.
+        if p.get("pick_stand") != "under":
+            continue
         if per_model and per[p["model_label"]] >= per_model:
             continue
         out.append(p)
@@ -1080,12 +1118,21 @@ def median_ci(values, conf=0.95):
     if n < 6:
         return None
     # P(k <= B <= n-k) for B ~ Bin(n, 1/2), walking k up while it still covers.
+    # Compared EXACTLY, as a ratio of integers against 19/20, because the page
+    # draws the same interval in JavaScript with integer arithmetic and the two
+    # must agree on every edge at every n: a float sum here and a float sum
+    # there can round differently at a coverage within an ulp of 0.95, and a
+    # rare disagreement between the report and the page is the one kind this
+    # repo does not tolerate. Fraction(0.95) is the float's own value, not
+    # 19/20; limit_denominator returns it to the fraction that was meant.
+    from fractions import Fraction
     from math import comb
-    total = 2.0 ** n
+    total = 2 ** n
+    want = Fraction(conf).limit_denominator(10 ** 6)
     best = None
     for k in range(1, n // 2 + 1):
-        covered = sum(comb(n, i) for i in range(k, n - k + 1)) / total
-        if covered >= conf:
+        covered = Fraction(sum(comb(n, i) for i in range(k, n - k + 1)), total)
+        if covered >= want:
             best = k
         else:
             break
@@ -1424,7 +1471,7 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
             if x.get("days_listed") is not None:
                 tags.append(f"on market {x['days_listed']}d")
             p = scored_by_vin.get(vin)
-            if p and p["pick_pct"] > 0:
+            if p and p.get("pick_stand") == "under":
                 tags.append(f"{p['pick_pct']:.0%} under typical")
             tags += x.get("flags") or []
             if tags:
@@ -1474,7 +1521,7 @@ def fmt_new(x, p=None):
     else:
         bits.append("new to the tracker")
     line = "- " + " · ".join(b for b in bits if b)
-    if p and p.get("pick_pct", 0) > 0:
+    if p and p.get("pick_stand") == "under":
         line += f"\n  _{p['pick_pct']:.0%} under typical ({money(p['pick_under'])} less)_"
     if x.get("url"):
         line += f"\n  [listing]({x['url']})"
@@ -3087,7 +3134,10 @@ def build_outputs(today_rows, all_rows, hist):
                     if is_new_today(x):
                         p = by_vin.get(x["vin"])
                         events["new"].append({"x": x, "label": name,
-                                              "pct": p["pick_pct"] if p else None,
+                                              # the margin only where the
+                                              # cohort's interval supports
+                                              # the word: see score_picks
+                                              "pct": p["pick_pct"] if p and p["pick_stand"] == "under" else None,
                                               "shopping": shopping})
                 for g in m_entry["gone"]:
                     if (g["likely"] == "delisted" and g["prev_fetch_day"]
