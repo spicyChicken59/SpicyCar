@@ -233,9 +233,19 @@ async function open(query) {
 // --- the watchlist ---------------------------------------------------------
 await step('the watchlist', async () => {
   plan('the watchlist opens', 'four tiles', 'a row per model', 'the chart draws', 'the map draws',
-       'three chip groups');
+       'three chip groups', 'the footer wears the watermark, not the cover lockup');
   await open('');
   ok('the watchlist opens', (await page.textContent('#h1')) === 'The watchlist', await page.textContent('#h1'));
+  // DESIGN_SYSTEM.md §9 fixes the footer's form for every page: the mono mark
+  // at 20px beside the wordmark in the display face. The horizontal lockup is
+  // the cover asset, and this footer wore it for its first month.
+  const foot = await page.locator('footer.sc-foot').evaluate((f) => ({
+    mark: !!f.querySelector('.sc-watermark img.sc-mark'), name: (f.querySelector('.sc-watermark .sc-watermark__name') || {}).textContent || '',
+    lockup: f.querySelectorAll('.sc-lockup').length,
+    h: (f.querySelector('.sc-watermark img.sc-mark') || { getBoundingClientRect: () => ({ height: 0 }) }).getBoundingClientRect().height }));
+  ok('the footer wears the watermark, not the cover lockup',
+     foot.mark && foot.name === 'SpicyChicken' && foot.lockup === 0 && Math.round(foot.h) === 20,
+     `mark ${foot.mark} at ${Math.round(foot.h)}px · name "${foot.name}" · ${foot.lockup} lockup(s)`);
   ok('four tiles', (await page.locator('#kpis .sc-tile').count()) === 4);
   // Two of these six are claims about a watchlist with more than one model on
   // it — the index draws a row EACH, and the model chips are a group only where
@@ -351,12 +361,16 @@ await step('comparing models', async () => {
 // live half is a real slug out of the sheet; the dead half is built from it, so
 // the URL cannot go stale and cannot accidentally name a car that comes back.
 await step('a half-dead link', async () => {
-  plan('a half-dead link still opens', 'and names what went missing');
+  plan('a half-dead link still opens', 'and names what went missing', 'and a dead link keeps the notice furniture');
   if (!carried) return skipRest('no model on the watchlist holds a car today');
   const ghost = `${carried.bk}-not-a-car`;
   await open(`?models=${carried.slug},${ghost}`);
   ok('a half-dead link still opens', (await page.locator('#overview-table tbody tr').count()) === 1);
   ok('and names what went missing', new RegExp(ghost).test(await page.textContent('#notice')));
+  // A dead link is the one real failure the notice slot reports, and it keeps
+  // the stop-and-read furniture — the empty selections below it do not.
+  ok('and a dead link keeps the notice furniture', (await page.locator('#notice .sc-notice').count()) === 1,
+     `${await page.locator('#notice .sc-notice').count()} .sc-notice in #notice`);
 });
 
 // ---- ns/NS-03 ----
@@ -781,6 +795,7 @@ await step('an empty trim', async () => {
 // The oracle is the rule: whatever trim holds no cars must say so and offer a
 // way out. A market where no trim is empty is not a failing dashboard, it is a
 plan('a zero-car trim says why the page is empty',
+     'and an empty selection is a sentence, not a red box',
      'and its way out drops the trim and brings the sections back',
      'a stale link onto an empty trim is not a dead end either',
      'the empty-filters notice counts what its own link restores');
@@ -832,6 +847,7 @@ const zt = emptyTrim() || await synthesizeEmptyTrim();
 if (!zt) {
   // vanished from the tally would be indistinguishable from one deleted.
   for (const name of ['a zero-car trim says why the page is empty',
+                      'and an empty selection is a sentence, not a red box',
                       'and its way out drops the trim and brings the sections back',
                       'a stale link onto an empty trim is not a dead end either'])
     skip(name, 'no watched trim holds zero cars and none could be emptied');
@@ -851,6 +867,12 @@ if (!zt) {
   }));
   ok('a zero-car trim says why the page is empty',
     !zeroTrim.hidden && zeroTrim.text.includes(zt.label), zt.tid + ' → ' + JSON.stringify(zeroTrim));
+  // The reader's own selection returning nothing is not a failure: §6 says one
+  // muted sentence, no graphic, no apology — and no 2px danger border, which
+  // is the dead link's furniture and was wrapping this too.
+  const furniture = await page.locator('#notice').evaluate((n) => ({ empty: n.querySelectorAll('.sc-empty').length, notice: n.querySelectorAll('.sc-notice').length }));
+  ok('and an empty selection is a sentence, not a red box', furniture.empty === 1 && furniture.notice === 0,
+     `${furniture.empty} .sc-empty, ${furniture.notice} .sc-notice in #notice`);
   // Guarded so the regression reports as a failed check rather than a 30s hang
   // on a link that is not there.
   if (await page.locator('#notice a').count()) { await page.click('#notice a'); await page.waitForTimeout(400); }
@@ -2566,6 +2588,30 @@ await step('one car, one number', async () => {
      `map: ${on} on + ${beyond} beyond + ${noLoc} unplaced = ${on + beyond + noLoc}; count line: "${count.trim()}"; ${coordless} cars carry no coordinates`);
 });
 
+// --- in print the mark keeps its surface ------------------------------------
+// sc.css prints in the light tokens whatever the theme, but the two chick
+// marks are <img src> chosen by the theme at draw time, and in "auto" on a
+// dark OS nothing flipped them: the dark-surface forms went onto white paper.
+// The print events are dispatched by hand — headless Chromium has no print
+// dialog to fire them — so what is pinned is the wiring: before the print the
+// marks wear the light-surface files, after it they wear the theme's own again.
+await step('in print the mark keeps its surface', async () => {
+  plan('the marks flip to the light-surface files for print, and back after');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await open('');
+  const srcs = () => page.$$eval('img[data-mark]', (is) => is.map((i) => i.getAttribute('src').split('/').pop()));
+  const before = await srcs();
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  const during = await srcs();
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  const after = await srcs();
+  ok('the marks flip to the light-surface files for print, and back after',
+     before.length > 0 && before.every((f) => /-dark\.svg$|-cream\.svg$/.test(f)) && during.every((f) => /-light\.svg$|-ink\.svg$/.test(f))
+       && after.join() === before.join(),
+     `${before.length} marks: ${[...new Set(before)].join('+')} → ${[...new Set(during)].join('+')} → ${[...new Set(after)].join('+')}`);
+  await page.emulateMedia({ colorScheme: null });
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -3182,7 +3228,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 155;
+const EXPECTED = 159;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
