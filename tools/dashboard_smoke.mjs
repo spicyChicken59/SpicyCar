@@ -2458,7 +2458,7 @@ await step('the market sentence describes the trim in view', async () => {
       const netDown = counted.filter((x) => (x.delta || 0) < 0), restored = counted.filter((x) => x.cuts && (x.delta || 0) >= 0);
       const medNet = netDown.length ? Math.trunc(med(netDown.map((x) => -x.delta))) : null;
       out.push(`${netDown.length} of ${tracked.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
-      out.push(`${counted.length ? Math.round(cut.length / counted.length * 100) : 0}% of ${counted.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')}` : '') + (swings.length ? ` · ${swings.length} seen at two prices, not counted` : ''));
+      out.push(`${counted.length ? Math.round(cut.length / counted.length * 100) : 0}% of ${counted.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')} of ${drops.length} cut${drops.length === 1 ? '' : 's'}` : '') + (swings.length ? ` · ${swings.length} seen at two prices, not counted` : ''));
     }
     if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
     return { out, spans: spans.length };

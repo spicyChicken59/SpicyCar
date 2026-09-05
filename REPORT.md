@@ -56,7 +56,7 @@ _Worth the ship:_
   [listing](https://bmwoffortwashington.com/certified/BMW/2025-BMW-i5-78a10dd9ac181588e4b749d9b0cef905.htm) `WBY13HG00SCU51722`
 
 _134 vehicles across 4 trims · IL 7 · OH 2 · IN 6 · WI 3 · beyond 116_
-_typical car 17d on market · 69 of 127 ask less than when first seen, median $1,000 less · 7 cut and put back · 65% cut while tracked, median $600 · 10 seen at two prices, not counted_
+_typical car 17d on market · 69 of 127 ask less than when first seen, median $1,000 less · 7 cut and put back · 65% of 117 cut while tracked, median $600 of 139 cuts · 10 seen at two prices, not counted_
 
 ### CPO under 30k mi — 2 vehicles · lowest asking $64,491 (Roseville, CA)
 
@@ -86,32 +86,32 @@ _Nothing drivable (IL/OH/IN/WI)._
 _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 **Price changes**
-- $36,997 -> **$36,597** (Ontario, CA) `WBY33FK01RCR76593`
-- $38,997 -> **$39,217** (Houston, TX) `WBY33FK00RCP55213`
-- $40,117 -> **$39,922** (San Jose, CA) `WBY33FK06RCR58557`
-- $39,998 -> **$40,083** (West Covina, CA) `WBY33FK01RCS76878`
-- $39,997 -> **$40,097** (Marietta, GA) `WBY33FK06RCR47204`
+- $74,709 -> **$66,699** (Mission, KS) `WBY33FK06RCR39314`
+- $55,759 -> **$59,355** (Spokane, WA) `WBY33FK00RCR93000`
+- $49,752 -> **$47,336** (Roswell, GA) `WBY33FK06SCU63880`
+- $45,100 -> **$47,300** (Apex, NC) `WBY33FK05SCT65228`
+- $45,586 -> **$43,586** (Columbia, SC) `WBY33FK01RCS84947`
+- $49,897 -> **$48,231** (Peoria, AZ) `WBY33FK07SCT62315`
+- $47,862 -> **$46,376** (Greensboro, NC) `WBY33FK03SCT79709`
 - $41,998 -> **$40,998** (Katy, TX) `WBY33FK01RCS37885`
-- $41,733 -> **$41,674** (Catonsville, MD) `WBY33FK04RCR68522`
-- $41,990 -> **$41,891** (Roseville, CA) `WBY33FK06RCR50278`
+- $46,998 -> **$45,998** (Laurel, MD) `WBY33FK03RCR06660`
+- $50,698 -> **$49,698** (West Palm Beach, FL) `WBY33FK00RCR89528`
 - $43,514 -> **$42,522** (Clearwater, FL) `WBY33FK03SCT63915`
-- $43,094 -> **$42,694** (Reno, NV) `WBY33FK07RCR83662`
+- $44,441 -> **$45,416** (Honolulu, HI) `WBY33FK0XRCR64149`
+- $52,876 -> **$52,176** (Jacksonville, FL) `WBY33FK06SCU73471`
 - $43,631 -> **$42,961** (Bentonville, AR) `WBY33FK02RCS84701`
 - $43,590 -> **$42,990** (Atlanta, GA) `WBY33FK00RCS84678`
-- $45,586 -> **$43,586** (Columbia, SC) `WBY33FK01RCS84947`
-- $44,441 -> **$45,416** (Honolulu, HI) `WBY33FK0XRCR64149`
-- $46,998 -> **$45,998** (Laurel, MD) `WBY33FK03RCR06660`
-- $47,862 -> **$46,376** (Greensboro, NC) `WBY33FK03SCT79709`
-- $47,193 -> **$46,781** (VIRGINIA BEACH, VA) `WBY33FK00RCR18216`
-- $45,100 -> **$47,300** (Apex, NC) `WBY33FK05SCT65228`
-- $49,752 -> **$47,336** (Roswell, GA) `WBY33FK06SCU63880`
-- $49,897 -> **$48,231** (Peoria, AZ) `WBY33FK07SCT62315`
-- $48,490 -> **$48,640** (Plano, TX) `WBY33FK04SCT75975`
-- $50,698 -> **$49,698** (West Palm Beach, FL) `WBY33FK00RCR89528`
-- $52,876 -> **$52,176** (Jacksonville, FL) `WBY33FK06SCU73471`
 - $54,215 -> **$53,616** (Plano, TX) `WBY33FK05RCS22435`
-- $55,759 -> **$59,355** (Spokane, WA) `WBY33FK00RCR93000`
-- $74,709 -> **$66,699** (Mission, KS) `WBY33FK06RCR39314`
+- $47,193 -> **$46,781** (VIRGINIA BEACH, VA) `WBY33FK00RCR18216`
+- $36,997 -> **$36,597** (Ontario, CA) `WBY33FK01RCR76593`
+- $43,094 -> **$42,694** (Reno, NV) `WBY33FK07RCR83662`
+- $38,997 -> **$39,217** (Houston, TX) `WBY33FK00RCP55213`
+- $40,117 -> **$39,922** (San Jose, CA) `WBY33FK06RCR58557`
+- $48,490 -> **$48,640** (Plano, TX) `WBY33FK04SCT75975`
+- $39,997 -> **$40,097** (Marietta, GA) `WBY33FK06RCR47204`
+- $41,990 -> **$41,891** (Roseville, CA) `WBY33FK06RCR50278`
+- $39,998 -> **$40,083** (West Covina, CA) `WBY33FK01RCS76878`
+- $41,733 -> **$41,674** (Catonsville, MD) `WBY33FK04RCR68522`
 
 **Gone since 2026-09-04**
 - $38,990 · 2024 · Seattle, WA · seen 12 of 12 days `WBY33FK07RCS83186`
@@ -167,9 +167,9 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 ### xDrive40 — 21 vehicles · lowest asking $46,538 (Haddon Township, NJ)
 
 **Price changes**
+- $54,990 -> **$56,990** (Scottsdale, AZ) `WBY13HG09SCU71760`
 - $48,398 -> **$47,500** (Marietta, GA) `WBY13HG09SCS35108`
 - $50,986 -> **$51,476** (Fort Washington, PA) `WBY13HG00SCU51722`
-- $54,990 -> **$56,990** (Scottsdale, AZ) `WBY13HG09SCU71760`
 
 **Gone since 2026-09-03**
 - $49,495 · 2025 · West Palm Beach, FL · seen 7 of 12 days `WBY13HG01SCS85680`
@@ -218,13 +218,13 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 ### M60 — 33 vehicles · lowest asking $46,995 (Allston, MA)
 
 **Price changes**
-- $53,929 -> **$54,051** (Los Angeles, CA) `WBY43FK02RCP56898`
 - $55,991 -> **$54,491** (Wilmington, NC) `WBY43FK06RCP53728`
-- $55,784 -> **$54,959** (Rockville, MD) `WBY43FK01RCR02403`
-- $57,385 -> **$56,395** (Morristown, NJ) `WBY43FK09RCR05226`
 - $58,065 -> **$56,970** (Valencia, CA) `WBY43FK03RCR76941`
+- $57,385 -> **$56,395** (Morristown, NJ) `WBY43FK09RCR05226`
 - $57,885 -> **$56,995** (Sherman Oaks, CA) `WBY43FK04RCR90945`
+- $55,784 -> **$54,959** (Rockville, MD) `WBY43FK01RCR02403`
 - $65,000 -> **$65,282** (Indianapolis, IN) `WBY43FK08RCS08565`
+- $53,929 -> **$54,051** (Los Angeles, CA) `WBY43FK02RCP56898`
 
 **Gone since 2026-09-03**
 - $54,087 · 2024 · Peoria, AZ · seen 6 of 12 days `WBY43FK03RCP52259`
@@ -358,30 +358,30 @@ _Worth the ship:_
   [listing](https://atlantabmw.com/exotic-used/BMW/2026-BMW-i7-atlanta-ga-57062c16ac185191c275d2adae278bdb.htm) `WBY43EJ06TCW32247`
 
 _151 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 126_
-_typical car 29d on market · 23 of 140 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% cut while tracked, median $758 · 15 seen at two prices, not counted · listings ran at least ~6d (30 gone)_
+_typical car 29d on market · 23 of 140 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 gone)_
 
 ### eDrive50 — 92 vehicles · lowest asking $54,000 (Marietta, GA)
 
 _The other half of the decision, beside the i5 eDrive40._
 
 **Price changes**
-- $58,761 -> **$57,577** (San Luis Obispo, CA) `WBY43EJ09RCR30039`
-- $59,999 -> **$60,898** (Lilburn, GA) `WBY43EJ00RCR31533`
-- $63,504 -> **$61,813** (Greensboro, NC) `WBY43EJ03RCR00082`
-- $64,998 -> **$63,910** (Greensboro, NC) `WBY43EJ07RCR48216`
-- $64,593 -> **$64,093** (Wichita, KS) `WBY43EJ00RCR14361`
-- $64,762 -> **$64,987** (San Antonio, TX) `WBY43EJ06RCR10461`
-- $63,692 -> **$67,261** (Tampa, FL) `WBY43EJ03SCU09663`
-- $66,995 -> **$67,494** (Boise, ID) `WBY43EJ07RCR82639`
-- $66,998 -> **$67,593** (Wichita, KS) `WBY43EJ04RCR87409`
-- $67,000 -> **$67,799** (Bowling Green, KY) `WBY43EJ06RCR21069`
-- $70,555 -> **$69,784** (San Diego, CA) `WBY43EJ09SCT73901`
-- $73,372 -> **$73,373** (Chicago, IL) `WBY43EJ08RCR02930`
-- $76,214 -> **$75,214** (Gresham, OR) `WBY43EJ01SCT90000`
 - $114,420 -> **$102,195** (Roseville, CA) `WBY43EJ09TCX64211`
 - $114,885 -> **$104,635** (Buena Park, CA) `WBY43EJ08TCY35043`
-- $111,574 -> **$115,838** (Duluth, GA) `WBY43EJ07TCY09727`
 - $125,744 -> **$118,244** (Los Angeles, CA) `WBY43EJ05TCX48636`
+- $111,574 -> **$115,838** (Duluth, GA) `WBY43EJ07TCY09727`
+- $63,692 -> **$67,261** (Tampa, FL) `WBY43EJ03SCU09663`
+- $63,504 -> **$61,813** (Greensboro, NC) `WBY43EJ03RCR00082`
+- $58,761 -> **$57,577** (San Luis Obispo, CA) `WBY43EJ09RCR30039`
+- $64,998 -> **$63,910** (Greensboro, NC) `WBY43EJ07RCR48216`
+- $76,214 -> **$75,214** (Gresham, OR) `WBY43EJ01SCT90000`
+- $59,999 -> **$60,898** (Lilburn, GA) `WBY43EJ00RCR31533`
+- $67,000 -> **$67,799** (Bowling Green, KY) `WBY43EJ06RCR21069`
+- $70,555 -> **$69,784** (San Diego, CA) `WBY43EJ09SCT73901`
+- $66,998 -> **$67,593** (Wichita, KS) `WBY43EJ04RCR87409`
+- $64,593 -> **$64,093** (Wichita, KS) `WBY43EJ00RCR14361`
+- $66,995 -> **$67,494** (Boise, ID) `WBY43EJ07RCR82639`
+- $64,762 -> **$64,987** (San Antonio, TX) `WBY43EJ06RCR10461`
+- $73,372 -> **$73,373** (Chicago, IL) `WBY43EJ08RCR02930`
 
 **Gone since 2026-09-04**
 - $68,670 · 2025 · Plano, TX · seen 4 of 4 days `WBY43EJ07SCT56417`
@@ -433,23 +433,23 @@ _The other half of the decision, beside the i5 eDrive40._
 ### xDrive60 — 37 vehicles · lowest asking $48,909 (Indianapolis, IN)
 
 **Price changes**
-- $51,995 -> **$52,170** (Great Neck, NY) `WBY53EJ05PCN85531`
-- $51,995 -> **$52,170** (Great Neck, NY) `WBY53EJ09PCN85645`
 - $58,496 -> **$55,658** (Jupiter, FL) `WBY53EJ06PCN81584`
-- $56,000 -> **$56,898** (Marietta, GA) `WBY53EJ04PCM43008`
-- $57,500 -> **$57,999** (Silver Spring, MD) `WBY53EJ06PCN64235`
-- $57,201 -> **$58,196** (OCEAN, NJ) `WBY53EJ00PCN23339`
-- $58,197 -> **$58,297** (Marietta, GA) `WBY53EJ06PCN69354`
-- $61,148 -> **$60,396** (Dayton, OH) `WBY53EJ04PCN58028`
-- $60,453 -> **$61,000** (Shelby Township, MI) `WBY53EJ03PCN84071`
-- $61,741 -> **$61,333** (Huntley, IL) `WBY53EJ08PCL83735`
-- $60,376 -> **$62,877** (Lake Villa, IL) `WBY53EJ08PCM44422`
 - $66,907 -> **$64,324** (Peoria, IL) `WBY53EJ0XPCN62780`
+- $60,376 -> **$62,877** (Lake Villa, IL) `WBY53EJ08PCM44422`
+- $57,201 -> **$58,196** (OCEAN, NJ) `WBY53EJ00PCN23339`
+- $56,000 -> **$56,898** (Marietta, GA) `WBY53EJ04PCM43008`
+- $61,148 -> **$60,396** (Dayton, OH) `WBY53EJ04PCN58028`
 - $64,999 -> **$64,376** (Lake Villa, IL) `WBY53EJ07PCM72048`
+- $60,453 -> **$61,000** (Shelby Township, MI) `WBY53EJ03PCN84071`
+- $57,500 -> **$57,999** (Silver Spring, MD) `WBY53EJ06PCN64235`
+- $61,741 -> **$61,333** (Huntley, IL) `WBY53EJ08PCL83735`
 - $64,859 -> **$65,257** (Youngstown, OH) `WBY53EJ09PCM61519`
 - $64,990 -> **$65,367** (Downers Grove, IL) `WBY53EJ00PCN31750`
 - $66,026 -> **$65,649** (Highland Park, IL) `WBY53EJ00PCN87641`
 - $65,357 -> **$65,734** (Burbank, IL) `WBY53EJ06PCM35508`
+- $51,995 -> **$52,170** (Great Neck, NY) `WBY53EJ05PCN85531`
+- $51,995 -> **$52,170** (Great Neck, NY) `WBY53EJ09PCN85645`
+- $58,197 -> **$58,297** (Marietta, GA) `WBY53EJ06PCN69354`
 
 **Gone since 2026-09-01**
 - $61,368 · 2023 · Westmont, IL · seen 6 of 8 days `WBY53EJ07PCN73574`
@@ -563,10 +563,10 @@ _The other half of the decision, beside the i5 eDrive40._
 ### M70 — 22 vehicles · lowest asking $66,196 (HILLSIDE, NJ)
 
 **Price changes**
-- $82,991 -> **$83,790** (Greensboro, NC) `WBY83EH02RCP15352`
 - $83,988 -> **$86,178** (Jacksonville, FL) `WBY83EH03RCP65371`
-- $89,757 -> **$88,999** (Roswell, GA) `WBY83EH00RCP16533`
 - $130,649 -> **$128,627** (Fort Worth, TX) `WBY83EH07SCU49042`
+- $82,991 -> **$83,790** (Greensboro, NC) `WBY83EH02RCP15352`
+- $89,757 -> **$88,999** (Roswell, GA) `WBY83EH00RCP16533`
 - $155,950 -> **$156,072** (North Hollywood, CA) `WBY83EH09SCV03618`
 
 **Gone since 2026-09-01**
