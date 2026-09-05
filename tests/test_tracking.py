@@ -5307,7 +5307,8 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=30000) for i in range(12)]
         st = T.market_stats(cars)
         self.assertEqual(st["days_split"],
-                         {"stock": {"n": 12, "days": 75}, "used": {"n": 12, "days": 15}})
+                         {"stock": {"n": 12, "days": 75}, "used": {"n": 12, "days": 15},
+                          "none": 0})
         self.assertIn("typical car 45d on market (24 of 24 dated) — "
                       "12 dealer stock at 75d, 12 used at 15d", T.market_line(st))
 
@@ -5346,6 +5347,10 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         self.assertEqual((st["days_split"]["stock"]["n"], st["days_split"]["used"]["n"]), (12, 12),
                          "the six undated-by-mileage cars joined neither side")
         self.assertEqual(st["dated"], 30, "…while still counting in the blend's own denominator")
+        # …and the clause says so, because it names that denominator itself.
+        self.assertEqual(st["days_split"]["none"], 6)
+        self.assertIn("(30 of 30 dated) — 12 dealer stock at 75d, 12 used at 15d, "
+                      "6 with no mileage", T.market_line(st))
 
     # -- a car with no state is in neither bucket --------------------------
 

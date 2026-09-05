@@ -1126,7 +1126,13 @@ def market_stats(listings):
         # clause was built; this is the same rule and the same floor, so the
         # record stops describing a market that is not there.
         "days_split": ({"stock": {"n": len(d_stock), "days": int(median(d_stock))},
-                        "used": {"n": len(d_used), "days": int(median(d_used))}}
+                        "used": {"n": len(d_used), "days": int(median(d_used))},
+                        # …and the dated cars in neither market, because the
+                        # clause names its parent total one breath earlier:
+                        # 49 and 61 against 113 is a subtraction that comes
+                        # out three short, and the reader doing it is owed
+                        # the reason rather than a discrepancy.
+                        "none": len(dl) - len(d_stock) - len(d_used)}
                        if len(d_stock) >= 12 and len(d_used) >= 12 else None),
         # …over how many of how many. The dashboard has printed "(85 of 134
         # dated)" since the days split was built; the committed record printed
@@ -1466,7 +1472,9 @@ def market_line(stats):
         bits.append(f"typical car {stats['median_days_listed']}d on market"
                     + (f" ({stats['dated']} of {stats['n']} dated)" if stats.get("n") else "")
                     + (f" — {sp['stock']['n']} dealer stock at {sp['stock']['days']}d, "
-                       f"{sp['used']['n']} used at {sp['used']['days']}d" if sp else ""))
+                       f"{sp['used']['n']} used at {sp['used']['days']}d"
+                       + (f", {sp['none']} with no mileage" if sp.get("none") else "")
+                       if sp else ""))
     if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
         # The cuts that stuck lead, with their denominator — see market_stats.
         # The share of cars with any downward step follows, since it is the
