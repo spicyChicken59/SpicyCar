@@ -2809,6 +2809,87 @@ await step('the decision, day by day', async () => {
   }
 });
 
+// --- what the premium buys --------------------------------------------------
+// The gap sentence prices the decision; this clause says what the money buys,
+// in the sheet's own columns for the two floor cars and nothing else: model
+// year, miles, owners, certification, days listed. Recomputed here from the
+// listing objects behind the two hero links. Then two served sheets turn every
+// clause the live one leaves at rest — the dearer car made older, higher-
+// mileage, multi-owner, certified and long-listed — and take the owner count
+// and the listing age away, since 0 owners is the API's "not reported" and
+// must read as silence, never "0 owners against 1".
+await step('what the premium buys', async () => {
+  plan('the clause states the dearer floor car against the cheaper in the sheet\'s own columns',
+       'and every clause turns with the sheet',
+       'and a field the sheet lacks is silence, not a zero');
+  const buyer = SHEET.buyer || {};
+  const want = new Set(buyer.shopping || []);
+  if (!want.size) return skipRest('this sheet names no shopped trims');
+  const models = [];
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {}))
+      if (Object.keys((m || {}).trims || {}).some((id) => want.has(id))) models.push({ bk, mk, m, label: m.label || mk });
+  if (models.length !== 2) return skipRest(`${models.length} shopped model(s); the clause needs two`);
+  const readHero = async () => {
+    const gap = ((await page.textContent('#hero-gap')) || '').replace(/\s+/g, ' ').trim();
+    const heads = gap.match(/^(.+?) costs \$[\d,]+ more than (.+?) on today's cheapest/);
+    const vins = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => ({
+      label: ((t.querySelector('.sc-tile__label') || {}).textContent || '').split(' — ')[0].trim(),
+      vin: ((t.querySelector('[data-fkey^="hero:"]') || { getAttribute: () => '' }).getAttribute('data-fkey') || '').split(':')[1] || '',
+    })));
+    const said = (gap.match(/For that, .*?\. /) || [''])[0];
+    return { gap, heads, vins, said };
+  };
+  // The sentence the sheet supports, from the two listing objects. Any field
+  // absent on either side is left out, and an owner count of 0 is absent.
+  const n = (v) => v.toLocaleString('en-US');
+  const buysOf = (x, y, B) => {
+    const head = [];
+    if (x.year && y.year) head.push(y.year === x.year ? 'the same model year' : `${Math.abs(y.year - x.year)} model year${Math.abs(y.year - x.year) === 1 ? '' : 's'} ${y.year > x.year ? 'newer' : 'older'}`);
+    if (x.miles != null && y.miles != null) head.push(y.miles === x.miles ? 'the same mileage' : `${n(Math.abs(y.miles - x.miles))} ${y.miles < x.miles ? 'fewer' : 'more'} miles`);
+    const parts = [head.join(' with ')];
+    if (x.owners > 0 && y.owners > 0) parts.push(x.owners === y.owners ? (x.owners === 1 ? 'both one owner' : `both ${x.owners} owners`) : `${y.owners} owner${y.owners === 1 ? '' : 's'} against ${x.owners}`);
+    parts.push(!!x.cpo === !!y.cpo ? (y.cpo ? 'both certified' : 'neither certified') : (y.cpo ? `${B} certified, the other not` : `${B} not certified, the other is`));
+    if (x.days_listed != null && y.days_listed != null) parts.push(`listed ${y.days_listed} day${y.days_listed === 1 ? '' : 's'} against ${x.days_listed}`);
+    return `For that, ${B} is ${parts.filter(Boolean).join('; ')}. `;
+  };
+  const carOf = (label, vin) => { const o = models.find((o) => o.label === label); return o && (o.m.listings || []).find((x) => x.vin === vin); };
+  await open('');
+  const live = await readHero();
+  if (!live.heads) return skipRest(`no two-model gap sentence today: "${live.gap.slice(0, 120)}"`);
+  const [, B, A] = live.heads;
+  const pick = (label) => { const t = live.vins.find((t) => t.label === label); return t && carOf(label, t.vin); };
+  const y = pick(B), x = pick(A);
+  if (!x || !y) return skipRest(`could not find the hero cars for "${A}" and "${B}" in the sheet`);
+  ok('the clause states the dearer floor car against the cheaper in the sheet\'s own columns', live.said === buysOf(x, y, B),
+     `page: "${live.said || '(no clause)'}" · sheet: "${buysOf(x, y, B)}"`);
+  // Served: the same two cars with their columns rewritten. Prices are
+  // untouched, so both stay the floor and the sentence's subjects.
+  const dearer = models.find((o) => o.label === B), cheaper = models.find((o) => o.label === A);
+  const serve = (edit) => ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const mx = sheet.brands[cheaper.bk].models[cheaper.mk], my = sheet.brands[dearer.bk].models[dearer.mk];
+    edit(mx.listings.find((c) => c.vin === x.vin), my.listings.find((c) => c.vin === y.vin));
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  const turned = { x: { year: 2025, miles: 5000, owners: 1, cpo: false, days_listed: 10 }, y: { year: 2024, miles: 13000, owners: 3, cpo: true, days_listed: 200 } };
+  await serve((cx, cy) => { Object.assign(cx, turned.x); Object.assign(cy, turned.y); });
+  try {
+    await open('');
+    const t = await readHero();
+    const wantT = buysOf(turned.x, turned.y, B);
+    ok('and every clause turns with the sheet', !!t.heads && t.heads[1] === B && t.said === wantT, `page: "${t.said || '(no clause)'}" · expected: "${wantT}"`);
+  } finally { await ctx.unroute('**/data.json'); }
+  const bare = { x: { year: 2025, miles: 5000, owners: 1, cpo: false, days_listed: 10 }, y: { year: 2025, miles: 13000, owners: 0, cpo: false, days_listed: null } };
+  await serve((cx, cy) => { Object.assign(cx, bare.x); Object.assign(cy, bare.y); });
+  try {
+    await open('');
+    const t = await readHero();
+    const wantB = `For that, ${B} is the same model year with 8,000 more miles; neither certified. `;
+    ok('and a field the sheet lacks is silence, not a zero', !!t.heads && t.heads[1] === B && t.said === wantB, `page: "${t.said || '(no clause)'}" · expected: "${wantB}"`);
+  } finally { await ctx.unroute('**/data.json'); }
+});
+
 // --- a headline figure carries its own date --------------------------------
 // The masthead says "data through Sep 4"; the watchlist's first tile can lead
 // with a car from a model on a slower cadence, last fetched two days before,
@@ -3646,7 +3727,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 175;
+const EXPECTED = 178;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

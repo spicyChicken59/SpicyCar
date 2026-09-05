@@ -3839,7 +3839,33 @@
     gap.textContent = `${b.o.m.label} costs ${money(b.total - a.total)} more than ${a.o.m.label} on today's cheapest of each`
       + (dm != null ? `, ${money(dm)} a month at each car's own rate. ` : '. ')
       + premiumOverTime(a, b)
+      + premiumBuys(a, b)
       + basis;
+  }
+  // What the extra money buys, in the columns the sheet already carries for
+  // the two cars the gap sentence is about — model year, miles, owners,
+  // certification, days listed — and nothing else: no adjective, no "worth
+  // it", no ranking word. Each clause prints only when BOTH cars carry the
+  // field, so a missing owner count on one side is silence, not a guess.
+  function premiumBuys(a, b) {
+    const x = a.x, y = b.x, B = b.o.m.label || b.o.mk, bits = [];
+    if (x.year && y.year) {
+      const dy = y.year - x.year;
+      bits.push(dy === 0 ? 'the same model year' : `${Math.abs(dy)} model year${Math.abs(dy) === 1 ? '' : 's'} ${dy > 0 ? 'newer' : 'older'}`);
+    }
+    if (x.miles != null && y.miles != null) {
+      const dm = y.miles - x.miles;
+      bits.push(dm === 0 ? 'the same mileage' : `${num(Math.abs(dm))} ${dm < 0 ? 'fewer' : 'more'} miles`);
+    }
+    const head = bits.length === 2 ? `${bits[0]} with ${bits[1]}` : bits[0] || '';
+    const rest = [];
+    // An owner count of 0 is the API's "not reported", not a car nobody has
+    // owned — the list rows already say nothing for it, and so does this.
+    if (x.owners > 0 && y.owners > 0) rest.push(x.owners === y.owners ? (x.owners === 1 ? 'both one owner' : `both ${x.owners} owners`) : `${y.owners} owner${y.owners === 1 ? '' : 's'} against ${x.owners}`);
+    rest.push(!!x.cpo === !!y.cpo ? (y.cpo ? 'both certified' : 'neither certified') : (y.cpo ? `${B} certified, the other not` : `${B} not certified, the other is`));
+    if (x.days_listed != null && y.days_listed != null) rest.push(`listed ${y.days_listed} day${y.days_listed === 1 ? '' : 's'} against ${x.days_listed}`);
+    if (!head && !rest.length) return '';
+    return `For that, ${B} is ${[head, ...rest].filter(Boolean).join('; ')}. `;
   }
   // The gap on every day both ledgers have a point — its range, its first
   // and last value, and which side moved it. Floors only, never a median
