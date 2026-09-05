@@ -3621,6 +3621,126 @@ await step('since your visit', async () => {
   await plant(null);
 });
 
+// --- a VIN in hand -----------------------------------------------------------
+// At a dealer the buyer has seventeen characters on a windshield and a page
+// that could only be walked by model. ?vin= (or the VIN field, which goes
+// through the same address bar) resolves a full VIN or its tail of six or
+// more over live rows then departed ones, and is honoured only when exactly
+// one car answers: its model page opens with the car in the notice slot and
+// its row landed on. Two answers say so and stop; none goes through the
+// dead-link notice; the address bar is cleaned either way. Every case below
+// is picked out of data.json, and __proto__ goes in as a VIN.
+await step('a VIN in hand', async () => {
+  plan('a full VIN opens its car: the model page, the card, the row, the address bar',
+       'and six characters of it do the same',
+       'a tail that fits two cars says how many and opens nothing',
+       'a VIN nobody has seen goes through the dead-link notice and is not re-shared',
+       'a departed car\'s VIN opens the card in its gone form',
+       'and the VIN field is the same path as the link',
+       'five characters are refused even when they would fit one car',
+       'and leaving the model page leaves the car behind');
+  const all = [];
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {})) {
+      for (const x of (m.listings || [])) all.push({ gone: false, bk, mk, label: m.label || mk, x });
+      for (const g of (m.gone || [])) all.push({ gone: true, bk, mk, label: m.label || mk, x: g });
+    }
+  const liveVins = new Set(all.filter((o) => !o.gone).map((o) => String(o.x.vin).toUpperCase()));
+  const byVin = new Map(); for (const o of all) { const v = String(o.x.vin).toUpperCase(); if (!byVin.has(v)) byVin.set(v, o); }
+  const live = all.find((o) => !o.gone && o.x.price != null && o.x.vin);
+  if (!live) return skipRest('no live priced car on the sheet');
+  const vin = String(live.x.vin).toUpperCase();
+  const tailOf = (n) => vin.slice(-n);
+  const count = (tail) => [...byVin.keys()].filter((v) => v.endsWith(tail)).length;
+  const read = () => page.evaluate(() => {
+    const n = document.getElementById('notice');
+    const card = n && n.querySelector('[data-vin-in-hand]');
+    const focused = document.activeElement && document.activeElement.closest ? document.activeElement.closest('tr') : null;
+    const fk = focused && focused.querySelector('[data-fkey^="star:"]');
+    return { h1: (document.getElementById('h1') || {}).textContent || '', url: location.search,
+             card: card ? card.getAttribute('data-vin-in-hand') : null, cardText: card ? card.textContent.replace(/\s+/g, ' ').trim() : '',
+             notice: n && !n.hidden && !card ? n.textContent.replace(/\s+/g, ' ').trim() : '',
+             landed: fk ? fk.getAttribute('data-fkey').split(':')[1] : null };
+  });
+  await open('?vin=' + vin);
+  const r1 = await read();
+  ok('a full VIN opens its car: the model page, the card, the row, the address bar',
+     r1.h1.includes(live.label) && r1.card === vin && r1.cardText.includes(vin) && r1.landed === vin && r1.url.includes('vin=' + vin) && r1.url.includes('m=' + live.mk),
+     `${vin}: h1 "${r1.h1}" · card ${r1.card} · landed ${r1.landed} · url "${r1.url}"`);
+  // six characters, if they are the car's alone
+  const six = tailOf(6);
+  if (count(six) !== 1) skip('and six characters of it do the same', `${six} fits ${count(six)} cars`);
+  else {
+    await open('?vin=' + six);
+    const r2 = await read();
+    ok('and six characters of it do the same', r2.card === vin && r2.landed === vin && r2.url.includes('vin=' + vin), `${six} → card ${r2.card}, landed ${r2.landed}, url "${r2.url}"`);
+  }
+  // a tail two cars share: the shortest length at which this VIN is not alone
+  let amb = null;
+  for (let n = 6; n <= 16; n++) { const t = tailOf(n); if (count(t) > 1) { amb = t; break; } }
+  if (!amb) { const c = [...byVin.keys()].map((v) => v.slice(-6)).find((t, i, a) => a.indexOf(t) !== i); amb = c || null; }
+  // …served when the sheet has none: another live car's VIN is rewritten to
+  // end in this car's six, so the tail fits exactly two.
+  const twin = amb ? null : all.find((o) => !o.gone && o.x.vin && String(o.x.vin).toUpperCase() !== vin && (o.bk !== live.bk || o.mk !== live.mk));
+  if (!amb && twin) await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const row = sheet.brands[twin.bk].models[twin.mk].listings.find((x) => x.vin === twin.x.vin);
+    row.vin = row.vin.slice(0, 11) + six;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  const tail = amb || (twin ? six : null), fits = amb ? count(amb) : 2;
+  if (!tail) skip('a tail that fits two cars says how many and opens nothing', 'no second car to plant');
+  else {
+    try {
+      await open('?vin=' + tail);
+      const r3 = await read();
+      ok('a tail that fits two cars says how many and opens nothing', !r3.card && r3.h1 === 'The watchlist' && new RegExp(`${fits} cars on the sheet end in`).test(r3.notice) && !r3.url.includes('vin='),
+         `${tail} fits ${fits}${amb ? '' : ' (one served)'}: h1 "${r3.h1}" · notice "${r3.notice.slice(0, 90)}" · url "${r3.url}"`);
+    } finally { if (!amb && twin) await ctx.unroute('**/data.json'); }
+  }
+  await open('?vin=__proto__');
+  const r4 = await read();
+  ok('a VIN nobody has seen goes through the dead-link notice and is not re-shared', !r4.card && r4.h1 === 'The watchlist' && /no car on the sheet has that VIN/i.test(r4.notice) && r4.url === '',
+     `__proto__: h1 "${r4.h1}" · notice "${r4.notice.slice(0, 80)}" · url "${r4.url}"`);
+  const departed = all.find((o) => o.gone && o.x.vin && !liveVins.has(String(o.x.vin).toUpperCase()) && o.x.last_price != null);
+  if (!departed) skip('a departed car\'s VIN opens the card in its gone form', 'no departed car on the sheet is absent from the live rows');
+  else {
+    const dv = String(departed.x.vin).toUpperCase();
+    await open('?vin=' + dv);
+    const r5 = await read();
+    ok('a departed car\'s VIN opens the card in its gone form', r5.card === dv && r5.h1.includes(departed.label) && /left the model's rows|last seen/i.test(r5.cardText) && !r5.landed,
+       `${dv}: h1 "${r5.h1}" · card ${r5.card} · "${r5.cardText.slice(0, 100)}"`);
+  }
+  // the field: type the tail, press Enter
+  await open('');
+  await page.fill('#f-vin', six.toLowerCase());
+  await page.press('#f-vin', 'Enter');
+  await page.waitForTimeout(500);
+  const r6 = await read();
+  ok('and the VIN field is the same path as the link', r6.card === vin && r6.landed === vin && r6.url.includes('vin=' + vin) && (await page.inputValue('#f-vin')) === '',
+     `typed "${six.toLowerCase()}": card ${r6.card} · landed ${r6.landed} · url "${r6.url}"`);
+  // the last four are a plate, not a car; five is not looked up either, even
+  // when the sheet would answer with one car
+  const five = tailOf(5);
+  await open('?vin=' + five);
+  const r7 = await read();
+  ok('five characters are refused even when they would fit one car', !r7.card && r7.h1 === 'The watchlist' && /six characters at least/.test(r7.notice) && r7.url === '',
+     `${five} fits ${count(five)}: h1 "${r7.h1}" · notice "${r7.notice.slice(0, 80)}"`);
+  // leaving: a model chip on the front page, or here the model tab, opens
+  // another model and the car in hand does not follow
+  await open('?vin=' + vin);
+  // by the model tab, the page's own way out — a fresh link would reset the
+  // car by itself and say nothing about the tab's handler
+  const other = WATCHED.find((w) => w.cars && w.bk === live.bk && w.mk !== live.mk);
+  const tab = other && page.locator(`button[data-fkey="tab-model:${other.mk}"]`);
+  if (!other || !(await tab.count())) skip('and leaving the model page leaves the car behind', 'no second model of the brand to tab to');
+  else {
+    await tab.click(); await page.waitForTimeout(500);
+    const r8 = await read();
+    ok('and leaving the model page leaves the car behind', !r8.card && r8.h1.includes(other.label) && !r8.url.includes('vin='), `${other.label} by its tab: card ${r8.card} · url "${r8.url}"`);
+  }
+});
+
 // --- a headline figure carries its own date --------------------------------
 // The masthead says "data through Sep 4"; the watchlist's first tile can lead
 // with a car from a model on a slower cadence, last fetched two days before,
@@ -4473,7 +4593,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 203;
+const EXPECTED = 211;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
