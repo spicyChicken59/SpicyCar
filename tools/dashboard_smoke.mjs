@@ -2843,6 +2843,10 @@ await step('the decision, day by day', async () => {
   plan('each shopped tile says how many cars held its floor, and since when',
        'and what stands behind the headline car today',
        'the premium over the shared fetch days is the one the ledgers make',
+       'the drivable premium over the record is the one the ledgers make',
+       'and six fetch days are too few to say it',
+       'and one drivable car a day is not a premium',
+       'and today\'s figure is withheld when only one car could be driven to today',
        'and on a sheet that breaches them, the fetch-day rule and the five-car gate hold');
   const buyer = SHEET.buyer || {}, f = buyer.fees || null, P = buyer.picks || {};
   const want = new Set(buyer.shopping || []);
@@ -2866,15 +2870,17 @@ await step('the decision, day by day', async () => {
     const latest = (tid, day) => { let b = null; for (const d of (fd[tid] || [])) { if (d <= day) b = d; else break; } return b; };
     const drawn = [];
     for (const day of days) {
-      let n = 0, floor = null;
+      let n = 0, nl = 0, floor = null, drive = null;
       for (const { x, seen } of cars.values()) {
         const lf = latest(x.trim_id, day);
         if (!lf || !seen.has(lf)) continue;
         n++;
-        const v = totalAt(x, seen.get(lf), localOn(x, day));
+        const local = localOn(x, day);
+        const v = totalAt(x, seen.get(lf), local);
         if (!floor || v < floor.v) floor = { v, vin: x.vin };
+        if (local) { nl++; if (!drive || v < drive.v) drive = { v, vin: x.vin }; }
       }
-      if (n >= 5 && floor) drawn.push({ day, v: floor.v, vin: floor.vin });
+      if (n >= 5 && floor) drawn.push({ day, v: floor.v, vin: floor.vin, nl, drive });
     }
     if (drawn.length < 3) return null;
     const last = drawn[drawn.length - 1];
@@ -2946,6 +2952,77 @@ await step('the decision, day by day', async () => {
          && (wantSplit ? saidSplit === wantSplit : !saidSplit),
        m ? `page: "${m[0]} ${saidSplit || ''}" · ledgers: ${shared.length} days, ${Math.min(...gaps)}–${Math.max(...gaps)}, first ${Math.abs(shared[0].gap)}, last ${Math.abs(shared[shared.length - 1].gap)}; split "${wantSplit || ''}"`
          : `no premium sentence in "${gapTxt.slice(0, 160)}"`);
+  }
+  // What driving to one has cost over the record: the drivable floor minus
+  // the floor on each ledger day with two or more drivable cars, seven such
+  // days at least, the pool size beside it.
+  const $n = (v) => '$' + v.toLocaleString('en-US');
+  const driveLineOf = (ledger) => {
+    const ds = ledger.drawn.filter((d) => d.nl >= 2 && d.drive);
+    if (ds.length < 7) return null;
+    const gaps = ds.map((d) => d.drive.v - d.v), lo = Math.min(...gaps), hi = Math.max(...gaps);
+    const pools = ds.map((d) => d.nl), pMin = Math.min(...pools), pMax = Math.max(...pools);
+    const ids = new Set(ds.map((d) => d.drive.vin)).size, last = ledger.drawn[ledger.drawn.length - 1];
+    const today = last.nl >= 2 && last.drive ? last.drive.v - last.v : null;
+    return (lo === hi ? `driving to one has cost ${$n(lo)} more on each of ${ds.length} fetch days` : `driving to one has cost ${$n(lo)}–${$n(hi)} more over ${ds.length} fetch days`)
+      + `, on ${pMin === pMax ? pMin : `${pMin}–${pMax}`} drivable cars` + (today != null ? ` · ${$n(today)} today` : '')
+      + (ids === 1 ? ' · the same drivable car throughout' : ` · ${ids} different drivable cars held that floor`);
+  };
+  const readDrive = () => page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => ({
+    label: ((t.querySelector('.sc-tile__label') || {}).textContent || '').split(' — ')[0].trim(),
+    line: ((t.querySelector('[data-drive-premium]') || {}).textContent || '').replace(/\s+/g, ' ').trim() })));
+  {
+    const drives = await readDrive();
+    const wrongD = models.filter((o) => o.ledger).map((o) => ({ o, t: drives.find((t) => t.label === o.label), want: driveLineOf(o.ledger) || '' })).filter(({ t, want }) => t && t.line !== want);
+    const said = models.filter((o) => o.ledger && driveLineOf(o.ledger)).length;
+    if (!said) skip('the drivable premium over the record is the one the ledgers make', 'no shopped model has seven ledger days with two drivable cars');
+    else ok('the drivable premium over the record is the one the ledgers make', wrongD.length === 0,
+       wrongD.length ? wrongD.map(({ o, t, want }) => `${o.label}: tile "${t.line}" · ledgers "${want}"`).join(' | ') : drives.filter((t) => t.line).map((t) => `${t.label}: ${t.line}`).join(' · '));
+  }
+  // Served: the subject's shopped trims keep only their last six fetch days
+  // (the line needs seven), then the subject with every drivable car but one
+  // moved beyond the states (one car a day is a price, not a premium).
+  const subjectD = models.find((o) => o.ledger && driveLineOf(o.ledger));
+  if (!subjectD) { for (const l of ['and six fetch days are too few to say it', 'and one drivable car a day is not a premium', 'and today\'s figure is withheld when only one car could be driven to today']) skip(l, 'no line to take away'); }
+  else {
+    const serve = async (edit, label, detail, expectLine) => {
+      const planted = JSON.parse(JSON.stringify(subjectD.m)); edit(planted);
+      const wantL = (ledgerOf(planted) && driveLineOf(ledgerOf(planted))) || '';
+      await ctx.route('**/data.json', async (route) => {
+        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        sheet.brands[subjectD.bk].models[subjectD.mk] = planted;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      try {
+        await open('');
+        const t = (await readDrive()).find((t) => t.label === subjectD.label) || {};
+        if (expectLine) ok(label, !!wantL && t.line === wantL && expectLine(wantL), `${detail}: tile "${t.line || '(nothing)'}" · harness "${wantL || '(nothing)'}"`);
+        else ok(label, !wantL && !t.line, `${detail}: tile ${t.line ? `still says "${t.line}"` : 'says nothing'}; harness ${wantL ? `would say "${wantL}"` : 'says nothing'}`);
+      } finally { await ctx.unroute('**/data.json'); }
+    };
+    await serve((pm) => { for (const id of Object.keys(pm.fetch_days || {})) if (want.has(id)) pm.fetch_days[id] = pm.fetch_days[id].slice(-6); },
+                'and six fetch days are too few to say it', `${subjectD.label} with six fetch days`);
+    await serve((pm) => {
+      let kept = false;
+      for (const x of (pm.listings || []).concat(pm.gone || [])) {
+        if (!x.local && !(x.local_hist || []).some((st) => st[1])) continue;
+        if (!kept) { kept = true; continue; }
+        x.local = false; delete x.local_hist; x.ship = x.ship || 900;
+      }
+    }, 'and one drivable car a day is not a premium', `${subjectD.label} with one drivable car`);
+    // …and every drivable car but one moved beyond the states on the LAST
+    // day only: the record still has its seven days, today does not, so the
+    // line prints without a "today".
+    const lastDay = subjectD.ledger.drawn[subjectD.ledger.drawn.length - 1].day;
+    await serve((pm) => {
+      let kept = false;
+      for (const x of (pm.listings || [])) {
+        if (!x.local) continue;
+        if (!kept) { kept = true; continue; }
+        x.local = false; x.ship = x.ship || 900;
+        x.local_hist = [...(x.local_hist || [[(x.series || [[lastDay]])[0][0], true]]), [lastDay, false]];
+      }
+    }, 'and today\'s figure is withheld when only one car could be driven to today', `${subjectD.label} with one drivable car on ${lastDay}`, (line) => !/ today/.test(line));
   }
   // The served sheet: the first shopped model's first shopped trim loses its
   // middle fetch day, and gets a day before its record on which one fit car
@@ -4593,7 +4670,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 211;
+const EXPECTED = 215;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

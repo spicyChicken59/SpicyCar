@@ -3794,16 +3794,23 @@
       if (seen.size) cars.set(k, { x, seen });
     }
     const latestFetch = (tid, day) => latestFetchDay(fd[tid], day);
+    // Each day also carries the drivable floor and how many drivable cars
+    // stood behind it — the same cars, placed by local_hist on that day —
+    // for the line under the tile that says what driving to one has cost
+    // over the record, not just today.
     const points = days.map((day) => {
-      let n = 0, floor = null;
+      let n = 0, nl = 0, floor = null, drive = null;
       for (const { x, seen } of cars.values()) {
         const lf = latestFetch(x.trim_id, day);
         if (!lf || !seen.has(lf)) continue;
         n++;
-        const v = heroTotalAt(x, seen.get(lf), localOnDay(x, day));
+        const local = localOnDay(x, day);
+        const v = heroTotalAt(x, seen.get(lf), local);
         if (floor == null || v < floor.v) floor = { v, vin: x.vin };
+        if (local) { nl++; if (drive == null || v < drive.v) drive = { v, vin: x.vin }; }
       }
-      return { day, n, v: n >= 5 && floor ? floor.v : null, vin: n >= 5 && floor ? floor.vin : null };
+      const ok = n >= 5 && floor;
+      return { day, n, v: ok ? floor.v : null, vin: ok ? floor.vin : null, nl, drive: ok && drive ? drive : null };
     });
     const drawn = points.filter((pt) => pt.v != null);
     if (drawn.length < 3) return null;
@@ -3811,6 +3818,29 @@
     let tenure = 0;
     for (let i = drawn.length - 1; i >= 0 && drawn[i].vin === last.vin; i--) tenure++;
     return { points, drawn, first: drawn[0], last, identities: new Set(drawn.map((pt) => pt.vin)).size, tenure };
+  }
+  // What driving to one has cost over the record, not only today: on each
+  // ledger day, the drivable floor minus the floor, over days with at least
+  // two drivable cars — one car is a price, not a premium — and only when
+  // seven such days exist, since a range over fewer is two numbers wearing a
+  // trend. The pool size is printed with it, because "$349–$4,158" over
+  // three drivable cars is a different claim from the same range over
+  // thirty, and the day the premium was $4,158 was the day the cheapest
+  // drivable car left. Rounded per day before differencing, like the tile.
+  function drivePremiumLine(ledger) {
+    const days = ledger.drawn.filter((pt) => pt.nl >= 2 && pt.drive);
+    if (days.length < 7) return null;
+    const gaps = days.map((pt) => pt.drive.v - pt.v);
+    const lo = Math.min(...gaps), hi = Math.max(...gaps);
+    const pools = days.map((pt) => pt.nl), pMin = Math.min(...pools), pMax = Math.max(...pools);
+    const ids = new Set(days.map((pt) => pt.drive.vin)).size;
+    const last = ledger.drawn[ledger.drawn.length - 1];
+    const today = last.nl >= 2 && last.drive ? last.drive.v - last.v : null;
+    return el('div', { class: 'sc-tile__sub', 'data-drive-premium': days.length },
+      (lo === hi ? `driving to one has cost ${money(lo)} more on each of ${days.length} fetch days` : `driving to one has cost ${money(lo)}–${money(hi)} more over ${days.length} fetch days`)
+      + `, on ${pMin === pMax ? pMin : `${pMin}–${pMax}`} drivable cars`
+      + (today != null ? ` · ${money(today)} today` : '')
+      + (ids === 1 ? ' · the same drivable car throughout' : ` · ${ids} different drivable cars held that floor`));
   }
   // The drivable car's line, financed. It said "$1,163 more" — the all-in gap
   // — under a winner whose own line quotes a payment, and on the day this was
@@ -3968,6 +3998,7 @@
           + `${localBest.x.state ? ` in ${localBest.x.state}` : ''}`
           + ` · ${localBest.v === best.v ? 'the same' : money(localBest.v - best.v) + ' more'} ${allIn ? 'all in' : 'landed'}`) : null,
         localBest ? driveGapLine(localBest.x, x) : null,
+        localBest && ledger ? drivePremiumLine(ledger) : null,
         // Both directions, for the same reason the shortlist gives them: this
         // tile leads with CHEAPEST, which is a different question from value,
         // and a cheapest car that is also above its own cohort's typical price
