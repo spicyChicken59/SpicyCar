@@ -4483,10 +4483,23 @@ class TestTheSnapshotPushSurvivesAnOwnerRebuild(unittest.TestCase):
         return subprocess.run(["git", *args], cwd=cwd, env=e, capture_output=True, text=True, check=True).stdout
 
     def _step_script(self, name):
-        import yaml
-        wf = yaml.safe_load((Path(__file__).parent.parent / ".github/workflows/daily.yml").read_text())
-        steps = next(iter(wf["jobs"].values()))["steps"]
-        return next(s["run"] for s in steps if s.get("name") == name)
+        """The named step's `run: |` block, read from the workflow as text.
+        No YAML parser: the suite runs on the CI image's bare Python plus
+        requests, and a dependency for one test is not worth the install."""
+        text = (Path(__file__).parent.parent / ".github/workflows/daily.yml").read_text()
+        head = text.index(f"- name: {name}\n")
+        run = text.index("run: |\n", head) + len("run: |\n")
+        lines = text[run:].split("\n")
+        indent = len(lines[0]) - len(lines[0].lstrip(" "))
+        body = []
+        for ln in lines:
+            if ln.strip() == "":
+                body.append("")
+                continue
+            if len(ln) - len(ln.lstrip(" ")) < indent:
+                break
+            body.append(ln[indent:])
+        return "\n".join(body).rstrip() + "\n"
 
     def _replay(self, step, owner_files, runner_files):
         import subprocess, tempfile
