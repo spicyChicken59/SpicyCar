@@ -2857,6 +2857,92 @@ await step('a headline figure carries its own date', async () => {
   }
 });
 
+// --- the floor delta names its cause ---------------------------------------
+// Tile 1's ▲▼ read as the market rising or falling; every floor move on this
+// record was a car arriving or leaving. The tile now says which, from the two
+// floor cars. Recomputed here from the sheet by the same rule — the previous
+// day row's floor car found through the series with the trim's carry-forward,
+// today's from the tile's own VIN — for every watched model page, and then a
+// served sheet retires today's floor car into a confirmed departure so the
+// "left the market" branch is exercised on a day nothing left.
+await step('the floor delta names its cause', async () => {
+  plan('the cause on every model page is the one the two floor cars make',
+       'and a confirmed departure of the floor car is named as one',
+       'and an unconfirmed one is not');
+  const money = (n) => '$' + Math.round(n).toLocaleString('en-US');
+  const latest = (days, day) => { let b = null; for (const d of (days || [])) { if (d <= day) b = d; else break; } return b; };
+  const causeOf = (m, bestVin) => {
+    const daily = m.daily || [];
+    const today = daily[daily.length - 1], prev = daily.length >= 2 ? daily[daily.length - 2] : null;
+    const best = (m.listings || []).find((x) => x.vin === bestVin);
+    if (!prev || !today || !best || prev.min_price == null || today.min_price == null || prev.min_price === today.min_price || today.min_price !== best.price) return null;
+    const fd = m.fetch_days || {};
+    const cars = new Map();
+    for (const x of (m.listings || []).concat(m.gone || [])) {
+      const k = String(x.vin || '').toUpperCase();
+      if (!k || cars.has(k)) continue;
+      const seen = new Map((x.series || []).filter((pt) => pt[1]).map((pt) => [pt[0], pt[1]]));
+      if (seen.size) cars.set(k, { x, seen });
+    }
+    const priceOn = (c, day) => { const days = fd[c.x.trim_id]; const lf = days && days.length ? latest(days, day) : day; return lf && c.seen.has(lf) ? c.seen.get(lf) : null; };
+    let prevCar = null;
+    for (const c of cars.values()) { const v = priceOn(c, prev.date); if (v != null && (!prevCar || v < prevCar.v)) prevCar = { c, v }; }
+    if (!prevCar || prevCar.v !== prev.min_price) return null;
+    const d = today.min_price - prev.min_price;
+    if (prevCar.c.x.vin === best.vin) return `this car was ${d < 0 ? 'cut' : 'raised'} ${money(Math.abs(d))}`;
+    if (d < 0) { const bc = cars.get(String(best.vin).toUpperCase()); return bc && priceOn(bc, prev.date) != null ? `another car cut to ${money(best.price)}` : `a car arriving at ${money(best.price)}`; }
+    const still = priceOn(prevCar.c, today.date);
+    if (still != null) return still > prevCar.v ? `the ${money(prevCar.v)} car was raised to ${money(still)}` : null;
+    const confirmed = (m.gone || []).some((g) => g.vin === prevCar.c.x.vin && g.likely === 'delisted' && g.exact === true);
+    return `the ${money(prevCar.v)} car ${confirmed ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
+  };
+  const readTile = () => page.locator('#kpis .sc-tile').first().evaluate((n) => ({
+    vin: n.getAttribute('data-vin') || '', delta: (n.querySelector('.sc-delta') || {}).textContent || '',
+    why: [...n.querySelectorAll('.sc-tile__sub')].map((s) => s.textContent.replace(/\s+/g, ' ').trim()).find((s) => /^(this car was|another car cut|a car arriving|the \$[\d,]+ car )/.test(s)) || '' }));
+  const seen = [], wrong = [];
+  for (const w of WATCHED.filter((w) => w.cars)) {
+    await open(w.q);
+    const t = await readTile();
+    const want = causeOf(SHEET.brands[w.bk].models[w.mk], t.vin) || '';
+    if (want) seen.push(`${w.label}: ${t.delta} — ${t.why}`);
+    if (t.why !== want) wrong.push(`${w.label}: tile "${t.why}" · sheet "${want}" (${t.delta})`);
+  }
+  ok('the cause on every model page is the one the two floor cars make', wrong.length === 0 && seen.length > 0,
+     wrong.length ? wrong.join(' | ') : (seen.join(' · ') || 'no floor moved on any model today'));
+  // The served sheet: the carried model's floor car is retired — its listing
+  // removed, its series ending on the previous day row, a gone row stamped
+  // exact — so today's floor is the runner-up and the old floor car left.
+  const m0 = SHEET.brands[carried.bk].models[carried.mk];
+  const daily = m0.daily || [];
+  if (daily.length < 2) { skip('and a confirmed departure of the floor car is named as one', `${carried.label} has one day row`); skip('and an unconfirmed one is not', `${carried.label} has one day row`); }
+  else for (const exact of [true, false]) {
+    const planted = JSON.parse(JSON.stringify(m0));
+    const today = planted.daily[planted.daily.length - 1], prev = planted.daily[planted.daily.length - 2];
+    const priced = planted.listings.filter((x) => x.price != null).sort((a, b) => a.price - b.price);
+    const floor = priced[0], next = priced[1];
+    planted.listings = planted.listings.filter((x) => x !== floor);
+    floor.series = (floor.series || []).filter((pt) => pt[0] <= prev.date);
+    if (!floor.series.length) floor.series = [[prev.date, floor.price]];
+    prev.min_price = floor.price; today.min_price = next.price;
+    planted.gone = (planted.gone || []).concat([{ ...floor, last_price: floor.price, last_seen: prev.date, likely: 'delisted', exact }]);
+    const wantWhy = `the ${money(floor.price)} car ${exact ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
+    const name = exact ? 'and a confirmed departure of the floor car is named as one' : 'and an unconfirmed one is not';
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[carried.bk].models[carried.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(carried.q);
+      const t = await readTile();
+      ok(name, t.why === wantWhy && /▲/.test(t.delta),
+         `${carried.label} with its ${money(floor.price)} floor car retired (exact ${exact}): "${t.delta} — ${t.why}" · expected "${wantWhy}"`);
+    } finally {
+      await ctx.unroute('**/data.json');
+    }
+  }
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -3473,7 +3559,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 166;
+const EXPECTED = 169;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

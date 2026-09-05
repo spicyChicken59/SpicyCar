@@ -2360,6 +2360,13 @@
   }
   // At module scope because the floor ledger asks the same question of the
   // same rows; the reason it exists is written where scopedDaily uses it.
+  // The trim's latest fetch on or before a day — the carry-forward rule
+  // scopedDaily, floorLedger and floorMoveCause all apply, written once.
+  function latestFetchDay(days, day) {
+    let b = null;
+    for (const d of (days || [])) { if (d <= day) b = d; else break; }
+    return b;
+  }
   function localOnDay(x, day) {
     const h = x.local_hist;
     if (!h || !h.length) return !!x.local;
@@ -3573,7 +3580,7 @@
       for (const pt of (x.series || [])) if (pt[1]) seen.set(pt[0], pt[1]);
       if (seen.size) cars.set(k, { x, seen });
     }
-    const latestFetch = (tid, day) => { let b = null; for (const d of (fd[tid] || [])) { if (d <= day) b = d; else break; } return b; };
+    const latestFetch = (tid, day) => latestFetchDay(fd[tid], day);
     const points = days.map((day) => {
       let n = 0, floor = null;
       for (const { x, seen } of cars.values()) {
@@ -4007,6 +4014,51 @@
     };
   }
 
+  // Why the floor moved. Tile 1's ▲▼ compares today's lowest asking with the
+  // previous day row's, and it read as the market rising or falling. It has
+  // not moved that way once: every floor move on this record so far was a car
+  // arriving or a car leaving — the i5's floor went $34,551 → $36,479 on Aug
+  // 29 because the $34,551 car in California was not checked that day. So the
+  // tile says which: the same car cut or raised, another car arriving below
+  // the floor or cut below it, or the old floor car leaving — and a departure
+  // is "left the market" only when the record confirmed it (an exact
+  // departure), "stopped being seen" otherwise.
+  //
+  // Reconstructed from the series with the same carry-forward rule as
+  // scopedDaily and floorLedger. If the reconstructed previous floor does not
+  // equal the day row's own min_price, or the old floor car is somehow still
+  // listed at its old price, the tile says nothing rather than name a car the
+  // record does not put there.
+  function floorMoveCause(t, today, prev, best) {
+    if (!prev || !today || !best || prev.min_price == null || today.min_price == null || prev.min_price === today.min_price) return null;
+    const fd = t.fetch_days || {};
+    const cars = new Map();
+    for (const x of trimRows((t.listings || []).concat(t.gone || [])).filter((y) => passesShared(y, true))) {
+      const k = String(x.vin || '').toUpperCase();
+      if (!k || cars.has(k)) continue;   // the live listing comes first and wins
+      const seen = new Map();
+      for (const pt of (x.series || [])) if (pt[1]) seen.set(pt[0], pt[1]);
+      if (seen.size) cars.set(k, { x, seen });
+    }
+    const priceOn = (c, day) => {
+      const days = fd[c.x.trim_id];
+      const lf = days && days.length ? latestFetchDay(days, day) : day;
+      return lf && c.seen.has(lf) ? c.seen.get(lf) : null;
+    };
+    let prevCar = null;
+    for (const c of cars.values()) { const v = priceOn(c, prev.date); if (v != null && (!prevCar || v < prevCar.v)) prevCar = { c, v }; }
+    if (!prevCar || prevCar.v !== prev.min_price) return null;
+    const d = today.min_price - prev.min_price;
+    if (prevCar.c.x.vin === best.vin) return `this car was ${d < 0 ? 'cut' : 'raised'} ${money(Math.abs(d))}`;
+    if (d < 0) {
+      const bc = cars.get(String(best.vin || '').toUpperCase());
+      return bc && priceOn(bc, prev.date) != null ? `another car cut to ${money(best.price)}` : `a car arriving at ${money(best.price)}`;
+    }
+    const still = priceOn(prevCar.c, today.date);
+    if (still != null) return still > prevCar.v ? `the ${money(prevCar.v)} car was raised to ${money(still)}` : null;
+    const confirmed = (t.gone || []).some((g) => g.vin === prevCar.c.x.vin && g.likely === 'delisted' && g.exact === true);
+    return `the ${money(prevCar.v)} car ${confirmed ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
+  }
   function renderKpis(rows) {
     const t = model(), daily = scopedDaily(t), record = dailyFor(t), host = $('kpis'); host.textContent = '';
     const all = trimRows(t.listings || []);
@@ -4042,7 +4094,7 @@
     // needs — the cheapest car they can drive to — gets its own tile rather than
     // being left to the table. Median moves into the market tile's sub-line.
     const bestLocal = lowestBy(priced.filter(isLocal), 'price');
-    const tile1 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, scopedView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
+    const tile1 = el('div', { class: 'sc-tile', 'data-vin': best ? (best.vin || '') : '' }, el('div', { class: 'sc-tile__label' }, scopedView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
       el('div', { class: 'sc-tile__value' }, best ? money(best.price) : '—'),
       el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
     // The day-over-day move used to be dropped under any filter, because the
@@ -4057,6 +4109,8 @@
     // history, and a filter must not make the page claim there is none.
     if (best && today && today.min_price === best.price) {
       tile1.appendChild(deltaEl(today.min_price, prev && prev.min_price, prev && prev.date, true, record.length));
+      const why = floorMoveCause(t, today, prev, best);
+      if (why) tile1.appendChild(el('div', { class: 'sc-tile__sub' }, why));
     }
     host.appendChild(tile1);
 
