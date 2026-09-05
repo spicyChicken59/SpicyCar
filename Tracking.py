@@ -970,11 +970,26 @@ def market_stats(listings):
     for x in listings:
         s = x.get("series") or []
         drops += [a - b for (_, a), (_, b) in zip(s, s[1:]) if b < a]
+    # A cut that stuck, told apart from a step that bounced back. cut_share
+    # counts any car with a downward step in its series, and a step reversed
+    # on the next fetch counts the same as one that held: on this record a
+    # third of the i5's downward steps were later reversed, and 17 of its 86
+    # "cut" cars ask today what they asked when first seen — the storefront
+    # sawtooth of a group listing one VIN at two prices on alternate days.
+    # "66% cut while tracked" is true and is not the number a buyer can act
+    # on; "69 of 131 ask less than when first seen, median $900 less" is.
+    # Counts with their denominator, never a rate, so the two never get
+    # compared across trims by eye.
+    net_down = [x for x in tracked if (x.get("delta") or 0) < 0]
+    restored = [x for x in tracked if x.get("cuts") and (x.get("delta") or 0) >= 0]
     return {
         "median_days_listed": int(median(dl)) if dl else None,
         "tracked_2d": len(tracked),
         "cut_share": round(len(cut_cars) / len(tracked), 2) if tracked else None,
         "median_cut": int(median(drops)) if drops else None,
+        "net_down": len(net_down),
+        "restored": len(restored),
+        "median_net_drop": int(median(-x["delta"] for x in net_down)) if net_down else None,
     }
 
 
@@ -1275,6 +1290,17 @@ def market_line(stats):
     if stats.get("median_days_listed") is not None:
         bits.append(f"typical car {stats['median_days_listed']}d on market")
     if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
+        # The cuts that stuck lead, with their denominator — see market_stats.
+        # The share of cars with any downward step follows, since it is the
+        # figure the record has carried since the start and the two together
+        # say how much of the cutting was theatre.
+        if stats.get("net_down") is not None:
+            held = f"{stats['net_down']} of {stats['tracked_2d']} ask less than when first seen"
+            if stats.get("median_net_drop"):
+                held += f", median {money(stats['median_net_drop'])} less"
+            if stats.get("restored"):
+                held += f" · {stats['restored']} cut and put back"
+            bits.append(held)
         cut = f"{stats['cut_share']:.0%} cut while tracked"
         if stats.get("median_cut"):
             cut += f", median {money(stats['median_cut'])}"

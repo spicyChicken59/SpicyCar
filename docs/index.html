@@ -2134,6 +2134,12 @@
     const dl = rows.map((x) => x.days_listed).filter((v) => v != null);
     const tracked = rows.filter((x) => (x.days_tracked || 0) >= 2);
     const cutCars = tracked.filter((x) => x.cuts);
+    // A cut that stuck, told apart from a step that bounced back — see
+    // market_stats(): a third of the i5's downward steps were later reversed,
+    // and 17 of its 86 "cut" cars ask today what they asked when first seen.
+    // Counts with their denominator, never a rate.
+    const netDown = tracked.filter((x) => (x.delta || 0) < 0);
+    const restored = tracked.filter((x) => x.cuts && (x.delta || 0) >= 0);
     const drops = [];
     for (const x of rows) {
       const s = x.series || [];
@@ -2164,6 +2170,8 @@
         ? { stock: { n: datedStock.length, days: Math.trunc(median(datedStock)) }, used: { n: datedUsed.length, days: Math.trunc(median(datedUsed)) } } : null,
       tracked_2d: tracked.length,
       cut_share: tracked.length ? Math.round(cutCars.length / tracked.length * 100) / 100 : null,   // two places, as market_stats() rounds
+      net_down: netDown.length, restored: restored.length,
+      median_net_drop: netDown.length ? Math.trunc(median(netDown.map((x) => -x.delta))) : null,
       median_cut: drops.length ? Math.trunc(median(drops)) : null,
       n_sold: spans.length,
       median_days_to_sale: spans.length ? Math.trunc(median(spans)) : null,
@@ -4341,7 +4349,12 @@
     const mk = sc.market, mbits = [];
     if (mk.median_days_listed != null && mk.dated >= 12) mbits.push(`typical car ${mk.median_days_listed}d on market (${mk.dated} of ${mk.n} dated)`
       + (mk.days_split ? ` — ${mk.days_split.stock.n} dealer stock at ${mk.days_split.stock.days}d, ${mk.days_split.used.n} used at ${mk.days_split.used.days}d` : ''));
-    if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% of ${mk.tracked_2d} cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
+    if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) {
+      // The cuts that stuck lead, then the share of cars with any downward
+      // step — the two together say how much of the cutting was theatre.
+      mbits.push(`${mk.net_down} of ${mk.tracked_2d} ask less than when first seen${mk.median_net_drop ? `, median ${money(mk.median_net_drop)} less` : ''}${mk.restored ? ` · ${mk.restored} cut and put back` : ''}`);
+      mbits.push(`${Math.round(mk.cut_share * 100)}% of ${mk.tracked_2d} cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
+    }
     // Same sentence, same floor, same caveats as the report's market_line —
     // this is the PRIMARY surface and it was the one still saying "sold". A
     // listing ending is not a sale: it may have sold, gone to auction, moved

@@ -1645,6 +1645,36 @@ class TestOneCarTwoTargets(unittest.TestCase):
         self.assertFalse(T.is_new_today(e), "a car listed for ten days is not new because a second query found it")
 
 
+class TestCutsThatStuck(unittest.TestCase):
+    """cut_share counts any car with a downward step, and a step that bounced
+    back counts the same as one that held. The buyer can act on the cars that
+    ask less than when first seen, and on how many "cuts" were put back."""
+
+    def _car(self, series):
+        prices = [p for _, p in series]
+        return {"days_tracked": len(series), "series": series,
+                "cuts": sum(1 for a, b in zip(prices, prices[1:]) if b < a),
+                "delta": prices[-1] - prices[0]}
+
+    def test_a_cut_that_bounced_back_is_not_a_car_asking_less(self):
+        stuck = self._car([["d1", 50000], ["d2", 49000]])                 # down, held
+        bounced = self._car([["d1", 50000], ["d2", 49000], ["d3", 50000]])   # down, put back
+        flat = self._car([["d1", 50000], ["d2", 50000]])
+        st = T.market_stats([stuck, bounced, flat])
+        self.assertEqual(st["tracked_2d"], 3)
+        self.assertAlmostEqual(st["cut_share"], 2 / 3, places=2, msg="both downward steps still count as cuts")
+        self.assertEqual(st["net_down"], 1, "only the car that still asks less")
+        self.assertEqual(st["restored"], 1, "the bounced one is named as put back")
+        self.assertEqual(st["median_net_drop"], 1000)
+
+    def test_the_line_leads_with_the_count_and_its_denominator(self):
+        line = T.market_line({"median_days_listed": None, "tracked_2d": 131, "cut_share": 0.66, "median_cut": 600,
+                              "net_down": 69, "restored": 17, "median_net_drop": 900})
+        self.assertIn("69 of 131 ask less than when first seen, median $900 less · 17 cut and put back", line)
+        self.assertIn("66% cut while tracked", line, "the share of cars with any downward step still follows")
+        self.assertLess(line.index("69 of 131"), line.index("66% cut"))
+
+
 class TestSeenLabel(unittest.TestCase):
     """"tracked 21d" read as three weeks; it was twenty-one sightings on a
     target fetched every second day, six weeks on the market. The label now
@@ -2189,7 +2219,10 @@ class TestMarketStats(unittest.TestCase):
         self.assertEqual(T.market_stats([]), {"median_days_listed": None,
                                               "tracked_2d": 0,
                                               "cut_share": None,
-                                              "median_cut": None})
+                                              "median_cut": None,
+                                              "net_down": 0,
+                                              "restored": 0,
+                                              "median_net_drop": None})
 
     def test_days_to_sale_counts_only_real_delistings(self):
         """…and only cars with a real listing date to count from.

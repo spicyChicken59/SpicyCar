@@ -2366,7 +2366,12 @@ await step('the market sentence describes the trim in view', async () => {
     const used = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles >= 100).map((x) => x.days_listed);
     if (dl.length >= 12) out.push(`typical car ${Math.trunc(med(dl))}d on market (${dl.length} of ${rows.length} dated)`
       + (stock.length >= 12 && used.length >= 12 ? ` — ${stock.length} dealer stock at ${Math.trunc(med(stock))}d, ${used.length} used at ${Math.trunc(med(used))}d` : ''));
-    if (tracked.length >= 5) out.push(`${Math.round(cut.length / tracked.length * 100)}% of ${tracked.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')}` : ''));
+    if (tracked.length >= 5) {
+      const netDown = tracked.filter((x) => (x.delta || 0) < 0), restored = tracked.filter((x) => x.cuts && (x.delta || 0) >= 0);
+      const medNet = netDown.length ? Math.trunc(med(netDown.map((x) => -x.delta))) : null;
+      out.push(`${netDown.length} of ${tracked.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
+      out.push(`${Math.round(cut.length / tracked.length * 100)}% of ${tracked.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')}` : ''));
+    }
     if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
     return { out, spans: spans.length };
   };
