@@ -3020,7 +3020,35 @@
   // selection is left standing, so the brand tab back to "all" — and the back
   // button, which this pushes a state for — returns to the comparison the
   // reader built instead of to a watchlist they have to rebuild it from.
-  function goTo(bk, mk) { S.brand = bk; S.model = mk; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav'); window.scrollTo(0, 0); }
+  function goTo(bk, mk, vin) {
+    S.brand = bk; S.model = mk; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; syncUrl(); rerender('nav');
+    if (!(vin && landOnCar(vin))) window.scrollTo(0, 0);
+  }
+  // One tap lands on the car, not the model. Every tile that names a car
+  // offered "Open BMW i5 →", which was the model page's top — 133 rows under
+  // the drivable-first sort with the tile's own car at position 23, and the
+  // i7's at 31, behind the thirty-row cap, so the tap landed on a page that
+  // did not show the car it was about. The row is found by the star button
+  // every row and card carries; if it sits past the cap the list is opened
+  // out first; if it cannot be found at all (the car left the model's rows
+  // between the tile and the list) the tap falls back to the top, as before.
+  // Landing focuses the row, as land() focuses a title, so the keyboard and
+  // the eyes arrive together and the focus ring says where.
+  function landOnCar(vin) {
+    const find = () => document.querySelector(`#list-card [data-fkey="star:${vin}"]`);
+    let hit = find();
+    if (!hit) {
+      const idx = filtered().findIndex((x) => x.vin === vin);
+      if (idx < 0) return false;
+      if (!S.showAllList) { S.showAllList = true; rerender('showList'); hit = find(); }
+    }
+    if (!hit) return false;
+    const row = hit.closest('tr') || hit.closest('.sc-media') || hit;
+    row.tabIndex = -1;
+    row.scrollIntoView({ block: 'center' });
+    row.focus({ preventScroll: true });
+    return true;
+  }
   function segment(host, ids, current, labelOf, caseClass, onPick, fkey) {
     host.textContent = '';
     if (ids.length <= 1) { host.hidden = true; return; }
@@ -3236,7 +3264,7 @@
       gone ? null : movement(x, daily),
       note ? el('span', { class: 'sc-note' }, `note: ${note}`) : null,
       el('div', { class: 'sc-media__code' }, x.vin),
-      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'sl:' + (x.vin || '') + ':open', onclick: (e) => { e.preventDefault(); goTo(bk, mk); } }, 'Open model →'))));
+      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'sl:' + (x.vin || '') + ':open', onclick: (e) => { e.preventDefault(); goTo(bk, mk, x.vin); } }, 'Open this car →'))));
   }
   function renderShortlist(show) {
     const host = $('shortlist'); host.textContent = '';
@@ -3764,8 +3792,8 @@
               + ` a typical ${c.short}, n=${c.n}`)
           : null,
         el('div', null, el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'hero:' + (x.vin || ''),
-          onclick: (e) => { e.preventDefault(); goTo(o.bk, o.mk); } },
-          `Open ${o.m.label || o.mk} →`))));
+          onclick: (e) => { e.preventDefault(); goTo(o.bk, o.mk, x.vin); } },
+          `Open this car in ${o.m.label || o.mk} →`))));
     }
     // The gap is the decision, so it is stated once, in both currencies the
     // page prices in, and only between two priced cars. With one shopped model

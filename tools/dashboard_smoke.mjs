@@ -2943,6 +2943,51 @@ await step('the floor delta names its cause', async () => {
   }
 });
 
+// --- one tap lands on the car ----------------------------------------------
+// Every tile that names a car offered "Open BMW i5 →", which was the model
+// page's top: 133 rows under the drivable-first sort with the tile's own car
+// at position 23, the i7's at 31 behind the thirty-row cap. The tap now lands
+// on the car's own row — opening the list out first when the row sits past
+// the cap — and focuses it, so the keyboard and the eyes arrive together.
+// The tile whose car sits deepest in its list is the subject, so the cap
+// branch is exercised whenever any shopped car sits past it.
+await step('one tap lands on the car', async () => {
+  plan('the decision tile\'s link lands on its car\'s row, in view and focused',
+       'and the list was opened out when the row sat past the cap');
+  await open('');
+  const links = await page.$$eval('#hero-cars [data-fkey^="hero:"]', (as) => as.map((a) => a.getAttribute('data-fkey').split(':')[1]));
+  if (!links.length) return skipRest('the decision panel led with no car today');
+  // the deepest car: its position under the page's default order is not
+  // recomputed here — the page is opened on each model and the row's index
+  // read off the list with everything shown
+  let subject = null;
+  for (const vin of links) {
+    const model = WATCHED.find((w) => (SHEET.brands[w.bk].models[w.mk].listings || []).some((x) => x.vin === vin));
+    if (!model) continue;
+    await open(model.q);
+    if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+    const idx = await page.$$eval('#list-table tbody tr', (trs, v) => trs.findIndex((tr) => tr.querySelector(`[data-fkey="star:${v}"]`)), vin);
+    if (idx >= 0 && (!subject || idx > subject.idx)) subject = { vin, idx, model };
+  }
+  if (!subject) return skipRest('no decision-tile car could be found in its model\'s list');
+  await open('');
+  await page.click(`#hero-cars [data-fkey="hero:${subject.vin}"]`);
+  await page.waitForTimeout(600);
+  const landed = await page.evaluate((v) => {
+    const b = document.querySelector(`#list-card [data-fkey="star:${v}"]`);
+    if (!b) return { found: false };
+    const row = b.closest('tr') || b.closest('.sc-media') || b;
+    const r = row.getBoundingClientRect();
+    return { found: true, inView: r.top >= 0 && r.bottom <= window.innerHeight, focused: document.activeElement === row || row.contains(document.activeElement),
+             h1: document.getElementById('h1').textContent, moreHidden: (document.getElementById('list-more') || {}).hidden };
+  }, subject.vin);
+  ok('the decision tile\'s link lands on its car\'s row, in view and focused',
+     landed.found && landed.inView && landed.focused && landed.h1.includes(subject.model.label),
+     `${subject.model.label} row ${subject.idx + 1}: ${JSON.stringify(landed)}`);
+  if (subject.idx < 30) skip('and the list was opened out when the row sat past the cap', `the deepest shopped car sits at row ${subject.idx + 1}, inside the cap`);
+  else ok('and the list was opened out when the row sat past the cap', landed.found && landed.moreHidden === true, `row ${subject.idx + 1}: show-all hidden ${landed.moreHidden}`);
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -3559,7 +3604,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 169;
+const EXPECTED = 171;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
