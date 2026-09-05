@@ -3029,8 +3029,6 @@ class TestCanonicalUrl(unittest.TestCase):
                                        f"({found!r} in a <script>) — it must stay static")
 
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
 
 
 class TestFinance(unittest.TestCase):
@@ -4425,3 +4423,120 @@ class TestExitReporting(unittest.TestCase):
         for word in ("sold", "sale"):
             self.assertNotIn(word, line.lower(),
                              "a listing ending is not a confirmed sale")
+
+
+# --------------------------------------------------------------------------
+# The sheet's shape is the builder's promise, and the page no longer papers
+# over a sheet without it.
+# --------------------------------------------------------------------------
+class TestTheSheetCarriesWhatThePageStoppedInventing(unittest.TestCase):
+    def test_every_row_carries_a_boolean_local_and_the_sheet_a_buyer(self):
+        """docs/index.html's adapt() used to synthesise a buyer block from
+        per-market params and derive `local` from a `markets` list — for a
+        data.json no Tracking.py revision ever wrote. Those branches are gone;
+        this pins the producer, so a sheet without a buyer or a row without a
+        boolean local is a builder regression the suite sees, not a shape the
+        page quietly repairs."""
+        def row(vin, day, price, state):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": "bmw-i5-edrive40", "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2024", "trim": "eDrive40", "miles": 20000,
+                      "state": state, "city": "Chicago" if state == "IL" else "Plano"})
+            return r
+        yday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        rows = [row("L" * 17, yday, 45000, "IL"), row("L" * 17, T.TODAY, 45000, "IL"),
+                row("F" * 17, yday, 44000, "TX"), row("G" * 17, yday, 43000, "TX")]   # G leaves today
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        _, site, _ = T.build_outputs(today, rows, T.build_history(rows))
+        self.assertIsInstance(site.get("buyer"), dict)
+        self.assertTrue(site["buyer"].get("states"), "the buyer block names the drivable states")
+        seen = 0
+        for b in site["brands"].values():
+            for m in b["models"].values():
+                for x in m.get("listings", []) + m.get("gone", []):
+                    self.assertIsInstance(x.get("local"), bool, f"{x.get('vin')}: local must be a boolean, not derived on the page")
+                    seen += 1
+        self.assertGreaterEqual(seen, 2, "live and gone rows both checked")
+
+
+# --------------------------------------------------------------------------
+# The snapshot commit step, replayed with git alone. The listings API is
+# live-only, so a push that fails to land is a day the record loses.
+# --------------------------------------------------------------------------
+class TestTheSnapshotPushSurvivesAnOwnerRebuild(unittest.TestCase):
+    """daily.yml rebases onto whatever landed on main during the run and
+    retries, and used to say the tracker's outputs never conflict with source
+    edits. They do: an owner who edits targets.json and runs
+    tools/rebuild_outputs.py — exactly what the exit-3 guard tells them to do
+    — commits the same REPORT.md and docs/data.json the tracker commits, the
+    rebase stops in both, the -e shell aborts mid-rebase, and the day's
+    snapshot never reaches main. The step now resolves those files in favour
+    of the tracker's regeneration inside the loop. Replayed here with a bare
+    remote, an owner clone and a runner clone, running the step's own script:
+    the push must land, the outputs must be the tracker's, and the owner's
+    source edit — which a `reset --soft` would have reverted silently — must
+    survive."""
+
+    def _git(self, cwd, *args, env=None):
+        import subprocess
+        e = {**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x", **(env or {})}
+        return subprocess.run(["git", *args], cwd=cwd, env=e, capture_output=True, text=True, check=True).stdout
+
+    def _step_script(self, name):
+        import yaml
+        wf = yaml.safe_load((Path(__file__).parent.parent / ".github/workflows/daily.yml").read_text())
+        steps = next(iter(wf["jobs"].values()))["steps"]
+        return next(s["run"] for s in steps if s.get("name") == name)
+
+    def _replay(self, step, owner_files, runner_files):
+        import subprocess, tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            bare, seed, owner, runner = tmp / "remote.git", tmp / "seed", tmp / "owner", tmp / "runner"
+            self._git(tmp, "init", "--bare", "-b", "main", str(bare))
+            self._git(tmp, "init", "-b", "main", str(seed))
+            for rel, text in {"REPORT.md": "seed report\n", "docs/data.json": "{\"seed\": 1}\n",
+                              "data/snapshots.csv": "a,b\n1,2\n", "targets.json": "{\"picks\": 4}\n"}.items():
+                (seed / rel).parent.mkdir(parents=True, exist_ok=True); (seed / rel).write_text(text)
+            self._git(seed, "add", "."); self._git(seed, "commit", "-qm", "seed")
+            self._git(seed, "remote", "add", "origin", str(bare)); self._git(seed, "push", "-q", "-u", "origin", "main")
+            self._git(tmp, "clone", "-q", str(bare), str(runner))      # the runner checks out BEFORE the owner's push
+            self._git(tmp, "clone", "-q", str(bare), str(owner))
+            for rel, text in owner_files.items():
+                (owner / rel).write_text(text)
+            self._git(owner, "add", "."); self._git(owner, "commit", "-qm", "owner: config change + rebuild")
+            self._git(owner, "push", "-q", "origin", "main")
+            for rel, text in runner_files.items():
+                (runner / rel).write_text(text)
+            r = subprocess.run(["bash", "-e", "-c", self._step_script(step)], cwd=runner,
+                               capture_output=True, text=True,
+                               env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@x", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@x"})
+            check = tmp / "check"
+            self._git(tmp, "clone", "-q", str(bare), str(check))
+            return r, {rel: (check / rel).read_text() for rel in ("REPORT.md", "docs/data.json", "data/snapshots.csv", "targets.json")}
+
+    def test_the_outputs_step_lands_the_snapshot_and_keeps_the_owners_edit(self):
+        r, main = self._replay("Commit outputs",
+            owner_files={"targets.json": "{\"picks\": 6}\n", "REPORT.md": "owner rebuild\n", "docs/data.json": "{\"owner\": 1}\n"},
+            runner_files={"REPORT.md": "tracker report\n", "docs/data.json": "{\"tracker\": 1}\n", "data/snapshots.csv": "a,b\n1,2\n3,4\n"})
+        self.assertEqual(r.returncode, 0, f"the step must land the snapshot, not abort mid-rebase:\n{r.stdout}\n{r.stderr}")
+        self.assertEqual(main["REPORT.md"], "tracker report\n", "the tracker's regeneration wins the conflict")
+        self.assertEqual(main["docs/data.json"], "{\"tracker\": 1}\n")
+        self.assertEqual(main["data/snapshots.csv"], "a,b\n1,2\n3,4\n", "the day's rows reached main")
+        self.assertEqual(main["targets.json"], "{\"picks\": 6}\n",
+                         "the owner's source edit survives — a reset --soft would have reverted it while reporting success")
+
+    def test_a_conflict_in_the_record_itself_still_aborts_loudly(self):
+        """Only the two regenerated outputs are resolved. data/ conflicting
+        means two fetches of one day landed — a thing to see, not to settle
+        on a runner — so the step still aborts and the safety-net artifact
+        keeps the snapshot."""
+        r, main = self._replay("Commit outputs",
+            owner_files={"data/snapshots.csv": "a,b\n1,2\n9,9\n"},
+            runner_files={"REPORT.md": "tracker report\n", "docs/data.json": "{\"tracker\": 1}\n", "data/snapshots.csv": "a,b\n1,2\n3,4\n"})
+        self.assertNotEqual(r.returncode, 0, "a conflicting ledger must not be resolved silently")
+        self.assertEqual(main["data/snapshots.csv"], "a,b\n1,2\n9,9\n", "and main is left as the owner pushed it")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

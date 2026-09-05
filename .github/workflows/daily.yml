@@ -14,11 +14,13 @@ on:
   # REPORT.md and docs/data.json from the snapshot already on disk, which is
   # what a re-run is almost always actually for. So a dispatch on an
   # already-fetched day SUCCEEDS and costs nothing. Tick allow_refetch below
-  # only when a run died partway and left the day incomplete.
+  # only when a COMPLETED run reported sources failed after retry and the
+  # day is worth fetching again in full — a run that died mid-fetch wrote no
+  # rows, so it never reaches the guard and simply runs again.
   workflow_dispatch:
     inputs:
       allow_refetch:
-        description: "Re-fetch a day already fetched (only after a run died partway)"
+        description: "Re-fetch a day already fetched, all of it (only when a completed run reported sources failed after retry; a run that died mid-fetch just runs again)"
         type: boolean
         default: false
 
@@ -111,8 +113,20 @@ jobs:
       - name: Commit outputs
         # The listings API is live-only: a rejected push would discard a
         # snapshot that can never be re-fetched. Rebase onto whatever landed
-        # on main during the run (the tracker's outputs never conflict with
-        # source edits) and retry.
+        # on main during the run and retry. The outputs CAN conflict with
+        # what landed: an owner who edits targets.json and runs
+        # tools/rebuild_outputs.py — the thing the exit-3 guard tells them to
+        # do — commits the same REPORT.md and docs/data.json this step
+        # commits, and the rebase then stops in both files, the -e shell
+        # aborts mid-rebase, the day's snapshot never reaches main and the
+        # safety-net artifact carries conflict markers. Those two files are
+        # full regenerations from data/, so on a conflict the tracker's fresh
+        # copy wins and the owner's source edit, which is not in the
+        # conflict, survives the rebase untouched. Only those two: a conflict
+        # in data/ itself means two fetches of one day, which nobody should
+        # resolve on a runner, and the loud abort stays. Never `reset --soft`:
+        # that commits the pre-fetch tree and reverts the owner's edit
+        # silently while the push reports success.
         run: |
           git config user.name  "tracker"
           git config user.email "actions@github.com"
@@ -121,7 +135,9 @@ jobs:
           git commit -m "snapshot $(date -u +%F)"
           for i in 1 2 3; do
             git push && exit 0
-            git pull --rebase origin main
+            git pull --rebase origin main || {
+              git checkout --theirs -- REPORT.md docs/data.json && git add REPORT.md docs/data.json && GIT_EDITOR=true git rebase --continue
+            }
           done
           git push
       - name: Keep the snapshot if the push still failed
