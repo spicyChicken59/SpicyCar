@@ -1058,6 +1058,14 @@ def two_prices(series):
     return distinct
 
 
+# Under a hundred miles a car is dealer stock rather than a used car — a demo,
+# a loaner, a press car — and it reaches this API on the same used-listings
+# endpoint at a different price. docs/index.html carries the same number as
+# NEW_STOCK_MILES; the two must not drift, because the page and the record
+# print the same split from it.
+NEW_STOCK_MILES = 100
+
+
 def market_stats(listings):
     """Per-model market context — the numbers a negotiation opens with: how
     long cars typically sit, what share have been cut while tracked, and the
@@ -1079,6 +1087,15 @@ def market_stats(listings):
         # one line above a row saying "of the 113 dated cars". Both are true
         # and they read as a contradiction, so the row says whose 113 it is.
         x["stale_of"] = len(dl) if dl else None
+    # Cars with no mileage are in neither market, exactly as on the page: the
+    # split is a claim about two populations and a car that cannot be assigned
+    # to one is not evidence about either.
+    d_stock = [x["days_listed"] for x in listings
+               if x.get("days_listed") is not None
+               and to_int(x.get("miles")) is not None and to_int(x["miles"]) < NEW_STOCK_MILES]
+    d_used = [x["days_listed"] for x in listings
+              if x.get("days_listed") is not None
+              and to_int(x.get("miles")) is not None and to_int(x["miles"]) >= NEW_STOCK_MILES]
     tracked = [x for x in listings if x.get("days_tracked", 0) >= 2]
     # Seen at two prices is not cut: those cars leave every cut figure and
     # are counted apart, with the sentence saying so — see two_prices().
@@ -1106,6 +1123,17 @@ def market_stats(listings):
     counted = len(tracked) - len(two_priced)
     return {
         "median_days_listed": int(median(dl)) if dl else None,
+        # …and each market's own, when both are big enough to have one. Under
+        # a hundred miles a car is dealer stock — demos, loaners, press cars,
+        # priced near sticker — and the used-listings API serves them beside
+        # the used cars. The i7's "typical car 29d" is 49 stock cars at a
+        # median 78 days blended with 61 used at 21, and 29 is a number no car
+        # on either side sits at. The page has printed the split since the days
+        # clause was built; this is the same rule and the same floor, so the
+        # record stops describing a market that is not there.
+        "days_split": ({"stock": {"n": len(d_stock), "days": int(median(d_stock))},
+                        "used": {"n": len(d_used), "days": int(median(d_used))}}
+                       if len(d_stock) >= 12 and len(d_used) >= 12 else None),
         # …over how many of how many. The dashboard has printed "(85 of 134
         # dated)" since the days split was built; the committed record printed
         # a bare median of the 85 as if it were the model's.
@@ -1440,8 +1468,11 @@ def market_line(stats):
             and (stats.get("dated") is None or stats["dated"] >= 12)):
         # Twelve dated cars or nothing, and the count beside it — the page's
         # rule and the page's words, which the record did not carry.
+        sp = stats.get("days_split")
         bits.append(f"typical car {stats['median_days_listed']}d on market"
-                    + (f" ({stats['dated']} of {stats['n']} dated)" if stats.get("n") else ""))
+                    + (f" ({stats['dated']} of {stats['n']} dated)" if stats.get("n") else "")
+                    + (f" — {sp['stock']['n']} dealer stock at {sp['stock']['days']}d, "
+                       f"{sp['used']['n']} used at {sp['used']['days']}d" if sp else ""))
     if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
         # The cuts that stuck lead, with their denominator — see market_stats.
         # The share of cars with any downward step follows, since it is the

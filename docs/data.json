@@ -14178,6 +14178,7 @@
      ],
      "market": {
       "median_days_listed": 17,
+      "days_split": null,
       "dated": 85,
       "n": 134,
       "tracked_2d": 127,
@@ -28987,6 +28988,16 @@
      ],
      "market": {
       "median_days_listed": 29,
+      "days_split": {
+       "stock": {
+        "n": 49,
+        "days": 78
+       },
+       "used": {
+        "n": 61,
+        "days": 21
+       }
+      },
       "dated": 113,
       "n": 151,
       "tracked_2d": 140,
@@ -33500,6 +33511,7 @@
      ],
      "market": {
       "median_days_listed": 21,
+      "days_split": null,
       "dated": 35,
       "n": 66,
       "tracked_2d": 64,
@@ -35516,6 +35528,7 @@
      ],
      "market": {
       "median_days_listed": 17,
+      "days_split": null,
       "dated": 25,
       "n": 27,
       "tracked_2d": 15,
@@ -38169,6 +38182,7 @@
      ],
      "market": {
       "median_days_listed": 44,
+      "days_split": null,
       "dated": 27,
       "n": 34,
       "tracked_2d": 29,
@@ -39570,6 +39584,7 @@
      ],
      "market": {
       "median_days_listed": 9,
+      "days_split": null,
       "dated": 7,
       "n": 22,
       "tracked_2d": 18,
@@ -44719,6 +44734,7 @@
      ],
      "market": {
       "median_days_listed": 13,
+      "days_split": null,
       "dated": 35,
       "n": 68,
       "tracked_2d": 53,
