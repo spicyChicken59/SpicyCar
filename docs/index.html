@@ -924,14 +924,20 @@
   // the decision panel so the two can never give different reasons for the
   // same car; the order matches pickEligible's, so the reason given is the
   // first rule the car actually fails.
-  function pickExcuse(x, P) {
+  // The rules without the price test, for a car judged on a day in the record
+  // — where the price is the day's, not the row's. pickExcuse() is the same
+  // list with the price in front, so the two cannot drift.
+  function ruleExcuse(x, P) {
     P = P || pickParams();
-    if (!hasPrice(x)) return 'no price';
     if (x.miles == null) return 'mileage not published';
     if (x.miles > P.max_miles) return `over your ${num(P.max_miles)}-mile cap`;
     if (P.no_acc && x.accidents > 0) return 'an accident on record';
     if (P.no_rental && isRental(x)) return 'rental or fleet history';
     return null;
+  }
+  function pickExcuse(x, P) {
+    if (!hasPrice(x)) return 'no price';
+    return ruleExcuse(x, P);
   }
   // The trim, minus words the model label already carries — a cohort reads
   // "2023 BMW i7 xDrive60", never "BMW i7 i7 xDrive60".
@@ -2305,13 +2311,7 @@
     // border on a day it was an hour's drive away. local_hist carries the
     // change points for the handful of cars that have any; everything else
     // falls back to the flag it already has.
-    const localOn = (x, day) => {
-      const h = x.local_hist;
-      if (!h || !h.length) return !!x.local;
-      let v = h[0][1];
-      for (const step of h) { if (step[0] <= day) v = step[1]; else break; }
-      return !!v;
-    };
+    const localOn = localOnDay;
     const by = new Map();
     for (const x of uniq.values()) {
       const seen = new Map();
@@ -2340,6 +2340,15 @@
       // trunc, not round: the builder writes int(median(...)) in Python
       return { date, n: p.length, n_local: e.local, min_price: p[0], median_price: Math.trunc(median(p)) };
     });
+  }
+  // At module scope because the floor ledger asks the same question of the
+  // same rows; the reason it exists is written where scopedDaily uses it.
+  function localOnDay(x, day) {
+    const h = x.local_hist;
+    if (!h || !h.length) return !!x.local;
+    let v = h[0][1];
+    for (const step of h) { if (step[0] <= day) v = step[1]; else break; }
+    return !!v;
   }
   // The chart's time window: the last N days ending at the newest snapshot,
   // or everything. The y-scale follows, so recent movement stays readable
@@ -3503,6 +3512,69 @@
   }
   // The comparable total, and the word for what is in it.
   const heroTotal = (x) => (feesCfg() ? otd(x) : landed(x));
+  // heroTotal for a day in the record: the car as it was priced and placed
+  // THAT day, with today's shipping estimate — shipping is a band on the
+  // distance, and the distance does not move unless the listing did, which
+  // local_hist records. Same formula as otd()/landed(), with the day's price.
+  function heroTotalAt(x, price, local) {
+    const f = feesCfg(), ship = local ? 0 : (x.ship || 0);
+    if (!f) return Math.round(price + ship);
+    return Math.round(price * (1 + (f.tax_rate || 0)) + (f.doc_fee || 0) + (f.title || 0)
+      + (f.registration || 0) + (f.ev_surcharge || 0) + ship);
+  }
+  // The hero tile's own number, day by day: the cheapest car that met the
+  // buyer's rules, all in, on each day the shopped trims were FETCHED, rebuilt
+  // from the series every car carries — departed cars included, because the
+  // floor on Aug 23 was a $34,551 car in California that stopped appearing on
+  // the 29th, and a ledger drawn from today's survivors would not know it.
+  //
+  // Fetch days only, never carried forward. scopedDaily carries a trim
+  // forward to fill the chart's calendar; this is a ledger of what the buyer
+  // could have bought on the days anyone looked, and a day nobody asked is a
+  // day it cannot speak for. A day counts only when the fit pool held five
+  // cars — below that the floor is one listing's whim — and the floor car's
+  // identity rides along, because "the floor rose $4,481" and "the $34,551
+  // car stopped appearing" are different sentences about the same number.
+  //
+  // Nothing under a budget: a budget narrows what the reader can afford
+  // today, and applying today's wallet to last month's cars would make the
+  // ledger describe neither. The other shared filters apply, as they do to
+  // the tile above it.
+  function floorLedger(o, P) {
+    if (S.budget) return null;
+    const shopping = new Set(((S.site || {}).buyer || {}).shopping || []);
+    const tids = Object.keys(o.m.trims || {}).filter((id) => shopping.has(id));
+    const fd = o.m.fetch_days || {};
+    const days = [...new Set(tids.flatMap((t) => fd[t] || []))].sort();
+    if (!days.length) return null;
+    const cars = new Map();
+    for (const x of (o.m.listings || []).concat(o.m.gone || [])) {
+      const k = String(x.vin || '').toUpperCase();
+      if (!k || cars.has(k) || !tids.includes(x.trim_id)) continue;   // the live listing comes first and wins
+      if (!passesShared(x, true) || ruleExcuse(x, P)) continue;
+      const seen = new Map();
+      for (const pt of (x.series || [])) if (pt[1]) seen.set(pt[0], pt[1]);
+      if (seen.size) cars.set(k, { x, seen });
+    }
+    const latestFetch = (tid, day) => { let b = null; for (const d of (fd[tid] || [])) { if (d <= day) b = d; else break; } return b; };
+    const points = days.map((day) => {
+      let n = 0, floor = null;
+      for (const { x, seen } of cars.values()) {
+        const lf = latestFetch(x.trim_id, day);
+        if (!lf || !seen.has(lf)) continue;
+        n++;
+        const v = heroTotalAt(x, seen.get(lf), localOnDay(x, day));
+        if (floor == null || v < floor.v) floor = { v, vin: x.vin };
+      }
+      return { day, n, v: n >= 5 && floor ? floor.v : null, vin: n >= 5 && floor ? floor.vin : null };
+    });
+    const drawn = points.filter((pt) => pt.v != null);
+    if (drawn.length < 3) return null;
+    const last = drawn[drawn.length - 1];
+    let tenure = 0;
+    for (let i = drawn.length - 1; i >= 0 && drawn[i].vin === last.vin; i--) tenure++;
+    return { points, drawn, first: drawn[0], last, identities: new Set(drawn.map((pt) => pt.vin)).size, tenure };
+  }
   // The drivable car's line, financed. It said "$1,163 more" — the all-in gap
   // — under a winner whose own line quotes a payment, and on the day this was
   // written that gap had the wrong sign for the decision: the i5's cheapest
@@ -3594,6 +3666,8 @@
       }
       const x = best.x, pay = payFor(x), c = cohortOf(x, o.m.label);
       const ship = x.local ? 0 : (x.ship || 0);
+      const ledger = floorLedger(o, P);
+      chosen[chosen.length - 1].ledger = ledger;
       // The cheapest car all in is often a thousand miles away — today's i5 is
       // in Seffner, Florida — and "can I drive to one" is the buyer's other
       // axis, the one with its own KPI tile below. So when the winner is not
@@ -3626,6 +3700,17 @@
           `${x.year || ''} ${carTrim(x)} · ${x.miles != null ? num(x.miles) + ' mi' : 'mileage not published'}`.replace(/\s+/g, ' ').trim()),
         el('div', { class: 'sc-tile__sub' },
           `${placeCell(x)} · ${x.local ? 'drivable' : (x.distance != null ? `~${num(x.distance)} mi away` : 'beyond your states')}`),
+        // The same number, day by day, and who held it: see floorLedger. The
+        // caption counts identities rather than moves, because the floor on
+        // this record has never moved by a price changing — every move so far
+        // was a car arriving or leaving.
+        ledger ? el('div', { class: 'sc-tile__spark', title: ledger.drawn.map((pt) => `${pt.day} ${money(pt.v)}`).join(' · ') },
+          spark(ledger.drawn.map((pt) => pt.v), 120, 26, true)) : null,
+        ledger ? el('div', { class: 'sc-tile__sub' },
+          (ledger.identities === 1
+            ? `the same car all ${ledger.drawn.length} fetch days`
+            : `${ledger.identities} different cars held this floor in ${ledger.drawn.length} fetch days, this one for ${ledger.tenure}`)
+          + ` · ${money(ledger.first.v)} ${allIn ? 'all in' : 'landed'} on ${fmtDate(ledger.first.day)}`) : null,
         cutOut.length ? el('div', { class: 'sc-tile__sub', title: picksRule() },
           `${cutOut.length} cheaper ${cutOut.length === 1 ? 'car is' : 'cars are'} ruled out by your own rules — ${reasons.join(', ')}`) : null,
         localBest ? el('div', { class: 'sc-tile__sub' },
@@ -3665,7 +3750,31 @@
     gap.hidden = false;
     gap.textContent = `${b.o.m.label} costs ${money(b.total - a.total)} more than ${a.o.m.label} on today's cheapest of each`
       + (dm != null ? `, ${money(dm)} a month at each car's own rate. ` : '. ')
+      + premiumOverTime(a, b)
       + basis;
+  }
+  // The gap on every day both ledgers have a point — its range, its first
+  // and last value, and which side moved it. Floors only, never a median
+  // gap: the pooled eDrive50 median moved $15,870 on 2026-09-01 from a
+  // coverage change alone, which would draw a market move that never
+  // happened. Five shared fetch days or nothing, and the change is split
+  // into each side's own floor movement, since "the premium fell $5,462"
+  // reads as the i7 getting cheaper when $4,481 of it was the i5's floor
+  // rising. Rounded per day before differencing, like everything on the tile.
+  function premiumOverTime(a, b) {
+    if (!a.ledger || !b.ledger) return '';
+    const byDay = new Map(a.ledger.drawn.map((pt) => [pt.day, pt.v]));
+    const shared = b.ledger.drawn.filter((pt) => byDay.has(pt.day)).map((pt) => ({ day: pt.day, a: byDay.get(pt.day), b: pt.v, gap: pt.v - byDay.get(pt.day) }));
+    if (shared.length < 5) return '';
+    const gaps = shared.map((d) => d.gap), first = shared[0], last = shared[shared.length - 1];
+    const lo = Math.min(...gaps), hi = Math.max(...gaps);
+    const da = last.a - first.a, db = last.b - first.b, change = last.gap - first.gap;
+    const side = (label, d) => `${money(Math.abs(d))} ${label}'s floor ${d > 0 ? 'rising' : 'falling'}`;
+    const parts = [da ? side(a.o.m.label, da) : null, db ? side(b.o.m.label, db) : null].filter(Boolean);
+    parts[0] = parts[0].replace(' ', ' is ');   // "$4,481 is BMW i5's floor rising and $981 BMW i7's floor falling"
+    return `Over the ${shared.length} fetch days both were fetched, ${b.o.m.label} has cost ${lo === hi ? money(lo) : `${money(lo)}–${money(hi)}`} more:`
+      + ` ${money(first.gap)} on ${fmtDate(first.day)}, ${money(last.gap)} ${last.day === dataThrough() ? 'today' : 'on ' + fmtDate(last.day)}.`
+      + (change ? ` Of that ${money(Math.abs(change))} change, ${parts.join(' and ')}. ` : ' ');
   }
   // ---------- the promo, priced ----------
   // financeNote() already says "60 days left"; nothing said what those days are

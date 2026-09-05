@@ -2612,6 +2612,151 @@ await step('in print the mark keeps its surface', async () => {
   await page.emulateMedia({ colorScheme: null });
 });
 
+// --- the decision, day by day ----------------------------------------------
+// The hero tile's own number on each day the shopped trims were fetched — the
+// all-in floor of the cars that meet the buyer's rules — with the floor car's
+// identity, and the premium between the two models over the days both were
+// fetched. Recomputed here from data.json by the same rules the page states:
+// fetch days only (from m.fetch_days), each car counted on a day when its
+// trim's latest fetch on or before that day is one it was seen on, priced at
+// that day's series entry, placed by local_hist, no point under five cars,
+// nothing under three points. Then a SERVED sheet breaches what the live one
+// cannot: a fetch day taken away from one trim (so its cars have to be carried
+// forward, or the pool collapses) and an early day on which one car was seen
+// (so the five-car gate has something to refuse).
+await step('the decision, day by day', async () => {
+  plan('each shopped tile says how many cars held its floor, and since when',
+       'the premium over the shared fetch days is the one the ledgers make',
+       'and on a sheet that breaches them, the fetch-day rule and the five-car gate hold');
+  const buyer = SHEET.buyer || {}, f = buyer.fees || null, P = buyer.picks || {};
+  const want = new Set(buyer.shopping || []);
+  if (!want.size || !f) return skipRest('this sheet names no shopped trims or has no fee block');
+  const RENTAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+  const rules = (x) => x.miles != null && x.miles <= (P.max_miles || 50000)
+    && !(P.exclude_accidents !== false && x.accidents > 0) && !(P.exclude_rental !== false && RENTAL.test(x.usage || ''));
+  const totalAt = (x, price, local) => Math.round(price * (1 + (f.tax_rate || 0)) + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0) + (local ? 0 : (x.ship || 0)));
+  const localOn = (x, day) => { const h = x.local_hist; if (!h || !h.length) return !!x.local; let v = h[0][1]; for (const st of h) { if (st[0] <= day) v = st[1]; else break; } return !!v; };
+  const ledgerOf = (m) => {
+    const tids = Object.keys(m.trims || {}).filter((id) => want.has(id));
+    const fd = m.fetch_days || {};
+    const days = [...new Set(tids.flatMap((t) => fd[t] || []))].sort();
+    const cars = new Map();
+    for (const x of (m.listings || []).concat(m.gone || [])) {
+      const k = String(x.vin || '').toUpperCase();
+      if (!k || cars.has(k) || !tids.includes(x.trim_id) || !rules(x)) continue;
+      const seen = new Map((x.series || []).filter((pt) => pt[1]).map((pt) => [pt[0], pt[1]]));
+      if (seen.size) cars.set(k, { x, seen });
+    }
+    const latest = (tid, day) => { let b = null; for (const d of (fd[tid] || [])) { if (d <= day) b = d; else break; } return b; };
+    const drawn = [];
+    for (const day of days) {
+      let n = 0, floor = null;
+      for (const { x, seen } of cars.values()) {
+        const lf = latest(x.trim_id, day);
+        if (!lf || !seen.has(lf)) continue;
+        n++;
+        const v = totalAt(x, seen.get(lf), localOn(x, day));
+        if (!floor || v < floor.v) floor = { v, vin: x.vin };
+      }
+      if (n >= 5 && floor) drawn.push({ day, v: floor.v, vin: floor.vin });
+    }
+    if (drawn.length < 3) return null;
+    const last = drawn[drawn.length - 1];
+    let tenure = 0; for (let i = drawn.length - 1; i >= 0 && drawn[i].vin === last.vin; i--) tenure++;
+    return { drawn, identities: new Set(drawn.map((d) => d.vin)).size, tenure, first: drawn[0], last };
+  };
+  const models = [];
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {}))
+      if (Object.keys((m || {}).trims || {}).some((id) => want.has(id))) models.push({ bk, mk, m, label: m.label || mk, ledger: ledgerOf(m) });
+  if (!models.some((o) => o.ledger)) return skipRest('no shopped model has three fetch days with five fitting cars yet');
+  const num = (t) => Number(String(t || '').replace(/[^0-9]/g, '')) || 0;
+  const readTiles = () => page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => ({
+    label: ((t.querySelector('.sc-tile__label') || {}).textContent || '').split(' — ')[0].trim(),
+    spark: !!t.querySelector('.sc-tile__spark svg'),
+    cap: ([...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.replace(/\s+/g, ' ').trim()).find((s) => /fetch days/.test(s)) || ''),
+  })));
+  const capOf = (o) => (!o.ledger ? null : (o.ledger.identities === 1
+    ? `the same car all ${o.ledger.drawn.length} fetch days`
+    : `${o.ledger.identities} different cars held this floor in ${o.ledger.drawn.length} fetch days, this one for ${o.ledger.tenure}`)
+    + ` · $${o.ledger.first.v.toLocaleString('en-US')} all in on`);
+  await open('');
+  const tiles = await readTiles();
+  const wrong = models.map((o) => ({ o, t: tiles.find((t) => t.label === o.label) })).filter(({ o, t }) => t && (o.ledger ? !(t.spark && t.cap.startsWith(capOf(o))) : (t.spark || t.cap)));
+  ok('each shopped tile says how many cars held its floor, and since when', wrong.length === 0 && tiles.some((t) => t.spark),
+     wrong.length ? wrong.map(({ o, t }) => `${o.label}: tile says "${t.cap}" (spark ${t.spark}); the sheet says "${capOf(o)}"`).join(' | ')
+                  : tiles.filter((t) => t.spark).map((t) => `${t.label}: ${t.cap}`).join(' · '));
+  const two = models.filter((o) => o.ledger);
+  const gapTxt = ((await page.textContent('#hero-gap')) || '').replace(/\s+/g, ' ');
+  if (two.length !== 2) skip('the premium over the shared fetch days is the one the ledgers make', `${two.length} shopped model(s) carry a ledger today`);
+  else {
+    const byDay = new Map(two[0].ledger.drawn.map((d) => [d.day, d.v]));
+    const shared = two[1].ledger.drawn.filter((d) => byDay.has(d.day)).map((d) => ({ day: d.day, gap: d.v - byDay.get(d.day) }));
+    const dearer = shared.length && shared[shared.length - 1].gap >= 0;   // two[1] dearer today, else the sign flips with the sentence's subject
+    const gaps = shared.map((d) => Math.abs(d.gap));
+    const m = gapTxt.match(/Over the (\d+) fetch days both were fetched, .*? has cost \$([\d,]+)(?:–\$([\d,]+))? more: \$([\d,]+) on [A-Z][a-z]{2} \d+, \$([\d,]+) (?:today|on [A-Z][a-z]{2} \d+)\./);
+    // …and the split of the change into each side's own floor movement, by
+    // label and by direction: the cheaper model today is the sentence's `a`.
+    const [lo0, hi0] = dearer ? [two[0], two[1]] : [two[1], two[0]];
+    const move = (o) => o.ledger.drawn.find((d) => d.day === shared[0].day) && o.ledger.drawn.find((d) => d.day === shared[shared.length - 1].day)
+      ? o.ledger.drawn.find((d) => d.day === shared[shared.length - 1].day).v - o.ledger.drawn.find((d) => d.day === shared[0].day).v : 0;
+    const da = move(lo0), db = move(hi0);
+    const wantParts = [da ? `$${Math.abs(da).toLocaleString('en-US')} ${lo0.label}'s floor ${da > 0 ? 'rising' : 'falling'}` : null,
+                       db ? `$${Math.abs(db).toLocaleString('en-US')} ${hi0.label}'s floor ${db > 0 ? 'rising' : 'falling'}` : null].filter(Boolean);
+    const change = shared.length ? Math.abs(shared[shared.length - 1].gap) - Math.abs(shared[0].gap) : 0;
+    if (wantParts.length) wantParts[0] = wantParts[0].replace(' ', ' is ');
+    const wantSplit = change ? `Of that $${Math.abs(change).toLocaleString('en-US')} change, ${wantParts.join(' and ')}.` : null;
+    const saidSplit = (gapTxt.match(/Of that \$[\d,]+ change, [^.]*\./) || [null])[0];
+    if (shared.length < 5) ok('the premium over the shared fetch days is the one the ledgers make', !m, m ? `only ${shared.length} shared days, yet the page says "${m[0]}"` : `${shared.length} shared days — rightly silent`);
+    else ok('the premium over the shared fetch days is the one the ledgers make',
+       !!m && +m[1] === shared.length && num(m[2]) === Math.min(...gaps) && (m[3] ? num(m[3]) : num(m[2])) === Math.max(...gaps)
+         && num(m[4]) === Math.abs(shared[0].gap) && num(m[5]) === Math.abs(shared[shared.length - 1].gap)
+         && (wantSplit ? saidSplit === wantSplit : !saidSplit),
+       m ? `page: "${m[0]} ${saidSplit || ''}" · ledgers: ${shared.length} days, ${Math.min(...gaps)}–${Math.max(...gaps)}, first ${Math.abs(shared[0].gap)}, last ${Math.abs(shared[shared.length - 1].gap)}; split "${wantSplit || ''}"`
+         : `no premium sentence in "${gapTxt.slice(0, 160)}"`);
+  }
+  // The served sheet: the first shopped model's first shopped trim loses its
+  // middle fetch day, and gets a day before its record on which one fit car
+  // was seen.
+  // The trim holding the most cars loses a fetch day that ANOTHER shopped
+  // trim still has — so the day stays in the ledger's calendar and the trim's
+  // cars have to be carried forward onto it — and its series points for that
+  // day go too, so a page that merely reads the sightings finds nothing there.
+  const subject = two[0] || models[0];
+  const held = (id) => (subject.m.listings || []).filter((x) => x.trim_id === id).length;
+  const tid = Object.keys(subject.m.trims || {}).filter((id) => want.has(id)).sort((p, q) => held(q) - held(p))[0];
+  const fdS = subject.m.fetch_days || {};
+  const others = new Set(Object.keys(subject.m.trims || {}).filter((id) => want.has(id) && id !== tid).flatMap((id) => fdS[id] || []));
+  const candidates = (fdS[tid] || []).filter((d) => others.has(d));
+  const gone = candidates[Math.floor(candidates.length / 2)];
+  if (!tid || !gone) skip('and on a sheet that breaches them, the fetch-day rule and the five-car gate hold', 'no fetch day is shared by two shopped trims of one model');
+  else {
+    const planted = JSON.parse(JSON.stringify(subject.m));
+    planted.fetch_days[tid] = planted.fetch_days[tid].filter((d) => d !== gone);
+    for (const x of (planted.listings || []).concat(planted.gone || [])) if (x.trim_id === tid) x.series = (x.series || []).filter((pt) => pt[0] !== gone);
+    const early = '2026-01-01';
+    planted.fetch_days[tid] = [early, ...planted.fetch_days[tid]];
+    const one = planted.listings.find((x) => x.trim_id === tid && rules(x) && (x.series || []).length);
+    if (one) one.series = [[early, one.series[0][1]], ...one.series];
+    const wantLedger = ledgerOf(planted);
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.bk].models[subject.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open('');
+      const t = (await readTiles()).find((t) => t.label === subject.label) || {};
+      const want2 = wantLedger ? capOf({ ledger: wantLedger }) : null;
+      ok('and on a sheet that breaches them, the fetch-day rule and the five-car gate hold',
+         wantLedger ? (t.spark && (t.cap || '').startsWith(want2)) : !(t.spark || t.cap),
+         `${subject.label} without ${gone} on ${tid} and with one car seen ${early}: tile says "${t.cap || '(nothing)'}"; the rules say "${want2 || '(nothing)'}"`);
+    } finally {
+      await ctx.unroute('**/data.json');
+    }
+  }
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -3228,7 +3373,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 159;
+const EXPECTED = 162;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
