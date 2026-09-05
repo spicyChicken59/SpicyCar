@@ -73,7 +73,7 @@ _Nothing drivable (IL/OH/IN/WI)._
 
 **Lowest asking beyond your states (shipping estimated)**
 - **$64,491** · 7,925 mi · + $1,362 shipping = $65,853 · 2025 · Roseville, CA · ~1,800 mi from Chicago
-  _down 1x (-$499) · CPO · fleet · 1-owner · no accidents_
+  _down 1x (-$499) · CPO (seller not named BMW) · fleet · 1-owner · no accidents_
   niello acura — [listing](https://niello.com/certified/BMW/2025-BMW-i5-06a2075bac180936a0a72ed8f3f76337.htm)
   `WBY13HG02SCU72040`
 - **$64,888** · 9,164 mi · + $1,336 shipping = $66,224 · 2025 · Irvine, CA · ~1,725 mi from Chicago
@@ -135,7 +135,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 **Wisconsin (1)**
 - **$45,717** · 15,707 mi · no shipping · 2024 · Madison, WI · ~125 mi from Chicago
-  _seen at $45,717 and $46,216 · CPO · multi-use · 2 owners · no accidents_
+  _seen at $45,717 and $46,216 · CPO (seller not named BMW) · multi-use · 2 owners · no accidents_
   rosen nissan of madison llc — [listing](https://rosennissanmadison.com/certified/BMW/2024-BMW-i5-7106ba6eac1824b1018118ba11304b66.htm)
   `WBY33FK09RCP96469`
 
@@ -386,7 +386,7 @@ _The other half of the decision, beside the i5 eDrive40._
   baha auto group palos hills — [listing](https://www.bahaautopalos.com/pre-owned-cars/detail/x/1533327)
   `WBY43EJ06RCR01923`
 - **$73,373** · 16,528 mi · no shipping · 2024 · Chicago, IL · ~25 mi from Chicago
-  _CPO · no accidents_
+  _CPO (seller not named BMW) · no accidents_
   mercedes benz of chicago — [listing](https://mercedesbenzchicago.com/certified/BMW/2024-BMW-i7-3e4492d10a0e094a3883bfc31d95401f.htm)
   `WBY43EJ08RCR02930`
 - **$120,000** · 100 mi · no shipping · 2024 · Glenview, IL · ~25 mi from Chicago
@@ -586,7 +586,7 @@ _The other half of the decision, beside the i5 eDrive40._
   Car Mart VA Inc — [listing](https://www.carfax.com/vehicle/WBY83EH07RCP54955)
   `WBY83EH07RCP54955`
 - **$83,790** · 20,079 mi · + $725 shipping = $84,515 · 2024 · Greensboro, NC · ~575 mi from Chicago
-  _CPO_
+  _CPO (seller not named BMW)_
   foreign cars italia of greensboro now hendrick — [listing](https://hendrickcars.com/certified/BMW/2024-BMW-i7-dac07de1ac182d6e573aace24508c928.htm)
   `WBY83EH02RCP15352`
 - **$86,178** · 24,440 mi · + $965 shipping = $87,143 · 2024 · Jacksonville, FL · ~875 mi from Chicago
