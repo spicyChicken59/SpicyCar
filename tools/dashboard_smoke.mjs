@@ -3818,6 +3818,67 @@ await step('a VIN in hand', async () => {
   }
 });
 
+// --- arrivals, not reach --------------------------------------------------------
+// "N new" on the movement tile is new TO THE TRACKER. A car carrying a listing
+// date a fortnight or more before the day the tracker first saw it was on the
+// market all along and only now entered a fetch window — the API serves forty
+// cars a query, sorted. The tile now says how many of its new cars are that,
+// and the comparison's movement row says the same. Recomputed from the sheet;
+// then a served sheet dates every new car today (no clause) and one car at
+// exactly thirteen days (not counted: fourteen is the line).
+await step('arrivals, not reach', async () => {
+  plan('the movement tile says how many of its new cars were listed a fortnight before the tracker saw them',
+       'and the comparison\'s movement row says the same',
+       'and a sheet whose new cars were all listed today gets no clause',
+       'and thirteen days is not a fortnight');
+  const dt = SHEET.data_through;
+  const dayDiff = (a, b) => (Date.parse(String(b).slice(0, 10) + 'T00:00:00Z') - Date.parse(String(a).slice(0, 10) + 'T00:00:00Z')) / 86400000;
+  const isNewOn = (x) => x.first_seen ? String(x.first_seen).slice(0, 10) === dt : x.days_tracked === 1;
+  const reach = (x) => !!x.listed_since && !!x.first_seen && dayDiff(x.listed_since, x.first_seen) >= 14;
+  const counts = (m) => { const fresh = (m.listings || []).filter(isNewOn); return { fresh: fresh.length, reach: fresh.filter(reach).length }; };
+  const subject = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] })).map((o) => ({ ...o, c: counts(o.m) }))
+    .filter((o) => (o.m.daily || []).length >= 2 && o.c.reach > 0).sort((a, b) => b.c.reach - a.c.reach)[0];
+  if (!subject) return skipRest('no model on the watchlist has a new car today that was listed a fortnight before the tracker saw it');
+  const clause = (c) => c.reach ? `(${c.reach} listed 14+ days before the tracker saw ${c.reach === 1 ? 'it' : 'them'})` : '';
+  const tileTxt = async () => ((await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent.replace(/\s+/g, ' ').trim()).find((t) => /since the previous/i.test(t)))) || '');
+  await open(subject.w.q);
+  const t1 = await tileTxt();
+  ok('the movement tile says how many of its new cars were listed a fortnight before the tracker saw them', t1.includes(`${subject.c.fresh} new`) && t1.includes(clause(subject.c)),
+     `${subject.w.label}: tile "${(t1.match(/\d+ new[^·]*/) || [t1.slice(0, 80)])[0].trim()}" · sheet: ${subject.c.fresh} new, ${subject.c.reach} reach`);
+  // the comparison's movement row, over this model and one more
+  const other = WATCHED.find((w) => w.cars && !(w.bk === subject.w.bk && w.mk === subject.w.mk));
+  if (!other) skip('and the comparison\'s movement row says the same', 'no second model to compare');
+  else {
+    await open(`?models=${subject.w.slug},${other.slug}`);
+    const row = await page.evaluate((label) => {
+      const tbl = document.getElementById('compare-table'); if (!tbl) return null;
+      const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.textContent.includes(label));
+      const tr = [...tbl.querySelectorAll('tbody tr')].find((r) => /since the previous snapshot/i.test(r.children[0].textContent));
+      return col >= 0 && tr ? tr.children[col].textContent.replace(/\s+/g, ' ').trim() : null;
+    }, subject.w.label);
+    ok('and the comparison\'s movement row says the same', !!row && row.includes(`${subject.c.fresh} new (${subject.c.reach} reach, not arrival)`), `${subject.w.label} column: "${row}"`);
+  }
+  // Served: every new car listed today — no clause; then one of them listed
+  // exactly thirteen days before it was first seen — still no clause.
+  const serve = async (edit, label, detail) => {
+    const planted = JSON.parse(JSON.stringify(subject.m)); edit(planted);
+    const c = counts(planted);
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.w.bk].models[subject.w.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(subject.w.q);
+      const t = await tileTxt();
+      ok(label, c.reach === 0 && t.includes(`${c.fresh} new`) && !/listed 14\+ days/.test(t), `${detail}: tile "${(t.match(/\d+ new[^·]*/) || [t.slice(0, 80)])[0].trim()}" · sheet ${c.fresh} new, ${c.reach} reach`);
+    } finally { await ctx.unroute('**/data.json'); }
+  };
+  const thirteen = new Date(Date.parse(dt + 'T00:00:00Z') - 13 * 86400000).toISOString().slice(0, 10);
+  await serve((pm) => { for (const x of pm.listings) if (isNewOn(x)) { x.listed_since = dt; x.days_listed = 0; } }, 'and a sheet whose new cars were all listed today gets no clause', `${subject.w.label} with every new car listed ${dt}`);
+  await serve((pm) => { let first = true; for (const x of pm.listings) if (isNewOn(x)) { x.listed_since = first ? thirteen : dt; x.days_listed = first ? 13 : 0; first = false; } }, 'and thirteen days is not a fortnight', `${subject.w.label} with one new car listed ${thirteen}`);
+});
+
 // --- a headline figure carries its own date --------------------------------
 // The masthead says "data through Sep 4"; the watchlist's first tile can lead
 // with a car from a model on a slower cadence, last fetched two days before,

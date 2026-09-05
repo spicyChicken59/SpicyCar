@@ -6,7 +6,7 @@
 - ▼ $2,416 cut · BMW i5 eDrive40 · now $47,336 · Roswell, GA `WBY33FK06SCU63880`
 - ▼ $2,000 cut · BMW i5 eDrive40 · now $43,586 · Columbia, SC `WBY33FK01RCS84947`
 - …and 50 more price changes in the sections below
-- 16 new on the shopped models · best 10% under typical ($106,425, Buena Park, CA)
+- 16 new on the shopped models (8 listed 14+ days before the tracker saw them — reach, not arrival) · best 10% under typical ($106,425, Buena Park, CA)
 - 16 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
@@ -15,7 +15,7 @@
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
 - 134 on the market · 18 drivable · 37 price changes · 7 new · 11 gone
 
-**New today (7)** — first seen this run, best value first
+**New today (7)** — first seen this run, 1 of them listed 14+ days before the tracker saw it — reach, not arrival; best value first
 
 - **$47,990** · 2024 · 9,398 mi · + $1,100 shipping · location n/a · listed 2d ago
   [listing](https://www.carvana.com/vehicle/4715894) `WBY33FK03RCR98692`
@@ -23,7 +23,7 @@
   [listing](https://bmwencinitas.com/certified/BMW/2024-BMW-i5-6d13da60ac183b721f3e02235ecd37e5.htm) `WBY33FK07RCR76727`
 - **$40,640** · 2024 · 36,026 mi · + $911 shipping · Irving, TX · listed 3d ago
   [listing](https://www.carfax.com/vehicle/WBY33FK03RCP23159) `WBY33FK03RCP23159`
-- **$57,992** · 2024 · 23,270 mi · + $1,238 shipping · Scottsdale, AZ · on market 24d, new to the tracker
+- **$57,992** · 2024 · 23,270 mi · + $1,238 shipping · Scottsdale, AZ · on market 24d, new to the tracker — reach, not arrival
   [listing](https://www.markmazdascottsdale.com/viewdetails/used/wby43fk03rcp86184/2024-bmw-i5-sedan?type=cash) `WBY43FK03RCP86184`
 - **$57,998** · 2024 · 24,815 mi · + $1,380 shipping · Mountain View, CA · listed 5d ago
   [listing](https://bmwofmountainview.com/used/BMW/2024-BMW-i5-568ddeddac18090da9ed9f9d94ca103d.htm) `WBY43FK03RCP43383`
@@ -308,9 +308,9 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 - Lowest drivable **$48,909** (Indianapolis, IN) · no shipping
 - 151 on the market · 25 drivable · 39 price changes · 9 new · 5 gone
 
-**New today (9)** — first seen this run, best value first
+**New today (9)** — first seen this run, 7 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
 
-- **$106,425** · 2026 · 11 mi · + $1,336 shipping · Buena Park, CA · on market 23d, new to the tracker
+- **$106,425** · 2026 · 11 mi · + $1,336 shipping · Buena Park, CA · on market 23d, new to the tracker — reach, not arrival
   _10% under typical ($11,827 less)_
   [listing](http://details.vast.com/details/cars/ob-48ae10cec45c5264c0c05239af7ac2c3eda678223f9171ac63be6a3107cd3db63b027b96ef83ac88fd6ccb42933d4f3c6bf26f82a637df6dbf6160746a741de26a78755cd4e149b07fe18c075222a57e32f58b8efcead3b7b06873b79f3c7ca41b0dbcaba4db7a93ec9e9192a6dfe33de43cf64702f1d8312e6aea61aad8fe07de5f4389b1cc2c773ae6b28b499c8f0c7b6ad524e9eb26f1797633f545ec82dae17dfe46c2bf13d50b6d06975724cf63/?pl=76&context=1e0d811633d20dd94c351375e543927eda3d8b1a) `WBY43EJ0XTCY05087`
 - **$55,096** · 2024 · 30,190 mi · + $725 shipping · Roswell, GA · listed 7d ago
@@ -319,17 +319,17 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 - **$110,710** · 2026 · 50 mi · + $766 shipping · Annapolis, MD · on market 8d, new to the tracker
   _7% under typical ($8,100 less)_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ03TCX43340) `WBY43EJ03TCX43340`
-- **$68,966** · 2025 · 9,100 mi · + $911 shipping · Plano, TX · on market 171d, new to the tracker
+- **$68,966** · 2025 · 9,100 mi · + $911 shipping · Plano, TX · on market 171d, new to the tracker — reach, not arrival
   _6% under typical ($4,228 less)_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ03SCT41980) `WBY43EJ03SCT41980`
-- **$112,729** · 2026 · 10 mi · + $1,344 shipping · Los Angeles, CA · on market 71d, new to the tracker
+- **$112,729** · 2026 · 10 mi · + $1,344 shipping · Los Angeles, CA · on market 71d, new to the tracker — reach, not arrival
   _5% under typical ($5,515 less)_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ05TCY21858) `WBY43EJ05TCY21858`
-- **$117,015** · 2026 · 11 mi · + $1,164 shipping · El Paso, TX · on market 128d, new to the tracker
+- **$117,015** · 2026 · 11 mi · + $1,164 shipping · El Paso, TX · on market 128d, new to the tracker — reach, not arrival
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ00TCY04661) `WBY43EJ00TCY04661`
-- **$72,336** · 2025 · 10,912 mi · + $951 shipping · Arlington, MA · on market 153d, new to the tracker
+- **$72,336** · 2025 · 10,912 mi · + $951 shipping · Arlington, MA · on market 153d, new to the tracker — reach, not arrival
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01SCU65021) `WBY43EJ01SCU65021`
-- **$122,515** · 2026 · 10 mi · + $1,004 shipping · Houston, TX · on market 406d, new to the tracker
+- **$122,515** · 2026 · 10 mi · + $1,004 shipping · Houston, TX · on market 406d, new to the tracker — reach, not arrival
   [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ0XTCW30355) `WBY43EJ0XTCW30355`
 - …and 1 more on the dashboard
 
@@ -650,4 +650,4 @@ _By asking price, shipping stated per car, on a slower cadence: the cheapest 20 
 - **Lucid Air** — 68 cars · 33 drivable · lowest asking $37,942 (Springfield, NJ) + $828 shipping · drivable from $38,197 (Streetsboro, OH) · median asking $43,895 _(every 3 days)_
 
 ---
-_1258 vehicle histories across 14 days · 24 API calls today._
+_1258 vehicle histories across 14 days · outputs rebuilt from the snapshot on disk — no calls made._

@@ -1473,7 +1473,11 @@ def build_today(events):
     news = [e for e in events["new"] if e["shopping"]]
     if news:
         best = max(news, key=lambda e: e["pct"] if e["pct"] is not None else -1)
+        reach = sum(1 for e in news if reach_not_arrival(e["x"]))
         line = f"- {len(news)} new on the shopped models"
+        if reach:
+            line += (f" ({reach} listed {REACH_DAYS}+ days before the tracker saw "
+                     f"{'it' if reach == 1 else 'them'} — reach, not arrival)")
         if best["pct"] and best["pct"] > 0:
             line += (f" · best {best['pct']:.0%} under typical "
                      f"({money(best['x']['price'])}, {place(best['x'])})")
@@ -1569,7 +1573,8 @@ def fmt_new(x, p=None):
     if dl is not None and dl <= 7:
         bits.append(f"listed {dl}d ago")
     elif dl is not None:
-        bits.append(f"on market {dl}d, new to the tracker")
+        bits.append(f"on market {dl}d, new to the tracker"
+                    + (" — reach, not arrival" if reach_not_arrival(x) else ""))
     else:
         bits.append("new to the tracker")
     line = "- " + " · ".join(b for b in bits if b)
@@ -2459,6 +2464,26 @@ def seen_label(s):
     return f"seen {n} of {max(span, n)} days"
 
 
+REACH_DAYS = 14
+
+
+def reach_not_arrival(x):
+    """A car first seen today that carries a listing date a fortnight or more
+    earlier was on the market all along and only now entered a fetch window:
+    the API serves forty cars a query, sorted, and a car a rank outside the
+    window is invisible until something ahead of it leaves. Reach, not
+    arrival — the count is printed beside "new" so nine new i7s of which
+    seven were listed in March, April and June do not read as nine arrivals.
+    docs/index.html carries the same fourteen days as REACH_DAYS."""
+    ls, fs = x.get("listed_since"), x.get("first_seen")
+    if not ls or not fs:
+        return False
+    try:
+        return (date.fromisoformat(str(fs)[:10]) - date.fromisoformat(str(ls)[:10])).days >= REACH_DAYS
+    except ValueError:
+        return False
+
+
 def is_new_today(x):
     """First seen on THIS snapshot, not merely seen once.
 
@@ -3230,8 +3255,11 @@ def build_outputs(today_rows, all_rows, hist):
                     key=lambda x: -(by_vin[x["vin"]]["pick_pct"]
                                     if x["vin"] in by_vin else -1.0))
                 if new_today:
+                    reach = sum(1 for x in new_today if reach_not_arrival(x))
                     sec += [f"**New today ({len(new_today)})** — first seen this run,"
-                            " best value first", ""]
+                            + (f" {reach} of them listed {REACH_DAYS}+ days before the tracker saw "
+                               f"{'it' if reach == 1 else 'them'} — reach, not arrival;" if reach else "")
+                            + " best value first", ""]
                     sec += [fmt_new(x, by_vin.get(x["vin"])) for x in new_today[:8]]
                     if len(new_today) > 8:
                         sec.append(f"- …and {len(new_today) - 8} more on the dashboard")

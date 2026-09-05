@@ -4305,10 +4305,25 @@
   // latest snapshot (nothing is "new" on day 1, when every car is one day
   // old), gone is a real delisting at the previous fetch day. The model tile
   // and the overview tile both count with exactly this, so they cannot drift.
+  // A car the tracker first saw today is new TO THE TRACKER. Where it carries
+  // a listing date a fortnight or more before that day, it was on the market
+  // all along and only now entered a fetch window — the API serves forty
+  // cars a query, sorted, and a car a rank or two outside the window is
+  // invisible until something ahead of it leaves. Reach, not arrival, and the
+  // count says so beside "new". Fourteen days, because a listing date a few
+  // days old is a car the tracker saw promptly on a two-day cadence, and the
+  // API's own index loads are already withheld from days_listed upstream.
+  const REACH_DAYS = 14;
+  const reachNotArrival = (x) => {
+    if (!x.listed_since || !x.first_seen) return false;
+    const a = Date.parse(String(x.listed_since).slice(0, 10) + 'T00:00:00Z'), b = Date.parse(String(x.first_seen).slice(0, 10) + 'T00:00:00Z');
+    return !isNaN(a) && !isNaN(b) && (b - a) / 86400000 >= REACH_DAYS;
+  };
   function movementFor(listings, departed, daily) {
     const prev = daily.length >= 2 ? daily[daily.length - 2] : null;
     return {
       hasPrev: daily.length >= 2,
+      reach: daily.length >= 2 ? listings.filter((x) => isNew(x) && reachNotArrival(x)).length : 0,
       cuts: listings.filter((x) => lastStep(x) < 0 && !twoPrices(x)).length,   // a sawtooth's down day is its other price
       // isNew's rule, not a second copy of the old one: the tile's count and
       // the chips in the table below it have to be the same set, or a reader
@@ -4447,7 +4462,8 @@
 
     // The movement tile counts over `all` — the model's rows before the shared
     // filters — so it takes the record's own series, not the scoped one.
-    const { cuts, fresh: newToday, gone } = movementFor(all, goneRows(t), record);
+    const { cuts, fresh: newToday, gone, reach } = movementFor(all, goneRows(t), record);
+    const reachNote = reach ? ` (${reach} listed ${REACH_DAYS}+ days before the tracker saw ${reach === 1 ? 'it' : 'them'})` : '';
     // The tile advertised "N new" and then buried them: under any price-based
     // order the new arrivals sit wherever their price puts them, so the count
     // was unreachable. It now sorts the table to them.
@@ -4494,6 +4510,7 @@
             ? el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:new', onclick: showNewest,
                         title: 'Sort the listings by newest to the tracker' }, `${newToday} new`)
             : `${newToday} new`,
+          reachNote,
           ' · ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:gone', onclick: showGoneCard,
                     title: 'Jump to the departed-vehicles list' }, `${gone} gone`))
@@ -5383,7 +5400,7 @@
     row(sharedActive() ? 'Since the previous snapshot (all cars)' : 'Since the previous snapshot',
       'Each column against its own previous fetch — cadences differ, so the windows do too. Counted over every car in the column, before the filters.',
       stat.map((v) => cmpCell(v.mv.hasPrev ? `${v.mv.cuts} cut${v.mv.cuts === 1 ? '' : 's'}` : '—',
-        v.mv.hasPrev ? `${v.mv.fresh} new · ${v.mv.gone} gone` : 'shows from day 2')));
+        v.mv.hasPrev ? `${v.mv.fresh} new${v.mv.reach ? ` (${v.mv.reach} reach, not arrival)` : ''} · ${v.mv.gone} gone` : 'shows from day 2')));
     row('Lowest asking over time', 'The same line the chart below draws for this column',
       // the day rows' own floors — no one-point fallback here, because an empty
       // column should read as an empty spark rather than borrow a number
