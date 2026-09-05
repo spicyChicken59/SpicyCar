@@ -606,7 +606,7 @@
   <section class="sc-card" id="gone-card" hidden>
     <div class="sc-card__head">
       <div>
-        <h2 id="gone-title">Gone from the market</h2>
+        <h2 id="gone-title">Missing from the latest snapshot</h2>
         <p class="sc-hint" id="gone-hint">Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.</p>
       </div>
     </div>
@@ -4588,7 +4588,7 @@
           reachNote,
           ' · ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:gone', onclick: showGoneCard,
-                    title: 'Jump to the departed-vehicles list' }, `${gone} gone`))
+                    title: 'Jump to the vehicles missing from the latest snapshot' }, `${gone} gone`))
       : el('div', { class: 'sc-tile__sub' }, 'movement shows from day 2');
     const cutsTxt = `${cuts} price cut${cuts === 1 ? '' : 's'}`;
     const tile4 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' },
@@ -4718,14 +4718,18 @@
     const aside = el('div', { class: 'sc-media__aside' }, el('div', { class: 'sc-figure' }, money(x.price)),
       el('span', { class: 'sc-note' }, shipNote(x)), movement(x, daily),
       // the phone twin of the table's cut-sort note — the sorted number must be visible here too
-      S.sort === 'cut' && lastStep(x) < 0
+      // …and never over a car seen at two prices: its down day is the other
+      // price, not a cut, and the movement note one line up says so in those
+      // words. Seven cars would have read "cut $8,010 at the latest snapshot"
+      // beside "seen at $66,699 and $74,709" on the day this was found.
+      S.sort === 'cut' && lastStep(x) < 0 && !twoPrices(x)
         ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
       valueNote(x, null),
       otdNote(x), payNote(x), exitNote(x));   // the phone twins of the table's payment, out-the-door and exit-comp notes
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
-      x.stale_pct >= 0.75 ? el('span', null, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `${x.stale_of} dated cars` : 'model'}`) : null,
+      x.stale_pct >= 0.75 ? el('span', null, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `model's ${x.stale_of} dated cars` : 'model'}`) : null,
       x.days_tracked > 1 ? el('span', null, seenLabel(x)) : null,
       x.dealer ? el('span', null, x.dealer) : null,
       flagsCell(x),
@@ -4895,7 +4899,8 @@
         // Sorted by the latest snapshot's cut, the number the sort ran on must
         // be visible — the movement badge shows the LIFETIME change, which can
         // read non-monotonic (or "cut, then back up") against this ordering.
-        S.sort === 'cut' && lastStep(x) < 0
+        // …and not for a car seen at two prices — see the phone twin below.
+        S.sort === 'cut' && lastStep(x) < 0 && !twoPrices(x)
           ? el('span', { class: 'sc-note' }, `cut ${money(-lastStep(x))} at the latest snapshot`) : null,
         valueNote(x, null),
         // The payment rides in the price cell rather than a column of its own:
@@ -4928,10 +4933,10 @@
         bandSlim ? el('span', { class: 'sc-note' },
           (x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : ''))
           + (x.days_tracked ? ` · ${seenLabel(x)}` : '')) : null,
-        bandSlim && x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `${x.stale_of} dated cars` : 'model'}`) : null);
+        bandSlim && x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `model's ${x.stale_of} dated cars` : 'model'}`) : null);
       const listed = bandSlim ? null : el('td', { class: 'sc-nowrap col-listed' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
-        x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `${x.stale_of} dated cars` : 'model'}`) : null,
+        x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `model's ${x.stale_of} dated cars` : 'model'}`) : null,
         x.days_tracked ? el('span', { class: 'sc-note' }, seenLabel(x)) : null);
       const trend = bandSlim ? null : el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
       if (trend) trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');
@@ -5013,7 +5018,7 @@
     moreG.hidden = shownG.length >= gone.length;
     if (!moreG.hidden) moreG.appendChild(el('button', { class: 'sc-btn', type: 'button', 'data-fkey': 'more:gone',
       onclick: () => { S.showAllGone = true; rerender('showGone'); } },
-      `Show all ${gone.length} missing from the latest snapshot`));
+      `Show all ${gone.length} vehicles missing from the latest snapshot`));
     const goneScroll = $('gone-scroll'), goneCards = $('gone-cards');
     goneCards.textContent = '';
     if (narrow()) {
