@@ -855,6 +855,13 @@ def score_picks(listings, model_label):
     exit note already suppresses on. At six, seven and eight cars the
     interval is the whole sample, so no car in such a cohort is ever called
     under or over: that is the arithmetic, not a policy.
+
+    A stand also asks for a margin that rounds to at least 1%. The interval
+    makes the WORD defensible; the rounded percentage is the NUMBER every
+    surface prints beside it, and "0% under typical" is a claim with no
+    content — on a cohort tight enough, a car $100 below the low edge would
+    print exactly that. Half a percent is the smallest margin that rounds
+    to a digit, on both sides of the sheet.
     """
     pool = [x for x in listings if pick_eligible(x)]
     if len(pool) < COHORT_FLOOR:
@@ -892,7 +899,9 @@ def score_picks(listings, model_label):
                     "pick_year": p_year, "pick_trim": p_trim,
                     "pick_basis": basis, "pick_n": n,
                     "pick_lo": lo, "pick_hi": hi,
-                    "pick_stand": "under" if v < lo else "over" if v > hi else "typical",
+                    "pick_stand": ("under" if v < lo and (med - v) / med >= 0.005
+                                   else "over" if v > hi and (v - med) / med >= 0.005
+                                   else "typical"),
                     # floor(x + .5), not round(): Python rounds half to even and
                     # JavaScript rounds half up, and the page recomputes this
                     # figure — two picks read "$1,936 less" here and "$1,937
@@ -1120,11 +1129,12 @@ def median_ci(values, conf=0.95):
     # P(k <= B <= n-k) for B ~ Bin(n, 1/2), walking k up while it still covers.
     # Compared EXACTLY, as a ratio of integers against 19/20, because the page
     # draws the same interval in JavaScript with integer arithmetic and the two
-    # must agree on every edge at every n: a float sum here and a float sum
-    # there can round differently at a coverage within an ulp of 0.95, and a
-    # rare disagreement between the report and the page is the one kind this
-    # repo does not tolerate. Fraction(0.95) is the float's own value, not
-    # 19/20; limit_denominator returns it to the fraction that was meant.
+    # must agree on every edge at every n. No n up to 2000 has a coverage
+    # within float rounding of 19/20 (the nearest sits 4.9e-6 away, at n=417),
+    # so this is parity by construction rather than a fix for a case that was
+    # seen; the concrete change is that 2 ** n no longer overflows where
+    # 2.0 ** n did, from n = 1024. Fraction(0.95) is the float's own value,
+    # not 19/20; limit_denominator returns it to the fraction that was meant.
     from fractions import Fraction
     from math import comb
     total = 2 ** n
@@ -1538,9 +1548,15 @@ def picks_rule():
     cpm = to_float(PICKS.get("cents_per_mile"))
     if cpm is None:
         cpm = 0.30
+    # The same sentence the page's picksRule() prints, interval clause
+    # included: two surfaces stating two rules for one list is the drift the
+    # cross-surface smoke check exists to catch.
     return (", ".join(bits) + "; ranked by how far under the typical price "
-            "for the model — its own trim and model year when there are "
-            f"enough of them — a car sits, allowing ${cpm:.2f} a mile")
+            "for its model — its own trim and model year when there are "
+            f"enough of them — a car sits, allowing ${cpm:.2f} a mile. "
+            "A car is under typical only when its value sits below the 95% "
+            f"interval of its cohort's median: {COHORT_FLOOR} cars make a "
+            "cohort, and nine are the fewest that can put a car outside it")
 
 
 # --------------------------------------------------------------------------

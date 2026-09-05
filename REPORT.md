@@ -16,7 +16,7 @@ _Not fetched today — showing 2026-09-04._
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
 - 133 on the market · 17 drivable · 30 price changes · 0 new · 6 gone
 
-**Spicy picks** — under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for the model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile
+**Spicy picks** — under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile. A car is under typical only when its value sits below the 95% interval of its cohort's median: 6 cars make a cohort, and nine are the fewest that can put a car outside it
 
 _Drivable (IL/OH/IN/WI):_
 
@@ -251,7 +251,7 @@ _Not fetched today — showing 2026-09-04._
 - Lowest drivable **$48,909** (Indianapolis, IN) · no shipping
 - 150 on the market · 25 drivable · 30 price changes · 0 new · 2 gone
 
-**Spicy picks** — under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for the model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile
+**Spicy picks** — under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile. A car is under typical only when its value sits below the 95% interval of its cohort's median: 6 cars make a cohort, and nine are the fewest that can put a car outside it
 
 _Drivable (IL/OH/IN/WI):_
 
@@ -511,7 +511,7 @@ _The other half of the decision, beside the i5 eDrive40._
 
 ## Spicy picks across the watchlist
 
-_under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for the model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile. Asking prices shown._
+_under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile. A car is under typical only when its value sits below the 95% interval of its cohort's median: 6 cars make a cohort, and nine are the fewest that can put a car outside it. Asking prices shown._
 
 ### Drivable — IL/OH/IN/WI
 

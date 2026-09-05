@@ -1001,8 +1001,12 @@
   // percentage stays the best estimate of the margin; the stand is whether
   // the data can defend the word. At six, seven and eight cars the interval
   // is the whole sample, so no car in such a cohort is ever called under or
-  // over: that is the arithmetic, not a policy. Same rules as score_picks in
-  // the builder, which the report runs.
+  // over: that is the arithmetic, not a policy. A stand also asks for a
+  // margin that rounds to at least 1%: the interval makes the WORD
+  // defensible, and the rounded percentage is the NUMBER every surface
+  // prints beside it — on a cohort tight enough, a car $100 below the low
+  // edge would print "0% under typical", a claim with no content. Same
+  // rules as score_picks in the builder, which the report runs.
   function scorePicks(listings, modelLabel) {
     const P = pickParams(), pool = listings.filter((x) => pickEligible(x, P));
     if (pool.length < COHORT_FLOOR) return [];
@@ -1024,7 +1028,7 @@
       else if (yearSt[y]) { st = yearSt[y]; year = y; basis = 'year'; }
       const v = vals.get(x);
       return { x, modelLabel, year, trim, basis, n: st.n, lo: st.lo, hi: st.hi,
-               stand: v < st.lo ? 'under' : v > st.hi ? 'over' : 'typical',
+               stand: v < st.lo && (st.med - v) / st.med >= 0.005 ? 'under' : v > st.hi && (v - st.med) / st.med >= 0.005 ? 'over' : 'typical',
                under: Math.round(st.med - v), pct: st.med ? (st.med - v) / st.med : 0 };
     }).sort((a, b) => b.pct - a.pct);
   }
@@ -2690,15 +2694,20 @@
         : x.pick_basis === 'year'
           ? `measured against the ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'}, this one included — too few of its own trim that year to judge it against those`
           : `measured against all ${x.pick_n} ${name} listing${x.pick_n === 1 ? '' : 's'}, this one included — too few of its own model year to judge it against those`)
-        + (x.pick_lo != null && x.pick_hi != null ? ` · typical value ${money(x.pick_lo)}–${money(x.pick_hi)} at 95%, miles priced in` : ''),
+        // "value", and it says what a value is: asking plus shipping with
+        // miles priced in, which on the 2026 eDrive50 sits wholly below the
+        // cohort's asking prices — a reader holding an asking price against
+        // this range would call a typical car dear
+        + (x.pick_lo != null && x.pick_hi != null ? ` · typical value ${money(x.pick_lo)}–${money(x.pick_hi)} at 95% — asking plus shipping, miles priced in` : ''),
     };
   }
   // The note itself: the percentage, then the cohort and its size, visible —
   // not in a title= a phone cannot reach. Only for a car that stands UNDER
-  // its cohort's interval — a car 4% under the median of nine sits inside
-  // that median's own sampling error and gets no note at all — and, of
-  // those, only a margin worth a line: the floor is notability, the stand
-  // is honesty, and the two are different questions.
+  // its cohort's interval — on today's sheet a 2025 eDrive40 7% under the
+  // median of nine sits on that interval's low edge and gets no note at all;
+  // whether a margin clears the edge depends on the cohort's spread, never
+  // on n alone — and, of those, only a margin worth a line: the floor is
+  // notability, the stand is honesty, and the two are different questions.
   function valueNote(x, modelLabel, floor) {
     if (x.pick_stand !== 'under' || x.pick_pct == null || x.pick_pct < (floor === undefined ? 0.05 : floor)) return null;
     const c = cohortOf(x, modelLabel);

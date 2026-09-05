@@ -586,6 +586,41 @@ class TestPicks(unittest.TestCase):
         self.assertEqual(nine[30000]["pick_stand"], "under")
         self.assertEqual([p["price"] for p in T.choose_picks(list(nine.values()), 4)], [30000])
 
+    def test_a_margin_that_rounds_to_nothing_is_not_a_stand(self):
+        """Eight cars at $47,000 and one at $46,900: the ninth is below the
+        low edge of the interval (which is $47,000 in values), so the WORD
+        "under" would hold — and every surface prints the rounded margin
+        beside the word, which here is "0% under typical". A number with no
+        content is not printed; the car is called typical. At $46,000 the
+        same car is 2% under and stands under."""
+        tight = [listing(price=47000) for _ in range(8)]
+        edge = {p["price"]: p for p in T.score_picks(tight + [listing(price=46900)], "M")}
+        self.assertLess(edge[46900]["pick_pct"], 0.005)
+        self.assertEqual(edge[46900]["pick_stand"], "typical")
+        self.assertEqual(T.choose_picks(list(edge.values()), 4), [], "and not a pick")
+        clear = {p["price"]: p for p in T.score_picks(tight + [listing(price=46000)], "M")}
+        self.assertEqual(clear[46000]["pick_stand"], "under")
+        self.assertIn("2% under typical", T.fmt_pick(clear[46000]))
+
+    def test_the_walk_skips_a_typical_car_rather_than_stopping_at_it(self):
+        """Picks are walked in margin order. A car sitting ON a wide interval's
+        low edge can carry a bigger margin than a car below a narrow one — two
+        $12,000 cars beside six at $50,000 are 76% under that median and still
+        "typical", because at nine cars the low edge IS the second value — so a
+        walk that stopped at the first non-pick would return nothing while a
+        genuine pick waited behind it. The walk skips."""
+        wide = ([listing(price=12000, vin="A1"), listing(price=12000, vin="A2")]
+                + [listing(price=50000, vin=f"A{i}") for i in range(3, 9)] + [listing(price=60000, vin="A9")])
+        narrow = [listing(price=40000, vin="B1")] + [listing(price=44000 + 500 * i, vin=f"B{i + 2}") for i in range(8)]
+        scored = T.score_picks(wide, "A") + T.score_picks(narrow, "B")
+        by = {p["vin"]: p for p in scored}
+        self.assertEqual(by["A1"]["pick_stand"], "typical", "on the edge, not below it")
+        self.assertGreater(by["A1"]["pick_pct"], by["B1"]["pick_pct"], "…and ahead of the real pick in margin order")
+        self.assertEqual(by["B1"]["pick_stand"], "under")
+        self.assertEqual([p["vin"] for p in T.choose_picks(scored, 4)], ["B1"])
+        local, ship = T.split_picks(scored, 4)
+        self.assertEqual([p["vin"] for p in local + ship], ["B1"])
+
     def test_a_car_above_its_interval_stands_over(self):
         """Both directions, because the shortlist row and the decision tile
         print "over" as well: a car is over typical only above the high edge,

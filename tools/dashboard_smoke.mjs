@@ -1948,7 +1948,8 @@ await step('a value percentage names its cohort', async () => {
 // is the claim that both applied the same rule to the same market.
 await step('the picks agree across both surfaces', async () => {
   plan('the drivable picks are the same cars in the report and on the page',
-       'and so are the worth-the-ship picks');
+       'and so are the worth-the-ship picks',
+       'and the two surfaces state one rule for the list');
   const reportPath = resolve(HERE, '..', 'REPORT.md');
   if (!existsSync(reportPath)) return skipRest('no REPORT.md beside the dashboard');
   const md = readFileSync(reportPath, 'utf8');
@@ -1981,6 +1982,16 @@ await step('the picks agree across both surfaces', async () => {
   else ok('and so are the worth-the-ship picks',
           same(wantShip, got('worth the ship')),
           `report ${JSON.stringify(wantShip)} vs page ${JSON.stringify(got('worth the ship'))}`);
+  // The rule sentence, once: the report prints picks_rule() and the page
+  // picksRule(), and the two drifted apart the day the interval clause was
+  // added to one of them. Compared word for word after the page's trailing
+  // "Asking prices shown." and the report's capitalisation are set aside.
+  const norm = (t) => t.replace(/\s+/g, ' ').replace(/\.?\s*Asking prices shown\.?$/i, '').trim().replace(/^./, (c) => c.toLowerCase()).replace(/\.$/, '');
+  const reportRule = (md.match(/\*\*Spicy picks\*\* — ([^\n]+)/) || [])[1] || (md.match(/^_(under [^\n]+?)\. Asking prices shown\._/m) || [])[1] || '';
+  const pageRule = await page.getAttribute('#hero-hint', 'title');
+  if (!reportRule || !pageRule) skip('and the two surfaces state one rule for the list', `${reportRule ? 'the page' : 'the report'} prints no rule sentence`);
+  else ok('and the two surfaces state one rule for the list', norm(reportRule) === norm(pageRule),
+          norm(reportRule) === norm(pageRule) ? `"${norm(pageRule).slice(0, 110)}…"` : `report: "${norm(reportRule)}" · page: "${norm(pageRule)}"`);
 });
 
 // --- the budget ------------------------------------------------------------
@@ -2906,7 +2917,10 @@ await step('under typical only outside its own interval', async () => {
        'and names the interval the order statistics give',
        'a car moved to its cohort\'s median loses the note and the pick',
        'and five cars are not a cohort: the survivors are judged against the year',
-       'and a floor car in a cohort of eight is about typical on every surface');
+       'and a floor car in a cohort of eight is about typical on every surface',
+       'and a margin that rounds to nothing is not a stand',
+       'the compare card\'s winner row prints only a car that stands under',
+       'and the pick walk skips a typical car with a big margin rather than stopping at it');
   const P0 = (SHEET.buyer || {}).picks || {};
   const P = { max_miles: P0.max_miles || 50000, cpm: P0.cents_per_mile != null ? P0.cents_per_mile : 0.30, base: P0.mileage_baseline || 20000,
               no_acc: P0.exclude_accidents !== false, no_rental: P0.exclude_rental !== false };
@@ -2939,7 +2953,8 @@ await step('under typical only outside its own interval', async () => {
       else if (byY.get(y).length >= 6) { vals = byY.get(y); basis = 'year'; }
       else { vals = all; basis = 'model'; }
       const [lo, hi] = ciOf(vals), v = valueOf(x), m0 = med(vals);
-      out.set(x.vin, { v, lo, hi, n: vals.length, basis, pct: (m0 - v) / m0, stand: v < lo ? 'under' : v > hi ? 'over' : 'typical' });
+      const pct = (m0 - v) / m0;   // a stand needs the edge AND a margin that rounds to a digit
+      out.set(x.vin, { v, lo, hi, n: vals.length, basis, pct, stand: v < lo && pct >= 0.005 ? 'under' : v > hi && -pct >= 0.005 ? 'over' : 'typical' });
     }
     return out;
   };
@@ -3113,6 +3128,99 @@ await step('under typical only outside its own interval', async () => {
            && !!cell && cell.figure === 'about typical' && cell.notes.some((n) => /\bn=8\b/.test(n)) && card.found && card.chip === '',
          `${hx.vin.slice(-6)} with ${kin.length} → 8 in ${short}: harness ${scH ? `${scH.stand}, ${(scH.pct * 100).toFixed(0)}% under the median` : 'unscored'} · tile "${t2.delta}" (flat ${t2.flat}) · pick cards ${picked} · shortlist row ${cell ? `"${cell.figure}" ${JSON.stringify(cell.notes)}` : 'missing'} · card ${card.found ? (card.chip ? `chip "${card.chip}"` : 'no chip') : 'missing'}`);
     } finally { await ctx.unroute('**/data.json'); await clearStars(); }
+  }
+  // Served: the subject's largest trim cohort rewritten so every car's VALUE
+  // is the same to the dollar and one car's is $100 less. That car is below
+  // the interval's low edge — the word "under" would hold — and 0.1% under
+  // the median, which every surface would print as "0% under typical". The
+  // rule calls it typical; its shortlist row must say so.
+  const big = [...cohorts.entries()].filter(([, xs]) => xs.length >= 9).sort((a, b) => b[1].length - a[1].length)[0];
+  if (!big) skip('and a margin that rounds to nothing is not a stand', `${subject.label} has no trim cohort of nine`);
+  else {
+    const [keyT, xs] = big;
+    const V = 100000, targetVin = xs[0].vin, otherVin = xs[1].vin;
+    const planted = JSON.parse(JSON.stringify(model0));
+    for (const c of planted.listings) if (xs.some((x) => x.vin === c.vin)) c.price = Math.round((c.vin === targetVin ? V - 100 : V) - (c.local ? 0 : (c.ship || 0)) - (c.miles - P.base) * P.cpm);
+    const scT = scoreModel(planted).get(targetVin);
+    const clearStars2 = () => page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.bk].models[subject.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(subject.q); await clearStars2(); await open(subject.q); await sortByValue(); await showAll();
+      for (const v of [targetVin, otherVin]) { await page.click(`button[data-fkey="star:${v}"]`); await page.waitForTimeout(150); }
+      const cell = await page.evaluate((vin) => {
+        const tbl = document.getElementById('finalists-table'); if (!tbl) return null;
+        const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.querySelector(`[data-fkey="fin:${vin}"]`));
+        const row = [...tbl.querySelectorAll('tbody tr')].find((tr) => /value vs typical/i.test(tr.children[0].textContent));
+        if (col < 0 || !row) return null;
+        return ((row.children[col].querySelector('.sc-figure') || {}).textContent || '').trim();
+      }, targetVin);
+      ok('and a margin that rounds to nothing is not a stand', !!scT && scT.v < scT.lo && scT.pct > 0 && scT.pct < 0.005 && scT.stand === 'typical' && cell === 'about typical',
+         `${keyT} rewritten to one value, ${targetVin.slice(-6)} $100 under it: harness ${scT ? `${scT.stand}, ${(scT.pct * 100).toFixed(2)}% under, ${scT.v < scT.lo ? 'below' : 'not below'} the edge` : 'unscored'} · shortlist row "${cell || '(missing)'}"`);
+    } finally { await ctx.unroute('**/data.json'); await clearStars2(); }
+  }
+  // The compare card's "Best value vs typical" row, two trims of the subject
+  // side by side: each column prints its first car that stands under, by
+  // margin, or a dash — never the first car by margin, which on today's M70
+  // column is a typical car 8% under its median.
+  const trimIds = Object.keys(model0.trims || {}).filter((id) => model0.listings.some((x) => x.trim_id === id));
+  const byTrim = (id) => [...scores.entries()].filter(([vin]) => (model0.listings.find((x) => x.vin === vin) || {}).trim_id === id);
+  const pairT = trimIds.map((id) => ({ id, label: (model0.trims[id] || {}).label || id, unders: byTrim(id).filter(([, sc]) => sc.stand === 'under').sort((a, b) => b[1].pct - a[1].pct), all: byTrim(id).sort((a, b) => b[1].pct - a[1].pct) }))
+    .filter((t) => t.all.length).sort((a, b) => (a.unders.length ? 1 : 0) - (b.unders.length ? 1 : 0) || b.all.length - a.all.length).slice(0, 2);
+  if (pairT.length < 2) skip('the compare card\'s winner row prints only a car that stands under', `${subject.label} has fewer than two scored trims`);
+  else {
+    await open(`${subject.q}&trims=${pairT.map((t) => t.id).join(',')}`);
+    const cells = await page.evaluate(() => {
+      const tbl = document.getElementById('compare-table'); if (!tbl) return null;
+      const heads = [...tbl.querySelectorAll('thead th')].slice(1).map((th) => th.getAttribute('aria-label') || th.textContent.trim());
+      const row = [...tbl.querySelectorAll('tbody tr')].find((tr) => /best value vs typical/i.test(tr.querySelector('th').textContent));
+      return row ? [...row.querySelectorAll('td')].map((td, i) => ({ head: heads[i], figure: ((td.querySelector('.sc-figure') || {}).textContent || '').trim() })) : null;
+    });
+    const wrongT = pairT.map((t) => {
+      const c = (cells || []).find((c) => c.head.includes(t.label));
+      const want = t.unders.length ? `${Math.round(t.unders[0][1].pct * 100)}% under` : '—';
+      return c && c.figure === want ? null : `${t.label}: cell ${c ? `"${c.figure}"` : 'missing'} · harness "${want}"${t.unders.length ? '' : ` (first by margin ${t.all[0][0].slice(-6)} is ${t.all[0][1].stand} at ${(t.all[0][1].pct * 100).toFixed(1)}%)`}`;
+    }).filter(Boolean);
+    ok('the compare card\'s winner row prints only a car that stands under', !!cells && wrongT.length === 0,
+       wrongT.length ? wrongT.join(' | ') : pairT.map((t) => `${t.label}: ${t.unders.length ? `${Math.round(t.unders[0][1].pct * 100)}% under` : `— (first by margin is ${t.all[0][1].stand})`}`).join(' · '));
+  }
+  // Served: the subject's largest trim cohort cut to nine cars, two of them
+  // rewritten to sit ON the low edge with a 70% margin — typical by the rule,
+  // and first in margin order — one drivable and one not, so both pick lists
+  // meet a typical car before any real pick. A walk that stopped there would
+  // draw no pick card at all; the rule skips, and the best car that stands
+  // under still gets its card.
+  if (!big) skip('and the pick walk skips a typical car with a big margin rather than stopping at it', `${subject.label} has no trim cohort of nine`);
+  else {
+    const [keyT, xs] = big;
+    const keep9 = xs.slice(0, 9), dropped = new Set(xs.slice(9).map((x) => x.vin));
+    const planted = JSON.parse(JSON.stringify(model0));
+    planted.listings = planted.listings.filter((c) => !dropped.has(c.vin));
+    const H = 150000, L = 40000;
+    // miles pinned to the baseline so each value is its price plus shipping
+    // to the dollar — a half-cent of mileage adjustment would put one edge
+    // car fifty cents below the other and make it genuinely under
+    keep9.forEach((x, i) => { const c = planted.listings.find((c) => c.vin === x.vin); c.local = i === 0; c.state = i === 0 ? ((SHEET.buyer || {}).states || ['IL'])[0] : 'CA'; c.ship = i === 0 ? 0 : 1000; c.miles = P.base; c.price = (i < 2 ? L : H) - (c.local ? 0 : c.ship); });
+    const sc2 = scoreModel(planted);
+    const edge = keep9.slice(0, 2).map((x) => sc2.get(x.vin));
+    const unders = [...sc2.entries()].filter(([, s]) => s.stand === 'under').sort((a, b) => b[1].pct - a[1].pct);
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[subject.bk].models[subject.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(subject.q);
+      const picked = await page.locator('#takeaway [data-fkey^="pick:"]').evaluateAll((as) => [...new Set(as.map((a) => a.getAttribute('data-fkey').split(':')[1]))]);
+      const edgeVins = keep9.slice(0, 2).map((x) => x.vin);
+      const bestUnder = unders[0] ? unders[0][0] : null;
+      ok('and the pick walk skips a typical car with a big margin rather than stopping at it',
+         edge.every((s) => s && s.stand === 'typical' && s.pct > 0.5) && !!bestUnder && (unders[0][1].pct < edge[0].pct) && picked.includes(bestUnder) && !edgeVins.some((v) => picked.includes(v)),
+         `${keyT} cut to nine, ${edgeVins.map((v) => v.slice(-6)).join('/')} on the edge at ${edge[0] ? (edge[0].pct * 100).toFixed(0) : '?'}% (${edge.map((s) => (s ? s.stand : 'unscored')).join('/')}); best under ${bestUnder ? bestUnder.slice(-6) : 'none'} at ${unders[0] ? (unders[0][1].pct * 100).toFixed(0) : '?'}% · pick cards ${JSON.stringify(picked.map((v) => v.slice(-6)))}`);
+    } finally { await ctx.unroute('**/data.json'); }
   }
 });
 
@@ -3968,7 +4076,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 183;
+const EXPECTED = 187;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
