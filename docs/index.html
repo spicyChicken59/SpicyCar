@@ -4725,7 +4725,7 @@
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, x.miles != null ? `${num(x.miles)} mi` : '— mi'),
       el('span', null, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '')),
-      x.stale_pct >= 0.75 ? el('span', null, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
+      x.stale_pct >= 0.75 ? el('span', null, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `${x.stale_of} dated cars` : 'model'}`) : null,
       x.days_tracked > 1 ? el('span', null, seenLabel(x)) : null,
       x.dealer ? el('span', null, x.dealer) : null,
       flagsCell(x),
@@ -4928,10 +4928,10 @@
         bandSlim ? el('span', { class: 'sc-note' },
           (x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : ''))
           + (x.days_tracked ? ` · ${seenLabel(x)}` : '')) : null,
-        bandSlim && x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null);
+        bandSlim && x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `${x.stale_of} dated cars` : 'model'}`) : null);
       const listed = bandSlim ? null : el('td', { class: 'sc-nowrap col-listed' },
         el('div', { class: 'sc-mono' }, x.days_listed != null ? `${x.days_listed}d listed` : (x.listed_since ? `since ${fmtDate(x.listed_since)}` : '—')),
-        x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the model`) : null,
+        x.stale_pct >= 0.6 ? el('span', { class: 'sc-note' }, `longer than ${Math.round(x.stale_pct * 100)}% of the ${x.stale_of ? `${x.stale_of} dated cars` : 'model'}`) : null,
         x.days_tracked ? el('span', { class: 'sc-note' }, seenLabel(x)) : null);
       const trend = bandSlim ? null : el('td', null, spark((x.series || []).map((s) => s[1]), 80, 26, x.delta < 0));
       if (trend) trend.title = (x.series || []).map((s) => `${s[0]}: ${money(s[1])}`).join('\n');
@@ -4993,6 +4993,10 @@
       nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
       nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null,
     ].filter(Boolean).join(' · ');
+    // The card holds every absence, and only some absences are departures —
+    // 76 of the i7's 114 rows are the fetch window moving, not a car leaving.
+    // The split one clause later already says so, so the words around it say
+    // "missing from the latest snapshot" and let the split name the departures.
     $('gone-hint').textContent = `Vehicles seen on an earlier snapshot but not on the latest, confirmed departures first — ${splitTxt}.`;
     const table = $('gone-table'); table.textContent = '';
     if (!gone.length) {
@@ -5009,13 +5013,13 @@
     moreG.hidden = shownG.length >= gone.length;
     if (!moreG.hidden) moreG.appendChild(el('button', { class: 'sc-btn', type: 'button', 'data-fkey': 'more:gone',
       onclick: () => { S.showAllGone = true; rerender('showGone'); } },
-      `Show all ${gone.length} departures`));
+      `Show all ${gone.length} missing from the latest snapshot`));
     const goneScroll = $('gone-scroll'), goneCards = $('gone-cards');
     goneCards.textContent = '';
     if (narrow()) {
       goneScroll.hidden = true; goneCards.hidden = false;
       for (const g of shownG) goneCards.appendChild(goneCard(g));
-      if (shownG.length < gone.length) $('gone-hint').textContent = `Showing ${shownG.length} of ${gone.length} departed vehicles, confirmed departures first — ${splitTxt}.`;
+      if (shownG.length < gone.length) $('gone-hint').textContent = `Showing ${shownG.length} of ${gone.length} vehicles missing from the latest snapshot, confirmed departures first — ${splitTxt}.`;
       return;
     }
     goneScroll.hidden = false; goneCards.hidden = true;
@@ -5046,7 +5050,7 @@
     }
     table.appendChild(body);
     markClipped(goneScroll);
-    if (shownG.length < gone.length) $('gone-hint').textContent = `Showing ${shownG.length} of ${gone.length} departed vehicles, confirmed departures first — ${splitTxt}.`;
+    if (shownG.length < gone.length) $('gone-hint').textContent = `Showing ${shownG.length} of ${gone.length} vehicles missing from the latest snapshot, confirmed departures first — ${splitTxt}.`;
   }
 
   // ---------- overview: every model on the watchlist, priced the same way ----------

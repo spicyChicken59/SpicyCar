@@ -2806,6 +2806,8 @@ class TestMarketStats(unittest.TestCase):
         self.assertIsNone(stats["cut_share"])
         self.assertIsNone(stats["median_cut"])
         self.assertEqual(T.market_stats([]), {"median_days_listed": None,
+                                              "dated": 0,
+                                              "n": 0,
                                               "tracked_2d": 0,
                                               "cut_share": None,
                                               "median_cut": None,
@@ -4917,6 +4919,171 @@ class TestTheSnapshotPushSurvivesAnOwnerRebuild(unittest.TestCase):
             runner_files={"REPORT.md": "tracker report\n", "docs/data.json": "{\"tracker\": 1}\n", "data/snapshots.csv": "a,b\n1,2\n3,4\n"})
         self.assertNotEqual(r.returncode, 0, "a conflicting ledger must not be resolved silently")
         self.assertEqual(main["data/snapshots.csv"], "a,b\n1,2\n9,9\n", "and main is left as the owner pushed it")
+
+
+# --------------------------------------------------------------------------
+# The committed record says what the page says.
+# --------------------------------------------------------------------------
+class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
+    """REPORT.md and the dashboard read the same data.json and print the same
+    claims, so a rule enforced on one surface and not the other is a file that
+    disagrees with itself. Every case here was a real disagreement found by
+    reading the two side by side on 2026-09-05, and each one is a place where
+    the page was already careful and the record was not.
+
+    The house rule is that a number is published with the denominator that
+    makes it true, or not published. These fixes are that rule applied to the
+    surface nobody was reading."""
+
+    def _car(self, vin, prices, **kw):
+        d0 = T.TODAY_ORD - len(prices)
+        return {**listing(price=prices[-1], vin=vin, city="Chicago", state="IL"),
+                "series": [[date.fromordinal(d0 + i).isoformat(), p]
+                           for i, p in enumerate(prices)],
+                "days_tracked": len(prices), "vin": vin, **kw}
+
+    def _rows(self, cars):
+        return {c["vin"]: {**{k: "" for k in T.FIELDS}, "vin": c["vin"],
+                           "price": c["price"], "miles": 20000, "year": "2024",
+                           "trim": "T", "city": "Chicago", "state": "IL",
+                           "target": "t"} for c in cars}
+
+    # -- a sawtooth is not a price change, on either surface ----------------
+
+    def test_a_car_seen_at_two_prices_is_not_a_price_change(self):
+        """It is out of the cut share, out of the median, and out of the
+        "asks less than when first seen" count already. Left in the price
+        change tally it made one clause of the brief contradict the rest of
+        the same sentence: 37 price changes over a paragraph whose every
+        other figure had set those cars aside."""
+        cars = [self._car("A" * 17, [50000, 49000]),
+                self._car("B" * 17, [50000, 51000]),
+                self._car("C" * 17, [54999, 55849, 54999, 55849])]
+        out = T.brief_lines({"daily": [], "gone": []}, cars, "2026-09-04")
+        line = next(l for l in out if "price change" in l)
+        self.assertIn("2 price changes", line,
+                      "the cut and the raise count; the sawtooth does not")
+        self.assertIn("(1 more seen at two prices, not counted)", line,
+                      "and the reader is told what was set aside, not left to "
+                      "wonder why the totals differ")
+
+    def test_the_note_is_absent_when_there_is_nothing_to_note(self):
+        """Saying "0 more seen at two prices" on a clean pool is noise, and a
+        clause that always fires stops being read."""
+        cars = [self._car("A" * 17, [50000, 49000])]
+        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, "2026-09-04")
+                    if "price change" in l)
+        self.assertIn("1 price change ·", line)
+        self.assertNotIn("not counted", line)
+
+    def test_the_price_change_block_leaves_the_sawtooth_out_too(self):
+        """The brief's count and the section it points at must agree, or the
+        reader who follows the number down the page finds a different set."""
+        cars = [self._car("A" * 17, [50000, 49000]),
+                self._car("C" * 17, [54999, 55849, 54999, 55849])]
+        sec = []
+        T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
+                      cars, self._rows(cars), {}, [], "2026-09-04")
+        i = sec.index("**Price changes**")
+        block = "\n".join(sec[i:sec.index("", i)])
+        self.assertIn("A" * 17, block, "the real cut is listed")
+        self.assertNotIn("C" * 17, block,
+                         "and the car that has been $54,999 and $55,849 all "
+                         "fortnight is not a price change today")
+
+    # -- the overflow line counts what it holds -----------------------------
+
+    def test_the_overflow_line_counts_cuts_because_cuts_are_what_it_holds(self):
+        """events["cuts"] takes only downward steps. The line under it said
+        "N more price changes", and on the day this was found it headlined 53
+        cuts while the sections below listed 64 price-change rows, 28 of them
+        upward moves the line had never counted. Either the word or the list
+        had to change, and the word was the one that was wrong: the three
+        bullets it overflows from are cuts."""
+        cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
+                       "state": "IL", "local": False},
+                 "label": "T", "amount": 500 + i, "shopping": 1} for i in range(5)]
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        text = "\n".join(sec)
+        self.assertIn("2 more cuts today", text)
+        self.assertNotIn("more price change", text)
+
+    def test_the_overflow_line_says_one_cut_for_one(self):
+        cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
+                       "state": "IL", "local": False},
+                 "label": "T", "amount": 500 + i, "shopping": 1} for i in range(4)]
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        self.assertIn("1 more cut today", "\n".join(sec))
+
+    # -- the stale tag names what it compared against -----------------------
+
+    def test_the_stale_share_carries_the_pool_it_is_a_share_of(self):
+        """"Sits longer than 75% of the model" is a claim about the model.
+        The share is computed against the cars carrying a listing date — 85 of
+        the i5's 134 — so it is a claim about the dated part, and the page has
+        printed the split since the days clause was built."""
+        cars = [self._car(f"{i}" * 17, [50000], days_listed=d)
+                for i, d in enumerate([5, 10, 20, 60])]
+        cars += [self._car("E" * 17, [50000]), self._car("F" * 17, [50000])]
+        for c in cars[4:]:
+            c["days_listed"] = None
+        T.market_stats(cars)
+        self.assertEqual(cars[3]["stale_pct"], 0.75)
+        self.assertEqual(cars[3]["stale_of"], 4,
+                         "four cars had a date to compare against, not six")
+        row = {**{k: "" for k in T.FIELDS}, "vin": "D" * 17, "price": 50000,
+               "miles": 20000, "year": "2024", "trim": "T", "city": "Chicago",
+               "state": "IL", "target": "t"}
+        out = T.fmt_row(row, {}, cars[3])
+        self.assertIn("sits longer than 75% of the 4 dated cars", out)
+
+    def test_an_undated_pool_falls_back_to_the_word_it_can_defend(self):
+        """No dated cars means no stale_pct at all, but an entry carried over
+        from an older data.json can hold the share without the count. The tag
+        says "the model" then — vaguer, and true."""
+        entry = {"stale_pct": 0.8}
+        row = {**{k: "" for k in T.FIELDS}, "vin": "D" * 17, "price": 50000,
+               "miles": 20000, "year": "2024", "trim": "T", "city": "Chicago",
+               "state": "IL", "target": "t"}
+        self.assertIn("80% of the model", T.fmt_row(row, {}, entry))
+
+    # -- the typical-days clause borrows the page's floor and denominator ---
+
+    def test_the_typical_days_clause_waits_for_twelve_dated_cars(self):
+        """The dashboard has withheld this median under twelve dated cars
+        since the days split was built: below that the median moves by days
+        when one car is added. The record printed it from one."""
+        cars = [self._car(f"{i:017d}", [50000], days_listed=10 + i) for i in range(11)]
+        st = T.market_stats(cars)
+        self.assertEqual(st["dated"], 11)
+        self.assertIsNotNone(st["median_days_listed"])
+        self.assertNotIn("on market", T.market_line(st),
+                         "eleven dated cars is not enough to publish a typical")
+
+    def test_the_typical_days_clause_carries_its_denominator(self):
+        """And at twelve it says twelve of how many — the number that tells
+        the reader the median speaks for two thirds of the pool or for a
+        tenth of it."""
+        cars = [self._car(f"{i:017d}", [50000], days_listed=10 + i) for i in range(12)]
+        cars += [self._car(f"U{i:016d}", [50000], days_listed=None) for i in range(8)]
+        st = T.market_stats(cars)
+        line = T.market_line(st)
+        self.assertIn("typical car 15d on market (12 of 20 dated)", line)
+
+    # -- the out-of-state list is sorted by asking, so it says asking -------
+
+    def test_the_out_of_state_heading_names_the_price_it_sorted_by(self):
+        """best5 takes the first five by ASKING price and every row prints a
+        landed total, so "cheapest" is a claim the list cannot make: a sixth
+        car asking more and shipping less lands under the fifth. "Shipping
+        stated" was wrong the same way — the estimate is the tracker's."""
+        cars = [self._car(f"{i:017d}", [50000 + i * 100]) for i in range(3)]
+        sec = []
+        T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
+                      cars, self._rows(cars), {}, [], "2026-09-04")
+        text = "\n".join(sec)
+        self.assertIn("**Lowest asking beyond your states (shipping estimated)**", text)
+        self.assertNotIn("Cheapest beyond", text)
 
 
 if __name__ == "__main__":
