@@ -5016,6 +5016,44 @@ await step('a share names the cars it is a share of', async () => {
      + `· ${seen.length} notes, all naming whose pool it is`);
 });
 
+// ---- the record and the page tell one story about one model ---------------
+// Both read the same data.json and print the same market sentence, and they
+// have drifted apart three times: a threshold on one side only, a word fixed
+// in a heading and left in a footnote, a split the page printed and the record
+// did not. The i7's "typical car 29d" is 49 dealer-stock cars at a median 78
+// days blended with 61 used at 21 — a number no car on either side sits at —
+// and the record published the blend alone.
+//
+// This reads the committed REPORT.md and the rendered page and compares the
+// clause itself, so a constant that drifts between Tracking.py and this file
+// is caught by the sentence disagreeing rather than by anyone remembering.
+await step('the record and the page tell one story about one model', async () => {
+  plan('the typical-days clause is the same on both surfaces');
+  const REPORT = join(ROOT, '..', 'REPORT.md');
+  if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
+  const md = readFileSync(REPORT, 'utf8');
+  const rows = [];
+  for (const w of WATCHED) {
+    const label = (SHEET.brands[w.bk].models[w.mk] || {}).label;
+    if (!label) continue;
+    const at = md.indexOf(`## Shopping: ${label}\n`);
+    if (at < 0) continue;                       // only the shopped models get a section
+    const sect = md.slice(at, md.indexOf('\n## ', at + 4) + 1 || undefined);
+    const line = (sect.match(/^_typical car .*$/m) || [''])[0];
+    if (!line) continue;
+    await open(w.q);
+    const hint = (await page.textContent('#list-hint')) || '';
+    // The clause, from the first character of the median to the end of the
+    // split — everything the two surfaces are supposed to agree on here.
+    const clause = (t) => ((t.match(/typical car \d+d on market \([^)]*\)( — [^·_]*)?/) || [''])[0]).trim();
+    rows.push({ id: w.id, md: clause(line), page: clause(hint) });
+  }
+  if (!rows.length) return skipRest('no shopped model has a market line in the record');
+  const off = rows.filter((r) => r.md !== r.page);
+  ok('the typical-days clause is the same on both surfaces', off.length === 0,
+     rows.map((r) => `${r.id}: ${r.md === r.page ? `both "${r.md}"` : `record "${r.md}" vs page "${r.page}"`}`).join(' · '));
+});
+
 // ---- a car the sheet cannot place is not a car beyond your states ----------
 // "Drivable" is state membership and nothing else, so a listing the API
 // returned with no state at all falls out of drivable and into every bucket
@@ -5244,7 +5282,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 245;
+const EXPECTED = 246;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

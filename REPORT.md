@@ -354,7 +354,7 @@ _Worth the ship:_
   [listing](https://atlantabmw.com/exotic-used/BMW/2026-BMW-i7-atlanta-ga-57062c16ac185191c275d2adae278bdb.htm) `WBY43EJ06TCW32247`
 
 _151 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 126_
-_typical car 29d on market (113 of 151 dated) · 23 of 140 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 gone)_
+_typical car 29d on market (113 of 151 dated) — 49 dealer stock at 78d, 61 used at 21d · 23 of 140 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 gone)_
 
 ### eDrive50 — 92 vehicles · lowest asking $54,000 (Marietta, GA)
 

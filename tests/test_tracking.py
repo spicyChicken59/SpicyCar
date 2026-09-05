@@ -2806,6 +2806,7 @@ class TestMarketStats(unittest.TestCase):
         self.assertIsNone(stats["cut_share"])
         self.assertIsNone(stats["median_cut"])
         self.assertEqual(T.market_stats([]), {"median_days_listed": None,
+                                              "days_split": None,
                                               "dated": 0,
                                               "n": 0,
                                               "tracked_2d": 0,
@@ -5117,6 +5118,59 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         st = T.market_stats(cars)
         line = T.market_line(st)
         self.assertIn("typical car 15d on market (12 of 20 dated)", line)
+
+    # -- two markets, two medians ------------------------------------------
+
+    def test_the_typical_days_figure_splits_the_two_markets(self):
+        """Under a hundred miles a car is dealer stock — a demo, a loaner, a
+        press car — reaching the used-listings API beside the used cars at a
+        different price. The i7's "typical car 29d" is 49 stock cars at a
+        median 78 days blended with 61 used at 21, and 29 is a number no car
+        on either side sits at. The page has printed the split since the days
+        clause was built and the record printed the blend alone."""
+        cars = [self._car(f"S{i:016d}", [50000], days_listed=70 + i, miles=50) for i in range(12)]
+        cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=30000) for i in range(12)]
+        st = T.market_stats(cars)
+        self.assertEqual(st["days_split"],
+                         {"stock": {"n": 12, "days": 75}, "used": {"n": 12, "days": 15}})
+        self.assertIn("typical car 45d on market (24 of 24 dated) — "
+                      "12 dealer stock at 75d, 12 used at 15d", T.market_line(st))
+
+    def test_one_thin_side_leaves_the_blend_to_stand_alone(self):
+        """Twelve each side, the same floor the bare median already answers to.
+        Eleven stock cars is not a market with a typical, and saying so of one
+        side while the other is solid would be worse than saying nothing."""
+        cars = [self._car(f"S{i:016d}", [50000], days_listed=70 + i, miles=50) for i in range(11)]
+        cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=30000) for i in range(20)]
+        st = T.market_stats(cars)
+        self.assertIsNone(st["days_split"])
+        line = T.market_line(st)
+        self.assertIn("typical car", line)
+        self.assertNotIn("dealer stock", line)
+
+    def test_a_hundred_miles_is_where_the_two_markets_part(self):
+        """The threshold is the rule, not a detail: 99 miles is a demo or a
+        loaner priced near sticker, 100 is a used car. docs/index.html carries
+        the same number, and a drift between them would have the page and the
+        record splitting the same pool two different ways."""
+        cars = [self._car(f"S{i:016d}", [50000], days_listed=70 + i, miles=99) for i in range(12)]
+        cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=100) for i in range(12)]
+        st = T.market_stats(cars)
+        self.assertEqual((st["days_split"]["stock"]["n"], st["days_split"]["used"]["n"]), (12, 12),
+                         "one mile either side of the line puts a car in the other market")
+        self.assertEqual(T.NEW_STOCK_MILES, 100)
+
+    def test_a_car_with_no_mileage_is_evidence_about_neither_market(self):
+        """The split is a claim about two populations. A car that cannot be
+        assigned to one is not evidence about either — the page's own rule,
+        and the reason its used side tests mileage twice."""
+        cars = [self._car(f"S{i:016d}", [50000], days_listed=70 + i, miles=50) for i in range(12)]
+        cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=30000) for i in range(12)]
+        cars += [self._car(f"N{i:016d}", [50000], days_listed=500, miles=None) for i in range(6)]
+        st = T.market_stats(cars)
+        self.assertEqual((st["days_split"]["stock"]["n"], st["days_split"]["used"]["n"]), (12, 12),
+                         "the six undated-by-mileage cars joined neither side")
+        self.assertEqual(st["dated"], 30, "…while still counting in the blend's own denominator")
 
     # -- a car with no state is in neither bucket --------------------------
 
