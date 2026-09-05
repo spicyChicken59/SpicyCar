@@ -3677,6 +3677,15 @@
       const ship = x.local ? 0 : (x.ship || 0);
       const ledger = floorLedger(o, P);
       chosen[chosen.length - 1].ledger = ledger;
+      // How much of the headline is one car: the runner-up's distance and how
+      // many OTHER cars sit within $1,000 of the floor, over the same fit
+      // pool the tile was chosen from. A floor with nothing behind it is one
+      // listing's whim; a floor with two cars inside $1,000 is a price. Counts
+      // exclude the floor car itself, so "2 other cars" never means "the
+      // floor and one more".
+      const ranked = fit.map((y) => ({ y, v: heroTotal(y) })).filter((r) => r.v != null).sort((p, q) => p.v - q.v);
+      const runnerUp = ranked.length > 1 ? ranked[1].v - best.v : null;
+      const within = ranked.filter((r) => r.y !== x && r.v - best.v <= 1000).length;
       // The cheapest car all in is often a thousand miles away — today's i5 is
       // in Seffner, Florida — and "can I drive to one" is the buyer's other
       // axis, the one with its own KPI tile below. So when the winner is not
@@ -3715,6 +3724,8 @@
         // was a car arriving or leaving.
         ledger ? el('div', { class: 'sc-tile__spark', title: ledger.drawn.map((pt) => `${pt.day} ${money(pt.v)}`).join(' · ') },
           spark(ledger.drawn.map((pt) => pt.v), 120, 26, true)) : null,
+        runnerUp != null ? el('div', { class: 'sc-tile__sub' },
+          `next car ${money(runnerUp)} behind · ${within ? `${within} other car${within === 1 ? '' : 's'}` : 'no other car'} within $1,000`) : null,
         ledger ? el('div', { class: 'sc-tile__sub' },
           (ledger.identities === 1
             ? `the same car all ${ledger.drawn.length} fetch days`

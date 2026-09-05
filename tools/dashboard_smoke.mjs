@@ -2656,6 +2656,7 @@ await step('in print the mark keeps its surface', async () => {
 // (so the five-car gate has something to refuse).
 await step('the decision, day by day', async () => {
   plan('each shopped tile says how many cars held its floor, and since when',
+       'and what stands behind the headline car today',
        'the premium over the shared fetch days is the one the ledgers make',
        'and on a sheet that breaches them, the fetch-day rule and the five-car gate hold');
   const buyer = SHEET.buyer || {}, f = buyer.fees || null, P = buyer.picks || {};
@@ -2705,6 +2706,8 @@ await step('the decision, day by day', async () => {
     label: ((t.querySelector('.sc-tile__label') || {}).textContent || '').split(' — ')[0].trim(),
     spark: !!t.querySelector('.sc-tile__spark svg'),
     cap: ([...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.replace(/\s+/g, ' ').trim()).find((s) => /fetch days/.test(s)) || ''),
+    depth: ([...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.replace(/\s+/g, ' ').trim()).find((s) => /^next car /.test(s)) || ''),
+    vin: (t.querySelector('[data-fkey^="hero:"]') || { getAttribute: () => '' }).getAttribute('data-fkey').split(':')[1] || '',
   })));
   const capOf = (o) => (!o.ledger ? null : (o.ledger.identities === 1
     ? `the same car all ${o.ledger.drawn.length} fetch days`
@@ -2716,6 +2719,20 @@ await step('the decision, day by day', async () => {
   ok('each shopped tile says how many cars held its floor, and since when', wrong.length === 0 && tiles.some((t) => t.spark),
      wrong.length ? wrong.map(({ o, t }) => `${o.label}: tile says "${t.cap}" (spark ${t.spark}); the sheet says "${capOf(o)}"`).join(' | ')
                   : tiles.filter((t) => t.spark).map((t) => `${t.label}: ${t.cap}`).join(' · '));
+  // The runner-up's distance and the count of OTHER cars within $1,000, over
+  // today's fit pool of the shopped trims, priced the way the tile is.
+  const depthWrong = models.map((o) => {
+    const t = tiles.find((t) => t.label === o.label);
+    if (!t || !t.vin) return null;
+    const pool = (o.m.listings || []).filter((x) => want.has(x.trim_id) && x.price != null && rules(x))
+      .map((x) => ({ x, v: totalAt(x, x.price, !!x.local) })).sort((p, q) => p.v - q.v);
+    if (pool.length < 2) return t.depth ? { o, t, wantDepth: '(nothing: one car)' } : null;
+    const floor = pool[0].v, within = pool.filter((r) => r.x.vin !== t.vin && r.v - floor <= 1000).length;
+    const wantDepth = `next car $${(pool[1].v - floor).toLocaleString('en-US')} behind · ${within ? `${within} other car${within === 1 ? '' : 's'}` : 'no other car'} within $1,000`;
+    return t.depth === wantDepth ? null : { o, t, wantDepth };
+  }).filter(Boolean);
+  ok('and what stands behind the headline car today', depthWrong.length === 0 && tiles.some((t) => t.depth),
+     depthWrong.length ? depthWrong.map(({ o, t, wantDepth }) => `${o.label}: tile "${t.depth}" · sheet "${wantDepth}"`).join(' | ') : tiles.filter((t) => t.depth).map((t) => `${t.label}: ${t.depth}`).join(' · '));
   const two = models.filter((o) => o.ledger);
   const gapTxt = ((await page.textContent('#hero-gap')) || '').replace(/\s+/g, ' ');
   if (two.length !== 2) skip('the premium over the shared fetch days is the one the ledgers make', `${two.length} shopped model(s) carry a ledger today`);
@@ -3451,7 +3468,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 165;
+const EXPECTED = 166;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
