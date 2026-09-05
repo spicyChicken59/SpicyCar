@@ -3008,6 +3008,28 @@ await step('spice is for events, the key is for models', async () => {
           `${keys.length} keys on ${tiles} tiles: ${keys.map((k) => `${k.stroke.replace('stroke:', '')} ${k.dash || 'solid'}`).join(' · ')}`);
 });
 
+// --- the chick keeps watch in the large frame only -------------------------
+// Every dealer photo in this harness is a one-pixel stand-in, so every frame
+// falls back — which is exactly the day this guards against, a slow photo
+// host. The large frame (a photo card) holds the mono chick; a 56×40 table
+// frame says "no photo" in the sheet's own mono, because forty chicks beside
+// forty prices is the mark worn nowhere.
+await step('the chick keeps watch in the large frame only', async () => {
+  plan('small empty frames say "no photo"', 'and large empty frames hold the mark');
+  await open(carried.q);
+  await page.waitForTimeout(600);
+  const frames = await page.evaluate(() => {
+    const all = [...document.querySelectorAll('.sc-frame--empty')];
+    const small = all.filter((f) => !f.classList.contains('sc-frame--lg'));
+    const large = all.filter((f) => f.classList.contains('sc-frame--lg'));
+    return { small: small.length, smallText: small.filter((f) => f.textContent.trim() === 'no photo' && !f.querySelector('img')).length,
+             large: large.length, largeMark: large.filter((f) => f.querySelector('img.sc-frame__mark')).length };
+  });
+  ok('small empty frames say "no photo"', frames.small > 0 && frames.smallText === frames.small, `${frames.smallText} of ${frames.small} small frames`);
+  if (!frames.large) skip('and large empty frames hold the mark', 'no large frame on this page fell back');
+  else ok('and large empty frames hold the mark', frames.largeMark === frames.large, `${frames.largeMark} of ${frames.large} large frames`);
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -3624,7 +3646,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 173;
+const EXPECTED = 175;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

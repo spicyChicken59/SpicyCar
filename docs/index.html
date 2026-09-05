@@ -3064,15 +3064,22 @@
   // The photo slot. alts are other photos to fall through to if a dealer's image will not load (a model row, never a specific car).
   function thumbFor(x, large, alts) {
     const cls = 'sc-frame' + (large ? ' sc-frame--lg' : '');
+    // The empty frame's two forms, by size: the mono chick keeps watch in a
+    // photo card's large frame (§7), and a 56×40 table frame says "no photo"
+    // in the sheet's own lowercase mono. The chick went into every small
+    // frame too, and on a day the dealer host is slow that is a column of
+    // forty chicks beside forty prices — the mark is the maker's, and a
+    // page wearing it forty times over is a page wearing it nowhere.
+    const empty = () => (large ? frameChick() : document.createTextNode('no photo'));
     const queue = [x && x.image, ...(alts || [])].map(safeUrl).filter((u, i, a) => u && a.indexOf(u) === i);
-    if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, frameChick());
+    if (!queue.length) return el('div', { class: cls + ' sc-frame--empty' }, empty());
     // a wrapper carries the frame so the photo can blur in and zoom on hover
     // without ever changing the layout box
     const img = el('img', { class: 'sc-frame__img', src: queue.shift(), alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
     const wrap = el('div', { class: cls + ' sc-frame--photo' }, img);
     const next = () => {
       if (queue.length) { img.classList.remove('is-loaded'); img.src = queue.shift(); }
-      else { wrap.classList.add('sc-frame--empty'); wrap.textContent = ''; wrap.appendChild(frameChick()); }
+      else { wrap.classList.add('sc-frame--empty'); wrap.textContent = ''; wrap.appendChild(empty()); }
     };
     img.addEventListener('error', next);
     img.addEventListener('load', () => { if (img.naturalWidth < 40) next(); else img.classList.add('is-loaded'); });   // a placeholder pixel is not a photo
