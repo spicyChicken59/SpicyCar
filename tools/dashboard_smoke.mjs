@@ -482,6 +482,81 @@ for (const q of cohorts) {
 }
 });
 
+// --- the compare card counts its dated cars ----------------------------------
+// The list sentence prints a typical-days figure only over twelve dated cars,
+// truncated like the builder, with its denominator, and split where dealer
+// stock sits beside used cars; the compare card's row for the same cars read
+// "18d" above a sentence reading "17d" (a .5 median, rounded here, truncated
+// there) and "9d" for a column with seven dated cars of twenty-two. The row
+// now takes the sentence's own figures. Recomputed here from data.json; then
+// a served sheet strips one column down to five dated cars, so the floor has
+// something to refuse on a day when every model carries twelve.
+await step('the compare card counts its dated cars', async () => {
+  plan('a column prints a typical days figure only over twelve dated cars, truncated, with its denominator',
+       'and a column of dealer stock beside used cars gives each market its own figure',
+       'and a column served with five dated cars prints none');
+  const STOCK = 100;
+  const daysOf = (m) => {
+    const rows = m.listings || [];
+    const dl = rows.map((x) => x.days_listed).filter((v) => v != null);
+    const med = (a) => { const b = a.slice().sort((p, q) => p - q), k = b.length >> 1; return Math.trunc(b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2); };
+    const stock = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles < STOCK).map((x) => x.days_listed);
+    const used = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles >= STOCK).map((x) => x.days_listed);
+    const split = stock.length >= 12 && used.length >= 12 ? { stock: { n: stock.length, days: med(stock) }, used: { n: used.length, days: med(used) } } : null;
+    const figure = dl.length >= 12 ? `${med(dl)}d` : '—';
+    const note = !dl.length ? 'no listing dates' : dl.length < 12 ? `${dl.length} of ${rows.length} dated — too few for a median`
+      : `${dl.length} of ${rows.length} dated` + (split ? ` · ${split.stock.n} dealer stock at ${split.stock.days}d, ${split.used.n} used at ${split.used.days}d` : '');
+    return { figure, note, dated: dl.length, n: rows.length, split };
+  };
+  const models = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] })).map((o) => ({ ...o, days: daysOf(o.m) }));
+  const readRow = () => page.evaluate(() => {
+    const tbl = document.getElementById('compare-table');
+    const heads = [...tbl.querySelectorAll('thead th')].slice(1).map((th) => th.getAttribute('aria-label') || th.textContent.trim());
+    const row = [...tbl.querySelectorAll('tbody tr')].find((tr) => /typical days on market/i.test(tr.querySelector('th').textContent));
+    if (!row) return null;
+    return [...row.querySelectorAll('td')].map((td, i) => ({ label: heads[i], figure: ((td.querySelector('.sc-figure') || {}).textContent || '').trim(),
+      note: [...td.querySelectorAll('.sc-note')].map((n) => n.textContent.trim()).join(' ') }));
+  });
+  const cellFor = (cells, w) => (cells || []).find((c) => c.label.split(',')[0].trim() === w.label);
+  const thin = models.find((o) => o.days.dated && o.days.dated < 12);
+  const full = models.filter((o) => o.days.dated >= 12).sort((a, b) => b.days.dated - a.days.dated);
+  const split = models.find((o) => o.days.split);
+  if (full.length < 1) return skipRest('no watched model carries twelve dated cars today');
+  const pair = [thin || full[1] || full[0], full[0]].filter((o, i, a) => a.indexOf(o) === i);
+  if (pair.length < 2) return skipRest('only one model on the watchlist has any listing dates');
+  await open(`?models=${pair.map((o) => o.w.slug).join(',')}`);
+  const cells = await readRow();
+  const wrong = pair.map((o) => ({ o, c: cellFor(cells, o.w) })).filter(({ o, c }) => !c || c.figure !== o.days.figure || c.note !== o.days.note);
+  ok('a column prints a typical days figure only over twelve dated cars, truncated, with its denominator', !!cells && wrong.length === 0,
+     wrong.length ? wrong.map(({ o, c }) => `${o.w.label}: cell ${c ? `"${c.figure}" / "${c.note}"` : 'missing'} · sheet "${o.days.figure}" / "${o.days.note}"`).join(' | ')
+                  : pair.map((o) => `${o.w.label}: ${o.days.figure} (${o.days.note})`).join(' · '));
+  if (!split) skip('and a column of dealer stock beside used cars gives each market its own figure', 'no watched model has twelve dated cars on each side of the stock line');
+  else {
+    const mate = full.find((o) => o !== split) || thin;
+    await open(`?models=${[split, mate].filter(Boolean).map((o) => o.w.slug).join(',')}`);
+    const c = cellFor(await readRow(), split.w);
+    ok('and a column of dealer stock beside used cars gives each market its own figure', !!c && c.figure === split.days.figure && c.note === split.days.note,
+       c ? `${split.w.label}: "${c.figure}" / "${c.note}"` : `${split.w.label}: no cell`);
+  }
+  // Served: the fullest column keeps five listing dates and loses the rest.
+  const victim = full[0], mate = pair.find((o) => o !== victim) || full[1];
+  if (!mate) skip('and a column served with five dated cars prints none', 'no second model to compare against');
+  else {
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      let kept = 0;
+      for (const x of sheet.brands[victim.w.bk].models[victim.w.mk].listings) if (x.days_listed != null) { if (kept < 5) kept++; else x.days_listed = null; }
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(`?models=${[victim, mate].map((o) => o.w.slug).join(',')}`);
+      const c = cellFor(await readRow(), victim.w);
+      ok('and a column served with five dated cars prints none', !!c && c.figure === '—' && c.note === `5 of ${victim.days.n} dated — too few for a median`,
+         c ? `${victim.w.label} with five dates: "${c.figure}" / "${c.note}"` : `${victim.w.label}: no cell`);
+    } finally { await ctx.unroute('**/data.json'); }
+  }
+});
+
 // One shared record handed every Audi row a "new" chip while the compare card
 // beside it said the Audi had no previous snapshot to be new against.
 await step('the "new" chip', async () => {
@@ -4094,7 +4169,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 187;
+const EXPECTED = 190;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
