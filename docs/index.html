@@ -4829,7 +4829,7 @@
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) {
       // The cuts that stuck lead, then the share of cars with any downward
       // step — the two together say how much of the cutting was theatre.
-      mbits.push(`${mk.net_down} of ${mk.tracked_2d} ask less than when first seen${mk.median_net_drop ? `, median ${money(mk.median_net_drop)} less` : ''}${mk.restored ? ` · ${mk.restored} cut and put back` : ''}`);
+      mbits.push(`${mk.net_down} of ${mk.tracked_2d - mk.two_priced} ask less than when first seen${mk.median_net_drop ? `, median ${money(mk.median_net_drop)} less` : ''}${mk.restored ? ` · ${mk.restored} cut and put back` : ''}`);
       mbits.push(`${Math.round(mk.cut_share * 100)}% of ${mk.tracked_2d - mk.two_priced} cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}${mk.n_cuts ? ` of ${mk.n_cuts} cut${mk.n_cuts === 1 ? '' : 's'}` : ''}` : ''}${mk.two_priced ? ` · ${mk.two_priced} seen at two prices, not counted` : ''}`);
     }
     // Same sentence, same floor, same caveats as the report's market_line —

@@ -2457,7 +2457,10 @@ await step('the market sentence describes the trim in view', async () => {
     if (tracked.length >= 5) {
       const netDown = counted.filter((x) => (x.delta || 0) < 0), restored = counted.filter((x) => x.cuts && (x.delta || 0) >= 0);
       const medNet = netDown.length ? Math.trunc(med(netDown.map((x) => -x.delta))) : null;
-      out.push(`${netDown.length} of ${tracked.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
+      // `counted`, not `tracked` — netDown already excludes the sawtooth
+      // cars, and printing the wider denominator beside it was the drift
+      // this mirror exists to catch.
+      out.push(`${netDown.length} of ${counted.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
       out.push(`${counted.length ? Math.round(cut.length / counted.length * 100) : 0}% of ${counted.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')} of ${drops.length} cut${drops.length === 1 ? '' : 's'}` : '') + (swings.length ? ` · ${swings.length} seen at two prices, not counted` : ''));
     }
     if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
@@ -5054,7 +5057,8 @@ await step('a certified badge on a departed car names who issued it', async () =
 // clause itself, so a constant that drifts between Tracking.py and this file
 // is caught by the sentence disagreeing rather than by anyone remembering.
 await step('the record and the page tell one story about one model', async () => {
-  plan('the typical-days clause is the same on both surfaces');
+  plan('the typical-days clause is the same on both surfaces',
+       'and so is the clause that counts cars asking less than they did');
   const REPORT = join(ROOT, '..', 'REPORT.md');
   if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
   const md = readFileSync(REPORT, 'utf8');
@@ -5072,12 +5076,20 @@ await step('the record and the page tell one story about one model', async () =>
     // The clause, from the first character of the median to the end of the
     // split — everything the two surfaces are supposed to agree on here.
     const clause = (t) => ((t.match(/typical car \d+d on market \([^)]*\)( — [^·_]*)?/) || [''])[0]).trim();
-    rows.push({ id: w.id, md: clause(line), page: clause(hint) });
+    // The second clause of the same sentence, which took its numerator over
+    // the cars that are not sawtooth and its denominator over all of them.
+    const held = (t) => ((t.match(/\d+ of \d+ ask less than when first seen/) || [''])[0]).trim();
+    rows.push({ id: w.id, md: clause(line), page: clause(hint),
+                mdHeld: held(line), pageHeld: held(hint) });
   }
   if (!rows.length) return skipRest('no shopped model has a market line in the record');
   const off = rows.filter((r) => r.md !== r.page);
   ok('the typical-days clause is the same on both surfaces', off.length === 0,
      rows.map((r) => `${r.id}: ${r.md === r.page ? `both "${r.md}"` : `record "${r.md}" vs page "${r.page}"`}`).join(' · '));
+  const offHeld = rows.filter((r) => r.mdHeld !== r.pageHeld);
+  ok('and so is the clause that counts cars asking less than they did',
+     offHeld.length === 0 && rows.some((r) => r.mdHeld),
+     rows.map((r) => `${r.id}: ${r.mdHeld === r.pageHeld ? `both "${r.mdHeld}"` : `record "${r.mdHeld}" vs page "${r.pageHeld}"`}`).join(' · '));
 });
 
 // ---- a car the sheet cannot place is not a car beyond your states ----------
@@ -5308,7 +5320,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 247;
+const EXPECTED = 248;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
