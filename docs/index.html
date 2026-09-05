@@ -984,7 +984,12 @@
   function stockSplit(rows) {
     const c = stockCounts(rows);
     if (c.medNew == null || c.medUsed == null) return null;
-    return `${c.nNew} of ${c.n} are delivery-mileage stock — under ${NEW_STOCK_MILES} mi, median ${money(c.medNew)} — and the ${c.nUsed} used cars sit at ${money(c.medUsed)}`;
+    // …and the cars in neither, because the sentence names c.n as the total
+    // and then splits it: 49 and 99 against 151 leaves a reader who subtracts
+    // expecting 102 used cars and told 99. stockCounts has counted them since
+    // it was written; the sentence never said so.
+    return `${c.nNew} of ${c.n} are delivery-mileage stock — under ${NEW_STOCK_MILES} mi, median ${money(c.medNew)} — and the ${c.nUsed} used cars sit at ${money(c.medUsed)}`
+      + (c.unknown ? `; ${c.unknown} publish no mileage and are in neither` : '');
   }
   function pickParams() {
     const p = ((S.site || {}).buyer || {}).picks || {};
@@ -2321,7 +2326,12 @@
       n: rows.length, dated: dl.length,
       median_days_listed: dl.length ? Math.trunc(median(dl)) : null,
       days_split: datedStock.length >= 12 && datedUsed.length >= 12
-        ? { stock: { n: datedStock.length, days: Math.trunc(median(datedStock)) }, used: { n: datedUsed.length, days: Math.trunc(median(datedUsed)) } } : null,
+        ? { stock: { n: datedStock.length, days: Math.trunc(median(datedStock)) },
+            used: { n: datedUsed.length, days: Math.trunc(median(datedUsed)) },
+            // …and the dated cars in neither market. 49 and 61 against the
+            // 113 the same clause has just named is a subtraction that comes
+            // out two short on the eDrive50 and three on the model.
+            none: dl.length - datedStock.length - datedUsed.length } : null,
       tracked_2d: tracked.length, two_priced: swings.size,
       cut_share: tracked.length - swings.size ? Math.round(cutCars.length / (tracked.length - swings.size) * 100) / 100 : null,   // two places, as market_stats() rounds
       net_down: netDown.length, restored: restored.length,
@@ -4825,11 +4835,12 @@
     const cover = sc.cover;
     const mk = sc.market, mbits = [];
     if (mk.median_days_listed != null && mk.dated >= 12) mbits.push(`typical car ${mk.median_days_listed}d on market (${mk.dated} of ${mk.n} dated)`
-      + (mk.days_split ? ` — ${mk.days_split.stock.n} dealer stock at ${mk.days_split.stock.days}d, ${mk.days_split.used.n} used at ${mk.days_split.used.days}d` : ''));
+      + (mk.days_split ? ` — ${mk.days_split.stock.n} dealer stock at ${mk.days_split.stock.days}d, ${mk.days_split.used.n} used at ${mk.days_split.used.days}d`
+        + (mk.days_split.none ? `, ${mk.days_split.none} with no mileage` : '') : ''));
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) {
       // The cuts that stuck lead, then the share of cars with any downward
       // step — the two together say how much of the cutting was theatre.
-      mbits.push(`${mk.net_down} of ${mk.tracked_2d} ask less than when first seen${mk.median_net_drop ? `, median ${money(mk.median_net_drop)} less` : ''}${mk.restored ? ` · ${mk.restored} cut and put back` : ''}`);
+      mbits.push(`${mk.net_down} of ${mk.tracked_2d - mk.two_priced} ask less than when first seen${mk.median_net_drop ? `, median ${money(mk.median_net_drop)} less` : ''}${mk.restored ? ` · ${mk.restored} cut and put back` : ''}`);
       mbits.push(`${Math.round(mk.cut_share * 100)}% of ${mk.tracked_2d - mk.two_priced} cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}${mk.n_cuts ? ` of ${mk.n_cuts} cut${mk.n_cuts === 1 ? '' : 's'}` : ''}` : ''}${mk.two_priced ? ` · ${mk.two_priced} seen at two prices, not counted` : ''}`);
     }
     // Same sentence, same floor, same caveats as the report's market_line —
@@ -5469,7 +5480,16 @@
         }));
     }
     row('Cars on the market', 'Under the current filters',
-      stat.map((v) => cmpCell(String(v.c.rows.length), `${v.c.rows.filter(isLocal).length} drivable · ${v.c.rows.length - v.c.rows.filter(isLocal).length} beyond`)));
+      // Three buckets, not two: a car the sheet carries no state for is not
+      // drivable and not beyond either, and the subtraction swept it into the
+      // second. The tiles, the brief line and the record's own trim footer all
+      // count it apart; this cell was the last surface still doing it.
+      stat.map((v) => {
+        const loc = v.c.rows.filter(isLocal).length, un = v.c.rows.filter(unplaced).length;
+        return cmpCell(String(v.c.rows.length),
+          `${loc} drivable · ${v.c.rows.length - loc - un} beyond`
+          + (un ? ` · ${un} with no state` : ''));
+      }));
     row('Median miles', null, stat.map((v) => cmpCell(v.medMiles != null ? num(v.medMiles) + ' mi' : '—', null)));
     // The figure the list sentence prints for the same rows, under the same
     // floor — twelve dated cars, or nothing — with its denominator beside it,
@@ -5486,7 +5506,8 @@
           !d.dated ? 'no listing dates'
           : d.dated < 12 ? `${d.dated} of ${d.n} dated — too few for a median`
           : `${d.dated} of ${d.n} dated`
-            + (d.days_split ? ` · ${d.days_split.stock.n} dealer stock at ${d.days_split.stock.days}d, ${d.days_split.used.n} used at ${d.days_split.used.days}d` : ''));
+            + (d.days_split ? ` · ${d.days_split.stock.n} dealer stock at ${d.days_split.stock.days}d, ${d.days_split.used.n} used at ${d.days_split.used.days}d`
+              + (d.days_split.none ? `, ${d.days_split.none} with no mileage` : '') : ''));
       }));
     // Each column says what its percentage was measured against, because
     // "21% under" means nothing without it — and because the cohort is exactly

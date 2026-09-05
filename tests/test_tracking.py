@@ -5112,7 +5112,11 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         return {**listing(price=prices[-1], vin=vin, city="Chicago", state="IL"),
                 "series": [[date.fromordinal(d0 + i).isoformat(), p]
                            for i, p in enumerate(prices)],
-                "days_tracked": len(prices), "vin": vin, **kw}
+                "days_tracked": len(prices), "vin": vin,
+                # the two the builder stamps beside the series, so a fixture
+                # here is a car market_stats can actually count
+                "cuts": sum(1 for a, b in zip(prices, prices[1:]) if b < a),
+                "delta": prices[-1] - prices[0], **kw}
 
     def _rows(self, cars):
         return {c["vin"]: {**{k: "" for k in T.FIELDS}, "vin": c["vin"],
@@ -5303,7 +5307,8 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=30000) for i in range(12)]
         st = T.market_stats(cars)
         self.assertEqual(st["days_split"],
-                         {"stock": {"n": 12, "days": 75}, "used": {"n": 12, "days": 15}})
+                         {"stock": {"n": 12, "days": 75}, "used": {"n": 12, "days": 15},
+                          "none": 0})
         self.assertIn("typical car 45d on market (24 of 24 dated) — "
                       "12 dealer stock at 75d, 12 used at 15d", T.market_line(st))
 
@@ -5342,6 +5347,10 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         self.assertEqual((st["days_split"]["stock"]["n"], st["days_split"]["used"]["n"]), (12, 12),
                          "the six undated-by-mileage cars joined neither side")
         self.assertEqual(st["dated"], 30, "…while still counting in the blend's own denominator")
+        # …and the clause says so, because it names that denominator itself.
+        self.assertEqual(st["days_split"]["none"], 6)
+        self.assertIn("(30 of 30 dated) — 12 dealer stock at 75d, 12 used at 15d, "
+                      "6 with no mileage", T.market_line(st))
 
     # -- a car with no state is in neither bucket --------------------------
 
@@ -5368,6 +5377,40 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, None)
                     if "on the market" in l)
         self.assertEqual(line, "- 2 on the market · 1 drivable")
+
+    # -- one clause, one exclusion, one denominator ------------------------
+
+    def test_the_ask_less_clause_counts_the_cars_it_kept(self):
+        """net_down excludes the sawtooth cars, as every cut figure does, and
+        printed tracked_2d, which does not — 69 over 127 where the very next
+        clause of the same sentence says "of 117" for the same exclusion. Ten
+        cars apart on the i5, fifteen on the i7."""
+        cars = [self._car(f"D{i:016d}", [50000, 49000 - i]) for i in range(6)]
+        cars += [self._car(f"F{i:016d}", [50000, 50000]) for i in range(3)]
+        cars += [self._car("S" * 17, [54999, 55849, 54999, 55849])]
+        st = T.market_stats(cars)
+        self.assertEqual((st["net_down"], st["tracked_2d"], st["two_priced"]), (6, 10, 1))
+        line = T.market_line(st)
+        self.assertIn("6 of 9 ask less than when first seen", line)
+        self.assertIn("of 9 cut while tracked", line,
+                      "the two clauses of one sentence answer to one denominator")
+
+    def test_the_state_footer_puts_an_unplaced_car_in_neither_column(self):
+        """The tiles and the brief line stopped counting a car with no state as
+        "beyond". This footer is the same claim about the same cars one section
+        further down, and went on doing it."""
+        rows = T.load_history()
+        latest = max(r["snapshot_date"] for r in rows)
+        report = T.build_outputs([r for r in rows if r["snapshot_date"] == latest],
+                                 rows, T.build_history(rows))[0]
+        foot = next(l for l in report.splitlines()
+                    if "vehicles across" in l and "beyond" in l)
+        n = int(foot.split("vehicles across")[0].strip("_ "))
+        parts = dict(p.rsplit(" ", 1) for p in foot.strip("_").split(" · ")[1:])
+        self.assertEqual(sum(int(v) for v in parts.values()), n,
+                         f"the columns must add to the model's own count: {foot}")
+        self.assertIn("no state", foot,
+                      "and today's i5 pool holds one such car, so it is named")
 
     # -- the record's vocabulary, checked on the record it prints ----------
 

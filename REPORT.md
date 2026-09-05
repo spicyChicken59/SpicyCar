@@ -55,8 +55,8 @@ _Worth the ship:_
   _spicy pick: 12% under typical for a 2025 BMW i5 xDrive40 ($6,506 less, from 18 such cars)_ · _1-owner · no accidents_
   [listing](https://bmwoffortwashington.com/certified/BMW/2025-BMW-i5-78a10dd9ac181588e4b749d9b0cef905.htm) `WBY13HG00SCU51722`
 
-_134 vehicles across 4 trims · IL 7 · OH 2 · IN 6 · WI 3 · beyond 116_
-_typical car 17d on market (85 of 134 dated) · 69 of 127 ask less than when first seen, median $1,000 less · 7 cut and put back · 65% of 117 cut while tracked, median $600 of 139 cuts · 10 seen at two prices, not counted_
+_134 vehicles across 4 trims · IL 7 · OH 2 · IN 6 · WI 3 · beyond 115 · no state 1_
+_typical car 17d on market (85 of 134 dated) · 69 of 117 ask less than when first seen, median $1,000 less · 7 cut and put back · 65% of 117 cut while tracked, median $600 of 139 cuts · 10 seen at two prices, not counted_
 
 ### CPO under 30k mi — 2 vehicles · lowest asking $64,491 (Roseville, CA)
 
@@ -354,7 +354,7 @@ _Worth the ship:_
   [listing](https://atlantabmw.com/exotic-used/BMW/2026-BMW-i7-atlanta-ga-57062c16ac185191c275d2adae278bdb.htm) `WBY43EJ06TCW32247`
 
 _151 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 126_
-_typical car 29d on market (113 of 151 dated) — 49 dealer stock at 78d, 61 used at 21d · 23 of 140 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 gone)_
+_typical car 29d on market (113 of 151 dated) — 49 dealer stock at 78d, 61 used at 21d, 3 with no mileage · 23 of 125 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 gone)_
 
 ### eDrive50 — 92 vehicles · lowest asking $54,000 (Marietta, GA)
 

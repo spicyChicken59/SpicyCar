@@ -1126,7 +1126,13 @@ def market_stats(listings):
         # clause was built; this is the same rule and the same floor, so the
         # record stops describing a market that is not there.
         "days_split": ({"stock": {"n": len(d_stock), "days": int(median(d_stock))},
-                        "used": {"n": len(d_used), "days": int(median(d_used))}}
+                        "used": {"n": len(d_used), "days": int(median(d_used))},
+                        # …and the dated cars in neither market, because the
+                        # clause names its parent total one breath earlier:
+                        # 49 and 61 against 113 is a subtraction that comes
+                        # out three short, and the reader doing it is owed
+                        # the reason rather than a discrepancy.
+                        "none": len(dl) - len(d_stock) - len(d_used)}
                        if len(d_stock) >= 12 and len(d_used) >= 12 else None),
         # …over how many of how many. The dashboard has printed "(85 of 134
         # dated)" since the days split was built; the committed record printed
@@ -1466,14 +1472,22 @@ def market_line(stats):
         bits.append(f"typical car {stats['median_days_listed']}d on market"
                     + (f" ({stats['dated']} of {stats['n']} dated)" if stats.get("n") else "")
                     + (f" — {sp['stock']['n']} dealer stock at {sp['stock']['days']}d, "
-                       f"{sp['used']['n']} used at {sp['used']['days']}d" if sp else ""))
+                       f"{sp['used']['n']} used at {sp['used']['days']}d"
+                       + (f", {sp['none']} with no mileage" if sp.get("none") else "")
+                       if sp else ""))
     if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
         # The cuts that stuck lead, with their denominator — see market_stats.
         # The share of cars with any downward step follows, since it is the
         # figure the record has carried since the start and the two together
         # say how much of the cutting was theatre.
         if stats.get("net_down") is not None:
-            held = f"{stats['net_down']} of {stats['tracked_2d']} ask less than when first seen"
+            # …over the cars it counted. net_down excludes the sawtooth cars,
+            # as every cut figure does, and printed tracked_2d — which does
+            # not. Ten cars apart on the i5, fifteen on the i7, in a sentence
+            # whose very next clause says "of 117" for the same exclusion.
+            held = (f"{stats['net_down']} of "
+                    f"{stats.get('tracked_2d', 0) - stats.get('two_priced', 0)}"
+                    " ask less than when first seen")
             if stats.get("median_net_drop"):
                 held += f", median {money(stats['median_net_drop'])} less"
             if stats.get("restored"):
@@ -3569,9 +3583,16 @@ def build_outputs(today_rows, all_rows, hist):
                     sec += ["_Worth the ship:_", ""]
                     sec += [fmt_pick(p) for p in ship_picks] + [""]
             counts = Counter(x["state"] for x in listings if x["local"])
-            n_out = sum(1 for x in listings if not x["local"])
+            # …and a car the sheet carries no state for is in neither column.
+            # The tiles and the brief line stopped counting it as "beyond"; this
+            # footer, which is the same claim about the same cars one section
+            # further down, went on doing it.
+            n_none = sum(1 for x in listings
+                         if not x["local"] and not str(x.get("state") or "").strip())
+            n_out = sum(1 for x in listings if not x["local"]) - n_none
             summary = " · ".join([f"{st} {counts.get(st, 0)}" for st in STATES]
-                                 + [f"beyond {n_out}"])
+                                 + [f"beyond {n_out}"]
+                                 + ([f"no state {n_none}"] if n_none else []))
             mline = market_line(m_entry["market"])
             sec += [f"_{len(listings)} vehicles across {len(trims)} "
                     f"trim{'s' if len(trims) != 1 else ''} · {summary}_"

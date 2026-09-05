@@ -502,10 +502,15 @@ await step('the compare card counts its dated cars', async () => {
     const med = (a) => { const b = a.slice().sort((p, q) => p - q), k = b.length >> 1; return Math.trunc(b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2); };
     const stock = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles < STOCK).map((x) => x.days_listed);
     const used = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles >= STOCK).map((x) => x.days_listed);
-    const split = stock.length >= 12 && used.length >= 12 ? { stock: { n: stock.length, days: med(stock) }, used: { n: used.length, days: med(used) } } : null;
+    const split = stock.length >= 12 && used.length >= 12
+      // …and the dated cars in neither market, which the cell names because
+      // it has just named the total they are counted in.
+      ? { stock: { n: stock.length, days: med(stock) }, used: { n: used.length, days: med(used) },
+          none: dl.length - stock.length - used.length } : null;
     const figure = dl.length >= 12 ? `${med(dl)}d` : '—';
     const note = !dl.length ? 'no listing dates' : dl.length < 12 ? `${dl.length} of ${rows.length} dated — too few for a median`
-      : `${dl.length} of ${rows.length} dated` + (split ? ` · ${split.stock.n} dealer stock at ${split.stock.days}d, ${split.used.n} used at ${split.used.days}d` : '');
+      : `${dl.length} of ${rows.length} dated` + (split ? ` · ${split.stock.n} dealer stock at ${split.stock.days}d, ${split.used.n} used at ${split.used.days}d`
+        + (split.none ? `, ${split.none} with no mileage` : '') : '');
     return { figure, note, dated: dl.length, n: rows.length, split };
   };
   const models = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] })).map((o) => ({ ...o, days: daysOf(o.m) }));
@@ -2453,11 +2458,15 @@ await step('the market sentence describes the trim in view', async () => {
     const stock = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles < 100).map((x) => x.days_listed);
     const used = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles >= 100).map((x) => x.days_listed);
     if (dl.length >= 12) out.push(`typical car ${Math.trunc(med(dl))}d on market (${dl.length} of ${rows.length} dated)`
-      + (stock.length >= 12 && used.length >= 12 ? ` — ${stock.length} dealer stock at ${Math.trunc(med(stock))}d, ${used.length} used at ${Math.trunc(med(used))}d` : ''));
+      + (stock.length >= 12 && used.length >= 12 ? ` — ${stock.length} dealer stock at ${Math.trunc(med(stock))}d, ${used.length} used at ${Math.trunc(med(used))}d`
+        + (dl.length - stock.length - used.length ? `, ${dl.length - stock.length - used.length} with no mileage` : '') : ''));
     if (tracked.length >= 5) {
       const netDown = counted.filter((x) => (x.delta || 0) < 0), restored = counted.filter((x) => x.cuts && (x.delta || 0) >= 0);
       const medNet = netDown.length ? Math.trunc(med(netDown.map((x) => -x.delta))) : null;
-      out.push(`${netDown.length} of ${tracked.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
+      // `counted`, not `tracked` — netDown already excludes the sawtooth
+      // cars, and printing the wider denominator beside it was the drift
+      // this mirror exists to catch.
+      out.push(`${netDown.length} of ${counted.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
       out.push(`${counted.length ? Math.round(cut.length / counted.length * 100) : 0}% of ${counted.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')} of ${drops.length} cut${drops.length === 1 ? '' : 's'}` : '') + (swings.length ? ` · ${swings.length} seen at two prices, not counted` : ''));
     }
     if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
@@ -2672,11 +2681,14 @@ await step('dealer stock is a market of its own', async () => {
     [...n.querySelectorAll('.sc-tile__sub')].map((s) => s.textContent.replace(/\s+/g, ' ').trim()));
   const before = await tile();
   const split = before.find((t) => /delivery-mileage stock/.test(t)) || '';
-  const m = split.match(/^(\d+) of (\d+) are delivery-mileage stock — under (\d+) mi, median \$([\d,]+) — and the (\d+) used cars sit at \$([\d,]+)$/);
+  // …with the optional tail naming the priced cars that publish no mileage,
+  // since the sentence opens by naming the total they are inside.
+  const m = split.match(/^(\d+) of (\d+) are delivery-mileage stock — under (\d+) mi, median \$([\d,]+) — and the (\d+) used cars sit at \$([\d,]+)(?:; (\d+) publish no mileage and are in neither)?$/);
   ok('a scope holding dealer stock says so beside its median',
      !!m && +m[1] === subject.fresh.length && +m[2] === subject.priced.length && +m[3] === NEW
        && digits(m[4]) === String(Math.trunc(med(subject.fresh.map((x) => x.price)))) && +m[5] === subject.used.length
-       && digits(m[6]) === String(Math.trunc(med(subject.used.map((x) => x.price)))),
+       && digits(m[6]) === String(Math.trunc(med(subject.used.map((x) => x.price))))
+       && (+m[7] || 0) === subject.priced.length - subject.fresh.length - subject.used.length,
      split ? `${subject.tid}: "${split}" — sheet says ${subject.fresh.length} of ${subject.priced.length} under ${NEW} mi at ${med(subject.fresh.map((x) => x.price))}, ${subject.used.length} used at ${med(subject.used.map((x) => x.price))}`
            : `${subject.tid}: no split line on the tile — ${before.join(' | ')}`);
   await page.check('#f-hidenew');
@@ -5042,6 +5054,79 @@ await step('a certified badge on a departed car names who issued it', async () =
      `row reads "${row.slice(0, 150)}"`);
 });
 
+// ---- a sentence that names a total and then splits it adds up --------------
+// Four surfaces named a total, split it in two, and left something in
+// neither: "49 of 151 are delivery-mileage stock … and the 99 used cars" (3
+// publish no mileage), "113 of 151 dated — 49 dealer stock, 61 used" (3 dated
+// cars publish none either), and the compare table's "134 / 18 drivable · 116
+// beyond" (one car carries no state). Each is arithmetic a reader can do in
+// their head, and each came out wrong by exactly the cars the page had
+// quietly declined to classify — which it was right to decline, and wrong not
+// to mention.
+await step('a split adds up to the total it named', async () => {
+  plan('the stock sentence accounts for every car it counted',
+       'the typical-days split accounts for every dated car',
+       'and the compare table puts an unplaced car in neither column');
+  const subject = WATCHED.map((w) => {
+    const L = SHEET.brands[w.bk].models[w.mk].listings || [];
+    return { ...w, L, noMi: L.filter((x) => x.price != null && x.miles == null).length };
+  }).sort((a, b) => b.noMi - a.noMi)[0];
+  if (!subject || !subject.noMi) return skipRest('every priced car on this sheet publishes its mileage');
+  await open(subject.q);
+  const subs = await page.locator('#kpis .sc-tile__sub').evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
+  const stock = subs.find((t) => /delivery-mileage stock/.test(t)) || '';
+  const m = stock.match(/(\d+) of (\d+) are delivery-mileage stock.*?the (\d+) used cars/);
+  const neither = Number((stock.match(/(\d+) publish no mileage/) || [])[1] || 0);
+  ok('the stock sentence accounts for every car it counted',
+     !!m && Number(m[1]) + Number(m[3]) + neither === Number(m[2]),
+     m ? `${m[1]} stock + ${m[3]} used + ${neither} unclassed = ${Number(m[1]) + Number(m[3]) + neither}, `
+       + `against the ${m[2]} it named · "${stock.slice(0, 120)}"` : `no stock sentence on ${subject.id}`);
+
+  const hint = (await page.textContent('#list-hint')) || '';
+  const d = hint.match(/\((\d+) of \d+ dated\) — (\d+) dealer stock at \d+d, (\d+) used at \d+d/);
+  if (!d) skip('the typical-days split accounts for every dated car',
+               `${subject.id} does not print a typical-days split today`);
+  else {
+    const none = Number((hint.match(/, (\d+) with no mileage/) || [])[1] || 0);
+    ok('the typical-days split accounts for every dated car',
+       Number(d[2]) + Number(d[3]) + none === Number(d[1]),
+       `${d[2]} + ${d[3]} + ${none} = ${Number(d[2]) + Number(d[3]) + none}, against the ${d[1]} dated it named`);
+  }
+
+  // The compare table opposes drivable to beyond by subtraction, so a car the
+  // sheet cannot place lands in the second by default.
+  const un = WATCHED.find((w) => (SHEET.brands[w.bk].models[w.mk].listings || [])
+    .some((x) => !x.local && !String(x.state || '').trim()));
+  if (!un) return skip('and the compare table puts an unplaced car in neither column',
+                       'every live car on this sheet carries a state');
+  // Two model chips is how a reader opens it, so that is how this opens it.
+  await open('');
+  const chips = page.locator('#f-model button');
+  const label = (SHEET.brands[un.bk].models[un.mk] || {}).label || un.mk;
+  const names = await chips.evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
+  const mine = names.findIndex((t) => t.startsWith(label));
+  const theirs = names.findIndex((t, i) => i !== mine);
+  if (mine < 0 || theirs < 0) return skip('and the compare table puts an unplaced car in neither column',
+                                          'the watchlist holds fewer than two models today');
+  await chips.nth(mine).click(); await page.waitForTimeout(250);
+  await chips.nth(theirs).click(); await page.waitForTimeout(500);
+  const cell = (await page.locator('#compare-table td').evaluateAll(
+    (ns) => ns.map((n) => n.textContent.trim()))).find((t) => /drivable/.test(t)) || '';
+  if (!cell) return skip('and the compare table puts an unplaced car in neither column',
+                         'the compare table is not on screen for this pair');
+  // The cell stacks a figure over a sub-line, so its text runs the total
+  // straight into the split — "134" and "18 drivable …" read back as "13418".
+  // Build what the sheet says it should be and look for that, rather than
+  // trying to tell where one number ends and the next begins.
+  const L = SHEET.brands[un.bk].models[un.mk].listings || [];
+  const loc2 = L.filter((x) => x.local).length;
+  const un2 = L.filter((x) => !x.local && !String(x.state || '').trim()).length;
+  const want = `${loc2} drivable · ${L.length - loc2 - un2} beyond · ${un2} with no state`;
+  ok('and the compare table puts an unplaced car in neither column',
+     un2 > 0 && cell.includes(want),
+     `expected "${want}" · cell reads "${cell.replace(/\s+/g, ' ').slice(0, 100)}"`);
+});
+
 // ---- the record and the page tell one story about one model ---------------
 // Both read the same data.json and print the same market sentence, and they
 // have drifted apart three times: a threshold on one side only, a word fixed
@@ -5054,7 +5139,8 @@ await step('a certified badge on a departed car names who issued it', async () =
 // clause itself, so a constant that drifts between Tracking.py and this file
 // is caught by the sentence disagreeing rather than by anyone remembering.
 await step('the record and the page tell one story about one model', async () => {
-  plan('the typical-days clause is the same on both surfaces');
+  plan('the typical-days clause is the same on both surfaces',
+       'and so is the clause that counts cars asking less than they did');
   const REPORT = join(ROOT, '..', 'REPORT.md');
   if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
   const md = readFileSync(REPORT, 'utf8');
@@ -5072,12 +5158,20 @@ await step('the record and the page tell one story about one model', async () =>
     // The clause, from the first character of the median to the end of the
     // split — everything the two surfaces are supposed to agree on here.
     const clause = (t) => ((t.match(/typical car \d+d on market \([^)]*\)( — [^·_]*)?/) || [''])[0]).trim();
-    rows.push({ id: w.id, md: clause(line), page: clause(hint) });
+    // The second clause of the same sentence, which took its numerator over
+    // the cars that are not sawtooth and its denominator over all of them.
+    const held = (t) => ((t.match(/\d+ of \d+ ask less than when first seen/) || [''])[0]).trim();
+    rows.push({ id: w.id, md: clause(line), page: clause(hint),
+                mdHeld: held(line), pageHeld: held(hint) });
   }
   if (!rows.length) return skipRest('no shopped model has a market line in the record');
   const off = rows.filter((r) => r.md !== r.page);
   ok('the typical-days clause is the same on both surfaces', off.length === 0,
      rows.map((r) => `${r.id}: ${r.md === r.page ? `both "${r.md}"` : `record "${r.md}" vs page "${r.page}"`}`).join(' · '));
+  const offHeld = rows.filter((r) => r.mdHeld !== r.pageHeld);
+  ok('and so is the clause that counts cars asking less than they did',
+     offHeld.length === 0 && rows.some((r) => r.mdHeld),
+     rows.map((r) => `${r.id}: ${r.mdHeld === r.pageHeld ? `both "${r.mdHeld}"` : `record "${r.mdHeld}" vs page "${r.pageHeld}"`}`).join(' · '));
 });
 
 // ---- a car the sheet cannot place is not a car beyond your states ----------
@@ -5308,7 +5402,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 247;
+const EXPECTED = 251;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
