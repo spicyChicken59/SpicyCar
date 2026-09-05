@@ -2347,7 +2347,8 @@ await step('the drivable car, financed', async () => {
 await step('the market sentence describes the trim in view', async () => {
   plan('the market sentence under a trim is that trim\'s own',
        'and a trim with too few departures to speak for does not borrow its siblings\'',
-       'and the floors hold on a sheet that would breach them');
+       'and the floors hold on a sheet that would breach them',
+       'and the typical-days split keeps its own twelve-car floor');
   const med = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
   const bitsOf = (rows, gone) => {
     const dl = rows.map((x) => x.days_listed).filter((v) => v != null);
@@ -2361,7 +2362,10 @@ await step('the market sentence describes the trim in view', async () => {
       spans.push(Math.max(0, Math.round((Date.parse(String(g.last_seen).slice(0, 10) + 'T00:00:00Z') - Date.parse(String(g.listed_since).slice(0, 10) + 'T00:00:00Z')) / 86400000)));
     }
     const out = [];
-    if (dl.length >= 12) out.push(`typical car ${Math.trunc(med(dl))}d on market (${dl.length} of ${rows.length} dated)`);
+    const stock = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles < 100).map((x) => x.days_listed);
+    const used = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles >= 100).map((x) => x.days_listed);
+    if (dl.length >= 12) out.push(`typical car ${Math.trunc(med(dl))}d on market (${dl.length} of ${rows.length} dated)`
+      + (stock.length >= 12 && used.length >= 12 ? ` — ${stock.length} dealer stock at ${Math.trunc(med(stock))}d, ${used.length} used at ${Math.trunc(med(used))}d` : ''));
     if (tracked.length >= 5) out.push(`${Math.round(cut.length / tracked.length * 100)}% of ${tracked.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')}` : ''));
     if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
     return { out, spans: spans.length };
@@ -2420,6 +2424,32 @@ await step('the market sentence describes the trim in view', async () => {
     ok('and the floors hold on a sheet that would breach them',
        !/typical car/.test(planted) && !/listings ran/.test(planted) && /cut while tracked/.test(planted),
        `${subject.tid} with 5 dated cars and 12 unconfirmed departures: the page says "${planted || '(no market sentence)'}"`);
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+  // The split inside the typical-days figure has its own floor: twelve dated
+  // cars on EACH side. Served: twenty dated cars of which three are dealer
+  // stock, so the figure prints and the split must not — compared against
+  // the harness's own sentence for the same served rows, which applies the
+  // rule, so a page that prints "3 dealer stock at …" cannot pass.
+  const plant2 = JSON.parse(JSON.stringify(SHEET.brands[subject.bk].models[subject.mk]));
+  let stockKept = 0, usedKept = 0;
+  for (const x of plant2.listings) {
+    if (x.trim_id !== subject.tid || x.days_listed == null) continue;
+    const stock = x.miles != null && x.miles < 100;
+    if (stock ? ++stockKept > 3 : ++usedKept > 17) x.days_listed = null;
+  }
+  const want2 = bitsOf(plant2.listings.filter((x) => x.trim_id === subject.tid), dedupe((plant2.gone || []).filter((g) => g.trim_id === subject.tid))).out.join(' · ');
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.brands[subject.bk].models[subject.mk] = plant2;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(`?brand=${subject.bk}&m=${subject.mk}&trims=${subject.tid}`);
+    const said2 = ((await page.textContent('#list-hint')).replace(/\s+/g, ' ').match(/Market: (.*?)\.(?= [A-Z]|$)/) || [])[1] || '';
+    ok('and the typical-days split keeps its own twelve-car floor', said2 === want2 && /typical car/.test(want2) && !/dealer stock/.test(want2),
+       `${subject.tid} with ${stockKept > 3 ? 3 : stockKept} dated stock cars and ${usedKept > 17 ? 17 : usedKept} dated used: page "${said2}" · rules "${want2}"`);
   } finally {
     await ctx.unroute('**/data.json');
   }
@@ -2754,6 +2784,54 @@ await step('the decision, day by day', async () => {
     } finally {
       await ctx.unroute('**/data.json');
     }
+  }
+});
+
+// --- a headline figure carries its own date --------------------------------
+// The masthead says "data through Sep 4"; the watchlist's first tile can lead
+// with a car from a model on a slower cadence, last fetched two days before,
+// and nothing said so. Now the tile stamps " · as of <date>" only when its
+// model's as_of is older than the masthead's — never when they agree. The
+// case is planted, not found: the served sheet ages the leading model's as_of
+// by two days, so the check holds on a morning when every model was fetched.
+await step('a headline figure carries its own date', async () => {
+  plan('a tile led by a model fetched on an older day says so', 'and a tile led by a model fetched today does not');
+  if (WATCHED.length < 1 || !carried) return skipRest('no model on the watchlist holds a car today');
+  const through = SHEET.data_through;
+  const lead = () => page.locator('#kpis .sc-tile').first().locator('.sc-tile__sub').first().textContent();
+  const aged = new Date(Date.parse(through + 'T00:00:00Z') - 2 * 86400000).toISOString().slice(0, 10);
+  // whichever model leads the drivable tile, make its as_of two days old
+  await open('');
+  const leadLabel = ((await lead()) || '').split(' · ')[0].trim();
+  const leader = WATCHED.find((w) => w.label === leadLabel);
+  if (!leader) return skipRest(`the drivable tile leads with "${leadLabel}", which no watched model is called`);
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.brands[leader.bk].models[leader.mk].as_of = aged;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open('');
+    const t1 = (await lead()) || '';
+    ok('a tile led by a model fetched on an older day says so', new RegExp(`· as of [A-Z][a-z]{2} \\d+$`).test(t1.trim()) && t1.includes(leadLabel),
+       `${leader.label} aged to ${aged} under data through ${through}: "${t1.trim()}"`);
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+  // …and the same model served as fetched on the masthead's own day gets no
+  // stamp — planted as well, because on the day this was written it really
+  // had been fetched two days before.
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.brands[leader.bk].models[leader.mk].as_of = through;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open('');
+    const t2 = (await lead()) || '';
+    ok('and a tile led by a model fetched today does not', t2.includes(leadLabel) && !/· as of /.test(t2), `${leader.label} as of ${through}: "${t2.trim()}"`);
+  } finally {
+    await ctx.unroute('**/data.json');
   }
 });
 
@@ -3373,7 +3451,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 162;
+const EXPECTED = 165;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

@@ -2150,9 +2150,18 @@
       if (isNaN(a) || isNaN(b)) continue;
       spans.push(Math.max(0, Math.round((b - a) / 86400000)));
     }
+    // The typical-days figure is a blend whenever dealer stock sits beside the
+    // used cars — on the eDrive50, 41 stock cars at a median 72 days beside 30
+    // used at 17, blended to 39, a number no car sits at. Each side prints
+    // its own median only with twelve dated cars behind it, the sentence's
+    // own floor for a bare median.
+    const datedStock = rows.filter((x) => x.days_listed != null && isNewStock(x)).map((x) => x.days_listed);
+    const datedUsed = rows.filter((x) => x.days_listed != null && x.miles != null && !isNewStock(x)).map((x) => x.days_listed);
     return {
       n: rows.length, dated: dl.length,
       median_days_listed: dl.length ? Math.trunc(median(dl)) : null,
+      days_split: datedStock.length >= 12 && datedUsed.length >= 12
+        ? { stock: { n: datedStock.length, days: Math.trunc(median(datedStock)) }, used: { n: datedUsed.length, days: Math.trunc(median(datedUsed)) } } : null,
       tracked_2d: tracked.length,
       cut_share: tracked.length ? Math.round(cutCars.length / tracked.length * 100) / 100 : null,   // two places, as market_stats() rounds
       median_cut: drops.length ? Math.trunc(median(drops)) : null,
@@ -4319,7 +4328,8 @@
     const all = sc.all;
     const cover = sc.cover;
     const mk = sc.market, mbits = [];
-    if (mk.median_days_listed != null && mk.dated >= 12) mbits.push(`typical car ${mk.median_days_listed}d on market (${mk.dated} of ${mk.n} dated)`);
+    if (mk.median_days_listed != null && mk.dated >= 12) mbits.push(`typical car ${mk.median_days_listed}d on market (${mk.dated} of ${mk.n} dated)`
+      + (mk.days_split ? ` — ${mk.days_split.stock.n} dealer stock at ${mk.days_split.stock.days}d, ${mk.days_split.used.n} used at ${mk.days_split.used.days}d` : ''));
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% of ${mk.tracked_2d} cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
     // Same sentence, same floor, same caveats as the report's market_line —
     // this is the PRIMARY surface and it was the one still saying "sold". A
@@ -4664,6 +4674,10 @@
     filterCount();
   }
 
+  // " · as of Sep 2" when the row's model was last fetched before the
+  // masthead's date; nothing when they agree, and never a count of days —
+  // fmtDate of the export's own as_of, so a tab left open does not age it.
+  const asOfNote = (r) => (r.as_of && dataThrough() && r.as_of < dataThrough() ? ` · as of ${fmtDate(r.as_of)}` : '');
   function renderOverviewKpis(rows) {
     // tiles
     const total = rows.reduce((a, r) => a + r.n, 0), localTotal = rows.reduce((a, r) => a + r.n_local, 0);
@@ -4676,9 +4690,15 @@
     // $10,524. The model page already swaps this label; the overview did not.
     const filteredView = !!filterBits(true).length;
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping` : 'Nothing drivable under these filters')));
+      // The masthead says "data through Sep 4"; a tile whose car belongs to a
+      // model on a slower cadence is older than that, and the reader has no
+      // way to know which — the Ioniq 5 runs every third day, and its $19,980
+      // led this tile two days after it was last fetched. The model index
+      // prints each row's own date; the tile now does too, only when it
+      // differs from the masthead's.
+      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping${asOfNote(bestLocalRow)}` : 'Nothing drivable under these filters')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}` : 'No priced listings')));
+      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}${asOfNote(bestRow)}` : 'No priced listings')));
     host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
       el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal} beyond your states · ${rows.length} model${rows.length === 1 ? '' : 's'}`)));
     // Tile 4 — the returning buyer's daily question, answered on the front
