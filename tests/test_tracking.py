@@ -2409,6 +2409,109 @@ class TestFlagsNameARental(unittest.TestCase):
         self.assertEqual(got.index("rental"), got.index("CPO") + 1)
 
 
+class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
+    """"10% under typical" is the same claim the spicy-pick block twenty-five
+    lines below prints as "10% under typical for a 2026 BMW i7 eDrive50 …
+    from 45 such cars". One denominator, present in one section of the record
+    and absent in the next — and the arrivals block is where a reader looks
+    first, because it is the only part of the report that is time-sensitive.
+
+    On the day this was written the arrivals headline named a $106,425
+    eleven-mile car as the day's best value. It is a demo or a loaner priced
+    near sticker, not a used i7 anyone is choosing between, and the real
+    candidate — a $55,096 2024 eDrive50 sitting 8% under twenty-six
+    comparable cars — was the second line down and unlabelled."""
+
+    def pick(self, **kw):
+        p = {"pick_pct": 0.10, "pick_under": 11827, "pick_stand": "under",
+             "pick_year": "2026", "model_label": "BMW i7", "pick_trim": "eDrive50",
+             "pick_n": 45}
+        p.update(kw)
+        return p
+
+    def car(self, **kw):
+        x = {"price": 106425, "year": 2026, "miles": 11, "local": False, "ship": 1336,
+             "city": "Buena Park", "state": "CA", "days_listed": 23, "vin": "V" * 17}
+        x.update(kw)
+        return x
+
+    def test_the_arrival_tag_carries_its_cohort_and_its_size(self):
+        got = T.fmt_new(self.car(), self.pick())
+        self.assertIn("10% under typical for a 2026 BMW i7 eDrive50 "
+                      "($11,827 less, from 45 such cars)", got)
+
+    def test_a_cohort_that_fell_back_names_only_what_it_used(self):
+        """score_picks stamps pick_trim "" on a year-basis pick and pick_year
+        None on a model-basis one. Joining the truthy parts is what makes "for
+        a BMW i7" the honest short form — an earlier draft pluralised the trim
+        into "from 26 2024 eDrive50s" and rendered "from 45 s" on every pick
+        that had fallen back."""
+        self.assertIn("under typical for a 2026 BMW i7 (",
+                      T.fmt_new(self.car(), self.pick(pick_trim="")))
+        self.assertIn("under typical for a BMW i7 (",
+                      T.fmt_new(self.car(), self.pick(pick_trim="", pick_year=None)))
+
+    def test_a_pick_with_no_cohort_at_all_says_nothing_about_one(self):
+        """Rather than "for a " with a hole in it."""
+        got = T.fmt_new(self.car(), self.pick(pick_trim="", pick_year=None, model_label=None))
+        self.assertIn("10% under typical ($11,827 less, from 45 such cars)", got)
+        self.assertNotIn("for a", got)
+
+    def test_a_cohort_of_unknown_size_drops_only_the_size(self):
+        got = T.fmt_new(self.car(), self.pick(pick_n=None))
+        self.assertIn("for a 2026 BMW i7 eDrive50 ($11,827 less)", got)
+        self.assertNotIn("such car", got)
+
+    def test_one_comparable_car_is_one_car(self):
+        self.assertIn("from 1 such car)", T.fmt_new(self.car(), self.pick(pick_n=1)))
+
+    # -- the day's headline -------------------------------------------------
+
+    def event(self, **kw):
+        e = {"x": self.car(), "label": "BMW i7 eDrive50", "pct": 0.10,
+             "p": self.pick(), "shopping": 1}
+        e.update(kw)
+        return e
+
+    def headline(self, *events):
+        sec, _ = T.build_today({"cuts": [], "new": list(events), "gone": []})
+        return next(l for l in sec if "new on the shopped models" in l)
+
+    def test_the_headline_names_the_cohort_the_mileage_and_the_kind_of_car(self):
+        line = self.headline(self.event())
+        self.assertIn("best 10% under typical for a 2026 BMW i7 eDrive50 "
+                      "($106,425, Buena Park, CA · 11 mi — delivery-mileage stock, "
+                      "from 45 such cars)", line)
+
+    def test_a_used_arrival_gets_its_mileage_and_no_label(self):
+        """Only the positive claim. A car over the line is not called anything
+        — "used" is the complement, and the complement is what the mileage
+        rule cannot support for a car whose mileage is missing."""
+        line = self.headline(self.event(x=self.car(miles=30190, price=55096)))
+        self.assertIn("· 30,190 mi, from 45 such cars)", line)
+        self.assertNotIn("delivery-mileage", line)
+        self.assertNotIn("used", line)
+
+    def test_an_arrival_with_no_mileage_is_called_neither(self):
+        line = self.headline(self.event(x=self.car(miles=None)))
+        self.assertIn("($106,425, Buena Park, CA, from 45 such cars)", line)
+        self.assertNotIn("mi", line.split("under typical")[1])
+
+    def test_a_hundred_miles_is_not_delivery_mileage(self):
+        """The same boundary market_stats splits its two markets on."""
+        self.assertNotIn("delivery-mileage", self.headline(self.event(x=self.car(miles=100))))
+        self.assertIn("delivery-mileage", self.headline(self.event(x=self.car(miles=99))))
+
+    def test_the_reach_clause_keeps_its_place(self):
+        """It was shipped first and says something the cohort does not: how
+        many of these arrived in the tracker's window rather than the market."""
+        old = date.fromordinal(T.TODAY_ORD - T.REACH_DAYS).isoformat()
+        line = self.headline(self.event(
+            x=self.car(days_listed=30, first_seen=T.TODAY, listed_since=old)))
+        self.assertIn("reach, not arrival", line)
+        self.assertLess(line.index("reach, not arrival"), line.index("under typical"))
+
+
 class TestACertificationIsIssuedBySomeone(unittest.TestCase):
     """Manufacturer certification is issued by the manufacturer's own stores,
     so a car flagged certified at a dealership named for another marque is a
