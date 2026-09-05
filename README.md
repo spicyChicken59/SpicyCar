@@ -153,7 +153,10 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   in the sheet's own columns for those two cars: model year, miles, owners, certification, days listed,
   with no verdict attached, and an owner count of 0 read as "not reported", not as a fact — and the premium as a trade:
   how many of the cheaper model's rule-fit cars the dearer floor's total buys (the newest, the lowest-mileage,
-  how many drivable and certified), and what the dearer car would have to ask to cost the same per month. Then the tiles: **lowest drivable
+  how many drivable and certified), and what the dearer car would have to ask to cost the same per month. On a return
+  visit with newer data, one sentence first: what changed since the data day you last saw — each shopped model's
+  floor then and now, cars first seen since, cars asking less than then, and departures worded by what the sheet
+  knows (gone, or merely stopped being seen). Then the tiles: **lowest drivable
   asking**, lowest nationwide, the market count and what moved since the last snapshot, and — while
   a promotional finance rate is live — what that rate is **worth** on the cheapest car that can
   actually have it. Below
