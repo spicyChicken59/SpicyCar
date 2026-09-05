@@ -2907,7 +2907,10 @@ await step('the decision, day by day', async () => {
 await step('what the premium buys', async () => {
   plan('the clause states the dearer floor car against the cheaper in the sheet\'s own columns',
        'and every clause turns with the sheet',
-       'and a field the sheet lacks is silence, not a zero');
+       'and a field the sheet lacks is silence, not a zero',
+       'the dearer floor\'s total is counted out in the cheaper model\'s own fit cars',
+       'and the asking price that would match the cheaper payment is the loan run backwards',
+       'and a car priced at the dearer total is not bought, a drivable car priced over it is not counted, and two terms print no payment');
   const buyer = SHEET.buyer || {};
   const want = new Set(buyer.shopping || []);
   if (!want.size) return skipRest('this sheet names no shopped trims');
@@ -2949,6 +2952,97 @@ await step('what the premium buys', async () => {
   if (!x || !y) return skipRest(`could not find the hero cars for "${A}" and "${B}" in the sheet`);
   ok('the clause states the dearer floor car against the cheaper in the sheet\'s own columns', live.said === buysOf(x, y, B),
      `page: "${live.said || '(no clause)'}" · sheet: "${buysOf(x, y, B)}"`);
+  // What the money buys, counted here from the sheet: the cheaper model's
+  // shopped, rule-fit, priced cars whose all-in total is under the dearer
+  // floor's; the newest (then fewest miles), the lowest-mileage, drivable,
+  // certified, and certified at a seller whose name carries the brand.
+  {
+    const f = (SHEET.buyer || {}).fees || null, P0 = (SHEET.buyer || {}).picks || {};
+    const RENTAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+    const fit = (c) => c.price != null && c.miles != null && c.miles <= (P0.max_miles || 50000) && !(P0.exclude_accidents !== false && c.accidents > 0) && !(P0.exclude_rental !== false && RENTAL.test(c.usage || ''));
+    const totalOf = (c) => { const ship = c.local ? 0 : (c.ship || 0); return f ? Math.round(c.price * (1 + (f.tax_rate || 0)) + (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0) + ship) : c.price + ship; };
+    const cheaperModel = models.find((o) => o.label === A);
+    const n = (v) => v.toLocaleString('en-US');
+    const dearTotal = totalOf(y);
+    // the sentence the sheet supports, from one model's listings and the dearer total
+    const buysLine = (listings) => {
+      const pool = listings.filter((c) => want.has(c.trim_id) && fit(c));
+      const buys = pool.filter((c) => totalOf(c) < dearTotal);
+      if (pool.length < 2 || !buys.length) return '';
+      const newest = buys.slice().sort((p, q) => (q.year - p.year) || (p.miles - q.miles))[0];
+      const lowest = buys.slice().sort((p, q) => p.miles - q.miles)[0];
+      const cert = buys.filter((c) => c.cpo), named = cert.filter((c) => new RegExp('\\b' + cheaperModel.bk + '\\b', 'i').test(c.dealer || '')).length;
+      return `${B}'s $${n(dearTotal)} buys ${buys.length} of the ${pool.length} ${A}s that fit your rules — the newest a ${newest.year} with ${n(newest.miles)} miles, the lowest-mileage a ${lowest.year} with ${n(lowest.miles)}; ${buys.filter((c) => c.local).length} drivable, ${cert.length} certified${cert.length && named !== cert.length ? ` (${named} at a seller named ${cheaperModel.bk.toUpperCase()})` : ''}. `;
+    };
+    const buysIn = (gap) => (gap.match(new RegExp(`${B.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'s \\$[\\d,]+ buys .*?\\. `)) || [''])[0];
+    const wantBuys = buysLine(cheaperModel.m.listings || []), saidBuys = buysIn(live.gap);
+    ok('the dearer floor\'s total is counted out in the cheaper model\'s own fit cars', saidBuys === wantBuys,
+       `page: "${saidBuys || '(no clause)'}" · sheet: "${wantBuys || '(nothing: no fit car under the dearer total)'}"`);
+    // …and the loan run backwards: the cheaper tile's payment, the dearer
+    // tile's own rate and term, the fee block and the dearer car's shipping.
+    const tiles = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => ({
+      label: ((t.querySelector('.sc-tile__label') || {}).textContent || '').split(' — ')[0].trim(),
+      pay: ([...t.querySelectorAll('.sc-tile__sub')].map((s) => s.textContent).find((s) => /\/mo at /.test(s)) || '') })));
+    const tA = tiles.find((t) => t.label === A), tB = tiles.find((t) => t.label === B);
+    const mA = tA && tA.pay.match(/\$([\d,]+)\/mo at ([\d.]+)% .*?over (\d+) months/), mB = tB && tB.pay.match(/\$([\d,]+)\/mo at ([\d.]+)% .*?over (\d+) months/);
+    const saidAsk = (live.gap.match(/would have to ask \$([\d,]+) — \$([\d,]+) off its \$([\d,]+)\./) || null);
+    if (!f || !mA || !mB) skip('and the asking price that would match the cheaper payment is the loan run backwards', 'no financed payment on both tiles today');
+    else if (mA[3] !== mB[3]) ok('and the asking price that would match the cheaper payment is the loan run backwards', !saidAsk, `terms differ (${mA[3]} vs ${mB[3]} months) — ${saidAsk ? `yet the page says "${saidAsk[0]}"` : 'rightly silent'}`);
+    else {
+      const pay = Number(mA[1].replace(/,/g, '')), apr = Number(mB[2]), term = Number(mB[3]), r = apr / 100 / 12;
+      const principal = r > 0 ? pay * (1 - Math.pow(1 + r, -term)) / r : pay * term;
+      const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
+      const inLoan = f.finance_shipping && !y.local ? (y.ship || 0) : 0;   // the loan carries shipping only when the fee block says so
+      const ask = Math.round((principal - fixed - inLoan) / (1 + (f.tax_rate || 0)));   // down payment 0 on a fresh profile
+      const wantAsk = ask < y.price ? `would have to ask $${n(ask)} — $${n(y.price - ask)} off its $${n(y.price)}.` : null;
+      ok('and the asking price that would match the cheaper payment is the loan run backwards', wantAsk ? (!!saidAsk && saidAsk[0] === wantAsk) : !saidAsk,
+         `page: "${saidAsk ? saidAsk[0] : '(no ask)'}" · harness from ${tA.pay.trim()} and ${B}'s ${apr}% over ${term}: "${wantAsk || '(nothing: the dearer car already asks less)'}"`);
+    }
+    // Served: one non-drivable fit car of the cheaper model priced so its
+    // all-in total EQUALS the dearer floor's (bought only under "<="), one
+    // drivable fit car priced over it (counted only if drivable were tallied
+    // over the pool rather than the bought), and a promo that reaches every
+    // car of the DEARER model at a 36-month cap, so the two floors finance
+    // over different terms and the payment line must stay silent — on the
+    // dearer side, because a shorter term on the cheaper car raises its
+    // payment above the dearer's and the line would be silent for the wrong
+    // reason.
+    const poolLive = (cheaperModel.m.listings || []).filter((c) => want.has(c.trim_id) && fit(c));
+    const atTotal = poolLive.find((c) => !c.local && c.vin !== x.vin && totalOf(c) < dearTotal);
+    const driven = poolLive.find((c) => c.local && c.vin !== x.vin && totalOf(c) < dearTotal);
+    const fees = f || {};
+    const priceAt = (c, T) => { const fixed = (fees.doc_fee || 0) + (fees.title || 0) + (fees.registration || 0) + (fees.ev_surcharge || 0), ship = c.local ? 0 : (c.ship || 0);
+      let price = Math.round((T - fixed - ship) / (1 + (fees.tax_rate || 0)));
+      for (let d = -3; d <= 3; d++) if (totalOf({ ...c, price: price + d }) === T) return price + d;
+      return null; };
+    const pAt = atTotal && f ? priceAt(atTotal, dearTotal) : null;
+    if (!atTotal || !driven || pAt == null || !mA || !mB) skip('and a car priced at the dearer total is not bought, a drivable car priced over it is not counted, and two terms print no payment',
+      `no ${!atTotal ? 'shipped' : !driven ? 'drivable' : 'financed'} fit car of ${A} to plant with today`);
+    else {
+      const planted = JSON.parse(JSON.stringify(cheaperModel.m));
+      planted.listings.find((c) => c.vin === atTotal.vin).price = pAt;
+      planted.listings.find((c) => c.vin === driven.vin).price = y.price + 1000;
+      const want2 = buysLine(planted.listings);
+      await ctx.route('**/data.json', async (route) => {
+        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        sheet.brands[cheaperModel.bk].models[cheaperModel.mk] = planted;
+        const dearer = models.find((o) => o.label === B);
+        const fin = sheet.buyer.finance = { ...(sheet.buyer.finance || {}) };
+        fin.promos = [...(fin.promos || []).filter((p) => p.model !== `${dearer.bk}/${dearer.mk}`),
+                      { model: `${dearer.bk}/${dearer.mk}`, cpo_only: false, apr: 2.99, max_term: 36, expires: '2099-01-01', label: 'planted 2.99%', active: true, days_left: 999 }];
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      try {
+        await open('');
+        const h2 = await readHero();
+        const said2 = buysIn(h2.gap), ask2 = /would have to ask/.test(h2.gap);
+        const terms = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) => (([...t.querySelectorAll('.sc-tile__sub')].map((s) => s.textContent).find((s) => /\/mo at /.test(s)) || '').match(/over (\d+) months/) || [])[1]));
+        ok('and a car priced at the dearer total is not bought, a drivable car priced over it is not counted, and two terms print no payment',
+           !!h2.heads && said2 === want2 && !ask2 && new Set(terms.filter(Boolean)).size === 2,
+           `${atTotal.vin.slice(-6)} at $${n(pAt)} (= ${B}'s $${n(dearTotal)}), ${driven.vin.slice(-6)} at $${n(y.price + 1000)}, terms ${JSON.stringify(terms)}: page "${said2 || '(no clause)'}"${ask2 ? ' + a payment line' : ''} · sheet "${want2}"`);
+      } finally { await ctx.unroute('**/data.json'); }
+    }
+  }
   // Served: the same two cars with their columns rewritten. Prices are
   // untouched, so both stay the floor and the sentence's subjects.
   const dearer = models.find((o) => o.label === B), cheaper = models.find((o) => o.label === A);
@@ -4169,7 +4263,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 190;
+const EXPECTED = 193;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

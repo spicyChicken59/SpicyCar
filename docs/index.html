@@ -2545,12 +2545,15 @@
           // it flags rather than excludes and why the wording says what was
           // actually checked. A false flag costs a sentence; the silence it
           // replaces cost a payment the buyer cannot get.
-          x.apr_seller_unnamed = !!gets && !/\bbmw\b/i.test(x.dealer || '');
+          x.apr_seller_unnamed = !!gets && !sellerNamed(x, 'bmw');
         }
       }
     }
   }
   const financeCfg = () => ((S.site || {}).buyer || {}).finance || null;
+  // Whether the seller's NAME carries the brand — the only thing the page can
+  // check about who wrote the sale. See the flag above for why it is a flag.
+  const sellerNamed = (x, brand) => new RegExp('\\b' + String(brand || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(x.dealer || '');
   // The reader's term, clamped to what a promo will actually write. A 2.99%
   // offer capped at 60 months does not finance 72 — quoting it at 72 would
   // invent a payment no lender has offered, and it is exactly the car the
@@ -3795,7 +3798,7 @@
         const v = heroTotal(x);
         return (v != null && (!b || v < b.v)) ? { v, x } : b;
       }, null);
-      chosen.push(best ? { o, x: best.x, total: best.v } : { o, x: null, total: null });
+      chosen.push(best ? { o, x: best.x, total: best.v, fit } : { o, x: null, total: null, fit });
       const label = el('div', { class: 'sc-tile__label' }, o.m.label || o.mk);
       if (!best) {
         // Silence here would read as "this model has nothing", when what
@@ -3911,7 +3914,39 @@
       + (dm != null ? `, ${money(dm)} a month at each car's own rate. ` : '. ')
       + premiumOverTime(a, b)
       + premiumBuys(a, b)
+      + moneyBuys(a, b)
       + basis;
+  }
+  // The premium as a trade rather than a subtraction: what the dearer floor's
+  // total buys among the cheaper model's own rule-fit cars, and what the
+  // dearer car would have to ASK to cost the same per month. Counts and named
+  // cars only — the newest, the lowest-mileage, how many drivable, how many
+  // certified and how many of those at a seller named for the brand, since
+  // the captive lender's certified rate is written at its own centres (see
+  // annotateFinance). The payment line prints only when both cars finance
+  // over the same term: across two terms "the same a month" compares two
+  // different loans, not two cars. Asking, not all in, on the right-hand side,
+  // because asking is the number a buyer can act on at a dealer.
+  function moneyBuys(a, b) {
+    const A = a.o.m.label || a.o.mk, B = b.o.m.label || b.o.mk;
+    const pool = (a.fit || []).map((x) => ({ x, v: heroTotal(x) })).filter((r) => r.v != null);
+    const buys = pool.filter((r) => r.v < b.total).map((r) => r.x);
+    if (pool.length < 2 || !buys.length) return '';
+    const newest = buys.reduce((p, x) => (!p || (x.year || 0) > (p.year || 0) || ((x.year || 0) === (p.year || 0) && (x.miles || 0) < (p.miles || 0)) ? x : p), null);
+    const lowest = buys.reduce((p, x) => (!p || (x.miles != null && x.miles < p.miles) ? x : p), null);
+    const drivable = buys.filter((x) => x.local).length, cert = buys.filter((x) => x.cpo);
+    const brand = brandLabel(a.o.bk);
+    const named = cert.filter((x) => sellerNamed(x, a.o.bk)).length;
+    let out = `${B}'s ${money(b.total)} buys ${buys.length} of the ${pool.length} ${A}s that fit your rules — the newest a ${newest.year} with ${num(newest.miles)} miles, the lowest-mileage a ${lowest.year} with ${num(lowest.miles)}; ${drivable} drivable, ${cert.length} certified${cert.length && named !== cert.length ? ` (${named} at a seller named ${brand})` : ''}. `;
+    const pa = payFor(a.x), pb = payFor(b.x), f = feesCfg();
+    if (pa != null && pb != null && termFor(a.x) === termFor(b.x) && b.x.apr != null) {
+      // shipping sits inside the loan only when the fee block says so — the
+      // same rule financed() applies going forward
+      const inLoan = (f && f.finance_shipping && !b.x.local) ? (b.x.ship || 0) : 0;
+      const ask = Math.round(priceForPayment(Math.round(pa), b.x.apr, termFor(b.x), inLoan));
+      if (ask < b.x.price) out += `To match ${A}'s ${perMo(pa)} a month, ${B}'s would have to ask ${money(ask)} — ${money(b.x.price - ask)} off its ${money(b.x.price)}. `;
+    }
+    return out;
   }
   // What the extra money buys, in the columns the sheet already carries for
   // the two cars the gap sentence is about — model year, miles, owners,
@@ -4014,12 +4049,16 @@
   // What a car financed at the ordinary rate would have to COST to match a
   // payment. financed() is linear in price — price x (1 + tax) + paperwork —
   // so this inverts in closed form; no search, no approximation.
-  function priceForPayment(pay, apr, term) {
+  function priceForPayment(pay, apr, term, ship) {
     const f = feesCfg() || {};
     const r = apr / 100 / 12;
     const principal = r > 0 ? pay * (1 - Math.pow(1 + r, -term)) / r : pay * term;
     const fixed = (f.doc_fee || 0) + (f.title || 0) + (f.registration || 0) + (f.ev_surcharge || 0);
-    return (principal + (S.down || 0) - fixed) / (1 + (f.tax_rate || 0));
+    // `ship` is whatever part of the shipping the loan carries — financed()
+    // adds it only under buyer.fees.finance_shipping — so a shipped car's
+    // asking-equivalent is that much lower; the promo card's caller asks
+    // about drivable cars and passes nothing
+    return (principal + (S.down || 0) - fixed - (ship || 0)) / (1 + (f.tax_rate || 0));
   }
   function renderPromo() {
     const card = $('promo-card');
