@@ -1217,7 +1217,8 @@ def exit_stats(gone, trim_id, floor=6):
     if (st.get("n_exits") or 0) < floor:
         return {}
     exits = [to_int(g.get("last_price")) for g in rows
-             if g.get("likely") == "delisted" and to_int(g.get("last_price")) is not None]
+             if g.get("likely") == "delisted" and not g.get("still_listed")
+             and to_int(g.get("last_price")) is not None]
     ci = median_ci(exits)
     return {"exit_n": st["n_exits"],
             "exit_price": st["median_exit_price"],
@@ -1268,6 +1269,10 @@ def departure_is_evidence(g):
     withhold the phrase from every model on the sheet for a reason that does
     not apply to any of them.
     """
+    # A car still listed under another of the model's targets did not leave
+    # the market, whatever the query that lost it can prove — see delisted().
+    if g.get("still_listed"):
+        return False
     if "exact" in g:
         return bool(g["exact"])
     # A sheet written before delisted() carried its own provenance: fall back
@@ -1368,7 +1373,8 @@ def one_cohort(gone):
     """
     labels = set()
     for g in gone:
-        if g.get("likely") != "delisted" or to_int(g.get("last_price")) is None:
+        if (g.get("likely") != "delisted" or g.get("still_listed")
+                or to_int(g.get("last_price")) is None):
             continue
         # A departure this target cannot separate from window churn is not
         # evidence about anything, so it cannot make a cohort either.
@@ -1535,6 +1541,7 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
         elif vin in gone_by_vin:
             g = gone_by_vin[vin]
             obj = g
+            still = g.get("still_listed")
             verdict = {
                 # not "sold or pulled": that names two of the four ways a
                 # listing ends, and the other two look identical from outside
@@ -1544,6 +1551,10 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
                 "not checked": "missing — not checked since it was last "
                                "seen, so nothing is known yet",
             }.get(g["likely"], "missing today")
+            if still:
+                verdict = (f"left the {g.get('trim_label') or 'watch'} — still "
+                           f"listed as {still['trim'] or 'another trim'}"
+                           + (f", asking {money(still['price'])}" if still["price"] else ""))
             line = (f"- {verdict} · last seen {g['last_seen']} at "
                     f"{money(g['last_price'])} · {g.get('trim_label') or ''} · "
                     f"{place(g)}")
@@ -2635,10 +2646,29 @@ def delisted(tids, all_rows, today_rows, hist):
     still be listed — 'delisted' means gone from the tracked market, which
     is the market the promo financing applies to.
 
+    That reading is right and the WORDS built on it were wrong. "GONE — the
+    listing ended" printed over WBY13HG00SCU51722 on 2026-09-05 while the
+    same VIN sat live in the listings table of the same page, asking $51,476
+    as an xDrive40: it left the certified watch, not the market. So such a
+    row now carries `still_listed` — the trim it is listed under today and
+    what it asks — and every surface names what happened instead of
+    announcing a departure that did not occur. The row keeps `likely`:
+    leaving the certified pool is real news for a buyer chasing 2.99%, and
+    the label is what makes the news findable. What it must not do is feed a
+    count or a price that means "left the market", so departure_is_evidence()
+    refuses it and the counts follow.
+
     Each entry carries its own trim's previous fetch day, because trims of
     one model can run on different cadences and the model's yesterday is
     not every trim's."""
     today_vins = {(r["target"], r["vin"]) for r in today_rows}
+    # …and the same VINs without their target, so a departure from ONE query
+    # can be told from a departure from the market: the model's own live rows
+    # are the whole of what "still listed" can mean here, since a VIN decodes
+    # to one model and cannot surface under another.
+    live_by_vin = {}
+    for r in today_rows:
+        live_by_vin.setdefault(r["vin"], r)
     days_by_tid = defaultdict(set)
     log = load_fetch_log()
     # win_max is the POOLED window: the widest value either query kept that day,
@@ -2790,8 +2820,16 @@ def delisted(tids, all_rows, today_rows, hist):
             likely = "out of window"    # beyond that day's fetch cut-off (price or miles)
         else:
             likely = "delisted"
+        live = live_by_vin.get(vin)
+        # The car is still on this model's board under another target — its
+        # trim as listed today and what it asks. Emitted only when true,
+        # which is two rows of 254 on this record: a key repeated 252 times
+        # to say "no" is 5KB of sheet for nothing.
+        still = ({"trim_id": live["target"], "trim": (live.get("trim") or "").strip(),
+                  "price": to_int(live.get("price"))} if live else None)
         out.append({
             "likely": likely,
+            **({"still_listed": still} if still else {}),
             # …and whether that label came from a query that actually looked.
             # See `exact` above; departure_is_evidence() is its one consumer.
             "exact": bool(exact) and likely != "not checked",
@@ -2958,6 +2996,21 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         for g in just_gone:
             sec.append(f"- {money(g['last_price'])} · {g['year']} · "
                        f"{g['city']}, {g['state']} · {seen_label(g)} `{g['vin']}`")
+        sec.append("")
+    # …and the cars that left this watch without leaving the market. They are
+    # no departure, so no count and no exit price carries them, but for a
+    # certified watch this is the news itself: the car a 2.99% rate applied to
+    # yesterday is a car it does not apply to today, and it is still for sale.
+    left_watch = [g for g in gone if g["trim_id"] == t["id"] and g.get("still_listed")]
+    if left_watch:
+        sec.append(f"**Left this watch, still listed ({len(left_watch)})**")
+        for g in left_watch:
+            st = g["still_listed"]
+            sec.append(f"- {money(g['last_price'])} · {g['year']} · "
+                       f"{g['city']}, {g['state']} · last seen {g['last_seen']} — "
+                       f"listed today as {st['trim'] or 'another trim'}"
+                       + (f", asking {money(st['price'])}" if st["price"] else "")
+                       + f" `{g['vin']}`")
         sec.append("")
     if STATES and not any(x["local"] for x in tl):
         sec += [f"_Nothing drivable ({scope_label()})._", ""]

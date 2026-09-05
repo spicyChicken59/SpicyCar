@@ -3938,6 +3938,92 @@ await step('the decision card folds its evidence on a phone', async () => {
   ok('and a desktop folds nothing', desk.folds === 0 && desk.subs > 6, `${desk.folds} folds, ${desk.subs} evidence lines in the open`);
 });
 
+// --- a departure from one query is not a departure from the market ----------
+// A CPO watch's market is "certified cars under the mileage cap", so a car
+// that loses its badge leaves that watch for real. The page announced it as
+// "GONE — the listing ended" while the same VIN sat live in the listings
+// table of the same page, asking $51,476 as an xDrive40. The builder now
+// marks such a row with the trim it is listed under today; here the counts
+// and the words are recomputed from the sheet, and then a served sheet turns
+// a real confirmed departure into a still-listed one, which must leave the
+// movement tile's count and say where the car went instead.
+await step('a departure from one query is not a departure from the market', async () => {
+  plan('the gone card counts a car still listed apart from the departures',
+       'and the row says which watch it left and what it asks now',
+       'the movement tile counts only cars that left the market',
+       'and a served departure that is still listed leaves that count and changes its words');
+  const money = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const still = (g) => (g.still_listed && (g.still_listed.trim || g.still_listed.trim_id) ? g.still_listed : null);
+  const subject = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] }))
+    .map((o) => ({ ...o, gone: (o.m.gone || []), n: (o.m.gone || []).filter(still).length }))
+    .filter((o) => o.n > 0).sort((a, b) => b.n - a.n)[0];
+  const anyModel = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] })).find((o) => (o.m.gone || []).some((g) => g.likely === 'delisted') && (o.m.daily || []).length >= 2);
+  // the page's own de-duplication: one row per VIN, first wins
+  const rowsOf = (m) => { const seen = new Set(), out = []; for (const g of (m.gone || [])) { const k = String(g.vin || '').toUpperCase(); if (k && seen.has(k)) continue; if (k) seen.add(k); out.push(g); } return out; };
+  const hintOf = (m) => {
+    const gone = rowsOf(m);
+    const nDel = gone.filter((g) => g.likely === 'delisted' && !still(g)).length;
+    const nStill = gone.filter(still).length;
+    const nOow = gone.filter((g) => !still(g) && g.likely === 'out of window').length;
+    const nNc = gone.length - nDel - nStill - nOow;
+    return [`${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
+            nStill ? `${nStill} left a watch but ${nStill === 1 ? 'is' : 'are'} still listed above` : null,
+            nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
+            nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null].filter(Boolean).join(' · ');
+  };
+  const goneCount = (m) => { const daily = m.daily || []; if (daily.length < 2) return 0; const prev = daily[daily.length - 2].date;
+    return rowsOf(m).filter((g) => g.likely === 'delisted' && !still(g) && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : g.last_seen === prev)).length; };
+  const read = async () => page.evaluate(() => {
+    const hint = (document.getElementById('gone-hint') || {}).textContent || '';
+    const rows = [...document.querySelectorAll('#gone-table tbody tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim());
+    const tile = [...document.querySelectorAll('#kpis .sc-tile')].map((t) => t.textContent.replace(/\s+/g, ' ')).find((t) => /since the previous/i.test(t)) || '';
+    return { hint: hint.replace(/\s+/g, ' ').trim(), rows, tile };
+  });
+  const showAllGone = async () => { if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await page.waitForTimeout(300); } };
+  if (!subject) {
+    skip('the gone card counts a car still listed apart from the departures', 'no model on the sheet has a car that left a watch while still listed');
+    skip('and the row says which watch it left and what it asks now', 'no such car');
+  } else {
+    await open(subject.w.q); await showAllGone();
+    const r = await read();
+    ok('the gone card counts a car still listed apart from the departures', r.hint.includes(hintOf(subject.m)),
+       `page: "${r.hint.slice(-160)}" · sheet: "${hintOf(subject.m).slice(-160)}"`);
+    const g0 = rowsOf(subject.m).filter(still)[0], st = still(g0);
+    const wantNote = `left the ${g0.trim_label || 'watch'} — still listed as ${st.trim || 'another trim'}` + (st.price != null ? `, asking ${money(st.price)}` : '');
+    const row = r.rows.find((t) => t.includes(String(g0.vin)));
+    ok('and the row says which watch it left and what it asks now', !!row && row.includes(wantNote) && !/GONE|the listing ended/.test(row),
+       row ? `"${row.slice(-150)}" · wanted "${wantNote}"` : `no row for ${String(g0.vin).slice(-6)} among ${r.rows.length}`);
+    ok('the movement tile counts only cars that left the market', new RegExp(`${goneCount(subject.m)} gone`).test(r.tile),
+       `tile "${(r.tile.match(/\d+ gone/) || ['(no gone clause)'])[0]}" · sheet ${goneCount(subject.m)} (${goneCount(subject.m) + subject.n} counting the cars still listed)`);
+  }
+  // Served: a real confirmed departure of another model is given a forwarding
+  // address, so the count must drop by one and the row must stop saying GONE.
+  if (!anyModel) skip('and a served departure that is still listed leaves that count and changes its words', 'no model holds a confirmed departure and two day rows');
+  else {
+    const planted = JSON.parse(JSON.stringify(anyModel.m));
+    const victim = rowsOf(planted).find((g) => g.likely === 'delisted' && !still(g) && (g.prev_fetch_day ? g.last_seen === g.prev_fetch_day : true));
+    if (!victim) skip('and a served departure that is still listed leaves that count and changes its words', 'no countable departure to re-label');
+    else {
+      const before = goneCount(planted);
+      planted.gone.find((g) => g.vin === victim.vin).still_listed = { trim_id: 'planted-trim', trim: 'eDrive40', price: 12345 };
+      const after = goneCount(planted);
+      await ctx.route('**/data.json', async (route) => {
+        const r2 = await route.fetch(); const sheet = JSON.parse(await r2.text());
+        sheet.brands[anyModel.w.bk].models[anyModel.w.mk] = planted;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      try {
+        await open(anyModel.w.q); await showAllGone();
+        const r2 = await read();
+        const row = r2.rows.find((t) => t.includes(String(victim.vin)));
+        ok('and a served departure that is still listed leaves that count and changes its words',
+           after === before - 1 && new RegExp(`${after} gone`).test(r2.tile) && !!row && row.includes('still listed as eDrive40, asking $12,345') && r2.hint.includes('left a watch but'),
+           `${String(victim.vin).slice(-6)} given a forwarding address: count ${before} → ${after}, tile "${(r2.tile.match(/\d+ gone/) || ['(none)'])[0]}", row ${row ? `"${row.slice(-110)}"` : 'missing'}`);
+      } finally { await ctx.unroute('**/data.json'); }
+    }
+  }
+});
+
 // --- a headline figure carries its own date --------------------------------
 // The masthead says "data through Sep 4"; the watchlist's first tile can lead
 // with a car from a model on a slower cadence, last fetched two days before,
@@ -4790,7 +4876,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 224;
+const EXPECTED = 228;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

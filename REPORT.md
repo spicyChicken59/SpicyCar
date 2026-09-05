@@ -7,13 +7,13 @@
 - ▼ $2,000 cut · BMW i5 eDrive40 · now $43,586 · Columbia, SC `WBY33FK01RCS84947`
 - …and 50 more price changes in the sections below
 - 16 new on the shopped models (8 listed 14+ days before the tracker saw them — reach, not arrival) · best 10% under typical ($106,425, Buena Park, CA)
-- 16 gone since the last fetch on the shopped models
+- 15 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
 - Lowest asking **$36,479** (Seffner, FL) · + $1,031 shipping · = vs 2026-09-04
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
-- 134 on the market · 18 drivable · 37 price changes · 7 new · 11 gone
+- 134 on the market · 18 drivable · 37 price changes · 7 new · 10 gone
 
 **New today (7)** — first seen this run, 1 of them listed 14+ days before the tracker saw it — reach, not arrival; best value first
 
@@ -65,8 +65,9 @@ _The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the f
 **Price changes**
 - $64,990 -> **$64,491** (Roseville, CA) `WBY13HG02SCU72040`
 
-**Gone since 2026-09-03**
-- $54,476 · 2025 · Fort Washington, PA · seen 2 of 3 days `WBY13HG00SCU51722`
+**Left this watch, still listed (2)**
+- $54,476 · 2025 · Fort Washington, PA · last seen 2026-09-03 — listed today as xDrive40, asking $51,476 `WBY13HG00SCU51722`
+- $58,085 · 2025 · Miami, FL · last seen 2026-09-03 — listed today as xDrive40, asking $56,000 `WBY13HG08SCT19677`
 
 _Nothing drivable (IL/OH/IN/WI)._
 
