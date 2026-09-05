@@ -3411,6 +3411,122 @@ await step('under typical only outside its own interval', async () => {
   }
 });
 
+// --- since your visit ---------------------------------------------------------
+// The page remembers the newest data day the reader has seen and, on the next
+// front-page load with newer data, says what changed since — floors from the
+// hero's own ledger, cars first seen since, cars asking less than they did
+// then, and departures worded by what the sheet knows: "gone" only for exact
+// rows, "stopped being seen" otherwise. Recomputed here from data.json for a
+// remembered day planted three shared fetch days back. Then the silences: a
+// first visit, the same data day, a day before the departures window, and a
+// slot already claimed by a dead-link notice.
+await step('since your visit', async () => {
+  plan('the sentence counts what changed since the remembered day, by the sheet\'s own rules',
+       'a reload on the same data day repeats it rather than losing it',
+       'a first visit says nothing',
+       'and a remembered day before the record',
+       'and a slot a dead link already claims');
+  const buyer = SHEET.buyer || {}, f = buyer.fees || null, P0 = buyer.picks || {};
+  const want = new Set(buyer.shopping || []);
+  if (!want.size) return skipRest('this sheet names no shopped trims');
+  const through = SHEET.data_through;
+  const RENTAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
+  const rules = (x) => x.miles != null && x.miles <= (P0.max_miles || 50000) && !(P0.exclude_accidents !== false && x.accidents > 0) && !(P0.exclude_rental !== false && RENTAL.test(x.usage || ''));
+  const totalAt = (x, price, local) => Math.round(price * (1 + ((f || {}).tax_rate || 0)) + ((f || {}).doc_fee || 0) + ((f || {}).title || 0) + ((f || {}).registration || 0) + ((f || {}).ev_surcharge || 0) + (local ? 0 : (x.ship || 0)));
+  const localOn = (x, day) => { const h = x.local_hist; if (!h || !h.length) return !!x.local; let v = h[0][1]; for (const st of h) { if (st[0] <= day) v = st[1]; else break; } return !!v; };
+  const money = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const fmtDate = (d) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  // the floor on a fetch day: cheapest rule-fit car of the shopped trims, all in, seen on its trim's latest fetch on or before the day; five cars or nothing
+  const ledgerOf = (m) => {
+    const tids = Object.keys(m.trims || {}).filter((id) => want.has(id)), fd = m.fetch_days || {};
+    const days = [...new Set(tids.flatMap((t) => fd[t] || []))].sort();
+    const cars = new Map();
+    for (const x of (m.listings || []).concat(m.gone || [])) {
+      const k = String(x.vin || '').toUpperCase();
+      if (!k || cars.has(k) || !tids.includes(x.trim_id) || !rules(x)) continue;
+      const seen = new Map((x.series || []).filter((pt) => pt[1]).map((pt) => [pt[0], pt[1]]));
+      if (seen.size) cars.set(k, { x, seen });
+    }
+    const latest = (tid, day) => { let b = null; for (const d of (fd[tid] || [])) { if (d <= day) b = d; else break; } return b; };
+    const drawn = [];
+    for (const day of days) {
+      let n = 0, floor = null;
+      for (const { x, seen } of cars.values()) { const lf = latest(x.trim_id, day); if (!lf || !seen.has(lf)) continue; n++; const v = totalAt(x, seen.get(lf), localOn(x, day)); if (!floor || v < floor.v) floor = { v }; }
+      if (n >= 5 && floor) drawn.push({ day, v: floor.v });
+    }
+    return drawn.length < 3 ? null : drawn;
+  };
+  const models = [];
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {}))
+      if (Object.keys((m || {}).trims || {}).some((id) => want.has(id))) models.push({ bk, mk, m, label: m.label || mk });
+  const sharedDays = [...new Set(models.flatMap((o) => Object.entries(o.m.fetch_days || {}).filter(([id]) => want.has(id)).flatMap(([, ds]) => ds)))].sort();
+  const since = sharedDays.filter((d) => d < through).slice(-3)[0];
+  if (!since) return skipRest('the record holds fewer than three fetch days before the newest');
+  const sentence = () => {
+    const bits = [];
+    for (const o of models) {
+      const tids = new Set(Object.keys(o.m.trims || {}).filter((id) => want.has(id)));
+      const days = [...new Set([...tids].flatMap((t) => (o.m.fetch_days || {})[t] || []))].sort();
+      if (!days.length || since < days[0]) continue;
+      const live = (o.m.listings || []).filter((x) => tids.has(x.trim_id));
+      const priceOn = (x) => { let v = null; for (const pt of (x.series || [])) { if (pt[0] <= since && pt[1]) v = pt[1]; else if (pt[0] > since) break; } return v; };
+      const fresh = live.filter((x) => x.first_seen && x.first_seen > since).length;
+      const less = live.filter((x) => { const then = priceOn(x); return then != null && x.price != null && x.price < then; }).length;
+      const liveVins = new Set((o.m.listings || []).map((x) => x.vin));
+      const gone = (o.m.gone || []).filter((g) => tids.has(g.trim_id) && g.last_seen >= since && !liveVins.has(g.vin));
+      const exact = gone.filter((g) => g.exact && g.likely === 'delisted').length, unseen = gone.length - exact;
+      const ledger = ledgerOf(o.m);
+      const then = ledger && ledger.filter((d) => d.day <= since).pop(), now = ledger && ledger[ledger.length - 1];
+      const floor = then && now ? (then.v === now.v ? `floor unchanged at ${money(now.v)}` : `floor ${money(then.v)} → ${money(now.v)}`) : '';
+      const left = !gone.length ? 'none gone' : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen` : exact ? `${exact} gone` : `${unseen} stopped being seen, none confirmed gone`;
+      bits.push(`${o.label} — ${[floor, `${fresh} new`, `${less} ask less than then`, left].filter(Boolean).join(', ')}`);
+    }
+    return bits.length ? `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.` : '';
+  };
+  const wantTxt = sentence();
+  const plant = (obj) => page.evaluate((o) => { try { if (o === null) localStorage.removeItem('spicycar.seen'); else localStorage.setItem('spicycar.seen', JSON.stringify(o)); } catch { /* private mode */ } }, obj);
+  const read = () => page.evaluate(() => { const n = document.getElementById('notice'); const p = n && n.querySelector('p[data-since]'); return { hidden: !n || n.hidden, text: p ? p.textContent.replace(/\s+/g, ' ').trim() : '', since: p ? p.getAttribute('data-since') : null, other: n && !n.hidden && !p ? n.textContent.replace(/\s+/g, ' ').trim().slice(0, 80) : '' }; });
+  await open('');
+  await plant({ through: since, since: null });   // the reader last saw data through `since`
+  await open('');
+  const r1 = await read();
+  ok('the sentence counts what changed since the remembered day, by the sheet\'s own rules', !!wantTxt && r1.text === wantTxt && r1.since === since,
+     r1.text === wantTxt ? `"${r1.text}"` : `page: "${r1.text || (r1.hidden ? '(slot hidden)' : r1.other)}" · sheet: "${wantTxt}"`);
+  // The load above advanced the remembered day to today's data; the day it
+  // replaced is kept as `since`, so the same sentence comes back on a reload.
+  await open('');
+  const r3 = await read();
+  const stored = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('spicycar.seen') || 'null'); } catch { return null; } });
+  ok('a reload on the same data day repeats it rather than losing it', r3.text === wantTxt && stored && stored.through === through && stored.since === since,
+     `remembered ${JSON.stringify(stored)}; reload says ${r3.text === wantTxt ? 'the same sentence' : `"${r3.text || (r3.hidden ? '(slot hidden)' : r3.other)}"`}`);
+  await plant(null); await open('');
+  const r2 = await read();
+  ok('a first visit says nothing', r2.hidden && !r2.text, r2.hidden ? 'slot hidden' : `"${r2.text || r2.other}"`);
+  // Two ways a remembered day can predate the record: before any shopped
+  // trim's first fetch day, and — served, since on this sheet the departures
+  // window opens before the record does — before the day departures are
+  // counted from, when "gone since" would count cars the sheet never saw leave.
+  const early = '2000-01-01';
+  await plant({ through: early, since: null }); await open('');
+  const r4 = await read();
+  await plant({ through: since, since: null });
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.departures_from = through;   // departures counted only from today: the remembered day is before that
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  let r4b;
+  try { await open(''); r4b = await read(); } finally { await ctx.unroute('**/data.json'); }
+  ok('and a remembered day before the record', r4.hidden && !r4.text && r4b.hidden && !r4b.text,
+     `${early}: ${r4.hidden ? 'slot hidden' : `"${r4.text || r4.other}"`} · departures counted from ${through} with ${since} remembered: ${r4b.hidden ? 'slot hidden' : `"${r4b.text || r4b.other}"`}`);
+  await plant({ through: since, since: null }); await open('?brand=no-such-brand');
+  const r5 = await read();
+  ok('and a slot a dead link already claims', !r5.hidden && !r5.text && /not tracked|no longer|not on/i.test(r5.other),
+     r5.text ? `the sentence won over the notice: "${r5.text.slice(0, 60)}"` : `notice: "${r5.other}"`);
+  await plant(null);
+});
+
 // --- a headline figure carries its own date --------------------------------
 // The masthead says "data through Sep 4"; the watchlist's first tile can lead
 // with a car from a model on a slower cadence, last fetched two days before,
@@ -4263,7 +4379,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 193;
+const EXPECTED = 198;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

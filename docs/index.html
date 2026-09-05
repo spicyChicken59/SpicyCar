@@ -681,6 +681,25 @@
       S.budgetKind = p.budgetKind === 'mo' ? 'mo' : 'otd';
     } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; }
   }
+  // What the reader last saw, so the front page can say what changed since.
+  // A key of its own, not a field in the prefs: the prefs are rewritten on
+  // every filter change and cleared by "reset", and neither should erase
+  // the reader's last visit. Two days are kept — `through`, the newest data
+  // the reader has seen, and `since`, the data day they saw before that —
+  // and `since` only advances when the data does, so a reload on the same
+  // data day repeats the same sentence rather than losing it.
+  const SEEN = { since: null };
+  function noteVisit() {
+    const through = dataThrough();
+    if (!through) return;
+    try {
+      const prev = JSON.parse(localStorage.getItem('spicycar.seen') || 'null') || {};
+      const seenThrough = typeof prev.through === 'string' ? prev.through : null;
+      const since = seenThrough && seenThrough < through ? seenThrough : (typeof prev.since === 'string' ? prev.since : null);
+      SEEN.since = since;
+      localStorage.setItem('spicycar.seen', JSON.stringify({ through, since }));
+    } catch (e) { SEEN.since = null; /* private mode etc. */ }
+  }
   function savePrefs() {
     try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
   }
@@ -4936,6 +4955,7 @@
     renderOverviewTable(rows);
     renderEmptyNotice(rows.reduce((a, r) => a + r.n, 0),
                       modelsInView().reduce((a, { m }) => a + (m.listings || []).length, 0));
+    renderSinceVisit();
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
     renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car');
     filterCount();
@@ -5360,6 +5380,52 @@
   // Filtering to nothing used to make the picks, the scatter and the map simply
   // disappear — three sections gone, no message, the page just shorter. Say it
   // once, where the filters are, and offer the way back.
+  // What changed since the reader last saw new data: one sentence in the
+  // notice slot, only when nothing else claims it — an empty selection or a
+  // dead link says its own thing there, and a failure never reaches this —
+  // and only when the remembered day sits inside the record, because before
+  // the departures window or a model's first fetch day "gone since" would
+  // count cars the sheet never saw leave. Counts and floors only, by the
+  // rules the tiles already use: the floor is the hero's own ledger (fetch
+  // days, five fit cars), "new" is first seen after that day, "ask less" is
+  // today's price under the price on that day — a cut that bounced back is
+  // not a cut the reader can act on — and a departure is "gone" only when
+  // the sheet is exact about it; otherwise it "stopped being seen", which is
+  // all that is known.
+  function renderSinceVisit() {
+    const n = $('notice');
+    const since = SEEN.since, through = dataThrough();
+    if (!n.hidden || S.brand !== 'all' || !since || !through || since >= through) return;
+    if (S.site.departures_from && since < S.site.departures_from) return;
+    const shopping = new Set(((S.site || {}).buyer || {}).shopping || []);
+    const P = pickParams(), bits = [];
+    const priceOn = (x, day) => { let v = null; for (const pt of (x.series || [])) { if (pt[0] <= day && pt[1]) v = pt[1]; else if (pt[0] > day) break; } return v; };
+    for (const o of heroModels()) {
+      const tids = new Set(Object.keys(o.m.trims || {}).filter((id) => shopping.has(id)));
+      const fd = o.m.fetch_days || {};
+      const days = [...new Set([...tids].flatMap((t) => fd[t] || []))].sort();
+      if (!days.length || since < days[0]) continue;   // before this model's record: nothing honest to say
+      const live = (o.m.listings || []).filter((x) => tids.has(x.trim_id));
+      const fresh = live.filter((x) => x.first_seen && x.first_seen > since).length;
+      const less = live.filter((x) => { const then = priceOn(x, since); return then != null && hasPrice(x) && x.price < then; }).length;
+      const liveVins = new Set((o.m.listings || []).map((x) => x.vin));
+      const gone = (o.m.gone || []).filter((g) => tids.has(g.trim_id) && g.last_seen >= since && !liveVins.has(g.vin));
+      const exact = gone.filter((g) => g.exact && g.likely === 'delisted').length, unseen = gone.length - exact;
+      const ledger = floorLedger(o, P);
+      const then = ledger && ledger.drawn.filter((d) => d.day <= since).pop();
+      const floor = then && ledger.last
+        ? (then.v === ledger.last.v ? `floor unchanged at ${money(ledger.last.v)}` : `floor ${money(then.v)} → ${money(ledger.last.v)}`)
+        : '';
+      const left = !gone.length ? 'none gone'
+        : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen`
+        : exact ? `${exact} gone`
+        : `${unseen} stopped being seen, none confirmed gone`;
+      bits.push(`${o.m.label || o.mk} — ${[floor, `${fresh} new`, `${less} ask less than then`, left].filter(Boolean).join(', ')}`);
+    }
+    if (!bits.length) return;
+    n.appendChild(el('p', { class: 'sc-hint', 'data-since': since }, `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.`));
+    n.hidden = false;
+  }
   function renderEmptyNotice(shown, total) {
     const n = $('notice');
     n.textContent = '';
@@ -6130,6 +6196,7 @@
       annotateValue(site);
       annotateFinance(site);
       loadPrefs();
+      noteVisit();
       applyUrl();
       window.addEventListener('popstate', () => { applyUrl(); rerender('nav'); });
       buildFilters();
