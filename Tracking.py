@@ -1013,14 +1013,8 @@ def fmt_pick(p):
                 (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
     bits.append(place(p))
     line = "- " + " · ".join(b for b in bits if b)
-    cohort = " ".join(b for b in (p.get("pick_year"), p["model_label"],
-                                  p.get("pick_trim")) if b)
-    # the cohort's SIZE, because a percentage under a median of three cars and
-    # one under a median of twenty-three are different claims wearing one word
-    n = p.get("pick_n")
-    line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {cohort} "
-             f"({money(p['pick_under'])} less"
-             + (f", from {n} such car{'s' if n != 1 else ''}" if n else "") + ")_")
+    line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {cohort_of(p)} "
+             f"({money(p['pick_under'])} less{from_n(p)})_")
     if p.get("flags"):
         line += f" · _{' · '.join(p['flags'])}_"
     if p.get("url"):
@@ -1592,8 +1586,21 @@ def build_today(events):
             line += (f" ({reach} listed {REACH_DAYS}+ days before the tracker saw "
                      f"{'it' if reach == 1 else 'them'} — reach, not arrival)")
         if best["pct"] and best["pct"] > 0:
-            line += (f" · best {best['pct']:.0%} under typical "
-                     f"({money(best['x']['price'])}, {place(best['x'])})")
+            bx, bp = best["x"], best.get("p") or {}
+            # The mileage, and the word for it where the sheet's own rule says
+            # so. Today's best arrival is an eleven-mile car — a demo or a
+            # loaner priced near sticker, not a used i7 anyone is choosing
+            # between — and the headline named it on price and place alone.
+            # Only the positive claim: a car whose mileage is missing is not
+            # called used, because three of this sheet's cars have none.
+            mi = to_int(bx.get("miles"))
+            coh = cohort_of(bp)
+            line += (f" · best {best['pct']:.0%} under typical"
+                     + (f" for a {coh}" if coh else "")
+                     + f" ({money(bx['price'])}, {place(bx)}"
+                     + (f" · {mi:,} mi" if mi is not None else "")
+                     + (" — delivery-mileage stock" if mi is not None and mi < NEW_STOCK_MILES else "")
+                     + from_n(bp) + ")")
         sec.append(line)
         bits.append(f"{len(news)} new")
     gones = [e for e in events["gone"] if e["shopping"]]
@@ -1680,6 +1687,29 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
     return sec
 
 
+def cohort_of(p):
+    """"2026 BMW i7 eDrive50" — the cars a margin was measured against.
+
+    score_picks falls back from trim to model year to the whole model when a
+    cohort is too thin, and stamps only the parts it actually used: pick_trim
+    is "" on a year- or model-basis pick, pick_year is None on a model-basis
+    one. Joining the truthy parts is what makes "for a BMW i7" the honest
+    short form rather than "for a  BMW i7 ", and it is why this is one
+    function: an idea to print "from 26 2024 eDrive50s" instead rendered
+    "from 45 s" on every pick that had fallen back.
+    """
+    return " ".join(str(b) for b in (p.get("pick_year"), p.get("model_label"),
+                                     p.get("pick_trim")) if b)
+
+
+def from_n(p):
+    """", from 45 such cars" — the cohort's SIZE, because a percentage under a
+    median of three cars and one under a median of twenty-three are different
+    claims wearing one word. Empty when score_picks did not record one."""
+    n = p.get("pick_n")
+    return f", from {n} such car{'s' if n != 1 else ''}" if n else ""
+
+
 def fmt_new(x, p=None):
     """One line for a car first seen this run — the time-sensitive block."""
     bits = [f"**{money(x['price'])}**", str(x.get("year") or "")]
@@ -1698,7 +1728,14 @@ def fmt_new(x, p=None):
         bits.append("new to the tracker")
     line = "- " + " · ".join(b for b in bits if b)
     if p and p.get("pick_stand") == "under":
-        line += f"\n  _{p['pick_pct']:.0%} under typical ({money(p['pick_under'])} less)_"
+        # …against what, and how many of them. The spicy-pick block twenty-five
+        # lines below prints "from 45 such cars" for this very cohort, and this
+        # block printed the same percentage bare — one denominator, present in
+        # one section of the record and absent in the next.
+        coh = cohort_of(p)
+        line += (f"\n  _{p['pick_pct']:.0%} under typical"
+                 + (f" for a {coh}" if coh else "")
+                 + f" ({money(p['pick_under'])} less{from_n(p)})_")
     if x.get("url"):
         line += f"\n  [listing]({x['url']})"
     line += f" `{x.get('vin', '')}`"
@@ -3477,6 +3514,10 @@ def build_outputs(today_rows, all_rows, hist):
                                               # cohort's interval supports
                                               # the word: see score_picks
                                               "pct": p["pick_pct"] if p and p["pick_stand"] == "under" else None,
+                                              # …and the pick itself, so the
+                                              # headline can name the cohort
+                                              # the margin was measured against
+                                              "p": p,
                                               "shopping": shopping})
                 for g in m_entry["gone"]:
                     if (g["likely"] == "delisted" and g["prev_fetch_day"]
