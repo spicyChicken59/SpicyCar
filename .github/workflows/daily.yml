@@ -49,6 +49,7 @@ jobs:
           python-version: "3.12"
       - run: pip install requests
       - name: Run tracker
+        id: tracker
         env:
           AUTODEV_API_KEY: ${{ secrets.AUTODEV_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -88,7 +89,14 @@ jobs:
         # untouched, and a crash after write_rows commits a day whose fetching
         # had already finished, which is also what lets tomorrow's guard exit 3
         # and rebuild the outputs for free.
-        if: always()
+        #
+        # And ONLY when the tracker did not succeed. A bare always() ran this
+        # on every good day too, ahead of the step below, and split each
+        # snapshot into two commits — "record" carrying data/, then "snapshot"
+        # carrying docs/ and REPORT.md — for a day that had lost nothing. The
+        # step below already commits data/ with the outputs on success; this
+        # one exists for the path where that step never runs.
+        if: always() && steps.tracker.conclusion != 'success'
         run: |
           git config user.name  "tracker"
           git config user.email "actions@github.com"

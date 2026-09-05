@@ -35,6 +35,11 @@ const ROOT = resolve(HERE, '..', 'docs');
 const argv = process.argv.slice(2);
 const DS = argv.find((a) => !a.startsWith('--'));
 const SHOTS = argv.includes('--shots') ? argv[argv.indexOf('--shots') + 1] : null;
+// --only <text> runs just the steps whose label contains it. For mutation
+// runs: reverting one fix and proving the one step that pins it goes red is a
+// three-minute suite per mutant otherwise, and the tally backstop below is
+// waived for a partial run since a partial run cannot add up to the whole.
+const ONLY = argv.includes('--only') ? argv[argv.indexOf('--only') + 1] : null;
 if (!DS || !existsSync(join(DS, 'sc.css'))) {
   console.error('usage: node tools/dashboard_smoke.mjs <design-system-checkout> [--shots <dir>]');
   console.error('       (the checkout the consumer linter already clones — it must contain sc.css)');
@@ -173,6 +178,7 @@ async function recover() {
 const oneLine = (e) => String((e && e.message) || e).replace(/\u001b\[[0-9;]*m/g, '')
   .split('\n').slice(0, 3).join(' ').replace(/\s+/g, ' ').trim().slice(0, 160);
 async function step(label, body) {
+  if (ONLY && !label.includes(ONLY)) return;
   live = { label, planned: new Set(), said: new Set() };
   let threw = false;
   try {
@@ -2251,6 +2257,202 @@ await step('the decision panel', async () => {
   }
 });
 
+// --- the drivable car, financed --------------------------------------------
+// The decision panel's drivable line said "$1,163 more" — the all-in gap —
+// under a winner whose own line quotes a monthly payment, and on the day it
+// was caught the gap had the wrong sign for the decision: the i5's cheapest
+// car all in was a non-certified Houston car at 6.9%, the cheapest drivable a
+// certified Cincinnati car on the 2.99% promo, and over the promo's 60 months
+// the drivable one costs thousands LESS, hauler included. The line now prices
+// the drivable car the way the winner's line prices the winner and states the
+// gap in cash by the end of each loan. Checked against the figures ON THE
+// TILE, not recomputed: the claim is that the sentence and the numbers above
+// it agree, and every number it needs is printed — the winner's payment and
+// term, its shipping, the drivable car's payment and term.
+await step('the drivable car, financed', async () => {
+  plan('the drivable car on the decision panel carries its own payment',
+       'and the cash gap it states is the one the figures above it make');
+  await open('');
+  const tiles = await page.locator('#hero-cars .sc-tile').evaluateAll((ts) => ts.map((t) =>
+    [...t.querySelectorAll('.sc-tile__sub')].map((n) => n.textContent.replace(/\s+/g, ' ').trim())));
+  const num = (t) => Number(String(t || '').replace(/[^0-9.]/g, '')) || 0;
+  const subjects = tiles.map((subs) => {
+    const drive = subs.find((t) => /^cheapest you can drive to:/.test(t));
+    if (!drive) return null;
+    const winner = subs.map((t) => t.match(/^\$([\d,]+)\/mo at [\d.]+%(?: promo)? over (\d+) months/)).find(Boolean);
+    const ship = num((subs.find((t) => /est\. shipping/.test(t)) || '').match(/\+ \$([\d,]+) est\. shipping/) ? RegExp.$1 : 0);
+    // the financed line: "$818/mo at 2.99% promo · $3,344 less in cash over 60 months, shipping counted"
+    // or, at differing terms, "$818/mo at 2.99% promo over 60 mo, against $857/mo over 72 mo · $X less in cash by the end of each loan, shipping counted"
+    const fin = subs.map((t) => t.match(/^\$([\d,]+)\/mo at [\d.]+%(?: promo)?(?: over (\d+) mo, against \$([\d,]+)\/mo over (\d+) mo)? · (?:(the same) in cash|\$([\d,]+) (less|more) in cash)(?: over (\d+) months| by the end of each loan), shipping counted$/)).find(Boolean);
+    return { drive, winner, ship, fin, subs };
+  }).filter(Boolean);
+  if (!subjects.length) return skipRest('every shopped model\'s cheapest car is drivable today — no drivable line to price');
+  const unpriced = subjects.filter((s) => !s.fin);
+  ok('the drivable car on the decision panel carries its own payment',
+     unpriced.length === 0,
+     unpriced.length ? unpriced.map((s) => s.drive + ' // ' + s.subs.join(' | ')).join(' ## ')
+                     : subjects.map((s) => s.fin[0]).join(' · '));
+  const wrong = subjects.filter((s) => s.fin && s.winner).filter((s) => {
+    const [, payL, termL, payX2, termX2, same, gapTxt, word, termBoth] = s.fin;
+    const payX = num(s.winner[1]), termX = termX2 ? num(termX2) : num(s.winner[2]);
+    const tL = termL ? num(termL) : num(termBoth);
+    const want = num(payL) * tL - (payX * termX + s.ship);
+    const said = same ? 0 : (word === 'less' ? -1 : 1) * num(gapTxt);
+    return want !== said || (payX2 && num(payX2) !== payX);
+  });
+  ok('and the cash gap it states is the one the figures above it make',
+     subjects.every((s) => s.winner) && wrong.length === 0,
+     wrong.length ? wrong.map((s) => `${s.fin[0]} — winner ${s.winner[0]}, ship $${s.ship}`).join(' ## ')
+                  : subjects.map((s) => `${s.fin[0]} against ${s.winner[0]} + $${s.ship} ship`).join(' · '));
+});
+
+// --- the market sentence describes the trim in view ------------------------
+// The list's "Market:" clause read the MODEL's block — computed in Python over
+// every trim — under a table trimRows() had already narrowed to one trim. On
+// the i7 that put "listings ran at least ~6d (29 gone)" under the eDrive50
+// while every one of those 29 departures was an xDrive60 or an M70. The
+// figures are recomputed here from data.json by the same rules Tracking.py's
+// market_stats() and sale_stats() apply — days listed over the rows that carry
+// one, cuts over rows tracked two days or more, spans over `exact` delistings
+// with a listing date, VIN-unique — for a trim whose own sentence differs from
+// its model's, so a page still reading the model block cannot pass.
+await step('the market sentence describes the trim in view', async () => {
+  plan('the market sentence under a trim is that trim\'s own',
+       'and a trim with too few departures to speak for does not borrow its siblings\'',
+       'and the floors hold on a sheet that would breach them');
+  const med = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const bitsOf = (rows, gone) => {
+    const dl = rows.map((x) => x.days_listed).filter((v) => v != null);
+    const tracked = rows.filter((x) => (x.days_tracked || 0) >= 2), cut = tracked.filter((x) => x.cuts);
+    const drops = [];
+    for (const x of rows) { const s = x.series || []; for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]); }
+    const spans = [], seen = new Set();
+    for (const g of gone) {
+      if (g.likely !== 'delisted' || g.exact !== true || !g.listed_since) continue;
+      const k = String(g.vin || '').toUpperCase(); if (seen.has(k)) continue; seen.add(k);
+      spans.push(Math.max(0, Math.round((Date.parse(String(g.last_seen).slice(0, 10) + 'T00:00:00Z') - Date.parse(String(g.listed_since).slice(0, 10) + 'T00:00:00Z')) / 86400000)));
+    }
+    const out = [];
+    if (dl.length >= 12) out.push(`typical car ${Math.trunc(med(dl))}d on market (${dl.length} of ${rows.length} dated)`);
+    if (tracked.length >= 5) out.push(`${Math.round(cut.length / tracked.length * 100)}% of ${tracked.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')}` : ''));
+    if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
+    return { out, spans: spans.length };
+  };
+  const dedupe = (rows) => { const seen = new Set(); return rows.filter((g) => { const k = String(g.vin || '').toUpperCase(); if (seen.has(k)) return false; seen.add(k); return true; }); };
+  let subject = null;
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {})) {
+      const whole = bitsOf(m.listings || [], dedupe(m.gone || []));
+      for (const tid of Object.keys(m.trims || {})) {
+        const rows = (m.listings || []).filter((x) => x.trim_id === tid);
+        if (!rows.length) continue;
+        const mine = bitsOf(rows, dedupe((m.gone || []).filter((g) => g.trim_id === tid)));
+        if (mine.out.join(' · ') === whole.out.join(' · ')) continue;
+        // prefer the case the bug was found on: a trim with too few departures
+        // of its own under a model whose sentence carries the days-to-go clause
+        const borrowed = whole.out.some((t) => /listings ran/.test(t)) && mine.spans < 12;
+        if (!subject || (borrowed && !subject.borrowed)) subject = { bk, mk, tid, mine, whole, borrowed };
+      }
+    }
+  if (!subject) return skipRest('no trim on this sheet has a market sentence different from its model\'s');
+  await open(`?brand=${subject.bk}&m=${subject.mk}&trims=${subject.tid}`);
+  const hint = (await page.textContent('#list-hint')).replace(/\s+/g, ' ');
+  const said = (hint.match(/Market: (.*?)\.(?= [A-Z]|$)/) || [])[1] || '';
+  const want = subject.mine.out.join(' · ');
+  ok('the market sentence under a trim is that trim\'s own', said === want,
+     `${subject.tid}: page says "${said}" · the trim's own rows say "${want}" · the model's block says "${subject.whole.out.join(' · ')}"`);
+  if (!subject.borrowed) skip('and a trim with too few departures to speak for does not borrow its siblings\'',
+                              'no trim on this sheet sits under a model whose days-to-go figure it did not earn');
+  else ok('and a trim with too few departures to speak for does not borrow its siblings\'',
+          !/listings ran/.test(said),
+          `${subject.tid} has ${subject.mine.spans} exact delistings of its own; the page says "${said}"`);
+
+  // The two gates the live sheet cannot exercise: on the day this was written
+  // every dated delisting in the record was stamped `exact`, and the only trim
+  // with fewer than twelve dated cars was a single-trim model. So the same
+  // trim is served a sheet that breaches both — five dated cars, and twelve
+  // departures that are delisted, dated and NOT exact — and the sentence must
+  // print neither the typical-days figure nor the days-to-go one, while still
+  // printing the cut clause, so that silence is the gates and not an empty
+  // sentence.
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    const mm = sheet.brands[subject.bk].models[subject.mk];
+    let kept = 0;
+    for (const x of mm.listings) if (x.trim_id === subject.tid && x.days_listed != null && ++kept > 5) x.days_listed = null;
+    const donor = (mm.gone || []).find((g) => g.trim_id === subject.tid) || (mm.gone || [])[0] || mm.listings.find((x) => x.trim_id === subject.tid);
+    mm.gone = (mm.gone || []).concat(Array.from({ length: 12 }, (_, i) => ({ ...donor, vin: `PLANT${String(i).padStart(12, '0')}`,
+      trim_id: subject.tid, likely: 'delisted', exact: false, listed_since: '2026-08-01', last_seen: '2026-08-20', series: [] })));
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(`?brand=${subject.bk}&m=${subject.mk}&trims=${subject.tid}`);
+    const planted = ((await page.textContent('#list-hint')).replace(/\s+/g, ' ').match(/Market: (.*?)\.(?= [A-Z]|$)/) || [])[1] || '';
+    ok('and the floors hold on a sheet that would breach them',
+       !/typical car/.test(planted) && !/listings ran/.test(planted) && /cut while tracked/.test(planted),
+       `${subject.tid} with 5 dated cars and 12 unconfirmed departures: the page says "${planted || '(no market sentence)'}"`);
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+});
+
+// --- dealer stock is a market of its own ------------------------------------
+// The i7 eDrive50 holds two markets under one median: 41 delivery-mileage cars
+// — under 100 miles, never registered, priced near sticker — and 49 used cars
+// at half the price. The pooled median described neither, and nothing on the
+// page said so. Now the market tile names the split with each side's count and
+// median, and one filter takes the stock out of every number on the page. Both
+// halves are checked on a scope that actually holds both kinds, found in the
+// sheet rather than named: a sheet with no dealer stock has nothing to say and
+// must say nothing.
+await step('dealer stock is a market of its own', async () => {
+  plan('a scope holding dealer stock says so beside its median',
+       'hiding the stock takes exactly those cars out of the count',
+       'and the median that remains is the used cars\' own');
+  const NEW = 100;
+  const med = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  let subject = null;
+  for (const [bk, b] of Object.entries(SHEET.brands || {}))
+    for (const [mk, m] of Object.entries((b || {}).models || {}))
+      for (const tid of Object.keys(m.trims || {})) {
+        const rows = (m.listings || []).filter((x) => x.trim_id === tid);
+        const priced = rows.filter((x) => x.price != null);
+        const fresh = priced.filter((x) => x.miles != null && x.miles < NEW), used = priced.filter((x) => x.miles != null && x.miles >= NEW);
+        if (fresh.length >= 5 && used.length >= 5 && (!subject || fresh.length > subject.fresh.length))
+          subject = { bk, mk, tid, rows, priced, fresh, used, all: (m.listings || []).length };
+      }
+  if (!subject) return skipRest('no trim on this sheet holds five cars under 100 miles beside five used ones');
+  const digits = (t) => String(t || '').replace(/[^0-9]/g, '');
+  await open(`?brand=${subject.bk}&m=${subject.mk}&trims=${subject.tid}`);
+  const tile = () => page.locator('#kpis .sc-tile').nth(2).evaluate((n) =>
+    [...n.querySelectorAll('.sc-tile__sub')].map((s) => s.textContent.replace(/\s+/g, ' ').trim()));
+  const before = await tile();
+  const split = before.find((t) => /delivery-mileage stock/.test(t)) || '';
+  const m = split.match(/^(\d+) of (\d+) are delivery-mileage stock — under (\d+) mi, median \$([\d,]+) — and the (\d+) used cars sit at \$([\d,]+)$/);
+  ok('a scope holding dealer stock says so beside its median',
+     !!m && +m[1] === subject.fresh.length && +m[2] === subject.priced.length && +m[3] === NEW
+       && digits(m[4]) === String(med(subject.fresh.map((x) => x.price))) && +m[5] === subject.used.length
+       && digits(m[6]) === String(med(subject.used.map((x) => x.price))),
+     split ? `${subject.tid}: "${split}" — sheet says ${subject.fresh.length} of ${subject.priced.length} under ${NEW} mi at ${med(subject.fresh.map((x) => x.price))}, ${subject.used.length} used at ${med(subject.used.map((x) => x.price))}`
+           : `${subject.tid}: no split line on the tile — ${before.join(' | ')}`);
+  await page.check('#f-hidenew');
+  await page.waitForTimeout(400);
+  const count = (await page.textContent('#filter-count')).trim();
+  const shown = +(count.match(/^showing ([\d,]+) of/) || [])[1]?.replace(/,/g, '');
+  const wantShown = subject.rows.filter((x) => !(x.miles != null && x.miles < NEW)).length;
+  ok('hiding the stock takes exactly those cars out of the count',
+     shown === wantShown && /no delivery-mileage stock/.test(count),
+     `${count} — expected ${wantShown} of ${subject.all} (${subject.rows.length} on the trim, ${subject.fresh.length} under ${NEW} mi)`);
+  const after = await tile();
+  const medLine = after.find((t) => /median \$/.test(t)) || '';
+  const wantMed = med(subject.priced.filter((x) => !(x.miles != null && x.miles < NEW)).map((x) => x.price));
+  ok('and the median that remains is the used cars\' own',
+     !after.some((t) => /delivery-mileage stock/.test(t)) && digits((medLine.match(/median \$([\d,]+)/) || [])[1]) === String(wantMed),
+     `${after.join(' | ')} — expected median ${wantMed} and no split line`);
+  await page.uncheck('#f-hidenew');
+});
+
 // --- the shortlist you build yourself --------------------------------------
 // Everything else on this page is the market's opinion: what is cheapest, what
 // is under typical, what the tracker thinks is worth a look. The shortlist is
@@ -2867,9 +3069,9 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 141;
-if (!skipped && results.length !== EXPECTED) {
+const EXPECTED = 149;
+if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
 }
-process.exit(failed || errors.length || (!skipped && results.length !== EXPECTED) ? 1 : 0);
+process.exit(failed || errors.length || (!ONLY && !skipped && results.length !== EXPECTED) ? 1 : 0);

@@ -490,6 +490,7 @@
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
       <label class="sc-check" title="Certified pre-owned only — the cars the promo financing applies to"><input type="checkbox" id="f-cpo"> CPO only</label>
+      <label class="sc-check" title="Cars under 100 miles are dealer stock priced near sticker, not the used market. A car whose mileage was not published stays."><input type="checkbox" id="f-hidenew"> Hide delivery-mileage stock</label>
     </div>
   </section>
 
@@ -631,7 +632,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -856,6 +857,40 @@
   // where value is asking + shipping + a mileage allowance. The reader only ever sees asking price.
   const NON_PERSONAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
   const isRental = (x) => NON_PERSONAL.test(x.usage || '');
+  // A car under 100 miles has never been anyone's: dealer stock, demos and
+  // press cars, priced at or above sticker. The used-listings API serves them
+  // beside the used cars, and on 2026-09-04 the i7 eDrive50 held 41 of them —
+  // median 5 miles, median $118,320 — beside 49 used cars at $66,213. The
+  // trim's one pooled median, $100,079, described neither market, and the day
+  // the nationwide page first reached the stock the median line jumped $14,000
+  // on a coverage change that looked like a market move.
+  //
+  // Miles, not model year: three 2026 cars carried 1,358 to 6,401 miles and
+  // are used cars by any reading. 100 rather than a bigger number for the same
+  // reason — a loaner with 1,300 miles on it has been driven, and the buyer is
+  // deciding whether to buy a driven car. A car whose mileage was not published
+  // is classed as neither: abstaining is what the page does with a number it
+  // does not have.
+  const NEW_STOCK_MILES = 100;
+  const isNewStock = (x) => x.miles != null && x.miles < NEW_STOCK_MILES;
+  const STOCK_WHY = `Under ${NEW_STOCK_MILES} miles a car is dealer stock — demos, loaners, press cars — priced near sticker. `
+    + 'It is on the used-listings API beside the used cars, and one median across both describes neither. '
+    + 'Miles, not model year: a 2026 with 5,000 miles on it is a used car.';
+  // The two markets inside one scope, counted, with a median for each side
+  // only once both sides have five cars — below that the pooled median is
+  // barely moved, and a "median" of three is a number nothing can stand on.
+  function stockCounts(rows) {
+    const priced = rows.filter(hasPrice);
+    const fresh = priced.filter(isNewStock), used = priced.filter((x) => x.miles != null && !isNewStock(x));
+    return { n: priced.length, nNew: fresh.length, nUsed: used.length, unknown: priced.length - fresh.length - used.length,
+      medNew: fresh.length >= 5 ? median(fresh.map((x) => x.price)) : null,
+      medUsed: used.length >= 5 ? median(used.map((x) => x.price)) : null };
+  }
+  function stockSplit(rows) {
+    const c = stockCounts(rows);
+    if (c.medNew == null || c.medUsed == null) return null;
+    return `${c.nNew} of ${c.n} are delivery-mileage stock — under ${NEW_STOCK_MILES} mi, median ${money(c.medNew)} — and the ${c.nUsed} used cars sit at ${money(c.medUsed)}`;
+  }
   function pickParams() {
     const p = ((S.site || {}).buyer || {}).picks || {};
     // 0, not 2: a sheet that does not name the rule does not get it applied
@@ -2012,7 +2047,12 @@
       lg.appendChild(chip);
     }
     const touch = window.matchMedia('(hover: none)').matches;
-    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters. A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for.`
+    const stock = stockCounts(pts);
+    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters.`
+      // The column of dots at the left edge is a different market, and a
+      // year's line fitted through it is fitted through dealer stock.
+      + (stock.nNew >= 5 ? ` ${stock.nNew} of them sit under ${NEW_STOCK_MILES} miles — dealer stock priced near sticker, the column at the left edge — and the ${stock.nUsed} used cars are the rest.` : '')
+      + ` A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for.`
       + (touch ? ' Tap a dot to preview it, tap again to open; press a year chip to light up that year.'
                : ' Hover a line or year chip to light up that year; hover a dot for the car, click to open the listing.');
     card.hidden = false;
@@ -2041,6 +2081,58 @@
     return out;
   }
   const dailyOfTrim = (m, id) => ((m.daily_by_trim || {})[id] || []);
+  // The market sentence, for the rows actually in view. It read t.market — one
+  // block per MODEL, computed in Python over every trim — under a list that
+  // trimRows() had already narrowed to one trim, and on the i7 that put
+  // "listings ran at least ~6d (29 gone)" under the eDrive50: every one of
+  // those 29 departures was an xDrive60 or an M70, and the trim the buyer is
+  // shopping had contributed none. The same block put a 25-day typical listing
+  // under a trim whose own cars sit 39, and "27% cut" under a trim at 15%.
+  //
+  // The rules are Tracking.py's — market_stats() and sale_stats() — applied to
+  // the trim and the filters in view, with the budget left out: a budget
+  // narrows what the reader can afford, not what the market is doing. A
+  // departure counts only where the sheet stamped it `exact`, which is
+  // Python's departure_is_evidence(): on a two-window target a car that fell
+  // out of the miles.asc window did not stop being advertised, and `likely`
+  // alone cannot tell the two apart. VIN-unique, because departures are keyed
+  // (target, vin) and the nationwide CPO watch files the same certified car
+  // twice. Medians truncate, because the builder writes int(median(...)).
+  //
+  // Every figure goes out with its own denominator, and the typical-days figure
+  // gets the twelve-car floor the days-to-go figure already has: it was a bare
+  // median over however many cars happened to carry a listing date, which on
+  // the eDrive50 is 72 of 91.
+  function marketOf(rows, gone) {
+    const dl = rows.map((x) => x.days_listed).filter((v) => v != null);
+    const tracked = rows.filter((x) => (x.days_tracked || 0) >= 2);
+    const cutCars = tracked.filter((x) => x.cuts);
+    const drops = [];
+    for (const x of rows) {
+      const s = x.series || [];
+      for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]);
+    }
+    const spans = [], seen = new Set();
+    for (const g of gone) {
+      if (g.likely !== 'delisted' || g.exact !== true || !g.listed_since) continue;
+      const k = String(g.vin || '').toUpperCase();
+      if (k && seen.has(k)) continue;
+      if (k) seen.add(k);
+      const a = Date.parse(String(g.listed_since).slice(0, 10) + 'T00:00:00Z');
+      const b = Date.parse(String(g.last_seen || '').slice(0, 10) + 'T00:00:00Z');
+      if (isNaN(a) || isNaN(b)) continue;
+      spans.push(Math.max(0, Math.round((b - a) / 86400000)));
+    }
+    return {
+      n: rows.length, dated: dl.length,
+      median_days_listed: dl.length ? Math.trunc(median(dl)) : null,
+      tracked_2d: tracked.length,
+      cut_share: tracked.length ? Math.round(cutCars.length / tracked.length * 100) / 100 : null,   // two places, as market_stats() rounds
+      median_cut: drops.length ? Math.trunc(median(drops)) : null,
+      n_sold: spans.length,
+      median_days_to_sale: spans.length ? Math.trunc(median(spans)) : null,
+    };
+  }
   // The precomputed record for the current trim selection: the model's own when
   // nothing is picked, one trim's when one is, and for a subset the union of
   // their days — counts SUMMED and the floor taken, the medians dropped.
@@ -2098,7 +2190,7 @@
   // the exception — see needsRebuild: nothing was precomputed for "eDrive40
   // and xDrive40 together", and their day rows cannot simply be added.
   function sharedActive() {
-    return !!(S.where.size || S.year !== 'all' || S.miles || S.clean || S.rental || S.cpo);
+    return !!(S.where.size || S.year !== 'all' || S.miles || S.clean || S.rental || S.cpo || S.hideNew);
   }
   // A pooled trim selection has no precomputed answer, so it is rebuilt for the
   // same reason a filtered one is: the alternative is a number nothing computed.
@@ -2771,6 +2863,7 @@
     if (S.clean && x.accidents > 0) return false;
     if (S.cpo && !x.cpo) return false;
     if (S.rental && isRental(x)) return false;
+    if (S.hideNew && isNewStock(x)) return false;
     return true;
   }
   function applyShared(rows) { return rows.filter((x) => passesShared(x)); }   // the filters that make sense across models
@@ -3361,6 +3454,45 @@
   }
   // The comparable total, and the word for what is in it.
   const heroTotal = (x) => (feesCfg() ? otd(x) : landed(x));
+  // The drivable car's line, financed. It said "$1,163 more" — the all-in gap
+  // — under a winner whose own line quotes a payment, and on the day this was
+  // written that gap had the wrong sign for the decision: the i5's cheapest
+  // car all in was a non-certified Houston car at 6.9%, $857 a month; the
+  // cheapest drivable was a certified Cincinnati car on the 2.99% promo, $818
+  // a month, and over the 60 months the promo writes it costs $3,326 LESS,
+  // hauler included — the same VIN the promo strip one card down was pricing
+  // at exactly that saving. So the line prices the drivable car the way the
+  // winner's line prices the winner, and states the gap as cash by the end of
+  // each loan: the down payment, every payment, and the hauler's bill — which
+  // financed() keeps OFF the note on purpose, so it is the one cheque that has
+  // to be added back here, and only where the note does not already carry it
+  // (a sheet with no fee block amortises the landed price, shipping in).
+  //
+  // Both terms on the face whenever they differ, for the reason payNote gives:
+  // a promo capped at 60 months under a 72-month setting is a shorter loan,
+  // not a saving per month, and two cars financed over different spans are not
+  // comparable per month at all. What IS comparable is the total each one
+  // takes out of the reader's pocket, so that is the number, with each span
+  // beside it. Rounded per month before multiplying — the tiles print whole
+  // dollars, and a reader checking $818 × 60 has to land where this does.
+  function cashOverTerm(y) {
+    const pay = payFor(y);
+    if (pay == null) return null;
+    const f = feesCfg();
+    const hauler = (f && !f.finance_shipping && !y.local) ? (y.ship || 0) : 0;
+    return Math.min(S.down || 0, financed(y)) + termFor(y) * Math.round(pay) + hauler;
+  }
+  function driveGapLine(y, x) {
+    const py = payFor(y), cy = cashOverTerm(y), cx = cashOverTerm(x);
+    if (py == null || cy == null || cx == null) return null;
+    const ty = termFor(y), tx = termFor(x), d = cy - cx;
+    const gap = d === 0 ? 'the same in cash' : `${money(Math.abs(d))} ${d < 0 ? 'less' : 'more'} in cash`;
+    return el('div', { class: 'sc-tile__sub' },
+      `${perMo(py)} at ${y.apr}%${y.apr_promo ? ' promo' : ''}`
+      + (ty === tx
+          ? ` · ${gap} over ${ty} months, shipping counted`
+          : ` over ${ty} mo, against ${perMo(payFor(x))} over ${tx} mo · ${gap} by the end of each loan, shipping counted`));
+  }
   function renderHero() {
     const card = $('hero-card'), host = $('hero-cars'), gap = $('hero-gap');
     const models = heroModels();
@@ -3450,7 +3582,8 @@
         localBest ? el('div', { class: 'sc-tile__sub' },
           `cheapest you can drive to: ${money(localBest.v)}`
           + `${localBest.x.state ? ` in ${localBest.x.state}` : ''}`
-          + ` · ${money(localBest.v - best.v)} more`) : null,
+          + ` · ${localBest.v === best.v ? 'the same' : money(localBest.v - best.v) + ' more'} ${allIn ? 'all in' : 'landed'}`) : null,
+        localBest ? driveGapLine(localBest.x, x) : null,
         // Both directions, for the same reason the shortlist gives them: this
         // tile leads with CHEAPEST, which is a different question from value,
         // and a cheapest car that is also above its own cohort's typical price
@@ -3753,6 +3886,10 @@
       el('div', { class: 'sc-tile__value' }, String(rows.length)),
       el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local} beyond your states`
         + (med != null ? ` · median ${money(med)}` : '')));
+    // The median above pools two markets whenever dealer stock is in the scope,
+    // so the tile says so on its face, with each side's own count and median.
+    const split = stockSplit(priced);
+    if (split) tile3.appendChild(el('div', { class: 'sc-tile__sub', title: STOCK_WHY }, split));
     // The spark follows the scope (its tile value does), but the "no trend yet"
     // line is a claim about the RECORD — gate it on the record, or a filter
     // tells a reader on day 8 that the tracker has only ever run once.
@@ -3895,7 +4032,10 @@
           : dailyFor(t).length >= 2
             ? `Only one snapshot day has a car in this scope — ${scope}.`
             : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
-        + ` ${spanText(daily)}.`;
+        + ` ${spanText(daily)}.`
+        // The median line pools dealer stock with the used cars whenever both
+        // are in view — say so, and name the one control that separates them.
+        + (daily.length && stockSplit(live) ? ` The median line pools ${stockCounts(live).nNew} delivery-mileage cars (under ${NEW_STOCK_MILES} mi) with ${stockCounts(live).nUsed} used ones — tick "Hide delivery-mileage stock" in the filters to see the used market alone.` : '');
     const lg = $('legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-emphasis)' }), 'Lowest asking'));
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-context)' }), 'Median asking'));
@@ -4005,7 +4145,8 @@
       pooled: false,
       all: trimRows(t.listings || []).length,
       cover: vals.length && vals.every((v) => v != null) ? vals.reduce((a, b) => a + b, 0) : null,
-      market: t.market || {},
+      market: marketOf(trimRows(t.listings || []).filter((x) => passesShared(x, true)),
+                       goneRows(t).filter((x) => passesShared(x, true))),
       daily: dailyFor(t),
       what: t.label || S.model,
     };
@@ -4020,8 +4161,8 @@
     const all = sc.all;
     const cover = sc.cover;
     const mk = sc.market, mbits = [];
-    if (mk.median_days_listed != null) mbits.push(`typical car ${mk.median_days_listed}d on market`);
-    if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
+    if (mk.median_days_listed != null && mk.dated >= 12) mbits.push(`typical car ${mk.median_days_listed}d on market (${mk.dated} of ${mk.n} dated)`);
+    if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) mbits.push(`${Math.round(mk.cut_share * 100)}% of ${mk.tracked_2d} cut while tracked${mk.median_cut ? `, median ${money(mk.median_cut)}` : ''}`);
     // Same sentence, same floor, same caveats as the report's market_line —
     // this is the PRIMARY surface and it was the one still saying "sold". A
     // listing ending is not a sale: it may have sold, gone to auction, moved
@@ -4625,6 +4766,18 @@
     }
     row('Median asking', 'The middle of this column’s own market',
       stat.map((v) => cmpCell(v.med != null ? money(v.med) : '—', `${v.priced.length} priced`)));
+    // Only where some column holds dealer stock: a row of dashes would ask the
+    // reader to learn a distinction no car in view makes.
+    if (stat.some((v) => stockCounts(v.priced).nNew)) {
+      row('Delivery-mileage stock', STOCK_WHY,
+        stat.map((v) => {
+          const c = stockCounts(v.priced);
+          return cmpCell(c.nNew ? `${c.nNew} of ${c.n}` : '—',
+            !c.nNew ? `none under ${NEW_STOCK_MILES} mi`
+            : c.medNew != null && c.medUsed != null ? `median ${money(c.medNew)} · used ${money(c.medUsed)}`
+            : `under ${NEW_STOCK_MILES} mi`);
+        }));
+    }
     row('Cars on the market', 'Under the current filters',
       stat.map((v) => cmpCell(String(v.c.rows.length), `${v.c.rows.filter(isLocal).length} drivable · ${v.c.rows.length - v.c.rows.filter(isLocal).length} beyond`)));
     row('Median miles', null, stat.map((v) => cmpCell(v.medMiles != null ? num(v.medMiles) + ' mi' : '—', null)));
@@ -4832,7 +4985,7 @@
       el('p', null, `All ${num(restorable)} cars are filtered out, so the picks, the map and the price chart below have nothing to draw. `,
         el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
-          S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false;
+          S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false; S.hideNew = false;
           // The comparison is NOT a filter and does not clear with them: it is
           // what the reader came to look at, it took several presses to build,
           // and clearing it here would land them on the watchlist with no way
@@ -5101,6 +5254,7 @@
     $('f-clean').checked = S.clean;
     $('f-rental').checked = S.rental;
     $('f-cpo').checked = S.cpo;
+    $('f-hidenew').checked = S.hideNew;
     $('filters-card').hidden = false;
     filterCount();
     syncBarHeight();
@@ -5127,6 +5281,7 @@
     if (S.clean) bits.push('no accidents');
     if (S.cpo) bits.push('CPO only');
     if (S.rental) bits.push('no rentals');
+    if (S.hideNew) bits.push('no delivery-mileage stock');
     if (S.budget) bits.push(S.budgetKind === 'mo' ? `under ${money(S.budget)}/mo` : `under ${money(S.budget)} all in`);
     return bits;
   }
@@ -5270,13 +5425,20 @@
       default: render(); break;
     }
     restoreFocus(fk, scope === 'nav');
-    if (anchorScope) requestAnimationFrame(() => {
-      if (anchored && !bar.hidden) {
-        const after = bar.getBoundingClientRect().top;
-        window.scrollTo(0, Math.max(0, window.scrollY + (after - before)));
-      } else if (scope === 'all') window.scrollTo(0, y);
-      rearmFilters();   // the page moved under the panel; the reader did not
-    });
+    if (anchorScope) {
+      settling = true;
+      requestAnimationFrame(() => {
+        if (anchored && !bar.hidden) {
+          const after = bar.getBoundingClientRect().top;
+          window.scrollTo(0, Math.max(0, window.scrollY + (after - before)));
+        } else if (scope === 'all') window.scrollTo(0, y);
+        rearmFilters();   // the page moved under the panel; the reader did not
+        // The scrollTo above lands its own scroll event in the NEXT frame's
+        // scroll steps, so the listener stands down for one more frame and
+        // re-arms from wherever the bar has settled.
+        requestAnimationFrame(() => { settling = false; rearmFilters(); });
+      });
+    }
   }
   // Where the phone filter bar sits IN THE VIEWPORT when the panel was opened,
   // or last re-armed — not where the document is scrolled to. null = closed.
@@ -5295,6 +5457,19 @@
   // between scroll events when a re-render changes the page above it, so
   // rerender() re-arms it: at module scope for that reason and no other.
   let filterArmY = null;
+  // …and while a re-render's compensation is still pending, the scroll
+  // listener stands down entirely. Two things move scrollY after a render —
+  // the browser's own scroll anchoring, and the frame callback in rerender()
+  // that corrects whatever anchoring left — and the scroll event for the first
+  // is dispatched BEFORE the animation frame that runs the second. The day the
+  // decision panel gained a payment line, pressing the first model chip put
+  // the bar at y=3 for exactly one scroll event: anchoring had compensated 26
+  // of the 449 pixels the panel shrank by, the correction landed one frame
+  // later, and by then the rule below had closed the panel on a jump the next
+  // frame took back. Measuring the bar instead of scrollY (above) was right
+  // and not enough: a scroll the page made is not the reader scrolling away,
+  // whichever number it is read off.
+  let settling = false;
   const barTop = () => $('filters-card').getBoundingClientRect().top;
   const rearmFilters = () => { if (filterArmY != null) filterArmY = barTop(); };
   function wireFilters() {
@@ -5304,6 +5479,7 @@
     $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender('rows'); });
     $('f-rental').addEventListener('change', (e) => { S.rental = e.target.checked; rerender('rows'); });
     $('f-cpo').addEventListener('change', (e) => { S.cpo = e.target.checked; rerender('rows'); });
+    $('f-hidenew').addEventListener('change', (e) => { S.hideNew = e.target.checked; rerender('rows'); });
     // Term and down change what every payment on the page says, so they redraw
     // the rows like a filter does — and they persist, because a reader who
     // finances at 48 months finances at 48 months tomorrow too.
@@ -5360,6 +5536,7 @@
       const y = window.scrollY;
       topBtn.classList.toggle('is-on', y > window.innerHeight * 2);
       if (filterArmY != null && narrow() && $('filters-card').classList.contains('is-open')) {
+        if (settling) return;   // the page is moving under the panel; the reader is not
         const top = barTop();
         if (top > filterArmY) filterArmY = top;             // scrolling UP re-arms from the higher position
         else if (filterArmY - top > 360) closeFilters();    // > the open panel's own ~300px: reading results now
