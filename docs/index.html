@@ -36,6 +36,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- The one file this page cannot render without is asked for first, before
+     the stylesheet and the three scripts below are even parsed: issued from
+     the bottom of the inline script it waited for the whole document — a
+     measured 160ms of the time to content at 1.6 Mbps, and 380ms at 400 kbps.
+     The no-op catch keeps a failing fetch from firing an unhandled rejection
+     before the page's own handler below picks the same promise up. -->
+<script>window.__data = fetch('data.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); window.__data.catch(function () {});</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc.css">
 <script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-theme.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-charts.js"></script>
@@ -2884,17 +2891,18 @@
       .sort((a, b) => b.pct - a.pct);
   }
 
-  // A data.json written before the buyer/state model carries per-market fields instead; map them so the page keeps working until the next run.
+  // What the page adds to the sheet it is handed: gone rows carry last_price
+  // where live rows carry price, and every row is stamped with its model.
+  // Nothing else. A synthesised buyer block and a per-market `local` fallback
+  // sat here for a data.json shape no Tracking.py revision ever wrote — the
+  // builder has exported a buyer and a boolean local on every row since the
+  // buyer/state model — and the producer test now pins that, so a sheet
+  // without them is a builder bug to see, not a shape to paper over.
   function adapt(site) {
     site.app = site.app || 'SpicyCar';
-    if (!site.buyer) {
-      const p = Object.values(site.brands || {}).flatMap((b) => Object.values(b.models || {})).map((m) => m.params || {}).find((q) => q.ship_cost != null) || {};
-      site.buyer = { id: '', label: '', home_zip: '', states: [], state_names: {}, ship_cost: p.ship_cost };
-    }
     for (const [bk, b] of Object.entries(site.brands || {})) for (const [mk, m] of Object.entries(b.models || {})) {
       m.params = m.params || {};
       for (const x of [...(m.listings || []), ...(m.gone || [])]) {
-        if (x.local === undefined) x.local = (x.markets || [x.market]).some((k) => k && k !== 'National');
         if (x.price === undefined && x.last_price !== undefined) x.price = x.last_price;
         // Which car this is, carried by the row itself. A table that pools two
         // models has to say which is which on every line, and a row that knows
@@ -6214,8 +6222,8 @@
 
   // ---------- boot ----------
   wireFilters();
-  fetch('data.json', { cache: 'no-cache' })
-    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+  (window.__data || fetch('data.json', { cache: 'no-cache' })
+    .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }))
     .then((raw) => {
       const site = adapt(raw || {});
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }

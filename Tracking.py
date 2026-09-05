@@ -3354,8 +3354,11 @@ def main():
     # The guard is here rather than in the workflow because the workflow is
     # not the only way in. Outputs can always be regenerated for free with
     # tools/rebuild_outputs.py, which is what a re-run is almost always
-    # actually for. ALLOW_REFETCH=1 is the escape hatch for the real case: a
-    # run that died partway and left the day incomplete.
+    # actually for. ALLOW_REFETCH=1 is the escape hatch for the one case
+    # that reaches this guard with a thin day behind it: a COMPLETED run in
+    # which a source failed after retry. A run that died mid-fetch never
+    # gets here — rows are written only after the whole fetch loop, so it
+    # left nothing and the next attempt is not a re-fetch at all.
     already = {r["snapshot_date"] for r in load_history()}
     if TODAY in already and not os.environ.get("ALLOW_REFETCH"):
         due_today = [t["id"] for t in TARGETS.values() if due_on(t, TODAY_ORD)]
@@ -3371,8 +3374,11 @@ def main():
               f"from the snapshot already on disk, for free:\n"
               f"      python3 tools/rebuild_outputs.py\n"
               f"  (A dispatched run does this for you automatically.)\n"
-              f"  To genuinely RE-FETCH — only when a run died partway and "
-              f"left {len(due_today)} due targets incomplete:\n"
+              f"  To genuinely RE-FETCH all {today_calls} calls for the day — "
+              f"only when a completed run reported sources failed after retry; "
+              f"a run that died mid-fetch wrote nothing and simply runs again, "
+              f"and tomorrow's run fetches afresh anyway ({len(due_today)} "
+              f"targets due today):\n"
               f"      ALLOW_REFETCH=1 python3 Tracking.py")
         sys.exit(ALREADY_FETCHED)
 
