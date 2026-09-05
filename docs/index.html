@@ -3309,6 +3309,21 @@
                                      : x.days_tracked === 1) && trackedDays() >= 2;
   const scopeChip = (x) => el('span', { class: 'sc-chip sc-chip--case ' + (x.local ? 'sc-chip--brand' : 'sc-chip--neutral'), title: x.local ? 'Drivable — no shipping' : 'Outside your states — shipping added' }, (x.state || '—').toUpperCase());
   const narrow = () => window.matchMedia('(max-width: 720px)').matches;
+  // The decision card is the first screen on a phone, and each shopped tile
+  // grew ten lines of evidence under its four lines of headline — the floor
+  // day by day, what stands behind it, the drivable alternative and what
+  // driving has cost — until the card ran to two screens and the gap line,
+  // the decision itself, sat a screen and a half down. The evidence is not
+  // dropped: on a phone it folds behind one disclosure per tile, the way the
+  // nationwide picks already fold, and the headline, the typical stand and
+  // the link stay on the first screen. A desktop has the room and shows it
+  // all. `kids` may hold nulls, like every el() call.
+  const foldOnPhone = (summary, kids, counted = true) => {
+    const live = kids.filter(Boolean);
+    if (!live.length) return [];
+    if (!narrow()) return live;
+    return [el('details', { class: 'sc-details hero-fold' }, el('summary', null, counted ? `${summary} · ${live.length} line${live.length === 1 ? '' : 's'}` : summary), ...live)];
+  };
   // The 721–1000px band gets neither the phone cards nor room for the full
   // desktop column set (the eight columns run 1105px; a 721px viewport shows
   // 615px of them). The tables shed their least load-bearing columns per
@@ -3982,6 +3997,7 @@
         // caption counts identities rather than moves, because the floor on
         // this record has never moved by a price changing — every move so far
         // was a car arriving or leaving.
+        ...foldOnPhone('the evidence', [
         ledger ? el('div', { class: 'sc-tile__spark', title: ledger.drawn.map((pt) => `${pt.day} ${money(pt.v)}`).join(' · ') },
           spark(ledger.drawn.map((pt) => pt.v), 120, 26, true)) : null,
         runnerUp != null ? el('div', { class: 'sc-tile__sub' },
@@ -3999,6 +4015,7 @@
           + ` · ${localBest.v === best.v ? 'the same' : money(localBest.v - best.v) + ' more'} ${allIn ? 'all in' : 'landed'}`) : null,
         localBest ? driveGapLine(localBest.x, x) : null,
         localBest && ledger ? drivePremiumLine(ledger) : null,
+        ]),
         // Both directions, for the same reason the shortlist gives them: this
         // tile leads with CHEAPEST, which is a different question from value,
         // and a cheapest car that is also above its own cohort's typical price
@@ -4029,12 +4046,13 @@
     const pa = payFor(a.x), pb = payFor(b.x);
     const dm = (pa != null && pb != null) ? Math.round(pb) - Math.round(pa) : null;
     gap.hidden = false;
-    gap.textContent = `${b.o.m.label} costs ${money(b.total - a.total)} more than ${a.o.m.label} on today's cheapest of each`
-      + (dm != null ? `, ${money(dm)} a month at each car's own rate. ` : '. ')
-      + premiumOverTime(a, b)
-      + premiumBuys(a, b)
-      + moneyBuys(a, b)
-      + basis;
+    gap.textContent = '';
+    const head = `${b.o.m.label} costs ${money(b.total - a.total)} more than ${a.o.m.label} on today's cheapest of each`
+      + (dm != null ? `, ${money(dm)} a month at each car's own rate. ` : '. ');
+    const rest = premiumOverTime(a, b) + premiumBuys(a, b) + moneyBuys(a, b) + basis;
+    // The decision is the first sentence; the record behind it and what the
+    // money buys fold on a phone, as the tiles' evidence does above.
+    gap.append(head, ...foldOnPhone('over the record, and what the money buys', [el('span', null, rest)], false));
   }
   // The premium as a trade rather than a subtraction: what the dearer floor's
   // total buys among the cheaper model's own rule-fit cars, and what the
