@@ -149,7 +149,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   cheapest rule-fit car on each day the trims were fetched — never carried forward, never under five
   cars — with how many cars held it and since when), and one line stating the gap between the two
   models in dollars and per month, and over the days both were fetched: its range, its first and
-  last value, and how much of the change was each side's own floor moving. Then the tiles: **lowest drivable
+  last value, and how much of the change was each side's own floor moving — then what the money buys,
+  in the sheet's own columns for those two cars: model year, miles, owners, certification, days listed,
+  with no verdict attached, and an owner count of 0 read as "not reported", not as a fact. Then the tiles: **lowest drivable
   asking**, lowest nationwide, the market count and what moved since the last snapshot, and — while
   a promotional finance rate is live — what that rate is **worth** on the cheapest car that can
   actually have it. Below
