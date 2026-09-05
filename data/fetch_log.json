@@ -1,0 +1,125 @@
+{
+ "2026-09-05": {
+  "bmw-i5-cpo": {
+   "National": {
+    "dim": "miles",
+    "exhausted": false,
+    "failed": false,
+    "raw": 40,
+    "window": 9184
+   }
+  },
+  "bmw-i5-edrive40": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 100,
+    "window": 43815
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 6,
+    "window": 47359
+   }
+  },
+  "bmw-i5-m60": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 57998
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 14,
+    "window": 75970
+   }
+  },
+  "bmw-i5-xdrive40": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 57979
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 4,
+    "window": 76365
+   }
+  },
+  "bmw-i7-edrive50": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 100,
+    "window": 73373
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 6,
+    "window": 120000
+   }
+  },
+  "hyundai-ioniq5": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 18690
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 23589
+   }
+  },
+  "lucid-air-grand-touring": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 45980
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 18,
+    "window": 74994
+   }
+  },
+  "lucid-air-touring": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 39900
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 45990
+   }
+  }
+ }
+}
