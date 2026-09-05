@@ -5090,11 +5090,12 @@
       const drive = priced.filter(isLocal);
       const landedRows = priced.map(landed).filter((v) => v != null);
       const scored = scoredFrom(c.rows, c.label, c.shopping);
-      const days = c.rows.map((x) => x.days_listed).filter((v) => v != null);
       return { c, priced, best: lowestBy(priced, 'price'), bestLocal: lowestBy(drive, 'price'),
         landed: landedRows.length ? Math.min(...landedRows) : null,
         med: medInt(priced.map((x) => x.price)), medMiles: median(c.rows.map((x) => x.miles).filter((v) => v != null)),
-        medDays: days.length ? median(days) : null,
+        // the list sentence's own figures for this column's rows — one
+        // function, so the cell and the sentence cannot disagree
+        days: marketOf(c.rows, c.gone),
         top: scored.find((p) => p.stand === 'under') || null,   // the best car the interval can defend, or nothing
         // The cheapest MONTHLY, which is not the cheapest landed whenever a
         // promo is in play — that divergence is the entire reason this row
@@ -5184,8 +5185,23 @@
     row('Cars on the market', 'Under the current filters',
       stat.map((v) => cmpCell(String(v.c.rows.length), `${v.c.rows.filter(isLocal).length} drivable · ${v.c.rows.length - v.c.rows.filter(isLocal).length} beyond`)));
     row('Median miles', null, stat.map((v) => cmpCell(v.medMiles != null ? num(v.medMiles) + ' mi' : '—', null)));
-    row('Typical days on market', 'Half of them have been listed longer than this',
-      stat.map((v) => cmpCell(v.medDays != null ? `${Math.round(v.medDays)}d` : '—', null)));
+    // The figure the list sentence prints for the same rows, under the same
+    // floor — twelve dated cars, or nothing — with its denominator beside it,
+    // and truncated like the builder's int(median(...)). This cell read "18d"
+    // for the i5 above a market line reading "17d" for the same cars (a .5
+    // median, rounded here and truncated there), and "9d" for the A6 e-tron
+    // from seven dated cars of twenty-two, a number the sentence refuses to
+    // print. Where dealer stock sits beside used cars with twelve dated on
+    // each side, each market's own figure, as the sentence gives it.
+    row('Typical days on market', 'Half of them have been listed longer than this — over twelve dated cars, or nothing, the list sentence\'s own floor',
+      stat.map((v) => {
+        const d = v.days;
+        return cmpCell(d.dated >= 12 ? `${d.median_days_listed}d` : '—',
+          !d.dated ? 'no listing dates'
+          : d.dated < 12 ? `${d.dated} of ${d.n} dated — too few for a median`
+          : `${d.dated} of ${d.n} dated`
+            + (d.days_split ? ` · ${d.days_split.stock.n} dealer stock at ${d.days_split.stock.days}d, ${d.days_split.used.n} used at ${d.days_split.used.days}d` : ''));
+      }));
     // Each column says what its percentage was measured against, because
     // "21% under" means nothing without it — and because the cohort is exactly
     // what decides whether the winner below may be marked at all. scorePicks
