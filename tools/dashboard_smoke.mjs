@@ -5016,6 +5016,78 @@ await step('a share names the cars it is a share of', async () => {
      + `· ${seen.length} notes, all naming whose pool it is`);
 });
 
+// ---- a car the sheet cannot place is not a car beyond your states ----------
+// "Drivable" is state membership and nothing else, so a listing the API
+// returned with no state at all falls out of drivable and into every bucket
+// opposed to it. The row then read "— · beyond your states": the location cell
+// saying it does not know where the car is, and the clause beside it saying
+// where the car is not. Three live cars are in that state today and eight VINs
+// over the record. They keep the flat shipping estimate — a car that cannot be
+// confirmed drivable has to be priced as though it ships — and lose the claim.
+await step('a car the sheet cannot place is not beyond your states', async () => {
+  plan('the decision tile says the state is missing, not that the car is elsewhere',
+       'the scope chip says the same under its dash',
+       'the model tile counts it apart from the cars it can place',
+       'and so does the watchlist tile');
+  const unplaced = (x) => !x.local && !String(x.state || '').trim();
+  const subject = WATCHED.find((w) => (SHEET.brands[w.bk].models[w.mk].listings || []).some(unplaced));
+  if (!subject) return skipRest('every live car on this sheet carries a state');
+  // The decision tile shows one car per shopped model, and today's unplaced
+  // cars are not the cheapest of theirs — so the line is reached by serving a
+  // sheet in which they are. Blanking the state on every car of one shopped
+  // model makes whichever car the tile picks an unplaced one.
+  const shopped = WATCHED.find((w) => (SHEET.brands[w.bk].models[w.mk] || {}).shopping);
+  if (!shopped) return skipRest('no model on this sheet is being shopped');
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    for (const x of (sheet.brands[shopped.bk].models[shopped.mk].listings || [])) { x.state = ''; x.local = false; }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  let tileTxt = '', chipTitle = '';
+  try {
+    await open('');
+    tileTxt = (await page.locator('#hero-cars .sc-tile__sub').evaluateAll(
+      (ns) => ns.map((n) => n.textContent.trim())
+        .filter((t) => /drivable|beyond your states|state not given/.test(t))))[0] || '';
+    await open(shopped.q);
+    chipTitle = await page.locator('#list-table tbody .sc-chip--case').first()
+      .evaluate((n) => n.getAttribute('title') || '').catch(() => '');
+  } finally { await ctx.unroute('**/data.json'); }
+  ok('the decision tile says the state is missing, not that the car is elsewhere',
+     !!tileTxt && /state not given/.test(tileTxt) && !/beyond your states/.test(tileTxt),
+     `tile line reads "${tileTxt.slice(0, 140)}"`);
+  ok('the scope chip says the same under its dash',
+     /State not given/.test(chipTitle) && !/Outside your states/.test(chipTitle),
+     `chip titled "${chipTitle}"`);
+
+  await open(subject.q);
+
+  // The tile opposes drivable to beyond, so an unplaced car silently joined
+  // the second number. It is named instead, in the map hint's own words.
+  const nUn = (SHEET.brands[subject.bk].models[subject.mk].listings || []).filter(unplaced).length;
+  const tile = (await page.locator('#kpis .sc-tile__sub').evaluateAll((ns) => ns.map((n) => n.textContent.trim())))
+    .find((t) => /drivable/.test(t)) || '';
+  const beyond = Number((tile.match(/(\d+) beyond your states/) || [])[1]);
+  const total = (SHEET.brands[subject.bk].models[subject.mk].listings || []).length;
+  const local = (SHEET.brands[subject.bk].models[subject.mk].listings || []).filter((x) => x.local).length;
+  ok('the model tile counts it apart from the cars it can place',
+     new RegExp(`${nUn} with no state`).test(tile) && beyond === total - local - nUn,
+     `tile says "${tile.slice(0, 110)}" · ${total} cars, ${local} drivable, ${nUn} unplaced`);
+
+  await open('');
+  const all = Object.values(SHEET.brands).flatMap((b) => Object.values(b.models || {}))
+    .flatMap((m) => m.listings || []);
+  const nUnAll = all.filter(unplaced).length;
+  const wTile = (await page.locator('#kpis .sc-tile__sub').evaluateAll((ns) => ns.map((n) => n.textContent.trim())))
+    .find((t) => /drivable/.test(t) && /model/.test(t)) || '';
+  const wBeyond = Number((wTile.match(/(\d+) beyond your states/) || [])[1]);
+  ok('and so does the watchlist tile',
+     new RegExp(`${nUnAll} with no state`).test(wTile)
+     && wBeyond === all.length - all.filter((x) => x.local).length - nUnAll,
+     `tile says "${wTile.slice(0, 120)}" · ${all.length} cars, ${nUnAll} unplaced`);
+});
+
 // ---- the cut sort's own note may not call a sawtooth flip a cut -------------
 // Sorting by "cut at the latest snapshot" prints the number the sort ran on
 // beside each row, because the movement badge shows the LIFETIME change and
@@ -5172,7 +5244,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 241;
+const EXPECTED = 245;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');

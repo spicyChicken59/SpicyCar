@@ -3064,8 +3064,18 @@ def brief_lines(m_entry, listings, prev_day):
                if g["likely"] == "delisted" and g["prev_fetch_day"]
                and g["last_seen"] == g["prev_fetch_day"]
                and departure_is_evidence(g))
+    # A car the sheet carries no state for is not drivable and not beyond the
+    # buyer's states either: in_scope() asks whether the state is one of the
+    # buyer's, so a blank state falls out of the first bucket and the page used
+    # to drop it silently into the second. Three live cars and eight VINs over
+    # the record are in that position. The record names them for the same
+    # reason the page does — a count that opposes two buckets has to say when
+    # a car is in neither.
+    unplaced = sum(1 for x in listings
+                   if not x["local"] and not str(x.get("state") or "").strip())
     line = (f"- {len(listings)} on the market · "
-            f"{sum(1 for x in listings if x['local'])} drivable")
+            f"{sum(1 for x in listings if x['local'])} drivable"
+            + (f" · {unplaced} with no state" if unplaced else ""))
     if prev_day:
         line += (f" · {movers} price change{'s' if movers != 1 else ''}"
                  + (f" ({swings} more moved, seen at two prices, not counted)" if swings else "")
