@@ -1000,6 +1000,35 @@ def fmt_pick(p):
     return line
 
 
+def two_prices(series):
+    """[low, high] when a car's record is two prices held in turn, else None.
+
+    The storefront sawtooth: a VIN that surfaces through a group's storefronts
+    at two fixed prices on alternate days reads as a series of cuts and
+    restorations — WBY33FK05RCP99465 shipped as 4 cuts on a record that was
+    54,999 / 55,849 / 54,999 / 55,849 for thirteen days — and every downward
+    step of it was counted as a cut a dealer took. Two distinct prices, each
+    seen at least twice, with a step in each direction: that shape is the
+    car being SEEN at two prices, and the page says exactly that and no
+    more. A single blip up and back, or a cut that was later put back once,
+    has one of its prices seen only once and stays what it is: a cut that
+    did not stick, which the "cut and put back" count already names. The
+    dealer string flipping with the price is what would make this "two
+    storefronts", and the sheet does not carry the dealer by day, so the
+    page does not say it.
+    """
+    prices = [p for _, p in (series or []) if p]
+    distinct = sorted(set(prices))
+    if len(distinct) != 2 or len(prices) < 4:
+        return None
+    if any(prices.count(p) < 2 for p in distinct):
+        return None
+    steps = [b - a for a, b in zip(prices, prices[1:]) if b != a]
+    if not any(d < 0 for d in steps) or not any(d > 0 for d in steps):
+        return None
+    return distinct
+
+
 def market_stats(listings):
     """Per-model market context — the numbers a negotiation opens with: how
     long cars typically sit, what share have been cut while tracked, and the
@@ -1012,9 +1041,15 @@ def market_stats(listings):
         x["stale_pct"] = (round(sum(1 for v in dl if v < d) / len(dl), 2)
                           if dl and d is not None else None)
     tracked = [x for x in listings if x.get("days_tracked", 0) >= 2]
-    cut_cars = [x for x in tracked if x.get("cuts")]
+    # Seen at two prices is not cut: those cars leave every cut figure and
+    # are counted apart, with the sentence saying so — see two_prices().
+    two_priced = [x for x in tracked if two_prices(x.get("series"))]
+    swings = {id(x) for x in two_priced}
+    cut_cars = [x for x in tracked if x.get("cuts") and id(x) not in swings]
     drops = []
     for x in listings:
+        if id(x) in swings:
+            continue
         s = x.get("series") or []
         drops += [a - b for (_, a), (_, b) in zip(s, s[1:]) if b < a]
     # A cut that stuck, told apart from a step that bounced back. cut_share
@@ -1027,16 +1062,18 @@ def market_stats(listings):
     # on; "69 of 131 ask less than when first seen, median $900 less" is.
     # Counts with their denominator, never a rate, so the two never get
     # compared across trims by eye.
-    net_down = [x for x in tracked if (x.get("delta") or 0) < 0]
-    restored = [x for x in tracked if x.get("cuts") and (x.get("delta") or 0) >= 0]
+    net_down = [x for x in tracked if (x.get("delta") or 0) < 0 and id(x) not in swings]
+    restored = [x for x in tracked if x.get("cuts") and (x.get("delta") or 0) >= 0 and id(x) not in swings]
+    counted = len(tracked) - len(two_priced)
     return {
         "median_days_listed": int(median(dl)) if dl else None,
         "tracked_2d": len(tracked),
-        "cut_share": round(len(cut_cars) / len(tracked), 2) if tracked else None,
+        "cut_share": round(len(cut_cars) / counted, 2) if counted else None,
         "median_cut": int(median(drops)) if drops else None,
         "net_down": len(net_down),
         "restored": len(restored),
         "median_net_drop": int(median(-x["delta"] for x in net_down)) if net_down else None,
+        "two_priced": len(two_priced),
     }
 
 
@@ -1361,6 +1398,8 @@ def market_line(stats):
         cut = f"{stats['cut_share']:.0%} cut while tracked"
         if stats.get("median_cut"):
             cut += f", median {money(stats['median_cut'])}"
+        if stats.get("two_priced"):
+            cut += f" · {stats['two_priced']} seen at two prices, not counted"
         bits.append(cut)
     # "Delisted" is not "sold" — a car whose ad ends may have sold, gone to
     # auction, moved lots, or simply expired, and none of those are
@@ -1473,7 +1512,10 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
             line = "- " + " · ".join(b for b in bits if b)
             tags = []
             series = x.get("series") or []
-            if (len(series) >= 2 and series[-1][0] == TODAY
+            swing = two_prices(series)
+            if swing:
+                tags.append(f"seen at {money(swing[0])} and {money(swing[1])}")
+            elif (len(series) >= 2 and series[-1][0] == TODAY
                     and series[-1][1] < series[-2][1]):
                 tags.append(f"▼ CUT {money(series[-2][1] - series[-1][1])} today")
             elif x.get("cuts"):
@@ -2464,7 +2506,10 @@ def fmt_row(r, s, entry=None):
     bits.append(where)
     out = "- " + " · ".join(str(b) for b in bits)
     tags = []
-    if s.get("cuts"):
+    swing = two_prices(s.get("series"))
+    if swing:
+        tags.append(f"seen at {money(swing[0])} and {money(swing[1])}")
+    elif s.get("cuts"):
         tags.append(cut_tag(s["cuts"], s.get("delta") or 0))
     if s.get("days_tracked", 0) >= 21:
         tags.append(seen_label(s))
@@ -3143,7 +3188,10 @@ def build_outputs(today_rows, all_rows, hist):
                     # gone" and per-model lines counting 42 price changes. Per
                     # MODEL, because a slow-cadence model's last fetch is its
                     # own, which is the same rule new and gone follow.
-                    if len(s_) >= 2 and s_[-1][0] == as_of and s_[-1][1] < s_[-2][1]:
+                    # a two-price car's downward day is its other price, not a
+                    # cut a dealer took today — see two_prices()
+                    if (len(s_) >= 2 and s_[-1][0] == as_of and s_[-1][1] < s_[-2][1]
+                            and not two_prices(s_)):
                         events["cuts"].append({"amount": s_[-2][1] - s_[-1][1],
                                                "x": x, "label": name,
                                                "shopping": shopping})

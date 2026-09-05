@@ -2438,9 +2438,11 @@ await step('the market sentence describes the trim in view', async () => {
   const med = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
   const bitsOf = (rows, gone) => {
     const dl = rows.map((x) => x.days_listed).filter((v) => v != null);
-    const tracked = rows.filter((x) => (x.days_tracked || 0) >= 2), cut = tracked.filter((x) => x.cuts);
+    // seen at two prices is not cut — two distinct prices, each seen twice, a step each way — and such cars are set aside from every cut figure
+    const swing = (x) => { const ps = (x.series || []).map((pt) => pt[1]).filter(Boolean), d = [...new Set(ps)]; if (d.length !== 2 || ps.length < 4 || d.some((p) => ps.filter((q) => q === p).length < 2)) return false; let dn = false, up = false; for (let i = 1; i < ps.length; i++) { if (ps[i] < ps[i - 1]) dn = true; else if (ps[i] > ps[i - 1]) up = true; } return dn && up; };
+    const tracked = rows.filter((x) => (x.days_tracked || 0) >= 2), swings = tracked.filter(swing), counted = tracked.filter((x) => !swing(x)), cut = counted.filter((x) => x.cuts);
     const drops = [];
-    for (const x of rows) { const s = x.series || []; for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]); }
+    for (const x of rows) { if (swing(x)) continue; const s = x.series || []; for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]); }
     const spans = [], seen = new Set();
     for (const g of gone) {
       if (g.likely !== 'delisted' || g.exact !== true || !g.listed_since) continue;
@@ -2453,10 +2455,10 @@ await step('the market sentence describes the trim in view', async () => {
     if (dl.length >= 12) out.push(`typical car ${Math.trunc(med(dl))}d on market (${dl.length} of ${rows.length} dated)`
       + (stock.length >= 12 && used.length >= 12 ? ` — ${stock.length} dealer stock at ${Math.trunc(med(stock))}d, ${used.length} used at ${Math.trunc(med(used))}d` : ''));
     if (tracked.length >= 5) {
-      const netDown = tracked.filter((x) => (x.delta || 0) < 0), restored = tracked.filter((x) => x.cuts && (x.delta || 0) >= 0);
+      const netDown = counted.filter((x) => (x.delta || 0) < 0), restored = counted.filter((x) => x.cuts && (x.delta || 0) >= 0);
       const medNet = netDown.length ? Math.trunc(med(netDown.map((x) => -x.delta))) : null;
       out.push(`${netDown.length} of ${tracked.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
-      out.push(`${Math.round(cut.length / tracked.length * 100)}% of ${tracked.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')}` : ''));
+      out.push(`${counted.length ? Math.round(cut.length / counted.length * 100) : 0}% of ${counted.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')}` : '') + (swings.length ? ` · ${swings.length} seen at two prices, not counted` : ''));
     }
     if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
     return { out, spans: spans.length };
@@ -2544,6 +2546,98 @@ await step('the market sentence describes the trim in view', async () => {
   } finally {
     await ctx.unroute('**/data.json');
   }
+});
+
+// --- seen at two prices is not cut ------------------------------------------
+// A VIN surfacing through a group's storefronts at two fixed prices on
+// alternate days read as four cuts and four restorations, and every downward
+// step counted as a cut a dealer took. Two distinct prices, each seen at least
+// twice, a step each way: that car was seen at two prices, and the page says
+// exactly that — on the row, in the market sentence's set-aside count, in the
+// movement tile's cut count and on the shortlist table. Recomputed from the
+// sheet; then a served sheet gives one car a single blip up and back, which
+// must stay a cut that did not stick, never a second price.
+await step('seen at two prices is not cut', async () => {
+  plan('a car seen at two prices wears those prices, not a cut count',
+       'and the movement tile does not count its down day as a cut',
+       'and on the shortlist table it reads the same',
+       'and a single blip up and back is still a cut that did not stick',
+       'and the cut share is read over the cars that were counted');
+  const swingOf = (x) => { const ps = (x.series || []).map((pt) => pt[1]).filter(Boolean), d = [...new Set(ps)].sort((a, b) => a - b); if (d.length !== 2 || ps.length < 4 || d.some((p) => ps.filter((q) => q === p).length < 2)) return null; let dn = false, up = false; for (let i = 1; i < ps.length; i++) { if (ps[i] < ps[i - 1]) dn = true; else if (ps[i] > ps[i - 1]) up = true; } return dn && up ? d : null; };
+  const money = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const found = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] })).map((o) => ({ ...o, cars: (o.m.listings || []).filter((x) => swingOf(x)) })).filter((o) => o.cars.length).sort((a, b) => b.cars.length - a.cars.length)[0];
+  if (!found) return skipRest('no car on the sheet has been seen at exactly two prices in turn');
+  const car = found.cars[0], pair = swingOf(car);
+  await open(found.w.q);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+  await open(found.w.q);
+  if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+  const rowText = await page.evaluate((vin) => { const b = document.querySelector(`#list-table [data-fkey="star:${vin}"]`); const tr = b && b.closest('tr'); return tr ? tr.textContent.replace(/\s+/g, ' ') : ''; }, car.vin);
+  const wantChip = `seen at ${money(pair[0])} and ${money(pair[1])}`;
+  ok('a car seen at two prices wears those prices, not a cut count', rowText.includes(wantChip) && !/\d+ cuts?\b/.test(rowText.split(wantChip)[0].slice(-40)),
+     `${car.vin.slice(-6)} (${(car.series || []).map((pt) => pt[1]).slice(-6).join('/')}): row ${rowText.includes(wantChip) ? `says "${wantChip}"` : `lacks "${wantChip}"`}`);
+  // the movement tile: cars whose last step is down, minus those seen at two prices
+  const lastStep = (x) => (x.series && x.series.length >= 2) ? x.series[x.series.length - 1][1] - x.series[x.series.length - 2][1] : 0;
+  const listings = found.m.listings || [];
+  const wantCuts = listings.filter((x) => lastStep(x) < 0 && !swingOf(x)).length, rawCuts = listings.filter((x) => lastStep(x) < 0).length;
+  const tileTxt = await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent.replace(/\s+/g, ' ')).find((t) => /since the previous/i.test(t)) || '');
+  const mCut = tileTxt.match(/(\d+) (?:price )?cuts?/);   // no \b: the tile's text runs "7 price cuts2 new" together
+  if (!(found.m.daily || []).length || (found.m.daily || []).length < 2) skip('and the movement tile does not count its down day as a cut', 'no previous snapshot to move from');
+  else ok('and the movement tile does not count its down day as a cut', !!mCut && Number(mCut[1]) === wantCuts,
+          `tile "${(tileTxt.match(/\d+ (?:price )?cuts?[^·]*/) || [tileTxt.slice(0, 60)])[0].trim()}" · sheet: ${wantCuts} cut (${rawCuts} with the sawtooth's down days counted)`);
+  // the shortlist table: star the car and one more
+  const other = listings.find((x) => x.vin !== car.vin && x.price != null);
+  for (const v of [car.vin, other && other.vin].filter(Boolean)) { await page.click(`button[data-fkey="star:${v}"]`); await page.waitForTimeout(150); }
+  const cell = await page.evaluate((vin) => {
+    const tbl = document.getElementById('finalists-table'); if (!tbl) return null;
+    const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.querySelector(`[data-fkey="fin:${vin}"]`));
+    const row = [...tbl.querySelectorAll('tbody tr')].find((tr) => /on the market/i.test(tr.children[0].textContent));   // days listed, then the cut note
+    if (col < 0 || !row) return { col, rows: [...tbl.querySelectorAll('tbody tr')].map((tr) => tr.children[0].textContent.trim()) };
+    return { text: row.children[col].textContent.replace(/\s+/g, ' ').trim() };
+  }, car.vin);
+  ok('and on the shortlist table it reads the same', !!cell && typeof cell.text === 'string' && cell.text.includes(wantChip),
+     cell && cell.text ? `"${cell.text}"` : `no movement row found: ${JSON.stringify(cell)}`);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
+  // Served: the same car with its record rewritten to one blip — the high
+  // price seen once — so it is a cut that was put back, not two prices.
+  const planted = JSON.parse(JSON.stringify(found.m));
+  const px = planted.listings.find((x) => x.vin === car.vin);
+  px.series = px.series.map((pt, i) => [pt[0], i === 1 ? pair[1] : pair[0]]);
+  px.cuts = 1; px.delta = 0; px.price = pair[0];
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.brands[found.w.bk].models[found.w.mk] = planted;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(found.w.q);
+    if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+    const rowText2 = await page.evaluate((vin) => { const b = document.querySelector(`#list-table [data-fkey="star:${vin}"]`); const tr = b && b.closest('tr'); return tr ? tr.textContent.replace(/\s+/g, ' ') : ''; }, car.vin);
+    ok('and a single blip up and back is still a cut that did not stick', /cut, then back up/.test(rowText2) && !rowText2.includes('seen at'),
+       `${car.vin.slice(-6)} with one sighting of ${money(pair[1])}: ${/cut, then back up/.test(rowText2) ? 'reads "cut, then back up"' : rowText2.includes('seen at') ? 'still reads "seen at"' : `reads "${rowText2.slice(0, 80)}"`}`);
+  } finally { await ctx.unroute('**/data.json'); }
+  // Served: twenty tracked cars that were not sawtooths rewritten into
+  // sawtooths, so the set-aside count is large and a share read over every
+  // tracked car cannot round to the share read over the cars that were
+  // counted — on the live sheet the two can coincide to the percent.
+  const planted2 = JSON.parse(JSON.stringify(found.m));
+  const rewrite = planted2.listings.filter((x) => (x.days_tracked || 0) >= 4 && !swingOf(x)).slice(0, 20);
+  for (const x of rewrite) { const lo = x.price, hi = x.price + 500; x.series = x.series.map((pt, i) => [pt[0], i % 2 ? hi : lo]); x.cuts = Math.floor((x.series.length - 1) / 2); x.delta = x.series[x.series.length - 1][1] - lo; x.price = x.series[x.series.length - 1][1]; }
+  const tracked2 = planted2.listings.filter((x) => (x.days_tracked || 0) >= 2), swings2 = tracked2.filter(swingOf), counted2 = tracked2.filter((x) => !swingOf(x)), cut2 = counted2.filter((x) => x.cuts);
+  const wantShare = `${counted2.length ? Math.round(cut2.length / counted2.length * 100) : 0}% of ${counted2.length} cut while tracked`;
+  const naive = `${Math.round(cut2.length / tracked2.length * 100)}%`;
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.brands[found.w.bk].models[found.w.mk] = planted2;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(found.w.q);
+    const line = ((await page.textContent('#list-hint')) || '') + ' ' + ((await page.locator('#list-card .sc-hint, #list-card p').allTextContents()).join(' '));
+    const said = (line.match(/\d+% of \d+ cut while tracked[^·]*·? ?(?:\d+ seen at two prices, not counted)?/) || [''])[0].replace(/\s+/g, ' ').trim();
+    ok('and the cut share is read over the cars that were counted', said.startsWith(wantShare) && said.includes(`${swings2.length} seen at two prices, not counted`),
+       `${rewrite.length} cars rewritten (${swings2.length} sawtooths of ${tracked2.length} tracked): page "${said || '(no cut clause)'}" · sheet "${wantShare} · ${swings2.length} seen at two prices, not counted" (${naive} if read over every tracked car)`);
+  } finally { await ctx.unroute('**/data.json'); }
 });
 
 // --- dealer stock is a market of its own ------------------------------------
@@ -4379,7 +4473,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 198;
+const EXPECTED = 203;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
