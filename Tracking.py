@@ -1069,6 +1069,10 @@ def market_stats(listings):
         d = x.get("days_listed")
         x["stale_pct"] = (round(sum(1 for v in dl if v < d) / len(dl), 2)
                           if dl and d is not None else None)
+        # …and what that share is a share OF: the cars carrying a listing
+        # date, 85 of the i5's 134. "Longer than 75% of the model" claimed
+        # the whole model and meant the dated part of it.
+        x["stale_of"] = len(dl) if dl else None
     tracked = [x for x in listings if x.get("days_tracked", 0) >= 2]
     # Seen at two prices is not cut: those cars leave every cut figure and
     # are counted apart, with the sentence saying so — see two_prices().
@@ -1096,6 +1100,10 @@ def market_stats(listings):
     counted = len(tracked) - len(two_priced)
     return {
         "median_days_listed": int(median(dl)) if dl else None,
+        # …over how many of how many. The dashboard has printed "(85 of 134
+        # dated)" since the days split was built; the committed record printed
+        # a bare median of the 85 as if it were the model's.
+        "dated": len(dl), "n": len(listings),
         "tracked_2d": len(tracked),
         "cut_share": round(len(cut_cars) / counted, 2) if counted else None,
         "median_cut": int(median(drops)) if drops else None,
@@ -1422,8 +1430,12 @@ def one_cohort(gone):
 def market_line(stats):
     """The market context as one report phrase, or ''. """
     bits = []
-    if stats.get("median_days_listed") is not None:
-        bits.append(f"typical car {stats['median_days_listed']}d on market")
+    if (stats.get("median_days_listed") is not None
+            and (stats.get("dated") is None or stats["dated"] >= 12)):
+        # Twelve dated cars or nothing, and the count beside it — the page's
+        # rule and the page's words, which the record did not carry.
+        bits.append(f"typical car {stats['median_days_listed']}d on market"
+                    + (f" ({stats['dated']} of {stats['n']} dated)" if stats.get("n") else ""))
     if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
         # The cuts that stuck lead, with their denominator — see market_stats.
         # The share of cars with any downward step follows, since it is the
@@ -1511,8 +1523,15 @@ def build_today(events):
                    f"{money(x['price'])} · {place(x)}"
                    f"{' · drivable' if x['local'] else ''} `{x['vin']}`")
     if len(cuts) > 3:
-        sec.append(f"- …and {len(cuts) - 3} more price change{'s' if len(cuts) - 3 != 1 else ''}"
-                   " in the sections below")
+        # Cuts, not "price changes": events["cuts"] takes only the downward
+        # steps, so a line calling itself price changes counted none of the
+        # increases the sections below go on to list — 53 cuts headlined here
+        # against 64 price-change rows down the page, 28 of them upward, on
+        # the day this was written. Either the word or the list had to give,
+        # and the word was the one that was wrong: the three bullets above
+        # this line are cuts, so the overflow from them is cuts.
+        sec.append(f"- …and {len(cuts) - 3} more cut{'s' if len(cuts) - 3 != 1 else ''}"
+                   " today, listed in the sections below")
     if cuts and not bits:
         e = cuts[0]
         bits.append(f"▼{money(e['amount'])} cut on "
@@ -2599,7 +2618,8 @@ def fmt_row(r, s, entry=None):
     # negotiation context: a car most of its own model has outsold is a car
     # whose dealer has a reason to talk
     if entry and (entry.get("stale_pct") or 0) >= 0.75:
-        tags.append(f"sits longer than {entry['stale_pct']:.0%} of the model")
+        tags.append(f"sits longer than {entry['stale_pct']:.0%} of the "
+                    + (f"{entry['stale_of']} dated cars" if entry.get("stale_of") else "model"))
     tags += flags(r)
     if tags:
         out += f"\n  _{' · '.join(tags)}_"
@@ -3007,8 +3027,13 @@ def brief_lines(m_entry, listings, prev_day):
                    f"({place(b)}) · no shipping")
     elif STATES:
         out.append(f"- Nothing drivable ({scope_label()})")
+    # A car seen at two prices moves every fetch and took none of them: it is
+    # out of every cut figure already, and counting its flip as a price change
+    # made one line disagree with the rest of the sentence — 37 against 33.
+    swings = sum(1 for x in listings if two_prices(x.get("series")))
     movers = sum(1 for x in listings if len(x["series"]) >= 2
-                 and x["series"][-1][1] != x["series"][-2][1])
+                 and x["series"][-1][1] != x["series"][-2][1]
+                 and not two_prices(x.get("series")))
     new = sum(1 for x in listings if is_new_today(x)) if prev else 0
     # each trim vanishes on its own cadence — compare against the trim's own
     # previous fetch day, or a slower trim's departures never count
@@ -3019,8 +3044,9 @@ def brief_lines(m_entry, listings, prev_day):
     line = (f"- {len(listings)} on the market · "
             f"{sum(1 for x in listings if x['local'])} drivable")
     if prev_day:
-        line += (f" · {movers} price change{'s' if movers != 1 else ''} · "
-                 f"{new} new · {gone} gone")
+        line += (f" · {movers} price change{'s' if movers != 1 else ''}"
+                 + (f" ({swings} more seen at two prices, not counted)" if swings else "")
+                 + f" · {new} new · {gone} gone")
     out.append(line)
     return out
 
@@ -3046,7 +3072,8 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
     # 80, 80, 80, 85 nine times, 95, 99, 100 five times, so $100 falls at the
     # densest point of the tail rather than at a gap.
     movers = sorted([x for x in tl if len(x["series"]) >= 2
-                     and x["series"][-1][1] != x["series"][-2][1]],
+                     and x["series"][-1][1] != x["series"][-2][1]
+                     and not two_prices(x.get("series"))],
                     key=lambda x: -abs(x["series"][-1][1] - x["series"][-2][1]))
     if movers:
         sec.append("**Price changes**")
@@ -3096,7 +3123,11 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         sec.append("")
     best5 = [x for x in tl if x["price"] is not None and not x["local"]][:5]
     if best5:
-        sec.append("**Cheapest beyond your states (shipping stated)**")
+        # "Lowest asking", not "cheapest": best5 is chosen by ASKING price
+        # and every row prints a landed total, so the fifth row can land above
+        # a car the list left out — today the M60's fifth lands at $55,395
+        # while a car asking more but shipping less would have beaten it.
+        sec.append("**Lowest asking beyond your states (shipping estimated)**")
         for x in best5:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
                                summarize((t["id"], x["vin"]), hist), x))

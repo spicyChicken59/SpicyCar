@@ -329,7 +329,8 @@
          36479
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK01RCR76593",
@@ -424,7 +425,8 @@
          36597
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK08RCS83536",
@@ -516,7 +518,8 @@
          36999
         ]
        ],
-       "stale_pct": 0.92
+       "stale_pct": 0.92,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK02RCS83564",
@@ -612,7 +615,8 @@
          38498
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK00RCP55213",
@@ -707,7 +711,8 @@
          39217
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK08RCP70798",
@@ -802,7 +807,8 @@
          39862
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.55,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK08RCS78319",
@@ -878,7 +884,8 @@
          39877
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR58557",
@@ -970,7 +977,8 @@
          39922
         ]
        ],
-       "stale_pct": 0.96
+       "stale_pct": 0.96,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK00RCR12965",
@@ -1065,7 +1073,8 @@
          39995
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK07RCR36227",
@@ -1140,7 +1149,8 @@
          39998
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK01RCS76878",
@@ -1236,7 +1246,8 @@
          40083
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR47204",
@@ -1331,7 +1342,8 @@
          40097
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03RCP23159",
@@ -1374,7 +1386,8 @@
          40640
         ]
        ],
-       "stale_pct": 0.07
+       "stale_pct": 0.07,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR89422",
@@ -1443,7 +1456,8 @@
          40980
         ]
        ],
-       "stale_pct": 0.19
+       "stale_pct": 0.19,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK04RCS86613",
@@ -1539,7 +1553,8 @@
          40990
         ]
        ],
-       "stale_pct": 0.46
+       "stale_pct": 0.46,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05RCS80027",
@@ -1635,7 +1650,8 @@
          40990
         ]
        ],
-       "stale_pct": 0.75
+       "stale_pct": 0.75,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK01RCS37885",
@@ -1731,7 +1747,8 @@
          40998
         ]
        ],
-       "stale_pct": 0.87
+       "stale_pct": 0.87,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK00SCT64147",
@@ -1827,7 +1844,8 @@
          41588
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR93843",
@@ -1922,7 +1940,8 @@
          41645
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK04RCR68522",
@@ -2011,7 +2030,8 @@
          41674
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK0XRCP53727",
@@ -2105,7 +2125,8 @@
          41841
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR50278",
@@ -2202,7 +2223,8 @@
          41891
         ]
        ],
-       "stale_pct": 0.58
+       "stale_pct": 0.58,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09RCP95158",
@@ -2296,7 +2318,8 @@
          41977
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03RCS37886",
@@ -2392,7 +2415,8 @@
          41990
         ]
        ],
-       "stale_pct": 0.48
+       "stale_pct": 0.48,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05RCS37890",
@@ -2488,7 +2512,8 @@
          41996
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03SCT63915",
@@ -2584,7 +2609,8 @@
          42522
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09RCR29277",
@@ -2680,7 +2706,8 @@
          42590
         ]
        ],
-       "stale_pct": 0.75
+       "stale_pct": 0.75,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK07RCR83662",
@@ -2775,7 +2802,8 @@
          42694
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK02RCS84701",
@@ -2839,7 +2867,8 @@
          42961
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03RCR30750",
@@ -2934,7 +2963,8 @@
          42987
         ]
        ],
-       "stale_pct": 0.69
+       "stale_pct": 0.69,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK07RCS39463",
@@ -3030,7 +3060,8 @@
          42990
         ]
        ],
-       "stale_pct": 0.75
+       "stale_pct": 0.75,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK00RCS84678",
@@ -3126,7 +3157,8 @@
          42990
         ]
        ],
-       "stale_pct": 0.52
+       "stale_pct": 0.52,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05RCS41308",
@@ -3222,7 +3254,8 @@
          42990
         ]
        ],
-       "stale_pct": 0.52
+       "stale_pct": 0.52,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK08RCR30534",
@@ -3278,7 +3311,8 @@
          42999
         ]
        ],
-       "stale_pct": 0.12
+       "stale_pct": 0.12,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK08RCR89213",
@@ -3373,7 +3407,8 @@
          42999
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.55,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCP59377",
@@ -3456,7 +3491,8 @@
          43349
         ]
        ],
-       "stale_pct": 0.38
+       "stale_pct": 0.38,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK01RCP17182",
@@ -3539,7 +3575,8 @@
          43580
         ]
        ],
-       "stale_pct": 0.38
+       "stale_pct": 0.38,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK01RCS84947",
@@ -3595,7 +3632,8 @@
          43586
         ]
        ],
-       "stale_pct": 0.52
+       "stale_pct": 0.52,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05RCS39462",
@@ -3691,7 +3729,8 @@
          43815
         ]
        ],
-       "stale_pct": 0.94
+       "stale_pct": 0.94,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK0XRCR49411",
@@ -3783,7 +3822,8 @@
          43998
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK04RCR29347",
@@ -3878,7 +3918,8 @@
          44582
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK01RCP79925",
@@ -3922,7 +3963,8 @@
          45169
         ]
        ],
-       "stale_pct": 0.07
+       "stale_pct": 0.07,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK0XRCR35394",
@@ -4018,7 +4060,8 @@
          45209
         ]
        ],
-       "stale_pct": 0.93
+       "stale_pct": 0.93,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR64195",
@@ -4114,7 +4157,8 @@
          45290
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK0XRCR64149",
@@ -4189,7 +4233,8 @@
          45416
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09RCP96469",
@@ -4286,7 +4331,8 @@
          45717
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09SCT64650",
@@ -4392,7 +4438,8 @@
          0
         ]
        ],
-       "stale_pct": 0.75
+       "stale_pct": 0.75,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03RCR06660",
@@ -4482,7 +4529,8 @@
          45998
         ]
        ],
-       "stale_pct": 0.84
+       "stale_pct": 0.84,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK04RCP70801",
@@ -4557,7 +4605,8 @@
          46083
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03SCT79709",
@@ -4629,7 +4678,8 @@
          46376
         ]
        ],
-       "stale_pct": 0.19
+       "stale_pct": 0.19,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09RCP36448",
@@ -4713,7 +4763,8 @@
          46393
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.4,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG09SCS84860",
@@ -4784,7 +4835,8 @@
          46538
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR16860",
@@ -4833,7 +4885,8 @@
          46762
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK00RCR18216",
@@ -4916,7 +4969,8 @@
          46781
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK03RCR45219",
@@ -4987,7 +5041,8 @@
          46995
         ]
        ],
-       "stale_pct": 0.46
+       "stale_pct": 0.46,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05SCT65228",
@@ -5035,7 +5090,8 @@
          47300
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06SCU63880",
@@ -5131,7 +5187,8 @@
          47336
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09RCR14004",
@@ -5225,7 +5282,8 @@
          47359
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG09SCS35108",
@@ -5277,7 +5335,8 @@
          47500
         ]
        ],
-       "stale_pct": 0.15
+       "stale_pct": 0.15,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK01RCR49667",
@@ -5353,7 +5412,8 @@
          47525
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK0XSCU70010",
@@ -5449,7 +5509,8 @@
          47686
         ]
        ],
-       "stale_pct": 0.95
+       "stale_pct": 0.95,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03RCR98692",
@@ -5489,7 +5550,8 @@
          47990
         ]
        ],
-       "stale_pct": 0.04
+       "stale_pct": 0.04,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK07RCR76727",
@@ -5531,7 +5593,8 @@
          48084
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK07SCT62315",
@@ -5615,7 +5678,8 @@
          48231
         ]
        ],
-       "stale_pct": 0.01
+       "stale_pct": 0.01,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK04SCT75975",
@@ -5711,7 +5775,8 @@
          48640
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG06SCS41187",
@@ -5782,7 +5847,8 @@
          48643
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR84771",
@@ -5877,7 +5943,8 @@
          48749
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR97679",
@@ -5923,7 +5990,8 @@
          48776
         ]
        ],
-       "stale_pct": 0.04
+       "stale_pct": 0.04,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09RCR29425",
@@ -5999,7 +6067,8 @@
          48898
         ]
        ],
-       "stale_pct": 0.19
+       "stale_pct": 0.19,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK03RCP91607",
@@ -6055,7 +6124,8 @@
          48999
         ]
        ],
-       "stale_pct": 0.13
+       "stale_pct": 0.13,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK08SCU88019",
@@ -6151,7 +6221,8 @@
          49000
         ]
        ],
-       "stale_pct": 0.88
+       "stale_pct": 0.88,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG02SCS75188",
@@ -6222,7 +6293,8 @@
          49163
         ]
        ],
-       "stale_pct": 0.98
+       "stale_pct": 0.98,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05SCU88074",
@@ -6307,7 +6379,8 @@
          49388
         ]
        ],
-       "stale_pct": 0.88
+       "stale_pct": 0.88,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK00RCR89528",
@@ -6402,7 +6475,8 @@
          49698
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK02RCP20158",
@@ -6473,7 +6547,8 @@
          49985
         ]
        ],
-       "stale_pct": 0.82
+       "stale_pct": 0.82,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG04SCS35730",
@@ -6536,7 +6611,8 @@
          50239
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.4,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK0XRCP79863",
@@ -6607,7 +6683,8 @@
          50370
         ]
        ],
-       "stale_pct": 0.48
+       "stale_pct": 0.48,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK09SCT65958",
@@ -6703,7 +6780,8 @@
          51353
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG00SCU51722",
@@ -6774,7 +6852,8 @@
          51476
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06SCU73471",
@@ -6870,7 +6949,8 @@
          52176
         ]
        ],
-       "stale_pct": 0.73
+       "stale_pct": 0.73,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG08SCT69740",
@@ -6941,7 +7021,8 @@
          52250
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK07RCR14051",
@@ -7015,7 +7096,8 @@
          52776
         ]
        ],
-       "stale_pct": 0.19
+       "stale_pct": 0.19,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK08RCR59679",
@@ -7086,7 +7168,8 @@
          52825
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG03SCT44406",
@@ -7157,7 +7240,8 @@
          53052
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05RCS22435",
@@ -7248,7 +7332,8 @@
          53616
         ]
        ],
-       "stale_pct": 0.58
+       "stale_pct": 0.58,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG05SCT74359",
@@ -7295,7 +7380,8 @@
          53811
         ]
        ],
-       "stale_pct": 0.04
+       "stale_pct": 0.04,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG04SCT78578",
@@ -7367,7 +7453,8 @@
          53990
         ]
        ],
-       "stale_pct": 0.75
+       "stale_pct": 0.75,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK02RCP56898",
@@ -7431,7 +7518,8 @@
          54051
         ]
        ],
-       "stale_pct": 0.69
+       "stale_pct": 0.69,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG08SCS30644",
@@ -7502,7 +7590,8 @@
          54290
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK06RCP07073",
@@ -7573,7 +7662,8 @@
          54354
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG06SCS47605",
@@ -7644,7 +7734,8 @@
          54393
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK06RCP53728",
@@ -7714,7 +7805,8 @@
          54491
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK01RCR02403",
@@ -7785,7 +7877,8 @@
          54959
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK0XSCU88233",
@@ -7840,7 +7933,8 @@
          54987
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG0XSCS85628",
@@ -7911,7 +8005,8 @@
          54994
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK05RCP99465",
@@ -8007,7 +8102,8 @@
          54999
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG02SCU85189",
@@ -8062,7 +8158,8 @@
          54999
         ]
        ],
-       "stale_pct": 0.15
+       "stale_pct": 0.15,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK00RCR21850",
@@ -8133,7 +8230,8 @@
          55337
         ]
        ],
-       "stale_pct": 0.84
+       "stale_pct": 0.84,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK04SCU69872",
@@ -8208,7 +8306,8 @@
          55580
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG08SCT19677",
@@ -8263,7 +8362,8 @@
          56000
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG05SCS15079",
@@ -8334,7 +8434,8 @@
          56194
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG06SCT75505",
@@ -8405,7 +8506,8 @@
          56309
         ]
        ],
-       "stale_pct": 0.75
+       "stale_pct": 0.75,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK09RCR05226",
@@ -8464,7 +8566,8 @@
          56395
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK03RCR97028",
@@ -8534,7 +8637,8 @@
          56831
         ]
        ],
-       "stale_pct": 0.86
+       "stale_pct": 0.86,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK07RCN81077",
@@ -8606,7 +8710,8 @@
          56887
         ]
        ],
-       "stale_pct": 0.48
+       "stale_pct": 0.48,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK03RCR76941",
@@ -8662,7 +8767,8 @@
          56970
         ]
        ],
-       "stale_pct": 0.15
+       "stale_pct": 0.15,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK05RCR34416",
@@ -8733,7 +8839,8 @@
          56985
         ]
        ],
-       "stale_pct": 0.72
+       "stale_pct": 0.72,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG09SCU71760",
@@ -8805,7 +8912,8 @@
          56990
         ]
        ],
-       "stale_pct": 0.45
+       "stale_pct": 0.45,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK04RCR90945",
@@ -8876,7 +8984,8 @@
          56995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG03SCS39347",
@@ -8920,7 +9029,8 @@
          57069
         ]
        ],
-       "stale_pct": 0.07
+       "stale_pct": 0.07,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK01RCR47213",
@@ -8991,7 +9101,8 @@
          57490
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK03RCP36451",
@@ -9046,7 +9157,8 @@
          57702
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK06RCP17215",
@@ -9090,7 +9202,8 @@
          57790
         ]
        ],
-       "stale_pct": 0.07
+       "stale_pct": 0.07,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG09SCT73313",
@@ -9133,7 +9246,8 @@
          57979
         ]
        ],
-       "stale_pct": 0.01
+       "stale_pct": 0.01,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK03RCP86184",
@@ -9176,7 +9290,8 @@
          57992
         ]
        ],
-       "stale_pct": 0.73
+       "stale_pct": 0.73,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK03RCP43383",
@@ -9219,7 +9334,8 @@
          57998
         ]
        ],
-       "stale_pct": 0.13
+       "stale_pct": 0.13,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK01RCP74017",
@@ -9286,7 +9402,8 @@
          58999
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK00RCR93000",
@@ -9380,7 +9497,8 @@
          59355
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK02RCP34965",
@@ -9448,7 +9566,8 @@
          59815
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK07RCP40096",
@@ -9520,7 +9639,8 @@
          60955
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK09RCP36406",
@@ -9588,7 +9708,8 @@
          60995
         ]
        ],
-       "stale_pct": 0.44
+       "stale_pct": 0.44,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK01RCP12942",
@@ -9659,7 +9780,8 @@
          61980
         ]
        ],
-       "stale_pct": 0.91
+       "stale_pct": 0.91,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK09RCP11490",
@@ -9727,7 +9849,8 @@
          61990
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.4,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK07RCR00896",
@@ -9798,7 +9921,8 @@
          63352
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK04RCR40756",
@@ -9869,7 +9993,8 @@
          64189
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK08SCU82502",
@@ -9939,7 +10064,8 @@
          64393
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG02SCU72040",
@@ -9988,7 +10114,8 @@
          64491
         ]
        ],
-       "stale_pct": 0.58
+       "stale_pct": 0.58,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG01SCT22551",
@@ -10036,7 +10163,8 @@
          64888
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK07RCP55178",
@@ -10095,7 +10223,8 @@
          64990
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK08RCS08565",
@@ -10155,7 +10284,8 @@
          65282
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK02RCR12518",
@@ -10214,7 +10344,8 @@
          65398
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY33FK06RCR39314",
@@ -10308,7 +10439,8 @@
          66699
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 85
       },
       {
        "vin": "WBY43FK08SCW08616",
@@ -10363,7 +10495,8 @@
          75970
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 85
       },
       {
        "vin": "WBY13HG08SCU89179",
@@ -10431,7 +10564,8 @@
          76365
         ]
        ],
-       "stale_pct": 0.99
+       "stale_pct": 0.99,
+       "stale_of": 85
       }
      ],
      "daily": [
@@ -14044,6 +14178,8 @@
      ],
      "market": {
       "median_days_listed": 17,
+      "dated": 85,
+      "n": 134,
       "tracked_2d": 127,
       "cut_share": 0.65,
       "median_cut": 600,
@@ -14225,7 +14361,8 @@
          48909
         ]
        ],
-       "stale_pct": 0.54
+       "stale_pct": 0.54,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ08PCN79299",
@@ -14293,7 +14430,8 @@
          49295
         ]
        ],
-       "stale_pct": 0.91
+       "stale_pct": 0.91,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ04PCN85407",
@@ -14360,7 +14498,8 @@
          52000
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ05PCN85531",
@@ -14427,7 +14566,8 @@
          52170
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ09PCN85645",
@@ -14495,7 +14635,8 @@
          52170
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ03PCL53395",
@@ -14562,7 +14703,8 @@
          53719
         ]
        ],
-       "stale_pct": 0.57
+       "stale_pct": 0.57,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ01RCN97139",
@@ -14642,7 +14784,8 @@
          54000
         ]
        ],
-       "stale_pct": 0.51
+       "stale_pct": 0.51,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ01PCN80083",
@@ -14710,7 +14853,8 @@
          55000
         ]
        ],
-       "stale_pct": 0.5
+       "stale_pct": 0.5,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05RCP22238",
@@ -14750,7 +14894,8 @@
          55096
         ]
        ],
-       "stale_pct": 0.1
+       "stale_pct": 0.1,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ06PCN81584",
@@ -14817,7 +14962,8 @@
          55658
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ0XPCN86271",
@@ -14860,7 +15006,8 @@
          55986
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06RCR19502",
@@ -14939,7 +15086,8 @@
          55987
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ04PCM43008",
@@ -15003,7 +15151,8 @@
          56898
         ]
        ],
-       "stale_pct": 0.69
+       "stale_pct": 0.69,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ06PCN79916",
@@ -15065,7 +15214,8 @@
          56942
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ02RCR61329",
@@ -15132,7 +15282,8 @@
          56995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ00PCL53385",
@@ -15200,7 +15351,8 @@
          56995
         ]
        ],
-       "stale_pct": 0.53
+       "stale_pct": 0.53,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09RCR30039",
@@ -15272,7 +15424,8 @@
          57577
         ]
        ],
-       "stale_pct": 0.59
+       "stale_pct": 0.59,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ0XPCN79062",
@@ -15332,7 +15485,8 @@
          57797
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09RCR70475",
@@ -15411,7 +15565,8 @@
          57825
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02RCS67624",
@@ -15475,7 +15630,8 @@
          57888
         ]
        ],
-       "stale_pct": 0.27
+       "stale_pct": 0.27,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ05PCN41142",
@@ -15542,7 +15698,8 @@
          57988
         ]
        ],
-       "stale_pct": 0.57
+       "stale_pct": 0.57,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ05RCP46348",
@@ -15609,7 +15766,8 @@
          57990
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ06PCN64235",
@@ -15660,7 +15818,8 @@
          57999
         ]
        ],
-       "stale_pct": 0.17
+       "stale_pct": 0.17,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ00PCN23339",
@@ -15708,7 +15867,8 @@
          58196
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ06PCN69354",
@@ -15771,7 +15931,8 @@
          58297
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ05PCM51389",
@@ -15835,7 +15996,8 @@
          58599
         ]
        ],
-       "stale_pct": 0.92
+       "stale_pct": 0.92,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06RCR01923",
@@ -15914,7 +16076,8 @@
          58995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02RCP90772",
@@ -15986,7 +16149,8 @@
          59084
         ]
        ],
-       "stale_pct": 0.99
+       "stale_pct": 0.99,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XRCR75930",
@@ -16045,7 +16209,8 @@
          59399
         ]
        ],
-       "stale_pct": 0.1
+       "stale_pct": 0.1,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ04PCN52844",
@@ -16112,7 +16277,8 @@
          59598
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ03PCN49661",
@@ -16160,7 +16326,8 @@
          59789
         ]
        ],
-       "stale_pct": 0.04
+       "stale_pct": 0.04,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ08PCN86074",
@@ -16224,7 +16391,8 @@
          59998
         ]
        ],
-       "stale_pct": 0.94
+       "stale_pct": 0.94,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ04PCN58028",
@@ -16287,7 +16455,8 @@
          60396
         ]
        ],
-       "stale_pct": 0.18
+       "stale_pct": 0.18,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ00RCR31533",
@@ -16363,7 +16532,8 @@
          60898
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ06PCN52764",
@@ -16431,7 +16601,8 @@
          60899
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ03PCN84071",
@@ -16494,7 +16665,8 @@
          61000
         ]
        ],
-       "stale_pct": 0.47
+       "stale_pct": 0.47,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ08PCL83735",
@@ -16562,7 +16734,8 @@
          61333
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ0XPCN59216",
@@ -16629,7 +16802,8 @@
          61598
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03RCR00082",
@@ -16690,7 +16864,8 @@
          61813
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09RCP31038",
@@ -16750,7 +16925,8 @@
          61998
         ]
        ],
-       "stale_pct": 0.57
+       "stale_pct": 0.57,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05RCR23265",
@@ -16814,7 +16990,8 @@
          62475
         ]
        ],
-       "stale_pct": 0.81
+       "stale_pct": 0.81,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ04RCP58714",
@@ -16873,7 +17050,8 @@
          62742
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ08PCM44422",
@@ -16940,7 +17118,8 @@
          62877
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ07RCR48216",
@@ -16998,7 +17177,8 @@
          63910
         ]
        ],
-       "stale_pct": 0.52
+       "stale_pct": 0.52,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ00RCR14361",
@@ -17057,7 +17237,8 @@
          64093
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05RCP17816",
@@ -17120,7 +17301,8 @@
          64296
         ]
        ],
-       "stale_pct": 0.12
+       "stale_pct": 0.12,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ0XPCN62780",
@@ -17183,7 +17365,8 @@
          64324
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ07PCM72048",
@@ -17250,7 +17433,8 @@
          64376
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ08PCN75396",
@@ -17302,7 +17486,8 @@
          64421
         ]
        ],
-       "stale_pct": 0.26
+       "stale_pct": 0.26,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XRCP79325",
@@ -17363,7 +17548,8 @@
          64447
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XRCR70324",
@@ -17441,7 +17627,8 @@
          64729
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06RCR10461",
@@ -17499,7 +17686,8 @@
          64987
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05RCP78261",
@@ -17558,7 +17746,8 @@
          64999
         ]
        ],
-       "stale_pct": 0.05
+       "stale_pct": 0.05,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ04SCU67698",
@@ -17622,7 +17811,8 @@
          64999
         ]
        ],
-       "stale_pct": 0.12
+       "stale_pct": 0.12,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ07RCP06817",
@@ -17690,7 +17880,8 @@
          65220
         ]
        ],
-       "stale_pct": 0.18
+       "stale_pct": 0.18,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ09PCM61519",
@@ -17757,7 +17948,8 @@
          65257
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.2,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ00PCN31750",
@@ -17804,7 +17996,8 @@
          65367
         ]
        ],
-       "stale_pct": 0.12
+       "stale_pct": 0.12,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ00PCN87641",
@@ -17872,7 +18065,8 @@
          65649
         ]
        ],
-       "stale_pct": 0.26
+       "stale_pct": 0.26,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ06PCM35508",
@@ -17936,7 +18130,8 @@
          65734
         ]
        ],
-       "stale_pct": 0.6
+       "stale_pct": 0.6,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09RCP81955",
@@ -18007,7 +18202,8 @@
          65759
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.2,
+       "stale_of": 113
       },
       {
        "vin": "WBY53EJ0XPCL71229",
@@ -18075,7 +18271,8 @@
          65800
         ]
        ],
-       "stale_pct": 0.95
+       "stale_pct": 0.95,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH0XRCP71734",
@@ -18122,7 +18319,8 @@
          66196
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05RCR57903",
@@ -18181,7 +18379,8 @@
          66213
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09SCT88124",
@@ -18240,7 +18439,8 @@
          66495
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03SCU09663",
@@ -18300,7 +18500,8 @@
          67261
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ07RCR82639",
@@ -18359,7 +18560,8 @@
          67494
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ04RCR87409",
@@ -18418,7 +18620,8 @@
          67593
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03RCR95419",
@@ -18477,7 +18680,8 @@
          67699
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06RCR21069",
@@ -18549,7 +18753,8 @@
          67799
         ]
        ],
-       "stale_pct": 0.96
+       "stale_pct": 0.96,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03SCT41980",
@@ -18589,7 +18794,8 @@
          68966
         ]
        ],
-       "stale_pct": 0.88
+       "stale_pct": 0.88,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08RCP30883",
@@ -18644,7 +18850,8 @@
          69215
         ]
        ],
-       "stale_pct": 0.04
+       "stale_pct": 0.04,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09SCT73901",
@@ -18707,7 +18914,8 @@
          69784
         ]
        ],
-       "stale_pct": 0.12
+       "stale_pct": 0.12,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02RCR64632",
@@ -18767,7 +18975,8 @@
          70395
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06SCU25551",
@@ -18825,7 +19034,8 @@
          70986
         ]
        ],
-       "stale_pct": 0.83
+       "stale_pct": 0.83,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08SCV01674",
@@ -18881,7 +19091,8 @@
          71886
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.3,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03SCU05404",
@@ -18940,7 +19151,8 @@
          71905
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ01SCU65021",
@@ -18984,7 +19196,8 @@
          72336
         ]
        ],
-       "stale_pct": 0.86
+       "stale_pct": 0.86,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08SCU12462",
@@ -19044,7 +19257,8 @@
          72625
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.49,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08RCR02930",
@@ -19123,7 +19337,8 @@
          73373
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ01SCT90000",
@@ -19175,7 +19390,8 @@
          75214
         ]
        ],
-       "stale_pct": 0.05
+       "stale_pct": 0.05,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ07RCR11876",
@@ -19247,7 +19463,8 @@
          77587
         ]
        ],
-       "stale_pct": 0.96
+       "stale_pct": 0.96,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH02RCP46293",
@@ -19295,7 +19512,8 @@
          79398
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH07RCP54955",
@@ -19342,7 +19560,8 @@
          80674
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08SCV21665",
@@ -19402,7 +19621,8 @@
          82572
         ]
        ],
-       "stale_pct": 0.27
+       "stale_pct": 0.27,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH02RCP15352",
@@ -19448,7 +19668,8 @@
          83790
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH03RCP65371",
@@ -19495,7 +19716,8 @@
          86178
         ]
        ],
-       "stale_pct": 0.05
+       "stale_pct": 0.05,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH00RCP16533",
@@ -19539,7 +19761,8 @@
          88999
         ]
        ],
-       "stale_pct": 0.56
+       "stale_pct": 0.56,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH06RCP58723",
@@ -19586,7 +19809,8 @@
          90999
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH0XRCP89876",
@@ -19632,7 +19856,8 @@
          91999
         ]
        ],
-       "stale_pct": 0.01
+       "stale_pct": 0.01,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH06RCP46233",
@@ -19683,7 +19908,8 @@
          93399
         ]
        ],
-       "stale_pct": 0.1
+       "stale_pct": 0.1,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09TCY06456",
@@ -19755,7 +19981,8 @@
          98010
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06TCW32247",
@@ -19811,7 +20038,8 @@
          102002
         ]
        ],
-       "stale_pct": 0.05
+       "stale_pct": 0.05,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02TCX48089",
@@ -19873,7 +20101,8 @@
          102110
         ]
        ],
-       "stale_pct": 0.18
+       "stale_pct": 0.18,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09TCX64211",
@@ -19929,7 +20158,8 @@
          102195
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XTCX42847",
@@ -19996,7 +20226,8 @@
          103213
         ]
        ],
-       "stale_pct": 0.01
+       "stale_pct": 0.01,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03TCY30090",
@@ -20052,7 +20283,8 @@
          104455
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08TCY35043",
@@ -20108,7 +20340,8 @@
          104635
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09TCY14931",
@@ -20164,7 +20397,8 @@
          105820
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03TCY37699",
@@ -20220,7 +20454,8 @@
          106030
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XTCY05087",
@@ -20260,7 +20495,8 @@
          106425
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08TCY37665",
@@ -20316,7 +20552,8 @@
          110250
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03TCX43340",
@@ -20356,7 +20593,8 @@
          110710
         ]
        ],
-       "stale_pct": 0.12
+       "stale_pct": 0.12,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ04TCY32138",
@@ -20412,7 +20650,8 @@
          111565
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05TCY21858",
@@ -20452,7 +20691,8 @@
          112729
         ]
        ],
-       "stale_pct": 0.64
+       "stale_pct": 0.64,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09TCX99010",
@@ -20496,7 +20736,8 @@
          115240
         ]
        ],
-       "stale_pct": 0.75
+       "stale_pct": 0.75,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ07TCY09727",
@@ -20552,7 +20793,8 @@
          115838
         ]
        ],
-       "stale_pct": 0.01
+       "stale_pct": 0.01,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03TCX86169",
@@ -20604,7 +20846,8 @@
          116015
         ]
        ],
-       "stale_pct": 0.88
+       "stale_pct": 0.88,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ00TCY04661",
@@ -20644,7 +20887,8 @@
          117015
         ]
        ],
-       "stale_pct": 0.8
+       "stale_pct": 0.8,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09TCY04156",
@@ -20700,7 +20944,8 @@
          117270
         ]
        ],
-       "stale_pct": 0.7
+       "stale_pct": 0.7,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02TCY02748",
@@ -20776,7 +21021,8 @@
          118012
         ]
        ],
-       "stale_pct": 0.88
+       "stale_pct": 0.88,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05TCY12562",
@@ -20848,7 +21094,8 @@
          118012
         ]
        ],
-       "stale_pct": 0.76
+       "stale_pct": 0.76,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ07TCX94033",
@@ -20920,7 +21167,8 @@
          118195
         ]
        ],
-       "stale_pct": 0.65
+       "stale_pct": 0.65,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05TCX48636",
@@ -20972,7 +21220,8 @@
          118244
         ]
        ],
-       "stale_pct": 0.84
+       "stale_pct": 0.84,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ05TCX30699",
@@ -21028,7 +21277,8 @@
          118285
         ]
        ],
-       "stale_pct": 0.93
+       "stale_pct": 0.93,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ00TCY05096",
@@ -21104,7 +21354,8 @@
          118320
         ]
        ],
-       "stale_pct": 0.72
+       "stale_pct": 0.72,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ01TCY14888",
@@ -21180,7 +21431,8 @@
          118320
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03TCY35158",
@@ -21236,7 +21488,8 @@
          118876
         ]
        ],
-       "stale_pct": 0.78
+       "stale_pct": 0.78,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH01SCU70971",
@@ -21283,7 +21536,8 @@
          118955
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06TCY00467",
@@ -21355,7 +21609,8 @@
          119370
         ]
        ],
-       "stale_pct": 0.73
+       "stale_pct": 0.73,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ07TCY02731",
@@ -21399,7 +21654,8 @@
          119425
         ]
        ],
-       "stale_pct": 0.7
+       "stale_pct": 0.7,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ00TCY36106",
@@ -21451,7 +21707,8 @@
          119970
         ]
        ],
-       "stale_pct": 0.55
+       "stale_pct": 0.55,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06RCR54816",
@@ -21530,7 +21787,8 @@
          120000
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06TCX73450",
@@ -21586,7 +21844,8 @@
          120284
         ]
        ],
-       "stale_pct": 0.87
+       "stale_pct": 0.87,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XTCY48747",
@@ -21642,7 +21901,8 @@
          120385
         ]
        ],
-       "stale_pct": 0.05
+       "stale_pct": 0.05,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02TCY26807",
@@ -21718,7 +21978,8 @@
          120585
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH03SCU88811",
@@ -21765,7 +22026,8 @@
          122288
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XTCW30355",
@@ -21805,7 +22067,8 @@
          122515
         ]
        ],
-       "stale_pct": 0.98
+       "stale_pct": 0.98,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XTCY35108",
@@ -21861,7 +22124,8 @@
          122585
         ]
        ],
-       "stale_pct": 0.5
+       "stale_pct": 0.5,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09TCY26805",
@@ -21933,7 +22197,8 @@
          122795
         ]
        ],
-       "stale_pct": 0.61
+       "stale_pct": 0.61,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ04TCX99058",
@@ -22009,7 +22274,8 @@
          123145
         ]
        ],
-       "stale_pct": 0.73
+       "stale_pct": 0.73,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02TCY50296",
@@ -22085,7 +22351,8 @@
          123273
         ]
        ],
-       "stale_pct": 0.39
+       "stale_pct": 0.39,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ06TCX46099",
@@ -22141,7 +22408,8 @@
          124014
         ]
        ],
-       "stale_pct": 0.81
+       "stale_pct": 0.81,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ09TCY00382",
@@ -22213,7 +22481,8 @@
          124470
         ]
        ],
-       "stale_pct": 0.73
+       "stale_pct": 0.73,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02TCY14902",
@@ -22253,7 +22522,8 @@
          125038
         ]
        ],
-       "stale_pct": 0.77
+       "stale_pct": 0.77,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02TCY12406",
@@ -22329,7 +22599,8 @@
          126895
         ]
        ],
-       "stale_pct": 0.65
+       "stale_pct": 0.65,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ02TCY18691",
@@ -22405,7 +22676,8 @@
          127210
         ]
        ],
-       "stale_pct": 0.66
+       "stale_pct": 0.66,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ00TCX72133",
@@ -22481,7 +22753,8 @@
          127430
         ]
        ],
-       "stale_pct": 0.79
+       "stale_pct": 0.79,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ03TCX46142",
@@ -22537,7 +22810,8 @@
          128045
         ]
        ],
-       "stale_pct": 0.81
+       "stale_pct": 0.81,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ08TCY18629",
@@ -22593,7 +22867,8 @@
          128260
         ]
        ],
-       "stale_pct": 0.66
+       "stale_pct": 0.66,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH07SCU49042",
@@ -22640,7 +22915,8 @@
          128627
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 113
       },
       {
        "vin": "WBY43EJ0XTCY20219",
@@ -22696,7 +22972,8 @@
          129160
         ]
        ],
-       "stale_pct": 0.66
+       "stale_pct": 0.66,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH08SCT38595",
@@ -22740,7 +23017,8 @@
          150072
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.2,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH09SCV03618",
@@ -22788,7 +23066,8 @@
          156072
         ]
        ],
-       "stale_pct": 0.47
+       "stale_pct": 0.47,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH03TCX69539",
@@ -22832,7 +23111,8 @@
          159485
         ]
        ],
-       "stale_pct": 0.23
+       "stale_pct": 0.23,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH03TCW23450",
@@ -22876,7 +23156,8 @@
          161135
         ]
        ],
-       "stale_pct": 0.96
+       "stale_pct": 0.96,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH0XTCY00415",
@@ -22920,7 +23201,8 @@
          169120
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.35,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH01TCX92740",
@@ -22964,7 +23246,8 @@
          171550
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.35,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH05TCX30628",
@@ -23008,7 +23291,8 @@
          172745
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.35,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH04TCX09334",
@@ -23052,7 +23336,8 @@
          173190
         ]
        ],
-       "stale_pct": 0.35
+       "stale_pct": 0.35,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH00TCX48602",
@@ -23116,7 +23401,8 @@
          189960
         ]
        ],
-       "stale_pct": 0.85
+       "stale_pct": 0.85,
+       "stale_of": 113
       },
       {
        "vin": "WBY83EH0XTCX62121",
@@ -23180,7 +23466,8 @@
          190862
         ]
        ],
-       "stale_pct": 0.9
+       "stale_pct": 0.9,
+       "stale_of": 113
       }
      ],
      "daily": [
@@ -28700,6 +28987,8 @@
      ],
      "market": {
       "median_days_listed": 29,
+      "dated": 113,
+      "n": 151,
       "tracked_2d": 140,
       "cut_share": 0.21,
       "median_cut": 758,
@@ -28833,7 +29122,8 @@
          30084
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF00NCK62644",
@@ -28885,7 +29175,8 @@
          30980
         ]
        ],
-       "stale_pct": 0.26
+       "stale_pct": 0.26,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF08PCL71467",
@@ -28940,7 +29231,8 @@
          33000
         ]
        ],
-       "stale_pct": 0.6
+       "stale_pct": 0.6,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF08NCK61077",
@@ -28995,7 +29287,8 @@
          33500
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.37,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF03NCK56191",
@@ -29043,7 +29336,8 @@
          33867
         ]
        ],
-       "stale_pct": 0.66
+       "stale_pct": 0.66,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF05NCK55298",
@@ -29087,7 +29381,8 @@
          33990
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.03,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF07RCN39232",
@@ -29142,7 +29437,8 @@
          33999
         ]
        ],
-       "stale_pct": 0.34
+       "stale_pct": 0.34,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF05PCM96572",
@@ -29194,7 +29490,8 @@
          34051
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.71,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF03PCL65415",
@@ -29249,7 +29546,8 @@
          34870
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF01NCK19625",
@@ -29304,7 +29602,8 @@
          34900
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF03NCK66204",
@@ -29359,7 +29658,8 @@
          35495
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF00PCM04641",
@@ -29415,7 +29715,8 @@
          35799
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF01PCM90929",
@@ -29471,7 +29772,8 @@
          35876
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF07PCM08556",
@@ -29523,7 +29825,8 @@
          35971
         ]
        ],
-       "stale_pct": 0.94
+       "stale_pct": 0.94,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF07PCL83223",
@@ -29575,7 +29878,8 @@
          36295
         ]
        ],
-       "stale_pct": 0.97
+       "stale_pct": 0.97,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF02PCM50648",
@@ -29627,7 +29931,8 @@
          37405
         ]
        ],
-       "stale_pct": 0.8
+       "stale_pct": 0.8,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF0XNCK57886",
@@ -29674,7 +29979,8 @@
          37543
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.03,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF0XRCN55831",
@@ -29729,7 +30035,8 @@
          37569
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF08NCK21405",
@@ -29777,7 +30084,8 @@
          37734
         ]
        ],
-       "stale_pct": 0.77
+       "stale_pct": 0.77,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF09PCM41185",
@@ -29833,7 +30141,8 @@
          38223
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF07RCN22477",
@@ -29885,7 +30194,8 @@
          38249
         ]
        ],
-       "stale_pct": 0.91
+       "stale_pct": 0.91,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF00NCK45956",
@@ -29929,7 +30239,8 @@
          38405
         ]
        ],
-       "stale_pct": 0.63
+       "stale_pct": 0.63,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF01NCK55332",
@@ -29977,7 +30288,8 @@
          38990
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.03,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF05PCM08555",
@@ -30032,7 +30344,8 @@
          39365
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF00RCN19811",
@@ -30087,7 +30400,8 @@
          39797
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF04RCN04650",
@@ -30142,7 +30456,8 @@
          39995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF0XNCJ58193",
@@ -30198,7 +30513,8 @@
          39998
         ]
        ],
-       "stale_pct": 0.83
+       "stale_pct": 0.83,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF03RCN71868",
@@ -30254,7 +30570,8 @@
          40899
         ]
        ],
-       "stale_pct": 0.86
+       "stale_pct": 0.86,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF09RCN27180",
@@ -30301,7 +30618,8 @@
          40995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB523CF07PCM96542",
@@ -30356,7 +30674,8 @@
          41500
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF06PCM41231",
@@ -30411,7 +30730,8 @@
          41981
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF00PCM48157",
@@ -30466,7 +30786,8 @@
          43986
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.4,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF01PCL94609",
@@ -30522,7 +30843,8 @@
          44999
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.2,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF01PCM61323",
@@ -30577,7 +30899,8 @@
          45628
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF07PCM45496",
@@ -30632,7 +30955,8 @@
          46070
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.49,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF00PCM95267",
@@ -30687,7 +31011,8 @@
          46995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF02PCM04533",
@@ -30734,7 +31059,8 @@
          47488
         ]
        ],
-       "stale_pct": 0.14
+       "stale_pct": 0.14,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF04PCM98320",
@@ -30789,7 +31115,8 @@
          49212
         ]
        ],
-       "stale_pct": 0.03
+       "stale_pct": 0.03,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF06PCL96114",
@@ -30845,7 +31172,8 @@
          49488
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF05PCK28030",
@@ -30901,7 +31229,8 @@
          49731
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF05PCM58439",
@@ -30956,7 +31285,8 @@
          50164
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF02PCM51304",
@@ -31012,7 +31342,8 @@
          50294
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF02PCM70869",
@@ -31068,7 +31399,8 @@
          50998
         ]
        ],
-       "stale_pct": 0.57
+       "stale_pct": 0.57,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF07PCM96593",
@@ -31124,7 +31456,8 @@
          51777
         ]
        ],
-       "stale_pct": 0.69
+       "stale_pct": 0.69,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF05PCM38434",
@@ -31169,7 +31502,8 @@
          51783
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF06PCM98321",
@@ -31225,7 +31559,8 @@
          51875
         ]
        ],
-       "stale_pct": 0.89
+       "stale_pct": 0.89,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF01PCM45560",
@@ -31271,7 +31606,8 @@
          52046
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF07RCN01598",
@@ -31327,7 +31663,8 @@
          52397
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.43,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF08PCM13933",
@@ -31382,7 +31719,8 @@
          52445
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.43,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF0XPCK60570",
@@ -31437,7 +31775,8 @@
          52725
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF09PCM38436",
@@ -31492,7 +31831,8 @@
          52995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF08PCK79196",
@@ -31548,7 +31888,8 @@
          52997
         ]
        ],
-       "stale_pct": 0.74
+       "stale_pct": 0.74,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF07PCM65618",
@@ -31603,7 +31944,8 @@
          55623
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF09PCM42728",
@@ -31659,7 +32001,8 @@
          58216
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF02PCM86456",
@@ -31715,7 +32058,8 @@
          58668
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.49,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF00PCK44880",
@@ -31771,7 +32115,8 @@
          59953
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF06RCN46838",
@@ -31826,7 +32171,8 @@
          62315
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF0XPCL48163",
@@ -31882,7 +32228,8 @@
          62444
         ]
        ],
-       "stale_pct": 0.26
+       "stale_pct": 0.26,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF08RCP21963",
@@ -31929,7 +32276,8 @@
          62987
         ]
        ],
-       "stale_pct": 0.14
+       "stale_pct": 0.14,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF02RCP00591",
@@ -31983,7 +32331,8 @@
          65498
         ]
        ],
-       "stale_pct": 0.54
+       "stale_pct": 0.54,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF04RCN34574",
@@ -32039,7 +32388,8 @@
          67277
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.2,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF04SCU36165",
@@ -32094,7 +32444,8 @@
          68901
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF08RCN35405",
@@ -32150,7 +32501,8 @@
          68995
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF06SCU62959",
@@ -32204,7 +32556,8 @@
          77324
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF07SCS36221",
@@ -32259,7 +32612,8 @@
          79438
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "WB533CF08SCS73343",
@@ -32315,7 +32669,8 @@
          80750
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       }
      ],
      "daily": [
@@ -33145,6 +33500,8 @@
      ],
      "market": {
       "median_days_listed": 21,
+      "dated": 35,
+      "n": 66,
       "tracked_2d": 64,
       "cut_share": 0.47,
       "median_cut": 744,
@@ -33271,7 +33628,8 @@
          14999
         ]
        ],
-       "stale_pct": 0.2
+       "stale_pct": 0.2,
+       "stale_of": 25
       },
       {
        "vin": "KM8KM4AE5NU054596",
@@ -33314,7 +33672,8 @@
          17497
         ]
        ],
-       "stale_pct": 0.44
+       "stale_pct": 0.44,
+       "stale_of": 25
       },
       {
        "vin": "KM8KM4AE9NU071644",
@@ -33354,7 +33713,8 @@
          17595
         ]
        ],
-       "stale_pct": 0.8
+       "stale_pct": 0.8,
+       "stale_of": 25
       },
       {
        "vin": "KM8KMDAF0NU090723",
@@ -33397,7 +33757,8 @@
          17943
         ]
        ],
-       "stale_pct": 0.12
+       "stale_pct": 0.12,
+       "stale_of": 25
       },
       {
        "vin": "KM8KN4AE7PU182824",
@@ -33440,7 +33801,8 @@
          17993
         ]
        ],
-       "stale_pct": 0.48
+       "stale_pct": 0.48,
+       "stale_of": 25
       },
       {
        "vin": "KM8KM4AE4NU065721",
@@ -33483,7 +33845,8 @@
          18100
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 25
       },
       {
        "vin": "KM8KN4DE6RU235351",
@@ -33526,7 +33889,8 @@
          18495
         ]
        ],
-       "stale_pct": 0.4
+       "stale_pct": 0.4,
+       "stale_of": 25
       },
       {
        "vin": "KM8KN4AEXNU082942",
@@ -33569,7 +33933,8 @@
          18498
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 25
       },
       {
        "vin": "KM8KN4AE1NU058089",
@@ -33609,7 +33974,8 @@
          18690
         ]
        ],
-       "stale_pct": 0.16
+       "stale_pct": 0.16,
+       "stale_of": 25
       },
       {
        "vin": "KM8KN4AE0NU057886",
@@ -33657,7 +34023,8 @@
          18980
         ]
        ],
-       "stale_pct": 0.32
+       "stale_pct": 0.32,
+       "stale_of": 25
       },
       {
        "vin": "KM8KNDAF4NU108539",
@@ -33713,7 +34080,8 @@
          19963
         ]
        ],
-       "stale_pct": 0.84
+       "stale_pct": 0.84,
+       "stale_of": 25
       },
       {
        "vin": "KM8KRDAF1PU159150",
@@ -33765,7 +34133,8 @@
          19981
         ]
        ],
-       "stale_pct": 0.24
+       "stale_pct": 0.24,
+       "stale_of": 25
       },
       {
        "vin": "KM8KMDAF2NU077066",
@@ -33821,7 +34190,8 @@
          20399
         ]
        ],
-       "stale_pct": 0.64
+       "stale_pct": 0.64,
+       "stale_of": 25
       },
       {
        "vin": "KM8KNDAF5PU201220",
@@ -33881,7 +34251,8 @@
          20998
         ]
        ],
-       "stale_pct": 0.56
+       "stale_pct": 0.56,
+       "stale_of": 25
       },
       {
        "vin": "KM8KMDAF5PU172370",
@@ -33940,7 +34311,8 @@
          21550
         ]
        ],
-       "stale_pct": 0.6
+       "stale_pct": 0.6,
+       "stale_of": 25
       },
       {
        "vin": "KM8KM4DE0RU290347",
@@ -33996,7 +34368,8 @@
          21799
         ]
        ],
-       "stale_pct": 0.52
+       "stale_pct": 0.52,
+       "stale_of": 25
       },
       {
        "vin": "KM8KNDAF4PU205694",
@@ -34052,7 +34425,8 @@
          22405
         ]
        ],
-       "stale_pct": 0.72
+       "stale_pct": 0.72,
+       "stale_of": 25
       },
       {
        "vin": "KM8KNDAF2PU206665",
@@ -34108,7 +34482,8 @@
          22408
         ]
        ],
-       "stale_pct": 0.72
+       "stale_pct": 0.72,
+       "stale_of": 25
       },
       {
        "vin": "KM8KMDDF3RU317615",
@@ -34151,7 +34526,8 @@
          22550
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 25
       },
       {
        "vin": "KM8KMDDF3RU264320",
@@ -34207,7 +34583,8 @@
          22630
         ]
        ],
-       "stale_pct": 0.96
+       "stale_pct": 0.96,
+       "stale_of": 25
       },
       {
        "vin": "KM8KNDDF6RU280864",
@@ -34255,7 +34632,8 @@
          22973
         ]
        ],
-       "stale_pct": 0.32
+       "stale_pct": 0.32,
+       "stale_of": 25
       },
       {
        "vin": "KM8KN4AE1PU142691",
@@ -34314,7 +34692,8 @@
          22981
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 25
       },
       {
        "vin": "KM8KMDAF9PU151683",
@@ -34354,7 +34733,8 @@
          23312
         ]
        ],
-       "stale_pct": 0.68
+       "stale_pct": 0.68,
+       "stale_of": 25
       },
       {
        "vin": "KM8KM4AEXNU109883",
@@ -34406,7 +34786,8 @@
          23405
         ]
        ],
-       "stale_pct": 0.92
+       "stale_pct": 0.92,
+       "stale_of": 25
       },
       {
        "vin": "KM8KNDAF6PU187327",
@@ -34465,7 +34846,8 @@
          23550
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 25
       },
       {
        "vin": "KM8KR4AE4PU207036",
@@ -34524,7 +34906,8 @@
          23550
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 25
       },
       {
        "vin": "KM8KNDAF0PU207779",
@@ -34564,7 +34947,8 @@
          23589
         ]
        ],
-       "stale_pct": 0.84
+       "stale_pct": 0.84,
+       "stale_of": 25
       }
      ],
      "daily": [
@@ -35132,6 +35516,8 @@
      ],
      "market": {
       "median_days_listed": 17,
+      "dated": 25,
+      "n": 27,
       "tracked_2d": 15,
       "cut_share": 0.8,
       "median_cut": 400,
@@ -35254,7 +35640,8 @@
          23988
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S21R6033757",
@@ -35302,7 +35689,8 @@
          27025
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.37,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S25R6020901",
@@ -35361,7 +35749,8 @@
          29797
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 27
       },
       {
        "vin": "KNDAB5S14R6031215",
@@ -35421,7 +35810,8 @@
          29981
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 27
       },
       {
        "vin": "KNDAB5S15R6043194",
@@ -35481,7 +35871,8 @@
          29997
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 27
       },
       {
        "vin": "KNDAB5S15R6035225",
@@ -35541,7 +35932,8 @@
          29999
         ]
        ],
-       "stale_pct": 0.3
+       "stale_pct": 0.3,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S23R6033811",
@@ -35597,7 +35989,8 @@
          30447
         ]
        ],
-       "stale_pct": 0.33
+       "stale_pct": 0.33,
+       "stale_of": 27
       },
       {
        "vin": "KNDAB5S11R6028322",
@@ -35653,7 +36046,8 @@
          31475
         ]
        ],
-       "stale_pct": 0.26
+       "stale_pct": 0.26,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S2XR6037709",
@@ -35705,7 +36099,8 @@
          31585
         ]
        ],
-       "stale_pct": 0.56
+       "stale_pct": 0.56,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S23R6026955",
@@ -35761,7 +36156,8 @@
          31776
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.37,
+       "stale_of": 27
       },
       {
        "vin": "KNDAB5S11R6034380",
@@ -35817,7 +36213,8 @@
          31808
         ]
        ],
-       "stale_pct": 0.74
+       "stale_pct": 0.74,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S28R6024456",
@@ -35877,7 +36274,8 @@
          32369
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S21R6043219",
@@ -35932,7 +36330,8 @@
          32977
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 27
       },
       {
        "vin": "KNDAB5S14R6030940",
@@ -35972,7 +36371,8 @@
          33276
         ]
        ],
-       "stale_pct": 0.11
+       "stale_pct": 0.11,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S22R6027403",
@@ -36023,7 +36423,8 @@
          33510
         ]
        ],
-       "stale_pct": 0.19
+       "stale_pct": 0.19,
+       "stale_of": 27
       },
       {
        "vin": "KNDAB5S13R6022392",
@@ -36071,7 +36472,8 @@
          33596
         ]
        ],
-       "stale_pct": 0.52
+       "stale_pct": 0.52,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S21R6034469",
@@ -36114,7 +36516,8 @@
          33622
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 27
       },
       {
        "vin": "KNDADFS51R6045494",
@@ -36170,7 +36573,8 @@
          36896
         ]
        ],
-       "stale_pct": 0.81
+       "stale_pct": 0.81,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S21R6044211",
@@ -36214,7 +36618,8 @@
          36998
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 27
       },
       {
        "vin": "KNDAFFS54R6050909",
@@ -36272,7 +36677,8 @@
          37110
         ]
        ],
-       "stale_pct": 0.44
+       "stale_pct": 0.44,
+       "stale_of": 27
       },
       {
        "vin": "KNDAEFS55R6039260",
@@ -36328,7 +36734,8 @@
          37405
         ]
        ],
-       "stale_pct": 0.89
+       "stale_pct": 0.89,
+       "stale_of": 27
       },
       {
        "vin": "KNDAFFS57R6046224",
@@ -36384,7 +36791,8 @@
          37852
         ]
        ],
-       "stale_pct": 0.59
+       "stale_pct": 0.59,
+       "stale_of": 27
       },
       {
        "vin": "KNDAFFS56R6038521",
@@ -36440,7 +36848,8 @@
          37878
         ]
        ],
-       "stale_pct": 0.78
+       "stale_pct": 0.78,
+       "stale_of": 27
       },
       {
        "vin": "KNDAFFS51R6036403",
@@ -36505,7 +36914,8 @@
          1
         ]
        ],
-       "stale_pct": 0.15
+       "stale_pct": 0.15,
+       "stale_of": 27
       },
       {
        "vin": "KNDADFS50R6034342",
@@ -36561,7 +36971,8 @@
          39295
         ]
        ],
-       "stale_pct": 0.7
+       "stale_pct": 0.7,
+       "stale_of": 27
       },
       {
        "vin": "KNDADFS50R6026077",
@@ -36616,7 +37027,8 @@
          39365
         ]
        ],
-       "stale_pct": 0.22
+       "stale_pct": 0.22,
+       "stale_of": 27
       },
       {
        "vin": "KNDAEFS59R6050780",
@@ -36672,7 +37084,8 @@
          39741
         ]
        ],
-       "stale_pct": 0.81
+       "stale_pct": 0.81,
+       "stale_of": 27
       },
       {
        "vin": "KNDADFS5XR6026717",
@@ -36728,7 +37141,8 @@
          39852
         ]
        ],
-       "stale_pct": 0.63
+       "stale_pct": 0.63,
+       "stale_of": 27
       },
       {
        "vin": "KNDAA5S21R6023570",
@@ -36780,7 +37194,8 @@
          39999
         ]
        ],
-       "stale_pct": 0.96
+       "stale_pct": 0.96,
+       "stale_of": 27
       },
       {
        "vin": "KNDAEFS50R6031065",
@@ -36840,7 +37255,8 @@
          40333
         ]
        ],
-       "stale_pct": 0.93
+       "stale_pct": 0.93,
+       "stale_of": 27
       },
       {
        "vin": "KNDAFFS5XR6038683",
@@ -36899,7 +37315,8 @@
          40564
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 27
       },
       {
        "vin": "KNDAFFS58R6038830",
@@ -36957,7 +37374,8 @@
          40700
         ]
        ],
-       "stale_pct": 0.67
+       "stale_pct": 0.67,
+       "stale_of": 27
       },
       {
        "vin": "KNDADFS5XR6039595",
@@ -36997,7 +37415,8 @@
          41405
         ]
        ],
-       "stale_pct": 0.48
+       "stale_pct": 0.48,
+       "stale_of": 27
       },
       {
        "vin": "KNDAFFS51R6037602",
@@ -37044,7 +37463,8 @@
          41441
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 27
       }
      ],
      "daily": [
@@ -37749,6 +38169,8 @@
      ],
      "market": {
       "median_days_listed": 44,
+      "dated": 27,
+      "n": 34,
       "tracked_2d": 29,
       "cut_share": 0.59,
       "median_cut": 444,
@@ -37873,7 +38295,8 @@
          35077
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU7CAGH1SA024647",
@@ -37919,7 +38342,8 @@
          39575
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGHXSA009168",
@@ -37966,7 +38390,8 @@
          39799
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGH4SA014916",
@@ -38013,7 +38438,8 @@
          42221
         ]
        ],
-       "stale_pct": 0.43
+       "stale_pct": 0.43,
+       "stale_of": 7
       },
       {
        "vin": "WAU7CAGH2SA024589",
@@ -38060,7 +38486,8 @@
          42244
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGH9SA014409",
@@ -38107,7 +38534,8 @@
          42670
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU1DAGH0SA026361",
@@ -38153,7 +38581,8 @@
          43797
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU7DAGH4SA024333",
@@ -38201,7 +38630,8 @@
          43870
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGH1SA012623",
@@ -38249,7 +38679,8 @@
          44270
         ]
        ],
-       "stale_pct": 0.57
+       "stale_pct": 0.57,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGH2SA015756",
@@ -38296,7 +38727,8 @@
          44375
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU7CAGH8SA026296",
@@ -38343,7 +38775,8 @@
          44598
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGH5SA026993",
@@ -38390,7 +38823,8 @@
          44799
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.71,
+       "stale_of": 7
       },
       {
        "vin": "WAU1DAGH3SA023566",
@@ -38434,7 +38868,8 @@
          44973
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU1CAGH9SA020982",
@@ -38482,7 +38917,8 @@
          45072
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 7
       },
       {
        "vin": "WAU7CAGH8SA024452",
@@ -38529,7 +38965,8 @@
          45298
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU7DAGH1SA026248",
@@ -38576,7 +39013,8 @@
          45499
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU7DAGH1SA024287",
@@ -38619,7 +39057,8 @@
          45557
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU3DAGHXSA026196",
@@ -38663,7 +39102,8 @@
          45999
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.71,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGH7SA018992",
@@ -38706,7 +39146,8 @@
          46023
         ]
        ],
-       "stale_pct": 0.14
+       "stale_pct": 0.14,
+       "stale_of": 7
       },
       {
        "vin": "WAU7DAGH4SA024168",
@@ -38754,7 +39195,8 @@
          46390
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU2CAGH8SA024834",
@@ -38801,7 +39243,8 @@
          46929
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       },
       {
        "vin": "WAU2DAGH3SA015584",
@@ -38849,7 +39292,8 @@
          64154
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 7
       }
      ],
      "daily": [
@@ -39126,6 +39570,8 @@
      ],
      "market": {
       "median_days_listed": 9,
+      "dated": 7,
+      "n": 22,
       "tracked_2d": 18,
       "cut_share": 0.22,
       "median_cut": 674,
@@ -39281,7 +39727,8 @@
          37942
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA4PA001317",
@@ -39333,7 +39780,8 @@
          37990
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA3RA009704",
@@ -39388,7 +39836,8 @@
          38075
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEAXPA002827",
@@ -39440,7 +39889,8 @@
          38197
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.49,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA0PA002254",
@@ -39488,7 +39938,8 @@
          38798
         ]
        ],
-       "stale_pct": 0.17
+       "stale_pct": 0.17,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA4RA003250",
@@ -39544,7 +39995,8 @@
          38922
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA9PA009865",
@@ -39588,7 +40040,8 @@
          38999
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.37,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA9PA005198",
@@ -39631,7 +40084,8 @@
          38999
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA2PA005477",
@@ -39687,7 +40141,8 @@
          39000
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA5RA008232",
@@ -39743,7 +40198,8 @@
          39353
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6NA002347",
@@ -39798,7 +40254,8 @@
          39400
         ]
        ],
-       "stale_pct": 0.83
+       "stale_pct": 0.83,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA8PA009081",
@@ -39854,7 +40311,8 @@
          39470
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEAXPA002892",
@@ -39905,7 +40363,8 @@
          39771
         ]
        ],
-       "stale_pct": 0.77
+       "stale_pct": 0.77,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA9PA005119",
@@ -39960,7 +40419,8 @@
          39789
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA6PA005739",
@@ -40008,7 +40468,8 @@
          39805
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA3PA005522",
@@ -40060,7 +40521,8 @@
          39855
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA0RA006419",
@@ -40108,7 +40570,8 @@
          39900
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA3RA008357",
@@ -40148,7 +40611,8 @@
          39900
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA7NA002180",
@@ -40203,7 +40667,8 @@
          40999
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA0PA002044",
@@ -40259,7 +40724,8 @@
          41900
         ]
        ],
-       "stale_pct": 0.66
+       "stale_pct": 0.66,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA2PA001963",
@@ -40315,7 +40781,8 @@
          41900
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6NA002624",
@@ -40370,7 +40837,8 @@
          41940
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA2PA006533",
@@ -40425,7 +40893,8 @@
          41981
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA2NA003866",
@@ -40481,7 +40950,8 @@
          41985
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6NA002090",
@@ -40525,7 +40995,8 @@
          42073
         ]
        ],
-       "stale_pct": 0.26
+       "stale_pct": 0.26,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA6RA001077",
@@ -40580,7 +41051,8 @@
          42097
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA6PA003232",
@@ -40636,7 +41108,8 @@
          42357
         ]
        ],
-       "stale_pct": 0.91
+       "stale_pct": 0.91,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA7PA004082",
@@ -40687,7 +41160,8 @@
          42389
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.37,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBAXNA005073",
@@ -40743,7 +41217,8 @@
          42794
         ]
        ],
-       "stale_pct": 0.6
+       "stale_pct": 0.6,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA5RA008862",
@@ -40799,7 +41274,8 @@
          42900
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA3RA001067",
@@ -40839,7 +41315,8 @@
          42947
         ]
        ],
-       "stale_pct": 0.0
+       "stale_pct": 0.0,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA5PA002343",
@@ -40894,7 +41371,8 @@
          43514
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA2PA001123",
@@ -40949,7 +41427,8 @@
          43590
         ]
        ],
-       "stale_pct": 0.77
+       "stale_pct": 0.77,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBAXNA004098",
@@ -41004,7 +41483,8 @@
          43796
         ]
        ],
-       "stale_pct": 0.94
+       "stale_pct": 0.94,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA2RA002565",
@@ -41055,7 +41535,8 @@
          43995
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.37,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA3NA005884",
@@ -41110,7 +41591,8 @@
          43999
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA7RA007325",
@@ -41166,7 +41648,8 @@
          44200
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.71,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA3PA001356",
@@ -41222,7 +41705,8 @@
          44357
         ]
        ],
-       "stale_pct": 0.69
+       "stale_pct": 0.69,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA1NA001588",
@@ -41270,7 +41754,8 @@
          45390
         ]
        ],
-       "stale_pct": 0.89
+       "stale_pct": 0.89,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA5RA009039",
@@ -41326,7 +41811,8 @@
          45449
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEAXRA001163",
@@ -41378,7 +41864,8 @@
          45500
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6NA001960",
@@ -41425,7 +41912,8 @@
          45500
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA8PA003376",
@@ -41481,7 +41969,8 @@
          45700
         ]
        ],
-       "stale_pct": 0.54
+       "stale_pct": 0.54,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA8NA003208",
@@ -41525,7 +42014,8 @@
          45767
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBAXNA004747",
@@ -41568,7 +42058,8 @@
          45795
         ]
        ],
-       "stale_pct": 0.14
+       "stale_pct": 0.14,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA0NA001274",
@@ -41611,7 +42102,8 @@
          45914
         ]
        ],
-       "stale_pct": 0.6
+       "stale_pct": 0.6,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA3NA003648",
@@ -41654,7 +42146,8 @@
          45956
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA3NA002015",
@@ -41697,7 +42190,8 @@
          45975
         ]
        ],
-       "stale_pct": 0.37
+       "stale_pct": 0.37,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA3NA003066",
@@ -41741,7 +42235,8 @@
          45980
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1TEA8RA001663",
@@ -41789,7 +42284,8 @@
          45990
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA3PA005967",
@@ -41840,7 +42336,8 @@
          46993
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6NA004602",
@@ -41895,7 +42392,8 @@
          47666
         ]
        ],
-       "stale_pct": 0.54
+       "stale_pct": 0.54,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA9NA004822",
@@ -41947,7 +42445,8 @@
          48000
         ]
        ],
-       "stale_pct": 0.31
+       "stale_pct": 0.31,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA0NA005910",
@@ -41991,7 +42490,8 @@
          48167
         ]
        ],
-       "stale_pct": 0.06
+       "stale_pct": 0.06,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA2PA004003",
@@ -42047,7 +42547,8 @@
          48989
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA9NA004254",
@@ -42102,7 +42603,8 @@
          49500
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA8NA001278",
@@ -42158,7 +42660,8 @@
          49606
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6PA003355",
@@ -42206,7 +42709,8 @@
          49998
         ]
        ],
-       "stale_pct": 0.23
+       "stale_pct": 0.23,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA1NA004636",
@@ -42257,7 +42761,8 @@
          50706
         ]
        ],
-       "stale_pct": 0.71
+       "stale_pct": 0.71,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6PA005090",
@@ -42300,7 +42805,8 @@
          52167
         ]
        ],
-       "stale_pct": 0.06
+       "stale_pct": 0.06,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA8PA004507",
@@ -42343,7 +42849,8 @@
          52167
         ]
        ],
-       "stale_pct": 0.06
+       "stale_pct": 0.06,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA4PA004066",
@@ -42399,7 +42906,8 @@
          52357
         ]
        ],
-       "stale_pct": 0.86
+       "stale_pct": 0.86,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA6PA004781",
@@ -42455,7 +42963,8 @@
          53001
         ]
        ],
-       "stale_pct": 0.49
+       "stale_pct": 0.49,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA5NA004445",
@@ -42498,7 +43007,8 @@
          53990
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA9PA003432",
@@ -42550,7 +43060,8 @@
          53998
         ]
        ],
-       "stale_pct": null
+       "stale_pct": null,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA1NA005950",
@@ -42593,7 +43104,8 @@
          56990
         ]
        ],
-       "stale_pct": 0.29
+       "stale_pct": 0.29,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA1SA001229",
@@ -42641,7 +43153,8 @@
          69995
         ]
        ],
-       "stale_pct": 0.17
+       "stale_pct": 0.17,
+       "stale_of": 35
       },
       {
        "vin": "50EA1GBA9NA002889",
@@ -42692,7 +43205,8 @@
          74994
         ]
        ],
-       "stale_pct": 0.97
+       "stale_pct": 0.97,
+       "stale_of": 35
       }
      ],
      "daily": [
@@ -44205,6 +44719,8 @@
      ],
      "market": {
       "median_days_listed": 13,
+      "dated": 35,
+      "n": 68,
       "tracked_2d": 53,
       "cut_share": 0.62,
       "median_cut": 407,

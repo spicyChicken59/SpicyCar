@@ -4955,6 +4955,74 @@ await step('the rate the page is ranking on', async () => {
   await page.selectOption('#f-term', String(fin.default_term || 60));
 });
 
+// ---- a share names the cars it is a share of --------------------------------
+// "Sits longer than 92% of the model" is a claim about the model, and the
+// share behind it is computed against the cars that carry a listing date —
+// 85 of the i5's 134. The other 49 have no date to be outlasted, so they are
+// in neither half of that percentage, and a reader taking the sentence at its
+// word overestimates how much of the market this car has outsat.
+//
+// The number was already honest; only the noun was wrong. It is checked on all
+// three row forms because the page has three, and the first pass at this fixed
+// two of them.
+await step('a share names the cars it is a share of', async () => {
+  plan('the wide table names the pool the share was taken from',
+       'the narrow band does too', 'and so does the phone card');
+  const subject = WATCHED.find((w) => ((SHEET.brands[w.bk].models[w.mk].listings) || [])
+    .some((x) => x.stale_pct != null && x.stale_pct >= 0.6 && x.stale_of));
+  if (!subject) return skipRest('no car on this sheet has outlasted 60% of its dated pool');
+  // Read every visible note that makes the claim, at one width, and judge them
+  // together: one row still saying "of the model" is the bug.
+  const notes = async () => page.locator('#list-table, #list-cards').locator('.sc-note, .sc-media__foot span')
+    .evaluateAll((ns) => ns.map((n) => n.textContent.trim()).filter((t) => /longer than \d+% of the/.test(t)));
+  const judge = (label, seen) => {
+    const named = seen.filter((t) => /longer than \d+% of the \d+ dated cars\b/.test(t));
+    const model = seen.filter((t) => /of the model\b/.test(t));
+    ok(label, seen.length > 0 && named.length === seen.length && model.length === 0,
+       `${seen.length} notes · ${named.length} name their pool · ${model.length} still claim the model`
+       + (seen.length ? ` · first: "${seen[0].slice(0, 70)}"` : ''));
+  };
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await open(subject.q);
+  judge('the wide table names the pool the share was taken from', await notes());
+  await page.setViewportSize({ width: 860, height: 1000 });
+  await open(subject.q);
+  judge('the narrow band does too', await notes());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(subject.q);
+  judge('and so does the phone card', await notes());
+  await page.setViewportSize({ width: 1280, height: 1000 });
+});
+
+// ---- the departures card holds absences, most of which are not departures ---
+// The card lists every VIN seen on an earlier snapshot and not on the latest.
+// On the i7 that is 114 rows, of which 38 are departures — the other 76 are the
+// fetch window moving past a car that is still for sale. The hint has printed
+// that split since the still-listed work, and one clause later the button
+// offered to "show all 114 departures", which is the claim the split exists to
+// refuse. The words around the split now say what the card holds and let the
+// split say which of them left.
+await step('the departures card counts absences, not departures', async () => {
+  plan('the button offers the absences, not a count of departures',
+       'and the truncated caption says the same');
+  const subject = WATCHED.map((w) => ({ ...w, gone: ((SHEET.brands[w.bk].models[w.mk].gone) || []).length }))
+    .sort((a, b) => b.gone - a.gone)[0];
+  if (!subject || subject.gone < 2) return skipRest('no model on this sheet has lost enough cars to truncate');
+  await open(subject.q);
+  const more = page.locator('[data-fkey="more:gone"]');
+  if (!await more.count()) return skipRest(`${subject.id} shows all ${subject.gone} of its absences at once`);
+  const label = (await more.textContent()).trim();
+  ok('the button offers the absences, not a count of departures',
+     /missing from the latest snapshot/.test(label) && !/\bdepartures\b/.test(label), `button says "${label}"`);
+  const hint = (await page.textContent('#gone-hint')) || '';
+  // The hint still NAMES departures — "confirmed departures first" is the sort
+  // order, which is true — so this asks only that the noun for the whole set
+  // is not "departed vehicles".
+  ok('and the truncated caption says the same',
+     /missing from the latest snapshot/.test(hint) && !/departed vehicles/.test(hint),
+     `hint says "${hint.slice(0, 120)}"`);
+});
+
 // --- what it costs to open -------------------------------------------------
 // The page is one static file and one JSON file, and both grow every time a
 // car joins the watchlist or a feature lands. Nothing measured them, so "how
@@ -5012,7 +5080,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 232;
+const EXPECTED = 237;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
