@@ -219,7 +219,8 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 Three checks run on every push, and all three run locally:
 
 ```
-python -m unittest discover -s tests -t .                     # the tracker, and what the dashboard may assume of its data
+python -m unittest discover -s tests -t .                     # the tracker, what the dashboard may assume of its data, and that
+                                                              # REPORT.md and docs/data.json are what this code builds from the CSV
 node tools/consumer_lint_ci.mjs <ds> docs/index.html docs/how.html tools/og_card.html
 node tools/dashboard_smoke.mjs <design-system>                 # the dashboard, opened in a real browser and asked if it works
 ```

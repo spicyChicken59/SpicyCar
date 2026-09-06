@@ -1860,6 +1860,60 @@ class TestATrimSectionIsAboutItsOwnQuery(unittest.TestCase):
                          "absent for a car one query alone returned, which is "
                          "almost all of them")
 
+    def test_a_departure_from_a_watch_is_printed_under_that_watch(self):
+        """The count and the rows behind it are one total split in two.
+        brief_lines() counts a model's departures across every trim; the rows
+        are printed only by trim_detail(), which build_outputs() skips entirely
+        for a trim with no display rows. Split on the table's chosen copy, the
+        certified watch could be empty on a day it had both cars and a
+        departure — so the record said "4 gone" and showed two, and the two it
+        swallowed were the watch's, on the most newsworthy day a watch can
+        have. The sections are built from each query's own rows now; this is
+        the arithmetic that says so."""
+        import re
+        from pathlib import Path
+        d1 = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        def r(target, vin, day, price, miles):
+            row = {k: "" for k in T.FIELDS}
+            row.update({"target": target, "vin": vin, "snapshot_date": day, "price": price,
+                        "year": "2025", "trim": "eDrive40", "miles": miles, "state": "CA",
+                        "city": "Irvine", "cpo": "1"})
+            return row
+        # The sibling's copy comes first, so the tie-break files the live car
+        # under it and the watch's own section is the empty one — which is the
+        # state the defect needed.
+        rows = [r("bmw-i5-edrive40", "A" * 17, d1, 48000, 9000),
+                r("bmw-i5-cpo", "A" * 17, d1, 48000, 9000),
+                r("bmw-i5-edrive40", "A" * 17, T.TODAY, 48000, 9000),
+                r("bmw-i5-cpo", "A" * 17, T.TODAY, 48000, 9000),
+                r("bmw-i5-cpo", "B" * 17, d1, 52000, 5000)]
+        today = [x for x in rows if x["snapshot_date"] == T.TODAY]
+        was, log = dict(T.SHORTLIST), T.FETCH_LOG
+        pw, ex, fs = dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES)
+        T.SHORTLIST.clear()
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+        try:
+            report, site, _ = T.build_outputs(today, rows, T.build_history(rows))
+        finally:
+            T.SHORTLIST.update(was); T.FETCH_LOG = log
+            T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+            T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+            T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        brief = next(l for l in report.splitlines() if " on the market · " in l)
+        said = int(re.search(r"· (\d+) gone", brief).group(1))
+        self.assertEqual(said, 1, f"the precondition: one real departure. {brief}")
+        printed = 0
+        for m in re.finditer(r"^\*\*Gone since [^*]*\*\*$", report, re.M):
+            block = report[m.end():]
+            block = block[:block.index("\n\n")] if "\n\n" in block else block
+            printed += len(re.findall(r"^- ", block, re.M))
+        self.assertEqual(printed, said,
+                         f"{said} gone in the model's own line and {printed} rows "
+                         f"under the sections that are supposed to hold them\n{report}")
+        self.assertIn("B" * 17, report,
+                      "and it is the watch's departure, under the watch")
+
     def test_the_table_is_still_one_row_per_vehicle_at_the_cheapest_price(self):
         i5 = self.site["brands"]["bmw"]["models"]["i5"]["listings"]
         self.assertEqual(len(i5), 3)
@@ -2737,6 +2791,115 @@ class TestDaysListedAnchor(unittest.TestCase):
             self.assertIsNone(T.days_listed(self.row("2026-08-15", "2026-08-09")))
         finally:
             T.INDEX_DATES.clear()
+
+
+class TestTheCommittedRecordIsThisCodesOwn(unittest.TestCase):
+    """REPORT.md and docs/data.json are the two artefacts everything else reads.
+
+    The browser suite compares the committed record against the rendered page
+    clause by clause — the typical-days sentence, the cut counts, the arrivals,
+    the trim headings, the margin on each car — and every one of those checks is
+    only as good as the record being the one this code produces. A change to
+    Tracking.py alone does not regenerate it, so a drift introduced there is
+    invisible in CI: the page moves and the file it is compared against does
+    not, and the pair agrees on the old answer.
+
+    The rebuild is pinned to the day the record says it was BUILT, which is its
+    own first line — that is the only input to build_outputs() that is not in
+    the repository, and pinning it is what makes the comparison exact rather
+    than approximate. On a live run that day is the data day; on a rebuild it is
+    the day the rebuild ran, and either way the file names it.
+    """
+
+    def test_rebuilding_the_record_on_the_day_it_names_reproduces_it(self):
+        import json as _json
+        report = Path("REPORT.md")
+        if not report.exists() or not T.SNAPSHOTS.exists():
+            self.skipTest("no committed record beside this checkout")
+        head = report.read_text().splitlines()[0]
+        m = re.match(r"# \S+ — (\d{4}-\d{2}-\d{2})$", head)
+        self.assertTrue(m, f"the record's first line names the day it was built: {head!r}")
+        day = m.group(1)
+        keep = (T.TODAY, T.TODAY_ORD, dict(T.PRICE_WINDOW), set(T.EXHAUSTED),
+                set(T.FAILED_SCOPES))
+        T.TODAY, T.TODAY_ORD = day, date.fromisoformat(day).toordinal()
+        # A rebuild holds no live fetch state; the committed fetch log is what
+        # it reads, exactly as tools/rebuild_outputs.py does.
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        try:
+            rows = T.load_history()
+            days = sorted({r["snapshot_date"] for r in rows})
+            latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+            built, site, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        finally:
+            (T.TODAY, T.TODAY_ORD) = keep[0], keep[1]
+            T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(keep[2])
+            T.EXHAUSTED.clear(); T.EXHAUSTED.update(keep[3])
+            T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(keep[4])
+        if built != report.read_text():
+            import difflib
+            diff = list(difflib.unified_diff(report.read_text().splitlines(),
+                                             built.splitlines(),
+                                             "committed", "rebuilt", n=1, lineterm=""))
+            self.fail("REPORT.md is not what this code builds from the committed "
+                      "snapshot on " + day + " — regenerate it "
+                      "(AUTODEV_API_KEY=offline python3 tools/rebuild_outputs.py):\n"
+                      + "\n".join(diff[:40]))
+        # Through the writer, not through a loaded object: a tuple and a list
+        # are the same JSON and a different Python value, and it is the FILE the
+        # dashboard fetches.
+        self.assertEqual(_json.dumps(site, indent=1),
+                         (T.DOCS / "data.json").read_text(),
+                         "…and docs/data.json with it, which is the file the "
+                         "dashboard and every browser check read")
+
+
+class TestAPercentReadsTheSameOnBothSurfaces(unittest.TestCase):
+    """Python rounds half to EVEN; JavaScript's Math.round rounds half UP.
+
+    Every percentage the record prints is recomputed on the page, so a margin
+    landing on an exact half-percent was published as two different numbers for
+    the same car on the same day. The field one place to the left already
+    carries this fix and names it — "floor(x + .5), not round(): … the page
+    recomputes this figure — two picks read '$1,936 less' here and '$1,937
+    less' there" — and the percentage in the same f-string was not swept.
+
+    The right-hand column is what `node -e "Math.round(v * 100)"` really prints,
+    measured rather than derived, so this test is not the fix restated: the last
+    assertion shows Python's own format disagrees with it on five of the seven.
+    """
+
+    # value: what the dashboard renders for it
+    JS = {0.005: "1%", 0.015: "2%", 0.025: "3%", 0.045: "5%",
+          0.105: "11%", 0.125: "13%", 0.135: "14%"}
+
+    def test_the_record_rounds_the_way_the_page_does(self):
+        for v, want in self.JS.items():
+            self.assertEqual(T.pct(v), want, f"{v!r} should read {want}")
+
+    def test_and_the_old_rule_really_did_disagree(self):
+        """Without this the table above could be Python's own answer written
+        down, and the test would pass on the defect it is named for."""
+        differ = [v for v, want in self.JS.items() if f"{v:.0%}" != want]
+        self.assertEqual(len(differ), 5,
+                         f"only {differ} differ between the two rules")
+
+    def test_the_stand_floor_no_longer_prints_a_claim_with_no_content(self):
+        """score_picks() admits a stand at a margin of exactly half a percent,
+        its docstring calling that "the smallest margin that rounds to a digit,
+        ON BOTH SIDES OF THE SHEET". The record printed that car as "0% under
+        typical" — the empty claim the floor exists to forbid — while the page
+        called it 1%."""
+        self.assertEqual(T.pct(0.005), "1%")
+
+    def test_every_share_the_record_prints_goes_through_it(self):
+        """Not only the picks: the cut share and the staleness share are
+        recomputed on the page too, with Math.round."""
+        import re
+        src = Path("Tracking.py").read_text()
+        left = re.findall(r"\{[^{}]*:\.0%\}", src)
+        self.assertEqual(left, [],
+                         f"these still round the other way: {left}")
 
 
 class TestFlagsSayTheCarsHistory(unittest.TestCase):

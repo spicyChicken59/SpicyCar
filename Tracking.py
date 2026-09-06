@@ -298,6 +298,30 @@ def money(n):
     return f"-${-n:,}" if n < 0 else f"${n:,}"
 
 
+def pct(v):
+    """A share as a whole percent, rounded the way the dashboard rounds it.
+
+    Python's format rounds half to EVEN and JavaScript's Math.round rounds half
+    UP, and every one of these numbers is recomputed on the page: 0.045 printed
+    "4% under typical" here and "5% under typical" there, for the same car on
+    the same day, with nothing to tell a reader which is the tool's answer. The
+    field one place to the left already carries this fix and says so —
+    "floor(x + .5), not round(): Python rounds half to even and JavaScript
+    rounds half up, and the page recomputes this figure" — and the percentage in
+    the same f-string was not swept with it.
+
+    Sharpest at the floor the picks turn on: score_picks() admits a stand at a
+    margin of exactly 0.005, its docstring calling half a percent "the smallest
+    margin that rounds to a digit, ON BOTH SIDES OF THE SHEET", and the record
+    printed that car as "0% under typical" — the claim with no content the rule
+    exists to forbid — while the page called it 1%.
+
+    floor(x + 0.5) is Math.round for negatives too: Math.round(-1485.5) is
+    -1485, which is floor(-1485.0).
+    """
+    return f"{int(math.floor(v * 100 + 0.5))}%"
+
+
 def place(x):
     """City, ST — or an honest 'location n/a' instead of an empty '(, )'."""
     bits = [str(x.get(k) or "").strip() for k in ("city", "state")]
@@ -1013,7 +1037,7 @@ def fmt_pick(p):
                 (f"+ {money(to_int(p['ship']))} shipping" if to_int(p.get("ship")) else "shipping n/a"))
     bits.append(place(p))
     line = "- " + " · ".join(b for b in bits if b)
-    line += (f"\n  _spicy pick: {p['pick_pct']:.0%} under typical for a {cohort_of(p)} "
+    line += (f"\n  _spicy pick: {pct(p['pick_pct'])} under typical for a {cohort_of(p)} "
              f"({money(p['pick_under'])} less{from_n(p)})_")
     if p.get("flags"):
         line += f" · _{' · '.join(p['flags'])}_"
@@ -1497,7 +1521,7 @@ def market_line(stats):
         # CARS and the median counts downward STEPS: two different figures in
         # one clause, and until now only one of them said what it was over.
         counted = stats.get("tracked_2d", 0) - stats.get("two_priced", 0)
-        cut = f"{stats['cut_share']:.0%} of {counted} cut while tracked"
+        cut = f"{pct(stats['cut_share'])} of {counted} cut while tracked"
         if stats.get("median_cut"):
             cut += f", median {money(stats['median_cut'])}"
             if stats.get("n_cuts"):
@@ -1632,7 +1656,7 @@ def build_today(events, record_day):
             # called used, because three of this sheet's cars have none.
             mi = to_int(bx.get("miles"))
             coh = cohort_of(bp)
-            line += (f" · best {best['pct']:.0%} under typical"
+            line += (f" · best {pct(best['pct'])} under typical"
                      + (f" for a {coh}" if coh else "")
                      + f" ({money(bx['price'])}, {place(bx)}"
                      + (f" · {mi:,} mi" if mi is not None else "")
@@ -1692,7 +1716,7 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin, record_day):
                 tags.append(f"on market {x['days_listed']}d")
             p = scored_by_vin.get(vin)
             if p and p.get("pick_stand") == "under":
-                tags.append(f"{p['pick_pct']:.0%} under typical")
+                tags.append(f"{pct(p['pick_pct'])} under typical")
             tags += x.get("flags") or []
             if tags:
                 line += f"\n  _{' · '.join(tags)}_"
@@ -1782,7 +1806,7 @@ def fmt_new(x, p=None):
         # block printed the same percentage bare — one denominator, present in
         # one section of the record and absent in the next.
         coh = cohort_of(p)
-        line += (f"\n  _{p['pick_pct']:.0%} under typical"
+        line += (f"\n  _{pct(p['pick_pct'])} under typical"
                  + (f" for a {coh}" if coh else "")
                  + f" ({money(p['pick_under'])} less{from_n(p)})_")
     if x.get("url"):
@@ -2797,7 +2821,7 @@ def fmt_row(r, s, as_of, entry=None):
     # negotiation context: a car most of its own model has outsold is a car
     # whose dealer has a reason to talk
     if entry and (entry.get("stale_pct") or 0) >= 0.75:
-        tags.append(f"sits longer than {entry['stale_pct']:.0%} of the "
+        tags.append(f"sits longer than {pct(entry['stale_pct'])} of the "
                     + (f"model's {entry['stale_of']} dated cars"
                        if entry.get("stale_of") else "model"))
     tags += flags(r)

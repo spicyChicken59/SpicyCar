@@ -5189,7 +5189,8 @@ await step('a split adds up to the total it named', async () => {
 await step('the record and the page tell one story about one model', async () => {
   plan('the typical-days clause is the same on both surfaces',
        'and so is the clause that counts cars asking less than they did',
-       'and so does the count of cars that arrived');
+       'and so does the count of cars that arrived',
+       'and so does the margin it prints on a car');
   const REPORT = join(ROOT, '..', 'REPORT.md');
   if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
   const md = readFileSync(REPORT, 'utf8');
@@ -5231,6 +5232,40 @@ await step('the record and the page tell one story about one model', async () =>
   ok('and so is the clause that counts cars asking less than they did',
      offHeld.length === 0 && rows.some((r) => r.mdHeld),
      rows.map((r) => `${r.id}: ${r.mdHeld === r.pageHeld ? `both "${r.mdHeld}"` : `record "${r.mdHeld}" vs page "${r.pageHeld}"`}`).join(' · '));
+  // …and the margin itself, per car. Python rounds half to EVEN and Math.round
+  // rounds half UP, so a margin landing on an exact half-percent was published
+  // as two numbers for one car — "4% under typical" in the record and "5%" on
+  // the page — with nothing to say which was the tool's answer. Read per VIN
+  // off both surfaces, so any divergence shows, not only the boundary one.
+  const pctOf = (t) => {
+    const out = new Map();
+    for (const m of t.matchAll(/(\d+)% under typical[\s\S]{0,400}?\b([A-HJ-NPR-Z0-9]{17})\b/g))
+      if (!out.has(m[2])) out.set(m[2], m[1]);
+    return out;
+  };
+  const mdPct = pctOf(md);
+  const pagePct = new Map();
+  for (const w of WATCHED) {
+    const label = (SHEET.brands[w.bk].models[w.mk] || {}).label;
+    if (!label || md.indexOf(`## Shopping: ${label}\n`) < 0) continue;
+    await open(w.q);
+    const more = page.locator('[data-fkey="more:list"]');
+    if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+    for (const t of await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((r) => r.innerText))) {
+      const vin = (t.match(/\b[A-HJ-NPR-Z0-9]{17}\b/) || [])[0];
+      const pc = (t.match(/(\d+)% under typical/) || [])[1];
+      if (vin && pc) pagePct.set(vin, pc);
+    }
+  }
+  const shared = [...mdPct.keys()].filter((v) => pagePct.has(v));
+  const offPct = shared.filter((v) => mdPct.get(v) !== pagePct.get(v));
+  if (!shared.length) skip('and so does the margin it prints on a car',
+                           'no car carries a printed margin on both surfaces today');
+  else ok('and so does the margin it prints on a car', offPct.length === 0,
+          offPct.length
+            ? offPct.slice(0, 3).map((v) => `${v}: record ${mdPct.get(v)}% vs page ${pagePct.get(v)}%`).join(' | ')
+            : `${shared.length} cars carry a margin on both, every one the same number`
+              + ` (e.g. ${shared[0]} at ${mdPct.get(shared[0])}%)`);
   const offNew = rows.filter((r) => r.mdNew !== r.pageNew);
   ok('and so does the count of cars that arrived',
      offNew.length === 0 && rows.some((r) => r.mdNew !== ''),
@@ -5769,7 +5804,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 265;
+const EXPECTED = 266;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
