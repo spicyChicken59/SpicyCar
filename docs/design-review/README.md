@@ -40,19 +40,31 @@ fallback remains available; no alternate car's photograph is substituted.
 
 ## Criterion navigation on a phone
 
-**The criterion navigator below is a local preview. Its website integration has
-not yet been published.** The shared helper is merged in
-[design-system PR #13](https://github.com/spicyChicken59/design-system/pull/13).
-Automatic approval review blocked replacing the application's HTML file because
-it contains existing business logic, despite the verified design-only diff.
+The checked-in chart and table presentation bundle adds navigation using the
+matrix's existing column headings. The application's HTML and data stay
+byte-for-byte unchanged. The transposed shortlist table remains separate: its
+columns name cars, so it does not receive criterion buttons.
 
 | Criteria available without guessing | History reached directly |
 | --- | --- |
-| ![Value, Reach, CPO and History buttons above the native signal matrix](criteria-phone.png) | ![History column visible with the same car identities and exact prices](criteria-history-phone.png) |
+| ![Value context, Reach, Certification and Accident record controls above the signal matrix](matrix-nav-bundle-phone.png) | ![Accident record visible beside the same car identities and exact prices](matrix-nav-bundle-history.png) |
 
 These 390-pixel phone captures come from the Chromium regression harness using
 the checked-in data and documented offline font/photo fallbacks. They verify the
 new layout; the desktop captures above come from the public site. The optional
 controls only appear when the native table overflows. Clicking one brings its
 criterion into view while car names and prices remain visible. Swiping, keyboard
-scrolling and the native table remain available if the helper cannot load.
+scrolling and the native table remain available without the navigation helper.
+
+The original dashboard verification suite remains unchanged. Run the additional
+design check with Playwright 1.56.1 and Chromium. The `../design-system` checkout
+must be at the exact commit recorded in the snapshot provenance:
+
+```bash
+node tools/matrix_navigation_smoke.mjs ../design-system --shots /tmp/car-matrix-proof
+```
+
+Its 26 checks cover the six viewport/theme combinations, every criterion jump,
+sticky identities, keyboard focus, reduced motion, forced colors, print,
+rerendering and the native fallback. The exact upstream commit and asset hashes
+are recorded in [`../design-system/provenance.json`](../design-system/provenance.json).

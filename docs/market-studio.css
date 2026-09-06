@@ -622,6 +622,8 @@
   .market-studio #decision-matrix tbody th {
     width: 136px;
     min-width: 136px;
+    /* Cover the small gutter while evidence passes under the sticky identity. */
+    box-shadow: calc(-1 * var(--sc-s0)) 0 0 var(--sc-surface);
   }
 
   .market-studio #decision-matrix tbody th {
