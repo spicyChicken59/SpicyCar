@@ -1,14 +1,15 @@
 {
   "repository": "spicyChicken59/design-system",
-  "commit": "c8580af27b00424d6805a57b8ab6bf26cb454310",
+  "commit": "cec1ff7da7ae76b285107bb81e124834fef6505b",
   "version": "2.10.0",
   "files": {
     "sc.css": "225516aa6e81d9f8ed31604437ebc8c44d5ddfacf7f6b0b5273332f19ace6a20",
     "sc-theme.js": "7e87030e52272d07683a2fb1f3389ccbd4f6d5ce3cc290cfb30f339968f0ce0a",
-    "sc-charts.js": "1f16af4a74fd3ba6fdf0f955f219306bb4c0a49135d79409ecb61c9e5e1ac846",
+    "sc-charts.js": "817866c6b98bf96c4ce154771fba2b9d03e0518cb210b1d7d1fc4237a14e33ae",
     "sc-map.js": "50ef8185f89682c51546483fa71fce995e5de871f3e22bb245a068ccf3450eee",
     "sc-motion.js": "2e9d8fe59c5211729aabd25fa8c92bea6b11beee1c5ea162aabeb5ef00ec140d",
     "sc-reading.js": "0f73500d2751313dc47d40ea25c1690e1cb14b43788ea7c70cf76683df3de349",
+    "sc-matrix-nav.js": "85b8d8584b0bc78d141a0746b4be3d4c8f040de648205318779da1758c6e804e",
     "assets/apple-touch-icon.png": "5a86780d62829e950541c8b66cdfe7bf5c6dbd587d1664d4f91fa9dcdfa97177",
     "assets/favicon-512.png": "e71e4dab85a0d706a7f82acf5ea178b6b510e9fa8848a7367bfe4d4aed65b52d",
     "assets/favicon.ico": "1290eef86ae1af2266eec58aaac3f6d0f72c7ed4829d080d30b5c4ee7d0999d4",
