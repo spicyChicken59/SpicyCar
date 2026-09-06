@@ -3560,6 +3560,51 @@ def build_outputs(today_rows, all_rows, hist):
             listings = [listing_entry(r, summarize_vin(r["vin"], tids, hist, (r["target"], r["vin"])))
                         for r in display]
             m_entry["listings"] = sorted(listings, key=lambda x: x["price"] or 10**9)
+            # …and the same entries again, per TARGET, because the two are
+            # different populations. The table is one row per VEHICLE, cheapest
+            # copy, ties by list order; a trim section is about the LISTINGS one
+            # query returned. The certified watch matches cars the ordinary trim
+            # targets match too, so splitting the table's rows by the chosen
+            # copy's trim_id handed the watch whatever survived that tie-break:
+            # on every one of the seven days it has run it reported the wrong
+            # thing — "2 vehicles · lowest asking $64,491" on a day it returned
+            # four, the cheapest at $48,084, and "none found" on four days it
+            # returned cars. Its own note says the 2.99% promo is the reason to
+            # watch it, so the cheapest certified car is the whole point.
+            #
+            # Membership alone would not have fixed it: of the nine VIN-days
+            # this record holds in two targets, four carry two different prices
+            # and one of those is certified at $58,085 in the watch and NOT
+            # certified at $56,000 in the sibling. The section shows what its
+            # own query returned, at that query's price.
+            by_target, rows_of = {}, {}
+            for t in trims:
+                own = pick_display_rows([x for x in m_rows if x["target"] == t["id"]])
+                rows_of[t["id"]] = {r["vin"]: r for r in own}
+                by_target[t["id"]] = sorted(
+                    [listing_entry(r, summarize_vin(r["vin"], tids, hist,
+                                                    (r["target"], r["vin"])))
+                     for r in own],
+                    key=lambda x: x["price"] or 10**9)
+            # How many vehicles are in more than one of them — the reason the
+            # section counts can add up past the model's own total.
+            in_two = sum(1 for _, n in Counter(
+                v for by_vin in rows_of.values() for v in by_vin).items() if n > 1)
+            # …and, on the table's row for such a car, what the OTHER queries
+            # returned it as. The row itself stays one per vehicle at the
+            # cheapest copy — that is the table's rule and README's — but the
+            # dashboard's trim chips are the same claim the sections above make,
+            # and without this the page can only answer them from the chosen
+            # copy: its "CPO under 30k mi" chip counted 2 where the watch
+            # returned 4. Absent for the ~98% of cars one query alone returned.
+            for x in m_entry["listings"]:
+                other = [(tid, by_vin[x["vin"]]) for tid, by_vin in rows_of.items()
+                         if tid != x["trim_id"] and x["vin"] in by_vin]
+                if other:
+                    x["also"] = [{"trim_id": tid, "trim_label": TARGETS[tid]["label"],
+                                  "price": to_int(r["price"]), "cpo": is_cpo(r),
+                                  "url": r.get("url", ""), "dealer": r.get("dealer", "")}
+                                 for tid, r in sorted(other)]
             m_entry["market"] = {**market_stats(m_entry["listings"]),
                                  **sale_stats(m_gone),
                                  # Whether the cars behind the pooled exit
@@ -3683,16 +3728,23 @@ def build_outputs(today_rows, all_rows, hist):
                                  + ([f"no state {n_none}"] if n_none else []))
             mline = market_line(m_entry["market"])
             sec += [f"_{len(listings)} vehicles across {len(trims)} "
-                    f"trim{'s' if len(trims) != 1 else ''} · {summary}_"
+                    f"trim{'s' if len(trims) != 1 else ''}"
+                    # …and why the sections below can add up to more than that:
+                    # a vehicle two queries both returned is a row in each of
+                    # their sections, at each query's own price.
+                    + (f" ({in_two} listed under two of them)" if in_two else "")
+                    + f" · {summary}_"
                     + (f"\n_{mline}_" if mline else ""), ""]
-            rows_by_vin = {r["vin"]: r for r in display}
             for t in trims:
-                tl = [x for x in m_entry["listings"] if x["trim_id"] == t["id"]]
+                tl = by_target[t["id"]]
                 if not tl:
                     sec += [f"### {t['label']} — none found", ""]
                     continue
-                trim_detail(sec, t, tl, rows_by_vin, hist, m_entry["gone"], prev_day,
-                            as_of)
+                # …and this query's own raw rows, not the table's: the row a
+                # section prints has to be the listing the section counted, or
+                # a certified car is printed at its uncertified sibling's price.
+                trim_detail(sec, t, tl, rows_of[t["id"]], hist, m_entry["gone"],
+                            prev_day, as_of)
             full += sec
 
     scored_by_vin = {str(p["vin"]).upper(): p for p in all_scored}

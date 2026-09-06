@@ -880,7 +880,15 @@ plan('a zero-car trim says why the page is empty',
      'a stale link onto an empty trim is not a dead end either',
      'the empty-filters notice counts what its own link restores');
 const DATA = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
-const perTrim = (m) => (m.listings || []).reduce((c, x) => (c[x.trim_id] = (c[x.trim_id] || 0) + 1, c), {});
+// The page's own membership rule: a car two queries both returned is one row
+// with the cheaper copy's trim_id and the other under `also`, and it is in both
+// trims. Counting only trim_id here would pick a "victim" trim that the page
+// still shows cars for, and the emptying below would leave two behind.
+const inTrimOf = (x, id) => x.trim_id === id || ((x.also || []).some((a) => a.trim_id === id));
+const perTrim = (m) => (m.listings || []).reduce((c, x) => {
+  for (const id of new Set([x.trim_id, ...(x.also || []).map((a) => a.trim_id)])) c[id] = (c[id] || 0) + 1;
+  return c;
+}, {});
 // A model with no listings at all is the pre-existing `!total` path, not this
 function emptyTrim() {
   for (const [bk, b] of Object.entries(DATA.brands || {}))
@@ -915,7 +923,7 @@ async function synthesizeEmptyTrim() {
         const r = await route.fetch();
         const sheet = JSON.parse(await r.text());
         const mm = ((sheet.brands || {})[bk] || {}).models[mk];
-        mm.listings = (mm.listings || []).filter((x) => x.trim_id !== victim);
+        mm.listings = (mm.listings || []).filter((x) => !inTrimOf(x, victim));
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
       });
       stubbedEmpty = true;
@@ -5216,6 +5224,137 @@ await step('the record and the page tell one story about one model', async () =>
   ok('and so does the count of cars that arrived',
      offNew.length === 0 && rows.some((r) => r.mdNew !== ''),
      rows.map((r) => `${r.id}: ${r.mdNew === r.pageNew ? `both ${r.mdNew || '—'} new` : `record ${r.mdNew || '—'} vs page ${r.pageNew || '—'}`}`).join(' · '));
+});
+
+// ---- a trim chip counts what its query returned ---------------------------
+// A car two of a model's queries both returned is one row in the table, filed
+// under whichever copy was cheapest with ties broken by list order — so the
+// certified watch's own section reported the tie-break and not the watch. On
+// every one of the seven days it had run it said the wrong thing: "2 vehicles ·
+// lowest asking $64,491" on a day it returned four, the cheapest at $48,084,
+// and "none found" on four days it returned cars. The record's sections and the
+// page's chips are the same claim, so this reads the committed record's own
+// headings and presses the chips.
+await step('a trim chip counts what its query returned', async () => {
+  plan('every trim section in the record has a chip saying the same number',
+       'and pressing one shows that many rows',
+       'and at the price that query returned',
+       'and makes no value claim it measured on the other price',
+       'and comparing two trims leaves it at the table\'s own price');
+  const REPORT = join(ROOT, '..', 'REPORT.md');
+  if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
+  const md = readFileSync(REPORT, 'utf8');
+  const rows = [];
+  for (const w of WATCHED) {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    if (!m.label || Object.keys(m.trims || {}).length < 2) continue;
+    const at = md.indexOf(`## Shopping: ${m.label}\n`);
+    if (at < 0) continue;                       // only the shopped models get sections
+    const sect = md.slice(at, md.indexOf('\n## ', at + 4) + 1 || undefined);
+    await open(w.q);
+    const chips = await page.locator('#f-trim button').evaluateAll((bs) => bs.map((b) => ({
+      key: b.getAttribute('data-fkey'),
+      label: b.firstChild ? String(b.firstChild.textContent).trim() : '',
+      n: b.querySelector('.chip-n') ? Number(b.querySelector('.chip-n').textContent) : null })));
+    for (const [id, t] of Object.entries(m.trims || {})) {
+      const line = (sect.match(new RegExp('^### ' + t.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' — .*$', 'm')) || [''])[0];
+      if (!line) continue;
+      const said = /none found/.test(line) ? 0 : Number((line.match(/— (\d+) vehicles/) || [])[1]);
+      const chip = chips.find((c) => c.key === 'trim:' + id);
+      rows.push({ id, label: t.label, md: said, chip: chip ? chip.n : null, q: w.q });
+    }
+  }
+  if (!rows.length) return skipRest('no shopped model on this sheet has a trim breakdown in the record');
+  const off = rows.filter((r) => r.md !== r.chip);
+  ok('every trim section in the record has a chip saying the same number', off.length === 0,
+     rows.map((r) => `${r.label}: ${r.md === r.chip ? `both ${r.md}` : `record ${r.md} vs chip ${r.chip}`}`).join(' · '));
+  // …and the chip is not just a number: pressing it has to put that many rows
+  // on screen, or the count is a claim the table cannot back.
+  const subject = rows.find((r) => r.md > 0 && r.md < 40) || rows.find((r) => r.md > 0);
+  if (!subject) return skip('and pressing one shows that many rows', 'no trim on this sheet holds a car today');
+  await open(subject.q);
+  await page.click(`[data-fkey="trim:${subject.id}"]`);
+  await page.waitForTimeout(400);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+  const shown = await page.locator('#list-table tbody tr').count();
+  ok('and pressing one shows that many rows', shown === subject.md,
+     `${subject.label}: the chip says ${subject.md}, the record says ${subject.md}, the table shows ${shown}`);
+
+  // …at the price THAT query returned. Membership alone would price a shared
+  // car by the table's rule — the cheapest copy — and of the nine VIN-days this
+  // record holds in two targets, four carry two prices and one is certified at
+  // $58,085 in the watch and NOT certified at $56,000 in its sibling. Both of
+  // today's shared cars happen to be listed at the same price by both queries,
+  // so no live sheet can tell the two rules apart: the divergence is planted.
+  // The subject is a car the page already calls a value, because one of the
+  // checks below is that the claim does NOT survive the swap — and the score is
+  // computed in the browser (annotateValue), so it is read off the page rather
+  // than out of the sheet, which carries no pick_* field at all.
+  let twin = null;
+  for (const w of WATCHED) {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    const ids = Object.keys(m.trims || {});
+    if (ids.length < 2 || !(m.listings || []).length) continue;
+    await open(w.q);
+    const texts = await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((r) => r.innerText));
+    for (const t of texts) {
+      if (!/under typical/.test(t)) continue;
+      const vin = (t.match(/\b[A-HJ-NPR-Z0-9]{17}\b/) || [])[0];
+      const x = vin && (m.listings || []).find((c) => c.vin === vin && c.price && c.trim_id);
+      const other = x && ids.find((id) => id !== x.trim_id);
+      if (other) { twin = { w, bk: w.bk, mk: w.mk, vin, own: x.price, other,
+                            dear: x.price + 9000, mine: x.trim_id }; break; }
+    }
+    if (twin) break;
+  }
+  const cash = (n) => '$' + Number(n).toLocaleString('en-US');
+  if (!twin) return skip('and at the price that query returned',
+                         'no model on this sheet has two trims and a priced car');
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    const mm = sheet.brands[twin.bk].models[twin.mk];
+    const car = (mm.listings || []).find((c) => c.vin === twin.vin);
+    car.also = [{ trim_id: twin.other, trim_label: (mm.trims[twin.other] || {}).label || twin.other,
+                  price: twin.dear, cpo: true, url: car.url, dealer: car.dealer }];
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(`?brand=${twin.bk}&m=${twin.mk}&trims=${twin.other}`);
+    const rowText = await page.locator('#list-table tbody tr').filter({ hasText: twin.vin }).first().innerText().catch(() => '');
+    ok('and at the price that query returned',
+       rowText.includes(cash(twin.dear)) && !rowText.includes(cash(twin.own)),
+       `${twin.vin} is ${cash(twin.own)} in its own query and ${cash(twin.dear)} in ${twin.other};`
+       + ` under that trim the row reads ${JSON.stringify(rowText.replace(/\s+/g, ' ').slice(0, 110))}`);
+    // The value score belongs to the price it was computed for. Carried over,
+    // the row would print a margin measured against the cheaper listing beside
+    // the dearer one's asking. The "before" is the same row under its OWN trim,
+    // where no swap happens — read from the page, because the score is computed
+    // in the browser and is in no sheet.
+    await open(`?brand=${twin.bk}&m=${twin.mk}&trims=${twin.mine}`);
+    const ownText = await page.locator('#list-table tbody tr').filter({ hasText: twin.vin }).first().innerText().catch(() => '');
+    if (!/under typical/.test(ownText))
+      skip('and makes no value claim it measured on the other price',
+           `the page gives ${twin.vin} no value note under its own trim, so there is none to lose`);
+    else ok('and makes no value claim it measured on the other price',
+            !/under typical/.test(rowText),
+            `under its own trim the row says ${JSON.stringify((ownText.match(/\d+% under typical/) || [''])[0])};`
+            + ` under ${twin.other} at ${cash(twin.dear)} it reads `
+            + JSON.stringify(rowText.replace(/\s+/g, ' ').slice(0, 90)));
+    // With two trims pressed the page is comparing them, and a car in both has
+    // no single answer to "at what price" — so it keeps its own, the table's.
+    // The OTHER trim goes first in the URL on purpose: a swap that reached this
+    // view would take the first selection, and with the car's own trim first it
+    // would be invisible — the check would pass on a page picking arbitrarily
+    // between two answers.
+    await open(`?brand=${twin.bk}&m=${twin.mk}&trims=${twin.other},${twin.mine}`);
+    const bothText = await page.locator('#list-table tbody tr').filter({ hasText: twin.vin }).first().innerText().catch(() => '');
+    ok('and comparing two trims leaves it at the table\'s own price',
+       bothText.includes(cash(twin.own)) && !bothText.includes(cash(twin.dear)),
+       `pressing ${twin.other} and ${twin.mine} together, the row reads `
+       + JSON.stringify(bothText.replace(/\s+/g, ' ').slice(0, 110)));
+  } finally { await ctx.unroute('**/data.json'); }
 });
 
 // ---- a car the sheet cannot place is not a car beyond your states ----------

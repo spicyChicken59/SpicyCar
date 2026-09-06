@@ -1745,6 +1745,113 @@ class TestEveryDatedSentenceNamesItsOwnDay(unittest.TestCase):
         self.assertNotIn("today", line)
 
 
+class TestATrimSectionIsAboutItsOwnQuery(unittest.TestCase):
+    """The table is one row per VEHICLE; a trim section is about LISTINGS.
+
+    The certified watch matches cars the ordinary trim targets match too, so a
+    car can be two records on one day — the record's own departure note says so
+    ("the same VIN is listed as xDrive40 at $51,476, not certified"). The
+    sections were split on the table's chosen copy, which is the cheapest with
+    ties broken by list order, so the watch reported whatever survived that:
+    on every one of the seven days it has run it said the wrong thing, and on
+    four of them "none found" while it was returning cars.
+
+    Membership alone would not have fixed it. Of the nine VIN-days this record
+    holds in two targets, four carry two different prices, and in one of those
+    the cheaper copy is NOT certified — so a section that borrowed the table's
+    price would publish an uncertified $56,000 listing as the cheapest
+    certified car.
+    """
+
+    @staticmethod
+    def row(target, vin, day, price, cpo="", trim="eDrive40", dealer="a dealer"):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": target, "vin": vin, "snapshot_date": day, "price": price,
+                  "year": "2025", "trim": trim, "miles": 9000, "state": "CA",
+                  "city": "Carlsbad", "cpo": cpo, "dealer": dealer})
+        return r
+
+    def setUp(self):
+        d = T.TODAY
+        self.both = "B" * 17          # in the watch AND in a sibling, two prices
+        self.tie = "T" * 17           # in both at the same price
+        rows = [
+            # the watch's own records
+            self.row("bmw-i5-cpo", self.both, d, 58085, cpo="1", trim="xDrive40"),
+            self.row("bmw-i5-cpo", self.tie, d, 48084, cpo="1"),
+            # the siblings', of the same two cars — cheaper, and one not certified
+            self.row("bmw-i5-xdrive40", self.both, d, 56000, trim="xDrive40"),
+            self.row("bmw-i5-edrive40", self.tie, d, 48084, cpo="1"),
+            # …and one car only the ordinary trim has
+            self.row("bmw-i5-edrive40", "O" * 17, d, 39000),
+        ]
+        self.report, self.site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        self.sections = {}
+        for block in self.report.split("\n### ")[1:]:
+            self.sections[block.split(" — ")[0]] = "### " + block
+
+    def test_the_watch_counts_what_it_returned_not_what_won_a_tie_break(self):
+        head = self.sections["CPO under 30k mi"].splitlines()[0]
+        self.assertIn("2 vehicles", head,
+                      "the watch returned two cars; the table filed one of them "
+                      "under a sibling because that copy was cheaper and the "
+                      "other on a tie")
+        self.assertIn("lowest asking $48,084", head)
+
+    def test_and_prints_each_car_at_the_price_its_own_query_returned(self):
+        cpo = self.sections["CPO under 30k mi"]
+        self.assertIn("$58,085", cpo,
+                      "the certified listing of this car, not its cheaper "
+                      "uncertified sibling record")
+        self.assertNotIn("$56,000", cpo)
+        x40 = self.sections["xDrive40"]
+        self.assertIn("$56,000", x40, "and the sibling section prints its own")
+        self.assertNotIn("$58,085", x40)
+
+    def test_and_the_certification_follows_the_listing_it_belongs_to(self):
+        row = next(b for b in self.sections["CPO under 30k mi"].split("\n- ")
+                   if self.both in b)
+        self.assertIn("CPO", row)
+        row2 = next(b for b in self.sections["xDrive40"].split("\n- ")
+                    if self.both in b)
+        self.assertNotIn("CPO", row2,
+                         "the sibling's record of this car is not certified, and "
+                         "the flag is a fact about the listing")
+
+    def test_the_model_line_says_how_many_cars_are_in_two_sections(self):
+        line = next(l for l in self.report.splitlines() if "vehicles across" in l)
+        self.assertIn("3 vehicles across 4 trims (2 listed under two of them)", line,
+                      "the table holds three cars and the sections below add up "
+                      "to five; the reader doing that subtraction is owed the "
+                      "reason")
+
+    def test_the_row_carries_the_other_query_s_listing_for_the_page(self):
+        """The dashboard has one row per vehicle and cannot reach the sibling
+        record without this, so its trim chip could only answer from the chosen
+        copy — it counted 2 where the watch returned 4, and a comment in the
+        page recorded that as a consequence of one row per VIN. It is not one."""
+        i5 = self.site["brands"]["bmw"]["models"]["i5"]["listings"]
+        both = next(x for x in i5 if x["vin"] == self.both)
+        self.assertEqual(both["trim_id"], "bmw-i5-xdrive40", "the cheapest copy")
+        self.assertEqual([(a["trim_id"], a["price"], a["cpo"]) for a in both["also"]],
+                         [("bmw-i5-cpo", 58085, True)],
+                         "and what the OTHER query returned it as, price and "
+                         "certification together — membership alone would put an "
+                         "uncertified $56,000 listing in the certified watch")
+        alone = next(x for x in i5 if x["vin"] == "O" * 17)
+        self.assertNotIn("also", alone,
+                         "absent for a car one query alone returned, which is "
+                         "almost all of them")
+
+    def test_the_table_is_still_one_row_per_vehicle_at_the_cheapest_price(self):
+        i5 = self.site["brands"]["bmw"]["models"]["i5"]["listings"]
+        self.assertEqual(len(i5), 3)
+        both = next(x for x in i5 if x["vin"] == self.both)
+        self.assertEqual(both["price"], 56000,
+                         "the table's rule is unchanged: one row per vehicle, "
+                         "the cheapest copy")
+
+
 class TestWindowArithmetic(unittest.TestCase):
     """Three lines of delisted() that decide every departure, and no test ran
     any of them: which cut-off applies when a car is reachable through two

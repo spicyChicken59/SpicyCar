@@ -137,7 +137,10 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 
 ## What you get each day
 
-- `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
+- `REPORT.md` — grouped by model then trim, each trim section holding what that query returned at
+  that query's price (a car two of a model's queries both matched — the certified watch matches
+  cars the ordinary trim targets match too — is in both sections, and the model's own line says
+  how many): price changes, vehicles gone since the last snapshot,
   every drivable listing grouped by state, and the five lowest-asking
   cars beyond the buyer's states, each with its shipping estimate. It reads the same data the
   dashboard does and is held to the same rule: a figure carries the denominator that makes it

@@ -1761,7 +1761,7 @@
     // returning reader met a map missing a whole model with nothing on screen
     // naming the filter. S.hidden is the price chart's legend and stops there.
     const inSel = (e) => (mode === 'model'
-      ? (!S.trims.size || S.trims.has(e.c.x.trim_id))
+      ? (!S.trims.size || [...S.trims].some((id) => inTrim(e.c.x, id)))
       : (!S.models.size || S.models.has(modelKey(e.c.bk, e.c.mk))));
     const entryVisible = (e) => inSel(e) && passesShared(e.c.x);
     // literally the same pick sets as the cards above the map
@@ -2220,7 +2220,39 @@
 
   // ---------- data access ----------
   function model() { return S.site.brands[S.brand].models[S.model]; }
-  function trimRows(rows) { return S.trims.size ? rows.filter((x) => S.trims.has(x.trim_id)) : rows; }
+  // A car two of a model's queries both returned is ONE row in the table — the
+  // cheapest copy, which is README's rule and the record's — and a car in each
+  // of their trim sections, at each query's own price. `also` carries the other
+  // copies. Without it the trim chips could only answer from the chosen copy:
+  // the certified watch's chip counted 2 on a day the watch returned 4, and the
+  // committed record's own section said "lowest asking $64,491" against the
+  // $48,084 that watch had found. A comment here used to record that as a
+  // consequence of one row per VIN; it is not one, and the export closed it.
+  const inTrim = (x, id) => x.trim_id === id || (x.also || []).some((a) => a.trim_id === id);
+  // …and under ONE trim, the row IS that query's listing. Membership alone
+  // would price it wrong: of the nine VIN-days this record holds in two
+  // targets, four carry two prices, and one is certified at $58,085 in the
+  // watch and NOT certified at $56,000 in its sibling. The value score goes
+  // with the price it was computed for, so a swapped row carries none and
+  // sorts with the unscored rather than claiming a margin off the other
+  // listing's asking.
+  const asListedUnder = (x, id) => {
+    const a = x.trim_id === id ? null : (x.also || []).find((o) => o.trim_id === id);
+    return a ? { ...x, trim_id: id, trim_label: a.trim_label || x.trim_label,
+                 price: a.price, cpo: a.cpo, url: a.url || x.url, dealer: a.dealer || x.dealer,
+                 pick_stand: null, pick_pct: null, pick_under: null, pick_n: null,
+                 pick_lo: null, pick_hi: null }
+             : x;
+  };
+  function trimRows(rows) {
+    if (!S.trims.size) return rows;
+    const ids = [...S.trims];
+    const kept = rows.filter((x) => ids.some((id) => inTrim(x, id)));
+    // One trim selected is the only view with a single answer to "at what
+    // price"; with two or more pressed the page is comparing them and the row
+    // keeps its own, the table's rule.
+    return ids.length === 1 ? kept.map((x) => asListedUnder(x, ids[0])) : kept;
+  }
   // Departures are keyed (target, vin), not by VIN alone, so a car two trim
   // targets both matched leaves two rows — and any scope holding both trims
   // would list it twice and count it twice as gone. Unconditional on purpose:
@@ -6037,14 +6069,15 @@
       ? 'Models — pick any; two or more compares them; none selected means every model'
       : 'Compare with — opens this car beside the one you are looking at');
     // Trim: a chip per trim of this model, same rule. The count on each chip is
-    // what the page has, not what the API has — the CPO watch reads 0 because
-    // every certified car it finds is also filed under the trim it is, and one
-    // row per VIN is the whole point of the list below.
+    // what the page has, not what the API has — but it now counts every car the
+    // query returned, not only the ones whose cheapest copy came from it. See
+    // inTrim(): the certified watch read 2 on a day it returned 4, because
+    // every certified car it finds is also filed under the trim it is.
     const ft = $('f-trim'); ft.textContent = '';
     const tIds = t ? trimIds(t) : [];
     if (t && tIds.length > 1) {
       const counts = {};
-      for (const x of (t.listings || [])) counts[x.trim_id] = (counts[x.trim_id] || 0) + 1;
+      for (const x of (t.listings || [])) for (const id of tIds) if (inTrim(x, id)) counts[id] = (counts[id] || 0) + 1;
       for (const id of tIds) {
         const q = t.trims[id] || {};
         chipInto(ft, 'trim:' + id, q.label || id,

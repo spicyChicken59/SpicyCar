@@ -1,8 +1,8 @@
 {
  "app": "SpicyCar",
- "generated": "2026-09-05",
+ "generated": "2026-09-06",
  "data_through": "2026-09-05",
- "departures_from": "2026-07-07",
+ "departures_from": "2026-07-08",
  "buyer": {
   "id": "chicago",
   "label": "Chicago",
@@ -78,7 +78,7 @@
   "finance": {
    "fallback_apr": 6.9,
    "fallback_checked": "2026-09-01",
-   "stale_days": 4,
+   "stale_days": 5,
    "default_term": 60,
    "terms": [
     36,
@@ -96,7 +96,7 @@
      "expires": "2026-10-31",
      "label": "BMW FS certified 2.99%",
      "active": true,
-     "days_left": 56
+     "days_left": 55
     },
     {
      "model": "bmw/ix",
@@ -106,7 +106,7 @@
      "expires": "2026-10-31",
      "label": "BMW FS certified 2.49%",
      "active": true,
-     "days_left": 56
+     "days_left": 55
     }
    ]
   },
@@ -154,7 +154,8 @@
      "cadence": 1,
      "as_of": "2026-09-05",
      "fetched_today": true,
-     "next_due": "2026-09-05",
+     "due_today": true,
+     "next_due": "2026-09-06",
      "params": {
       "min_price": 20000
      },
@@ -5593,6 +5594,16 @@
          48084
         ]
        ],
+       "also": [
+        {
+         "trim_id": "bmw-i5-cpo",
+         "trim_label": "CPO under 30k mi",
+         "price": 48084,
+         "cpo": true,
+         "url": "https://bmwencinitas.com/certified/BMW/2024-BMW-i5-6d13da60ac183b721f3e02235ecd37e5.htm",
+         "dealer": "bmw of carlsbad"
+        }
+       ],
        "stale_pct": 0.0,
        "stale_of": 85
       },
@@ -6779,6 +6790,16 @@
          "2026-09-05",
          51353
         ]
+       ],
+       "also": [
+        {
+         "trim_id": "bmw-i5-cpo",
+         "trim_label": "CPO under 30k mi",
+         "price": 51353,
+         "cpo": true,
+         "url": "https://bmwvegas.com/certified/BMW/2025-BMW-i5-b9b2a649ac18131151cd1f59eab9849b.htm",
+         "dealer": "bmw of las vegas"
+        }
        ],
        "stale_pct": null,
        "stale_of": 85
@@ -14231,7 +14252,8 @@
      "cadence": 1,
      "as_of": "2026-09-05",
      "fetched_today": true,
-     "next_due": "2026-09-05",
+     "due_today": true,
+     "next_due": "2026-09-06",
      "params": {
       "min_price": 35000
      },
@@ -29050,6 +29072,7 @@
      "cadence": 3,
      "as_of": "2026-09-03",
      "fetched_today": false,
+     "due_today": true,
      "next_due": "2026-09-06",
      "params": {
       "min_price": 25000
@@ -33568,7 +33591,8 @@
      "cadence": 3,
      "as_of": "2026-09-05",
      "fetched_today": true,
-     "next_due": "2026-09-05",
+     "due_today": false,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -35583,6 +35607,7 @@
      "cadence": 3,
      "as_of": "2026-09-04",
      "fetched_today": false,
+     "due_today": false,
      "next_due": "2026-09-07",
      "params": {
       "min_price": 8000
@@ -38236,6 +38261,7 @@
      "cadence": 3,
      "as_of": "2026-09-03",
      "fetched_today": false,
+     "due_today": true,
      "next_due": "2026-09-06",
      "params": {
       "min_price": 8000
@@ -39641,7 +39667,8 @@
      "cadence": 3,
      "as_of": "2026-09-05",
      "fetched_today": true,
-     "next_due": "2026-09-05",
+     "due_today": false,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 30000
      },
