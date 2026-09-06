@@ -114,7 +114,7 @@ belong to the market. Keeping them apart is what makes the second buyer an addit
 **Nothing to operate.** A scheduled Action (with a concurrency guard, and a rebase-and-retry push
 so a busy `main` can never cost a day's snapshot), a CSV rewritten in place each run (so a same-day
 re-run replaces rather than duplicates), a static dashboard that reads one JSON file, and the
-SpicyChicken design system pinned at v2.4.0 via jsDelivr.
+SpicyChicken design system shipped as one versioned local snapshot.
 
 ## Architecture
 
@@ -276,3 +276,22 @@ any change — it shows today, the worst day in the next two weeks, and the mont
 ## Author
 
 Mohammed Tahir Madni — [github.com/spicyChicken59](https://github.com/spicyChicken59)
+
+
+## Visual system snapshot
+
+The dashboard and field guide use the same SpicyChicken cover, original chick mark,
+metric strip, chart signature, responsive typography and restrained motion. Motion is
+progressive enhancement and follows the device's reduced-motion preference.
+
+The authored pages are `docs/index.html` and `docs/how.html`. The daily tracker writes
+`docs/data.json` and `REPORT.md`; it does not regenerate the HTML, so the visual design
+survives every daily update without touching the tracker or its data.
+
+`docs/design-system/` is an atomic copy of the shared system's CSS, runtime scripts,
+and assets. `provenance.json` records its source commit and a SHA-256 digest for each
+file. Refresh the whole snapshot together, never one stylesheet or script in isolation.
+CI verifies those digests and checks the pages against that exact upstream commit.
+Both live pages resolve their visual assets locally. The existing share-card source and image retain their original version.
+
+For local design review, run `npm run dev` (Node only, no dependencies) and open the preview address it serves. The production pages remain static.

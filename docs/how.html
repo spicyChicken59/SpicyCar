@@ -21,15 +21,16 @@
      two pages agree about how identity is declared and neither drifts alone. -->
 <link rel="canonical" href="https://spicychicken59.github.io/SpicyCar/how.html">
 <meta name="twitter:card" content="summary_large_image">
-<!-- SpicyChicken Design System v2.4.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/apple-touch-icon.png">
+<!-- SpicyChicken Design System · atomic local snapshot, see design-system/provenance.json -->
+<link rel="icon" href="design-system/assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="design-system/assets/sc-avatar-tile.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="design-system/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc.css">
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-theme.js"></script>
+<link rel="stylesheet" href="design-system/sc.css">
+<script src="design-system/sc-theme.js"></script>
+<script src="design-system/sc-motion.js" defer></script>
 <style>
   /* The readability pass lives in the design system since v2.2.0; the one
      override left is the eyebrow's case (state codes must read as IL). */
@@ -67,6 +68,39 @@
   @media (pointer: coarse) {
     .sc-toc a { display: inline-flex; align-items: center; min-height: 44px; }
   }
+
+  /* The field guide gives navigation its own rail and lets long explanations
+     keep a readable line length. The content and diagrams remain unchanged. */
+  #method-cover { margin-top: var(--sc-s4); }
+  #method-cover .sc-cover__title { font-size: clamp(38px, 5vw, 64px); }
+  #method-cover .sc-cover__art > img { max-width: 140px; }
+  #method-cover .sc-cover__caption { line-height: 1.7; }
+  #method-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sc-s6); align-items: start; padding-top: var(--sc-s5); }
+  #method-toc { position: sticky; top: var(--sc-s3); display: flex; flex-direction: column; gap: var(--sc-s1); margin-top: 0; padding-top: var(--sc-s2); border-top: 1px solid var(--sc-border-strong); }
+  #method-toc a { white-space: normal; padding-block: var(--sc-s1); }
+  #method-copy { margin: 0; width: 100%; min-width: 0; }
+  #method-copy .sc-chapter { margin-top: var(--sc-s6); }
+  #method-copy .sc-chapter:first-child { margin-top: 0; }
+  #method-copy .sc-chapter h2 { padding: 0; border: 0; margin: 0; }
+  #method-copy > p, #method-copy > ul { line-height: 1.8; }
+  #method-copy .diagram { margin-block: var(--sc-s4); padding: var(--sc-s2); border: 1px solid var(--sc-border); border-radius: var(--sc-r-md); background: var(--sc-surface); }
+  #method-copy > .sc-callout { margin-block: var(--sc-s6); }
+  @media (max-width: 900px) {
+    #method-layout { grid-template-columns: minmax(0, 1fr); gap: var(--sc-s4); }
+    #method-toc { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s1) var(--sc-s3); }
+    #method-copy { max-width: none; }
+  }
+  @media (max-width: 600px) {
+    #method-cover { margin-top: var(--sc-s3); }
+    #method-cover .sc-cover__dek { font-size: var(--sc-text-md); }
+    #method-cover .sc-cover__art > img { max-width: 56px; }
+    #method-copy .sc-chapter { margin-top: var(--sc-s5); }
+    #method-copy .diagram { padding: var(--sc-s1); }
+  }
+  @media print {
+    #method-toc { display: none; }
+    #method-layout { display: block; }
+  }
 </style>
 </head>
 <body>
@@ -74,8 +108,8 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-color-dark.svg" alt="">
-    <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
+    <img class="sc-mark" src="design-system/assets/sc-mark-color-dark.svg" alt="">
+    <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">A SpicyChicken tool</span></span>
   </a>
   <div class="sc-masthead__right">
     <nav class="sc-nav" aria-label="Primary"><a href="./">Dashboard</a></nav>
@@ -88,12 +122,21 @@
   </div>
 </header>
 
-<main class="sc-wrap sc-wrap--prose" id="main">
-  <div class="sc-title">
-    <div class="sc-eyebrow">Methodology</div>
-    <h1>How SpicyCar works</h1>
-    <p class="sc-dek">SpicyCar watches a list of cars every day and shows, for one buyer, the cheapest of each anywhere and the cheapest close to home — with the cost of getting a far one home stated, not hidden.</p>
-    <nav class="sc-toc" aria-label="On this page">
+<main class="sc-wrap sc-wrap--wide" id="main">
+  <section class="sc-cover sc-cover--paper sc-reveal" data-sc-motion="fade" id="method-cover" aria-labelledby="method-title">
+    <div class="sc-cover__content">
+      <div class="sc-eyebrow">SpicyCar · field guide</div>
+      <h1 class="sc-cover__title" id="method-title">How SpicyCar works</h1>
+      <p class="sc-cover__dek">SpicyCar watches a list of cars every day and shows, for one buyer, the cheapest of each anywhere and the cheapest close to home — with the cost of getting a far one home stated, not hidden.</p>
+    </div>
+    <div class="sc-cover__art" aria-hidden="true">
+      <img src="design-system/assets/sc-mark-color-light.svg" alt="" width="342" height="405">
+      <span class="sc-cover__caption">The SpicyChicken field guide<br>the method behind the market</span>
+    </div>
+  </section>
+
+  <div id="method-layout">
+    <nav id="method-toc" class="sc-toc" aria-label="On this page">
       <a href="#question">The question</a>
       <a href="#prices">Prices</a>
       <a href="#data">Where the data comes from</a>
@@ -103,15 +146,14 @@
       <a href="#limits">What it does not know</a>
       <a href="#roadmap">Roadmap</a>
     </nav>
-  </div>
 
-  <article class="sc-doc sc-doc--flat">
-    <h2 id="question">The question</h2>
+  <article class="sc-doc sc-doc--flat" id="method-copy">
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">01</span><div class="sc-chapter__body"><h2 id="question">The question</h2></div></div>
     <p>Asking price alone does not tell you what a car costs. A $38,000 car in San Diego and a $45,000 car in Indianapolis are not $7,000 apart for a buyer in Chicago if one of them has to ride a truck for 1,800 miles. SpicyCar shows both numbers side by side, every day — asking as listed, shipping stated — so you can see which cars are sitting, which are being cut, and which just disappeared.</p>
     <p>It is built around a <strong>buyer</strong> — a home anchor, the states they are willing to drive to, and what shipping costs them — and a <strong>watchlist</strong> of brands, models and trims. The two are configured separately, so a second buyer is an addition rather than a rewrite.</p>
     <p>The first buyer is real: someone near Chicago, deciding between a BMW i5 eDrive40 and an i7 eDrive50. The watchlist is the i5 and i7 in depth — the i5 also carrying a nationwide watch on certified cars under 30,000 miles, where the promo financing rate is most of the payment (the i7's was written and stood down before it ever ran: on miles.asc the forty lowest-mileage i7s in the country are all uncertified 2026 delivery stock, so no certified car falls inside the window) — their sibling the iX for comparison, and rivals from Hyundai, Kia, Audi and Lucid, so the two they are choosing between can be judged against each other and against the market. The report leads with what is being shopped, in full, and gives every comparison model one line.</p>
 
-    <h2 id="prices">Prices</h2>
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">02</span><div class="sc-chapter__body"><h2 id="prices">Prices</h2></div></div>
     <p>The number everywhere is the <strong>asking price</strong>, exactly as the dealer listed it. Nothing is adjusted or inferred. Every sort, tile and chart uses it, and miles are shown next to every price so you can weigh them yourself.</p>
     <p><strong>Shipping</strong> is the one cost SpicyCar adds, and it states it on every car. A drivable car costs nothing to bring home — you drive it. Anything else gets an estimate in two steps. First the straight-line distance from the listing to the buyer's anchor point is inflated by <strong>1.18</strong> into road miles, because a truck follows interstates around lakes and terrain and a great-circle line does not. Then those road miles are priced through <strong>distance bands, marginally — like tax brackets</strong>: $1.20 a mile for the first 500, $0.70 to 1,000, $0.45 to 1,500 and $0.30 beyond, with a $350 floor. Each band applies only to the miles inside it, so a longer haul always costs more in total while costing less per mile — which is how transport actually prices, since the carrier's fixed costs are the same for 200 miles as for 2,000. If a listing cannot be placed on the map at all, a flat $1,100 is used instead.</p>
     <p class="sc-hint">Those band rates are <strong>published typical open-carrier ranges, not quotes anyone obtained</strong>. The shape of the model is defensible; its constants are not yet. Every shipping figure on this site is an estimate until real quotes calibrate it, and the site says so rather than presenting a guess as research.</p>
@@ -157,7 +199,7 @@
     <p>Car C is still the cheapest by more than $2,600 after the truck — which is the point of stating it. Whether a buyer wants to purchase a car sight-unseen from 1,800 miles is a separate question; the number just makes the trade-off visible.</p>
     <p><strong>Spicy picks</strong> are the one place miles are priced in — but only to rank, never to change a number you see. A car is eligible under 50,000 miles with no reported accidents and no rental or fleet history. Each eligible car gets a value: asking, plus shipping, plus 30 cents for every mile above 20,000 (or minus, below). It is then compared with the typical value for its own cohort — its own trim and model year where six or more eligible cars share them, else the model year, else the whole model — so a cheap model does not win just for being cheap. The picks come in two lists under that one rule — the best values <em>in your states</em>, and the best values <em>worth the ship</em> from everywhere else — and only cars genuinely under typical qualify, so a thin drivable market never promotes an ordinary car. <em>Genuinely</em> is arithmetic, not taste: a median of nine cars has a 95% interval of its own, and a car is under typical only when its value sits <em>below</em> that interval. On today's sheet a 2025 eDrive40 seven percent under the median of nine sits on that interval's low edge, so the page cannot tell the car from typical and says nothing — no note, no chip, no pick — rather than reading noise as a discount; whether a margin clears the edge depends on how spread the cohort is, never on its size alone. A margin that rounds to nothing is not called under either, because “0% under typical” is a number with no content. Six cars make a cohort, because five is the largest sample with no such interval at all; and at six, seven or eight the interval is the whole sample, so no car in a cohort that small is ever called under or over. And the cohort has to be <em>comparable</em>, which the interval cannot ask: it says whether a median is stable, not whether the cars behind it are the same kind of car. Four 2022 iX xDrive50s read &ldquo;26&ndash;40% under typical for a BMW iX, n=21&rdquo; against a pool of ten M60s and eleven xDrive50s &mdash; the M60 is a different car at a different price, so the percentage was pricing the pool's trim mix. So a cohort speaks only when every car in it wears the scored car's trim: automatic when the cohort is the car's own trim and model year, an accident when it is the year or the whole model. Where it is not, the page says <em>too few comparable listings to say</em> and prints no percentage &mdash; not on the row, not on a chip, not as a pick, and not as a place in the best-value order either, since ranking a car first on a number the page will not print is making the claim with position instead of words. The label says how far under typical each pick sits; the price on the card is still the asking price.</p>
 
-    <h2 id="data">Where the data comes from</h2>
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">03</span><div class="sc-chapter__body"><h2 id="data">Where the data comes from</h2></div></div>
     <p>Listings come from the <a href="https://auto.dev" rel="noopener">auto.dev</a> API. Every day at 11:00 UTC a GitHub Action runs the tracker, which fetches each target due that day, states shipping on every listing, and writes three things back into the repository: a CSV with one row per vehicle per day, a Markdown report — the day's committed record, not a message; the email path is switched off on purpose — and the JSON behind the dashboard.</p>
     <figure class="diagram" role="img" aria-label="Pipeline: targets.json configures the tracker, which queries the auto.dev API daily and writes the snapshot ledger, the report and email, and the dashboard's data file.">
       <svg viewBox="0 0 720 292" xmlns="http://www.w3.org/2000/svg">
@@ -204,7 +246,7 @@
     </figure>
     <p>There is no server and no database. The CSV in the repository is the ledger, and git history is the backup. A same-day re-run replaces that day's rows rather than duplicating them.</p>
 
-    <h2 id="budget">Staying inside a free plan</h2>
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">04</span><div class="sc-chapter__body"><h2 id="budget">Staying inside a free plan</h2></div></div>
     <p>The free plan allows <strong>1,000 calls a month</strong> and returns at most <strong>20 listings per call</strong>. That shapes the whole design.</p>
     <ul>
       <li><strong>Two queries per target.</strong> One filtered to the buyer's states plus the <code>search_states</code> worth watching from beyond — the API takes a comma-separated list, so eight states cost one call — and one national. Adding a state costs nothing. The exception is the nationwide CPO watches: they ask only the national question, sorted by lowest mileage, because the states are a subset of the same answer and the saved call is what makes a coast-to-coast watch affordable.</li>
@@ -219,7 +261,7 @@
       <p>And a departure from one query is not a departure from the market. A certified watch's market is &ldquo;certified cars under the mileage cap&rdquo;, so a car that loses its badge leaves <em>that</em> watch for real &mdash; but it is still for sale, and the page said &ldquo;GONE &mdash; the listing ended&rdquo; over a car sitting live in its own listings table two cards down. Such a row now names what happened instead: <em>left the CPO under 30k mi &mdash; the same VIN is listed as xDrive40 at $51,476, not certified</em>. It names the other record as its own, because that is what it is: the snapshot holds both on the same day, at different prices and sometimes under different dealer names, so the departed listing was never <em>cut</em> to the surviving one. And it leads with the certification, because the promo is certified-only &mdash; a VIN that survives uncertified is a car whose payment just moved by about $92 a month, and &ldquo;still listed&rdquo; on its own would report that as good news. Only against a record from the day the model was last fetched: trims run different cadences, so &ldquo;live on the sheet&rdquo; can mean a sighting as old as the departure itself. It keeps its place in the departures card, because for a buyer chasing the certified rate that is the news; what it leaves is every count and every price that means <em>left the market</em> &mdash; the movement tile's &ldquo;N gone&rdquo;, the exit price and its interval, the typical days a listing ran, and the report's &ldquo;Gone since&rdquo; block, which now heads a &ldquo;Left this watch, still listed&rdquo; block instead. The departures card says how many were set aside, the way it already says how many were beyond a fetch cut-off.</p>
     </div>
 
-    <h2 id="local">What counts as drivable — your states, nothing else</h2>
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">05</span><div class="sc-chapter__body"><h2 id="local">What counts as drivable — your states, nothing else</h2></div></div>
     <p>The first version scoped by city: a 200-mile radius around each of three Midwest cities, with listings placed by their coordinates. It returned one or two local cars a day, while the same cars showed up in the national results with Midwest addresses.</p>
     <p>The cause took a week to find. For listings it cannot geocode, the API returns coordinates of exactly (0, 0) — a point in the Atlantic off West Africa, about 5,900 miles from Indianapolis. Those values are not null, so every emptiness check passed them through, and the distance math confidently placed the cars outside every radius. About 7% of listings were affected, including the two cheapest i5 eDrive40s in Indianapolis.</p>
     <p>SpicyCar checks <strong>state, and only state</strong>: a listing is drivable when its own <code>state</code> field is one of the buyer's states. No coordinates are involved, so a car the API could not place on the map still lands in the right bucket — and the line sits exactly where the buyer drew it. There used to be a five-hour drive radius layered on top; it was removed on purpose. A radius sounds generous but it is a claim about roads that straight-line miles cannot honestly make, and it blurred the one question this bucket answers: <em>will I go get it myself?</em> States are the buyer's own answer to that. Benton Harbor, Michigan — 90 miles from Chicago — now pays the $350 shipping floor, because Michigan is not on this buyer's list; add Michigan to <code>buyer.states</code> and every Michigan car flips to drivable on the next run.</p>
@@ -231,7 +273,7 @@
     </div>
     <p>One more honesty note, about privacy this time: every distance measures from a <strong>public anchor</strong> — downtown Chicago, set as coordinates in the config — never from anyone's home. A published distance is an exact constraint, and hundreds of dealer coordinates plus a distance each would pin a private origin down to a city block no matter how the numbers were rounded. Anchoring to a public point makes the whole question moot. Distances are also rounded to 25 miles, because they are estimates for judging a drive, not measurements.</p>
 
-    <h2 id="reading">Reading the dashboard</h2>
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">06</span><div class="sc-chapter__body"><h2 id="reading">Reading the dashboard</h2></div></div>
     <p>In the order the page presents them — what you can buy first, the evidence behind it next, the reference material last.</p>
     <ul>
       <li><strong>The decision</strong> — the top of the watchlist, and the only card that knows which cars this is actually about: one tile per model named in <code>buyer.shopping</code>, each holding the cheapest car of its watched trims. Cheapest <em>all in</em> — asking plus shipping plus tax and paperwork — because a car in California and a car in Ohio are not comparable on the sticker when one of them owes a hauler $1,336, and because the buyer is choosing between totals. That total is an estimate and the tile says so on its own label. Under it: what the total is made of, the payment at that car's own rate, the car itself, where it is, the cheapest one you could drive to instead and what that costs — priced the way the winner is, at its own rate over its own term, with the gap stated in cash by the end of each loan rather than on the sticker, because a certified car on a promo can be dearer all in and cheaper to own — and what driving to one has cost over the record, not only today: the drivable floor against the floor on each fetch day with two or more drivable cars (one car is a price, not a premium), the range over those days with the pool size beside it, since “$349–$8,495 over 14 fetch days, on 2–3 drivable cars” is a different claim from the same range over thirty, and only once seven such days exist — and how far the car sits from typical for its own trim and model year — in <em>both</em> directions, because a cheapest car that is also above typical is exactly what you would want to know first, and “about typical” when it sits inside its cohort's own interval, because a number the data cannot defend is not printed here either. Cars your own rules exclude — over the mileage cap, an accident on record, a rental past — are not shown and not hidden either: the tile counts them and names the rules. Under the car, the same number day by day: a sparkline of the cheapest rule-fit car, all in, on each day the shopped trims were <em>fetched</em> — never a day carried forward, never a day the fit pool held fewer than five cars, nothing under three such days — with a caption saying how many different cars held that floor, how long the current one has, and what the first day's figure was; and, for today, how far behind the next car sits and how many <em>other</em> cars are within $1,000 of the floor — a floor with nothing behind it is one listing's whim, a floor with two cars inside $1,000 is a price. One line under the two tiles states the gap between them, in dollars and per month, and — over the days both were fetched, five at least — its range, its first and last value, and how much of the change was each side's own floor moving, because "the premium fell $5,462" reads as the i7 getting cheaper when $4,481 of it was the i5's floor rising. Floors only, never a median gap: a median moves when coverage moves. Then what the money buys, in the sheet's own columns for those two cars and no others: model year, miles, owners, certification, days listed — “1 model year older with 8,000 more miles; 3 owners against 1; certified, the other not” — with no adjective and no verdict, because whether that is worth the premium is the buyer's call, not the page's. A column absent on either side is left out, and an owner count of 0 counts as absent: it is the API's “not reported”, not a car nobody has owned. Then the premium as a trade rather than a subtraction: what the dearer floor's total buys among the cheaper model's own rule-fit cars — “buys 42 of the 48 BMW i5s that fit your rules — the newest a 2025 with 5,770 miles, the lowest-mileage a 2024 with 5,171; 3 drivable, 10 certified (6 at a seller named BMW)” — and what the dearer car would have to <em>ask</em> to cost the same per month, the loan run backwards at that car's own rate over its own term, with shipping inside the loan only where the fee block says it is. Asking rather than all in, because asking is the number a buyer can act on at a dealer; and no payment line at all when the two cars finance over different terms, because “the same a month” across two terms compares two loans, not two cars. Each tile's link opens the car, not just the model: it lands on the car's own row in the listings — opening the list out when the row sits past the first thirty — and focuses it, so the keyboard and the eyes arrive together. On a phone each tile keeps its headline, its typical stand and its link on the first screen and folds the evidence — the floor day by day, what stands behind it, the drivable alternative, what driving has cost — behind one disclosure, the way the nationwide picks fold; the gap line keeps its first sentence and folds the record behind it. A desktop has the room and shows it all. It is the front page only; a model page is already about one model.</li>
@@ -254,7 +296,7 @@
     <p>The same shape turned up four more times, each one arithmetic a reader can do in their head and each one coming out short by exactly the cars the page had declined to classify &mdash; rightly declined, and wrongly left unmentioned. &ldquo;49 of 151 are delivery-mileage stock &hellip; and the 99 used cars&rdquo; leaves three that publish no mileage; &ldquo;113 of 151 dated &mdash; 49 dealer stock, 61 used&rdquo; leaves three dated cars in the same position; and the comparison table's &ldquo;134 / 18 drivable &middot; 116 beyond&rdquo; still swept in the car with no state. Each sentence now names the remainder &mdash; <em>3 publish no mileage and are in neither</em>, <em>3 with no mileage</em>, <em>1 with no state</em> &mdash; on the page, in the record, and in the compare card, so the parts add to the total the sentence named. A browser check does that addition on every one of them.</p>
     <p>The signals worth acting on: <strong>days on market</strong> past 30 usually means a dealer who will negotiate. <strong>Price cuts</strong> show how many times and how far. <strong>new</strong> marks cars first seen today. <strong>1-owner</strong>, <strong>no accidents</strong> and <strong>cpo</strong> are the history flags worth filtering on; <strong>ex-lease</strong> usually means one careful owner and a full service record.</p>
 
-    <h2 id="limits">What it does not know</h2>
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">07</span><div class="sc-chapter__body"><h2 id="limits">What it does not know</h2></div></div>
     <ul>
       <li>It samples the cheapest end of the market, plus — for the shopped trims — the newest listings each day. A comparison-model car that never sat in the bottom of its trim's price order never appears.</li>
       <li>Shipping is an estimate. Get a quote before believing it to the dollar.</li>
@@ -265,7 +307,7 @@
       <li>Days on market come from the API's <code>createdAt</code>, which is when the RECORD was made. A bulk index load stamps thousands of cars with one date — this feed's is 2026-08-09, carried by a third of every snapshot across 25 states and 85 dealers — and a date like that is detected and the age withheld rather than published as a listing age. Those cars show no "days listed" at all, which is the honest answer.</li>
     </ul>
 
-    <h2 id="roadmap">Roadmap</h2>
+    <div class="sc-chapter"><span class="sc-chapter__index" aria-hidden="true">08</span><div class="sc-chapter__body"><h2 id="roadmap">Roadmap</h2></div></div>
     <ul>
       <li>Drill below state: county or metro.</li>
       <li><s>Compare two cars at once, not one at a time.</s> Shipped — press two model or two trim chips; see <a href="#reading">Side by side</a>.</li>
@@ -280,6 +322,7 @@
       <p><a href="./">Open the dashboard →</a></p>
     </div>
   </article>
+  </div>
 </main>
 
 <footer class="sc-foot">
@@ -291,7 +334,7 @@
        was one project's footer wearing a different mark from every other. The
        footer is ink in both schemes, so the cream mono form needs no flip. -->
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-mono-cream.svg" alt="">
+    <img class="sc-mark" src="design-system/assets/sc-mark-mono-cream.svg" alt="">
     <span class="sc-watermark__name">SpicyChicken</span>
   </a>
 </footer>

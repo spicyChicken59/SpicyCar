@@ -4863,7 +4863,7 @@ await step('what a keyboard gets', async () => {
 // does NOT offer the "serve it over HTTP" advice, which is the answer to a
 // different question and was printed unconditionally.
 await step('when the design system does not load', async () => {
-  plan('a CDN outage says so instead of drawing a blank page',
+  plan('missing design assets say so instead of drawing a blank page',
        'and does not blame data.json for it');
   // The console errors this step provokes are the point of it, so they are
   // taken back out of the run's tally afterwards — but only the ones that are
@@ -4871,7 +4871,7 @@ await step('when the design system does not load', async () => {
   // swapped still counts, which is the difference between silencing a step and
   // silencing a page.
   const before = errors.length;
-  await ctx.route('**://cdn.jsdelivr.net/**', (r) =>
+  await ctx.route('**/design-system/**', (r) =>
     r.fulfill({ status: 503, contentType: 'text/plain', body: 'no' }));
   try {
     await page.goto(BASE + '/index.html', { waitUntil: 'load' });
@@ -4879,7 +4879,7 @@ await step('when the design system does not load', async () => {
     const notice = await page.locator('#notice').evaluate((n) => ({
       hidden: n.hidden, text: (n.textContent || '').replace(/\s+/g, ' ').trim(),
     }));
-    ok('a CDN outage says so instead of drawing a blank page',
+    ok('missing design assets say so instead of drawing a blank page',
        !notice.hidden && /design system/i.test(notice.text),
        notice.hidden ? 'the notice stayed hidden — the page is blank and silent'
                      : `"${notice.text.slice(0, 110)}"`);
@@ -4892,16 +4892,8 @@ await step('when the design system does not load', async () => {
     const mine = /jsdelivr|design system|SC is not defined|503/i;
     const raised = errors.splice(before);
     for (const e of raised) if (!mine.test(e)) errors.push(e);
-    // Put the checkout back for every step after this one.
-    await ctx.unroute('**://cdn.jsdelivr.net/**');
-    await ctx.route('**://cdn.jsdelivr.net/**', (route) => {
-      const path = new URL(route.request().url()).pathname;
-      if (path.includes('us-atlas')) return route.fulfill({ contentType: 'application/json', body: ATLAS });
-      const file = join(DS, path.replace(/^\/gh\/spicyChicken59\/design-system@[^/]+\//, ''));
-      return existsSync(file)
-        ? route.fulfill({ path: file, contentType: TYPES[extname(file)] })
-        : route.fulfill({ status: 404, body: 'not in the checkout: ' + path });
-    });
+    // Restore the real locally served snapshot for subsequent steps.
+    await ctx.unroute('**/design-system/**');
   }
 });
 

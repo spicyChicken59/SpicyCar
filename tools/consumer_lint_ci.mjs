@@ -33,9 +33,11 @@
 // CI checks out the design system at that ref before running this, so the
 // pages are always linted against the sheet they actually load.
 import { readFileSync, appendFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { verifySnapshot, snapshotRoot } from './design_snapshot.mjs';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 
 const [dsRoot, ...pages] = process.argv.slice(2);
 if (!dsRoot || !pages.length) {
@@ -55,22 +57,47 @@ try {
   console.log(`  note  no promotion-verdicts.json (${e.code || 'unreadable'}) — every candidate counts as open`);
 }
 
-// --- every page must pin the same design-system ref ------------------------
+// --- active pages share one verified local snapshot -----------------------
+// The original social-card source remains pinned at its historical release:
+// it describes a committed image, and is still linted below. Live documents
+// must all load the atomic snapshot, including the scripts that style them.
 const refs = new Set();
 const bodies = new Map();
+let hard = 0, snapshot = null;
+const openCandidates = [];
+try {
+  snapshot = verifySnapshot();
+  const css = createHash('sha256').update(readFileSync(resolve(dsRoot, 'sc.css'))).digest('hex');
+  if (css !== snapshot.files['sc.css']) throw new Error('The linter checkout differs from the CSS the pages actually load.');
+  refs.add('v' + snapshot.version);
+  console.log(`pages use local design-system ${snapshot.version} at ${snapshot.commit}`);
+} catch (error) {
+  console.error('FAIL  ' + error.message);
+  hard++;
+}
 for (const p of pages) {
   const html = readFileSync(p, 'utf8');
   bodies.set(p, html);
-  for (const m of html.matchAll(/design-system@([^/"'\s]+)\//g)) refs.add(m[1]);
-}
-let hard = 0;
-const openCandidates = [];
-if (refs.size > 1) {
-  console.error(`FAIL  the pages pin different design-system refs: ${[...refs].join(' vs ')}`);
-  console.error('      (updated one page and forgot the other — they must move together)');
-  hard++;
-} else {
-  console.log(`pages pin design-system@${[...refs][0] ?? '(no pin found)'}`);
+  // tools/og_card.html is an archived rendering source, never a live page.
+  const livePage = resolve(dirname(p)) === resolve(snapshotRoot, '..');
+  if (livePage) {
+    for (const name of ['sc.css', 'sc-theme.js', 'sc-motion.js']) {
+      if (!html.includes(`"design-system/${name}"`)) {
+        console.error(`FAIL  ${p} must use the shared local ${name}`);
+        hard++;
+      }
+    }
+    if (/design-system@[^/"'\s]+\//.test(html)) {
+      console.error(`FAIL  ${p} mixes a CDN design system with its local snapshot`);
+      hard++;
+    }
+  } else {
+    const historical = new Set([...html.matchAll(/design-system@([^/"'\s]+)\//g)].map((m) => m[1]));
+    if (historical.size > 1) {
+      console.error(`FAIL  ${p} mixes historical design-system versions`);
+      hard++;
+    } else if (historical.size) console.log(`${p}: archived image source retains ${[...historical][0]}`);
+  }
 }
 
 // The README names the pin in prose, and prose does not get checked out — so it
@@ -155,8 +182,10 @@ if (pinned && /^v\d+\.\d+\.\d+$/.test(pinned)) {
       console.log(`\n  note  the pages pin ${pinned}, but ${latest} is released.`);
       console.log('        Bump every pin in ONE commit (this linter fails a split pin),');
       console.log('        and delete any bridge whose comment says the new release carries it.');
+    } else if (latest === pinned) {
+      console.log(`\n  ok    snapshot version ${pinned} matches the newest design-system release`);
     } else if (latest) {
-      console.log(`\n  ok    pin ${pinned} is the newest design-system release`);
+      console.log(`\n  note  local snapshot ${pinned}; newest published release is ${latest}`);
     }
   } catch (e) {
     console.log(`  note  could not list design-system tags (${e.code || 'offline'}) — pin freshness unchecked`);

@@ -1,0 +1,7 @@
+{
+  "name": "spicycar-design-preview",
+  "private": true,
+  "scripts": {
+    "dev": "node tools/design-preview.mjs --root docs"
+  }
+}

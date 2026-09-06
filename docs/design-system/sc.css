@@ -1,0 +1,1278 @@
+/* ==========================================================================
+   SpicyChicken Design System — sc.css  v2.6.0
+   Mohammed Tahir Madni · github.com/spicyChicken59
+
+   One file, no build step. Drop it in (or link it) and every page shares the
+   same surfaces, type, components and chart colors.
+
+   Layers, top to bottom:
+     1. Primitives   — raw ramps. Never reference these from a page.
+     2. Semantic     — what a color *does*. Dark is the default; light is a
+                      first-class mode (OS setting, or data-theme="light").
+                      2c re-scopes the text/brand/accent tokens on ink surfaces.
+     3. Base         — reset, type, links, code.
+     4. Components   — .sc-* classes. Reproduce these; don't invent new ones.
+     4b. Components added in 2.1 — title block, chart host, sparkline, frame,
+                      media row, empty state, figure/note, quiet link, doc/TOC.
+     5. Utilities    — small helpers.
+
+   Rules of the system (the short version — DESIGN_SYSTEM.md has the rest):
+     · Cobalt is structure: surfaces, headings, brand labels, data emphasis.
+     · Spice is heat: links, primary actions, focus rings. One hot accent, used
+       sparingly — if everything is spicy, nothing is.
+     · Flat fills, hairline borders, modest radii, soft rare shadows.
+     · Text never wears a data color; marks carry color, text wears text tokens.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* --------------------------------------------------------------------------
+   1. PRIMITIVES
+   Cobalt carries the exact OKLCH lightness of the template's greens, so every
+   contrast pair the old system relied on still holds. Chroma is raised on the
+   dark steps only — blue needs more saturation than green to read as a color
+   at low lightness.
+   -------------------------------------------------------------------------- */
+:root {
+  --sc-cobalt-50:  #F3F7FC;
+  --sc-cobalt-100: #E5EEF9;
+  --sc-cobalt-200: #C6D9F2;
+  --sc-cobalt-300: #A3C4EE;   /* labels on dark surfaces (was light green #A1CEAD) */
+  --sc-cobalt-400: #71A1DF;
+  --sc-cobalt-500: #4682CC;
+  --sc-cobalt-600: #2766B1;
+  --sc-cobalt-700: #165194;   /* the accent on light (was medium green #006325) */
+  --sc-cobalt-800: #1B3E69;
+  --sc-cobalt-900: #182E4B;   /* ink on light (was dark green #213B34) */
+  --sc-cobalt-950: #111F31;   /* mastheads, code, covers (was #0f1a17) */
+
+  --sc-spice-300: #FFAC92;
+  --sc-spice-400: #FE825C;    /* links & actions on dark */
+  --sc-spice-500: #EE5D2B;    /* the brand's hot note */
+  --sc-spice-600: #D24100;    /* links & actions on light */
+  --sc-spice-700: #AC3400;
+  --sc-spice-800: #852B09;
+
+  --sc-night-950: #09111B;    /* page background, dark mode */
+  --sc-night-900: #121C2A;    /* cards */
+  --sc-night-850: #162232;    /* hover */
+  --sc-night-800: #1B2737;    /* raised */
+  --sc-night-700: #2A394D;    /* hairline on dark */
+  --sc-night-600: #3C4E66;    /* strong border on dark */
+
+  --sc-gray-50:  #F2F4F8;     /* page background, light mode (was #F5F4F0) */
+  --sc-gray-100: #EDF2FA;     /* hover on light */
+  --sc-gray-200: #E6E8EB;     /* desk surface (was #e7e9e6) */
+  --sc-gray-300: #CFD6DE;     /* hairline on light (was #cdd8d2) */
+  --sc-gray-400: #A6AFBB;
+  --sc-gray-500: #737B86;
+  --sc-gray-600: #5D6671;     /* muted text on light (was slate #5B6770) */
+  --sc-gray-800: #2F3741;     /* body text on light (was #2c3a35) */
+
+  --sc-white: #FFFFFF;
+
+  /* Wine — the brand mark's own family (Zenith-style maroon). Reserved for the
+     mark and brand moments; never a UI state and never a chart series. */
+  --sc-wine-900: #580819;    /* covers, deepest shade */
+  --sc-wine-700: #82182B;    /* the mark on light surfaces */
+  --sc-wine-500: #A12E3E;    /* the mark on dark surfaces */
+  --sc-wine-300: #E2AFB0;    /* rare tint */
+
+  /* Type */
+  --sc-font-display: 'Bricolage Grotesque', 'Instrument Sans', system-ui, sans-serif;
+  --sc-font-body:    'Instrument Sans', system-ui, -apple-system, sans-serif;
+  --sc-font-mono:    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --sc-text-xs: 11px;  --sc-text-sm: 13px;  --sc-text-md: 15px;  --sc-text-lg: 18px;
+  --sc-h3: 20px;  --sc-h2: 28px;  --sc-h1: 40px;  --sc-display: 56px;
+  --sc-lh-tight: 1.1;  --sc-lh-heading: 1.2;  --sc-lh-body: 1.6;
+  --sc-cover-title: clamp(36px, 5.5vw, 76px);
+  --sc-stat-value: clamp(28px, 3.5vw, 44px);
+  --sc-mark-display: clamp(112px, 18vw, 224px);
+
+  /* Space — 8px rhythm */
+  --sc-s0: 4px;  --sc-s1: 8px;  --sc-s2: 16px;  --sc-s3: 24px;  --sc-s4: 32px;
+  --sc-s5: 40px; --sc-s6: 48px; --sc-s8: 64px;  --sc-s10: 80px; --sc-s12: 96px;
+
+  /* Shape */
+  --sc-r-sm: 6px;  --sc-r-md: 10px;  --sc-r-lg: 14px;  --sc-r-pill: 999px;
+
+  /* Motion — fades and short slides, ease-out, never load-bearing */
+  --sc-motion: 240ms;
+  --sc-ease: cubic-bezier(.2, .7, .3, 1);
+
+
+  --sc-motion-fast: 160ms;
+  --sc-motion-enter: 480ms;
+  --sc-motion-brand: 640ms;
+  --sc-motion-stagger: 60ms;
+  --sc-motion-loading: 1200ms;
+  --sc-motion-distance: 16px;
+  --sc-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --sc-ease-in-out: cubic-bezier(.4, 0, .2, 1);
+
+  /* Layout */
+  --sc-w-prose: 800px;  --sc-w-content: 1120px;  --sc-w-wide: 1280px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --sc-motion: 0ms; }
+}
+
+/* --------------------------------------------------------------------------
+   2. SEMANTIC — DARK (default)
+   -------------------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+
+  --sc-bg:            var(--sc-night-950);
+  --sc-surface:       var(--sc-night-900);
+  --sc-hover:         var(--sc-night-850);
+  --sc-raised:        var(--sc-night-800);
+  --sc-border:        var(--sc-night-700);
+  --sc-border-strong: var(--sc-night-600);
+  --sc-border-control: #5B6E86;              /* input/select edges — 3.3:1 on surface (WCAG 1.4.11) */
+  --sc-ink:           var(--sc-cobalt-950);   /* masthead, footer, covers — dark in both modes */
+  --sc-on-ink:        #F4F7FB;
+  --sc-on-ink-2:      var(--sc-cobalt-300);
+  --sc-on-ink-3:      rgba(255,255,255,.62);  /* footer text — 7.1:1 on ink */
+  /* Ink is fixed in both modes, so its hairlines and fills are declared once here. */
+  --sc-ink-line:        rgba(255,255,255,.06);
+  --sc-ink-line-strong: rgba(255,255,255,.25);
+  --sc-ink-fill:        rgba(255,255,255,.14);
+
+  --sc-heading: #F4F7FB;
+  --sc-text:    #D8DFE8;
+  --sc-text-2:  #92A0B1;     /* muted — 7.1:1 on bg */
+  --sc-text-3:  #8090A4;     /* faint — 5.3:1 on surface, 4.6:1 on raised; labels, placeholders, hairline text */
+
+  --sc-brand:        var(--sc-cobalt-300);   /* eyebrows, labels, brand text */
+  --sc-brand-strong: var(--sc-cobalt-400);   /* data emphasis, icons */
+  --sc-brand-fill:   #19273A;                /* tinted fills (callout core, chips) */
+  --sc-brand-line:   var(--sc-cobalt-700);   /* left borders, rules */
+
+  --sc-accent:       var(--sc-spice-400);    /* links, primary actions — 7.7:1 on bg */
+  --sc-accent-hover: var(--sc-spice-300);
+  --sc-accent-fill:  #371F18;
+  --sc-on-accent:    var(--sc-night-950);    /* text on a spice button */
+  --sc-focus:        var(--sc-spice-400);
+
+  --sc-good:   #4EA954;  --sc-good-fill:   #1A2C1A;
+  --sc-warn:   #D59800;  --sc-warn-fill:   #31240E;
+  --sc-danger: #EE5A66;  --sc-danger-fill: #381E1E;   /* 4.6:1 on its fill */
+  --sc-info:   var(--sc-cobalt-400);  --sc-info-fill: #19273A;
+
+  --sc-code-bg:   var(--sc-cobalt-950);
+  --sc-code-text: #D8DFE8;
+  --sc-selection: #1D487C;
+  --sc-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+  --sc-shadow-pop: 0 4px 14px rgba(0, 0, 0, .35);   /* floating ink surfaces (tooltip) — same in both modes */
+
+  /* Charts — validated against --sc-surface with the dataviz checks.
+     Categorical: fixed order, never cycled. 5 slots; a 6th folds to "Other".
+     All-pairs forms (scatter, bubble, maps) use slots 1–3 only. */
+  --sc-chart-1: #4682CC;   /* cobalt  */
+  --sc-chart-2: #E75623;   /* spice   */
+  --sc-chart-3: #009D82;   /* teal    */
+  --sc-chart-4: #8B5DCE;   /* violet  */
+  --sc-chart-5: #CD4290;   /* pink    */
+  --sc-chart-other: #6D7C8F;
+  --sc-chart-grid: #1F2C3D;
+  --sc-chart-emphasis: var(--sc-cobalt-400);
+  --sc-chart-context:  #6D7C8F;
+  --sc-chart-seq-1: #A3C4EE; --sc-chart-seq-2: #71A1DF; --sc-chart-seq-3: #4682CC; --sc-chart-seq-4: #2766B1; --sc-chart-seq-5: #165194;
+
+  /* Scrim — the only place the system paints text over an arbitrary photograph.
+     A photograph is the same picture in both modes, so these are deliberately
+     NOT redefined in the light blocks: white on a dark wash, always. */
+  --sc-scrim:     linear-gradient(transparent, rgba(9, 17, 27, .82));
+  --sc-on-scrim:   var(--sc-white);
+  --sc-on-scrim-2: rgba(255, 255, 255, .85);
+
+  /* Brand compositions: wine belongs to the maker, never a status or series. */
+  --sc-brand-wine: var(--sc-wine-900);
+  --sc-brand-paper: #F5F1E9;
+  --sc-on-paper: var(--sc-cobalt-900);
+  --sc-on-paper-2: var(--sc-gray-600);
+  --sc-paper-line: #D4D1CA;
+  --sc-motif-opacity: .055;
+}
+
+/* --------------------------------------------------------------------------
+   2b. SEMANTIC — LIGHT
+   Follows the OS unless the page says otherwise. Mastheads and code stay dark.
+   -------------------------------------------------------------------------- */
+@media (prefers-color-scheme: light), print {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --sc-bg:            var(--sc-gray-50);
+    --sc-surface:       var(--sc-white);
+    --sc-hover:         var(--sc-gray-100);
+    --sc-raised:        var(--sc-cobalt-50);
+    --sc-border:        var(--sc-gray-300);
+    --sc-border-strong: var(--sc-gray-400);
+    --sc-border-control: var(--sc-gray-500);   /* 4.3:1 on white */
+    --sc-heading: var(--sc-cobalt-900);
+    --sc-text:    var(--sc-gray-800);
+    --sc-text-2:  var(--sc-gray-600);
+    --sc-text-3:  #646C77;                     /* faint — 5.3:1 on white, 4.8:1 on bg, 4.5:1 on brand-fill */
+    --sc-brand:        var(--sc-cobalt-700);
+    --sc-brand-strong: var(--sc-cobalt-600);
+    --sc-brand-fill:   var(--sc-cobalt-100);
+    --sc-brand-line:   var(--sc-cobalt-700);
+    --sc-accent:       var(--sc-spice-700);    /* 5.9:1 on bg, 6.5:1 on white — 600 fails AA off-white */
+    --sc-accent-hover: var(--sc-spice-800);
+    --sc-accent-fill:  #FFE9E2;
+    --sc-on-accent:    var(--sc-white);
+    --sc-focus:        var(--sc-spice-700);
+    --sc-good:   #1B7E2A;  --sc-good-fill:   #E3F4E2;
+    --sc-warn:   #906400;  --sc-warn-fill:   #F9EDD9;
+    --sc-danger: #BE2132;  --sc-danger-fill: #FFE8E7;
+    --sc-info:   var(--sc-cobalt-600);  --sc-info-fill: #E4F0FF;
+    --sc-selection: #C6D9F2;
+    --sc-shadow: 0 1px 3px rgba(24, 46, 75, .08);
+    --sc-chart-1: #2766B1; --sc-chart-2: #D24100; --sc-chart-3: #00856E; --sc-chart-4: #7541B8; --sc-chart-5: #BC3181;
+    --sc-chart-other: #8A94A1;
+    --sc-chart-grid: #E6EBF2;
+    --sc-chart-emphasis: var(--sc-cobalt-600);
+    --sc-chart-context:  #8A94A1;
+    --sc-chart-seq-1: #71A1DF; --sc-chart-seq-2: #4682CC; --sc-chart-seq-3: #2766B1; --sc-chart-seq-4: #165194; --sc-chart-seq-5: #1B3E69;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --sc-bg:            var(--sc-gray-50);
+  --sc-surface:       var(--sc-white);
+  --sc-hover:         var(--sc-gray-100);
+  --sc-raised:        var(--sc-cobalt-50);
+  --sc-border:        var(--sc-gray-300);
+  --sc-border-strong: var(--sc-gray-400);
+  --sc-border-control: var(--sc-gray-500);   /* 4.3:1 on white */
+  --sc-heading: var(--sc-cobalt-900);
+  --sc-text:    var(--sc-gray-800);
+  --sc-text-2:  var(--sc-gray-600);
+  --sc-text-3:  #646C77;                     /* faint — 5.3:1 on white, 4.8:1 on bg, 4.5:1 on brand-fill */
+  --sc-brand:        var(--sc-cobalt-700);
+  --sc-brand-strong: var(--sc-cobalt-600);
+  --sc-brand-fill:   var(--sc-cobalt-100);
+  --sc-brand-line:   var(--sc-cobalt-700);
+  --sc-accent:       var(--sc-spice-700);    /* 5.9:1 on bg, 6.5:1 on white — 600 fails AA off-white */
+  --sc-accent-hover: var(--sc-spice-800);
+  --sc-accent-fill:  #FFE9E2;
+  --sc-on-accent:    var(--sc-white);
+  --sc-focus:        var(--sc-spice-700);
+  --sc-good:   #1B7E2A;  --sc-good-fill:   #E3F4E2;
+  --sc-warn:   #906400;  --sc-warn-fill:   #F9EDD9;
+  --sc-danger: #BE2132;  --sc-danger-fill: #FFE8E7;
+  --sc-info:   var(--sc-cobalt-600);  --sc-info-fill: #E4F0FF;
+  --sc-selection: #C6D9F2;
+  --sc-shadow: 0 1px 3px rgba(24, 46, 75, .08);
+  --sc-chart-1: #2766B1; --sc-chart-2: #D24100; --sc-chart-3: #00856E; --sc-chart-4: #7541B8; --sc-chart-5: #BC3181;
+  --sc-chart-other: #8A94A1;
+  --sc-chart-grid: #E6EBF2;
+  --sc-chart-emphasis: var(--sc-cobalt-600);
+  --sc-chart-context:  #8A94A1;
+  --sc-chart-seq-1: #71A1DF; --sc-chart-seq-2: #4682CC; --sc-chart-seq-3: #2766B1; --sc-chart-seq-4: #165194; --sc-chart-seq-5: #1B3E69;
+}
+
+/* --------------------------------------------------------------------------
+   2c. ON-INK CONTEXT
+   Ink surfaces are dark in both modes, so anything nested in them (headings,
+   links, strong, eyebrows, buttons) re-reads the page tokens as on-ink ones.
+   Add .sc-on-ink to any other ink-filled block to get the same treatment.
+   -------------------------------------------------------------------------- */
+.sc-masthead, .sc-foot, .sc-tooltip, .sc-callout--ink, .sc-on-ink {
+  --sc-heading:      var(--sc-on-ink);
+  --sc-text:         var(--sc-on-ink);
+  --sc-text-2:       var(--sc-on-ink-2);
+  --sc-text-3:       var(--sc-on-ink-3);
+  --sc-brand:        var(--sc-on-ink-2);
+  --sc-brand-strong: var(--sc-cobalt-300);
+  --sc-accent:       var(--sc-spice-400);
+  --sc-accent-hover: var(--sc-spice-300);
+  --sc-focus:        var(--sc-spice-400);
+  --sc-raised:       var(--sc-cobalt-900);
+  --sc-hover:        var(--sc-ink-fill);
+  --sc-border:       var(--sc-ink-line-strong);
+  --sc-border-strong: var(--sc-ink-line-strong);
+  --sc-on-accent:    var(--sc-night-950);   /* a primary button inside ink: 7.7:1 on spice-400 */
+  /* Filled components inside ink use the dark fill set, so their text stays readable in light mode too. */
+  --sc-surface:      var(--sc-cobalt-900);
+  --sc-brand-fill:   #19273A;
+  --sc-accent-fill:  #371F18;
+  --sc-info:         var(--sc-cobalt-400);  --sc-info-fill:   #19273A;
+  --sc-good:         #4EA954;               --sc-good-fill:   #1A2C1A;
+  --sc-warn:         #D59800;               --sc-warn-fill:   #31240E;
+  --sc-danger:       #EE5A66;               --sc-danger-fill: #381E1E;
+}
+
+/* --------------------------------------------------------------------------
+   3. BASE
+   -------------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }   /* the attribute must beat any component's display */
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font: 400 var(--sc-text-md)/var(--sc-lh-body) var(--sc-font-body);
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--sc-motion) var(--sc-ease), color var(--sc-motion) var(--sc-ease);
+}
+::selection { background: var(--sc-selection); color: var(--sc-heading); }
+
+h1, h2, h3, h4 { color: var(--sc-heading); margin: 0 0 var(--sc-s2); }
+h1 { font: 700 var(--sc-h1)/var(--sc-lh-tight) var(--sc-font-display); letter-spacing: -.6px; }
+h2 { font: 700 var(--sc-h2)/var(--sc-lh-heading) var(--sc-font-display); letter-spacing: -.35px; }
+h3 { font: 700 var(--sc-h3)/var(--sc-lh-heading) var(--sc-font-display); letter-spacing: -.2px; }
+h1, h2, h3 { text-wrap: balance; }   /* progressive enhancement: balanced line breaks where supported */
+h4 { font: 700 16px/1.3 var(--sc-font-body); letter-spacing: -.1px; }
+p  { margin: 0 0 var(--sc-s2); }
+strong { font-weight: 700; color: var(--sc-heading); }
+small { font-size: var(--sc-text-sm); }
+hr { border: 0; border-top: 1px solid var(--sc-border); margin: var(--sc-s4) 0; }
+
+a { color: var(--sc-accent); text-decoration: none; border-bottom: 1px solid var(--sc-accent); border-bottom-color: color-mix(in srgb, var(--sc-accent) 60%, transparent); transition: border-color var(--sc-motion) var(--sc-ease), color var(--sc-motion) var(--sc-ease); }
+a:where(:hover) { color: var(--sc-accent-hover); border-bottom-color: var(--sc-accent-hover); }   /* (0,0,1) so any single-class component wins */
+:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; border-radius: 2px; }
+
+code, kbd, pre { font-family: var(--sc-font-mono); }
+code { font-size: .88em; background: var(--sc-raised); border: 1px solid var(--sc-border); border-radius: 4px; padding: 1px 5px; color: var(--sc-heading); }
+pre  { background: var(--sc-code-bg); color: var(--sc-code-text); font-size: 12.5px; line-height: 1.6; padding: var(--sc-s3); border-radius: var(--sc-r-md); overflow-x: auto; margin: var(--sc-s2) 0; border: 1px solid var(--sc-border); }
+pre code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+kbd  { font-size: 11px; background: var(--sc-raised); border: 1px solid var(--sc-border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; color: var(--sc-heading); }
+
+img, svg, video { max-width: 100%; height: auto; }
+table { border-collapse: collapse; }
+
+/* --------------------------------------------------------------------------
+   4. COMPONENTS
+   -------------------------------------------------------------------------- */
+
+/* Layout */
+.sc-wrap        { max-width: var(--sc-w-content); margin: 0 auto; padding: 0 var(--sc-s4); }
+.sc-wrap--wide  { max-width: var(--sc-w-wide); }
+.sc-wrap--prose { max-width: var(--sc-w-prose); }
+.sc-section { margin-top: var(--sc-s6); }
+.sc-grid { display: grid; gap: var(--sc-s2); }
+.sc-grid--2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.sc-grid--3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.sc-grid--4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+
+/* Eyebrow — the signature tell: lowercase mono opened by a spice-less "//" */
+.sc-eyebrow { font: 600 12px/1 var(--sc-font-mono); letter-spacing: .4px; text-transform: lowercase; color: var(--sc-brand); margin: 0 0 10px; }
+.sc-eyebrow--accent { color: var(--sc-accent); }
+.sc-eyebrow--muted  { color: var(--sc-text-2); }
+.sc-eyebrow--case   { text-transform: none; letter-spacing: 0; }   /* proper nouns and codes that must keep their casing (IL · OH, BMW i5) */
+.sc-dek { font: 400 var(--sc-text-lg)/1.5 var(--sc-font-body); color: var(--sc-text-2); margin: 0 0 var(--sc-s3); max-width: 760px; }
+.sc-meta { display: flex; flex-wrap: wrap; gap: var(--sc-s1) var(--sc-s2); font: 500 12.5px/1.4 var(--sc-font-mono); color: var(--sc-text-2); letter-spacing: .3px; }
+.sc-meta .sc-sep { opacity: .4; }
+
+/* Masthead — project leads (left), brand endorses (right). Dark in both modes. */
+.sc-masthead { background: var(--sc-ink); color: var(--sc-on-ink); padding: 14px var(--sc-s4); display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s3); border-bottom: 1px solid var(--sc-ink-line); }
+.sc-masthead a { color: inherit; border: 0; }
+.sc-brand { display: flex; align-items: center; gap: 10px; color: inherit; border: 0; }   /* a.sc-brand outside a masthead stays text-coloured */
+.sc-brand__mark { width: 26px; height: 26px; border-radius: 7px; background: var(--sc-brand-line); display: grid; place-items: center; color: var(--sc-white); font: 700 12px/1 var(--sc-font-mono); flex: none; }  /* letter-tile fallback when no SVG mark is available; img.sc-mark is the standard */
+.sc-brand__name { font: 700 18px/1 var(--sc-font-display); letter-spacing: -.3px; color: var(--sc-on-ink); }
+.sc-brand__sub  { display: block; font: 500 9.5px/1 var(--sc-font-mono); letter-spacing: .4px; text-transform: lowercase; color: var(--sc-on-ink-2); margin-top: 5px; opacity: .9; }
+.sc-masthead__right { display: flex; align-items: center; gap: var(--sc-s2); font: 600 11px/1.7 var(--sc-font-mono); letter-spacing: .4px; text-transform: lowercase; color: var(--sc-on-ink-2); white-space: nowrap; }
+.sc-masthead__right .sc-sep { width: 1px; height: 15px; background: var(--sc-ink-line-strong); display: block; }
+.sc-nav { display: flex; gap: var(--sc-s2); font: 600 13px/1 var(--sc-font-body); letter-spacing: 0; text-transform: none; }
+.sc-nav a { color: var(--sc-on-ink); opacity: .8; padding: 6px 2px; border-bottom: 2px solid transparent; }
+.sc-nav a:hover, .sc-nav a[aria-current] { opacity: 1; border-bottom-color: var(--sc-spice-400); }
+
+/* Theme toggle — a small segmented control; the page's script sets data-theme */
+.sc-theme-toggle { display: inline-flex; border: 1px solid var(--sc-ink-line-strong); border-radius: var(--sc-r-pill); padding: 2px; gap: 2px; }
+.sc-theme-toggle button { appearance: none; border: 0; background: transparent; color: var(--sc-on-ink); opacity: .7; font: 600 10.5px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; padding: 6px 10px; min-height: 24px; border-radius: var(--sc-r-pill); cursor: pointer; transition: background var(--sc-motion) var(--sc-ease), opacity var(--sc-motion) var(--sc-ease); }
+.sc-theme-toggle button:hover { opacity: 1; }
+.sc-theme-toggle button[aria-pressed="true"] { background: var(--sc-ink-fill); opacity: 1; }
+
+/* Cards & tiles */
+.sc-card { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); padding: 18px 20px; box-shadow: var(--sc-shadow); color: var(--sc-text); }   /* a.sc-card is the supported linked-card form */
+.sc-card--raised { background: var(--sc-raised); }
+.sc-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sc-s2); flex-wrap: wrap; margin-bottom: var(--sc-s1); }
+.sc-card__head h2, .sc-card__head h3 { margin: 0; font-size: var(--sc-h3); letter-spacing: -.2px; }
+.sc-hint { font-size: var(--sc-text-sm); color: var(--sc-text-2); margin: 2px 0 0; }
+
+.sc-tile { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); padding: 16px 18px; box-shadow: var(--sc-shadow); min-width: 0; color: var(--sc-text); }
+.sc-card > :last-child, .sc-tile > :last-child, .sc-notice > :last-child, .sc-doc > :last-child { margin-bottom: 0; }
+.sc-tile__label { font-size: var(--sc-text-sm); color: var(--sc-text-2); margin: 0 0 6px; }
+.sc-tile__value { font: 700 32px/1.1 var(--sc-font-body); color: var(--sc-heading); letter-spacing: -.5px; }   /* proportional figures, same sans as body */
+.sc-tile__value--sm { font-size: 24px; }
+.sc-tile__sub   { font: 500 12.5px/1.5 var(--sc-font-mono); color: var(--sc-text-2); margin-top: 6px; letter-spacing: .2px; }
+.sc-delta { font: 700 12px/1.4 var(--sc-font-mono); margin-top: 4px; }
+.sc-delta--good { color: var(--sc-good); }
+.sc-delta--bad  { color: var(--sc-warn); }
+.sc-delta--flat { color: var(--sc-text-2); }
+.sc-hero { font: 700 var(--sc-display)/1 var(--sc-font-body); letter-spacing: -1.5px; color: var(--sc-heading); }
+
+/* Callouts — tinted fill with the family's file-fold in the top-right corner.
+   One .sc-callout--core per section, max. */
+.sc-callout { position: relative; overflow: hidden; border-radius: var(--sc-r-md); padding: 14px 18px; margin: var(--sc-s2) 0; background: var(--sc-brand-fill); color: var(--sc-text); --sc-fold: var(--sc-brand-line); }
+.sc-callout::after { content: ""; position: absolute; top: 0; right: 0; width: 14px; height: 14px; background: var(--sc-fold); clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.sc-callout > :last-child { margin-bottom: 0; }
+.sc-callout__label { font: 600 11px/1 var(--sc-font-mono); letter-spacing: .4px; text-transform: lowercase; color: var(--sc-brand); margin-bottom: 7px; }
+.sc-callout__figure { font: 700 22px/1.2 var(--sc-font-body); color: var(--sc-heading); letter-spacing: -.3px; }   /* the lead figure; on-ink context handles the ink variant */
+.sc-callout--core    { background: var(--sc-brand-fill); --sc-fold: var(--sc-brand-line); }
+.sc-callout--ink     { background: var(--sc-ink); color: var(--sc-on-ink); --sc-fold: var(--sc-cobalt-500); }   /* label and strong come from the on-ink context (2c) */
+.sc-callout--spice   { background: var(--sc-accent-fill); --sc-fold: var(--sc-accent); }
+.sc-callout--spice .sc-callout__label { color: var(--sc-accent); }
+.sc-callout--warning { background: var(--sc-danger-fill); border: 2px solid var(--sc-danger); --sc-fold: var(--sc-danger); }
+.sc-callout--warning .sc-callout__label { color: var(--sc-danger); }
+
+/* Chips — mono pills. Tone = meaning; the text always says it too. */
+.sc-chip { display: inline-flex; align-items: center; gap: 5px; font: 600 11px/1 var(--sc-font-mono); letter-spacing: .2px; text-transform: lowercase; padding: 4px 8px; border-radius: var(--sc-r-sm); border: 1px solid transparent; white-space: nowrap; vertical-align: middle; }
+.sc-chip--brand   { background: var(--sc-brand-fill);  color: var(--sc-brand);  border-color: color-mix(in srgb, var(--sc-brand) 35%, transparent); }
+.sc-chip--neutral { background: var(--sc-raised);      color: var(--sc-text-2); border-color: var(--sc-border); }
+.sc-chip--spice   { background: var(--sc-accent-fill); color: var(--sc-accent); border-color: color-mix(in srgb, var(--sc-accent) 35%, transparent); }
+.sc-chip--good    { background: var(--sc-good-fill);   color: var(--sc-good);   border-color: color-mix(in srgb, var(--sc-good) 35%, transparent); }
+.sc-chip--warn    { background: var(--sc-warn-fill);   color: var(--sc-warn);   border-color: color-mix(in srgb, var(--sc-warn) 35%, transparent); }
+.sc-chip--danger  { background: transparent;           color: var(--sc-danger); border: 1.5px solid var(--sc-danger); }   /* the outline form = stop and check */
+.sc-chip--info    { background: var(--sc-info-fill);   color: var(--sc-info);   border-color: color-mix(in srgb, var(--sc-info) 35%, transparent); }
+.sc-chip--solid   { background: var(--sc-brand-line);  color: var(--sc-white); }
+.sc-chip--case    { text-transform: none; letter-spacing: 0; }   /* proper nouns and codes that must keep their casing (VIN, TX, BMW i5) */
+
+/* Buttons — primary is spice (the one hot action); secondary is a cobalt outline */
+.sc-btn { appearance: none; display: inline-flex; align-items: center; gap: 8px; font: 700 13px/1 var(--sc-font-body); letter-spacing: .1px; padding: 10px 16px; border-radius: var(--sc-r-md); border: 1px solid transparent; cursor: pointer; text-decoration: none; transition: background var(--sc-motion) var(--sc-ease), border-color var(--sc-motion) var(--sc-ease), color var(--sc-motion) var(--sc-ease); }
+.sc-btn--primary { background: var(--sc-accent); color: var(--sc-on-accent); border-color: var(--sc-accent); }
+.sc-btn--primary:hover { background: var(--sc-accent-hover); border-color: var(--sc-accent-hover); color: var(--sc-on-accent); }
+.sc-btn--secondary { background: transparent; color: var(--sc-heading); border-color: var(--sc-border-strong); }
+.sc-btn--secondary:hover { border-color: var(--sc-brand-strong); background: var(--sc-hover); color: var(--sc-heading); }
+.sc-btn--ghost { background: transparent; color: var(--sc-text-2); }
+.sc-btn--ghost:hover { background: var(--sc-hover); color: var(--sc-heading); border-color: transparent; }
+.sc-btn--secondary:active, .sc-btn--ghost:active { background: var(--sc-hover); }   /* pressed cue without filters or transforms; primary keeps its hover shift */
+.sc-btn--sm { padding: 7px 12px; font-size: 12px; }
+.sc-btn[disabled], .sc-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+a.sc-btn[aria-disabled="true"] { pointer-events: none; }   /* stops the click, not the keyboard — also drop href, or use <button disabled> */
+
+/* Inputs & selects */
+.sc-field { display: flex; align-items: center; gap: 8px; min-height: 24px; font: 600 11.5px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; color: var(--sc-text-2); }
+.sc-input, .sc-select { font: 500 14px var(--sc-font-body); color: var(--sc-heading); background: var(--sc-surface); border: 1px solid var(--sc-border-control); border-radius: var(--sc-r-sm); padding: 8px 10px; transition: border-color var(--sc-motion) var(--sc-ease); min-width: 0; }
+.sc-input::placeholder { color: var(--sc-text-3); }
+.sc-input:hover, .sc-select:hover { border-color: var(--sc-brand-strong); }
+.sc-input:disabled, .sc-select:disabled { opacity: .5; cursor: not-allowed; }
+.sc-input[aria-invalid="true"], .sc-select[aria-invalid="true"] { border-color: var(--sc-danger); }
+.sc-input:read-only:not(:disabled) { background: var(--sc-raised); }
+.sc-select { appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--sc-text-2) 50%), linear-gradient(135deg, var(--sc-text-2) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 55%, calc(100% - 10px) 55%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+.sc-check { display: inline-flex; align-items: center; gap: 8px; min-height: 24px; cursor: pointer; font: 600 11.5px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; color: var(--sc-text-2); }   /* same label type as .sc-field, so label.sc-check alone matches */
+.sc-check input { accent-color: var(--sc-accent); width: 15px; height: 15px; margin: 0; }
+.sc-filters { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: var(--sc-s2) 0 var(--sc-s0); }   /* one row, above everything it scopes */
+
+/* Tables — brand header, hairline rows, zebra-free. The header sticks only inside
+   .sc-table-scroll--tall (a bounded, vertically scrolling wrapper). */
+.sc-table-scroll { overflow-x: auto; position: relative; }
+.sc-table-scroll--tall { max-height: 70vh; overflow-y: auto; }
+.sc-table-scroll--tall thead th { position: sticky; top: 0; }
+/* A table that scrolls sideways hides its first column — the one naming the
+   thing each row is about — and gives no sign it scrolled at all. Pin the
+   first column and fade the clipped edge. The background has to be opaque
+   (content passes underneath), so the hover and raised cases restate it. */
+.sc-table-scroll th:first-child,
+.sc-table-scroll td:first-child { position: sticky; left: 0; z-index: 1; background: var(--sc-surface); }
+.sc-table-scroll thead th:first-child { z-index: 2; }
+.sc-table-scroll .sc-table tbody tr:hover td:first-child { background: var(--sc-hover); }
+.sc-card--raised .sc-table-scroll th:first-child,
+.sc-card--raised .sc-table-scroll td:first-child { background: var(--sc-raised); }
+/* .is-clipped is set by the consumer when scrollWidth > clientWidth */
+.sc-table-scroll.is-clipped::after {
+  content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 34px;
+  pointer-events: none; background: linear-gradient(to right, transparent, var(--sc-surface));
+}
+.sc-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sc-table thead th { background: var(--sc-surface); color: var(--sc-brand); font: 600 11px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; text-align: left; padding: 9px 12px; white-space: nowrap; border-bottom: 2px solid var(--sc-brand-line); }
+.sc-card--raised .sc-table thead th { background: var(--sc-raised); }
+.sc-table thead th.is-sortable { cursor: pointer; }
+.sc-table thead th.is-sortable:hover { color: var(--sc-heading); border-bottom-color: var(--sc-brand-strong); }
+.sc-table thead th.is-sorted::after { content: " ↓"; content: " ↓" / ""; }   /* deprecated 2.1 — use aria-sort; removed in 3.0 */
+.sc-table thead th[aria-sort="ascending"]::after  { content: " ↑"; content: " ↑" / ""; }
+.sc-table thead th[aria-sort="descending"]::after { content: " ↓"; content: " ↓" / ""; }
+.sc-table__sort { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }   /* a <button> inside a sortable th — keyboard-reachable sorting */
+.sc-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--sc-border); vertical-align: middle; }
+.sc-table tbody tr:last-child td { border-bottom: 0; }
+.sc-table tbody tr { transition: background var(--sc-motion) var(--sc-ease); }
+.sc-table tbody tr:hover { background: var(--sc-hover); }
+.sc-table .sc-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sc-table--compact tbody td { padding: 7px 10px; font-size: 13px; }
+
+/* Tooltip — ink surface, values lead. Hidden from AT while off (visibility), fades on. */
+.sc-tooltip { position: absolute; z-index: 5; pointer-events: none; background: var(--sc-ink); color: var(--sc-on-ink); border: 1px solid var(--sc-border-strong); border-radius: var(--sc-r-sm); padding: 8px 11px; font: 400 13px/1.5 var(--sc-font-body); min-width: 150px; box-shadow: var(--sc-shadow-pop); opacity: 0; visibility: hidden; transition: opacity var(--sc-motion) var(--sc-ease), visibility 0s linear var(--sc-motion); }
+.sc-tooltip.is-on { opacity: 1; visibility: visible; transition-delay: 0s; }
+.sc-tooltip__date { font: 600 10.5px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; color: var(--sc-on-ink-2); margin-bottom: 6px; }
+.sc-tooltip__row { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.sc-tooltip__row i { width: 12px; height: 2px; display: inline-block; border-radius: 1px; flex: none; }
+.sc-tooltip__row b { font-weight: 700; color: var(--sc-on-ink); }
+.sc-tooltip__row span { color: var(--sc-cobalt-200); }
+.sc-tooltip__meta { color: var(--sc-cobalt-200); font-size: 12px; margin-top: 4px; }
+/* A tooltip opened by tap is a small card with live links in it, so it has to
+   take the pointer back. Must stay after the base rule, which sets none. */
+.sc-tooltip--tap { pointer-events: auto; }
+.sc-tooltip__img { display: block; width: 150px; height: 94px; object-fit: cover; border-radius: var(--sc-r-sm); margin-bottom: 7px; }
+.sc-tooltip__link { display: inline-block; margin-top: 6px; font: 600 12.5px/1.4 var(--sc-font-body); color: var(--sc-on-ink); text-decoration: underline; text-underline-offset: 2px; }
+.sc-tooltip__dash { flex: none; display: inline-block; }   /* the svg twin of .sc-tooltip__row i, when a series is dashed */
+
+/* Legend — line keys for lines, swatches for bars */
+.sc-legend { display: flex; gap: 18px; flex-wrap: wrap; font: 500 12.5px/1 var(--sc-font-mono); color: var(--sc-text-2); margin: 10px 0 4px; }
+.sc-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sc-legend i { display: inline-block; width: 18px; height: 2px; border-radius: 1px; }
+.sc-legend i.is-swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+/* Details / table view */
+.sc-details summary { cursor: pointer; display: flex; align-items: center; gap: 6px; min-height: 24px; font: 600 11px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; color: var(--sc-brand); list-style: none; }   /* gap replaces the glyph's trailing space, which flex would collapse */
+.sc-details summary::-webkit-details-marker { display: none; }
+.sc-details summary::before { content: "→ "; content: "→ " / ""; color: var(--sc-text-3); }
+.sc-details[open] summary::before { content: "↓ "; content: "↓ " / ""; }
+
+/* Tabs — a segmented control (pill row). Contract: <div class="sc-tabs" role="group" aria-label="…">
+   with <button class="sc-tab" aria-pressed="true|false">. aria-selected is styled too for old markup. */
+.sc-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.sc-tab { font: 600 11px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; padding: 8px 13px; border-radius: var(--sc-r-sm); border: 1px solid var(--sc-border); background: var(--sc-surface); color: var(--sc-heading); cursor: pointer; transition: background var(--sc-motion) var(--sc-ease), border-color var(--sc-motion) var(--sc-ease); }
+.sc-tab:hover { background: var(--sc-hover); border-color: var(--sc-brand-strong); }
+.sc-tab[aria-pressed="true"], .sc-tab[aria-selected="true"] { background: var(--sc-brand-line); border-color: var(--sc-brand-line); color: var(--sc-white); }
+.sc-tab--case { text-transform: none; letter-spacing: 0; font-family: var(--sc-font-body); font-size: 13px; }   /* proper nouns that must keep their casing (BMW i5) */
+
+/* Notice — the stop-and-read block */
+.sc-notice { background: var(--sc-surface); border: 2px solid var(--sc-danger); border-radius: var(--sc-r-md); padding: 16px 18px; margin: var(--sc-s3) 0; }
+.sc-notice .sc-eyebrow { color: var(--sc-danger); }
+
+/* Footer & watermark — brand endorsement lives here, small, always the same */
+.sc-foot { background: var(--sc-ink); color: var(--sc-on-ink-3); padding: 20px var(--sc-s4); margin-top: var(--sc-s6); font: 500 10.5px/1.8 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; display: flex; justify-content: space-between; align-items: center; gap: var(--sc-s3); flex-wrap: wrap; border-top: 1px solid var(--sc-ink-line); }
+.sc-foot a { color: var(--sc-on-ink-2); border-bottom-color: var(--sc-on-ink-2); border-bottom-color: color-mix(in srgb, var(--sc-on-ink-2) 35%, transparent); }
+.sc-watermark { display: inline-flex; align-items: center; gap: 8px; color: var(--sc-on-ink); opacity: .7; transition: opacity var(--sc-motion) var(--sc-ease); border: 0; }
+.sc-watermark:hover { opacity: 1; }
+.sc-foot .sc-watermark, .sc-foot .sc-watermark:hover { color: var(--sc-on-ink); }   /* out-specifies .sc-foot a */
+.sc-watermark .sc-brand__mark { width: 20px; height: 20px; border-radius: 5px; font-size: 9px; }
+.sc-watermark img.sc-mark { height: 20px; }
+
+/* The brand mark as an image. color-dark form on ink/dark surfaces, color-light
+   on light surfaces, mono forms for the watermark and single-color uses. */
+img.sc-mark { display: block; height: 26px; width: auto; }
+img.sc-mark--lg { height: 48px; }
+.sc-watermark__name { font: 700 12px/1 var(--sc-font-display); letter-spacing: -.2px; text-transform: none; }
+
+/* Prose document surface — the on-screen document template */
+.sc-doc { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); padding: var(--sc-s6) var(--sc-s6) var(--sc-s8); max-width: var(--sc-w-prose); margin: var(--sc-s4) auto; }
+.sc-doc h2 { margin-top: var(--sc-s5); padding-top: var(--sc-s2); border-top: 1.5px solid var(--sc-brand-line); }
+.sc-doc h2:first-of-type { margin-top: 0; }
+
+/* --------------------------------------------------------------------------
+   4b. COMPONENTS ADDED IN 2.1
+   Promoted from the first production consumer (the SpicyCar tracker).
+   -------------------------------------------------------------------------- */
+
+/* Title block — eyebrow, h1, dek, meta and an optional segmented control */
+.sc-title { padding: var(--sc-s5) 0 var(--sc-s1); }
+.sc-title .sc-tabs { margin-top: var(--sc-s2); }
+
+/* Chart host. Contract: <div class="sc-chart" role="group" tabindex="0" aria-label="…">
+   holding an aria-hidden SVG, with a .sc-details table twin below it. */
+.sc-chart { position: relative; margin-top: var(--sc-s1); }
+.sc-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.sc-chart:focus { outline: none; }
+.sc-chart:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 4px; border-radius: var(--sc-r-sm); }
+.sc-chart text { font: 500 10.5px var(--sc-font-mono); fill: var(--sc-text-2); }
+.sc-chart .sc-chart__label { font: 700 12px var(--sc-font-body); fill: var(--sc-heading); }
+.sc-chart__grid { stroke: var(--sc-chart-grid); }
+.sc-chart__crosshair { stroke: var(--sc-chart-context); }
+/* A mark's colour and weight arrive through two INHERITED channels rather than
+   through the mark's own stroke/fill:
+
+     <path class="sc-chart__series" style="--sc-tone: var(--sc-chart-3)">
+
+   The sheet keeps the declaration — so it can still restyle every chart at once
+   — and the consumer only supplies a value. Two things this buys that neither
+   alternative does. A presentation attribute (stroke="…") is outranked by these
+   very rules, so it cannot carry a per-series colour at all. And an inline
+   `stroke:` would outrank them, taking the property away from the sheet for
+   good. Passing a var() REFERENCE through the channel also keeps the value
+   live: it re-resolves on a theme flip with no JavaScript, where a resolved hex
+   is frozen at the moment it was read.
+   Marks the sheet does not colour — .sc-chart__marker's fill, .sc-dot — take a
+   plain attribute, which works there precisely because nothing competes. */
+.sc-chart__series { fill: none; stroke: var(--sc-tone, var(--sc-chart-context)); stroke-width: var(--sc-weight, 2); stroke-linejoin: round; stroke-linecap: round; }
+.sc-chart__series--emphasis { --sc-tone: var(--sc-chart-emphasis); }
+.sc-chart__series--context { --sc-tone: var(--sc-chart-context); }
+.sc-chart__marker { fill: var(--sc-tone, var(--sc-chart-context)); stroke: var(--sc-surface); stroke-width: 2; }
+
+/* Sparkline — an inline SVG; marks wear chart tokens, never text tokens */
+.sc-spark { display: block; overflow: visible; }
+.sc-spark path { fill: none; stroke: var(--sc-tone, var(--sc-chart-context)); stroke-width: var(--sc-weight, 1.5); stroke-linejoin: round; stroke-linecap: round; }
+.sc-spark circle { fill: var(--sc-tone, var(--sc-chart-context)); stroke: var(--sc-surface); stroke-width: 2; }
+.sc-spark--emphasis { --sc-tone: var(--sc-chart-emphasis); }   /* one channel on the host beats two rules on its children */
+.sc-tile__spark { display: block; margin-top: 8px; }
+
+/* Frame — the photo slot (img.sc-frame) and its empty twin */
+.sc-frame { --sc-frame-w: 56px; --sc-frame-h: 40px; display: block; width: var(--sc-frame-w); height: var(--sc-frame-h); flex: none; object-fit: cover; border-radius: var(--sc-r-sm); border: 1px solid var(--sc-border); background: var(--sc-raised); }
+.sc-frame--empty { display: flex; align-items: center; justify-content: center; font: 600 11px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; color: var(--sc-text-2); }
+.sc-frame--lg { --sc-frame-w: 120px; --sc-frame-h: 80px; }
+
+/* Media row — frame + title/sub/code + links; .sc-media--card is the narrow-screen twin */
+.sc-media { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sc-media__body { min-width: 0; }
+.sc-media__title { font-weight: 700; color: var(--sc-heading); line-height: 1.3; }
+.sc-media__sub { font-size: 12.5px; color: var(--sc-text-2); line-height: 1.3; }
+.sc-media__code { font: 500 11px/1.4 var(--sc-font-mono); color: var(--sc-text-3); letter-spacing: .3px; }
+.sc-media__links { font: 500 11px/1.6 var(--sc-font-mono); white-space: nowrap; }
+.sc-media__links a + a { margin-left: 8px; }
+.sc-media--card { border: 1px solid var(--sc-border); border-radius: var(--sc-r-md); padding: 10px; background: var(--sc-surface); display: grid; grid-template-columns: auto 1fr auto; gap: 3px 10px; align-items: start; }
+.sc-media--card .sc-frame { grid-row: span 3; }
+.sc-media--card .sc-media__aside { text-align: right; grid-row: span 3; }
+.sc-media--card .sc-media__foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font: 500 11.5px/1.5 var(--sc-font-mono); color: var(--sc-text-2); border-top: 1px solid var(--sc-border); padding-top: 8px; margin-top: 4px; }
+
+/* Empty state — a sentence, not a graphic; tr.sc-empty for tables */
+.sc-empty { font-size: 14px; color: var(--sc-text-2); padding: var(--sc-s3) 0; }
+.sc-table tr.sc-empty td { text-align: center; padding: 28px 12px; color: var(--sc-text-2); }
+
+/* Figure + note — the lead value and its mono footnote inside a cell or row */
+.sc-figure { font-weight: 700; color: var(--sc-heading); white-space: nowrap; }
+.sc-note { display: block; font: 400 12px/1.45 var(--sc-font-body); color: var(--sc-text-2); }
+
+/* Quiet link — for dense tables and media rows, where a spice link per cell is noise */
+.sc-link--quiet { color: var(--sc-text-2); border-bottom-color: var(--sc-border-strong); }
+.sc-link--quiet:hover { color: var(--sc-accent); border-bottom-color: var(--sc-accent); }
+
+/* Prose document extras — flat form, h3 rhythm, measure, and a table of contents */
+.sc-doc--flat { background: none; border: 0; padding: 0; box-shadow: none; }   /* prose straight on the page, no card */
+.sc-doc h3 { margin-top: 26px; }
+.sc-doc p, .sc-doc li { max-width: 68ch; }
+.sc-doc li + li { margin-top: 6px; }
+.sc-toc { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 500 12.5px/1.6 var(--sc-font-mono); margin-top: 14px; }
+.sc-toc a { white-space: nowrap; }
+
+
+/* --------------------------------------------------------------------------
+   4c. COMPONENTS ADDED IN 2.3
+   The second fold-back from the SpicyCar tracker: a pan/zoom point map, the
+   dot vocabulary the map and the scatter share, a pressable chart legend,
+   the photo-led card, and the sticky filter bar. Placed after 4b so the few
+   rules that override a band-4 component (the tooltip's --tap modifier, the
+   dot rings) still win on order, exactly as they did in the page.
+   -------------------------------------------------------------------------- */
+
+/* Map — a projected SVG that pans and zooms. Contract:
+   <div class="sc-map"><svg aria-hidden="true">…</svg><div class="sc-map__btns">…
+   Plain scroll must keep scrolling the page; zoom is modifier + wheel or pinch. */
+.sc-map { position: relative; }
+.sc-map svg { display: block; width: 100%; height: auto; touch-action: pan-y; cursor: grab; }
+.sc-map svg:active { cursor: grabbing; }
+.sc-map__btns { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
+.sc-map__btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--sc-border); background: var(--sc-surface);
+  color: var(--sc-heading); font: 600 16px/1 var(--sc-font-body); cursor: pointer; }
+.sc-map__btn:hover { border-color: var(--sc-border-strong); }
+.sc-map__btn:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+/* 32px reads right under a mouse but fails the 44px target under a finger.
+   Keyed to the pointer, not the viewport — a touch laptop needs it too. */
+@media (pointer: coarse) { .sc-map__btn { width: 44px; height: 44px; } }
+
+/* The hint that teaches the zoom modifier, shown while a plain scroll passes through */
+.sc-map__scrollhint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0; transition: opacity .25s ease; z-index: 4; }
+.sc-map__scrollhint.is-on { opacity: 1; }
+.sc-map__scrollhint span { background: var(--sc-ink); color: var(--sc-on-ink); border-radius: 8px;
+  padding: 8px 14px; font: 600 13px/1.4 var(--sc-font-body); box-shadow: var(--sc-shadow-pop); }
+
+/* Geography */
+.sc-map__state { fill: var(--sc-bg); stroke: var(--sc-border); stroke-width: .75; }
+.sc-map__state-label { fill: var(--sc-text-2); font-family: var(--sc-font-mono); font-weight: 600;
+  letter-spacing: .08em; text-anchor: middle; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+.sc-map--labels .sc-map__state-label { opacity: .5; }   /* set past a zoom threshold, so a tight frame still says where it is */
+.sc-map__radius { fill: none; stroke: var(--sc-brand-strong); stroke-width: 1.5; stroke-dasharray: 5 4; }   /* "within N of here" */
+.sc-map__anchor { fill: var(--sc-accent); stroke: var(--sc-surface); stroke-width: 1.5; pointer-events: all; cursor: help; }
+
+/* Data dot — one datum as a point, on a map or in a scatter. Filled and hollow
+   are a second channel beside hue, so a category never rides on colour alone.
+   fill="none" makes an SVG circle's interior untouchable, so hollow dots would
+   otherwise only hit-test on their stroke: pointer-events restores the disc. */
+.sc-dot { pointer-events: all; }
+.sc-dot.is-filled { stroke: var(--sc-surface); stroke-width: 1; }   /* the 1px surface ring keeps overlapping dots separable */
+.sc-dot.is-hollow { fill: none; stroke-width: 1.6; }
+.sc-dot:hover { stroke-width: 2.6; }
+.sc-dot--link { cursor: pointer; }
+.sc-dot-ring { fill: none; stroke: var(--sc-accent); stroke-width: 2; pointer-events: none; }   /* calls out a dot without blocking it */
+
+/* Scatter furniture — the marks are .sc-dot; these are the lines around them */
+.sc-scatter__line { fill: none; stroke: var(--sc-border-strong); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.sc-scatter__line-hit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }   /* a 1.2px line needs a real target */
+.sc-scatter__series-label { cursor: pointer; }
+.sc-dot, .sc-dot-ring, .sc-scatter__line, .sc-scatter__series-label { transition: opacity .15s ease; }
+
+/* The invisible full-height rect that gives a hover chart one clean hit area */
+.sc-chart__hit { cursor: crosshair; }
+
+/* Legend chip — a legend key that is also a control. Two behaviours:
+   the default HIDES its series (pressed-off reads as struck out), and --select
+   SELECTS it (pressed-off must stay fully legible, because nothing is hidden). */
+.sc-legend__chip { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none;
+  padding: 4px 8px; cursor: pointer; color: inherit; font: 500 12.5px/1.4 var(--sc-font-mono); border-radius: var(--sc-r-sm); }
+.sc-legend__chip[aria-pressed="false"] span { opacity: .45; text-decoration: line-through; }
+.sc-legend__chip:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: 2px; }
+.sc-legend__chip--select[aria-pressed="false"] span { opacity: 1; text-decoration: none; }
+.sc-legend__chip--select[aria-pressed="true"] { background: var(--sc-bg); box-shadow: inset 0 0 0 1px var(--sc-border-strong); }
+
+/* Photo frame — the loading behaviour of .sc-frame when it holds a real photo.
+   The image fades and un-blurs once decoded, so a slow one never pops. */
+.sc-frame--photo { overflow: hidden; position: relative; padding: 0; }
+.sc-frame--photo .sc-frame__img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; filter: blur(10px); }
+.sc-frame--photo .sc-frame__img.is-loaded { opacity: 1; filter: none; }
+.sc-frame__mark { height: 45%; max-height: 44px; width: auto; opacity: .28; }   /* the chick keeps watch in a .sc-frame--empty */
+/* Photographs are lit for white, so they glare on a dark page; damp them until
+   the reader hovers, then show the picture as shot. */
+:root[data-theme="dark"] .sc-frame__img.is-loaded,
+:root[data-theme="dark"] .sc-tooltip__img { filter: brightness(.82) saturate(.95); }
+:root[data-theme="dark"] .sc-media:hover .sc-frame__img.is-loaded,
+:root[data-theme="dark"] .sc-photo-card:hover .sc-frame__img.is-loaded,
+:root[data-theme="dark"] .sc-photo-card:focus-within .sc-frame__img.is-loaded { filter: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sc-frame__img.is-loaded,
+  :root:not([data-theme="light"]) .sc-tooltip__img { filter: brightness(.82) saturate(.95); }
+  :root:not([data-theme="light"]) .sc-media:hover .sc-frame__img.is-loaded,
+  :root:not([data-theme="light"]) .sc-photo-card:hover .sc-frame__img.is-loaded,
+  :root:not([data-theme="light"]) .sc-photo-card:focus-within .sc-frame__img.is-loaded { filter: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sc-frame--photo .sc-frame__img { transition: opacity .35s ease, filter .5s ease, transform .35s ease; }
+  .sc-media:hover .sc-frame__img.is-loaded,
+  .sc-photo-card:hover .sc-frame__img.is-loaded { transform: scale(1.06); }
+}
+
+/* Photo card — picture on top, the headline figure on a scrim over it, facts below.
+   A .sc-card is text-first; this one leads with the image, so it sheds the padding. */
+.sc-photo-card { display: flex; flex-direction: column; border: 1px solid var(--sc-border); border-radius: var(--sc-r-md); overflow: hidden; background: var(--sc-surface); }
+.sc-photo-card__media { position: relative; aspect-ratio: 16 / 10; max-height: 300px; overflow: hidden; }
+@media (min-width: 721px) and (max-width: 1000px) { .sc-photo-card__media { max-height: 240px; } }   /* the picture gives way first when the grid narrows */
+.sc-photo-card__media .sc-frame { --sc-frame-w: 100%; --sc-frame-h: 100%; border-radius: 0; }
+.sc-photo-card__price { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 14px 10px; pointer-events: none;
+  font: 700 21px/1.1 var(--sc-font-body); letter-spacing: -.3px; color: var(--sc-on-scrim); background: var(--sc-scrim); }
+.sc-photo-card__price-sub { display: block; font: 500 12px/1.5 var(--sc-font-body); letter-spacing: 0; color: var(--sc-on-scrim-2); }
+.sc-photo-card__chip { position: absolute; top: 10px; right: 10px; }
+.sc-photo-card__body { padding: 11px 14px 13px; display: grid; gap: 4px; align-content: start; }
+.sc-photo-card__body p { margin: 0; }
+
+/* Filter bar — a real control with a name and a live count, pinned to the top
+   so it stays under the cursor while the page below it re-renders. */
+.sc-filter-bar { position: sticky; top: 0; z-index: 4; padding: 12px 16px 14px; }
+.sc-filter-bar__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.sc-filter-bar__head .sc-eyebrow, .sc-filter-bar__head .sc-note { margin: 0; }
+.sc-filter-bar__toggle { display: none; margin-left: auto; }
+.sc-filter-bar .sc-filters { padding-top: 0; }
+
+/* Section weight — every h2 at one size made a 3,000px table and a 260px note
+   card look equally important. Supporting sections step down; a chapter break
+   gets more air than the stack's own rhythm. */
+.sc-section--support .sc-card__head h2 { font-size: var(--sc-text-lg); }
+.sc-stack > .sc-section--chapter { margin-top: var(--sc-s4); }
+
+/* Small shared pieces */
+.sc-show-more { display: flex; justify-content: center; padding: 14px 0 2px; }
+.sc-with-mark { display: flex; align-items: center; gap: 8px; }        /* a heading or label carrying the chick beside its text */
+.sc-with-mark img.sc-mark { height: 18px; }
+.sc-lockup { display: block; height: 20px; width: auto; opacity: .9; } /* the drawn SpicyChicken lockup, as drawn */
+
+/* --------------------------------------------------------------------------
+   4d. BRAND COMPOSITIONS — opt-in; existing consumer layouts stay stable.
+   The exact chick supplies the imagery. Covers reserve an art column; marks
+   never sit over body copy, controls or data. No new logo geometry or effects.
+   -------------------------------------------------------------------------- */
+.sc-cover {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; flex-wrap: wrap;
+  gap: var(--sc-s6); align-items: center;
+  padding: clamp(28px, 5vw, 64px); border-radius: var(--sc-r-lg);
+  background: var(--sc-ink); color: var(--sc-on-ink);
+  border: 1px solid var(--sc-ink-line-strong);
+}
+.sc-cover--wine { background: var(--sc-brand-wine); }
+.sc-cover--paper {
+  color-scheme: light;
+  background: var(--sc-brand-paper); color: var(--sc-on-paper); border-color: var(--sc-paper-line);
+  --sc-heading: var(--sc-on-paper); --sc-text: var(--sc-on-paper);
+  --sc-text-2: var(--sc-on-paper-2); --sc-text-3: var(--sc-on-paper-2);
+  --sc-brand: var(--sc-on-paper); --sc-border: var(--sc-paper-line);
+  --sc-accent: var(--sc-spice-700); --sc-accent-hover: var(--sc-spice-800);
+  --sc-on-accent: var(--sc-white); --sc-focus: var(--sc-spice-700);
+  --sc-surface: var(--sc-white); --sc-hover: var(--sc-gray-100);
+  --sc-raised: var(--sc-cobalt-50); --sc-border-strong: var(--sc-gray-400);
+  --sc-border-control: var(--sc-gray-500); --sc-brand-strong: var(--sc-cobalt-600);
+  --sc-brand-fill: var(--sc-cobalt-100); --sc-brand-line: var(--sc-cobalt-700);
+  --sc-accent-fill: #FFE9E2; --sc-selection: var(--sc-cobalt-200);
+  --sc-good: #1B7E2A; --sc-good-fill: #E3F4E2;
+  --sc-warn: #906400; --sc-warn-fill: #F9EDD9;
+  --sc-danger: #BE2132; --sc-danger-fill: #FFE8E7;
+  --sc-info: var(--sc-cobalt-600); --sc-info-fill: #E4F0FF;
+  --sc-chart-1: #2766B1; --sc-chart-2: #D24100; --sc-chart-3: #00856E;
+  --sc-chart-4: #7541B8; --sc-chart-5: #BC3181; --sc-chart-context: #737B86;
+  --sc-chart-emphasis: var(--sc-cobalt-600); --sc-chart-grid: #E6EBF2;
+}
+.sc-cover__content { flex: 2 1 380px; min-width: 0; position: relative; z-index: 1; }
+.sc-cover__title {
+  font: 700 var(--sc-cover-title)/1.02 var(--sc-font-display);
+  letter-spacing: -.045em; max-width: 14ch; margin: var(--sc-s3) 0;
+  overflow-wrap: anywhere; text-wrap: balance;
+}
+.sc-cover__dek { max-width: 48ch; margin: 0; font-size: var(--sc-text-lg); color: var(--sc-text-2); line-height: 1.6; }
+.sc-cover__meta { display: flex; flex-wrap: wrap; gap: var(--sc-s1) var(--sc-s3); margin-top: var(--sc-s4); font: 500 11px/1.6 var(--sc-font-mono); color: var(--sc-text-2); }
+.sc-cover__actions { display: flex; flex-wrap: wrap; gap: var(--sc-s1); margin-top: var(--sc-s4); }
+.sc-cover__art { flex: 1 1 160px; min-width: 0; display: grid; place-items: center; gap: var(--sc-s4); padding: var(--sc-s3); }
+.sc-cover__art > img { display: block; width: min(100%, var(--sc-mark-display)); height: auto; }
+.sc-cover__caption { font: 500 11px/1.5 var(--sc-font-mono); color: var(--sc-text-2); text-align: center; letter-spacing: .04em; }
+.sc-cover--compact { padding: var(--sc-s4); gap: var(--sc-s4); }
+.sc-cover--compact .sc-cover__title { font-size: clamp(30px, 4vw, 44px); max-width: 22ch; }
+.sc-cover--compact .sc-cover__art > img { max-width: 96px; }
+
+/* A dedicated decorative panel. Its text has an opaque surface, so pattern
+   density cannot change text contrast. The pattern SVG reuses the locked mark. */
+.sc-brand-panel { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: flex-end; min-height: 260px; padding: var(--sc-s3); border-radius: var(--sc-r-lg); background: var(--sc-ink); border: 1px solid var(--sc-ink-line-strong); }
+.sc-brand-panel--wine { background: var(--sc-brand-wine); }
+.sc-brand-panel--paper { background: var(--sc-brand-paper); border-color: var(--sc-paper-line); }
+.sc-brand-panel { --sc-focus: var(--sc-spice-400); }
+.sc-brand-panel--paper { --sc-focus: var(--sc-spice-700); }
+.sc-brand-panel__pattern { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; user-select: none; }
+.sc-brand-panel__label { padding: var(--sc-s1) var(--sc-s2); border-radius: var(--sc-r-sm); background: var(--sc-ink); color: var(--sc-on-ink); font: 500 11px/1.6 var(--sc-font-mono); }
+.sc-brand-panel--paper .sc-brand-panel__label { background: var(--sc-brand-paper); color: var(--sc-on-paper); }
+.sc-brand-panel a.sc-brand-panel__label:hover { color: var(--sc-on-ink); text-decoration: underline; }
+.sc-brand-panel--paper a.sc-brand-panel__label:hover { color: var(--sc-on-paper); }
+
+/* Decorative watermark: reserve its own space, use alt="" + aria-hidden,
+   never place this on a chart's plot area. Mono pairs follow the local theme. */
+.sc-ghost { display: grid; place-items: center; min-height: 180px; overflow: hidden; pointer-events: none; user-select: none; }
+.sc-ghost > img { width: min(60%, 200px); height: auto; opacity: var(--sc-motif-opacity); grid-area: 1 / 1; }
+.sc-ghost > .sc-ghost__light { display: none; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .sc-ghost__dark { display: none; }
+  :root:not([data-theme="dark"]) .sc-ghost__light { display: block; }
+}
+:root[data-theme="light"] .sc-ghost__dark { display: none; }
+:root[data-theme="light"] .sc-ghost__light { display: block; }
+.sc-ghost.sc-ghost--ink > .sc-ghost__dark { display: block; }
+.sc-ghost.sc-ghost--ink > .sc-ghost__light { display: none; }
+.sc-ghost.sc-ghost--paper > .sc-ghost__dark { display: none; }
+.sc-ghost.sc-ghost--paper > .sc-ghost__light { display: block; }
+
+/* The signature is contextual and legible. Existing .sc-watermark remains
+   the unchanged footer endorsement. This works in paper and chart captions. */
+.sc-signature { display: inline-flex; align-items: center; gap: var(--sc-s1); color: inherit; border: 0; text-decoration: none; min-height: 24px; }
+.sc-signature:hover { color: inherit; border: 0; text-decoration: underline; text-underline-offset: 4px; }
+.sc-signature img { display: block; width: auto; height: 24px; }
+.sc-signature__name { font: 700 15px/1.1 var(--sc-font-display); letter-spacing: -.025em; }
+.sc-signature__sub { display: block; margin-top: 5px; font: 500 10px/1.3 var(--sc-font-mono); letter-spacing: .01em; color: var(--sc-text-2); }
+.sc-signature--small img { height: 18px; }
+.sc-signature--small .sc-signature__name { font-size: 12px; }
+.sc-signature--small .sc-signature__sub { display: none; }
+
+/* A chapter changes rhythm without adding another card boundary. */
+.sc-chapter { display: flex; gap: var(--sc-s2); align-items: baseline; padding-block: var(--sc-s3); border-top: 1px solid var(--sc-border-strong); }
+.sc-chapter__index { flex: none; font: 500 12px/1.4 var(--sc-font-mono); color: var(--sc-text-3); }
+.sc-chapter__body { flex: 1; min-width: 0; }
+.sc-chapter__body > :is(h2,h3) { margin: 0; }
+.sc-chapter__body > p { margin: var(--sc-s1) 0 0; max-width: 64ch; color: var(--sc-text-2); }
+.sc-chapter__meta { font: 500 11px/1.5 var(--sc-font-mono); color: var(--sc-text-3); }
+
+/* One shared surface for related metrics. The lead is typographic, never
+   green/red numeric text. Each number keeps its unit and source context. */
+.sc-stat-strip { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); margin: 0; border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); background: var(--sc-surface); overflow: hidden; }
+.sc-stat-strip--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.sc-stat-strip--4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.sc-stat { min-width: 0; padding: var(--sc-s3); }
+.sc-stat + .sc-stat { border-left: 1px solid var(--sc-border); }
+.sc-stat--lead { background: var(--sc-brand-fill); }
+.sc-stat__label { font: 500 11px/1.5 var(--sc-font-mono); color: var(--sc-text-2); text-transform: lowercase; }
+.sc-stat__value { margin: var(--sc-s2) 0 var(--sc-s1); font: 700 var(--sc-stat-value)/1.1 var(--sc-font-body); letter-spacing: -.045em; color: var(--sc-heading); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sc-stat__note { margin: 0; font-size: var(--sc-text-sm); color: var(--sc-text-2); }
+
+/* SpicyStock's portable fact-row design, promoted without its scoring logic. */
+.sc-facts { display: flex; flex-wrap: wrap; gap: var(--sc-s2) var(--sc-s4); margin: var(--sc-s3) 0 0; padding-top: var(--sc-s2); border-top: 1px solid var(--sc-border); }
+.sc-facts > div { min-width: 0; }
+.sc-facts dt { font: 500 11px/1.4 var(--sc-font-mono); color: var(--sc-text-2); text-transform: lowercase; }
+.sc-facts dd { margin: var(--sc-s0) 0 0; color: var(--sc-heading); font-size: var(--sc-text-md); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.sc-chart-caption { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--sc-s1) var(--sc-s3); border-top: 1px solid var(--sc-border); padding-top: var(--sc-s2); margin-top: var(--sc-s2); font-size: var(--sc-text-sm); color: var(--sc-text-2); }
+.sc-chart-caption > p { margin: 0; max-width: 65ch; }
+.sc-empty--brand { display: grid; justify-items: center; gap: var(--sc-s2); padding: var(--sc-s6) var(--sc-s3); text-align: center; border: 1px dashed var(--sc-border-strong); border-radius: var(--sc-r-lg); background: var(--sc-surface); }
+.sc-empty--brand > img { height: 48px; width: auto; }
+.sc-empty--brand > :is(h2,h3) { margin: 0; font-size: var(--sc-h3); }
+.sc-empty--brand > p { max-width: 44ch; margin: 0; color: var(--sc-text-2); }
+.sc-adaptive-mark { display: inline-grid; }
+.sc-adaptive-mark > img { grid-area: 1 / 1; }
+.sc-adaptive-mark > .sc-adaptive-mark__light { display: none; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .sc-adaptive-mark__dark { display: none; }
+  :root:not([data-theme="dark"]) .sc-adaptive-mark__light { display: block; }
+}
+:root[data-theme="light"] .sc-adaptive-mark__dark { display: none; }
+:root[data-theme="light"] .sc-adaptive-mark__light { display: block; }
+.sc-on-ink .sc-adaptive-mark > .sc-adaptive-mark__dark { display: block; }
+.sc-on-ink .sc-adaptive-mark > .sc-adaptive-mark__light { display: none; }
+.sc-cover--paper .sc-adaptive-mark > .sc-adaptive-mark__dark { display: none; }
+.sc-cover--paper .sc-adaptive-mark > .sc-adaptive-mark__light { display: block; }
+.sc-empty--brand .sc-adaptive-mark > img { height: 48px; width: auto; }
+@media (pointer: coarse) {
+  .sc-signature { min-height: 44px; }
+  .sc-brand-panel a.sc-brand-panel__label { display: inline-flex; align-items: center; min-height: 44px; }
+}
+
+/* A real paper composition: branded front sheet, open editorial body, a
+   compact source/signature footer. No ink-heavy background behind the report. */
+.sc-report { max-width: var(--sc-w-prose); margin: var(--sc-s6) auto; background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); overflow: hidden; }
+.sc-report > .sc-cover { border: 0; border-radius: 0; }
+.sc-report__body { padding: clamp(24px, 5vw, 56px); }
+.sc-report__body > :first-child { margin-top: 0; }
+.sc-report__footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--sc-s2); padding: var(--sc-s3) clamp(24px, 5vw, 56px); border-top: 1px solid var(--sc-border); font: 500 11px/1.6 var(--sc-font-mono); color: var(--sc-text-2); }
+@media (max-width: 720px) {
+  .sc-cover { gap: var(--sc-s4); }
+  .sc-cover__title { max-width: 18ch; }
+  .sc-cover__art { justify-items: start; grid-template-columns: auto 1fr; padding: 0; }
+  .sc-cover__art > img { max-width: 72px; }
+  .sc-cover__caption { text-align: left; }
+  .sc-cover--compact { padding: var(--sc-s3); gap: var(--sc-s2); }
+  .sc-cover--compact .sc-cover__title { margin-block: var(--sc-s2); }
+  .sc-cover--compact .sc-cover__dek { font-size: var(--sc-text-md); }
+  .sc-cover--compact .sc-cover__meta { margin-top: var(--sc-s2); }
+  .sc-cover--compact .sc-cover__art > img { width: 40px; }
+  .sc-cover--compact .sc-cover__art { gap: var(--sc-s2); }
+  .sc-stat-strip--4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .sc-stat-strip--4 > .sc-stat:nth-child(3) { border-left: 0; }
+  .sc-stat-strip--4 > .sc-stat:nth-child(n+3) { border-top: 1px solid var(--sc-border); }
+  .sc-chapter { flex-wrap: wrap; }
+  .sc-chapter__meta { flex-basis: 100%; }
+  .sc-report { margin: var(--sc-s3) auto; }
+}
+@media (max-width: 480px) {
+  .sc-stat-strip { grid-template-columns: minmax(0,1fr); }
+  .sc-stat-strip > .sc-stat + .sc-stat { border-left: 0; border-top: 1px solid var(--sc-border); }
+}
+@media (forced-colors: active) {
+  .sc-brand-panel__pattern, .sc-ghost { display: none; }
+  .sc-cover, .sc-brand-panel, .sc-report, .sc-stat-strip { border: 1px solid CanvasText; }
+}
+@media print {
+  .sc-cover { break-inside: avoid; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .sc-cover__actions, .sc-ghost, .sc-brand-panel { display: none; }
+  .sc-report { max-width: none; border: 0; border-radius: 0; margin: 0; }
+  .sc-report__body { padding: 24pt 0; }
+  .sc-report__footer { padding: 12pt 0; }
+  .sc-chapter { break-after: avoid; }
+  .sc-stat-strip, .sc-facts { break-inside: avoid; }
+}
+
+/* 4e. VISUAL LIBRARY START */
+/* --------------------------------------------------------------------------
+   VISUAL COMPOSITIONS — reusable arrangements for pages, evidence and states.
+   Structure uses semantic tokens; the original mark remains an image asset.
+   These are opt-in layouts. Each flex track wraps to its own available width.
+   -------------------------------------------------------------------------- */
+
+/* Asymmetric bento — one lead surface with a supporting stack. */
+.sc-bento { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--sc-s2); }
+.sc-bento__main { flex: 1.65 1 300px; min-width: 0; }
+.sc-bento__aside { flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; gap: var(--sc-s2); }
+.sc-bento__aside > * { flex: 1; min-width: 0; }
+.sc-bento > .sc-bento__main > :last-child { margin-bottom: 0; }
+
+/* Editorial split — copy and art occupy separate, generously spaced regions. */
+.sc-editorial { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--sc-s4); }
+.sc-editorial__body { flex: 1.6 1 240px; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
+.sc-editorial__body > :is(h2,h3) { font: 700 clamp(26px, 3vw, 42px)/1.1 var(--sc-font-display); letter-spacing: -.035em; max-width: 22ch; }
+.sc-editorial__body > p { max-width: 54ch; color: var(--sc-text-2); }
+.sc-editorial__body > :last-child { margin-bottom: 0; }
+.sc-editorial__art { flex: 1 1 180px; min-width: 0; min-height: 240px; display: grid; place-items: center; padding: var(--sc-s3); background: var(--sc-raised); border-radius: var(--sc-r-lg); }
+.sc-editorial__art > img { width: min(46%, 120px); height: auto; }
+.sc-editorial__art > .sc-ghost { width: 100%; }
+
+/* Timeline — chronological evidence, with a real ordered-list reading order. */
+.sc-timeline { list-style: none; padding: 0; margin: 0; }
+.sc-timeline__item { display: grid; grid-template-columns: minmax(66px, .3fr) minmax(0, 1fr); gap: var(--sc-s3); position: relative; padding: 0 0 var(--sc-s4); }
+.sc-timeline__stamp { color: var(--sc-text-2); font: 500 var(--sc-text-xs)/1.6 var(--sc-font-mono); padding-top: 3px; }
+.sc-timeline__body { border-left: 1px solid var(--sc-border-strong); padding-left: var(--sc-s3); position: relative; min-width: 0; }
+.sc-timeline__body::before { content: ''; position: absolute; width: 7px; height: 7px; left: -4px; top: 7px; border-radius: 50%; background: var(--sc-brand-strong); outline: 4px solid var(--sc-surface); }
+.sc-timeline__body > :is(h2,h3,h4) { margin: 0 0 var(--sc-s1); font-size: var(--sc-text-lg); }
+.sc-timeline__body > p { margin: 0; color: var(--sc-text-2); font-size: var(--sc-text-sm); }
+.sc-timeline__item:last-child { padding-bottom: 0; }
+
+/* Pull quote — expressive type, citation directly beneath the statement. */
+.sc-quote { margin: 0; padding: var(--sc-s4) 0; border-top: 2px solid var(--sc-brand-line); }
+.sc-quote__text { margin: 0 0 var(--sc-s3); color: var(--sc-heading); font: 600 clamp(24px, 3.2vw, 40px)/1.25 var(--sc-font-display); letter-spacing: -.025em; max-width: 32ch; }
+.sc-quote__source { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sc-s1) var(--sc-s2); color: var(--sc-text-2); font: 500 var(--sc-text-xs)/1.6 var(--sc-font-mono); font-style: normal; }
+
+/* Ranked list — position, meaning and figure; no colour-only ranking. */
+.sc-rank-list { list-style: none; padding: 0; margin: 0; }
+.sc-rank-list__item { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: baseline; gap: var(--sc-s2); padding: var(--sc-s2) 0; border-bottom: 1px solid var(--sc-border); }
+.sc-rank-list__item:last-child { border-bottom: 0; }
+.sc-rank-list__position { color: var(--sc-text-2); font: 500 var(--sc-text-xs)/1.5 var(--sc-font-mono); }
+.sc-rank-list__body { min-width: 0; }
+.sc-rank-list__body > strong { display: block; color: var(--sc-heading); font-weight: 600; }
+.sc-rank-list__body > span { display: block; margin-top: var(--sc-s0); color: var(--sc-text-2); font-size: var(--sc-text-sm); }
+.sc-rank-list__value { color: var(--sc-heading); font: 600 var(--sc-text-lg)/1.3 var(--sc-font-body); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Stepper — a status overview, not a substitute for interactive navigation. */
+.sc-stepper { display: flex; flex-wrap: wrap; gap: var(--sc-s2); list-style: none; padding: 0; margin: 0; }
+.sc-stepper__item { flex: 1 1 160px; min-width: 0; display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: start; gap: var(--sc-s1); padding-top: var(--sc-s2); border-top: 2px solid var(--sc-border-strong); }
+.sc-stepper__index { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--sc-border-control); color: var(--sc-text-2); font: 600 var(--sc-text-xs)/1 var(--sc-font-mono); }
+.sc-stepper__body { padding-top: 3px; }
+.sc-stepper__body > strong { display: block; color: var(--sc-heading); font-size: var(--sc-text-sm); }
+.sc-stepper__body > span { display: block; margin-top: var(--sc-s0); color: var(--sc-text-2); font-size: var(--sc-text-sm); }
+.sc-stepper__item.is-current, .sc-stepper__item.is-complete { border-top-color: var(--sc-brand-line); }
+.sc-stepper__item.is-current .sc-stepper__index { background: var(--sc-brand-fill); color: var(--sc-heading); border-color: var(--sc-brand-line); }
+.sc-stepper__item.is-complete .sc-stepper__index { color: var(--sc-heading); border-color: var(--sc-brand-line); }
+
+/* Checkpoint — confirmation with shape and explicit words, never colour alone. */
+.sc-checkpoint { display: flex; align-items: flex-start; gap: var(--sc-s2); padding: var(--sc-s3); background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); }
+.sc-checkpoint__mark { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--sc-brand-fill); color: var(--sc-heading); font: 600 18px/1 var(--sc-font-body); }
+.sc-checkpoint__body { min-width: 0; }
+.sc-checkpoint__body > :is(h2,h3,h4) { margin: 0 0 var(--sc-s0); font-size: var(--sc-text-lg); }
+.sc-checkpoint__body > p { margin: 0; color: var(--sc-text-2); font-size: var(--sc-text-sm); }
+
+/* Metric spotlight — a single lead figure, honest unit and immediate context. */
+.sc-metric-spotlight { padding-block: var(--sc-s3); border-top: 2px solid var(--sc-brand-line); }
+.sc-metric-spotlight__value { display: block; margin-block: var(--sc-s3) var(--sc-s2); color: var(--sc-heading); font: 700 clamp(48px, 7vw, 88px)/.95 var(--sc-font-body); letter-spacing: -.055em; overflow-wrap: anywhere; }
+.sc-metric-spotlight__value > small { font-size: .34em; letter-spacing: -.02em; margin-left: var(--sc-s1); }
+.sc-metric-spotlight__context { max-width: 42ch; color: var(--sc-text-2); font-size: var(--sc-text-md); margin: 0; }
+
+/* Comparison rail — parallel choices with equal visual weight. */
+.sc-comparison { display: flex; flex-wrap: wrap; gap: var(--sc-s3); margin: 0; }
+.sc-comparison__item { flex: 1 1 160px; min-width: 0; padding-top: var(--sc-s2); border-top: 2px solid var(--sc-border-strong); }
+.sc-comparison__label { color: var(--sc-text-2); font: 500 var(--sc-text-xs)/1.6 var(--sc-font-mono); }
+.sc-comparison__value { color: var(--sc-heading); font: 700 var(--sc-h2)/1.15 var(--sc-font-body); margin: var(--sc-s2) 0; letter-spacing: -.025em; }
+.sc-comparison__item > p, .sc-comparison__note { margin: 0; color: var(--sc-text-2); font-size: var(--sc-text-sm); max-width: 34ch; }
+
+/* Captioned image — the caption is outside the image and remains selectable. */
+.sc-captioned { margin: 0; }
+.sc-captioned__art { display: grid; place-items: center; min-height: 240px; padding: var(--sc-s4); background: var(--sc-raised); border-radius: var(--sc-r-lg); overflow: hidden; }
+.sc-captioned__art > img { display: block; width: 100%; height: auto; object-fit: cover; }
+.sc-captioned__art > .sc-adaptive-mark { width: min(48%, 120px); }
+.sc-captioned__art .sc-adaptive-mark > img { width: 100%; height: auto; }
+.sc-captioned__caption { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--sc-s1) var(--sc-s3); padding-top: var(--sc-s2); color: var(--sc-text-2); font: 500 var(--sc-text-xs)/1.6 var(--sc-font-mono); }
+.sc-captioned__caption > strong { color: var(--sc-heading); font-weight: 500; }
+
+/* Labeled bars — every quantity is real text; the scale begins at zero.
+   Pass a percentage through --sc-bar-size and a chart slot through --sc-tone.
+   Values and labels stay visible even when the visual marks cannot render. */
+.sc-bars { margin: 0; }
+.sc-bars__row { display: grid; grid-template-columns: minmax(52px, .32fr) minmax(0, 1fr); align-items: center; gap: var(--sc-s2); padding-block: var(--sc-s1); }
+.sc-bars__label { color: var(--sc-text-2); font-size: var(--sc-text-sm); }
+.sc-bars__measure { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: center; gap: var(--sc-s2); margin: 0; }
+.sc-bars__track { display: block; height: 12px; background: var(--sc-chart-grid); border-radius: 2px; overflow: hidden; }
+.sc-bars__fill { display: block; width: clamp(0%, var(--sc-bar-size, 0%), 100%); height: 100%; background: var(--sc-tone, var(--sc-chart-emphasis)); }
+.sc-bars__value { color: var(--sc-heading); font: 600 var(--sc-text-sm)/1.5 var(--sc-font-body); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Skeleton — a static layout placeholder; never invent a percentage or pulse. */
+.sc-skeleton { display: block; background: var(--sc-border); border-radius: var(--sc-r-sm); }
+.sc-skeleton--line { height: 12px; width: 100%; }
+.sc-skeleton--title { height: 24px; width: 56%; }
+.sc-skeleton--block { height: 144px; width: 100%; }
+
+@media (max-width: 480px) {
+  .sc-timeline__item { grid-template-columns: 60px minmax(0, 1fr); gap: var(--sc-s2); }
+  .sc-timeline__body { padding-left: var(--sc-s2); }
+  .sc-rank-list__item { column-gap: var(--sc-s1); }
+  .sc-editorial { gap: var(--sc-s3); }
+  .sc-editorial__art { min-height: 180px; }
+}
+@media (forced-colors: active) {
+  .sc-timeline__body::before { background: CanvasText; outline-color: Canvas; }
+  .sc-stepper__index, .sc-checkpoint__mark { border: 1px solid CanvasText; }
+  .sc-skeleton { background: GrayText; }
+}
+@media print {
+  .sc-bento, .sc-editorial, .sc-quote, .sc-metric-spotlight, .sc-captioned, .sc-checkpoint { break-inside: avoid; }
+  .sc-timeline__item, .sc-rank-list__item { break-inside: avoid; }
+}
+
+
+
+/* --------------------------------------------------------------------------
+   OPT-IN MOTION — arrival, interaction and honest waiting states.
+   Content is visible before the optional runtime runs. Only an observed
+   arrival receives .sc-motion-in. Focus, reduced motion and print end it.
+   -------------------------------------------------------------------------- */
+.sc-reveal, .sc-stagger, .sc-chick-arrive, .sc-rule-reveal { --sc-motion-order: 0; }
+.sc-motion-in {
+  animation: sc-motion-rise var(--sc-motion-enter) var(--sc-ease-out) both;
+  animation-delay: calc(var(--sc-motion-order, 0) * var(--sc-motion-stagger));
+}
+.sc-motion-in[data-sc-motion="fade"] { animation-name: sc-motion-fade; }
+.sc-motion-in[data-sc-motion="scale"] { animation-name: sc-motion-scale; }
+.sc-motion-in[data-sc-motion="slide"] { animation-name: sc-motion-slide; }
+.sc-motion-in[data-sc-motion="wipe"] { animation-name: sc-motion-wipe; }
+.sc-chick-arrive.sc-motion-in { animation-name: sc-motion-chick; animation-duration: var(--sc-motion-brand); }
+.sc-rule-reveal.sc-motion-in { animation-name: sc-motion-rule; transform-origin: left center; }
+.sc-motion-in:focus-within { animation: none; }
+
+@keyframes sc-motion-rise {
+  from { opacity: 0; translate: 0 var(--sc-motion-distance); }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes sc-motion-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sc-motion-scale {
+  from { opacity: 0; scale: .97; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes sc-motion-slide {
+  from { opacity: 0; translate: calc(-1 * var(--sc-motion-distance)) 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes sc-motion-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes sc-motion-chick {
+  from { opacity: 0; translate: 0 calc(var(--sc-motion-distance) / 2); }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes sc-motion-rule { from { scale: 0 1; } to { scale: 1 1; } }
+
+/* Interaction transforms are opt-in; color/focus styles keep doing their job. */
+.sc-hover-lift, .sc-press {
+  transition: translate var(--sc-motion-fast) var(--sc-ease-out),
+    scale var(--sc-motion-fast) var(--sc-ease-out),
+    background-color var(--sc-motion-fast) var(--sc-ease-out),
+    border-color var(--sc-motion-fast) var(--sc-ease-out),
+    color var(--sc-motion-fast) var(--sc-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sc-hover-lift:hover { translate: 0 -3px; }
+}
+.sc-press:active { scale: .985; }
+.sc-press:disabled, .sc-press[aria-disabled="true"] { scale: 1; }
+
+/* A loading symbol is decorative; its enclosing status names the real task.
+   Three gentle cycles run only in an explicitly busy region, then rest. */
+.sc-loader {
+  display: inline-block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--sc-border-strong);
+  border-top-color: var(--sc-heading);
+  border-radius: var(--sc-r-pill);
+  vertical-align: middle;
+}
+[aria-busy="true"] .sc-loader { animation: sc-motion-spin var(--sc-motion-loading) linear 3; }
+.sc-loading-dots { display: inline-flex; align-items: center; gap: 4px; height: 20px; }
+.sc-loading-dots > span { width: 4px; height: 4px; border-radius: var(--sc-r-pill); background: var(--sc-text-2); }
+[aria-busy="true"] .sc-loading-dots > span { animation: sc-motion-dot var(--sc-motion-loading) var(--sc-ease-in-out) 3; }
+.sc-loading-dots > span:nth-child(2) { animation-delay: var(--sc-motion-fast); }
+.sc-loading-dots > span:nth-child(3) { animation-delay: calc(var(--sc-motion-fast) * 2); }
+@keyframes sc-motion-spin { to { rotate: 1turn; } }
+@keyframes sc-motion-dot { 0%, 70%, 100% { opacity: .45; } 35% { opacity: 1; } }
+.sc-progress {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--sc-r-pill);
+  background: var(--sc-border);
+  color: var(--sc-brand-strong);
+  accent-color: var(--sc-brand-strong);
+}
+.sc-progress::-webkit-progress-bar { background: var(--sc-border); border-radius: var(--sc-r-pill); }
+.sc-progress::-webkit-progress-value { background: var(--sc-brand-strong); border-radius: var(--sc-r-pill); }
+.sc-progress::-moz-progress-bar { background: var(--sc-brand-strong); border-radius: var(--sc-r-pill); }
+
+/* Pause finishes arrivals immediately. It never freezes readable content at
+   zero opacity. Loading labels and native progress values remain available. */
+:root[data-sc-motion-paused="true"] .sc-motion-in,
+:root[data-sc-motion-paused="true"] .sc-loader,
+:root[data-sc-motion-paused="true"] .sc-loading-dots > span { animation: none; }
+:root[data-sc-motion-paused="true"] .sc-hover-lift,
+:root[data-sc-motion-paused="true"] .sc-press { transition: none; translate: none; scale: none; }
+@media (prefers-reduced-motion: reduce) {
+  .sc-motion-in, .sc-loader, .sc-loading-dots > span { animation: none !important; }
+  .sc-hover-lift, .sc-press { transition: none !important; translate: none !important; scale: none !important; }
+}
+@media print {
+  .sc-motion-in, .sc-loader, .sc-loading-dots > span { animation: none !important; }
+  .sc-hover-lift, .sc-press { transition: none !important; translate: none !important; scale: none !important; }
+  [data-sc-motion-toggle], [data-sc-motion-replay] { display: none !important; }
+}
+@media (forced-colors: active) {
+  .sc-loader { border-color: GrayText; border-top-color: CanvasText; }
+  .sc-loading-dots > span { background: CanvasText; }
+  .sc-progress { forced-color-adjust: auto; }
+}
+
+/* 4e. VISUAL LIBRARY END */
+
+/* --------------------------------------------------------------------------
+   5. UTILITIES
+   -------------------------------------------------------------------------- */
+.sc-mono { font-family: var(--sc-font-mono); }
+.sc-muted { color: var(--sc-text-2); }
+.sc-faint { color: var(--sc-text-3); }
+.sc-num { font-variant-numeric: tabular-nums; }
+.sc-stack > * + * { margin-top: var(--sc-s2); }
+.sc-row { display: flex; align-items: center; gap: var(--sc-s2); flex-wrap: wrap; }
+.sc-right { margin-left: auto; }
+.sc-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.sc-skip { position: absolute; left: -9999px; top: 8px; z-index: 10; }   /* <a class="sc-skip" href="#main"> before the masthead */
+.sc-skip:focus { left: 8px; padding: 8px 12px; background: var(--sc-surface); color: var(--sc-heading); border: 1px solid var(--sc-border-strong); border-radius: var(--sc-r-sm); }
+.sc-text-good { color: var(--sc-good); } .sc-text-warn { color: var(--sc-warn); } .sc-text-danger { color: var(--sc-danger); } .sc-text-info { color: var(--sc-info); } .sc-text-brand { color: var(--sc-brand); }
+.sc-text-accent { color: var(--sc-accent); }   /* deprecated 2.1 — use .sc-chip--spice; removed in 3.0 */
+.sc-nowrap { white-space: nowrap; }
+.sc-truncate { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-case, .sc-table thead th.sc-case, .sc-details summary.sc-case { text-transform: none; letter-spacing: 0; }   /* keep casing inside a lowercased component (VIN, TX). Last, so it wins by order. */
+
+/* Touch targets. The masthead controls sat at 24-27px against the 44px
+   guideline — a defect in this sheet, inherited by every consumer, not a
+   preference of any one of them. Keyed to the pointer, not the viewport (the
+   .sc-map__btn rule above) — a landscape phone is 844px wide and a tablet
+   wider still, but the finger is the same size; and a narrow mouse window
+   needs none of this. `pointer`, not `any-pointer`: these rules move layout,
+   so they follow the PRIMARY input — a touch-screen laptop driven by its
+   trackpad keeps the desktop masthead. The filter bar's folded head and
+   toggle keep their 44px inside the width gate below: the fold itself only
+   exists there. .sc-brand is split out from the nav rule because it needs
+   display:inline-flex to beat the base's display:flex. */
+@media (pointer: coarse) {
+  .sc-theme-toggle button { min-height: 44px; padding-inline: 14px; }
+  .sc-masthead .sc-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+  .sc-brand { display: inline-flex; align-items: center; min-height: 44px; }
+  .sc-foot a { display: inline-block; padding: 10px 2px; }
+}
+
+@media (max-width: 720px) {
+  .sc-wrap, .sc-wrap--wide { padding: 0 20px; }
+  .sc-masthead, .sc-foot { padding-left: 20px; padding-right: 20px; }
+  .sc-masthead { padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; row-gap: 10px; }
+  .sc-masthead__right { flex-wrap: wrap; white-space: normal; row-gap: 8px; }
+  .sc-hide-sm { display: none !important; }
+  .sc-brand__name { font-size: 16px; }
+  h1 { font-size: 30px; }
+  .sc-title { padding-top: var(--sc-s3); }
+  .sc-card, .sc-doc { padding: 14px; }
+  .sc-doc--flat { padding: 0; }
+  .sc-table-scroll { margin: 0 -14px; padding: 0 14px; }          /* bleeds to the card/doc edge */
+  .sc-wrap > .sc-table-scroll { margin: 0 -20px; padding: 0 20px; } /* …or to the wrap edge */
+  .sc-foot { row-gap: 10px; }
+  .sc-foot .sc-theme-toggle { order: 3; flex: none; }   /* the toggle drops below the footer's own links */
+  /* A wide-aspect map would otherwise collapse to a sliver on a phone */
+  .sc-map, .sc-map svg { min-height: 300px; }
+  /* The filter bar folds to one row that expands on tap, so the controls
+     never eat the fold while the state stays visible. */
+  .sc-filter-bar { padding: 8px 14px; }
+  .sc-filter-bar__head { margin-bottom: 0; min-height: 44px; align-items: center; }
+  .sc-filter-bar__toggle { display: inline-flex; min-height: 44px; padding-inline: 14px; }
+  .sc-filter-bar .sc-filters { display: none; }
+  .sc-filter-bar.is-open .sc-filters { display: flex; padding-top: 10px; }
+}
+
+/* Windows High Contrast — state must survive when fills and borders are replaced */
+@media (forced-colors: active) {
+  .sc-theme-toggle button[aria-pressed="true"], .sc-tab[aria-pressed="true"], .sc-tab[aria-selected="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: Highlight; }
+  .sc-nav a { border-bottom-color: transparent; }
+  .sc-nav a[aria-current] { text-decoration: underline; text-underline-offset: 4px; }
+  .sc-legend i, .sc-tooltip__row i, .sc-chart__series, .sc-chart__marker, .sc-spark path, .sc-spark circle, .sc-callout::after { forced-color-adjust: none; }
+  .sc-select { appearance: auto; -webkit-appearance: auto; background-image: none; padding-right: 10px; }
+}
+
+@media print {
+  :root { color-scheme: light; }
+  body { background: #fff; color: #2F3741; font-size: 11pt; }
+  .sc-masthead, .sc-foot { background: #111F31 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  pre, .sc-callout--ink, .sc-tooltip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sc-card, .sc-tile, .sc-doc { box-shadow: none; break-inside: avoid; }
+  .sc-theme-toggle { display: none; }
+}
