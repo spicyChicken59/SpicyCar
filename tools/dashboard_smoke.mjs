@@ -4392,8 +4392,18 @@ await step('spice is for events, the key is for models', async () => {
 // forty prices is the mark worn nowhere.
 await step('the chick keeps watch in the large frame only', async () => {
   plan('small empty frames say "no photo"', 'and large empty frames hold the mark');
+  await page.setViewportSize({ width: 1280, height: 1000 });
   await open(carried.q);
-  await page.waitForTimeout(600);
+  // Dealer images are lazy. A taller cover can leave every small table photo
+  // outside Chromium's fetch distance; sleeping does not make those requests
+  // happen. Bring a real small frame into view, then wait for its pixel to
+  // become the fallback before judging the fallback's contents.
+  const smallFrame = page.locator('.sc-frame:not(.sc-frame--lg):visible').first();
+  await smallFrame.scrollIntoViewIfNeeded();
+  const smallFrameNode = await smallFrame.elementHandle();
+  try {
+    await page.waitForFunction((frame) => frame.classList.contains('sc-frame--empty'), smallFrameNode, { timeout: 10000 });
+  } finally { await smallFrameNode.dispose(); }
   const frames = await page.evaluate(() => {
     const all = [...document.querySelectorAll('.sc-frame--empty')];
     const small = all.filter((f) => !f.classList.contains('sc-frame--lg'));
