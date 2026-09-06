@@ -5350,6 +5350,317 @@ await step('the departures card counts absences, not departures', async () => {
      `heading "${head}" · ${jump.length} jump link(s) titled ${JSON.stringify(jump)}`);
 });
 
+// --- the market studio is visible work, not a hidden component -------------
+// The decision matrix describes the SAME exact cars already selected by the
+// decision card. It is not another scoring or selection implementation. These
+// checks pin identity, evidence and source uncertainty, then prove the new
+// first-screen composition at the three widths in both themes. Fixtures are
+// served through the ordinary data request; no test-only page APIs are needed.
+const studioRows = () => page.locator('#decision-matrix tbody tr[data-signal-vin]').evaluateAll((rows) => rows.map((row) => ({
+  vin: row.dataset.signalVin,
+  cells: [...row.querySelectorAll('td')].map((td) => ({
+    label: td.querySelector('.sc-signal__label')?.textContent.trim() || '',
+    note: td.querySelector('.market-matrix__note')?.textContent.trim() || '',
+    title: td.querySelector('.sc-signal')?.title || '',
+    tone: (td.querySelector('.sc-signal')?.className.match(/sc-signal--(\w+)/) || [])[1] || 'neutral',
+  })),
+})));
+const studioHero = () => page.locator('#hero-cars .sc-tile').evaluateAll((tiles) => tiles.map((tile) => ({
+  vin: tile.querySelector('[data-fkey^="hero:"]')?.getAttribute('data-fkey').slice(5) || '',
+  delta: tile.querySelector('.sc-delta')?.textContent.trim() || '',
+  cohort: tile.querySelector('.sc-delta')?.title || '',
+})).filter((tile) => tile.vin));
+const studioSource = new Map(WATCHED.flatMap((w) => (SHEET.brands[w.bk].models[w.mk].listings || []).map((x) => [x.vin, x])));
+
+await step('market studio identity and source facts', async () => {
+  plan('the signal matrix is visible by default and names exactly the decision candidates',
+       'the signal matrix remains a named native table with text alternatives',
+       'each signal agrees with the exact listing and existing value evidence',
+       'candidate photography comes from that candidate VIN, never a model substitute',
+       'the matrix leads the decision and the map precedes the picks and listings');
+  await open('');
+  const hero = await studioHero();
+  if (!hero.length) return skipRest('the sheet has no eligible configured shopping candidate');
+  const rows = await studioRows();
+  const vins = hero.map((h) => h.vin);
+  ok('the signal matrix is visible by default and names exactly the decision candidates',
+     await page.locator('#signal-card').isVisible() && JSON.stringify(rows.map((r) => r.vin)) === JSON.stringify(vins),
+     `decision ${vins.join(', ')} · matrix ${rows.map((r) => r.vin).join(', ')}`);
+  const native = await page.locator('#decision-matrix').evaluate((table) => ({
+    tag: table.tagName, matrix: table.classList.contains('sc-signal-matrix'),
+    caption: table.querySelector('caption')?.textContent.trim() || '',
+    columns: [...table.querySelectorAll('thead th')].map((th) => [th.textContent.trim(), th.scope]),
+    rowHeaders: [...table.querySelectorAll('tbody tr')].every((tr) => tr.firstElementChild?.tagName === 'TH' && tr.firstElementChild.scope === 'row'),
+    glyphsHidden: [...table.querySelectorAll('.sc-signal__glyph')].every((glyph) => glyph.getAttribute('aria-hidden') === 'true'),
+  }));
+  ok('the signal matrix remains a named native table with text alternatives', native.tag === 'TABLE' && native.matrix && native.caption.length > 20
+     && JSON.stringify(native.columns) === JSON.stringify(['Car', 'Value context', 'Reach', 'Certification', 'Accident record'].map((name) => [name, 'col']))
+     && native.rowHeaders && native.glyphsHidden, JSON.stringify(native));
+  const wrong = rows.filter((row) => {
+    const x = studioSource.get(row.vin), h = hero.find((tile) => tile.vin === row.vin);
+    if (!x || !h || row.cells.length !== 4) return true;
+    const [value, reach, cpo, accident] = row.cells;
+    const valueLabel = /% under a typical/.test(h.delta) ? (h.delta.match(/\d+%/) || [''])[0] + ' under typical'
+      : /% over a typical/.test(h.delta) ? (h.delta.match(/\d+%/) || [''])[0] + ' over typical'
+      : /^about typical/.test(h.delta) ? 'About typical' : 'Not enough evidence';
+    const valueTone = /% under a typical/.test(h.delta) ? 'good' : /% over a typical/.test(h.delta) ? 'caution' : 'neutral';
+    return value.label !== valueLabel || value.tone !== valueTone || value.title !== h.cohort
+      || reach.label !== (x.local ? 'Drivable' : !String(x.state || '').trim() ? 'State not reported' : 'Shipping')
+      || reach.tone !== (x.local || String(x.state || '').trim() ? 'info' : 'neutral')
+      || cpo.label !== (x.cpo === true ? 'CPO' : 'Not marked CPO') || cpo.tone !== (x.cpo === true ? 'good' : 'neutral')
+      || accident.label !== (x.accidents === 0 ? 'None reported' : x.accidents > 0 ? `${x.accidents} reported` : 'Unknown')
+      || accident.tone !== (x.accidents === 0 ? 'good' : x.accidents > 0 ? 'caution' : 'neutral');
+  });
+  ok('each signal agrees with the exact listing and existing value evidence', rows.length > 0 && !wrong.length,
+     wrong.length ? JSON.stringify(wrong[0]) : `${rows.length} exact VINs; value/cohort, reach, CPO and accident count agree`);
+
+  // The normal harness replaces dealer photos with a pixel to test fallback.
+  // Here use an inert image larger than thumbFor's rejection threshold so the
+  // requested src remains inspectable. Its contents are not a visual baseline.
+  const photos = new Set([...studioSource.values()].map((x) => x.image).filter((url) => /^https?:\/\//.test(url || '')));
+  const photoRoute = (url) => photos.has(url.href);
+  await ctx.route(photoRoute, (route) => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"><rect width="80" height="60" fill="#999"/></svg>' }));
+  try {
+    await open('');
+    const frames = await page.locator('#hero-cars .market-candidate').evaluateAll((tiles) => tiles.map((tile) => ({
+      vin: tile.querySelector('[data-fkey^="hero:"]')?.getAttribute('data-fkey').slice(5),
+      src: tile.querySelector('.sc-frame__img')?.getAttribute('src') || '',
+      alt: tile.querySelector('.sc-frame__img')?.alt || '', empty: !!tile.querySelector('.sc-frame--empty'),
+    })));
+    const bad = frames.filter((frame) => {
+      const source = studioSource.get(frame.vin);
+      return !source || (photos.has(source.image) ? frame.src !== source.image || frame.alt !== '' : !frame.empty);
+    });
+    ok('candidate photography comes from that candidate VIN, never a model substitute', frames.length === vins.length && !bad.length,
+       bad.length ? JSON.stringify(bad[0]) : `${frames.length} candidate-specific photos or explicit empty frames`);
+  } finally { await ctx.unroute(photoRoute); }
+  const order = await page.evaluate(() => {
+    const before = (a, b) => !!(document.getElementById(a).compareDocumentPosition(document.getElementById(b)) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return { sibling: document.getElementById('signal-card').nextElementSibling?.id,
+      mapAfterFilters: before('filters-card', 'map-card'), mapAfterComparisons: before('finalists-card', 'map-card'),
+      mapBeforePicks: before('map-card', 'takeaway'), mapBeforeList: before('map-card', 'list-card') };
+  });
+  ok('the matrix leads the decision and the map precedes the picks and listings', order.sibling === 'hero-card'
+     && order.mapAfterFilters && order.mapAfterComparisons && order.mapBeforePicks && order.mapBeforeList, JSON.stringify(order));
+});
+
+await step('market studio uncertainty fixtures', async () => {
+  plan('unknown and undersampled facts never receive a positive signal',
+       'explicit certification and zero accidents keep their separate positive signals',
+       'reported accidents remain caution and malformed certification remains neutral',
+       'no matching candidates hides the matrix and its cover link');
+  const candidates = WATCHED.filter((w) => Object.keys(SHEET.brands[w.bk].models[w.mk].trims || {}).some((id) => (SHEET.buyer?.shopping || []).includes(id)));
+  if (!candidates.length) return skipRest('there are no configured shopping models to serve fixtures for');
+  const serve = async (mutate, check) => {
+    const sheet = structuredClone(SHEET);
+    sheet.buyer.picks = { ...sheet.buyer.picks, exclude_accidents: false, exclude_rental: false };
+    mutate(sheet);
+    await ctx.route('**/data.json', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) }));
+    try { await open(''); await check(await studioRows()); }
+    finally { await ctx.unroute('**/data.json'); }
+  };
+  const allCars = (sheet, fn) => {
+    for (const brand of Object.values(sheet.brands || {})) for (const model of Object.values(brand.models || {})) {
+      for (const x of model.listings || []) fn(x);
+    }
+  };
+  await serve((sheet) => {
+    for (const w of candidates) {
+      const model = sheet.brands[w.bk].models[w.mk];
+      model.listings = (model.listings || []).filter((x) => sheet.buyer.shopping.includes(x.trim_id) && x.price != null && x.miles != null && x.miles <= (sheet.buyer.picks.max_miles || 50000)).slice(0, 1);
+    }
+    allCars(sheet, (x) => { x.cpo = null; x.accidents = null; x.local = false; x.state = null; });
+  }, async (rows) => {
+    ok('unknown and undersampled facts never receive a positive signal', rows.length > 0 && rows.every((r) =>
+      JSON.stringify(r.cells.map((c) => c.label)) === JSON.stringify(['Not enough evidence', 'State not reported', 'Not marked CPO', 'Unknown'])
+      && r.cells.every((c) => c.tone === 'neutral')), JSON.stringify(rows));
+  });
+  await serve((sheet) => allCars(sheet, (x) => { x.cpo = true; x.accidents = 0; x.local = true; x.state = 'IL'; }), async (rows) => {
+    ok('explicit certification and zero accidents keep their separate positive signals', rows.length > 0 && rows.every((r) =>
+      r.cells[1].label === 'Drivable' && r.cells[1].tone === 'info' && r.cells[2].label === 'CPO' && r.cells[2].tone === 'good'
+      && r.cells[3].label === 'None reported' && r.cells[3].tone === 'good'), `${rows.length} explicit source records`);
+  });
+  await serve((sheet) => allCars(sheet, (x) => { x.cpo = 'false'; x.accidents = 2; x.local = false; x.state = 'CA'; }), async (rows) => {
+    ok('reported accidents remain caution and malformed certification remains neutral', rows.length > 0 && rows.every((r) =>
+      r.cells[1].label === 'Shipping' && r.cells[1].tone === 'info' && r.cells[2].label === 'Not marked CPO' && r.cells[2].tone === 'neutral'
+      && r.cells[3].label === '2 reported' && r.cells[3].tone === 'caution'), `${rows.length} records, no inspection or title verdict inferred`);
+  });
+  await serve((sheet) => allCars(sheet, (x) => { x.price = null; }), async (rows) => {
+    ok('no matching candidates hides the matrix and its cover link', !rows.length && await page.locator('#signal-card').isHidden()
+      && await page.locator('.market-cover__index a[href="#signal-card"]').evaluate((a) => a.hidden), 'an empty candidate set produces no stale matrix');
+  });
+});
+
+await step('market studio keyboard navigation', async () => {
+  plan('the cover index uses keyboard-reachable native anchors to visible sections',
+       'the signal matrix is a named focusable region that scrolls by keyboard',
+       'opening a signal candidate preserves its exact VIN and hides overview-only navigation');
+  await page.setViewportSize({ width: 390, height: 844 });
+  try {
+    await open('');
+    if (!(await studioHero()).length) return skipRest('no configured candidate on this sheet');
+    const anchors = page.locator('.market-cover__index a:not([hidden])');
+    const links = await anchors.evaluateAll((as) => as.map((a) => ({ href: a.getAttribute('href'), visible: !!document.querySelector(a.getAttribute('href'))?.getBoundingClientRect().height, tag: a.tagName })));
+    await page.keyboard.press('Tab'); // establish keyboard modality before testing :focus-visible
+    await anchors.first().focus();
+    const firstFocus = await anchors.first().evaluate((a) => document.activeElement === a && getComputedStyle(a).outlineStyle !== 'none');
+    await page.keyboard.press('Tab');
+    const secondFocus = links.length < 2 || await anchors.nth(1).evaluate((a) => document.activeElement === a);
+    ok('the cover index uses keyboard-reachable native anchors to visible sections', links.length > 1 && links.every((a) => a.tag === 'A' && a.visible
+      && ['#hero-card', '#signal-card', '#map-card', '#list-card'].includes(a.href)) && firstFocus && secondFocus, JSON.stringify(links));
+    const region = page.locator('#signal-card .sc-table-scroll');
+    await region.focus();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(200);
+    const scroll = await region.evaluate((r) => ({ role: r.getAttribute('role'), label: r.getAttribute('aria-label'), focused: document.activeElement === r,
+      outline: getComputedStyle(r).outlineStyle, left: r.scrollLeft, needsScroll: r.scrollWidth > r.clientWidth, described: r.getAttribute('aria-describedby') }));
+    ok('the signal matrix is a named focusable region that scrolls by keyboard', scroll.role === 'region' && !!scroll.label && scroll.focused
+      && scroll.outline !== 'none' && !!scroll.described && (!scroll.needsScroll || scroll.left > 0), JSON.stringify(scroll));
+    const link = page.locator('#decision-matrix [data-fkey^="signal:"]').first();
+    const vin = (await link.getAttribute('data-fkey')).slice(7);
+    await link.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    const hidden = await page.locator('.market-cover__index a').evaluateAll((as) => as.every((a) => a.hidden === !!document.querySelector(a.getAttribute('href'))?.hidden));
+    const landed = await page.evaluate((id) => {
+      const star = document.querySelector(`#list-card [data-fkey="star:${id}"]`);
+      const row = star?.closest('tr') || star?.closest('.sc-media');
+      return !!row && (document.activeElement === row || row.contains(document.activeElement));
+    }, vin);
+    ok('opening a signal candidate preserves its exact VIN and hides overview-only navigation', await page.locator('#signal-card').isHidden()
+      && await page.locator('#hero-card').isHidden() && hidden && landed,
+      `focused listing ${vin}; ${page.url().split('/index.html')[1]}`);
+  } finally { await page.setViewportSize({ width: 1280, height: 1000 }); }
+});
+
+await step('market studio cover links follow scoped filters', async () => {
+  plan('cover links update when a budget hides sections and recover when it is cleared');
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await open('');
+  if (!(await studioHero()).length) return skipRest('no configured candidate to remove with a budget');
+  const linkState = () => page.locator('.market-cover__index a').evaluateAll((as) => as.map((a) => ({
+    href: a.getAttribute('href'), hidden: a.hidden, targetHidden: document.querySelector(a.getAttribute('href'))?.hidden,
+  })));
+  try {
+    await page.fill('#f-budget', '1');
+    await page.locator('#f-budget').press('Tab');
+    await page.waitForTimeout(400);
+    const empty = await linkState();
+    const matrixGone = await page.locator('#signal-card').isHidden();
+    await page.fill('#f-budget', '');
+    await page.locator('#f-budget').press('Tab');
+    await page.waitForTimeout(400);
+    const restored = await linkState();
+    ok('cover links update when a budget hides sections and recover when it is cleared', matrixGone
+      && await page.locator('#signal-card').isVisible()
+      && empty.some((l) => l.href === '#signal-card' && l.hidden)
+      && restored.some((l) => l.href === '#signal-card' && !l.hidden)
+      && [...empty, ...restored].every((l) => l.hidden === !!l.targetHidden), JSON.stringify({ empty, restored }));
+  } finally { await page.evaluate(() => localStorage.removeItem('spicycar.prefs')); }
+});
+
+await step('market studio responsive first screen', async () => {
+  const sizes = [[390, 844], [820, 1180], [1280, 1000]];
+  plan(...sizes.flatMap(([width]) => ['light', 'dark'].map((theme) => `the market studio fits ${width}px in ${theme} with a useful first screen and readable signals`)));
+  for (const [width, height] of sizes) for (const theme of ['light', 'dark']) {
+    const name = `the market studio fits ${width}px in ${theme} with a useful first screen and readable signals`;
+    await page.setViewportSize({ width, height });
+    await open('');
+    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+    await page.waitForTimeout(400);
+    if (!(await studioHero()).length) { skip(name, 'no shopping candidate exists on this sheet'); continue; }
+    const geometry = await page.evaluate(() => {
+      const first = document.querySelector('#decision-matrix .sc-signal__label');
+      const rect = first?.getBoundingClientRect();
+      const bgFor = (node) => {
+        for (let n = node; n; n = n.parentElement) {
+          const c = getComputedStyle(n).backgroundColor.match(/[\d.]+/g)?.map(Number);
+          if (c?.length === 3 || c?.[3] === 1) return c.slice(0, 3);
+        }
+        return [255, 255, 255];
+      };
+      const lum = (c) => c.map((v) => { v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((n, v, i) => n + v * [.2126, .7152, .0722][i], 0);
+      const contrast = [...document.querySelectorAll('#decision-matrix .sc-signal__label')].map((label) => {
+        const fg = getComputedStyle(label).color.match(/[\d.]+/g).slice(0, 3).map(Number), bg = bgFor(label);
+        const [a, b] = [lum(fg), lum(bg)].sort((a, b) => b - a);
+        return (a + .05) / (b + .05);
+      });
+      return { studio: document.body.classList.contains('market-studio'), width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+        firstSignal: rect && { top: rect.top, bottom: rect.bottom, text: first.textContent }, height: innerHeight,
+        contrast: Math.min(...contrast), labels: contrast.length,
+        photos: document.querySelectorAll('#hero-cars .market-candidate .sc-frame').length };
+    });
+    ok(name, geometry.studio && geometry.scrollWidth <= geometry.width + 1 && geometry.firstSignal?.top >= 0
+      && geometry.firstSignal.bottom < geometry.height && geometry.photos > 0 && geometry.labels > 0 && geometry.contrast >= 4.5,
+      JSON.stringify(geometry));
+    await shot(`market-studio-${width}-${theme}`);
+    await page.locator('#signal-card').scrollIntoViewIfNeeded();
+    await shot(`signal-matrix-${width}-${theme}`);
+    await page.locator('#hero-card').scrollIntoViewIfNeeded();
+    await shot(`decision-cards-${width}-${theme}`);
+  }
+  await page.setViewportSize({ width: 1280, height: 1000 });
+});
+
+await step('market studio motion and alternate rendering', async () => {
+  plan('reduced motion leaves the market studio complete without running animation',
+       'forced colors retains text labels and distinct matrix cell borders',
+       'printing exposes all signal columns without sticky clipping');
+  await open('');
+  if (!(await studioHero()).length) return skipRest('no configured shopping candidate for alternate rendering');
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.waitForTimeout(400);
+    const motion = await page.evaluate(() => ({ reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      active: document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.target?.closest('.market-cover, #hero-card, #signal-card')).length,
+      candidates: document.querySelectorAll('#hero-cars .market-candidate').length,
+      matrix: !document.getElementById('signal-card').hidden }));
+    ok('reduced motion leaves the market studio complete without running animation', motion.reduced && !motion.active && motion.candidates > 0 && motion.matrix, JSON.stringify(motion));
+    await shot('market-studio-reduced-motion');
+    await page.emulateMedia({ forcedColors: 'active' });
+    await page.locator('#signal-card').scrollIntoViewIfNeeded();
+    const forced = await page.locator('#decision-matrix tbody td').evaluateAll((cells) => cells.map((cell) => ({
+      text: cell.textContent.trim(), border: getComputedStyle(cell).borderStyle, color: getComputedStyle(cell).color,
+    })));
+    ok('forced colors retains text labels and distinct matrix cell borders', forced.length > 0 && forced.every((cell) => cell.text && cell.border !== 'none'), `${forced.length} labeled bordered cells`);
+    await shot('signal-matrix-forced-colors');
+    await page.emulateMedia({ forcedColors: 'none', media: 'print' });
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    const print = await page.locator('#decision-matrix').evaluate((table) => ({
+      width: table.getBoundingClientRect().width, parent: table.parentElement.getBoundingClientRect().width,
+      overflow: getComputedStyle(table.parentElement).overflowX,
+      sticky: [...table.querySelectorAll('th')].some((th) => getComputedStyle(th).position === 'sticky'),
+      labels: [...table.querySelectorAll('.sc-signal__label')].every((label) => getComputedStyle(label).display !== 'none' && label.getBoundingClientRect().height > 0),
+    }));
+    ok('printing exposes all signal columns without sticky clipping', print.width > 0 && print.width <= print.parent + 1
+      && print.overflow === 'visible' && !print.sticky && print.labels, JSON.stringify(print));
+    await shot('signal-matrix-print');
+  } finally {
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await page.emulateMedia({ media: 'screen', reducedMotion: 'no-preference', forcedColors: 'none' });
+  }
+});
+
+await step('market studio shortlist benchmark sizing', async () => {
+  plan('shortlist value rails use the matrix value variant and fit their own cells');
+  await open('');
+  const vins = (await studioHero()).map((h) => h.vin).slice(0, 2);
+  if (vins.length < 2) return skipRest('fewer than two shopping candidates to build a shortlist');
+  // The same local selection record the existing shortlist tests exercise.
+  await page.evaluate((ids) => localStorage.setItem('spicycar.prefs', JSON.stringify({ stars: Object.fromEntries(ids.map((vin) => [vin, 'short'])) })), vins);
+  await open('');
+  const rails = await page.locator('#finalists-table').evaluate((table) => ({
+    values: table.classList.contains('sc-signal-matrix--values'),
+    figures: [...table.querySelectorAll('.sc-benchmark')].map((figure) => ({ width: figure.getBoundingClientRect().width, cell: figure.closest('td').getBoundingClientRect().width,
+      track: figure.querySelector('.sc-benchmark__track').getBoundingClientRect().height,
+      point: figure.querySelector('.sc-benchmark__point').getBoundingClientRect().width })),
+  }));
+  if (!rails.figures.length) skip('shortlist value rails use the matrix value variant and fit their own cells', 'neither selected car has a scored cohort');
+  else ok('shortlist value rails use the matrix value variant and fit their own cells', rails.values
+    && rails.figures.every((r) => r.width > 0 && r.width <= r.cell && r.track === 16 && r.point === 10), JSON.stringify(rails));
+  await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+});
+
 // --- what it costs to open -------------------------------------------------
 // The page is one static file and one JSON file, and both grow every time a
 // car joins the watchlist or a feature lands. Nothing measured them, so "how
@@ -5407,7 +5718,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // made where it is exact: when nothing skipped, every check had a subject and the
 // total must be the declared one. That is the case CI runs.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 251;
+const EXPECTED = 274;
 if (!ONLY && !skipped && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
   console.log('     with nothing skipped. A check was lost or added silently.');
