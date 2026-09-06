@@ -3527,13 +3527,38 @@
       }
     }
   }
-  // One spelling of an age, for every surface that shows one. It mirrors
-  // Tracking.py's days_ago() and a test runs this exact function through node
-  // against it, so the report and the page cannot drift apart. Module scope
-  // because the model card's meta line and the watchlist's price tiles both
-  // render it, and two copies of four lines is how this project has grown two
-  // vocabularies for one mechanism before.
+  // One spelling of an age, and one of the schedule beside it, for every
+  // surface that shows either. Both mirror Tracking.py (days_ago,
+  // schedule_phrase) and a test runs these exact functions through node
+  // against them, so the report and the page cannot drift apart.
+  //
+  // Module scope because FOUR surfaces render this — the model card's meta
+  // row, the watchlist's two price tiles, and the model index table — and the
+  // round that added the first three left the fourth on the old spelling. The
+  // result was one page saying both things about one model: the tile read
+  // "Chevrolet Equinox EV · as of Aug 27, 10 days ago" while the index row
+  // three inches below read "Aug 27 · every 4 days", and the Ioniq 9's row
+  // still carried the exact sentence that round existed to delete. Three
+  // copies of a rule is how the third one gets missed.
   const daysAgo = (n) => (n === 1 ? '1 day ago' : `${n} days ago`);
+  // "No fetch since" was the daily wording and claimed a fetch did not HAPPEN
+  // — which fetch_overdue()'s own contract says no surface may claim, since a
+  // run that found nothing looks identical from here. It also broke the shape
+  // the browser checks look for. "Past its daily cadence" says what is
+  // measured: the gap against the schedule.
+  const schedulePhrase = (cadence, overdue) => {
+    const c = Math.max(1, Number(cadence) || 1);
+    if (overdue) return c === 1 ? 'past its daily cadence' : `past its ${c}-day cadence`;
+    return c === 1 ? '' : `every ${c} days`;
+  };
+  // What a model's freshness reads as, from the two fields Tracking.py writes.
+  // A sheet from before they existed has neither and gets the old line back
+  // rather than a confident zero.
+  const freshness = (m) => {
+    const age = Number.isFinite(m && m.age_days) ? m.age_days : null;
+    const over = !!(m && m.overdue === true);
+    return { age, over, ago: age ? daysAgo(age) : '', sched: schedulePhrase(m && m.cadence, over) };
+  };
 
   function metaRow(bits) {
     const meta = $('meta'); meta.textContent = '';
@@ -4746,16 +4771,17 @@
     // before those fields existed has neither and keeps the old line rather
     // than being given a confident zero. `days_ago` mirrors days_ago() there;
     // a test mails one model through both and compares the words.
-    const age = Number.isFinite(t.age_days) ? t.age_days : null;
-    const over = t.overdue === true;
+    const fr = freshness(t);
+    const cap = (w) => (w ? w[0].toUpperCase() + w.slice(1) : '');
     metaRow([
       unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}`
-        : t.as_of ? `Data through ${fmtDateLong(t.as_of)}` + (age ? ` · ${daysAgo(age)}` : '')
+        : t.as_of ? `Data through ${fmtDateLong(t.as_of)}` + (fr.ago ? ` · ${fr.ago}` : '')
         : `Asked ${fmtDateLong(t.last_asked)}, nothing found`,
-      // The cadence is dropped where the clause beside it is about to say the
-      // schedule was not kept — one number, said once, as the fact it is.
-      t.cadence > 1 && !over ? `Fetched every ${t.cadence} days` : null,
-      over ? (t.cadence > 1 ? `Past its ${t.cadence}-day cadence` : 'No fetch since') : null,
+      // The schedule is dropped where the clause beside it is about to say it
+      // was not kept — one number, said once, as the fact it is. Both branches
+      // come from schedulePhrase, so "Fetched every 4 days" and "Past its
+      // 4-day cadence" cannot drift apart or leave a cadence uncovered.
+      fr.sched ? (fr.over ? cap(fr.sched) : `Fetched ${fr.sched}`) : null,
       // the day count is the SELECTED VIEW's, so a brand-new trim on a
       // fetched model (a CPO watch before its first run) says so instead of
       // claiming a day it does not have; a never-fetched model claims nothing
@@ -5620,9 +5646,8 @@
   // until you know the model claims to run every four days.
   const asOfNote = (r) => {
     if (!(r.as_of && dataThrough() && r.as_of < dataThrough())) return '';
-    const m = r.m || {};
-    const age = Number.isFinite(m.age_days) ? m.age_days : null;
-    return ` · as of ${fmtDate(r.as_of)}` + (m.overdue === true && age ? `, ${daysAgo(age)}` : '');
+    const fr = freshness(r.m || {});
+    return ` · as of ${fmtDate(r.as_of)}` + (fr.over && fr.ago ? `, ${fr.ago}` : '');
   };
   function renderOverviewKpis(rows) {
     // tiles
@@ -6047,7 +6072,13 @@
       oBandSlim ? null : el('th', null, 'Trend'), oBandSlim ? null : el('th', null, 'Data through'))));
     const obody = el('tbody');
     for (const r of rows) {
-      const dataTxt = r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—');
+      // Same two fields, same two words, as the card and the tiles. This row
+      // kept `· every N days` beside a bare date long after the other three
+      // stopped, so the page contradicted itself about the same model.
+      const rf = freshness(r.m || r);
+      const dataTxt = r.as_of
+        ? `${fmtDate(r.as_of)}${rf.ago ? ` · ${rf.ago}` : ''}${rf.sched ? ` · ${rf.sched}` : ''}`
+        : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—');
       const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, !oBandSlim, r.photos), el('div', { class: 'sc-media__body' },
         el('div', { class: 'sc-media__title' }, r.label),
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),

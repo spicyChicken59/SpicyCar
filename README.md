@@ -171,10 +171,11 @@ because the twenty cheapest in the country and the twenty cheapest within drivin
 disjoint sets.
 
 The split that governs it is not which brand a model belongs to but **how big a catch its national
-query is allowed**. A `depth: full` target fetches about a hundred cars nationally and loses 21% by
-dropping its States half — that is the redundancy `sources_for()` describes. A `depth: light` target
-fetches twenty, the whole country, cheapest first, and loses **85%**. (Those two cover 23 of the 28;
-the other 5 sit on targets the watchlist has since restructured away.) The 28 one-EV-a-brand targets
+query is allowed**. Of what the States query brings back, a `depth: full` target — about a hundred
+cars nationally — loses 21% by dropping its States half, which is the redundancy `sources_for()`
+describes and it is real there. A `depth: light` target fetches twenty, the whole country, cheapest
+first, and loses **88%**. The denominator is the States catch, not the model's whole day: the
+national query keeps what it found either way. The 28 one-EV-a-brand targets
 are all light, so their national query was returning the twenty cheapest of that model *in America*
 and almost none of them were drivable. For 28 of 36 models the page could not show a car this buyer
 could go and see.
@@ -191,13 +192,17 @@ by definition, not to save a call — and at `depth: full` it is the case where 
 is close to redundant. Standing a model down again is a two-field edit — `national_only: true` and a
 slower cadence — and the overlap log is what should decide it.
 
-Those figures are a measurement, not a constant, and the log they come from is appended to and
-committed every day — so the window they were read off is frozen in
-`tests/fixtures/source_overlap_window.json`. One test holds every row of it against the live log, so
-the evidence cannot drift from what was actually observed; another recomputes these percentages from
-it, so the sentences above cannot drift from the evidence; and a third asks the *current* log whether
-a light target still loses far more than a full one, which is the finding rather than the number and
-is the one that should fail if the market changes its mind.
+Those figures are a measurement, not a constant. The log they come from is appended to, committed
+every day, and pruned to the newest 120 days, so the window they were read off is frozen in
+`tests/fixtures/source_overlap_window.json` — with each row's depth as it was **when the row was
+fetched**, which is not the depth its target carries today. One test holds every frozen row against
+the live log for as long as the live log still reaches back that far, so the evidence cannot be
+invented; another recomputes each percentage from the fixture and asserts it inside its own sentence,
+because an earlier version searched for the bare digits anywhere in this file and the two figures
+could be *swapped* — README stating the exact inverse of the finding — with the whole suite green;
+and a third asks the *current* log whether a light target still loses far more than a full one, which
+is the finding rather than the number and is the one that should fail if the market changes its
+mind.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are

@@ -1,10 +1,10 @@
 {
- "//": "The evidence behind README's \"Why every model asks its own states\" paragraph, frozen. data/source_overlap.json is appended to and COMMITTED by the daily job, so a test pinning the prose against the live log would turn CI red on the next tracker run and the numbers would be a moving target nobody could quote. This is the window the prose cites; a test asserts every row here still appears identically in the live log, so the evidence cannot be invented, and a separate test asserts the FINDING still holds on the live log, which is the part that must not rot.",
+ "//": "The evidence behind README's \"Why every model asks its own states\" paragraph, frozen. data/source_overlap.json is appended to and COMMITTED by the daily job, and save_overlap_history() also PRUNES it to the newest 120 days, so a test pinning the prose against the live log would turn CI red on the next tracker run and again, differently, once the window ages out. This is the window the prose cites; one test asserts every row here still matches the live log for as long as the live log still holds that day, so the evidence cannot be invented, and another asserts the FINDING still holds on the live log, which is the part that must not rot.",
  "window": [
   "2026-09-02",
   "2026-09-06"
  ],
- "depth_at_measurement": "Read off TARGETS the day the fixture was cut. A null depth is a target the watchlist has since restructured away (the two Lucid trims and the Ioniq 5); its rows count in the total and in neither depth group.",
+ "depth_when_fetched": "The depth each target was configured at ON THE DAY the row was recorded, which is the depth that governed how big a catch its National query got \u2014 the variable the whole split turns on. It is NOT the depth the target carries today: the two Lucid trims and the Ioniq 5 have since been merged or stood down, and an earlier cut of this fixture gave them null and dropped 5 of the 28 rows out of both groups, which understated the light share by three points. Read off the targets.json each of those days' own run committed.",
  "observations": [
   {
    "day": "2026-09-02",
@@ -27,7 +27,7 @@
   {
    "day": "2026-09-02",
    "target": "lucid-air-grand-touring",
-   "depth": null,
+   "depth": "light",
    "states": 13,
    "national": 17,
    "both": 0,
@@ -36,7 +36,7 @@
   {
    "day": "2026-09-02",
    "target": "lucid-air-touring",
-   "depth": null,
+   "depth": "light",
    "states": 19,
    "national": 16,
    "both": 2,
@@ -189,7 +189,7 @@
   {
    "day": "2026-09-05",
    "target": "hyundai-ioniq5",
-   "depth": null,
+   "depth": "light",
    "states": 19,
    "national": 9,
    "both": 1,
@@ -198,7 +198,7 @@
   {
    "day": "2026-09-05",
    "target": "lucid-air-grand-touring",
-   "depth": null,
+   "depth": "light",
    "states": 18,
    "national": 17,
    "both": 0,
@@ -207,7 +207,7 @@
   {
    "day": "2026-09-05",
    "target": "lucid-air-touring",
-   "depth": null,
+   "depth": "light",
    "states": 18,
    "national": 17,
    "both": 2,

@@ -1955,6 +1955,29 @@ def days_ago(age):
     return "1 day ago" if age == 1 else f"{age} days ago"
 
 
+def schedule_phrase(cadence, overdue):
+    """The schedule half of a freshness line, in the one wording every surface
+    uses. Empty for a daily model that is keeping up, which has nothing to say.
+
+    "no fetch since" was the daily-cadence wording and it was wrong twice over.
+    It claims a fetch did not HAPPEN, which `fetch_overdue()`'s own docstring
+    says no surface may claim — a run that found nothing leaves `as_of` where
+    it was and looks identical from here. And it broke the shape: the page's
+    check for an overdue model looked for "Past its N-day cadence", so a
+    shopped daily model one day behind rendered correctly and turned the
+    browser suite red. Both halves are the same fix. "Past its daily cadence"
+    is a statement about the gap against the schedule, which is the only thing
+    measured.
+    """
+    try:
+        c = max(1, int(cadence))
+    except (TypeError, ValueError):
+        return ""
+    if overdue:
+        return "past its daily cadence" if c == 1 else f"past its {c}-day cadence"
+    return "" if c == 1 else f"every {c} days"
+
+
 def fetch_age(as_of, record_day):
     """How many days older the cars on a model's card are than the record.
 
@@ -3815,18 +3838,19 @@ def compact_line(m_entry, label):
         line = f"- **{label}** — " + " · ".join(bits)
     tail = []
     age, over = m_entry.get("age_days"), m_entry.get("overdue")
-    # The cadence, unless the age clause below is about to contradict it. It
-    # was printed flatly beside an absolute date, so "every 4 days · as of
-    # 2026-08-25" read as four-day-old cars when they were twelve days old.
-    # Saying the number twice in one bracket, once as a promise and once as a
-    # promise not kept, is the two-vocabularies shape; the age clause names it.
-    if m_entry["cadence"] > 1 and not over:
-        tail.append(f"every {m_entry['cadence']} days")
+    sched = schedule_phrase(m_entry["cadence"], over)
+    # The cadence, unless the age clause is about to contradict it — and when
+    # it is, in place of it rather than beside it. It was printed flatly beside
+    # an absolute date, so "every 4 days · as of 2026-08-25" read as four-day-
+    # old cars when they were twelve days old. Saying the number twice in one
+    # bracket, once as a promise and once as a promise not kept, is the
+    # two-vocabularies shape; schedule_phrase() is the one wording.
+    if sched and not over:
+        tail.append(sched)
     if m_entry["as_of"] and m_entry["as_of"] != TODAY:
         tail.append(f"as of {m_entry['as_of']}" + (f", {days_ago(age)}" if age else ""))
-    if over:
-        tail.append(f"past its {m_entry['cadence']}-day cadence"
-                    if m_entry["cadence"] > 1 else "no fetch since")
+    if over and sched:
+        tail.append(sched)
     return line + (f" _({' · '.join(tail)})_" if tail else "")
 
 

@@ -4114,10 +4114,58 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
                                  f'{m["label"]}: overdue disagrees with the rule')
         self.assertGreater(checked, 0, "no model on the sheet has an as_of to check")
 
-    def test_the_report_says_the_age_wherever_the_sheet_holds_one(self):
-        """Read off the record rather than naming a model: which model is
-        behind is a fact about the market and the cadence, and a test that
-        names one goes quiet the day that model catches up."""
+    def _entry(self, **over):
+        """A model entry shaped the way build_outputs() writes one, for
+        compact_line() to render. Only the keys that function reads."""
+        e = {"listings": [], "as_of": "2026-08-25", "last_asked": None,
+             "cadence": 4, "age_days": 12, "overdue": True,
+             "next_due": "2026-09-09", "gone": [], "shopping": False}
+        e.update(over)
+        return e
+
+    def test_the_report_builds_the_age_into_the_line_it_prints(self):
+        """compact_line() EXECUTED, not a committed artifact read back.
+
+        This test used to load REPORT.md and docs/data.json and compare them to
+        each other. Nothing in compact_line() ran, so every mutation of the
+        tail it is named for left it green — dropping the age clause, dropping
+        the overdue clause, printing the schedule beside its own contradiction.
+        The rule was really held by the rebuild-and-diff test, which is a
+        different test with a different name, and this one reported a safety it
+        was not providing. That is the third shape this project's notes
+        describe, and the cheapest to write.
+        """
+        over = T.compact_line(self._entry(), "Test Model")
+        self.assertIn("as of 2026-08-25, 12 days ago", over,
+                      f"the line gives a date and no age: {over}")
+        self.assertIn("past its 4-day cadence", over, over)
+        self.assertNotIn("every 4 days", over,
+                         "the line states the cadence as a promise and as a "
+                         f"promise not kept, in one bracket: {over}")
+
+        keeping = T.compact_line(self._entry(age_days=2, overdue=False,
+                                             as_of="2026-09-04"), "Test Model")
+        self.assertIn("every 4 days", keeping, keeping)
+        self.assertIn("as of 2026-09-04, 2 days ago", keeping, keeping)
+        self.assertNotIn("cadence", keeping,
+                         f"a model keeping its schedule has nothing to say about it: {keeping}")
+
+        # A daily model that has fallen behind. This branch said "no fetch
+        # since" — a claim about whether a run HAPPENED, which fetch_overdue's
+        # contract forbids any surface from making, and a phrase the browser
+        # checks did not look for, so the page rendered correctly and the suite
+        # went red.
+        daily = T.compact_line(self._entry(cadence=1, age_days=1,
+                                           as_of="2026-09-05"), "Test Model")
+        self.assertIn("past its daily cadence", daily, daily)
+        self.assertNotIn("no fetch", daily.lower(),
+                         "the line claims a fetch did not happen, which the record "
+                         f"cannot know: {daily}")
+
+    def test_the_committed_report_agrees_with_the_committed_sheet(self):
+        """The artifact comparison the test above used to be, kept for what it
+        is: a check that the two files on disk tell one story, not a check of
+        the rule that built them."""
         site = json.loads(Path("docs/data.json").read_text())
         report = Path("REPORT.md").read_text()
         aged = [m for b in site["brands"].values() for m in b["models"].values()
@@ -4132,12 +4180,36 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
             self.assertIn(T.days_ago(m["age_days"]), line,
                           f'{m["label"]}: the report gives a date and no age')
             if m.get("overdue"):
-                self.assertIn(f'past its {m["cadence"]}-day cadence', line,
+                self.assertIn(T.schedule_phrase(m["cadence"], True), line,
                               f'{m["label"]}: {m["age_days"]} days on a '
                               f'{m["cadence"]}-day cadence, said flatly')
-                self.assertNotIn(f'every {m["cadence"]} days', line,
-                                 f'{m["label"]}: the report states the cadence as a '
-                                 "promise and as a promise not kept, in one bracket")
+
+    def test_the_page_and_the_report_share_one_schedule_phrase(self):
+        """The other half of the formatter pair, executed the same way.
+
+        Four surfaces render this now — the report's line, the page's model
+        card, its two price tiles and its model index — and the round that
+        added the first three left the index on the old spelling, so one page
+        said "as of Aug 27, 10 days ago" in a tile and "Aug 27 · every 4 days"
+        in the row below it. One rule each side, and this holds them equal.
+        """
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the page's formatter through")
+        import subprocess
+        page = Path("docs/index.html").read_text()
+        m = re.search(r"const schedulePhrase = (\([^)]*\) => \{.*?\n  \});", page, re.S)
+        self.assertIsNotNone(m, "the page no longer defines schedulePhrase — this "
+                                "check has lost its subject")
+        cases = [(1, False), (1, True), (2, False), (2, True), (4, True),
+                 (4, False), (15, True), (15, False)]
+        script = (f"const schedulePhrase = {m.group(1)};\n"
+                  f"console.log(JSON.stringify({json.dumps(cases)}"
+                  ".map(([c, o]) => schedulePhrase(c, o))));")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual([T.schedule_phrase(c, o) for c, o in cases],
+                         json.loads(out.stdout),
+                         "the page and the report spell the schedule differently")
 
     def test_the_page_spells_an_age_the_same_way_the_report_does(self):
         """The page's own formatter, executed, against Python's. Not a
@@ -4198,15 +4270,31 @@ class TestTheStatesQueryPaidForItself(unittest.TestCase):
         return st, sum(r["states_only"] for r in rows), (sum(r["states_only"] for r in rows) / st if st else None)
 
     def test_every_frozen_observation_is_one_the_log_really_recorded(self):
-        """The fixture is evidence, so it has to BE evidence. Each row is
-        checked against the live log by its own day and target — the log only
-        grows, so a frozen row that has gone missing or changed means the
-        fixture was edited to fit a sentence."""
+        """The fixture is evidence, so it has to BE evidence.
+
+        Each row is checked against the live log by its own day and target. The
+        first version of this reasoned "the log only grows, so a frozen row
+        that has gone missing means the fixture was edited to fit a sentence" —
+        and that is false twice: `save_overlap_history()` prunes to the newest
+        `keep` days and overwrites the current day rather than appending. Driven
+        forward a day at a time, the window's first day falls out of the live
+        log 120 runs after it was recorded, at which point this test would have
+        gone red every day thereafter and blamed the fixture for the retention
+        policy. A day the log no longer reaches is not checkable; a day it holds
+        must match exactly. The precondition below is what stops "not checkable"
+        from quietly becoming "nothing checked".
+        """
         live = json.loads(Path("data/source_overlap.json").read_text())
         obs = self.frozen()["observations"]
         self.assertEqual(28, len(obs), "the prose names 28 observations")
+        oldest = min(live) if live else None
+        checkable = [r for r in obs if oldest and r["day"] >= oldest]
+        self.assertTrue(checkable,
+                        "the live log no longer reaches any day the fixture froze, so "
+                        "nothing here is checked — re-cut the fixture against a window "
+                        f"the log still holds (log starts {oldest})")
         missing, differs = [], []
-        for r in obs:
+        for r in checkable:
             got = live.get(r["day"], {}).get(r["target"])
             if got is None:
                 missing.append(f'{r["day"]} {r["target"]}'); continue
@@ -4216,24 +4304,73 @@ class TestTheStatesQueryPaidForItself(unittest.TestCase):
         self.assertEqual([], missing, f"frozen rows the live log does not hold: {missing}")
         self.assertEqual([], differs, f"frozen rows the live log contradicts: {differs}")
 
+    def test_every_frozen_row_carries_the_depth_it_was_fetched_at(self):
+        """`depth` is the analytic variable the whole decision turns on, and
+        nothing checked it: the previous guard compared only the four counts,
+        so the fixture's depths could be inverted and README's two percentages
+        would follow, publishing the exact opposite of the finding with the
+        suite green.
+
+        Checked against the config for every target the watchlist still holds.
+        The rest — targets since merged or stood down — are held to a named
+        list rather than to nothing, because "the config no longer knows" is
+        exactly the gap the first cut of this fixture fell into: it gave those
+        five rows a null depth, dropped them out of both groups, and understated
+        the light share by three points.
+        """
+        RETIRED = {"lucid-air-touring": "light", "lucid-air-grand-touring": "light",
+                   "hyundai-ioniq5": "light"}
+        wrong, unattributed = [], []
+        for r in self.frozen()["observations"]:
+            t = T.TARGETS.get(r["target"])
+            want = t.get("depth") if t else RETIRED.get(r["target"])
+            if want is None:
+                unattributed.append(r["target"]); continue
+            if r["depth"] != want:
+                wrong.append(f'{r["day"]} {r["target"]}: frozen {r["depth"]!r}, really {want!r}')
+        self.assertEqual([], wrong, f"the fixture misattributes evidence: {wrong}")
+        self.assertEqual([], sorted(set(unattributed)),
+                         "these rows are on targets the config no longer knows and are not "
+                         "in the retired list either, so their depth is a guess: "
+                         f"{sorted(set(unattributed))}")
+
     def test_the_percentages_the_readme_quotes_are_the_ones_the_window_yields(self):
+        """Each figure inside its own sentence, not loose in the file.
+
+        This asserted `assertIn(f"{round(share*100)}%", readme)` — a bare "NN%"
+        anywhere in a four-hundred-line README, which already contains 99%, 97%,
+        95%, 88%, 35%, 21% and 4% in sentences about other things. Exchanging
+        README's two figures so it read "a `depth: full` target … loses 88%" and
+        "a `depth: light` target … loses 21%" — the exact inversion of the
+        finding that justifies moving 28 targets off national_only — left all
+        482 tests green. Reproduced before it was fixed.
+        """
         obs = self.frozen()["observations"]
         readme = " ".join(Path("README.md").read_text().split())
         window = self.frozen()["window"]
+        self.assertEqual([min(r["day"] for r in obs), max(r["day"] for r in obs)], window,
+                         "the fixture's window does not span its own observations")
         self.assertIn(f"between {window[0]} and {window[1]}", readme,
                       "the prose must name the window it read")
         st, only, _ = self.share(obs)
+        self.assertIn(f"the {len(obs)} observations recorded", readme,
+                      "the headline count is quoted and must be the fixture's")
         self.assertIn(f"States query found {st} cars and {only} of them were invisible", readme)
-        for depth, pct in (("full", None), ("light", None)):
+        # each share attached to the depth it describes, as one contiguous run
+        shares = {}
+        for depth in ("full", "light"):
             rows = [r for r in obs if r["depth"] == depth]
             self.assertTrue(rows, f"no {depth} observation in the window")
-            _, _, share = self.share(rows)
-            self.assertIn(f"`depth: {depth}` target", readme)
-            self.assertIn(f"{round(share * 100)}%", readme,
-                          f"the {depth} share is {share:.0%} and the prose does not say so")
-        split = len([r for r in obs if r["depth"]])
-        self.assertIn(f"cover {split} of the {len(obs)}", readme,
-                      "…and the prose must own the rows neither group covers")
+            shares[depth] = self.share(rows)[2]
+        self.assertIn(f"a `depth: full` target — about a hundred cars nationally — "
+                      f"loses {round(shares['full'] * 100)}% by dropping its States half",
+                      readme, f"the full share is {shares['full']:.0%}")
+        self.assertIn(f"A `depth: light` target fetches twenty, the whole country, cheapest "
+                      f"first, and loses **{round(shares['light'] * 100)}%**",
+                      readme, f"the light share is {shares['light']:.0%}")
+        # …and the DIRECTION, so an inversion fails even if both digits are real
+        self.assertGreater(shares["light"], shares["full"],
+                           "the fixture no longer shows what the paragraph claims")
 
     def test_the_finding_still_holds_on_the_log_as_it_stands_today(self):
         """The one that is allowed to fail. Everything above pins a sentence to

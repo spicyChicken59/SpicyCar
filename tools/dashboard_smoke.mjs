@@ -229,6 +229,18 @@ const daysAgo = (() => {
   if (!m) throw new Error('the page no longer defines daysAgo — the age checks have lost their subject');
   return (0, eval)(m[1]);
 })();
+// …and the schedule half, the same way. The check for an overdue model used
+// to assume the `cadence > 1` wording, so a shopped DAILY model one day
+// behind — which fetch_overdue calls overdue by its own max(1, c) — rendered
+// correctly and turned this suite red. Reading the page's own function means
+// the expectation follows whatever the page says, and the Python suite is
+// what holds that to the report's wording.
+const schedulePhrase = (() => {
+  const m = readFileSync(join(ROOT, 'index.html'), 'utf8')
+    .match(/const schedulePhrase = (\([^)]*\) => \{[\s\S]*?\n  \});/);
+  if (!m) throw new Error('the page no longer defines schedulePhrase — the age checks have lost their subject');
+  return (0, eval)(m[1]);
+})();
 const WATCHED = Object.entries(SHEET.brands || {}).flatMap(([bk, b]) =>
   Object.entries((b || {}).models || {}).map(([mk, m]) => ({
     bk, mk, id: `${bk} ${mk}`, slug: `${bk}-${mk}`, q: `?brand=${bk}&m=${mk}`, label: (m || {}).label || mk,
@@ -5258,7 +5270,8 @@ await step('a car is called what it is', async () => {
 await step('the card says how old its cars are', async () => {
   plan('a model behind the record says how many days behind',
        'and says so when the cadence cannot account for it',
-       'and a model fetched on the record\'s newest day claims no age');
+       'and a model fetched on the record\'s newest day claims no age',
+       'and the model index says the same thing about the same model');
   const modelOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {});
   const withCars = WATCHED.filter((w) => modelOf(w).as_of);
   const aged = withCars.filter((w) => modelOf(w).age_days > 0);
@@ -5279,10 +5292,18 @@ await step('the card says how old its cars are', async () => {
     if (!over.length) skip('and says so when the cadence cannot account for it',
                            'no model on the sheet is further behind than its own cadence allows');
     else {
-      const quiet = over.filter((r) => !r.text.includes(`Past its ${r.m.cadence}-day cadence`)
-                                    || r.text.includes(`Fetched every ${r.m.cadence} days`));
+      // The expected words come from the page's own rule, not from a branch
+      // guessed here: a daily model says "Past its daily cadence" and has no
+      // "Fetched every 1 days" to be missing.
+      const cap = (w) => w[0].toUpperCase() + w.slice(1);
+      const quiet = over.filter((r) => {
+        const want = cap(schedulePhrase(r.m.cadence, true));
+        const keptPromise = schedulePhrase(r.m.cadence, false);
+        return !r.text.includes(want)
+            || (keptPromise && r.text.includes(`Fetched ${keptPromise}`));
+      });
       ok('and says so when the cadence cannot account for it', quiet.length === 0,
-         over.map((r) => `${r.w.id}: ${r.m.age_days}d on a ${r.m.cadence}-day cadence · "${r.text.slice(0, 110)}"`).join(' | '));
+         over.map((r) => `${r.w.id}: ${r.m.age_days}d on a ${r.m.cadence}-day cadence, wants "${cap(schedulePhrase(r.m.cadence, true))}" · "${r.text.slice(0, 110)}"`).join(' | '));
     }
   }
   // The other side: an age clause on a model fetched today would be noise on
@@ -5295,6 +5316,43 @@ await step('the card says how old its cars are', async () => {
     const noisy = rows.filter((r) => /days? ago|Past its/.test(r.text));
     ok('and a model fetched on the record\'s newest day claims no age', noisy.length === 0,
        rows.map((r) => `${r.w.id} · "${r.text.slice(0, 80)}"`).join(' | '));
+  }
+
+  // The fourth surface, and the one that was left behind. The round that
+  // taught the card and the two price tiles to say the age did not touch the
+  // model index, so ONE PAGE said both things about one model: the tile read
+  // "Chevrolet Equinox EV · as of Aug 27, 10 days ago" and the index row three
+  // inches below read "Aug 27 · every 4 days" — the exact sentence that round
+  // existed to delete, on the surface a reader scans all thirty-six models in.
+  // Checked here as agreement between two surfaces of the same page rather
+  // than against a string this file composes: what matters is that they cannot
+  // say different things, and asserting a literal here would just be a fifth
+  // place for the wording to live.
+  if (!aged.length) skip('and the model index says the same thing about the same model',
+                         'every model carrying cars was fetched on the record\'s newest day');
+  else {
+    await open('');
+    const idx = await page.evaluate(() => {
+      const out = {};
+      document.querySelectorAll('table tbody tr').forEach((tr) => {
+        const t = tr.querySelector('.sc-media__title');
+        if (!t) return;
+        out[t.textContent.trim()] = [...tr.querySelectorAll('td')]
+          .map((td) => td.innerText.replace(/\s+/g, ' ').trim())
+          .find((x) => /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b|first run/.test(x)) || '';
+      });
+      return out;
+    });
+    const bad = aged.filter((w) => {
+      const row = idx[modelOf(w).label];
+      if (row === undefined) return false;               // not on the index under that name
+      const m = modelOf(w);
+      return !row.includes(daysAgo(m.age_days))
+          || !row.includes(schedulePhrase(m.cadence, !!m.overdue))
+          || (m.overdue && schedulePhrase(m.cadence, false) && row.includes(schedulePhrase(m.cadence, false)));
+    });
+    ok('and the model index says the same thing about the same model', bad.length === 0,
+       aged.map((w) => `${modelOf(w).label}: ${modelOf(w).age_days}d${modelOf(w).overdue ? ', overdue' : ''} · index row "${idx[modelOf(w).label] ?? '(not on the index)'}"`).join(' | '));
   }
 });
 
@@ -6606,7 +6664,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 297;
+const EXPECTED = 298;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
