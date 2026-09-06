@@ -767,6 +767,82 @@ ok('and the meta row beside it counts the same models',
    `"${meta.slice(0, 120)}" · ${shop} of ${models}`);
 });
 
+// --- naming nothing is a state, not an absence -------------------------------
+// `buyer.shopping` names the models the decision card lays out. Empty is what
+// a person browsing thirty-six models has before they have chosen anything —
+// and the front page answered it by removing its most important block without
+// a word. It is a different state from "the reader's own chips left nothing
+// shopped in view", which is deliberate and stays silent, so both are served
+// here and the checks are what tell them apart.
+await step('naming nothing is a state, not an absence', async () => {
+plan('with no models named the decision card says so instead of vanishing',
+     'and it lays out no cars, because there are none to lay out',
+     'while the reader\'s own chips emptying it stays silent, as before',
+     'and the meta row never counts the same models twice');
+const serveUnshopped = async () => {
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.buyer.shopping = [];
+    for (const b of Object.values(sheet.brands || {}))
+      for (const m of Object.values(b.models || {})) {
+        m.shopping = false;
+        for (const t of Object.values(m.trims || {})) t.shopping = false;
+        for (const x of (m.listings || [])) delete x.shopping;
+      }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+};
+const readHero = () => page.evaluate(() => ({
+  hidden: document.getElementById('hero-card').hidden,
+  hint: (document.getElementById('hero-hint').textContent || '').replace(/\s+/g, ' ').trim(),
+  cars: document.getElementById('hero-cars').children.length,
+  gapHidden: document.getElementById('hero-gap').hidden,
+  meta: (document.getElementById('meta').innerText || '').replace(/\s+/g, ' ').trim(),
+}));
+await serveUnshopped();
+let none;
+try { await open(''); none = await readHero(); } finally { await ctx.unroute('**/data.json'); }
+ok('with no models named the decision card says so instead of vanishing',
+   !none.hidden && /No models are named/.test(none.hint) && /model chips|buyer\.shopping/.test(none.hint),
+   `hidden=${none.hidden} · "${none.hint.slice(0, 150)}"`);
+ok('and it lays out no cars, because there are none to lay out',
+   none.cars === 0 && none.gapHidden === true,
+   `${none.cars} tiles, gap hidden=${none.gapHidden}`);
+
+// The control: models ARE named, and the reader presses a chip for one that is
+// not among them. Same empty hero, different cause, and the page has always
+// been right to stay quiet — the reader knows what they just pressed.
+const shopped = new Set((SHEET.buyer || {}).shopping || []);
+const other = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] }))
+  .find((o) => !Object.keys(o.m.trims || {}).some((t) => shopped.has(t)));
+if (!shopped.size || !other) skip('while the reader\'s own chips emptying it stays silent, as before',
+                                  'this sheet names no shopped models, or every model is shopped');
+else {
+  await open(`?models=${other.w.bk}-${other.w.mk}`);
+  const chip = await readHero();
+  ok('while the reader\'s own chips emptying it stays silent, as before',
+     chip.hidden === true && !/No models are named/.test(chip.hint),
+     `pressing ${other.w.bk}/${other.w.mk}: hidden=${chip.hidden} · "${chip.hint.slice(0, 90)}"`);
+}
+
+// "1 of 36 models · 1 models" — the count twice, and un-pluralised. Always
+// reachable; the ordinary case now that thirty-four of the thirty-six models
+// are not shopped, so almost any chip a reader presses lands on it.
+// The state that PRODUCES it is a chip on a model nobody is shopping — with
+// nShop 0 the last clause falls through to its own count beside the
+// selection's. A first version of this check pressed WATCHED[0], which is a
+// shopped model, so it never visited the bug at all and stayed green with the
+// duplicate restored: a check that cannot fail, caught by mutating the fix.
+const metaQueries = ['', `?models=${WATCHED[0].bk}-${WATCHED[0].mk}`];
+if (other) metaQueries.push(`?models=${other.w.bk}-${other.w.mk}`);
+if (WATCHED[1]) metaQueries.push(`?models=${WATCHED[0].bk}-${WATCHED[0].mk},${WATCHED[1].bk}-${WATCHED[1].mk}`);
+const metas = [none.meta];
+for (const q of metaQueries) { await open(q); metas.push((await readHero()).meta); }
+const dup = metas.find((m) => /\b1 models\b/.test(m) || /of \d+ models · \d+ models/.test(m));
+ok('and the meta row never counts the same models twice', !dup,
+   dup ? `"${dup}"` : metas.map((m) => '"' + m.replace(/^Data through [^·]+· /, '') + '"').join(' · '));
+});
+
 // ---- ns/NS-09 ----
 await step('the filter count announces itself', async () => {
 // Pressing a chip rewrote the tiles, the map, the chart and the table and
@@ -6071,7 +6147,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 277;
+const EXPECTED = 281;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

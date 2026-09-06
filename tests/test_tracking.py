@@ -2836,6 +2836,68 @@ class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
         self.assertTrue(report.startswith("# "))
 
 
+class TestNamingNothingMeansNothingIsBeingShopped(unittest.TestCase):
+    """An empty `buyer.shopping` used to mean every model was being shopped.
+
+    `shopping = any(...) or not SHOPPING` was a fair default for a
+    seven-model watchlist: with nobody named, give the reader full sections
+    rather than an empty report. On thirty-six models it is a false claim
+    about a person. Reproduced by emptying the list and rebuilding: every
+    model was headed "## Shopping: Lucid Air" about a car nobody named, the
+    report ran to 1,373 lines with only six models carrying cars — roughly
+    eight thousand once they all do — and the page's meta row read "36
+    shopping · 0 comparison" for a reader shopping nothing.
+
+    A buyer who has not chosen wants the market on one line per model, which
+    is what the compact section already is. 1,373 lines became 85.
+    """
+
+    def _build(self, shopping):
+        was = (list(T.SHOPPING), {tid: t["shopping"] for tid, t in T.TARGETS.items()})
+        T.SHOPPING[:] = list(shopping)
+        for tid, t in T.TARGETS.items():
+            t["shopping"] = tid in T.SHOPPING
+        try:
+            rows = T.load_history()
+            days = sorted({r["snapshot_date"] for r in rows})
+            latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+            return T.build_outputs(latest, rows, T.build_history(rows))
+        finally:
+            T.SHOPPING[:] = was[0]
+            for tid, t in T.TARGETS.items():
+                t["shopping"] = was[1][tid]
+
+    def test_nobody_named_means_nobody_shopped(self):
+        report, site, _ = self._build([])
+        flagged = [f"{bk}/{mk}" for bk, b in site["brands"].items()
+                   for mk, m in b["models"].items() if m["shopping"]]
+        self.assertEqual(flagged, [], "no model is being shopped")
+        self.assertNotIn("## Shopping:", report,
+                         "and none of them is headed as though it were")
+        self.assertEqual(site["buyer"]["shopping"], [])
+
+    def test_and_the_report_becomes_the_market_rather_than_a_car(self):
+        """The size is the point, not a detail: the compact section is what a
+        buyer who has not chosen actually wants, and the full sections are
+        what made the file unreadable."""
+        short, _, _ = self._build([])
+        long, _, _ = self._build(["bmw-i5-edrive40", "bmw-i7-edrive50"])
+        self.assertLess(len(short.splitlines()), len(long.splitlines()) // 2,
+                        "an unshopped report is a fraction of a shopped one")
+        self.assertIn("## Comparison", short)
+
+    def test_the_shipped_config_still_leads_with_the_cars_it_names(self):
+        """The control. Without it the assertions above pass on a build that
+        flags nothing as shopped under ANY config, which is the same defect
+        pointing the other way."""
+        report, site, _ = self._build(["bmw-i5-edrive40", "bmw-i7-edrive50"])
+        flagged = sorted(f"{bk}/{mk}" for bk, b in site["brands"].items()
+                         for mk, m in b["models"].items() if m["shopping"])
+        self.assertEqual(flagged, ["bmw/i5", "bmw/i7"])
+        self.assertIn("## Shopping: BMW i5", report)
+        self.assertNotIn("## Shopping: Lucid Air", report)
+
+
 class TestDailySeries(unittest.TestCase):
     """A day row holds what the record knew on that day.
 

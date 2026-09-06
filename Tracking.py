@@ -3673,7 +3673,14 @@ def build_outputs(today_rows, all_rows, hist):
             "anchor": ([HOME[0], HOME[1]]
                        if (ANCHOR and coords_ok(*HOME)) else None),
             "scope_label": scope_label(),
-            "shopping": SHOPPING,
+            # A COPY. This exported the live module-level list, so the
+            # published sheet aliased it and anything that touched SHOPPING
+            # after build_outputs() silently rewrote what had already been
+            # built — which nothing in production does, and which is exactly
+            # why it would not be noticed. Found by a test that emptied
+            # SHOPPING, built, restored it, and read the restored value back
+            # out of the sheet it had just built.
+            "shopping": list(SHOPPING),
             "picks": {"count": PICKS.get("count", 4), "per_model": PICKS.get("per_model", 2),
                       # the page hard-coded 2 and nothing published it; both
                       # sides read this now, and 0 means "rank by margin alone"
@@ -3726,7 +3733,19 @@ def build_outputs(today_rows, all_rows, hist):
             m0 = trims[0]
             label = m0["model_label"]
             tids = {t["id"] for t in trims}
-            shopping = any(t["shopping"] for t in trims) or not SHOPPING
+            # An empty `buyer.shopping` means nothing is being shopped, and
+            # every model is a comparison line. It used to mean the OPPOSITE —
+            # `or not SHOPPING` gave every model a FULL section — which was a
+            # fair default for a seven-model watchlist and is a false claim on
+            # a thirty-six-model one. Reproduced by emptying the list and
+            # rebuilding: the report headed every model "## Shopping: Lucid
+            # Air" about a car the buyer never named, ran to 1,373 lines with
+            # only six models carrying cars (roughly eight thousand once they
+            # all do), and the page's own meta row read "36 shopping · 0
+            # comparison" for a reader shopping nothing. A buyer who has not
+            # chosen wants the market on one line per model, which is exactly
+            # what the compact section is.
+            shopping = any(t["shopping"] for t in trims)
             m_rows_all = [r for r in all_rows if r["target"] in tids]
             m_days = sorted({r["snapshot_date"] for r in m_rows_all})
             m_rows = current_rows(all_rows, tids)

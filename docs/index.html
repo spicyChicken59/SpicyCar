@@ -4081,7 +4081,26 @@
     const card = $('hero-card'), host = $('hero-cars'), gap = $('hero-gap');
     const models = heroModels();
     host.textContent = '';
-    if (!models.length) { card.hidden = true; gap.hidden = true; return; }
+    if (!models.length) {
+      // Nothing NAMED is a different state from nothing left after the
+      // reader's own chips, and only one of them is worth a sentence. A
+      // watchlist with an empty buyer.shopping is what a person browsing
+      // thirty-six models has before they have chosen anything — and the
+      // front page answered it by removing its most important block without
+      // a word, which is the one state where a reader most needs telling
+      // what to do next. When the reader's own model chips are what emptied
+      // it, they know: the card stays away, as it always has.
+      gap.hidden = true;
+      const named = (((S.site || {}).buyer || {}).shopping || []).length;
+      if (named) { card.hidden = true; return; }
+      card.hidden = false;
+      $('hero-hint').removeAttribute('title');
+      $('hero-hint').textContent = 'No models are named as the ones you are shopping, '
+        + 'so there is no decision to lay out yet. Press two model chips to put any two '
+        + 'of them side by side, all in — or name their trims in buyer.shopping to pin '
+        + 'them here every day.';
+      return;
+    }
     card.hidden = false;
     const allIn = !!feesCfg();
     const bits = filterBits(true);
@@ -5273,9 +5292,19 @@
         // which is the same falsehood at a size somebody would notice.
         : `${rows.length} electric models, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
+    // Three clauses, and the last two used to be able to say the same number
+    // twice in two different shapes: with a chip pressed on a model nobody is
+    // shopping, this read "1 of 36 models · 1 models" — the count repeated,
+    // and un-pluralised. It was always reachable and it is now the ordinary
+    // case, because thirty-four of the thirty-six models are not shopped, so
+    // almost any chip a reader presses lands on it. The selection clause
+    // already carries the count when there is a selection; the last clause is
+    // the shopping split, and it stands alone only when nothing is selected.
+    const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
     metaRow([`Data through ${fmtDateLong(dataThrough())}`,
-      S.models.size ? `${rows.length} of ${allModels().length} models` : null,
-      nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
+      S.models.size ? `${rows.length} of ${plural(allModels().length, 'model')}` : null,
+      nShop ? `${nShop} shopping · ${rows.length - nShop} comparison`
+            : S.models.size ? null : plural(rows.length, 'model')]);
   }
   function renderOverview() {
     const site = S.site;
