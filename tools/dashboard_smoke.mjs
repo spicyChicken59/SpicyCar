@@ -4035,6 +4035,14 @@ await step('a departure from one query is not a departure from the market', asyn
   if (!subject) {
     skip('the gone card counts a car still listed apart from the departures', 'no model on the sheet has a car that left a watch while still listed');
     skip('and the row says which watch it left and what it asks now', 'no such car');
+    // A sheet with no forwarded listings still has a movement count to check.
+    // Keep this assertion active; only the two forwarding-specific rows skip.
+    if (anyModel) {
+      await open(anyModel.w.q);
+      const r = await read();
+      ok('the movement tile counts only cars that left the market', new RegExp(`${goneCount(anyModel.m)} gone`).test(r.tile),
+         `tile "${(r.tile.match(/\d+ gone/) || ['(no gone clause)'])[0]}" · sheet ${goneCount(anyModel.m)} (no cars still listed)`);
+    } else skip('the movement tile counts only cars that left the market', 'no model holds a departure and two day rows');
   } else {
     await open(subject.w.q); await showAllGone();
     const r = await read();
@@ -4285,7 +4293,12 @@ await step('the floor delta names its cause', async () => {
     const floor = priced[0], next = priced[1];
     planted.listings = planted.listings.filter((x) => x !== floor);
     floor.series = (floor.series || []).filter((pt) => pt[0] <= prev.date);
-    if (!floor.series.length) floor.series = [[prev.date, floor.price]];
+    // Make the served history agree with the served daily floor. The real
+    // car may have cut its price today: preserving yesterday's older price
+    // while changing prev.min_price creates contradictory evidence, which
+    // the production renderer correctly refuses to describe as a departure.
+    const prevFetch = latest((planted.fetch_days || {})[floor.trim_id], prev.date) || prev.date;
+    floor.series = floor.series.filter((pt) => pt[0] < prevFetch).concat([[prevFetch, floor.price]]);
     prev.min_price = floor.price; today.min_price = next.price;
     planted.gone = (planted.gone || []).concat([{ ...floor, last_price: floor.price, last_seen: prev.date, likely: 'delisted', exact }]);
     const wantWhy = `the ${money(floor.price)} car ${exact ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
