@@ -1,6 +1,6 @@
 # SpicyCar design review · 6 September 2026
 
-These are real captures of the public SpicyCar page, not mockups. They preserve
+The desktop images below are real captures of the public SpicyCar page, not mockups. They preserve
 the visual review of the matrix-first redesign in [PR #62](https://github.com/spicyChicken59/SpicyCar/pull/62).
 The figures and dealer photographs are the site's snapshot on that date; they
 are historical evidence, not current listing or financing claims.
