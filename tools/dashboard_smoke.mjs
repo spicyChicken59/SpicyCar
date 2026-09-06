@@ -596,13 +596,54 @@ ok(FRESH, Object.values(newByModel).every((v) => v.fresh < v.rows), JSON.stringi
 // pressed. One selection, so one step: the second reads the chip the first
 // pressed.
 await step('the filter line and the chip beside it', async () => {
-plan('the count measures against the whole watchlist', "a pressed chip's count is still readable");
+plan('the count measures against the whole watchlist',
+     'and it still reads it once the watchlist passes a thousand cars',
+     "a pressed chip's count is still readable");
 const q = '?models=bmw-i5,kia-ev9';
 if (!inSheet(q)) return skipRest(`${q} names a car the watchlist no longer holds`);
 await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
 await open(q);
 const count = await page.textContent('#filter-count');
-ok('the count measures against the whole watchlist', / of \d+ cars/.test(count) && /\+/.test(count), count);
+// The total is written with num(), which is toLocaleString — so it grows a
+// comma at a thousand cars and `\d+` stops matching. The watchlist holds 444
+// today and about 1,148 once all thirty-six models carry cars, so this check
+// was a dated time bomb: CI would go red on an unreviewed bot commit, for a
+// separator. Four other reads of this same element in this file already allow
+// it; this was the one that did not. Read the number and compare it to the
+// sheet, so the check is about the VALUE and not about the shape of it.
+const totalCars = Object.values(SHEET.brands || {})
+  .flatMap((b) => Object.values(b.models || {}))
+  .reduce((n, m) => n + (m.listings || []).length, 0);
+// ONE parser, used by both checks below. The first draft gave each its own
+// copy, and mutating the first left the second passing — two copies of a rule
+// is two places for it to be wrong, and the mutant found it immediately.
+const totalIn = (txt) => Number(((txt.match(/ of ([\d,]+) cars/) || [])[1] || '').replace(/,/g, ''));
+const seenTotal = totalIn(count);
+ok('the count measures against the whole watchlist',
+   seenTotal === totalCars && /\+/.test(count),
+   `${count} · sheet holds ${totalCars}`);
+// Served, because 444 cars cannot exercise the separator and the projection
+// says the full watchlist is about 1,148. Every listing of one model is
+// cloned until the sheet crosses a thousand, with fresh VINs so the page's
+// own de-duplication does not undo it.
+await ctx.route('**/data.json', async (route) => {
+  const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+  const m = Object.values(sheet.brands).flatMap((b) => Object.values(b.models))
+    .sort((a, b2) => (b2.listings || []).length - (a.listings || []).length)[0];
+  const seed = [...(m.listings || [])];
+  let i = 0;
+  while (Object.values(sheet.brands).flatMap((b) => Object.values(b.models))
+    .reduce((n, mm) => n + (mm.listings || []).length, 0) <= 1100)
+    m.listings.push({ ...seed[i % seed.length], vin: `CLONE${String(i++).padStart(12, '0')}` });
+  return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+});
+let big;
+try { await open(q); big = await page.textContent('#filter-count'); }
+finally { await ctx.unroute('**/data.json'); }
+const bigTotal = totalIn(big);
+ok('and it still reads it once the watchlist passes a thousand cars',
+   bigTotal > 1000 && /,/.test(big),
+   `"${big.trim()}" · parsed ${bigTotal}`);
 
 const chipCR = await page.evaluate(() => {
   const n = document.querySelector('#f-model button[aria-pressed="true"] .chip-n');
@@ -6202,7 +6243,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 283;
+const EXPECTED = 284;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
