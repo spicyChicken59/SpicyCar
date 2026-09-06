@@ -274,16 +274,31 @@ def first(obj, paths, default=""):
 
 
 def to_int(v):
+    """A number, or None. Never raises — which is how every caller uses it.
+
+    OverflowError was not in the list, and int(float(...)) raises it: json.loads
+    accepts `Infinity`, `-Infinity` and any literal above ~1e308 by default, so
+    one record whose price, miles, ownerCount, accidentCount or baseMsrp came
+    back non-finite took normalize() down INSIDE the fetch loop — after the
+    calls made so far were billed and before write_rows(), save_fetch_log() or
+    save_spend_history() had run, so the day left no snapshot row, no spend
+    record and no fetch log. A value this function cannot turn into a number is
+    the case it exists for, and infinity is one of those."""
     try:
-        return int(float(str(v).replace(",", "").replace("$", "")))
-    except (TypeError, ValueError):
+        f = float(str(v).replace(",", "").replace("$", ""))
+        return int(f) if math.isfinite(f) else None
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
 def to_float(v):
+    """…and its sibling, which does not overflow (float("inf") is a float) but
+    hands infinity onward. haversine() takes coordinates through it and returns
+    nan; row_distance() then rounds nan to a distance. Not a number, so None."""
     try:
-        return float(v)
-    except (TypeError, ValueError):
+        f = float(v)
+        return f if math.isfinite(f) else None
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -586,9 +601,25 @@ def _ship_bands(raw):
     last edge at the widest band's rate; unsorted, "widest" and "last in the
     list" are different bands, and a descending config bills long hauls at the
     SHORT-haul rate — which reverses the whole point of banding.
+
+    A fourth, added later and for the same reason: a band that is not an object
+    at all. Everything above is one level in, and this is the level out —
+    `"1000:0.7"` where a band belongs raised AttributeError at import, before
+    anything ran, from a module-level constant. The near-identical typo one
+    level deeper (`"per_mile": "one-twenty"`) is named and dropped, and the
+    sibling key does exactly this check for exactly this reason:
+    ship_calibration() says "A quote written with the wrong key is
+    indistinguishable from no quote at all… Silence here means the bands go
+    unchecked". So does a band written the wrong way.
     """
     out, seen_open = [], False
+    if raw is not None and not isinstance(raw, list):
+        print(f"  ! ship_bands is not a list, ignoring it: {raw!r}")
+        return out
     for b in (raw or []):
+        if not isinstance(b, dict):
+            print(f"  ! ship_bands: dropping an entry that is not a band: {b!r}")
+            continue
         rate = to_float(b.get("per_mile"))
         if rate is None:
             print(f"  ! ship_bands: dropping a band with no usable per_mile: {b}")
@@ -626,9 +657,14 @@ def band_cost(miles):
     The bands accumulate like tax brackets rather than one replacing another,
     and that is a correctness requirement, not a preference. The first version
     of this picked a single rate by distance, which made the estimate NON-
-    MONOTONE: at 423 straight-line miles it charged $574 and at 424 it charged
-    $425, so a car one mile further away was $149 cheaper to bring home. Every
-    mile is now billed at its own band's rate, so the total can only rise with
+    MONOTONE: on the bands shipped today, at 423 straight-line miles it charged
+    $599 and at 424 it charged $350, so a car one mile further away was $249
+    cheaper to bring home. (Those were $574 and $425 when this was written,
+    against the ORIGINAL 1.15/0.85/0.68/0.58 — carried forward verbatim when the
+    bands were re-cut, which is the rot ship_for()'s own docstring records
+    happening to it once already. The figures are derived from the live config
+    by a test now, so re-cutting the bands moves them or turns the suite red.)
+    Every mile is now billed at its own band's rate, so the total can only rise with
     distance while the EFFECTIVE per-mile rate is NON-INCREASING across bands —
     which was the whole point of banding.
 
@@ -2203,13 +2239,67 @@ def save_fetch_log(row, path=None, keep=400):
     return hist
 
 
+# The shape delisted() and save_fetch_log() actually index into, checked to the
+# depth they reach rather than at the top level. `log if isinstance(log, dict)`
+# guarded one level and both of them go three further —
+# `(log.get(day) or {}).get(tid)`, `[logged.get(k) for k in keys]`,
+# `f["window"] > price` — so a day, a target or a source of the wrong type
+# raised inside build_outputs(), which main() only reaches once the whole API
+# budget has been spent. Ten shapes did, on a file the run writes itself and a
+# human may edit.
+#
+# One shape is worse than a crash, and it is the reason the window is checked by
+# type and not by truthiness: `"window": true` passed every guard, because
+# isinstance(True, int) is True in Python, and a $59,000 car compared against 1
+# was published as "out of window" — a departure the record then declines to
+# price, silently, on a file nobody would look at twice.
+def _fetch_log_fact(f):
+    """One (day, target, source) record, or None if it is not one."""
+    if not isinstance(f, dict):
+        return None
+    w = f.get("window")
+    if not (w is None or (isinstance(w, (int, float)) and not isinstance(w, bool)
+                          and math.isfinite(w))):
+        return None
+    if not isinstance(f.get("exhausted"), bool) or not isinstance(f.get("failed"), bool):
+        return None
+    return f
+
+
 def load_fetch_log(path=None):
     path = Path(path) if path else FETCH_LOG
     try:
         log = json.loads(path.read_text()) if path.exists() else {}
     except (OSError, ValueError):
         return {}
-    return log if isinstance(log, dict) else {}
+    if not isinstance(log, dict):
+        return {}
+    out, dropped = {}, 0
+    for day, targets in log.items():
+        if not isinstance(targets, dict):
+            dropped += 1
+            continue
+        kept_day = {}
+        for tid, sources in targets.items():
+            if not isinstance(sources, dict):
+                dropped += 1
+                continue
+            kept = {src: fact for src, fact in
+                    ((s, _fetch_log_fact(f)) for s, f in sources.items()) if fact}
+            dropped += len(sources) - len(kept)
+            if kept:
+                kept_day[tid] = kept
+        if kept_day:
+            out[day] = kept_day
+    if dropped:
+        # Loud, because the fallback is a real change of answer: where the log
+        # is silent delisted() judges on what the rows can prove and says "not
+        # checked" for the rest, which is the safe direction and not the same
+        # published number.
+        print(f"  ! {path}: dropped {dropped} malformed entr"
+              f"{'y' if dropped == 1 else 'ies'} — those days fall back to what "
+              "the snapshot rows can prove")
+    return out
 
 
 OVERLAP_LOG = Path("data/source_overlap.json")
@@ -4012,8 +4102,16 @@ def main():
         r["via"] = "|".join(sorted(via.get((tid, vin), ())))
     today_rows = list(rows.values())
     if not today_rows:
-        msg = ("No listings fetched for any target — "
-               "leaving data, report and site untouched.")
+        # What is really true of this path. It said "leaving data, report and
+        # site untouched", and by here save_overlap_history(), save_fetch_log(),
+        # save_spend_history() and save_zip_cache() have all run — so data/
+        # gained the day's spend row and a full set of per-scope fetch facts,
+        # and daily.yml commits them, deliberately and with a comment saying so.
+        # The sentence is the process's exit message, the last line in the
+        # Actions log, and the whole body of the run-FAILED email.
+        msg = ("No listings fetched for any target — the report and the site are "
+               "untouched; today's fetch log and spend row are written, because a "
+               "night that asked and got nothing is a fact the record needs.")
         send_email(msg, subject=f"{APP} — run FAILED {TODAY}")
         sys.exit(msg)
 

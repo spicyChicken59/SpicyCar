@@ -14,6 +14,7 @@ key is set here before the import.
 """
 
 import html as html_mod
+import io
 import json
 import os
 import re
@@ -2794,6 +2795,272 @@ class TestDaysListedAnchor(unittest.TestCase):
             T.INDEX_DATES.clear()
 
 
+# Every shape a hand-edited or half-written data/fetch_log.json can take at the
+# three levels delisted() and save_fetch_log() index into. Ten of them crashed
+# the run inside build_outputs(), which main() reaches only after the whole API
+# budget has been spent; one loaded clean and answered wrongly.
+MALFORMED_LOGS = [
+    ("the day is a list", lambda d, t, g: {d: []}),
+    ("…with something in it", lambda d, t, g: {d: ["x"]}),
+    ("the day is a string", lambda d, t, g: {d: "s"}),
+    ("the day is a number", lambda d, t, g: {d: 3}),
+    ("the day is true", lambda d, t, g: {d: True}),
+    ("the day is null", lambda d, t, g: {d: None}),
+    ("the target is a string", lambda d, t, g: {d: {t: "s"}}),
+    ("the target is a list", lambda d, t, g: {d: {t: ["x"]}}),
+    ("the target is a number", lambda d, t, g: {d: {t: 3}}),
+    ("the source is a string", lambda d, t, g: {d: {t: {"National": "s", "States": "s"}}}),
+    ("the source is a number", lambda d, t, g: {d: {t: {"National": 3, "States": 3}}}),
+    ("the source is a list", lambda d, t, g: {d: {t: {"National": [], "States": []}}}),
+    ("the window is a string", lambda d, t, g: {d: {t: {k: {**g, "window": "sixty"} for k in ("National", "States")}}}),
+    ("the window is a list", lambda d, t, g: {d: {t: {k: {**g, "window": [1]} for k in ("National", "States")}}}),
+    ("the window is true", lambda d, t, g: {d: {t: {k: {**g, "window": True} for k in ("National", "States")}}}),
+    ("the window is not finite", lambda d, t, g: {d: {t: {k: {**g, "window": float("inf")} for k in ("National", "States")}}}),
+    ("exhausted is a word", lambda d, t, g: {d: {t: {k: {**g, "exhausted": "yes"} for k in ("National", "States")}}}),
+    ("failed is a number", lambda d, t, g: {d: {t: {k: {**g, "failed": 1} for k in ("National", "States")}}}),
+    ("the whole file is a list", lambda d, t, g: []),
+    ("the whole file is a string", lambda d, t, g: "nope"),
+]
+
+
+class TestANumberThatIsNotOneIsNone(unittest.TestCase):
+    """to_int() is the file's universal "give me a number or None", and every
+    caller uses it as a function that never raises.
+
+    int(float(...)) raises OverflowError, which was not in the caught list, and
+    json.loads accepts `Infinity`, `-Infinity` and any literal above ~1e308 by
+    default — so one record whose price, miles, ownerCount, accidentCount or
+    baseMsrp came back non-finite took normalize() down INSIDE the fetch loop:
+    after the calls made so far were billed and before write_rows(),
+    save_fetch_log() or save_spend_history() had run, leaving the day with no
+    snapshot row, no spend record and no fetch log for calls that were paid for.
+    """
+
+    NOT_NUMBERS = [float("inf"), float("-inf"), float("nan"), 1e400, "1e400",
+                   "-1e400", "Infinity", "-Infinity", "NaN", "nan",
+                   "$1e400", "1,0e400"]
+
+    def test_a_non_finite_value_is_no_number_at_all(self):
+        for v in self.NOT_NUMBERS:
+            self.assertIsNone(T.to_int(v), f"to_int({v!r})")
+            self.assertIsNone(T.to_float(v), f"to_float({v!r})")
+
+    def test_and_the_numbers_it_always_read_still_read(self):
+        for v, want in (("42", 42), (7, 7), ("$60,999", 60999), ("40000.9", 40000),
+                        (0, 0), ("0", 0), (-3, -3)):
+            self.assertEqual(T.to_int(v), want, f"to_int({v!r})")
+        self.assertIsNone(T.to_int(None))
+        self.assertIsNone(T.to_int("n/a"))
+        self.assertEqual(T.int_or_blank(float("inf")), "")
+
+    def test_a_listing_priced_at_infinity_is_dropped_not_fatal(self):
+        """Through the real normalize(), which is where it landed."""
+        rec = json.loads(Path("data/sample_record.json").read_text())
+        t = T.TARGETS["bmw-i5-m60"]      # the sample record is an M60
+        base = T.normalize(json.loads(json.dumps(rec)), t, Counter())
+        self.assertTrue(base and base.get("price"), "the sample record is a car")
+        for path in (("retailListing", "price"), ("retailListing", "miles"),
+                     ("history", "ownerCount"), ("history", "accidentCount"),
+                     ("vehicle", "baseMsrp")):
+            bad = json.loads(json.dumps(rec))
+            node = bad
+            for k in path[:-1]:
+                node = node.setdefault(k, {})
+            node[path[-1]] = 1e400
+            try:
+                T.normalize(bad, t, Counter())
+            except Exception as e:                        # noqa: BLE001 — the point
+                self.fail(f"{'.'.join(path)} = 1e400 raised {type(e).__name__}: {e}")
+        # …and the coordinates, which took the other road out: to_float handed
+        # infinity to haversine(), whose asin() then raised "math domain error"
+        # in the same fetch loop. The coordinate is refused now, so the car
+        # falls back to its zip — which is what the geocoding rescue is for —
+        # and comes out with a real distance instead of a crash.
+        import math as _math
+        for i in (0, 1):
+            bad = json.loads(json.dumps(rec))
+            bad["location"] = list(bad["location"])
+            bad["location"][i] = 1e400
+            got = T.normalize(bad, t, Counter())
+            self.assertTrue(got, f"location[{i}] = 1e400 dropped the whole car")
+            d = got["distance"]
+            self.assertTrue(d in ("", None) or (isinstance(d, (int, float)) and _math.isfinite(d)),
+                            f"location[{i}] = 1e400 produced a distance of {d!r}")
+
+
+class TestTheNonMonotoneIllustrationIsAboutTheseBands(unittest.TestCase):
+    """The figures README and band_cost() use to argue for marginal banding.
+
+    Both said "$574 at 423 miles and $425 at 424". Those come from the ORIGINAL
+    bands 1.15/0.85/0.68/0.58 and were carried forward verbatim when the bands
+    were re-cut to 1.20/0.70/0.45/0.30 — which is the rot ship_for()'s own
+    docstring records happening to it once already: "Every figure in it was
+    false by the time it was committed". The sweep that class calls for was not
+    run over these two.
+
+    Derived here from the live config rather than typed, so the next re-cut
+    either moves the prose or turns this red.
+    """
+
+    def _replace_model(self, road):
+        """The rejected model: one band's rate applied to the whole distance."""
+        for edge, rate in T.SHIP_BANDS:
+            if edge is None or road <= edge:
+                return round(road * rate)
+        return round(road * T.SHIP_BANDS[-1][1])
+
+    def test_the_two_numbers_both_places_quote(self):
+        lo = self._replace_model(423 * T.SHIP_ROAD_FACTOR)
+        hi = self._replace_model(424 * T.SHIP_ROAD_FACTOR)
+        self.assertGreater(lo, hi, "the illustration is a car one mile further "
+                                   "away costing less")
+        want = f"${lo} at 423 miles and ${hi} at 424"
+        readme = Path("README.md").read_text()
+        self.assertIn(want, readme, f"README quotes something else: {want!r}")
+        # One line, because a docstring wraps and the sentence is the claim.
+        doc = " ".join(T.band_cost.__doc__.split())
+        self.assertIn(f"at 423 straight-line miles it charged ${lo} and at 424 "
+                      f"it charged ${hi}", doc)
+        self.assertIn(f"was ${lo - hi} cheaper to bring home", doc)
+
+    def test_and_the_property_they_are_defending_holds(self):
+        """The point of the illustration, checked rather than illustrated."""
+        prev = -1
+        for d in range(0, 6001, 7):
+            cost = T.band_cost(d * T.SHIP_ROAD_FACTOR)
+            self.assertGreaterEqual(cost, prev, f"{d} miles cost less than {d - 7}")
+            prev = cost
+
+
+class TestAMistypedBandIsNamedNotFatal(unittest.TestCase):
+    """_ship_bands()'s whole docstring is about surviving a hand-edited config,
+    and it checks `per_mile` and `to` one level in — while a band that is not an
+    object at all raised AttributeError from a module-level constant, before
+    anything ran. The sibling key does exactly this check and says why:
+    ship_calibration() calls a quote with the wrong key "indistinguishable from
+    no quote at all"."""
+
+    def test_an_entry_that_is_not_a_band_is_named_and_dropped(self):
+        for bad in ("1000:0.7", 7, ["to", 500], None, True):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                got = T._ship_bands([{"to": 500, "per_mile": 1.2}, bad,
+                                     {"to": None, "per_mile": 0.3}])
+            self.assertEqual(got, [(500.0, 1.2), (None, 0.3)], f"with {bad!r} in the list")
+            self.assertIn("not a band", out.getvalue(), f"with {bad!r} in the list")
+
+    def test_a_ship_bands_that_is_not_a_list_is_named_and_ignored(self):
+        for bad in ("1.20/0.70", {"to": 500, "per_mile": 1.2}, 3):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(T._ship_bands(bad), [], f"{bad!r}")
+            self.assertIn("not a list", out.getvalue(), f"{bad!r}")
+
+    def test_and_a_config_with_none_of_that_is_unchanged(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(T._ship_bands([{"to": 500, "per_mile": 1.2},
+                                            {"to": None, "per_mile": 0.3}]),
+                             [(500.0, 1.2), (None, 0.3)])
+            self.assertEqual(T._ship_bands(None), [])
+        self.assertEqual(T.SHIP_BANDS, T._ship_bands(T.BUYER.get("ship_bands")),
+                         "and the shipped config still reads as it did")
+
+
+class TestAMalformedFetchLogDoesNotKillTheRun(unittest.TestCase):
+    """The one file the run writes for itself and a human may edit.
+
+    load_fetch_log() checked `isinstance(log, dict)` and nothing below it, while
+    delisted() goes three levels deeper — `(log.get(day) or {}).get(tid)`,
+    `[logged.get(k) for k in keys]`, `f["window"] > price` — and
+    save_fetch_log() does the same. Every crash lands inside build_outputs(),
+    which main() reaches only after the entire API budget has been billed: the
+    day would leave no snapshot row and no report for calls that were paid for.
+
+    One shape is worse than a crash and is why the window is checked by TYPE:
+    `"window": true` passed every guard, because isinstance(True, int) is True
+    in Python, and a $59,000 car compared against 1 was published as a departure
+    the record then declines to price — quietly, on a file nobody re-reads.
+    """
+
+    TID = "bmw-i5-m60"
+    GOOD = {"window": 60000, "dim": "price", "exhausted": False, "failed": False, "raw": 40}
+
+    def setUp(self):
+        import tempfile
+        self._keep = (dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES), T.FETCH_LOG)
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        self._td = tempfile.TemporaryDirectory()
+        T.FETCH_LOG = Path(self._td.name) / "fetch_log.json"
+        d1 = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": self.TID, "vin": vin, "snapshot_date": day, "price": price,
+                      "year": "2025", "trim": "M60", "miles": 9000, "state": "IL", "city": "Chicago"})
+            return r
+        self.rows = [row("V" * 17, d1, 59000), row("K" * 17, d1, 40000),
+                     row("K" * 17, T.TODAY, 40000)]
+        self.today = [r for r in self.rows if r["snapshot_date"] == T.TODAY]
+        self.hist = T.build_history(self.rows)
+        self.d1 = d1
+
+    def tearDown(self):
+        pw, ex, fs, log = self._keep
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        T.FETCH_LOG = log
+        self._td.cleanup()
+
+    def _verdict(self, shape):
+        T.FETCH_LOG.write_text(json.dumps(shape))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            gone = T.delisted({self.TID}, self.rows, self.today, self.hist)
+        return {g["vin"]: (g["likely"], g.get("exact")) for g in gone}, out.getvalue()
+
+    def test_the_good_log_is_the_control(self):
+        got, said = self._verdict({T.TODAY: {self.TID: {"National": self.GOOD,
+                                                        "States": self.GOOD}}})
+        self.assertEqual(got["V" * 17], ("delisted", True),
+                         "a window that reached past the car, and it was not there")
+        self.assertNotIn("malformed", said, "nothing to drop in a clean log")
+
+    def test_none_of_them_crashes_and_every_one_says_so(self):
+        bad = []
+        for name, make in MALFORMED_LOGS:
+            shape = make(T.TODAY, self.TID, self.GOOD)
+            try:
+                got, said = self._verdict(shape)
+            except Exception as e:                        # noqa: BLE001 — the point
+                bad.append(f"{name}: {type(e).__name__}: {e}")
+                continue
+            if got["V" * 17] == ("delisted", True):
+                bad.append(f"{name}: still published a confirmed departure")
+        self.assertEqual(bad, [],
+                         "a log the run cannot read must not decide a departure, "
+                         "and must not take the run down after the calls are paid")
+
+    def test_a_boolean_window_is_not_a_window_of_one(self):
+        """isinstance(True, int) — the trap this file's sister project hit at a
+        different level. Read off the loaded log, because the verdict it
+        produces happens to match the fallback's on this fixture and would pin
+        nothing."""
+        T.FETCH_LOG.write_text(json.dumps(
+            {T.TODAY: {self.TID: {"National": {**self.GOOD, "window": True}}}}))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(T.load_fetch_log(), {})
+
+    def test_a_good_entry_beside_a_bad_one_survives(self):
+        """Dropping the file wholesale would throw away the days that are fine,
+        and every one of those is a day whose departures can still be judged
+        exactly."""
+        T.FETCH_LOG.write_text(json.dumps({
+            self.d1: {self.TID: {"National": "rubbish"}},
+            T.TODAY: {self.TID: {"National": self.GOOD, "States": self.GOOD}}}))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            log = T.load_fetch_log()
+        self.assertEqual(list(log), [T.TODAY])
+        self.assertEqual(log[T.TODAY][self.TID]["National"], self.GOOD)
+        self.assertIn("dropped 1 malformed entry", out.getvalue())
+
+
 class TestTheWeeklyLoopKnowsWhenItDidNotLook(unittest.TestCase):
     """The one automation whose stated job is "the remembering".
 
@@ -5012,7 +5279,7 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
                   "state": "IL", "year": "2024", "trim": "eDrive40"})
         return r
 
-    def _drive(self, history, batches, allow_refetch=False):
+    def _drive(self, history, batches, allow_refetch=False, wrote=None):
         """Run the real main() with the API and every write stubbed out.
 
         write_rows is where the fetch loop's work lands, so capturing there and
@@ -5050,12 +5317,19 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
             unittest.mock.patch.object(T, "load_history", lambda: list(history)),
             unittest.mock.patch.object(T, "send_email", lambda *a, **k: None),
             unittest.mock.patch.object(T, "save_zip_cache", lambda *a, **k: None),
-            unittest.mock.patch.object(T, "save_spend_history", lambda row, **k: {}),
-            unittest.mock.patch.object(T, "save_overlap_history", lambda *a, **k: {}),
+            # `wrote` is a list a caller can pass to learn WHICH of these ran
+            # before main() returned — the writers are stubbed so nothing lands
+            # in the working tree, and whether they were reached is the fact one
+            # test below is about.
+            unittest.mock.patch.object(T, "save_spend_history",
+                                       lambda row, **k: ((wrote is not None and wrote.append("data/spend.json")), {})[1]),
+            unittest.mock.patch.object(T, "save_overlap_history",
+                                       lambda *a, **k: ((wrote is not None and wrote.append("data/source_overlap.json")), {})[1]),
             # …and the fetch log, or driving main() writes a data/fetch_log.json
             # of stub numbers into the working tree — which daily.yml would then
             # `git add data` and commit as a real day's record
-            unittest.mock.patch.object(T, "save_fetch_log", lambda *a, **k: {}),
+            unittest.mock.patch.object(T, "save_fetch_log",
+                                       lambda *a, **k: ((wrote is not None and wrote.append("data/fetch_log.json")), {})[1]),
             unittest.mock.patch.dict(os.environ, env, clear=True),
         ]
         for p_ in patches:
@@ -5074,6 +5348,28 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         finally:
             for p_ in reversed(patches):
                 p_.stop()
+
+    def test_a_night_that_fetched_nothing_says_what_it_wrote(self):
+        """The exit message is the last line in the Actions log and the whole
+        body of the run-FAILED email, and it said "leaving data, report and site
+        untouched" — after save_overlap_history(), save_fetch_log() and
+        save_spend_history() had all run. daily.yml commits data/ on this path,
+        deliberately and with a comment saying so, so the record gained a spend
+        row and a full set of per-scope fetch facts under a sentence saying
+        nothing moved. The report and the site really are untouched; the fix is
+        the sentence, not the writes."""
+        wrote = []
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        _, captured, out = self._drive([self._hist_row(yesterday)],
+                                       lambda *a: [], wrote=wrote)
+        self.assertNotIn("rows", captured, "nothing was fetched, so nothing is written")
+        self.assertIn("data/spend.json", wrote)
+        self.assertIn("data/fetch_log.json", wrote)
+        msg = str(out.code)
+        self.assertNotIn("leaving data", msg,
+                         f"data/ moved on this path — {sorted(set(wrote))}: {msg}")
+        self.assertIn("the report and the site are untouched", msg)
+        self.assertIn("fetch log and spend row are written", msg)
 
     # ---- the guard ----------------------------------------------------------
     def test_an_already_fetched_day_spends_nothing(self):
