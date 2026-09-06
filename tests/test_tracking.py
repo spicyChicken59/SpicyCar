@@ -2541,6 +2541,155 @@ class TestDelisted(unittest.TestCase):
 # Market stats: the negotiation context — how long cars sit, how often and
 # how much they get cut, and each car's staleness within its own model.
 # --------------------------------------------------------------------------
+class TestNarrowingTheWatchlistIsNotAMarketEvent(unittest.TestCase):
+    """A car the config stopped asking for did not leave the market.
+
+    `years` is sent to the API and also filtered client-side, so narrowing it
+    makes every stored car outside the new range stop coming back — and every
+    test in delisted() then reads that absence as a query having looked and
+    not found the car. Measured on this repo's own record before the rule
+    existed: restricting the watchlist to 2024 and newer retires 35 of the 37
+    cars bmw-i7-xdrive60 was holding, 26 of bmw-ix-m's 36 and 23 of
+    bmw-ix-xdrive's 30, and all 84 would have been published as "GONE — the
+    listing ended", dated to the night of a config edit, counted by
+    sale_stats() as cars that left the market and priced by exit_stats().
+
+    The word is "out of scope" and it is decided before any window test,
+    because after the edit the queries were asking a different question.
+    """
+
+    def setUp(self):
+        self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
+        self._fs, self._log = set(T.FAILED_SCOPES), T.FETCH_LOG
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+        self.tid = "bmw-i5-edrive40"
+        self._years = list(T.TARGETS[self.tid]["years"])
+
+    def tearDown(self):
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(self._pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(self._fs)
+        T.FETCH_LOG = self._log
+        T.TARGETS[self.tid]["years"] = self._years
+
+    def row(self, vin, day, year, price=45000, miles=10000):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": self.tid, "vin": vin, "snapshot_date": day,
+                  "price": price, "year": str(year), "miles": miles,
+                  "state": "IL", "city": "Chicago"})
+        return r
+
+    def _verdict(self, year, years, price=45000, miles=10000):
+        """One car seen on an earlier day and not on the latest, judged by a
+        query that saw its whole scope — the strongest case there is for
+        calling an absence a departure."""
+        T.TARGETS[self.tid]["years"] = years
+        d1, d2 = "2026-08-01", T.TODAY
+        gone = self.row("G" * 17, d1, year, price, miles)
+        gone["listed_since"] = "2026-07-01"
+        rows = [gone,
+                self.row("K" * 17, d1, 2025), self.row("K" * 17, d2, 2025)]
+        today = [r for r in rows if r["snapshot_date"] == d2]
+        T.EXHAUSTED.add((self.tid, "States"))
+        T.EXHAUSTED.add((self.tid, "National"))
+        out = T.delisted({self.tid}, rows, today, T.build_history(rows))
+        return {g["vin"]: g for g in out}["G" * 17]
+
+    def test_a_model_year_the_watchlist_dropped_is_not_a_departure(self):
+        self.assertEqual(self._verdict(2023, ["2024", "2025", "2026"])["likely"],
+                         "out of scope",
+                         "a 2023 car on a watch that now asks for 2024+ did not "
+                         "leave the market — the query left it")
+
+    def test_the_same_car_inside_the_years_is_still_a_departure(self):
+        """The half that makes the test above load-bearing.
+
+        Without it, `likely = "out of scope"` unconditionally would pass — and
+        so would a rule that never fires, since both would be checked only on
+        the side they were written for. This is the same setup, one field
+        different, and it must reach the opposite word.
+        """
+        self.assertEqual(self._verdict(2024, ["2024", "2025", "2026"])["likely"],
+                         "delisted",
+                         "an exhaustive query looked for a 2024 car on a 2024+ "
+                         "watch and did not find it: that is a real departure")
+
+    def test_a_watch_naming_no_years_still_judges_every_car(self):
+        """`years: []` means "every year", and an empty list is falsy — so a
+        predicate written as `if year not in t["years"]` would call every car
+        on an unrestricted watch out of scope. Six of this repo's targets
+        inherit no years at all."""
+        self.assertEqual(self._verdict(2019, [])["likely"], "delisted")
+
+    def test_a_row_with_no_year_is_judged_by_the_window_not_by_the_config(self):
+        """A blank year cannot be shown to be outside anything. Guessing
+        "out of scope" there would hide a real departure behind a missing
+        field — the same silence-into-a-verdict move fetch_log_row() exists
+        to stop."""
+        T.TARGETS[self.tid]["years"] = ["2024", "2025", "2026"]
+        d1, d2 = "2026-08-01", T.TODAY
+        blank = self.row("G" * 17, d1, "")
+        rows = [blank, self.row("K" * 17, d1, 2025), self.row("K" * 17, d2, 2025)]
+        T.EXHAUSTED.add((self.tid, "States"))
+        T.EXHAUSTED.add((self.tid, "National"))
+        out = T.delisted({self.tid}, rows,
+                         [r for r in rows if r["snapshot_date"] == d2],
+                         T.build_history(rows))
+        self.assertEqual({g["vin"]: g for g in out}["G" * 17]["likely"], "delisted")
+
+    def test_the_narrowness_is_deliberate_price_and_mileage_are_not_this(self):
+        """min_price, max_miles and cpo_only are NOT watchlist moves.
+
+        A car's asking price, odometer and certification all change while it
+        sits, so a stored row outside those may be a car that genuinely left
+        the tracked market — which is exactly the reading delisted()'s own
+        docstring argues for the CPO watches, and it has to survive this. Only
+        the model year is fixed at the factory and stored verbatim, so only
+        the model year can prove the config moved rather than the car.
+        """
+        T.TARGETS[self.tid]["years"] = ["2024", "2025", "2026"]
+        floor = T.TARGETS[self.tid].get("min_price", 0)
+        self.assertEqual(
+            self._verdict(2024, ["2024", "2025", "2026"], price=max(1, floor - 1))["likely"],
+            "delisted",
+            "a car below today's min_price is still judged on the market, not "
+            "on the config")
+        self.assertEqual(
+            self._verdict(2024, ["2024", "2025", "2026"], miles=400000)["likely"],
+            "delisted",
+            "and so is one past any mileage cap")
+
+    def test_the_word_reaches_no_number_the_record_publishes(self):
+        """Every consumer of a departure requires the word "delisted", so a
+        new word is excluded from the sale spans, the exit prices, the cohort
+        test and the events feed by construction. This is what says so — and
+        the delisted control beside it is what stops it passing on an empty
+        list, which is how a rule that counted nothing at all would look.
+        """
+        moved = self._verdict(2023, ["2024", "2025", "2026"])
+        kept = self._verdict(2024, ["2024", "2025", "2026"])
+        self.assertEqual(T.sale_stats([moved]).get("n_departures", 0), 0)
+        self.assertEqual(T.sale_stats([kept]).get("n_departures", 0), 1,
+                         "the control: an identical row inside the years IS "
+                         "counted, so the assertion above is about the word "
+                         "and not about an empty list")
+        self.assertFalse([g for g in [moved] if g["likely"] == "delisted"])
+
+    def test_the_report_names_the_watchlist_rather_than_the_market(self):
+        """The shortlist line for such a car must not read "missing".
+
+        The verdict table is a dict with a fallback, so an unknown word does
+        not crash — it prints "missing <day>", which is a claim about the
+        market on a car the market never lost.
+        """
+        src = Path("Tracking.py").read_text()
+        i = src.index('"out of scope": ')
+        sentence = src[i:src.index("}.get(", i)]
+        self.assertIn("no longer watched", sentence)
+        self.assertNotIn("missing", sentence)
+
+
 class TestDailySeries(unittest.TestCase):
     """A day row holds what the record knew on that day.
 

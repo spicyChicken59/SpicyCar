@@ -3675,7 +3675,8 @@ await step('since your visit', async () => {
        'a reload on the same data day repeats it rather than losing it',
        'a first visit says nothing',
        'and a remembered day before the record',
-       'and a slot a dead link already claims');
+       'and a slot a dead link already claims',
+       'a car the watchlist dropped is not the market losing it');
   const buyer = SHEET.buyer || {}, f = buyer.fees || null, P0 = buyer.picks || {};
   const want = new Set(buyer.shopping || []);
   if (!want.size) return skipRest('this sheet names no shopped trims');
@@ -3725,12 +3726,17 @@ await step('since your visit', async () => {
       const less = live.filter((x) => { const then = priceOn(x); return then != null && x.price != null && x.price < then; }).length;
       const liveVins = new Set((o.m.listings || []).map((x) => x.vin));
       const gone = (o.m.gone || []).filter((g) => tids.has(g.trim_id) && g.last_seen >= since && !liveVins.has(g.vin));
-      const exact = gone.filter((g) => g.exact && g.likely === 'delisted').length, unseen = gone.length - exact;
+      // Same split as the page: a watchlist edit is not the market moving,
+      // and `unseen` is a remainder that would otherwise absorb it.
+      const moved = gone.filter((g) => g.likely === 'out of scope').length;
+      const real = gone.filter((g) => g.likely !== 'out of scope');
+      const exact = real.filter((g) => g.exact && g.likely === 'delisted').length, unseen = real.length - exact;
       const ledger = ledgerOf(o.m);
       const then = ledger && ledger.filter((d) => d.day <= since).pop(), now = ledger && ledger[ledger.length - 1];
       const floor = then && now ? (then.v === now.v ? `floor unchanged at ${money(now.v)}` : `floor ${money(then.v)} → ${money(now.v)}`) : '';
-      const left = !gone.length ? 'none gone' : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen` : exact ? `${exact} gone` : `${unseen} stopped being seen, none confirmed gone`;
-      bits.push(`${o.label} — ${[floor, `${fresh} new`, `${less} ask less than then`, left].filter(Boolean).join(', ')}`);
+      const left = !real.length ? 'none gone' : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen` : exact ? `${exact} gone` : `${unseen} stopped being seen, none confirmed gone`;
+      const dropped = moved ? `${moved} dropped from the watchlist` : '';
+      bits.push(`${o.label} — ${[floor, `${fresh} new`, `${less} ask less than then`, left, dropped].filter(Boolean).join(', ')}`);
     }
     return bits.length ? `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.` : '';
   };
@@ -3774,6 +3780,37 @@ await step('since your visit', async () => {
   const r5 = await read();
   ok('and a slot a dead link already claims', !r5.hidden && !r5.text && /not tracked|no longer|not on/i.test(r5.other),
      r5.text ? `the sentence won over the notice: "${r5.text.slice(0, 60)}"` : `notice: "${r5.other}"`);
+  // Served, both ways round: this sentence's "stopped being seen" count is a
+  // REMAINDER, so a car the watchlist dropped would have been reported as the
+  // market losing it — the same collapse the departures card had, one screen
+  // up. One row, labelled twice, is what tells the two apart; asserting only
+  // the 'out of scope' side would pass on a page that printed the watchlist
+  // clause for every absence.
+  const target = models.map((o) => ({ o, g: (o.m.gone || []).find((g) => want.has(g.trim_id) && g.last_seen >= since
+      && !(o.m.listings || []).some((x) => x.vin === g.vin)) })).find((x) => x.g);
+  if (!target) skip('a car the watchlist dropped is not the market losing it', 'no shopped model has a departure inside the window');
+  else {
+    const say = async (word) => {
+      await ctx.route('**/data.json', async (route) => {
+        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        const mm = sheet.brands[target.o.bk].models[target.o.mk];
+        const row = mm.gone.find((g) => g.vin === target.g.vin);
+        row.likely = word; if (word === 'delisted') row.exact = true;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      try { await plant({ through: since, since: null }); await open(''); return (await read()).text; }
+      finally { await ctx.unroute('**/data.json'); }
+    };
+    const asGone = await say('delisted');
+    const asMoved = await say('out of scope');
+    const nOf = (txt, re) => { const m = txt.match(re); return m ? Number(m[1]) : null; };
+    const goneBefore = nOf(asGone, new RegExp(target.o.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^;]*?(\\d+) gone'));
+    const goneAfter = nOf(asMoved, new RegExp(target.o.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^;]*?(\\d+) gone'));
+    ok('a car the watchlist dropped is not the market losing it',
+       !/dropped from the watchlist/.test(asGone) && /1 dropped from the watchlist/.test(asMoved)
+         && goneBefore !== null && goneAfter === goneBefore - 1,
+       `as delisted: "${asGone.slice(0, 150)}" · as out of scope: "${asMoved.slice(0, 170)}"`);
+  }
   await plant(null);
 });
 
@@ -4044,10 +4081,16 @@ await step('a departure from one query is not a departure from the market', asyn
     const nDel = gone.filter((g) => g.likely === 'delisted' && !still(g)).length;
     const nStill = gone.filter(still).length;
     const nOow = gone.filter((g) => !still(g) && g.likely === 'out of window').length;
-    const nNc = gone.length - nDel - nStill - nOow;
+    // 'out of scope' is the fourth word — the watchlist moved, not the car.
+    // Counted here rather than folded into the remainder for the same reason
+    // the page counts it: a remainder silently renames every word it does
+    // not know.
+    const nOos = gone.filter((g) => !still(g) && g.likely === 'out of scope').length;
+    const nNc = gone.length - nDel - nStill - nOow - nOos;
     return [`${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
             nStill ? `${nStill} left a watch while the ${nStill === 1 ? 'car is' : 'cars are'} still listed above` : null,
             nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
+            nOos ? `${nOos} dropped by a watchlist change, not by leaving the market` : null,
             nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null].filter(Boolean).join(' · ');
   };
   const goneCount = (m) => { const daily = m.daily || []; if (daily.length < 2) return 0; const prev = daily[daily.length - 2].date;
@@ -4101,6 +4144,72 @@ await step('a departure from one query is not a departure from the market', asyn
       } finally { await ctx.unroute('**/data.json'); }
     }
   }
+});
+
+// --- a watchlist edit is not a market event ----------------------------------
+// Narrowing `years` makes every stored car outside the new range stop coming
+// back, and delisted() used to read that as a query having looked and not
+// found the car: on this repo's own record, restricting to 2024+ retires 84
+// cars across three BMW watches and would have published every one of them as
+// "GONE — the listing ended". Tracking.py calls that "out of scope"; this is
+// the half that says the PAGE knows the word. It matters here specifically
+// because nNc was a remainder — `gone.length - nDel - nStill - nOow` — so any
+// word this file did not name was silently renamed "not checked on the day
+// they vanished", which is false about a car no fetch will ask for again.
+await step('a watchlist edit reads as a watchlist edit, not a departure', async () => {
+  plan('the gone card counts a car the watchlist dropped as its own thing',
+       'and the row says the model years moved, not that a fetch is owed',
+       'and the same row under a word the page does know reads differently');
+  const still = (g) => (g.still_listed && (g.still_listed.trim || g.still_listed.trim_id) ? g.still_listed : null);
+  const host = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] }))
+    .find((o) => (o.m.gone || []).some((g) => !still(g) && g.likely !== 'out of scope'));
+  if (!host) {
+    for (const n of ['the gone card counts a car the watchlist dropped as its own thing',
+                     'and the row says the model years moved, not that a fetch is owed',
+                     'and the same row under a word the page does know reads differently'])
+      skip(n, 'no watched model carries a departure to re-label');
+    return;
+  }
+  const victim = (host.m.gone || []).find((g) => !still(g) && g.likely !== 'out of scope');
+  const readGone = async () => page.evaluate(() => ({
+    hint: ((document.getElementById('gone-hint') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+    rows: [...document.querySelectorAll('#gone-table tbody tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()),
+  }));
+  const serveWith = async (word) => {
+    const planted = JSON.parse(JSON.stringify(host.m));
+    planted.gone.find((g) => g.vin === victim.vin).likely = word;
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[host.w.bk].models[host.w.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(host.w.q);
+      if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await page.waitForTimeout(300); }
+      return await readGone();
+    } finally { await ctx.unroute('**/data.json'); }
+  };
+  const moved = await serveWith('out of scope');
+  ok('the gone card counts a car the watchlist dropped as its own thing',
+     /\b1 dropped by a watchlist change, not by leaving the market\b/.test(moved.hint)
+       && !/1 not checked on the day it vanished/.test(moved.hint),
+     `"${moved.hint.slice(-190)}"`);
+  const movedRow = moved.rows.find((t) => t.includes(String(victim.vin)));
+  ok('and the row says the model years moved, not that a fetch is owed',
+     !!movedRow && movedRow.includes('outside the model years now watched')
+       && !/not checked that day|GONE|the listing ended/.test(movedRow),
+     movedRow ? `"${movedRow.slice(-150)}"` : `no row for ${String(victim.vin).slice(-6)} among ${moved.rows.length}`);
+  // The control. Without it both assertions above pass on a page that prints
+  // the watchlist sentence for EVERY absence — which is the same defect
+  // pointing the other way, and the reason the counts are counted rather
+  // than subtracted.
+  const nc = await serveWith('not checked');
+  const ncRow = nc.rows.find((t) => t.includes(String(victim.vin)));
+  ok('and the same row under a word the page does know reads differently',
+     !/dropped by a watchlist change/.test(nc.hint) && /not checked on the day/.test(nc.hint)
+       && !!ncRow && ncRow.includes('not checked that day')
+       && !ncRow.includes('outside the model years now watched'),
+     `"${nc.hint.slice(-160)}" · row ${ncRow ? `"${ncRow.slice(-110)}"` : 'missing'}`);
 });
 
 // --- a cohort of mixed trims prices the mix, not the car ---------------------
@@ -5906,7 +6015,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 270;
+const EXPECTED = 274;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

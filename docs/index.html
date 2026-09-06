@@ -3580,8 +3580,15 @@
     // are indistinguishable from outside, which market_line() and exitNote()
     // both say at length. The claim the data supports is that it stopped being
     // advertised.
+    // Four words, not three. 'out of scope' is the watchlist moving rather
+    // than the car going — see watchlist_moved() in Tracking.py — and the
+    // else branch below used to swallow it into 'not checked recently',
+    // which tells the reader a fetch is owed on a car no fetch will ever ask
+    // for again.
     const goneLine = gone ? (stillTxt(x) || (x.likely === 'delisted' ? 'GONE — the listing ended'
-      : (x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale' : 'not checked recently'))) : null;
+      : x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale'
+      : x.likely === 'out of scope' ? 'no longer watched — outside the model years this watch now asks for'
+      : 'not checked recently')) : null;
     const price = gone ? x.last_price : x.price;
     const media = el('div', { class: 'sc-photo-card__media' }, thumbFor(gone ? null : x, true),
       el('div', { class: 'sc-photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
@@ -5104,11 +5111,18 @@
     const nDel = gone.filter(isDep).length;
     const nStill = gone.filter(stillListed).length;
     const nOow = gone.filter((g) => !stillListed(g) && g.likely === 'out of window').length;
-    const nNc = gone.length - nDel - nStill - nOow;
+    // Counted, not left to the subtraction: nNc is a remainder, so every word
+    // this function does not name becomes 'not checked on the day they
+    // vanished' — a sentence that is false about a car the watchlist stopped
+    // asking for, and one that would have been printed 84 times the night
+    // this repo's own years were narrowed to 2024+.
+    const nOos = gone.filter((g) => !stillListed(g) && g.likely === 'out of scope').length;
+    const nNc = gone.length - nDel - nStill - nOow - nOos;
     const splitTxt = [
       `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
       nStill ? `${nStill} left a watch while the ${nStill === 1 ? 'car is' : 'cars are'} still listed above` : null,
       nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
+      nOos ? `${nOos} dropped by a watchlist change, not by leaving the market` : null,
       nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null,
     ].filter(Boolean).join(' · ');
     // The card holds every absence, and only some absences are departures —
@@ -5153,7 +5167,10 @@
     for (const g of shownG) {
       const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
       const likely = stillListed(g) ? el('span', { class: 'sc-note' }, stillTxt(g))
-        : g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null;
+        : g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' },
+            g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off'
+            : g.likely === 'out of scope' ? 'outside the model years now watched'
+            : 'not checked that day') : null;
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
           gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · ${seenLabel(g) || 'seen 0 days'}${drop}`) : null,
@@ -5758,17 +5775,25 @@
       const less = live.filter((x) => { const then = priceOn(x, since); return then != null && hasPrice(x) && x.price < then; }).length;
       const liveVins = new Set((o.m.listings || []).map((x) => x.vin));
       const gone = (o.m.gone || []).filter((g) => tids.has(g.trim_id) && g.last_seen >= since && !liveVins.has(g.vin));
-      const exact = gone.filter((g) => g.exact && g.likely === 'delisted').length, unseen = gone.length - exact;
+      // A car the watchlist stopped asking for did not stop being seen — the
+      // sentence is about what the MARKET did since your last visit, and
+      // `unseen` is a remainder, so without this split an edit to `years`
+      // would report itself as cars vanishing from the market. It is still
+      // said out loud, because those rows do leave the page.
+      const moved = gone.filter((g) => g.likely === 'out of scope').length;
+      const real = gone.filter((g) => g.likely !== 'out of scope');
+      const exact = real.filter((g) => g.exact && g.likely === 'delisted').length, unseen = real.length - exact;
       const ledger = floorLedger(o, P);
       const then = ledger && ledger.drawn.filter((d) => d.day <= since).pop();
       const floor = then && ledger.last
         ? (then.v === ledger.last.v ? `floor unchanged at ${money(ledger.last.v)}` : `floor ${money(then.v)} → ${money(ledger.last.v)}`)
         : '';
-      const left = !gone.length ? 'none gone'
+      const left = !real.length ? 'none gone'
         : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen`
         : exact ? `${exact} gone`
         : `${unseen} stopped being seen, none confirmed gone`;
-      bits.push(`${o.m.label || o.mk} — ${[floor, `${fresh} new`, `${less} ask less than then`, left].filter(Boolean).join(', ')}`);
+      const dropped = moved ? `${moved} dropped from the watchlist` : '';
+      bits.push(`${o.m.label || o.mk} — ${[floor, `${fresh} new`, `${less} ask less than then`, left, dropped].filter(Boolean).join(', ')}`);
     }
     if (!bits.length) return;
     n.appendChild(el('p', { class: 'sc-hint', 'data-since': since }, `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.`));

@@ -1825,6 +1825,10 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin, record_day):
                                  "cut-off, probably still for sale",
                 "not checked": "missing — not checked since it was last "
                                "seen, so nothing is known yet",
+                # The watchlist moved, not the car: see watchlist_moved().
+                # Never "missing", which would be a claim about the market.
+                "out of scope": "no longer watched — outside the model years "
+                                "this watch now asks for",
             }.get(g["likely"], missing)
             if still:
                 verdict = (f"left the {g.get('trim_label') or 'watch'} — the same VIN is "
@@ -3076,6 +3080,40 @@ def daily_stats(rows, days=None):
     return out
 
 
+def watchlist_moved(t, r):
+    """Did the WATCHLIST move out from under this car, rather than the car go?
+
+    A stored row whose model year is outside its target's current `years` did
+    not leave the market. The query left it. Narrowing `years` to 2024 and
+    newer on this repo's own record retires 35 of the 37 cars the i7 xDrive60
+    watch was holding, 26 of the iX M's 36 and 23 of the iX xDrive's 30 — and
+    without this every one of those 84 is published as "GONE — the listing
+    ended", dated to the night of a config edit, and counted by sale_stats()
+    as a car that left the market.
+
+    Only the model year, and deliberately so. A year is fixed at the factory
+    and stored verbatim in the CSV, so a row outside the range can ONLY have
+    got there by an edit to targets.json. Every other filter normalize()
+    applies is either mutable or unreconstructable:
+
+      * `min_price`, `max_miles`, `cpo_only` — a car's asking price, odometer
+        and certification all move while it sits, so a row outside those may
+        be a car that genuinely left the tracked market. That is the reading
+        delisted()'s own docstring argues for the CPO watches, and it must
+        survive this.
+      * `trim_match` / `trim_exclude` — normalize() searches four API fields
+        (vehicle.trim, .style, .series, .model) and the CSV keeps one of
+        them, so the check cannot be reproduced from a stored row and a
+        false positive here would silently hide a real departure.
+
+    Returns the reason, or "" when today's watchlist still asks for this car.
+    """
+    year = str(to_int(r.get("year")) or "")
+    if t.get("years") and year and year not in [str(y) for y in t["years"]]:
+        return "model year"
+    return ""
+
+
 def delisted(tids, all_rows, today_rows, hist):
     """Vehicles seen before but not today. Because each query only returns
     the cheapest N, a car priced above the fetch window for its trim may
@@ -3278,7 +3316,13 @@ def delisted(tids, all_rows, today_rows, hist):
                         or (last_val > cutoff
                             and (pooled is None or last_val <= pooled))):
                     unknown = True
-        if van_day is None:
+        moved = watchlist_moved(t, r)
+        if moved:
+            # First, and ahead of every window test: the queries after the
+            # edit were asking a different question, so what they did or did
+            # not return says nothing about this car. See watchlist_moved().
+            likely = "out of scope"
+        elif van_day is None:
             likely = "not checked"      # not fetched again since last seen
         elif unknown:
             likely = "not checked"      # the day's queries cannot answer for it
