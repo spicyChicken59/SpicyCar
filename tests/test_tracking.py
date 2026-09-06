@@ -2704,6 +2704,76 @@ class TestNarrowingTheWatchlistIsNotAMarketEvent(unittest.TestCase):
         self.assertNotIn("missing", sentence)
 
 
+class TestWhatTheReadmeSaysAboutRanking(unittest.TestCase):
+    """The prose about how the front page is ordered, held to the code.
+
+    An earlier draft of README said a cheap model "wins any cheapest-first
+    ranking". Nothing on the front page is ranked by price, so the sentence
+    named a mechanism that does not exist — and a wrong mechanism argues for
+    the wrong fix. These pin the three facts the corrected paragraph rests on,
+    because a paragraph about ordering is exactly the kind of prose that rots
+    when the ordering changes.
+    """
+
+    @staticmethod
+    def car(vin, pct, model, local=True, shopping=False):
+        return {"vin": vin, "pick_pct": pct, "pick_stand": "under",
+                "model_label": model, "local": local, "shopping": shopping}
+
+    def test_a_cohort_never_crosses_a_model(self):
+        """score_picks takes ONE model's listings and one label, so a $27,000
+        EV9 can never be measured against a $65,000 i7. The claim that the
+        margins are within-model is a fact about the signature."""
+        import inspect
+        sig = list(inspect.signature(T.score_picks).parameters)
+        self.assertEqual(sig, ["listings", "model_label"])
+        pool = [{"price": 40000 + 500 * i, "miles": 20000, "year": "2024",
+                 "trim": "eDrive40", "accidents": 0, "usage": "Personal Use"}
+                for i in range(12)]
+        scored = T.score_picks(pool, "BMW i5")
+        self.assertTrue(scored)
+        self.assertEqual({p["model_label"] for p in scored}, {"BMW i5"},
+                         "every score carries the one label it was given")
+
+    def test_the_drivable_list_reserves_seats_and_the_shipped_list_does_not(self):
+        """The asymmetry README names. `reserve_shopping` holds the first N
+        drivable seats for the models being shopped; the worth-the-ship list
+        is ranked by margin alone, so a cheap model can take all of it."""
+        scored = ([self.car(f"F{i}", 0.40 - i / 100, f"Cheap {i}", local=False)
+                   for i in range(6)]
+                  + [self.car(f"S{i}", 0.05 - i / 1000, f"Shopped {i}",
+                              local=False, shopping=True) for i in range(3)]
+                  + [self.car(f"L{i}", 0.40 - i / 100, f"Cheap {i}") for i in range(6)]
+                  + [self.car(f"P{i}", 0.05 - i / 1000, f"Shopped {i}",
+                              shopping=True) for i in range(3)])
+        local, far = T.split_picks(scored, 4, per_model=2, reserve=2)
+        self.assertEqual(sum(1 for p in local if p["shopping"]), 2,
+                         "two drivable seats are held for the shopped models")
+        self.assertEqual(sum(1 for p in far if p["shopping"]), 0,
+                         "and the shipped list holds none — the margins alone "
+                         "decide it, which is what README says")
+
+    def test_a_bigger_margin_on_a_cheaper_car_outranks_a_smaller_one(self):
+        """The defect itself, stated as a test rather than as an adjective: a
+        margin is a ratio and a ratio does not know what a car costs. If a
+        later change makes price class part of the order, this fails and the
+        README paragraph beside it has to be rewritten — which is the point."""
+        cheap = self.car("A", 0.35, "Kia EV9", local=False)
+        dear = self.car("B", 0.04, "BMW i7", local=False)
+        _, far = T.split_picks([dear, cheap], 2, per_model=2, reserve=2)
+        self.assertEqual([p["vin"] for p in far], ["A", "B"])
+
+    def test_the_readme_paragraph_names_the_rule_the_config_carries(self):
+        readme = " ".join(Path("README.md").read_text().split())
+        reserve = T.PICKS.get("reserve_shopping")
+        per_model = T.PICKS.get("per_model")
+        self.assertTrue(reserve and per_model, "the config carries both knobs")
+        self.assertIn("`picks.per_model` caps each model at two", readme)
+        self.assertEqual(per_model, 2, "…and two is what it is set to")
+        self.assertIn("holds the first two drivable seats", readme)
+        self.assertEqual(reserve, 2, "…and two is what it is set to")
+
+
 class TestDailySeries(unittest.TestCase):
     """A day row holds what the record knew on that day.
 

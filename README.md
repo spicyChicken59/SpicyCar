@@ -95,9 +95,26 @@ Two things are configured, separately:
   best-seller is the EQB at around $35,000 used, not the EQE SUV; Volvo's is the EX30,
   not the EX90; Genesis's is the GV60, not the Electrified GV70; Tesla's is the Model Y,
   not the Model S. Five of the rows are therefore market coverage rather than
-  cross-shops. Nothing in the config expresses that difference yet, so a $30,000
-  completeness row wins any cheapest-first ranking against every genuine rival — which
-  is a real defect and is listed on the roadmap rather than quietly patched.
+  cross-shops, and nothing in the config expresses that difference.
+
+  An earlier draft of this paragraph said a completeness row "wins any cheapest-first
+  ranking", and that is wrong about the mechanism — worth correcting rather than
+  deleting, because the wrong mechanism suggests the wrong fix. Nothing on the front
+  page is ranked by price. The picks are ranked by how far under **its own model's**
+  typical price a car sits, cohorts never cross models, `picks.per_model` caps each
+  model at two, and `picks.reserve_shopping` holds the first two drivable seats for the
+  models actually being shopped — a rule `choose_picks_reserving` exists for and whose
+  docstring records the exact failure it was written against. On today's sheet the
+  drivable picks really are an i5, an i7, an iX and an Ioniq 9.
+
+  What is true, and is the defect, is that **price class is nowhere in the ranking**.
+  A $27,025 Kia EV9 at 35% under a typical EV9 outranks a $64,729 i7 at 4% under a
+  typical i7, because a margin is a ratio and a ratio does not know what a car costs.
+  The drivable list is half-protected by the reserve; the shipped list has no reserve at
+  all. With seven models that was a curiosity. With thirty-six it means a buyer looking
+  at $50,000-$90,000 cars can open the page to four picks they would never buy. The
+  budget filter is the lever that exists; a notion of class is the one that does not,
+  and it is on the roadmap rather than quietly patched.
 
   The list is meant to move with the decision. When it narrowed to the i5 against the i7, the
   i4 stood down — at full depth on a daily cadence it was ten calls a day, a third of the whole
@@ -353,10 +370,10 @@ window finally meets the peak.
 - A second buyer profile — the config is already shaped for it.
 - Drill below state: county or metro.
 - **Say which rows are cross-shops and which are market coverage.** One EV per brand puts
-  a $30,000 Equinox EV and a $75,000 Rivian R1S in one ranking, and cheapest-first hands
-  the front page to the coverage rows forever. A per-model flag, and the picks and the
-  best-value order reading it, is the fix; the counts and the market chart should keep
-  every row.
+  a $27,000 Kia EV9 and a $75,000 Rivian R1S in one pick list ranked by margin, and a
+  margin is a ratio that does not know what a car costs. A per-model flag — or a band
+  taken from the budget the reader already sets — read by the picks and the best-value
+  order, is the fix; the counts, the map and the market chart should keep every row.
 
 ## Author
 
