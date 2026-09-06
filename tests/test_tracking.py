@@ -4022,6 +4022,128 @@ class TestTheCutOffProseNamesBothAxes(unittest.TestCase):
                       "…and the record says which axis it was")
 
 
+# The slowest tier — one EV from each brand outside BMW and the five with a
+# record — is DERIVED, not typed. It was 10 and is 15, and every place that
+# named the number also named the ordinal word for it, so a literal here would
+# be the same rot in a new file. `max` is sound because the prose's own claim is
+# that this tier is the slowest one, and
+# test_the_config_has_no_tier_the_prose_does_not_name fails if a cadence the
+# prose does not name appears above or below it.
+TAIL_CADENCE = max(t["cadence"] for t in T.TARGETS.values())
+# The word the sentences use. A number with no word raises rather than
+# defaulting, because a silent wrong word is exactly what this derivation is
+# for — "every 15th day" is not what either surface says.
+_ORDINAL_WORD = {2: "other", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth",
+                 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth",
+                 12: "twelfth", 14: "fourteenth", 15: "fifteenth",
+                 16: "sixteenth", 18: "eighteenth", 20: "twentieth",
+                 21: "twenty-first", 28: "twenty-eighth", 30: "thirtieth"}
+TAIL_CADENCE_WORD = _ORDINAL_WORD[TAIL_CADENCE]
+
+
+class TestTheStatesQueryPaidForItself(unittest.TestCase):
+    """The measurement README's decision rests on, held three ways.
+
+    The 28 national-only targets were standing on `sources_for()`'s premise —
+    that a second query into the buyer's own states re-fetches a subset of the
+    national answer. `data/source_overlap.json` exists to test that premise and
+    had never been read. It is false for exactly the targets it was applied to:
+    the redundancy is real at `depth: full`, where the national query fetches
+    about a hundred cars, and it collapses at `depth: light`, where it fetches
+    twenty — the cheapest twenty in America, of which almost none are drivable.
+
+    Pinning it needs care the obvious way does not survive. The log is appended
+    to and `git add data`-ed by the daily job, so a test comparing the prose to
+    the LIVE log turns CI red on the next tracker run — the fourth number in
+    this repo's prose to rot would have been replaced by one that rots nightly.
+    So the window the prose cites is frozen as a fixture, and the three checks
+    below divide the work: the fixture cannot be invented, the prose cannot
+    drift from the fixture, and the FINDING — not the number — is what is asked
+    of the live log.
+    """
+
+    WINDOW = Path("tests/fixtures/source_overlap_window.json")
+
+    @classmethod
+    def frozen(cls):
+        return json.loads(cls.WINDOW.read_text())
+
+    @staticmethod
+    def share(rows):
+        """States cars found, and the share of them the national query missed."""
+        st = sum(r["states"] for r in rows)
+        return st, sum(r["states_only"] for r in rows), (sum(r["states_only"] for r in rows) / st if st else None)
+
+    def test_every_frozen_observation_is_one_the_log_really_recorded(self):
+        """The fixture is evidence, so it has to BE evidence. Each row is
+        checked against the live log by its own day and target — the log only
+        grows, so a frozen row that has gone missing or changed means the
+        fixture was edited to fit a sentence."""
+        live = json.loads(Path("data/source_overlap.json").read_text())
+        obs = self.frozen()["observations"]
+        self.assertEqual(28, len(obs), "the prose names 28 observations")
+        missing, differs = [], []
+        for r in obs:
+            got = live.get(r["day"], {}).get(r["target"])
+            if got is None:
+                missing.append(f'{r["day"]} {r["target"]}'); continue
+            want = [r["states"], r["national"], r["both"], r["states_only"]]
+            if list(got[:4]) != want:
+                differs.append(f'{r["day"]} {r["target"]}: log {list(got[:4])} vs frozen {want}')
+        self.assertEqual([], missing, f"frozen rows the live log does not hold: {missing}")
+        self.assertEqual([], differs, f"frozen rows the live log contradicts: {differs}")
+
+    def test_the_percentages_the_readme_quotes_are_the_ones_the_window_yields(self):
+        obs = self.frozen()["observations"]
+        readme = " ".join(Path("README.md").read_text().split())
+        window = self.frozen()["window"]
+        self.assertIn(f"between {window[0]} and {window[1]}", readme,
+                      "the prose must name the window it read")
+        st, only, _ = self.share(obs)
+        self.assertIn(f"States query found {st} cars and {only} of them were invisible", readme)
+        for depth, pct in (("full", None), ("light", None)):
+            rows = [r for r in obs if r["depth"] == depth]
+            self.assertTrue(rows, f"no {depth} observation in the window")
+            _, _, share = self.share(rows)
+            self.assertIn(f"`depth: {depth}` target", readme)
+            self.assertIn(f"{round(share * 100)}%", readme,
+                          f"the {depth} share is {share:.0%} and the prose does not say so")
+        split = len([r for r in obs if r["depth"]])
+        self.assertIn(f"cover {split} of the {len(obs)}", readme,
+                      "…and the prose must own the rows neither group covers")
+
+    def test_the_finding_still_holds_on_the_log_as_it_stands_today(self):
+        """The one that is allowed to fail. Everything above pins a sentence to
+        a frozen window; this asks the CURRENT log the question the decision
+        turns on, and it is deliberately about the gap rather than either
+        number, because the numbers move every night and the gap is the reason
+        28 targets changed shape.
+
+        A depth that has left the watchlist is skipped rather than guessed: a
+        row whose target no longer exists cannot be attributed to a group.
+        """
+        live = json.loads(Path("data/source_overlap.json").read_text())
+        rows = {"full": [], "light": []}
+        for day, tgts in live.items():
+            for tid, v in tgts.items():
+                t = T.TARGETS.get(tid)
+                if not t or t.get("depth") not in rows:
+                    continue
+                st, nat, both, only = v[:4]
+                rows[t["depth"]].append({"states": st, "states_only": only})
+        for d in rows:
+            if not rows[d]:
+                self.skipTest(f"the live log holds no {d} observation to compare")
+        _, _, full = self.share(rows["full"])
+        _, _, light = self.share(rows["light"])
+        self.assertGreater(light, full + 0.25,
+                           "the whole reason 28 targets ask their own states is that a "
+                           f"light target loses far more by not asking: light {light:.0%} "
+                           f"vs full {full:.0%} on today's log. If that gap has closed, the "
+                           "cadence those targets pay for it in is being spent for nothing "
+                           "and README's paragraph is out of date.")
+
+
 class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
     """"BMW siblings run every other day, rival brands every third day", on a
     watchlist where four of the six non-shopped BMW targets are on cadence 3.
@@ -4076,23 +4198,31 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         self.assertFalse([t for t in kept if T.TARGETS[t].get("national_only")],
                          f"…and that they are the ones that kept both queries: {kept}")
 
-    def test_the_tenth_day_tier_is_one_national_only_ev_a_brand(self):
+    def test_the_slowest_tier_is_one_ev_a_brand_asking_both_queries(self):
         """Derived, not counted. This asserted `== 27` and went red the moment
         a brand was added — which is the guard working, and also a literal
         doing a rule's job. The rule is: every brand outside BMW that is not
-        one of the five with a record, one target each, national query only.
-        The prose's own number is pinned separately, against the config."""
-        ref = sorted(self._by_cadence().get(10, []))
+        one of the five with a record, one target each.
+
+        It said "national query only" for as long as the tier was national_only,
+        and that half is now inverted rather than dropped: the overlap log
+        settled the question these targets were standing on the wrong side of,
+        so the tier asks BOTH queries and the assertion is that none of them is
+        national_only. Inverted rather than deleted because it is the same rule
+        the prose states, and a rule that stops being asserted the moment it
+        changes is the assertion this file exists to avoid.
+        """
+        ref = sorted(self._by_cadence().get(TAIL_CADENCE, []))
         kept = {T.TARGETS[t]["brand"] for t in self._by_cadence().get(4, [])}
         self.assertEqual({T.TARGETS[t]["brand"] for t in ref},
                          {t["brand"] for t in T.TARGETS.values()} - kept - {"bmw"})
-        self.assertTrue(all(T.TARGETS[t].get("national_only") for t in ref),
-                        "the prose says national query only")
+        self.assertFalse([t for t in ref if T.TARGETS[t].get("national_only")],
+                         "the prose says every one of them asks its own states too")
         self.assertEqual(len({T.TARGETS[t]["brand"] for t in ref}), len(ref),
                          "…one EV from each")
 
     def test_the_config_has_no_tier_the_prose_does_not_name(self):
-        named = {1, 2, 3, 4, 10}
+        named = {1, 2, 3, 4, TAIL_CADENCE}
         others = {c for c in self._by_cadence() if c not in named}
         self.assertFalse(others, f"both surfaces name {sorted(named)}, "
                                  f"the config also has {sorted(others)}")
@@ -4117,13 +4247,14 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         """
         brands = {t["brand"] for t in T.TARGETS.values()}
         others = len(brands - {"bmw"})
-        tenth = len([t for t in T.TARGETS.values() if t["cadence"] == 10])
+        tail = len([t for t in T.TARGETS.values() if t["cadence"] == TAIL_CADENCE])
+        word = TAIL_CADENCE_WORD
         readme = " ".join(Path("README.md").read_text().split())
         how = " ".join(Path("docs/how.html").read_text().split())
         self.assertIn(f"each of the other {others} brands", readme)
-        self.assertIn(f"other {tenth} brands every tenth day", readme)
-        self.assertIn(f"other {tenth} brands every tenth day", how)
-        self.assertEqual(others, tenth + 5,
+        self.assertIn(f"other {tail} brands every {word} day", readme)
+        self.assertIn(f"other {tail} brands every {word} day", how)
+        self.assertEqual(others, tail + 5,
                          "the two tiers outside BMW are the five with a record "
                          "and the rest; if that stops being true the sentences "
                          "above describe a watchlist that no longer exists")
@@ -5665,8 +5796,17 @@ class TestConfig(unittest.TestCase):
                          "the trim's own override")
         self.assertEqual(target("bmw-i5-xdrive40")["min_price"], 20000,
                          "…and its sibling takes the model's")
-        self.assertTrue(target("tesla-model-y")["national_only"],
-                        "the brand's, on a reference watch")
+        # The brand layer used to be demonstrated with national_only, which no
+        # brand carries any more — the long tail asks both queries now, and the
+        # one target still holding the flag holds it on a TRIM, which is the
+        # layer above. Cadence is the live brand-layer override: defaults say
+        # 1, the brand says 15, and the trimless model under it restates
+        # neither.
+        self.assertEqual(target("tesla-model-y")["cadence"], 15,
+                         "the brand's, over the defaults' 1")
+        self.assertEqual(json.loads(Path("targets.json").read_text())
+                         ["watchlist"]["tesla"]["models"]["model-y"].get("cadence"),
+                         None, "…and the model does not restate it")
         self.assertEqual(target("bmw-i5-m60")["years"],
                          ["2024", "2025", "2026", "2027"],
                          "and the 2024+ rule from defaults, which no target "

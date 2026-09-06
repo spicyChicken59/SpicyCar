@@ -72,6 +72,7 @@
     "pages": 2
   },
 
+  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 85%. All 28 of these are light, so their National query returns the twenty cheapest of that model IN AMERICA and almost none of them are drivable. Paid for out of cadence, not budget: 10 -> 15 days buys the second source at 973 calls/month against 1000 and a worst day of 38 against 40, and 15 keeps plan_horizon() at 60 days where 13 and 14 push it to 156 and 84. The cost is real and is freshness: twice a month instead of three times. bmw-i5-cpo keeps national_only and is not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call.",
   "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is.",
   "legacy_ids": {
     "i5-edrive40": "bmw-i5-edrive40",
@@ -308,8 +309,7 @@
     "tesla": {
       "label": "Tesla",
       "make": "Tesla",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "model-y": { "label": "Tesla Model Y", "model": "Model Y" }
       }
@@ -318,8 +318,7 @@
     "ford": {
       "label": "Ford",
       "make": "Ford",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "mustang-mach-e": { "label": "Ford Mustang Mach-E", "model": "Mustang Mach-E,Mach-E,Mustang Mach E" }
       }
@@ -328,8 +327,7 @@
     "gmc": {
       "label": "GMC",
       "make": "GMC",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "hummer-ev": { "label": "GMC Hummer EV", "model": "Hummer EV,Hummer EV Pickup,Hummer EV SUV" }
       }
@@ -338,8 +336,7 @@
     "genesis": {
       "label": "Genesis",
       "make": "Genesis",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "gv60": { "label": "Genesis GV60", "model": "GV60" }
       }
@@ -348,8 +345,7 @@
     "nissan": {
       "label": "Nissan",
       "make": "Nissan",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "ariya": { "label": "Nissan Ariya", "model": "Ariya,ARIYA" }
       }
@@ -358,8 +354,7 @@
     "mercedes": {
       "label": "Mercedes-Benz",
       "make": "Mercedes-Benz",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "eqb": { "label": "Mercedes-Benz EQB", "model": "EQB,EQB 250+,EQB 300,EQB 350" }
       }
@@ -368,8 +363,7 @@
     "porsche": {
       "label": "Porsche",
       "make": "Porsche",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "taycan": { "label": "Porsche Taycan", "model": "Taycan" }
       }
@@ -378,8 +372,7 @@
     "volkswagen": {
       "label": "Volkswagen",
       "make": "Volkswagen",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "id4": { "label": "Volkswagen ID.4", "model": "ID.4,ID4,ID 4" }
       }
@@ -388,8 +381,7 @@
     "volvo": {
       "label": "Volvo",
       "make": "Volvo",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "ex30": { "label": "Volvo EX30", "model": "EX30" }
       }
@@ -398,8 +390,7 @@
     "polestar": {
       "label": "Polestar",
       "make": "Polestar",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "polestar-3": { "label": "Polestar 3", "model": "3,Polestar 3" }
       }
@@ -408,8 +399,7 @@
     "mini": {
       "label": "MINI",
       "make": "MINI",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "countryman-electric": { "label": "MINI Countryman Electric", "model": "Countryman Electric,Countryman SE,Countryman SE ALL4" }
       }
@@ -418,8 +408,7 @@
     "cadillac": {
       "label": "Cadillac",
       "make": "Cadillac",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "lyriq": { "label": "Cadillac Lyriq", "model": "LYRIQ,Lyriq" }
       }
@@ -428,8 +417,7 @@
     "jeep": {
       "label": "Jeep",
       "make": "Jeep",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "wagoneer-s": { "label": "Jeep Wagoneer S", "model": "Wagoneer S" }
       }
@@ -438,8 +426,7 @@
     "dodge": {
       "label": "Dodge",
       "make": "Dodge",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "charger-daytona": { "label": "Dodge Charger Daytona", "model": "Charger Daytona" }
       }
@@ -448,8 +435,7 @@
     "ram": {
       "label": "Ram",
       "make": "Ram",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "promaster-ev": { "label": "Ram ProMaster EV", "model": "ProMaster EV" }
       }
@@ -458,8 +444,7 @@
     "rivian": {
       "label": "Rivian",
       "make": "Rivian",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "r1s": { "label": "Rivian R1S", "model": "R1S" }
       }
@@ -468,8 +453,7 @@
     "vinfast": {
       "label": "VinFast",
       "make": "VinFast",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "vf8": { "label": "VinFast VF 8", "model": "VF 8,VF8" }
       }
@@ -478,8 +462,7 @@
     "fisker": {
       "label": "Fisker",
       "make": "Fisker",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "ocean": { "label": "Fisker Ocean", "model": "Ocean" }
       }
@@ -488,8 +471,7 @@
     "toyota": {
       "label": "Toyota",
       "make": "Toyota",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "bz4x": { "label": "Toyota bZ4X", "model": "bZ4X,bZ,BZ4X" }
       }
@@ -498,8 +480,7 @@
     "honda": {
       "label": "Honda",
       "make": "Honda",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "prologue": { "label": "Honda Prologue", "model": "Prologue" }
       }
@@ -508,8 +489,7 @@
     "acura": {
       "label": "Acura",
       "make": "Acura",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "zdx": { "label": "Acura ZDX", "model": "ZDX" }
       }
@@ -518,8 +498,7 @@
     "lexus": {
       "label": "Lexus",
       "make": "Lexus",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "rz": { "label": "Lexus RZ", "model": "RZ,RZ 300e,RZ 450e" }
       }
@@ -528,8 +507,7 @@
     "subaru": {
       "label": "Subaru",
       "make": "Subaru",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "solterra": { "label": "Subaru Solterra", "model": "Solterra" }
       }
@@ -538,8 +516,7 @@
     "maserati": {
       "label": "Maserati",
       "make": "Maserati",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "grecale-folgore": { "label": "Maserati Grecale Folgore", "model": "Grecale Folgore" }
       }
@@ -548,8 +525,7 @@
     "lotus": {
       "label": "Lotus",
       "make": "Lotus",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "eletre": { "label": "Lotus Eletre", "model": "Eletre" }
       }
@@ -558,8 +534,7 @@
     "rolls-royce": {
       "label": "Rolls-Royce",
       "make": "Rolls-Royce",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "spectre": { "label": "Rolls-Royce Spectre", "model": "Spectre" }
       }
@@ -568,8 +543,7 @@
     "fiat": {
       "label": "Fiat",
       "make": "Fiat",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "500e": { "label": "Fiat 500e", "model": "500e,500E" }
       }
@@ -578,8 +552,7 @@
     "jaguar": {
       "label": "Jaguar",
       "make": "Jaguar",
-      "national_only": true,
-      "cadence": 10,
+      "cadence": 15,
       "models": {
         "i-pace": { "label": "Jaguar I-PACE", "model": "I-PACE,I-Pace,IPACE" }
       }

@@ -141,16 +141,16 @@ Two things are configured, separately:
 
 ## Design decisions
 
-**It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
+**It runs on about 32 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
 each. So a target is fetched twice — once filtered to the buyer's states plus `search_states`
 (the API takes a comma list, so eight states cost one call) and once nationally — unless it is
-`national_only`, which is how the reference brands are affordable. Each target has a *depth* (the
+`national_only`, which now means the nationwide certified watch and nothing else. Each target has a *depth* (the
 two being shopped get both sorts at two pages **plus a newest-first page**, so a fresh listing is
 seen the day it appears instead of whenever it ranks among the cheapest; the rest get the cheapest
 20) and a *cadence*, per target rather than per brand: the two shopped trims run daily, the i5's
 other three (the certified watch among them) every other day, the i7's other trims and the iX every
 third day, the five models already carrying a record every fourth day, and one EV from each of the
-other 28 brands every tenth day. Spread evenly across the cycle in watchlist order. A hard
+other 28 brands every fifteenth day. Spread evenly across the cycle in watchlist order. A hard
 `budget_per_day` makes the script refuse to run if any day of the cadence cycle would exceed it — a
 fortnight at least, and longer when the cadences repeat over more than that, which they now do: the
 cycle is 60 days — and it prints the plan before it starts.
@@ -162,16 +162,42 @@ eight calls a day, ~240 a month, reserved and never spent. `data/spend.json` rec
 `banked`, apart from `unrun` — calls a target was due and failed to spend, which is a broken target
 and not headroom.
 
-**Why the reference brands are national-only, and the shopped ones are not.** Half a target's
-calls go to asking the buyer's own eight states the question the national query just asked, and
-whether that is worth paying for is an empirical question `data/source_overlap.json` has been
-answering since the audit that added it: on this record the States query returns 15 to 18 cars a
-fetch that the national one did not — 17 of 20 on the EV9, 18 of 19 on the Ioniq 5, 16 of 18 on
-the iX xDrive — because the twenty cheapest in the country and the twenty cheapest within driving
-range are almost disjoint sets. So it is not the redundant half it looks like, and the models this
-buyer might actually drive to see keep it. A brand on the list for the shape of the market does
-not: the national cheapest-20 at 2024+ is a consistent yardstick across brands, and it costs one
-call. Promoting one is a two-field edit — `national_only: false` and a faster cadence.
+**Why every model asks its own states, and what that cost.** Half a target's calls go to asking
+the buyer's own eight states the question the national query just asked, and whether that is worth
+paying for is an empirical question `data/source_overlap.json` has been answering since the audit
+that added it. It has now answered it. Over the 28 observations recorded between 2026-09-02 and
+2026-09-06 the States query found 310 cars and 232 of them were invisible to the national one,
+because the twenty cheapest in the country and the twenty cheapest within driving range are almost
+disjoint sets.
+
+The split that governs it is not which brand a model belongs to but **how big a catch its national
+query is allowed**. A `depth: full` target fetches about a hundred cars nationally and loses 21% by
+dropping its States half — that is the redundancy `sources_for()` describes. A `depth: light` target
+fetches twenty, the whole country, cheapest first, and loses **85%**. (Those two cover 23 of the 28;
+the other 5 sit on targets the watchlist has since restructured away.) The 28 one-EV-a-brand targets
+are all light, so their national query was returning the twenty cheapest of that model *in America*
+and almost none of them were drivable. For 28 of 36 models the page could not show a car this buyer
+could go and see.
+
+They ask both queries now, and it is paid for out of cadence rather than budget: every tenth day
+became every fifteenth, which buys the second source at 973 calls a month against 1,000 and a worst
+day of 38 against 40. Fifteen rather than thirteen or fourteen because it keeps the cadence cycle at
+60 days, where those push it to 156 and 84. The cost is real and it is freshness — twice a month
+instead of three times, so a car listed and sold inside a fortnight can pass unseen. That is the
+trade, and it is the right way round: a car you cannot drive to is not a car you were going to buy.
+
+`bmw-i5-cpo` keeps `national_only` and is not part of this. A nationwide certified watch is national
+by definition, not to save a call — and at `depth: full` it is the case where the States half really
+is close to redundant. Standing a model down again is a two-field edit — `national_only: true` and a
+slower cadence — and the overlap log is what should decide it.
+
+Those figures are a measurement, not a constant, and the log they come from is appended to and
+committed every day — so the window they were read off is frozen in
+`tests/fixtures/source_overlap_window.json`. One test holds every row of it against the live log, so
+the evidence cannot drift from what was actually observed; another recomputes these percentages from
+it, so the sentences above cannot drift from the evidence; and a third asks the *current* log whether
+a light target still loses far more than a full one, which is the finding rather than the number and
+is the one that should fail if the market changes its mind.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are

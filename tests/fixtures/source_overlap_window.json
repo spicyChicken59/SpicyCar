@@ -1,0 +1,262 @@
+{
+ "//": "The evidence behind README's \"Why every model asks its own states\" paragraph, frozen. data/source_overlap.json is appended to and COMMITTED by the daily job, so a test pinning the prose against the live log would turn CI red on the next tracker run and the numbers would be a moving target nobody could quote. This is the window the prose cites; a test asserts every row here still appears identically in the live log, so the evidence cannot be invented, and a separate test asserts the FINDING still holds on the live log, which is the part that must not rot.",
+ "window": [
+  "2026-09-02",
+  "2026-09-06"
+ ],
+ "depth_at_measurement": "Read off TARGETS the day the fixture was cut. A null depth is a target the watchlist has since restructured away (the two Lucid trims and the Ioniq 5); its rows count in the total and in neither depth group.",
+ "observations": [
+  {
+   "day": "2026-09-02",
+   "target": "bmw-i5-edrive40",
+   "depth": "full",
+   "states": 6,
+   "national": 79,
+   "both": 6,
+   "states_only": 0
+  },
+  {
+   "day": "2026-09-02",
+   "target": "bmw-i7-edrive50",
+   "depth": "full",
+   "states": 7,
+   "national": 88,
+   "both": 4,
+   "states_only": 3
+  },
+  {
+   "day": "2026-09-02",
+   "target": "lucid-air-grand-touring",
+   "depth": null,
+   "states": 13,
+   "national": 17,
+   "both": 0,
+   "states_only": 13
+  },
+  {
+   "day": "2026-09-02",
+   "target": "lucid-air-touring",
+   "depth": null,
+   "states": 19,
+   "national": 16,
+   "both": 2,
+   "states_only": 17
+  },
+  {
+   "day": "2026-09-03",
+   "target": "audi-a6-etron",
+   "depth": "light",
+   "states": 5,
+   "national": 20,
+   "both": 3,
+   "states_only": 2
+  },
+  {
+   "day": "2026-09-03",
+   "target": "bmw-i5-edrive40",
+   "depth": "full",
+   "states": 6,
+   "national": 82,
+   "both": 6,
+   "states_only": 0
+  },
+  {
+   "day": "2026-09-03",
+   "target": "bmw-i5-m60",
+   "depth": "light",
+   "states": 13,
+   "national": 19,
+   "both": 1,
+   "states_only": 12
+  },
+  {
+   "day": "2026-09-03",
+   "target": "bmw-i5-xdrive40",
+   "depth": "light",
+   "states": 5,
+   "national": 20,
+   "both": 2,
+   "states_only": 3
+  },
+  {
+   "day": "2026-09-03",
+   "target": "bmw-i7-edrive50",
+   "depth": "full",
+   "states": 6,
+   "national": 88,
+   "both": 4,
+   "states_only": 2
+  },
+  {
+   "day": "2026-09-03",
+   "target": "bmw-ix-m",
+   "depth": "light",
+   "states": 17,
+   "national": 20,
+   "both": 1,
+   "states_only": 16
+  },
+  {
+   "day": "2026-09-03",
+   "target": "bmw-ix-xdrive",
+   "depth": "light",
+   "states": 18,
+   "national": 14,
+   "both": 2,
+   "states_only": 16
+  },
+  {
+   "day": "2026-09-04",
+   "target": "bmw-i5-edrive40",
+   "depth": "full",
+   "states": 6,
+   "national": 79,
+   "both": 6,
+   "states_only": 0
+  },
+  {
+   "day": "2026-09-04",
+   "target": "bmw-i7-edrive50",
+   "depth": "full",
+   "states": 7,
+   "national": 88,
+   "both": 4,
+   "states_only": 3
+  },
+  {
+   "day": "2026-09-04",
+   "target": "bmw-i7-m70",
+   "depth": "light",
+   "states": 2,
+   "national": 20,
+   "both": 0,
+   "states_only": 2
+  },
+  {
+   "day": "2026-09-04",
+   "target": "bmw-i7-xdrive60",
+   "depth": "light",
+   "states": 20,
+   "national": 20,
+   "both": 3,
+   "states_only": 17
+  },
+  {
+   "day": "2026-09-04",
+   "target": "kia-ev9",
+   "depth": "light",
+   "states": 20,
+   "national": 17,
+   "both": 3,
+   "states_only": 17
+  },
+  {
+   "day": "2026-09-05",
+   "target": "bmw-i5-edrive40",
+   "depth": "full",
+   "states": 6,
+   "national": 77,
+   "both": 5,
+   "states_only": 1
+  },
+  {
+   "day": "2026-09-05",
+   "target": "bmw-i5-m60",
+   "depth": "light",
+   "states": 14,
+   "national": 20,
+   "both": 1,
+   "states_only": 13
+  },
+  {
+   "day": "2026-09-05",
+   "target": "bmw-i5-xdrive40",
+   "depth": "light",
+   "states": 4,
+   "national": 20,
+   "both": 3,
+   "states_only": 1
+  },
+  {
+   "day": "2026-09-05",
+   "target": "bmw-i7-edrive50",
+   "depth": "full",
+   "states": 6,
+   "national": 90,
+   "both": 4,
+   "states_only": 2
+  },
+  {
+   "day": "2026-09-05",
+   "target": "hyundai-ioniq5",
+   "depth": null,
+   "states": 19,
+   "national": 9,
+   "both": 1,
+   "states_only": 18
+  },
+  {
+   "day": "2026-09-05",
+   "target": "lucid-air-grand-touring",
+   "depth": null,
+   "states": 18,
+   "national": 17,
+   "both": 0,
+   "states_only": 18
+  },
+  {
+   "day": "2026-09-05",
+   "target": "lucid-air-touring",
+   "depth": null,
+   "states": 18,
+   "national": 17,
+   "both": 2,
+   "states_only": 16
+  },
+  {
+   "day": "2026-09-06",
+   "target": "audi-a6-etron",
+   "depth": "light",
+   "states": 4,
+   "national": 20,
+   "both": 2,
+   "states_only": 2
+  },
+  {
+   "day": "2026-09-06",
+   "target": "bmw-i5-edrive40",
+   "depth": "full",
+   "states": 6,
+   "national": 78,
+   "both": 6,
+   "states_only": 0
+  },
+  {
+   "day": "2026-09-06",
+   "target": "bmw-i7-edrive50",
+   "depth": "full",
+   "states": 6,
+   "national": 89,
+   "both": 4,
+   "states_only": 2
+  },
+  {
+   "day": "2026-09-06",
+   "target": "bmw-ix-m",
+   "depth": "light",
+   "states": 20,
+   "national": 20,
+   "both": 1,
+   "states_only": 19
+  },
+  {
+   "day": "2026-09-06",
+   "target": "bmw-ix-xdrive",
+   "depth": "light",
+   "states": 19,
+   "national": 15,
+   "both": 2,
+   "states_only": 17
+  }
+ ]
+}

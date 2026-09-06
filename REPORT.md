@@ -596,34 +596,34 @@ _By asking price, with a shipping estimate per car, on a slower cadence: the 20 
 - **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,735 _(every 4 days)_
 - **Lucid Air** — not fetched yet · first run 2026-09-06 _(every 4 days)_
 - **Chevrolet Equinox EV** — 31 cars · 12 drivable · lowest asking $19,600 (Wake Forest, NC) + $766 shipping · drivable from $24,385 (Greenwood, IN) · median asking $25,648 _(every 4 days · as of 2026-08-27)_
-- **Tesla Model Y** — not fetched yet · first run 2026-09-11 _(every 10 days)_
-- **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-10 _(every 10 days)_
-- **GMC Hummer EV** — not fetched yet · first run 2026-09-09 _(every 10 days)_
-- **Genesis GV60** — not fetched yet · first run 2026-09-08 _(every 10 days)_
-- **Nissan Ariya** — not fetched yet · first run 2026-09-07 _(every 10 days)_
-- **Mercedes-Benz EQB** — not fetched yet · first run 2026-09-06 _(every 10 days)_
-- **Porsche Taycan** — not fetched yet · first run 2026-09-15 _(every 10 days)_
-- **Volkswagen ID.4** — not fetched yet · first run 2026-09-14 _(every 10 days)_
-- **Volvo EX30** — not fetched yet · first run 2026-09-13 _(every 10 days)_
-- **Polestar 3** — not fetched yet · first run 2026-09-12 _(every 10 days)_
-- **MINI Countryman Electric** — not fetched yet · first run 2026-09-11 _(every 10 days)_
-- **Cadillac Lyriq** — not fetched yet · first run 2026-09-10 _(every 10 days)_
-- **Jeep Wagoneer S** — not fetched yet · first run 2026-09-09 _(every 10 days)_
-- **Dodge Charger Daytona** — not fetched yet · first run 2026-09-08 _(every 10 days)_
-- **Ram ProMaster EV** — not fetched yet · first run 2026-09-07 _(every 10 days)_
-- **Rivian R1S** — not fetched yet · first run 2026-09-06 _(every 10 days)_
-- **VinFast VF 8** — not fetched yet · first run 2026-09-15 _(every 10 days)_
-- **Fisker Ocean** — not fetched yet · first run 2026-09-14 _(every 10 days)_
-- **Toyota bZ4X** — not fetched yet · first run 2026-09-13 _(every 10 days)_
-- **Honda Prologue** — not fetched yet · first run 2026-09-12 _(every 10 days)_
-- **Acura ZDX** — not fetched yet · first run 2026-09-11 _(every 10 days)_
-- **Lexus RZ** — not fetched yet · first run 2026-09-10 _(every 10 days)_
-- **Subaru Solterra** — not fetched yet · first run 2026-09-09 _(every 10 days)_
-- **Maserati Grecale Folgore** — not fetched yet · first run 2026-09-08 _(every 10 days)_
-- **Lotus Eletre** — not fetched yet · first run 2026-09-07 _(every 10 days)_
-- **Rolls-Royce Spectre** — not fetched yet · first run 2026-09-06 _(every 10 days)_
-- **Fiat 500e** — not fetched yet · first run 2026-09-15 _(every 10 days)_
-- **Jaguar I-PACE** — not fetched yet · first run 2026-09-14 _(every 10 days)_
+- **Tesla Model Y** — not fetched yet · first run 2026-09-16 _(every 15 days)_
+- **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-15 _(every 15 days)_
+- **GMC Hummer EV** — not fetched yet · first run 2026-09-14 _(every 15 days)_
+- **Genesis GV60** — not fetched yet · first run 2026-09-13 _(every 15 days)_
+- **Nissan Ariya** — not fetched yet · first run 2026-09-12 _(every 15 days)_
+- **Mercedes-Benz EQB** — not fetched yet · first run 2026-09-11 _(every 15 days)_
+- **Porsche Taycan** — not fetched yet · first run 2026-09-10 _(every 15 days)_
+- **Volkswagen ID.4** — not fetched yet · first run 2026-09-09 _(every 15 days)_
+- **Volvo EX30** — not fetched yet · first run 2026-09-08 _(every 15 days)_
+- **Polestar 3** — not fetched yet · first run 2026-09-07 _(every 15 days)_
+- **MINI Countryman Electric** — not fetched yet · first run 2026-09-06 _(every 15 days)_
+- **Cadillac Lyriq** — not fetched yet · first run 2026-09-20 _(every 15 days)_
+- **Jeep Wagoneer S** — not fetched yet · first run 2026-09-19 _(every 15 days)_
+- **Dodge Charger Daytona** — not fetched yet · first run 2026-09-18 _(every 15 days)_
+- **Ram ProMaster EV** — not fetched yet · first run 2026-09-17 _(every 15 days)_
+- **Rivian R1S** — not fetched yet · first run 2026-09-16 _(every 15 days)_
+- **VinFast VF 8** — not fetched yet · first run 2026-09-15 _(every 15 days)_
+- **Fisker Ocean** — not fetched yet · first run 2026-09-14 _(every 15 days)_
+- **Toyota bZ4X** — not fetched yet · first run 2026-09-13 _(every 15 days)_
+- **Honda Prologue** — not fetched yet · first run 2026-09-12 _(every 15 days)_
+- **Acura ZDX** — not fetched yet · first run 2026-09-11 _(every 15 days)_
+- **Lexus RZ** — not fetched yet · first run 2026-09-10 _(every 15 days)_
+- **Subaru Solterra** — not fetched yet · first run 2026-09-09 _(every 15 days)_
+- **Maserati Grecale Folgore** — not fetched yet · first run 2026-09-08 _(every 15 days)_
+- **Lotus Eletre** — not fetched yet · first run 2026-09-07 _(every 15 days)_
+- **Rolls-Royce Spectre** — not fetched yet · first run 2026-09-06 _(every 15 days)_
+- **Fiat 500e** — not fetched yet · first run 2026-09-20 _(every 15 days)_
+- **Jaguar I-PACE** — not fetched yet · first run 2026-09-19 _(every 15 days)_
 
 ---
 _1279 vehicle histories across 15 days · outputs rebuilt from the snapshot on disk — no calls made._
