@@ -927,6 +927,64 @@ ok('and one whose query ran and found nothing says THAT instead',
    `"${asked}"`);
 });
 
+// --- the brand row is navigation, not the page ------------------------------
+// It was six pills and is thirty-five. At 390x844 it stood 382px tall — 45% of
+// the first screen — and pushed "The decision", the card this product exists
+// for, to y=782 of 844: its heading on screen and not one number in it. The
+// oracle is what a reader can SEE, not the row's height: a height is a fact
+// about the market (more brands, taller row) and the decision card's first
+// figure being on the first screen is the claim.
+await step('the brand row is navigation, not the page', async () => {
+plan('a phone reaches the decision card without scrolling',
+     'and every brand is still reachable, pressed one scrolled into view');
+await page.setViewportSize({ width: 390, height: 844 });
+await open('');
+const seen = await page.evaluate(() => {
+  const t = document.getElementById('tabs-brand');
+  const hero = document.getElementById('hero-card');
+  if (!t || t.hidden || !hero || hero.hidden) return null;
+  const money = [...document.querySelectorAll('#hero-cars *')]
+    .find((n) => /^\$[\d,]+$/.test((n.textContent || '').trim()));
+  return { tabs: Math.round(t.getBoundingClientRect().height),
+           tabsN: t.children.length,
+           firstFigure: money ? Math.round(money.getBoundingClientRect().bottom) : null,
+           vh: innerHeight };
+});
+if (!seen) return skipRest('this sheet has no brand row or no decision card');
+ok('a phone reaches the decision card without scrolling',
+   seen.firstFigure !== null && seen.firstFigure <= seen.vh,
+   `${seen.tabsN} brand tabs in ${seen.tabs}px; the decision card's first figure ends at `
+   + `y=${seen.firstFigure} of ${seen.vh}`);
+// …and the cap must not hide a brand from the reader who asked for it.
+// THREE brands, and the middle one is the load-bearing case: at the end of
+// the row every arithmetic lands on the same place, because the scroll is
+// clamped to its maximum either way. The first draft checked only the last
+// brand and stayed green with the buggy offsetTop version restored — the
+// version that really did leave the pressed tab out of view, which is how
+// this scroll was found in the first place.
+const brands = Object.keys(SHEET.brands || {});
+const probe = [...new Set([brands[Math.floor(brands.length / 2)],
+                           brands[brands.length - 1], brands[0]])].filter(Boolean);
+const out = [];
+for (const bk of probe) {
+  const mk = Object.keys(SHEET.brands[bk].models || {})[0];
+  await open(`?brand=${bk}&m=${mk}`);
+  out.push(await page.evaluate(() => {
+    const t = document.getElementById('tabs-brand');
+    const on = t.querySelector('[aria-pressed="true"]');
+    if (!on) return null;
+    const hb = t.getBoundingClientRect(), ob = on.getBoundingClientRect();
+    return { label: on.textContent, inside: ob.top >= hb.top - 2 && ob.bottom <= hb.bottom + 2,
+             scrolls: t.scrollHeight > t.clientHeight + 1, top: Math.round(t.scrollTop) };
+  }));
+}
+ok('and every brand is still reachable, pressed one scrolled into view',
+   out.length === probe.length && out.every((p) => p && p.inside),
+   out.map((p, i) => p ? `"${p.label}" at ${p.top}px ${p.inside ? 'in view' : 'OUT OF VIEW'}`
+                       : `${probe[i]}: no pressed tab`).join(' · '));
+await page.setViewportSize({ width: 1280, height: 1000 });
+});
+
 // ---- ns/NS-09 ----
 await step('the filter count announces itself', async () => {
 // Pressing a chip rewrote the tiles, the map, the chart and the table and
@@ -6243,7 +6301,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 284;
+const EXPECTED = 286;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

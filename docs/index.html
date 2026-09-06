@@ -310,6 +310,25 @@
      short viewport can spare less, and being later in the cascade it wins in
      its own band. */
   #filters-card { max-height: 60vh; overflow-y: auto; }
+
+  /* The brand row was six pills and is thirty-five. At 390x844 it stands
+     382px tall — 45% of the first screen — and pushes "The decision", the
+     card this product exists for, to y=782 of 844: its heading is on screen
+     and not one number in it is. Measured on the real page at four viewports;
+     the same row was 70px when the watchlist was six brands.
+
+     Capped to three rows with an internal scroll, the self-limiting shape
+     #filters-card above already uses and this audit confirmed works: a row
+     is 31px on a 8px gap, so three rows are 109px and the decision card
+     comes back to y=509. Keyed to the same 720px edge sc.css folds the
+     filter bar at, because the cost is proportional to how much of the
+     screen the row eats — 18% of a 768px tablet is fine and 45% of a phone
+     is not. Nothing is unreachable behind the scroll: every brand is also a
+     Models chip in the filter bar and a row in the model index, and
+     renderTabs() scrolls the pressed one into view. */
+  @media (max-width: 720px) {
+    #tabs-brand { max-height: 109px; overflow-y: auto; overscroll-behavior: contain; }
+  }
   @media (max-height: 560px) {
     #filters-card { max-height: 45vh; overflow-y: auto; }
   }
@@ -3360,6 +3379,24 @@
     if (ids.length <= 1) { host.hidden = true; return; }
     host.hidden = false;
     for (const id of ids) host.appendChild(el('button', { class: 'sc-tab' + (caseClass ? ' sc-tab--case' : ''), type: 'button', 'aria-pressed': id === current ? 'true' : 'false', 'data-fkey': fkey ? fkey + ':' + id : null, onclick: () => onPick(id) }, labelOf(id)));
+    // The brand row is capped and scrolls inside itself on a phone (see the
+    // rule beside #filters-card), so the pressed tab can be below the cap on a
+    // link that opens a brand directly — which would read as "my brand is not
+    // on the list". Only when the host really is scrolling: scrollTop on a row
+    // that fits is a no-op, but so is the branch, and one less thing to
+    // reason about on a desktop.
+    if (host.scrollHeight > host.clientHeight + 1) {
+      const on = host.querySelector('[aria-pressed="true"]');
+      // Rects, not offsetTop: #tabs-brand sets no `position`, so offsetTop is
+      // measured against whatever ancestor happens to be the offsetParent and
+      // the first version of this scrolled the row to 273px with the pressed
+      // tab still out of view. Caught by measuring what the reader can see
+      // rather than by trusting the arithmetic.
+      if (on) {
+        const hb = host.getBoundingClientRect(), ob = on.getBoundingClientRect();
+        host.scrollTop = Math.max(0, host.scrollTop + (ob.top - hb.top) - (hb.height - ob.height) / 2);
+      }
+    }
   }
   function metaRow(bits) {
     const meta = $('meta'); meta.textContent = '';
