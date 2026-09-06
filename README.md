@@ -1,4 +1,4 @@
-<!-- The hero is a real capture of the dashboard, taken against data_through 2026-08-31, and
+<!-- The hero is a real capture of the dashboard, taken against data_through 2026-09-05, and
      it DATES: the numbers in it are the numbers of that morning and the live dashboard has
      moved on. That is the deal a screenshot makes; the alt below is deliberately structural
      (a chip row, a tile row, what changed) and names no figure, so it stays true after the
@@ -16,10 +16,12 @@
 
 **A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i7 being shopped —
 including a nationwide watch on every certified (CPO) i5 under 30,000 miles, where the
-promo rate on certified EVs (2.99% on the i5) makes the financing the story — their siblings
-and rivals follow on their own cadence. Each car is priced as what it would actually cost to land in a
-specific buyer's driveway, and the result is published as a dashboard, with a committed Markdown
-report beside it as the day's record. (An email path exists and is switched off: see below.)
+promo rate on certified EVs (2.99% on the i5) makes the financing the story — with their
+siblings behind them and, on a slower cadence, one battery EV from each of the other 32
+brands selling a 2024-or-newer one in the US. Each car is priced as what it would actually cost
+to land in a specific buyer's driveway, and the result is published as a dashboard, with a
+committed Markdown report beside it as the day's record. (An email path exists and is switched
+off: see below.)
 
 It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
 CSV in the repository is the ledger.
@@ -63,9 +65,16 @@ Two things are configured, separately:
   ordinary trim targets. The i7's was stood down before it ever ran: the same recipe on the
   i7 sorts miles.asc into a national pool whose 40 lowest-mileage cars are all uncertified
   2026 delivery-mileage inventory, so no certified car falls inside the window (see the note
-  on that trim in `targets.json`). The iX is tracked for comparison only; comparison models from Hyundai,
-  Kia, Audi and Lucid run every third day. `buyer.shopping` names the targets that lead the
-  report in full; everything else gets one line.
+  on that trim in `targets.json`). The iX is tracked for comparison only.
+
+  **Outside BMW it is one EV per brand, model year 2024 and newer.** The 2024+ rule is one
+  line in `defaults` and no target restates it. Every brand selling a 2024-or-newer battery
+  EV in the US carries its best-selling nameplate — Tesla the Model Y, Ford the Mach-E,
+  Chevrolet the Equinox EV, Rivian the R1S, Cadillac the Lyriq, and so on down to the brands
+  whose whole US electric range is one car. Three are chosen rather than ranked, because the
+  buyer asked for them: Hyundai's Ioniq 9 (not the better-selling Ioniq 5), Kia's EV9 and
+  Audi's A6 e-tron. `buyer.shopping` names the targets that lead the report in full;
+  everything else gets one line.
 
   The list is meant to move with the decision. When it narrowed to the i5 against the i7, the
   i4 stood down — at full depth on a daily cadence it was ten calls a day, a third of the whole
@@ -76,18 +85,37 @@ Two things are configured, separately:
 
 ## Design decisions
 
-**It runs on about 30 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
-each. So each target is fetched twice — once filtered to the buyer's states plus `search_states`
-(the API takes a comma list, so eight states cost one call) and once nationally — and each target
-has a *depth* (the two being shopped get both sorts at two pages **plus a newest-first page**, so a
-fresh listing is seen the day it appears instead of whenever it ranks among the cheapest; the rest
-get the cheapest 20) and a *cadence*, per target rather than per brand: the two shopped trims run
-daily, the i5's other three (the certified watch among them) every other day, and everything else —
-the i7's other trims, the iX and every rival — every third day, spread evenly across the cycle in
-watchlist order. A hard `budget_per_day` makes the script
-refuse to run if any day of the cadence cycle would exceed it — a fortnight at least, and longer
-when the cadences repeat over more than that — and it prints the plan before it
-starts.
+**It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
+each. So a target is fetched twice — once filtered to the buyer's states plus `search_states`
+(the API takes a comma list, so eight states cost one call) and once nationally — unless it is
+`national_only`, which is how the reference brands are affordable. Each target has a *depth* (the
+two being shopped get both sorts at two pages **plus a newest-first page**, so a fresh listing is
+seen the day it appears instead of whenever it ranks among the cheapest; the rest get the cheapest
+20) and a *cadence*, per target rather than per brand: the two shopped trims run daily, the i5's
+other three (the certified watch among them) every other day, the i7's other trims and the iX every
+third day, the five models already carrying a record every fourth day, and one EV from each of the
+other 27 brands every tenth day. Spread evenly across the cycle in watchlist order. A hard
+`budget_per_day` makes the script refuse to run if any day of the cadence cycle would exceed it — a
+fortnight at least, and longer when the cadences repeat over more than that, which they now do: the
+cycle is 60 days — and it prints the plan before it starts.
+
+That plan is an **upper bound**, and the difference is the headroom every "can we afford one more
+model?" needs. The fetch loop stops paging the moment a query comes back short and skips that
+scope's newest probe, so the two shopped trims are budgeted ten calls each and spend six: about
+eight calls a day, ~240 a month, reserved and never spent. `data/spend.json` records it per day as
+`banked`, apart from `unrun` — calls a target was due and failed to spend, which is a broken target
+and not headroom.
+
+**Why the reference brands are national-only, and the shopped ones are not.** Half a target's
+calls go to asking the buyer's own eight states the question the national query just asked, and
+whether that is worth paying for is an empirical question `data/source_overlap.json` has been
+answering since the audit that added it: on this record the States query returns 15 to 18 cars a
+fetch that the national one did not — 17 of 20 on the EV9, 18 of 19 on the Ioniq 5, 16 of 18 on
+the iX xDrive — because the twenty cheapest in the country and the twenty cheapest within driving
+range are almost disjoint sets. So it is not the redundant half it looks like, and the models this
+buyer might actually drive to see keep it. A brand on the list for the shape of the market does
+not: the national cheapest-20 at 2024+ is a consistent yardstick across brands, and it costs one
+call. Promoting one is a two-field edit — `national_only: false` and a faster cadence.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
@@ -288,9 +316,11 @@ Parameters resolve trim ← model ← brand ← defaults:
 A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as
 another key under `watchlist`; the dashboard grows a brand tab. Check the printed call plan after
 any change — it shows today, the worst day of the cycle it covers, and the monthly average. The
-window is the least common multiple of the cadences, floored at a fortnight: at a flat fourteen
-days a config using cadences of 4 and 5 would repeat over 60 and the guard would only ever see a
-quarter of it, so its answer would depend on the day it ran.
+window is the least common multiple of the cadences, floored at a fortnight. That stopped being
+hypothetical when the watchlist widened: cadences of 1, 2, 3, 4 and 10 repeat over 60 days, so a
+flat fourteen would see less than a quarter of the cycle and the guard's answer would depend on
+the day it ran — CI approving a config that `main()` starts refusing weeks later, on the day the
+window finally meets the peak.
 
 ## Roadmap
 

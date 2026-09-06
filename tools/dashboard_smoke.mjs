@@ -739,6 +739,34 @@ if (!subject) {
   ok('and neither reads as a deadline', !DATED.test(dek) && !DATED.test(chip || ''), dek);
 }
 });
+// --- the one-sentence purpose line counts what it names ----------------------
+// `rows` in overviewTitles() is the MODEL list — the meta row one line below
+// counts the same array as "N models" — and the sentence called them cars.
+// "7 electric cars" sat over a sheet holding 502 of them for as long as the
+// watchlist was small enough for nobody to look; one EV per brand made it
+// "35 electric cars" over 444. Pinned against both populations, because a
+// check that only knew the model count would pass on either noun.
+await step('the watchlist dek counts what it names', async () => {
+plan('the watchlist dek counts models, not cars',
+     'and the meta row beside it counts the same models');
+const sheet = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const models = Object.values(sheet.brands || {}).flatMap((b) => Object.keys(b.models || {})).length;
+const cars = Object.values(sheet.brands || {}).flatMap((b) => Object.values(b.models || {}))
+  .reduce((n, m) => n + (m.listings || []).length, 0);
+if (!models || models === cars) return skipRest(`the sheet holds ${models} models and ${cars} cars — nothing to tell apart`);
+await open('');
+const dek = (await page.textContent('#dek')).replace(/\s+/g, ' ').trim();
+ok('the watchlist dek counts models, not cars',
+   new RegExp(`^${models} electric models\\b`).test(dek) && !/electric cars/.test(dek),
+   `${models} models, ${cars} cars on the sheet — the page says "${dek.slice(0, 90)}"`);
+const meta = (await page.textContent('#meta') || '').replace(/\s+/g, ' ');
+const shop = Object.values(sheet.brands || {}).flatMap((b) => Object.values(b.models || {}))
+  .filter((m) => m.shopping).length;
+ok('and the meta row beside it counts the same models',
+   meta.includes(`${shop} shopping · ${models - shop} comparison`),
+   `"${meta.slice(0, 120)}" · ${shop} of ${models}`);
+});
+
 // ---- ns/NS-09 ----
 await step('the filter count announces itself', async () => {
 // Pressing a chip rewrote the tiles, the map, the chart and the table and
@@ -1225,7 +1253,9 @@ await step('a phone in landscape', async () => {
 // the viewport, on a panel that scrolls — and those three do not move when the
 // market does.
 plan('a phone in landscape still sees the results under the filter bar',
-     'and can still reach every filter in it', 'and the cap lifts again on a tall screen');
+     'and can still reach every filter in it',
+     'and the short-viewport cap is the tighter of the two',
+     'and the desktop panel is capped without being clipped');
 const subject = (() => {
   const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const all = [];
@@ -1240,7 +1270,8 @@ await page.setViewportSize({ width: 844, height: 390 });
 if (!subject) {
   skip('a phone in landscape still sees the results under the filter bar', 'data.json names no model to open');
   skip('and can still reach every filter in it', 'data.json names no model to open');
-  skip('and the cap lifts again on a tall screen', 'data.json names no model to open');
+  skip('and the short-viewport cap is the tighter of the two', 'data.json names no model to open');
+  skip('and the desktop panel is capped without being clipped', 'data.json names no model to open');
 } else {
   await open(subject.q);
   await page.evaluate(() => window.scrollTo(0, 4000));
@@ -1264,14 +1295,31 @@ if (!subject) {
       c.scrollTop = c.scrollHeight;
       return c.scrollTop > 0;
     }))), `overflow-y:${land.overflowY}, ${land.clipped}px past the cap`);
-  // …and it is keyed to the SHORT viewport, not applied everywhere. This one
-  // is a guard, not a reproduction: it holds on the unfixed page too, and its
-  // job is to catch a later edit that drops the media query and caps the bar
-  // on the desktop the sticky panel was designed for.
+  // This used to read "and the cap lifts again on a tall screen", asserting
+  // max-height:none at 390x844 — which was true while the panel fitted there.
+  // One EV per brand put 35 model chips in it and the panel measured 1848px on
+  // that 844px screen: a sticky element taller than its viewport, whose lower
+  // two-thirds no scroll offset can reach. The cap is unconditional now, so
+  // the two things still worth guarding are that the media query is not dead
+  // weight (the short viewport must be capped TIGHTER, since it can spare
+  // less) and that the desktop the sticky panel was designed for is capped
+  // without being clipped — which is what the old assertion was really
+  // protecting, and it is now checked where a desktop actually is.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(250);
-  const tall = await page.evaluate(() => getComputedStyle(document.getElementById('filters-card')).maxHeight);
-  ok('and the cap lifts again on a tall screen', tall === 'none', `max-height ${tall} at 390x844`);
+  const tall = await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('filters-card')).maxHeight));
+  ok('and the short-viewport cap is the tighter of the two',
+     tall > 0 && land.capPx > 0 && land.capPx / land.vh < tall / 844,
+     `${Math.round(land.capPx)}px of 390 in landscape, ${Math.round(tall)}px of 844 in portrait`);
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.waitForTimeout(250);
+  const desk = await page.evaluate(() => {
+    const c = document.getElementById('filters-card');
+    return { clipped: c.scrollHeight - c.clientHeight, h: c.scrollHeight,
+             cap: parseFloat(getComputedStyle(c).maxHeight) };
+  });
+  ok('and the desktop panel is capped without being clipped', desk.clipped <= 1,
+     `panel ${desk.h}px under a ${Math.round(desk.cap)}px cap at 1280x1000, ${desk.clipped}px clipped`);
 }
 });
 
@@ -2509,6 +2557,14 @@ await step('the market sentence describes the trim in view', async () => {
         if (!rows.length) continue;
         const mine = bitsOf(rows, dedupe((m.gone || []).filter((g) => g.trim_id === tid)));
         if (mine.out.join(' · ') === whole.out.join(' · ')) continue;
+        // …and it must be able to SPEAK. The served check below asserts that
+        // two floors stay shut while the cut clause still prints, so a trim
+        // whose own sentence has no cut clause proves nothing there — it is
+        // silent for a reason the check is not about. bitsOf() needs five
+        // tracked cars for that clause, and when one EV per brand made
+        // bmw-i5-cpo (four listings) the first differing trim on the sheet,
+        // the check failed on a page that was behaving correctly.
+        if (!mine.out.some((t) => /cut while tracked/.test(t))) continue;
         // prefer the case the bug was found on: a trim with too few departures
         // of its own under a model whose sentence carries the days-to-go clause
         const borrowed = whole.out.some((t) => /listings ran/.test(t)) && mine.spans < 12;
@@ -6015,7 +6071,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 274;
+const EXPECTED = 277;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

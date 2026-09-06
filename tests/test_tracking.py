@@ -366,13 +366,18 @@ class TestNormalize(unittest.TestCase):
                          "alone cannot keep it out — trim_exclude must")
 
     def test_trim_exclude_keeps_a_target_off_its_sibling(self):
-        """Two live targets are separated from a sibling by trim_exclude and
-        nothing else. bmw-ix-m matches '' — every iX — and relies on excluding
-        'xdrive'; lucid-air-touring matches 'touring', which the Grand Touring
-        also contains, and relies on excluding 'grand'. Lose the branch and
-        each target quietly absorbs the sibling's whole market under its own
-        name, its median and its picks included. The trim gates run before
-        year and price, so a record only has to carry the trim words."""
+        """bmw-ix-m matches '' — every iX — and relies on excluding 'xdrive'.
+        Lose the branch and it quietly absorbs the xDrive's whole market under
+        its own name, its median and its picks included. The trim gates run
+        before year and price, so a record only has to carry the trim words.
+
+        The Lucid Air used to be the second live example, matching 'touring'
+        against a Grand Touring it had to exclude. One EV per brand made the
+        Air one trimless target, so the pair went with it; the loop below is
+        over whatever the config still separates this way, so the next target
+        that needs an exclusion is covered the day it is added rather than
+        when somebody remembers this test.
+        """
         import copy
 
         def rec_with(trim):
@@ -380,17 +385,26 @@ class TestNormalize(unittest.TestCase):
             r["vehicle"]["trim"] = trim
             r["vehicle"]["series"] = trim
             return r
-        self.assertIsNone(T.normalize(rec_with("xDrive50"), target("bmw-ix-m"), self.dropped))
-        self.assertEqual(self.dropped["trim excluded"], 1, "an xDrive is not an M, whatever else it is")
-        self.assertIsNone(T.normalize(rec_with("Grand Touring"), target("lucid-air-touring"), self.dropped))
-        self.assertEqual(self.dropped["trim excluded"], 2, "'touring' is inside 'Grand Touring'; only the exclusion tells them apart")
-        # …and the same words pass the trim gates of the target they belong to,
-        # so the drop is the exclusion's doing and not a mismatch on the way in.
-        kept = Counter()
-        T.normalize(rec_with("xDrive50"), target("bmw-ix-xdrive"), kept)
-        T.normalize(rec_with("Grand Touring"), target("lucid-air-grand-touring"), kept)
-        self.assertEqual(kept["trim excluded"], 0)
-        self.assertEqual(kept["trim mismatch"], 0)
+        excluders = [t for t in T.TARGETS.values() if t.get("trim_exclude")]
+        self.assertTrue(excluders, "no live target relies on trim_exclude")
+        for n, t in enumerate(excluders, start=1):
+            word = t["trim_exclude"]
+            self.assertIsNone(T.normalize(rec_with(word), t, self.dropped), t["id"])
+            self.assertEqual(self.dropped["trim excluded"], n,
+                             f"{t['id']} must refuse a car whose trim reads "
+                             f"{word!r}, whatever else it is")
+            # …and the same word passes the trim gates of a sibling that does
+            # NOT exclude it, so the drop is the exclusion's doing and not a
+            # mismatch on the way in.
+            sibs = [o for o in T.TARGETS.values()
+                    if o["model_key"] == t["model_key"] and o["id"] != t["id"]
+                    and not o.get("trim_exclude")
+                    and o.get("trim_match", "") in word.lower()]
+            self.assertTrue(sibs, f"{t['id']} excludes {word!r} and no sibling claims it")
+            kept = Counter()
+            T.normalize(rec_with(word), sibs[0], kept)
+            self.assertEqual(kept["trim excluded"], 0, sibs[0]["id"])
+            self.assertEqual(kept["trim mismatch"], 0, sibs[0]["id"])
 
     def test_cpo_watch_drops_the_uncertified(self):
         # the clean fixture is cpo: false as shipped
@@ -3205,22 +3219,33 @@ class TestThePlanCoversAWholeCycle(unittest.TestCase):
         self.assertGreaterEqual(T.plan_horizon(), 14)
 
     def test_a_cadence_the_fortnight_would_miss_widens_it(self):
-        """The case the flat fourteen could not see. Patched on rather than
-        asserted dead, because today's watchlist cannot reach it."""
-        one = next(iter(T.TARGETS.values()))
-        was = one["cadence"]
+        """No longer hypothetical: the shipped watchlist is the case.
+
+        This used to mutate one target to cadence 5 and check the horizon
+        moved to 30, with a docstring saying today's config could not reach
+        it. One EV per brand put the reference watches on cadence 10 beside
+        the shopped trims' 1/2/3 and the kept models' 4, so the cycle is 60
+        days and a flat fortnight would see less than a quarter of it — which
+        is exactly the failure this widening exists to prevent, since main()
+        runs the same guard and would start refusing a config CI approved,
+        weeks later, on the day the window finally met the peak.
+        """
+        self.assertEqual(T.plan_horizon(), 60,
+                         "1/2/3/4/10 is an LCM of 60")
+        # …and the fortnight is still the floor when the cycle is short.
+        was = {tid: t["cadence"] for tid, t in T.TARGETS.items()}
         try:
-            one["cadence"] = 5
-            self.assertEqual(T.plan_horizon(), 30,
-                             "5 against the existing 1/2/3 is an LCM of 30, and "
-                             "a fortnight sees less than half of it")
-            one["cadence"] = 4
+            for i, t in enumerate(T.TARGETS.values()):
+                t["cadence"] = 1 + (i % 2)
             self.assertEqual(T.plan_horizon(), 14,
-                             "…while 4 gives an LCM of 12, which the fortnight "
-                             "already covers, so the floor is what applies")
+                             "1 and 2 repeat every other day; the floor is "
+                             "what applies, because one cycle of an all-daily "
+                             "watchlist is one day and the printed plan is a "
+                             "forecast a human reads")
         finally:
-            one["cadence"] = was
-        self.assertEqual(T.plan_horizon(), 14, "and the shipped config is back")
+            for tid, c in was.items():
+                T.TARGETS[tid]["cadence"] = c
+        self.assertEqual(T.plan_horizon(), 60, "and the shipped config is back")
 
     def test_the_worst_day_is_the_worst_of_that_horizon(self):
         """Not of an arbitrary fortnight: the number main() refuses to run on."""
@@ -3307,26 +3332,75 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         self.assertIn("bmw-i5-cpo", every_other,
                       "the prose names the certified watch as one of them")
 
-    def test_and_the_rest_is_one_third_day_tier(self):
+    def test_the_third_day_tier_is_the_i7s_other_trims_and_the_ix(self):
+        """It used to hold every rival too. One EV per brand moved the rivals
+        onto their own tiers, so the sentence naming them here had to move
+        with them — this is the half that fails if only one of the two does."""
         rest = sorted(self._by_cadence().get(3, []))
-        others = {c for c in self._by_cadence() if c not in (1, 2, 3)}
-        self.assertFalse(others, f"the prose names three tiers, the config has {others}")
-        self.assertTrue(any(t.startswith("bmw-i7-") for t in rest)
-                        and any(t.startswith("bmw-ix") for t in rest)
-                        and any(not t.startswith("bmw-") for t in rest),
-                        f"the prose says the i7's other trims, the iX and every "
-                        f"rival share the third-day tier: {rest}")
+        self.assertTrue(rest and all(t.startswith("bmw-i7-") or t.startswith("bmw-ix")
+                                     for t in rest),
+                        f"the prose says the i7's other trims and the iX: {rest}")
+
+    def test_the_fourth_day_tier_is_the_models_that_already_have_a_record(self):
+        kept = sorted(self._by_cadence().get(4, []))
+        self.assertEqual(len(kept), 5, f"the prose says five: {kept}")
+        self.assertFalse([t for t in kept if t.startswith("bmw-")],
+                         f"…and that none of them is a BMW: {kept}")
+        self.assertFalse([t for t in kept if T.TARGETS[t].get("national_only")],
+                         f"…and that they are the ones that kept both queries: {kept}")
+
+    def test_the_tenth_day_tier_is_one_national_only_ev_a_brand(self):
+        ref = sorted(self._by_cadence().get(10, []))
+        self.assertEqual(len(ref), 27, f"the prose says 27 brands: {len(ref)}")
+        self.assertTrue(all(T.TARGETS[t].get("national_only") for t in ref),
+                        "the prose says national query only")
+        self.assertEqual(len({T.TARGETS[t]["brand"] for t in ref}), len(ref),
+                         "…one EV from each")
+
+    def test_the_config_has_no_tier_the_prose_does_not_name(self):
+        named = {1, 2, 3, 4, 10}
+        others = {c for c in self._by_cadence() if c not in named}
+        self.assertFalse(others, f"both surfaces name {sorted(named)}, "
+                                 f"the config also has {sorted(others)}")
 
     def test_the_call_figures_both_surfaces_quote(self):
         today, worst, avg = T.planned_calls()
-        for name, needed in (("README.md", []),
+        for name, needed in (("README.md", [f"about {round(avg)} API calls a day"]),
                              ("docs/how.html", [f"about {round(avg)} calls a day",
                                                 f"roughly {round(avg * 30.5)} a month",
-                                                f"worst day in any fortnight at {worst}",
+                                                f"worst day in the {T.plan_horizon()}-day cycle at {worst}",
                                                 f"hard cap of {T.BUDGET}"])):
             text = Path(name).read_text()
             for want in needed:
                 self.assertIn(want, text, f"{name}: {want}")
+
+    def test_the_brand_counts_both_surfaces_quote(self):
+        """Four numbers in prose that move with the watchlist.
+
+        README's opening names the brands beside BMW; both surfaces name the
+        tenth-day tier. Nothing pinned either, and a brand added or dropped
+        makes them false in a sentence nobody re-reads.
+        """
+        brands = {t["brand"] for t in T.TARGETS.values()}
+        others = len(brands - {"bmw"})
+        tenth = len([t for t in T.TARGETS.values() if t["cadence"] == 10])
+        readme = " ".join(Path("README.md").read_text().split())
+        how = " ".join(Path("docs/how.html").read_text().split())
+        self.assertIn(f"each of the other {others} brands", readme)
+        self.assertIn(f"other {tenth} brands every tenth day", readme)
+        self.assertIn(f"other {tenth} brands every tenth day", how)
+        self.assertEqual(others, tenth + 5,
+                         "the two tiers outside BMW are the five with a record "
+                         "and the rest; if that stops being true the sentences "
+                         "above describe a watchlist that no longer exists")
+
+    def test_the_cycle_length_both_surfaces_quote(self):
+        """README says the cycle is 60 days in prose and how.html names it in
+        the worst-day clause. Neither was pinned while the cadences were 1/2/3
+        and the horizon was the fortnight floor, so the day a cadence widened
+        it both sentences went quietly false."""
+        flat = " ".join(Path("README.md").read_text().split())
+        self.assertIn(f"the cycle is {T.plan_horizon()} days", flat)
 
 
 class TestTheComparisonPreambleDescribesTheQueriesItRan(unittest.TestCase):
@@ -4775,15 +4849,42 @@ class TestShortlist(unittest.TestCase):
 # Config resolution and small parsers.
 # --------------------------------------------------------------------------
 class TestConfig(unittest.TestCase):
-    def test_trim_inherits_from_model_brand_and_defaults(self):
-        t = target("bmw-i5-m60")
-        self.assertEqual(t["min_price"], 30000)          # trim override
-        self.assertEqual(t["years"], ["2024", "2025"])   # from the model
-        self.assertEqual(t["make"], "BMW")               # from the brand
+    def test_a_parameter_resolves_through_all_four_layers(self):
+        """trim ← model ← brand ← defaults, one live example of each.
+
+        This used to read the years off the model, which is where the 2024+
+        rule used to be written four times over. It is one line in `defaults`
+        now, so the defaults layer is what the years demonstrate and the model
+        layer needed an example that survives — the i5's own price floor,
+        inherited by the trim that does not override it.
+        """
+        self.assertEqual(target("bmw-i5-m60")["min_price"], 30000,
+                         "the trim's own override")
+        self.assertEqual(target("bmw-i5-xdrive40")["min_price"], 20000,
+                         "…and its sibling takes the model's")
+        self.assertTrue(target("tesla-model-y")["national_only"],
+                        "the brand's, on a reference watch")
+        self.assertEqual(target("bmw-i5-m60")["years"],
+                         ["2024", "2025", "2026", "2027"],
+                         "and the 2024+ rule from defaults, which no target "
+                         "restates")
+        self.assertEqual(target("bmw-i5-m60")["make"], "BMW")
 
     def test_a_model_without_trims_is_one_target(self):
-        self.assertIn("hyundai-ioniq5", T.TARGETS)
-        self.assertEqual(T.TARGETS["hyundai-ioniq5"]["trim_key"], "all")
+        """Read off the config rather than naming one model: most of this
+        watchlist is trimless now, and the one this test used to name
+        (hyundai-ioniq5) was stood down when the Ioniq 9 took Hyundai's
+        place."""
+        cfg = json.loads(Path("targets.json").read_text())["watchlist"]
+        trimless = [(bk, mk) for bk, b in cfg.items() if b.get("active", True)
+                    for mk, m in b["models"].items()
+                    if m.get("active", True) and not m.get("trims")]
+        self.assertGreater(len(trimless), 20,
+                           "one EV per brand is a watchlist of trimless models")
+        for bk, mk in trimless:
+            tid = f"{bk}-{mk}"
+            self.assertIn(tid, T.TARGETS)
+            self.assertEqual(T.TARGETS[tid]["trim_key"], "all", tid)
 
     def test_shopping_is_the_i5_and_the_i7(self):
         # The decision is between the i5 and the i7 now. The iX came off the
@@ -4880,13 +4981,27 @@ class TestConfig(unittest.TestCase):
             (Path(__file__).parent.parent / "data/snapshots.csv").open(newline=""))}
         self.assertNotIn("bmw-i7-cpo", seen)
 
-    def test_the_watchlist_reduction(self):
-        # Removed to pay for the CPO watches; the A6 e-tron replaces them.
+    def test_one_ev_per_brand_outside_bmw(self):
+        """The rule that replaced the old reduction.
+
+        The EV6 and the Q4 e-tron came off to pay for the CPO watches; they
+        stay off for a different reason now — their brands are represented by
+        the EV9 and the A6 e-tron, and the watchlist carries one nameplate per
+        brand outside BMW, whose trims are the thing being shopped. The
+        Equinox EV came back as Chevrolet's, which is why the old assertion
+        that no target contains "equinox" could not survive.
+        """
         for tid in T.TARGETS:
             self.assertNotIn("ev6", tid)
             self.assertNotIn("q4-etron", tid)
-            self.assertNotIn("equinox", tid)
         self.assertIn("audi-a6-etron", T.TARGETS)
+        self.assertIn("chevrolet-equinox-ev", T.TARGETS)
+        per_brand = Counter(t["brand"] for t in T.TARGETS.values()
+                            if t["brand"] != "bmw")
+        extra = {b: n for b, n in per_brand.items() if n > 1}
+        self.assertFalse(extra, f"one target per brand outside BMW: {extra}")
+        self.assertGreater(len(per_brand), 25,
+                           "…across the brands that sell a 2024-or-newer EV")
 
     def test_site_dates_the_data_not_the_build(self):
         """generated is the day the file was BUILT (an offline rebuild stamps

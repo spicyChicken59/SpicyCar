@@ -289,8 +289,27 @@
      Same at 320x256. Neither was in the fault this rule was written for, and
      in both the cap is an improvement, not a regression — but it does fire
      there, and a reader tracing the 560px number should not be surprised by
-     it. Above 560px tall nothing changes: max-height computes to none at
-     390x844, 768x1024 and 1280x1000, measured. */
+     it.
+
+     "Above 560px tall nothing changes: max-height computes to none at 390x844,
+     768x1024 and 1280x1000, measured" — that sentence stood here, and it was a
+     measurement of a SEVEN-MODEL watchlist, not of the viewport. One EV per
+     brand made the model filter 35 chips and the brand tabs 34, and the panel
+     measures 1848px on a 390x844 phone and 1584px on 430x932: a sticky element
+     taller than the screen it is stuck to, whose lower two-thirds cannot be
+     scrolled to at any offset, because the sticky top pins them there. Every
+     chip below the first screenful was unreachable on a phone — found by the
+     browser suite timing out trying to press one, which is the check scaling
+     with the config while the CSS did not.
+
+     So the cap is unconditional now, and it is self-limiting: a panel shorter
+     than 60vh is unaffected, which is every desktop (417px of 1000) and the
+     watchlist this rule was written under. 768x1024 goes from 767px to 614px,
+     a viewport that fitted and is better for it — three quarters of an iPad
+     screen was filters. The landscape rule below stays and stays tighter: a
+     short viewport can spare less, and being later in the cascade it wins in
+     its own band. */
+  #filters-card { max-height: 60vh; overflow-y: auto; }
   @media (max-height: 560px) {
     #filters-card { max-height: 45vh; overflow-y: auto; }
   }
@@ -5247,7 +5266,12 @@
       ? `${rows.length} models side by side, priced for one buyer in ${homeName()} — every car in one table, cheapest first.`
       : S.models.size
         ? `One model of the watchlist, priced for one buyer in ${homeName()} — press another to compare.`
-        : `${rows.length} electric cars, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
+        // MODELS, and it has to say so. `rows` is the model list — the meta
+        // row one line below counts the same array as "N models" — and the
+        // sentence called them cars: "7 electric cars" over a sheet holding
+        // 502 of them. One EV per brand made it "35 electric cars" over 444,
+        // which is the same falsehood at a size somebody would notice.
+        : `${rows.length} electric models, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
     metaRow([`Data through ${fmtDateLong(dataThrough())}`,
       S.models.size ? `${rows.length} of ${allModels().length} models` : null,

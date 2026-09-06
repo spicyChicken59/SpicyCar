@@ -5,9 +5,9 @@
 - ▼ $7,500 cut · BMW i7 eDrive50 · now $118,244 · Los Angeles, CA `WBY43EJ05TCX48636`
 - ▼ $2,416 cut · BMW i5 eDrive40 · now $47,336 · Roswell, GA `WBY33FK06SCU63880`
 - ▼ $2,000 cut · BMW i5 eDrive40 · now $43,586 · Columbia, SC `WBY33FK01RCS84947`
-- …and 50 more cuts on 2026-09-05, 27 of them listed in the sections below
+- …and 27 more cuts on 2026-09-05, listed in the sections below
 - 16 new on the shopped models (8 listed 14+ days before the tracker saw them — reach, not arrival) · best 10% under typical for a 2026 BMW i7 eDrive50 ($106,425, Buena Park, CA · 11 mi — delivery-mileage stock, from 45 such cars)
-- 15 gone since the last fetch on the shopped models
+- 14 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
@@ -315,7 +315,7 @@ _Not fetched today — showing 2026-09-05._
 
 - Lowest asking **$48,909** (Indianapolis, IN) · = vs 2026-09-04
 - Lowest drivable **$48,909** (Indianapolis, IN) · no shipping
-- 151 on the market · 25 drivable · 31 price changes (8 more moved, seen at two prices, not counted) · 9 new · 5 gone
+- 151 on the market · 25 drivable · 31 price changes (8 more moved, seen at two prices, not counted) · 9 new · 4 gone
 
 **New on 2026-09-05 (9)** — first seen on 2026-09-05, 7 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
 
@@ -366,7 +366,7 @@ _Worth the ship:_
   [listing](https://atlantabmw.com/exotic-used/BMW/2026-BMW-i7-atlanta-ga-57062c16ac185191c275d2adae278bdb.htm) `WBY43EJ06TCW32247`
 
 _151 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 126_
-_typical car 29d on market (113 of 151 dated) — 49 dealer stock at 78d, 61 used at 21d, 3 with no mileage · 23 of 125 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 of 38 dated)_
+_typical car 29d on market (113 of 151 dated) — 49 dealer stock at 78d, 61 used at 21d, 3 with no mileage · 23 of 125 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted_
 
 ### eDrive50 — 92 vehicles · lowest asking $54,000 (Marietta, GA)
 
@@ -450,9 +450,6 @@ _The other half of the decision, beside the i5 eDrive40._
 - $51,995 -> **$52,170** (Great Neck, NY) `WBY53EJ05PCN85531`
 - $51,995 -> **$52,170** (Great Neck, NY) `WBY53EJ09PCN85645`
 - $58,197 -> **$58,297** (Marietta, GA) `WBY53EJ06PCN69354`
-
-**Gone since 2026-09-01**
-- $61,368 · 2023 · Westmont, IL · seen 6 of 8 days `WBY53EJ07PCN73574`
 
 **Illinois (15)**
 - **$56,995** · 39,470 mi · no shipping · 2024 · Palos Hills, IL · ~25 mi from Chicago
@@ -621,9 +618,9 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 - **$52,997** · BMW iX · 2023 · 15,258 mi · drivable · no shipping · Huntley, IL
   _spicy pick: 13% under typical for a 2023 BMW iX M60 ($7,875 less, from 10 such cars)_ · _1-owner · no accidents · ex-lease_
   [listing](https://www.autolist.com/bmw-ix#vin=WB533CF08PCK79196) `WB533CF08PCK79196`
-- **$42,097** · Lucid Air · 2024 · 8,756 mi · drivable · no shipping · Streetsboro, OH
-  _spicy pick: 8% under typical for a 2024 Lucid Air Touring ($3,524 less, from 12 such cars)_ · _1-owner · no accidents_
-  [listing](https://www.carfax.com/vehicle/50EA1TEA6RA001077) `50EA1TEA6RA001077`
+- **$47,428** · Hyundai Ioniq 9 · 2026 · 51 mi · drivable · no shipping · Norwalk, OH
+  _spicy pick: 7% under typical for a 2026 Hyundai Ioniq 9 S ($3,020 less, from 11 such cars)_
+  [listing](https://www.autolist.com/hyundai-ioniq+9#vin=7YAMS5S15TY005885) `7YAMS5S15TY005885`
 
 ### Worth the ship — nationwide
 
@@ -645,10 +642,38 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 _By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per TRIM queried — a model with two trims on the watchlist is the union of two such queries, which is why these counts run past 20. Every car is on the dashboard._
 
 - **BMW iX** — 66 cars · 29 drivable · lowest asking $30,084 (Sacramento, CA) + $1,353 shipping · drivable from $30,980 (Schererville, IN) · median asking $45,313 _(every 3 days · as of 2026-09-03)_
-- **Hyundai Ioniq 5** — 27 cars · 18 drivable · lowest asking $14,999 (Plantation, FL) + $1,124 shipping · drivable from $17,943 (Columbus, OH) · median asking $20,998 _(every 3 days · as of 2026-09-05)_
-- **Kia EV9** — 34 cars · 19 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $35,259 _(every 3 days · as of 2026-09-04)_
-- **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,698 _(every 3 days · as of 2026-09-03)_
-- **Lucid Air** — 68 cars · 33 drivable · lowest asking $37,942 (Springfield, NJ) + $828 shipping · drivable from $38,197 (Streetsboro, OH) · median asking $43,895 _(every 3 days · as of 2026-09-05)_
+- **Hyundai Ioniq 9** — 37 cars · 20 drivable · lowest asking $46,249 (Carson City, NV) + $1,327 shipping · drivable from $47,428 (Norwalk, OH) · median asking $48,989 _(every 4 days · as of 2026-08-25)_
+- **Kia EV9** — 34 cars · 19 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $35,259 _(every 4 days · as of 2026-09-04)_
+- **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,698 _(every 4 days · as of 2026-09-03)_
+- **Lucid Air** — not fetched yet · first run 2026-09-06 _(every 4 days)_
+- **Chevrolet Equinox EV** — not fetched yet · first run 2026-09-09 _(every 4 days)_
+- **Tesla Model Y** — not fetched yet · first run 2026-09-11 _(every 10 days)_
+- **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-10 _(every 10 days)_
+- **GMC Hummer EV** — not fetched yet · first run 2026-09-09 _(every 10 days)_
+- **Genesis GV60** — not fetched yet · first run 2026-09-08 _(every 10 days)_
+- **Nissan Ariya** — not fetched yet · first run 2026-09-07 _(every 10 days)_
+- **Mercedes-Benz EQB** — not fetched yet · first run 2026-09-06 _(every 10 days)_
+- **Porsche Taycan** — not fetched yet · first run 2026-09-15 _(every 10 days)_
+- **Volkswagen ID.4** — not fetched yet · first run 2026-09-14 _(every 10 days)_
+- **Volvo EX30** — not fetched yet · first run 2026-09-13 _(every 10 days)_
+- **Polestar 3** — not fetched yet · first run 2026-09-12 _(every 10 days)_
+- **MINI Countryman Electric** — not fetched yet · first run 2026-09-11 _(every 10 days)_
+- **Cadillac Lyriq** — not fetched yet · first run 2026-09-10 _(every 10 days)_
+- **Jeep Wagoneer S** — not fetched yet · first run 2026-09-09 _(every 10 days)_
+- **Dodge Charger Daytona** — not fetched yet · first run 2026-09-08 _(every 10 days)_
+- **Ram ProMaster EV** — not fetched yet · first run 2026-09-07 _(every 10 days)_
+- **Rivian R1S** — not fetched yet · first run 2026-09-06 _(every 10 days)_
+- **VinFast VF 8** — not fetched yet · first run 2026-09-15 _(every 10 days)_
+- **Fisker Ocean** — not fetched yet · first run 2026-09-14 _(every 10 days)_
+- **Toyota bZ4X** — not fetched yet · first run 2026-09-13 _(every 10 days)_
+- **Honda Prologue** — not fetched yet · first run 2026-09-12 _(every 10 days)_
+- **Acura ZDX** — not fetched yet · first run 2026-09-11 _(every 10 days)_
+- **Lexus RZ** — not fetched yet · first run 2026-09-10 _(every 10 days)_
+- **Subaru Solterra** — not fetched yet · first run 2026-09-09 _(every 10 days)_
+- **Maserati Grecale Folgore** — not fetched yet · first run 2026-09-08 _(every 10 days)_
+- **Lotus Eletre** — not fetched yet · first run 2026-09-07 _(every 10 days)_
+- **Rolls-Royce Spectre** — not fetched yet · first run 2026-09-06 _(every 10 days)_
+- **Jaguar I-PACE** — not fetched yet · first run 2026-09-15 _(every 10 days)_
 
 ---
 _1258 vehicle histories across 14 days · outputs rebuilt from the snapshot on disk — no calls made._
