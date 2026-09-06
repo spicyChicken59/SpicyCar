@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import struct
+import sys
 import unittest
 import unittest.mock
 import contextlib
@@ -2772,6 +2773,67 @@ class TestWhatTheReadmeSaysAboutRanking(unittest.TestCase):
         self.assertEqual(per_model, 2, "…and two is what it is set to")
         self.assertIn("holds the first two drivable seats", readme)
         self.assertEqual(reserve, 2, "…and two is what it is set to")
+
+
+class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
+    """`tools/rebuild_outputs.py` is what a human runs after editing
+    targets.json, and it is the only place a config change is described
+    before the next fetch. Its summary used to end with
+
+        print("bmw models in site:", list(site["brands"]["bmw"]["models"]...))
+
+    which is a KeyError the moment BMW is not on the watchlist. The files are
+    written BEFORE that line, so standing BMW down produced a correct
+    REPORT.md, a correct docs/data.json, a traceback and exit 1 — a rebuild
+    that succeeded and reported failure. Driven here as a subprocess against a
+    real copy of the tree, because reading the source proves nothing about
+    what the interpreter does with it.
+    """
+
+    def _run(self, edit):
+        """A copy of the WORKING TREE, not of HEAD.
+
+        The first version of this archived HEAD, which means it tested the
+        last commit rather than the change under test — it reproduced the bug
+        beautifully and would have gone on passing after the fix, one commit
+        behind forever. That is this project's "a test that cannot fail" shape
+        wearing a subprocess.
+        """
+        import subprocess, shutil, tempfile, os, json as _json
+        root = Path(__file__).parent.parent
+        with tempfile.TemporaryDirectory() as td:
+            dst = Path(td) / "repo"
+            shutil.copytree(root, dst, ignore=shutil.ignore_patterns(
+                ".git", "__pycache__", "node_modules", "*.pyc"))
+            cfg = _json.loads((dst / "targets.json").read_text())
+            edit(cfg)
+            (dst / "targets.json").write_text(_json.dumps(cfg, indent=1))
+            env = {**os.environ, "AUTODEV_API_KEY": "offline"}
+            r = subprocess.run([sys.executable, "tools/rebuild_outputs.py"],
+                               cwd=dst, env=env, capture_output=True, text=True)
+            return r, (dst / "REPORT.md").read_text(), (dst / "docs" / "data.json").read_text()
+
+    def test_a_rebuild_with_the_shipped_config_succeeds_and_says_what_is_empty(self):
+        r, report, sheet = self._run(lambda cfg: None)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        self.assertIn("no listings yet (first fetch)", r.stdout)
+        self.assertIn("call plan:", r.stdout)
+        self.assertTrue(report.startswith("# "))
+        self.assertIn('"brands"', sheet)
+
+    def test_standing_the_only_hard_coded_brand_down_is_not_a_failure(self):
+        def drop_bmw(cfg):
+            cfg["watchlist"]["bmw"]["active"] = False
+            # buyer.shopping names BMW targets that no longer exist; the tool
+            # must survive that too, since it is what a real edit looks like
+            cfg["buyer"]["shopping"] = []
+        r, report, sheet = self._run(drop_bmw)
+        self.assertEqual(r.returncode, 0,
+                         "the rebuild wrote both files and then died on a "
+                         "hard-coded brand key:\n" + r.stderr[-800:])
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertNotIn("bmw", json.loads(sheet)["brands"])
+        self.assertTrue(report.startswith("# "))
 
 
 class TestDailySeries(unittest.TestCase):
