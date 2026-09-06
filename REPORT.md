@@ -591,11 +591,11 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 _By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per TRIM queried — a model with two trims on the watchlist is the union of two such queries, which is why these counts run past 20. Every car is on the dashboard._
 
 - **BMW iX** — 71 cars · 30 drivable · lowest asking $30,084 (Sacramento, CA) + $1,353 shipping · drivable from $30,980 (Schererville, IN) · median asking $45,900 _(every 3 days)_
-- **Hyundai Ioniq 9** — 37 cars · 20 drivable · lowest asking $46,249 (Carson City, NV) + $1,327 shipping · drivable from $47,428 (Norwalk, OH) · median asking $48,989 _(every 4 days · as of 2026-08-25)_
-- **Kia EV9** — 34 cars · 19 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $35,259 _(every 4 days · as of 2026-09-04)_
+- **Hyundai Ioniq 9** — 37 cars · 20 drivable · lowest asking $46,249 (Carson City, NV) + $1,327 shipping · drivable from $47,428 (Norwalk, OH) · median asking $48,989 _(as of 2026-08-25, 12 days ago · past its 4-day cadence)_
+- **Kia EV9** — 34 cars · 19 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $35,259 _(every 4 days · as of 2026-09-04, 2 days ago)_
 - **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,735 _(every 4 days)_
 - **Lucid Air** — not fetched yet · first run 2026-09-06 _(every 4 days)_
-- **Chevrolet Equinox EV** — 31 cars · 12 drivable · lowest asking $19,600 (Wake Forest, NC) + $766 shipping · drivable from $24,385 (Greenwood, IN) · median asking $25,648 _(every 4 days · as of 2026-08-27)_
+- **Chevrolet Equinox EV** — 31 cars · 12 drivable · lowest asking $19,600 (Wake Forest, NC) + $766 shipping · drivable from $24,385 (Greenwood, IN) · median asking $25,648 _(as of 2026-08-27, 10 days ago · past its 4-day cadence)_
 - **Tesla Model Y** — not fetched yet · first run 2026-09-16 _(every 15 days)_
 - **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-15 _(every 15 days)_
 - **GMC Hummer EV** — not fetched yet · first run 2026-09-14 _(every 15 days)_

@@ -392,7 +392,7 @@ Parameters resolve trim ← model ← brand ← defaults:
 |---|---|
 | `min_price` | listings below this are ignored — monthly payments or typos, not cars |
 | `depth` | `light` (1 call per source) or `full` (`sorts` × `pages` calls per source) |
-| `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked with its own day — "as of" in the report, "data through" on the dashboard |
+| `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked with its own day — "as of" in the report, "data through" on the dashboard — and with how many days ago that was, since the day alone made a reader subtract from a schedule the record was not keeping. Where the gap is wider than the cadence itself, both surfaces say so in place of the schedule rather than beside it |
 | `sorts`, `pages` | what `full` depth fetches (defaults: `price.asc` + `miles.asc`, 2 pages) |
 | `newest` | extra newest-first (`createdAt.desc`) pages per source, so brand-new listings are caught the day they list. On for the shopped targets; new cars lead their report section as **New today**. Skipped automatically when a query already returned its whole scope. |
 | `years` | model years; sent as a range and also filtered client-side |

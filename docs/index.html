@@ -3515,6 +3515,14 @@
       }
     }
   }
+  // One spelling of an age, for every surface that shows one. It mirrors
+  // Tracking.py's days_ago() and a test runs this exact function through node
+  // against it, so the report and the page cannot drift apart. Module scope
+  // because the model card's meta line and the watchlist's price tiles both
+  // render it, and two copies of four lines is how this project has grown two
+  // vocabularies for one mechanism before.
+  const daysAgo = (n) => (n === 1 ? '1 day ago' : `${n} days ago`);
+
   function metaRow(bits) {
     const meta = $('meta'); meta.textContent = '';
     bits.filter(Boolean).forEach((b, i) => { if (i) meta.appendChild(el('span', { class: 'sc-sep' }, '·')); meta.appendChild(el('span', null, b)); });
@@ -4695,11 +4703,25 @@
     // next_due always rolls forward. `last_asked` is the day the model's
     // targets were last ASKED, off the run's own fetch log.
     const unfetched = !t.as_of && !t.last_asked && t.next_due;
+    // How old these cars are, in the report's words and off the report's own
+    // field. Both surfaces used to print the SCHEDULE beside an absolute date
+    // and leave the subtraction to the reader: "Data through Tue, August 25,
+    // 2026 · Fetched every 4 days" over cars that were twelve days old, three
+    // due days past that cadence. The age is computed once in Tracking.py
+    // (fetch_age/fetch_overdue) and carried on the model, so a record written
+    // before those fields existed has neither and keeps the old line rather
+    // than being given a confident zero. `days_ago` mirrors days_ago() there;
+    // a test mails one model through both and compares the words.
+    const age = Number.isFinite(t.age_days) ? t.age_days : null;
+    const over = t.overdue === true;
     metaRow([
       unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}`
-        : t.as_of ? `Data through ${fmtDateLong(t.as_of)}`
+        : t.as_of ? `Data through ${fmtDateLong(t.as_of)}` + (age ? ` · ${daysAgo(age)}` : '')
         : `Asked ${fmtDateLong(t.last_asked)}, nothing found`,
-      t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
+      // The cadence is dropped where the clause beside it is about to say the
+      // schedule was not kept — one number, said once, as the fact it is.
+      t.cadence > 1 && !over ? `Fetched every ${t.cadence} days` : null,
+      over ? (t.cadence > 1 ? `Past its ${t.cadence}-day cadence` : 'No fetch since') : null,
       // the day count is the SELECTED VIEW's, so a brand-new trim on a
       // fetched model (a CPO watch before its first run) says so instead of
       // claiming a day it does not have; a never-fetched model claims nothing
@@ -5550,9 +5572,24 @@
   }
 
   // " · as of Sep 2" when the row's model was last fetched before the
-  // masthead's date; nothing when they agree, and never a count of days —
-  // fmtDate of the export's own as_of, so a tab left open does not age it.
-  const asOfNote = (r) => (r.as_of && dataThrough() && r.as_of < dataThrough() ? ` · as of ${fmtDate(r.as_of)}` : '');
+  // masthead's date, and nothing when they agree.
+  //
+  // The count of days used to be refused here, on the grounds that a tab left
+  // open would age it. That objection is answered rather than overruled:
+  // `age_days` is computed against the record's newest day when the file is
+  // BUILT (Tracking.py's fetch_age), so it is as static as the date beside it
+  // and a tab left open cannot move it. What it is NOT is unconditional — a
+  // count on every tile is a count nobody reads. It appears only when the
+  // model is further behind than its own cadence can account for, which is the
+  // case where the date alone misleads: these two tiles quote a PRICE as the
+  // day's answer, and "as of Aug 25" under a headline figure reads as recent
+  // until you know the model claims to run every four days.
+  const asOfNote = (r) => {
+    if (!(r.as_of && dataThrough() && r.as_of < dataThrough())) return '';
+    const m = r.m || {};
+    const age = Number.isFinite(m.age_days) ? m.age_days : null;
+    return ` · as of ${fmtDate(r.as_of)}` + (m.overdue === true && age ? `, ${daysAgo(age)}` : '');
+  };
   function renderOverviewKpis(rows) {
     // tiles
     const total = rows.reduce((a, r) => a + r.n, 0), localTotal = rows.reduce((a, r) => a + r.n_local, 0);

@@ -4041,6 +4041,129 @@ _ORDINAL_WORD = {2: "other", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth",
 TAIL_CADENCE_WORD = _ORDINAL_WORD[TAIL_CADENCE]
 
 
+class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
+    """Both surfaces printed a schedule beside an absolute date.
+
+    "**Hyundai Ioniq 9** … _(every 4 days · as of 2026-08-25)_" in the report,
+    "Data through Tue, August 25, 2026 · Fetched every 4 days" on the page —
+    over cars twelve days old, three due days past that cadence. A reader does
+    the only arithmetic offered and concludes the prices are four days old.
+    That is the surface whose entire job is saying what a price is worth, and
+    it matters more from this round on: the long tail runs fortnightly now, so
+    a model being a week and a half behind is the ordinary case rather than a
+    fault.
+
+    The age is one rule in Tracking.py and both surfaces render it, because a
+    number formatted twice is how this project has grown two vocabularies for
+    one mechanism before.
+    """
+
+    def test_the_age_is_measured_against_the_record_not_the_clock(self):
+        """An offline rebuild a week later must not age every model by a week.
+        `TODAY` is the day the file was BUILT; the anchor is the newest day
+        anywhere in the record, which is what the masthead shows and what a
+        reader subtracts from."""
+        self.assertEqual(12, T.fetch_age("2026-08-25", "2026-09-06"))
+        self.assertEqual(0, T.fetch_age("2026-09-06", "2026-09-06"))
+        # the record moving is what changes the answer; the wall clock is not
+        # consulted at all, which this asserts by passing a record day that is
+        # nowhere near TODAY and getting the arithmetic of the two arguments
+        self.assertEqual(365, T.fetch_age("2025-01-01", "2026-01-01"))
+
+    def test_an_age_it_cannot_compute_is_none_and_never_zero(self):
+        """A confident 0 on an unreadable date is the worst answer available:
+        it reads as "fetched today"."""
+        for as_of, day in ((None, "2026-09-06"), ("2026-08-25", None),
+                           ("", "2026-09-06"), ("not-a-date", "2026-09-06"),
+                           ("2026-13-45", "2026-09-06"), (["2026-08-25"], "2026-09-06")):
+            self.assertIsNone(T.fetch_age(as_of, day), f"{as_of!r} vs {day!r}")
+        # …and a record day BEHIND the model's own is clamped rather than
+        # reported as a negative age, which no surface has words for
+        self.assertEqual(0, T.fetch_age("2026-09-06", "2026-08-25"))
+
+    def test_overdue_is_exact_at_the_cadence_and_not_a_tolerance(self):
+        """A target on cadence N is due every Nth day, so the widest gap the
+        schedule can account for is N-1 — the day before it next comes round.
+        N is one due day missed. Both sides of every boundary, because a
+        tolerance quietly added here would make the clause stop appearing on
+        the model it was written for."""
+        for cad in (2, 3, 4, 15):
+            self.assertFalse(T.fetch_overdue(cad - 1, cad), f"cadence {cad}: N-1 is the widest honest gap")
+            self.assertTrue(T.fetch_overdue(cad, cad), f"cadence {cad}: N is one due day missed")
+        # daily is any gap at all
+        self.assertFalse(T.fetch_overdue(0, 1))
+        self.assertTrue(T.fetch_overdue(1, 1))
+        # a cadence of 0 or a nonsense one cannot make every model overdue
+        self.assertFalse(T.fetch_overdue(0, 0))
+        self.assertFalse(T.fetch_overdue(None, 4))
+        self.assertFalse(T.fetch_overdue(9, "every four days"))
+
+    def test_the_model_entry_carries_both_so_neither_surface_recomputes(self):
+        site = json.loads(Path("docs/data.json").read_text())
+        day = site["data_through"]
+        checked = 0
+        for b in site["brands"].values():
+            for m in b["models"].values():
+                if not m.get("as_of"):
+                    continue
+                checked += 1
+                self.assertEqual(T.fetch_age(m["as_of"], day), m.get("age_days"),
+                                 f'{m["label"]}: age_days disagrees with the rule')
+                self.assertEqual(T.fetch_overdue(m.get("age_days"), m["cadence"]),
+                                 m.get("overdue"),
+                                 f'{m["label"]}: overdue disagrees with the rule')
+        self.assertGreater(checked, 0, "no model on the sheet has an as_of to check")
+
+    def test_the_report_says_the_age_wherever_the_sheet_holds_one(self):
+        """Read off the record rather than naming a model: which model is
+        behind is a fact about the market and the cadence, and a test that
+        names one goes quiet the day that model catches up."""
+        site = json.loads(Path("docs/data.json").read_text())
+        report = Path("REPORT.md").read_text()
+        aged = [m for b in site["brands"].values() for m in b["models"].values()
+                if m.get("age_days") and m.get("listings")]
+        if not aged:
+            self.skipTest("every model carrying cars was fetched on the record's newest day")
+        for m in aged:
+            line = next((l for l in report.splitlines()
+                         if l.startswith(f'- **{m["label"]}**')), None)
+            if line is None:
+                continue
+            self.assertIn(T.days_ago(m["age_days"]), line,
+                          f'{m["label"]}: the report gives a date and no age')
+            if m.get("overdue"):
+                self.assertIn(f'past its {m["cadence"]}-day cadence', line,
+                              f'{m["label"]}: {m["age_days"]} days on a '
+                              f'{m["cadence"]}-day cadence, said flatly')
+                self.assertNotIn(f'every {m["cadence"]} days', line,
+                                 f'{m["label"]}: the report states the cadence as a '
+                                 "promise and as a promise not kept, in one bracket")
+
+    def test_the_page_spells_an_age_the_same_way_the_report_does(self):
+        """The page's own formatter, executed, against Python's. Not a
+        comparison of two source files: `days_ago` and `daysAgo` are four lines
+        each and the interesting cases are 0 and 1, which reading them
+        confidently gets right and which have been got wrong here before.
+        """
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the page's formatter through")
+        import subprocess
+        page = Path("docs/index.html").read_text()
+        m = re.search(r"const daysAgo = (\(n\) => [^;]+);", page)
+        self.assertIsNotNone(m, "the page no longer defines daysAgo — this "
+                                "check has lost its subject")
+        script = (f"const daysAgo = {m.group(1)};\n"
+                  "console.log(JSON.stringify([0,1,2,3,12,15,100].map(daysAgo)));")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(0, out.returncode, out.stderr)
+        # 0 is the one the page never renders (the clause is gated on a truthy
+        # age) and Python returns "" for; every other value must agree exactly.
+        got = json.loads(out.stdout)[1:]
+        want = [T.days_ago(n) for n in (1, 2, 3, 12, 15, 100)]
+        self.assertEqual(want, got,
+                         "the page and the report spell the same age differently")
+
+
 class TestTheStatesQueryPaidForItself(unittest.TestCase):
     """The measurement README's decision rests on, held three ways.
 

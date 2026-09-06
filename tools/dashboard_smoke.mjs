@@ -216,6 +216,19 @@ async function step(label, body) {
 // ?brand=…&m=… asserts today's config beside the page's behaviour and goes red
 // on a night that only changed the watchlist.
 const SHEET = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+
+// How the page spells an age, taken FROM the page rather than retyped. There
+// are already two implementations of these four lines — Tracking.py's
+// days_ago() and index.html's daysAgo — and the Python suite pins them to each
+// other by running this same extracted function through node. A third copy
+// typed here would be the only one nothing holds to the others, and it is the
+// one that decides whether this file's checks pass.
+const daysAgo = (() => {
+  const m = readFileSync(join(ROOT, 'index.html'), 'utf8')
+    .match(/const daysAgo = (\(n\) => [^;]+);/);
+  if (!m) throw new Error('the page no longer defines daysAgo — the age checks have lost their subject');
+  return (0, eval)(m[1]);
+})();
 const WATCHED = Object.entries(SHEET.brands || {}).flatMap(([bk, b]) =>
   Object.entries((b || {}).models || {}).map(([mk, m]) => ({
     bk, mk, id: `${bk} ${mk}`, slug: `${bk}-${mk}`, q: `?brand=${bk}&m=${mk}`, label: (m || {}).label || mk,
@@ -4710,7 +4723,9 @@ await step('a cohort of mixed trims prices the mix, not the car', async () => {
 // case is planted, not found: the served sheet ages the leading model's as_of
 // by two days, so the check holds on a morning when every model was fetched.
 await step('a headline figure carries its own date', async () => {
-  plan('a tile led by a model fetched on an older day says so', 'and a tile led by a model fetched today does not');
+  plan('a tile led by a model fetched on an older day says so',
+       'and one further behind than its cadence allows gives the count',
+       'and a tile led by a model fetched today does not');
   if (WATCHED.length < 1 || !carried) return skipRest('no model on the watchlist holds a car today');
   const through = SHEET.data_through;
   const lead = () => page.locator('#kpis .sc-tile').first().locator('.sc-tile__sub').first().textContent();
@@ -4720,11 +4735,26 @@ await step('a headline figure carries its own date', async () => {
   const leadLabel = ((await lead()) || '').split(' · ')[0].trim();
   const leader = WATCHED.find((w) => w.label === leadLabel);
   if (!leader) return skipRest(`the drivable tile leads with "${leadLabel}", which no watched model is called`);
-  await ctx.route('**/data.json', async (route) => {
+  // The plant writes every field the tile reads, not just the one it is
+  // about. as_of alone leaves age_days and overdue holding the REAL model's
+  // values, so the served sheet contradicts itself and the page is asked to
+  // describe a state no writer produces — the same incomplete-plant shape the
+  // floor-departure check was fixed for. age_days is the gap Tracking.py's
+  // fetch_age computes; overdue is its fetch_overdue, which is exact at the
+  // cadence with no tolerance.
+  const ageTo = (sheet, day) => {
+    const m = sheet.brands[leader.bk].models[leader.mk];
+    m.as_of = day;
+    m.age_days = Math.max(0, Math.round((Date.parse(sheet.data_through) - Date.parse(day)) / 86400000));
+    m.overdue = m.age_days >= Math.max(1, m.cadence || 1);
+    return m;
+  };
+  const serve = (day) => ctx.route('**/data.json', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
-    sheet.brands[leader.bk].models[leader.mk].as_of = aged;
+    ageTo(sheet, day);
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
+  await serve(aged);
   try {
     await open('');
     const t1 = (await lead()) || '';
@@ -4733,14 +4763,29 @@ await step('a headline figure carries its own date', async () => {
   } finally {
     await ctx.unroute('**/data.json');
   }
+  // Two days behind is a gap most cadences account for, so the tile above
+  // gives a date and no count. Past the cadence it gives both, because that
+  // is the case where the date alone reads as recent: these tiles quote a
+  // price as the day's answer, and the count is what says how old the answer
+  // is. Planted well past any cadence on the watchlist so the branch is
+  // reached whatever the leading model runs at.
+  const far = Math.max(2, ...WATCHED.map((w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {}).cadence || 1)) + 3;
+  const farDay = new Date(Date.parse(through + 'T00:00:00Z') - far * 86400000).toISOString().slice(0, 10);
+  await serve(farDay);
+  try {
+    await open('');
+    const t3 = (await lead()) || '';
+    const lc = ((SHEET.brands[leader.bk] || {}).models[leader.mk] || {}).cadence;
+    ok('and one further behind than its cadence allows gives the count',
+       new RegExp(`· as of [A-Z][a-z]{2} \\d+, ${far} days ago$`).test(t3.trim()) && t3.includes(leadLabel),
+       `${leader.label} aged to ${farDay} — ${far} days on a ${lc}-day cadence, under data through ${through}: "${t3.trim()}"`);
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
   // …and the same model served as fetched on the masthead's own day gets no
   // stamp — planted as well, because on the day this was written it really
   // had been fetched two days before.
-  await ctx.route('**/data.json', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
-    sheet.brands[leader.bk].models[leader.mk].as_of = through;
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
-  });
+  await serve(through);
   try {
     await open('');
     const t2 = (await lead()) || '';
@@ -5199,6 +5244,60 @@ await step('a car is called what it is', async () => {
 // rewritten against, each showing "0 new" beside a gone count measured against
 // its own last fetch. Two clocks in one tile. The third check below is the one
 // that fails if the anchor goes back.
+// --- how old the cars on this card are --------------------------------------
+// Both surfaces printed the SCHEDULE beside an absolute date and left the
+// subtraction to the reader: "Data through Tue, August 25, 2026 · Fetched
+// every 4 days" over cars twelve days old, three due days past that cadence.
+// The number a reader would compute from what was on screen was wrong by a
+// factor of three, on the page whose job is saying what a price is worth.
+//
+// Data-driven: the subject is whichever model the sheet says is behind, and
+// the words are the sheet's own age field rather than a date this file
+// re-derives — deriving it here would let the page and the check drift
+// together, which is the shape that hid this for a month.
+await step('the card says how old its cars are', async () => {
+  plan('a model behind the record says how many days behind',
+       'and says so when the cadence cannot account for it',
+       'and a model fetched on the record\'s newest day claims no age');
+  const modelOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {});
+  const withCars = WATCHED.filter((w) => modelOf(w).as_of);
+  const aged = withCars.filter((w) => modelOf(w).age_days > 0);
+  const fresh = withCars.filter((w) => modelOf(w).age_days === 0);
+  const said = async (w) => {
+    await open(w.q);
+    return page.locator('#meta').evaluate((n) => n.innerText.replace(/\s+/g, ' ').trim());
+  };
+  if (!aged.length) skipRest('every model carrying cars was fetched on the record\'s newest day');
+  else {
+    const rows = [];
+    for (const w of aged) rows.push({ w, m: modelOf(w), text: await said(w) });
+    const silent = rows.filter((r) => !r.text.includes(daysAgo(r.m.age_days)));
+    ok('a model behind the record says how many days behind', silent.length === 0,
+       rows.map((r) => `${r.w.id} is ${r.m.age_days}d behind · card reads "${r.text.slice(0, 90)}"`).join(' | '));
+
+    const over = rows.filter((r) => r.m.overdue);
+    if (!over.length) skip('and says so when the cadence cannot account for it',
+                           'no model on the sheet is further behind than its own cadence allows');
+    else {
+      const quiet = over.filter((r) => !r.text.includes(`Past its ${r.m.cadence}-day cadence`)
+                                    || r.text.includes(`Fetched every ${r.m.cadence} days`));
+      ok('and says so when the cadence cannot account for it', quiet.length === 0,
+         over.map((r) => `${r.w.id}: ${r.m.age_days}d on a ${r.m.cadence}-day cadence · "${r.text.slice(0, 110)}"`).join(' | '));
+    }
+  }
+  // The other side: an age clause on a model fetched today would be noise on
+  // every card the page draws, which is how a warning stops being read.
+  if (!fresh.length) skip('and a model fetched on the record\'s newest day claims no age',
+                          'no model on the sheet was fetched on its newest day');
+  else {
+    const rows = [];
+    for (const w of fresh) rows.push({ w, text: await said(w) });
+    const noisy = rows.filter((r) => /days? ago|Past its/.test(r.text));
+    ok('and a model fetched on the record\'s newest day claims no age', noisy.length === 0,
+       rows.map((r) => `${r.w.id} · "${r.text.slice(0, 80)}"`).join(' | '));
+  }
+});
+
 await step('a car is new only on the day it arrives', async () => {
   plan('a car first seen before its model was last fetched does not wear the new chip',
        'and the tile counts what the table shows',
@@ -6507,7 +6606,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 293;
+const EXPECTED = 297;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

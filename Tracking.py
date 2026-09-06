@@ -1945,6 +1945,65 @@ PRICE_WINDOW = {}      # (target id, source) -> highest price its price.asc quer
 MILES_WINDOW = {}      # (target id, source) -> highest mileage its miles.asc query returned today
 
 
+def days_ago(age):
+    """The one phrasing for an age in days. The page renders the same words
+    from the same field, and a test mails both through it — a number formatted
+    two ways on two surfaces is how this project has grown two vocabularies for
+    one mechanism before."""
+    if not age:
+        return ""
+    return "1 day ago" if age == 1 else f"{age} days ago"
+
+
+def fetch_age(as_of, record_day):
+    """How many days older the cars on a model's card are than the record.
+
+    Not the wall clock. An offline rebuild a week later would make every model
+    seven days staler against `TODAY` while the rows it is describing have not
+    moved, which is the two-clock defect `is_new_on()` takes a day parameter to
+    avoid. The anchor is the newest day anywhere in the record, because that is
+    the date the page's masthead shows and the one a reader subtracts from.
+
+    None when either date is missing or unparseable: a model with no `as_of`
+    has never found a car and says so in different words, and a date the record
+    cannot parse must not become a confident 0.
+    """
+    if not as_of or not record_day:
+        return None
+    try:
+        a = date.fromisoformat(str(as_of)[:10])
+        b = date.fromisoformat(str(record_day)[:10])
+    except ValueError:
+        return None
+    return max(0, (b - a).days)
+
+
+def fetch_overdue(age, cadence):
+    """Whether that age is one the cadence can account for.
+
+    Exact, with no tolerance, because the arithmetic is exact: a target on
+    cadence N is due every Nth day, so the widest honest gap between the
+    record's newest day and the model's own last fetch is N-1 — the day before
+    it next comes round. N or more means at least one due day passed without
+    this model's cars being refreshed.
+
+    What it does NOT say is why, and no surface may claim to know: a run that
+    was never made and a run that was made and found nothing both leave `as_of`
+    where it was. The distinction lives in `last_asked`, and the fetch log is
+    younger than the record, so for most models it cannot yet answer. The age
+    and the comparison are facts; the cause is not one this can see.
+
+    A cadence of 1 or less is daily, so any gap at all is overdue.
+    """
+    if age is None:
+        return False
+    try:
+        c = int(cadence)
+    except (TypeError, ValueError):
+        return False
+    return age >= max(1, c)
+
+
 def window_dim(t):
     """Which axis a target's fetch window lives on. A cheapest-N fetch is
     bounded in dollars; the CPO watches sort by miles.asc only, so their
@@ -3755,10 +3814,19 @@ def compact_line(m_entry, label):
             bits.append(f"median asking {money(int(median([x['price'] for x in priced])))}")
         line = f"- **{label}** — " + " · ".join(bits)
     tail = []
-    if m_entry["cadence"] > 1:
+    age, over = m_entry.get("age_days"), m_entry.get("overdue")
+    # The cadence, unless the age clause below is about to contradict it. It
+    # was printed flatly beside an absolute date, so "every 4 days · as of
+    # 2026-08-25" read as four-day-old cars when they were twelve days old.
+    # Saying the number twice in one bracket, once as a promise and once as a
+    # promise not kept, is the two-vocabularies shape; the age clause names it.
+    if m_entry["cadence"] > 1 and not over:
         tail.append(f"every {m_entry['cadence']} days")
     if m_entry["as_of"] and m_entry["as_of"] != TODAY:
-        tail.append(f"as of {m_entry['as_of']}")
+        tail.append(f"as of {m_entry['as_of']}" + (f", {days_ago(age)}" if age else ""))
+    if over:
+        tail.append(f"past its {m_entry['cadence']}-day cadence"
+                    if m_entry["cadence"] > 1 else "no fetch since")
     return line + (f" _({' · '.join(tail)})_" if tail else "")
 
 
@@ -3907,6 +3975,18 @@ def build_outputs(today_rows, all_rows, hist):
                 "shopping": shopping,
                 "cadence": min(t["cadence"] for t in trims),
                 "as_of": as_of,
+                # How old these cars are, and whether the cadence beside them
+                # can account for it. Computed HERE so the report and the page
+                # read one answer: both printed the schedule ("every 4 days")
+                # next to an absolute date ("as of 2026-08-25") and left the
+                # reader to subtract, and on this record the Ioniq 9 said
+                # exactly that over cars twelve days old — three due days past
+                # a four-day cadence, on the surface whose whole job is to say
+                # what a price is worth. It matters more now that the long
+                # tail runs fortnightly.
+                "age_days": fetch_age(as_of, record_day),
+                "overdue": fetch_overdue(fetch_age(as_of, record_day),
+                                         min(t["cadence"] for t in trims)),
                 # …and the day this model's queries were last ASKED, which is
                 # a different fact and the one "not fetched yet" is really
                 # about. A query that runs and finds nothing writes no row, so
