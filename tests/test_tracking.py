@@ -2705,6 +2705,124 @@ class TestNarrowingTheWatchlistIsNotAMarketEvent(unittest.TestCase):
         self.assertNotIn("missing", sentence)
 
 
+class TestEveryVersionThePagesCiteIsTheOneTheyLoad(unittest.TestCase):
+    """The pin is data now, so the prose about it can be held to it.
+
+    `docs/design-system/provenance.json` names the exact commit and version of
+    the vendored sheet, and moving it is one file edit — which is precisely how
+    four comments in the two pages came to describe a sheet that was no longer
+    there. The pin went v2.4.0 -> v2.7.0 in one merge; `index.html` went on
+    saying "everything generic now lives in sc.css v2.4.0" and both pages went
+    on crediting "sc.css v2.4.0's own 44px block" for rules the loaded sheet
+    still does not carry.
+
+    This is the fourth number in this repo's prose to rot and the second to do
+    it while a mechanism existed that could have caught it. The rule is the
+    cheap one: any version a page NAMES must be the version it LOADS.
+
+    The forward-looking form is refused outright. "Promotion candidate for
+    design-system v2.5.x" is a citation that cannot be checked when written and
+    is silently wrong the moment v2.5.0 ships without the rule — which is what
+    happened. A promotion candidate is a claim about the pinned sheet, so it
+    says so and names no release.
+    """
+
+    PAGES = ("docs/index.html", "docs/how.html")
+
+    @staticmethod
+    def pinned():
+        return json.loads(Path("docs/design-system/provenance.json").read_text())
+
+    def test_the_snapshot_names_a_version_and_the_sheet_it_ships_is_that_one(self):
+        """The anchor everything below reads. A provenance file whose version
+        does not match the CSS beside it would make every check here agree with
+        a number that is not on the page."""
+        pin = self.pinned()
+        self.assertRegex(pin["version"], r"^\d+\.\d+\.\d+$")
+        css = Path("docs/design-system/sc.css").read_text(errors="replace")
+        self.assertIn(f"v{pin['version']}", css[:4000],
+                      "the vendored sc.css does not announce the version "
+                      "provenance.json claims for it")
+
+    def test_no_page_cites_a_design_system_version_it_does_not_load(self):
+        want = "v" + self.pinned()["version"]
+        pat = re.compile(r"(?:sc\.css|design[- ]system)\s+(v\d+\.\d+(?:\.\d+|\.x)?)")
+        found = []
+        for name in self.PAGES:
+            text = Path(name).read_text()
+            for m in pat.finditer(text):
+                line = text.count("\n", 0, m.start()) + 1
+                found.append((name, line, m.group(1),
+                              text[max(0, m.start() - 60):m.end() + 20].replace("\n", " ")))
+        self.assertTrue(found, "no page cites a version at all — this check has "
+                               "lost its subject and would pass over anything")
+        wrong = [f for f in found if f[2] != want]
+        self.assertEqual([], wrong,
+                         f"the pages load {want}; these name something else:\n"
+                         + "\n".join(f"  {n}:{ln} says {v} — …{ctx}…" for n, ln, v, ctx in wrong))
+
+    def test_no_page_names_a_release_it_is_waiting_for(self):
+        """A version that has not shipped cannot be checked against anything,
+        and reads as decided once it does. The pages had two of these, both
+        saying v2.5.x, both written under a v2.4.0 pin, and both still saying
+        it at v2.7.0."""
+        bad = []
+        for name in self.PAGES:
+            text = Path(name).read_text()
+            for m in re.finditer(r"[Pp]romotion candidates?[^*]{0,120}", text):
+                if re.search(r"v\d+\.\d+", m.group(0)):
+                    line = text.count("\n", 0, m.start()) + 1
+                    bad.append(f"  {name}:{line} — {m.group(0)[:100].strip()}")
+        self.assertEqual([], bad,
+                         "a promotion candidate is a claim about the pinned sheet, "
+                         "not a booking against a future release:\n" + "\n".join(bad))
+
+    def test_the_bridges_the_pages_keep_are_ones_the_pinned_sheet_does_not_carry(self):
+        """The substantive half, and the one a version number was standing in
+        for. A bridge whose selector upstream now covers is dead CSS the page
+        is still maintaining; the comment says "delete when the pinned sheet
+        carries it", so that condition is executed rather than remembered.
+
+        Both sides are parsed with brace matching, not line grepping: the
+        sheet's coarse blocks are three of about a thousand rules, and a
+        regex range that stops at the first `}` reports selectors from four
+        blocks further down as covered.
+        """
+        def coarse_selectors(css):
+            out = set()
+            for m in re.finditer(r"@media\s*\(([a-z-]*pointer:\s*coarse)\)\s*\{", css):
+                depth, end = 0, None
+                for j in range(m.end() - 1, len(css)):
+                    if css[j] == "{":
+                        depth += 1
+                    elif css[j] == "}":
+                        depth -= 1
+                        if depth == 0:
+                            end = j
+                            break
+                if end is None:
+                    continue
+                for rule in re.finditer(r"([^{}]+)\{[^{}]*\}", css[m.end():end]):
+                    for sel in rule.group(1).split(","):
+                        out.add(sel.strip())
+            return out
+
+        upstream = coarse_selectors(Path("docs/design-system/sc.css").read_text(errors="replace"))
+        self.assertTrue(upstream, "no coarse-pointer rule found in the pinned sheet — "
+                                  "the parser has lost its subject")
+        dead = []
+        for name in self.PAGES:
+            for sel in coarse_selectors(Path(name).read_text()):
+                # a page bridge is dead only if the SAME selector is upstream;
+                # ::before halos and :not() narrowings are this page's own shape
+                base = sel.split("::")[0].strip()
+                if base and base in upstream:
+                    dead.append(f"  {name} bridges {sel!r}, which the pinned sheet already carries")
+        self.assertEqual([], dead,
+                         "these bridges are dead CSS under the current pin and their "
+                         "own comments say to delete them:\n" + "\n".join(dead))
+
+
 class TestWhatTheReadmeSaysAboutRanking(unittest.TestCase):
     """The prose about how the front page is ordered, held to the code.
 
@@ -4260,60 +4378,129 @@ class TestTheWeeklyLoopKnowsWhenItDidNotLook(unittest.TestCase):
             body.append(ln[indent:])
         return "\n".join(body).rstrip() + "\n"
 
+    # The pin used to be grepped out of docs/index.html; it is now whatever
+    # tools/design_snapshot.mjs prints, so `node` is called TWICE in this block
+    # for two unrelated jobs. A stub that fails both cannot tell the three
+    # failure modes apart — and did not: with one blanket-failing `node`, the
+    # linter-crash test below was green because the SNAPSHOT step died, which
+    # is a different rule rejecting than the one its name promises. The stub
+    # dispatches on the argument, so each test fails on its own mechanism.
+    PIN_STUB = "0123456789abcdef0123456789abcdef01234567"
+    NODE_STUB = ('#!/bin/sh\n'
+                 'case "$*" in\n'
+                 '  *design_snapshot*) echo ' + PIN_STUB + '; exit 0 ;;\n'
+                 'esac\n'
+                 'echo "cannot find module" >&2\n'
+                 'exit 1\n')
+
+    def _run_lint_step(self, tmp, git, node):
+        """Execute loop.yml's own lint step against stub binaries.
+
+        Every git stub is prefixed with a line recording what it was asked
+        for, into the step's own working directory. That log is the only
+        thing that can tell "the linter died" apart from "the step never got
+        that far" — the stdout cannot, because a snapshot step and a linter
+        step both die through the same `node`.
+        """
+        import subprocess
+        (tmp / "bin").mkdir()
+        for name, script in (("git", git.replace("#!/bin/sh\n", '#!/bin/sh\necho "$*" >> git-calls\n', 1)),
+                             ("node", node)):
+            f = tmp / "bin" / name
+            f.write_text(script)
+            f.chmod(0o755)
+        return subprocess.run(
+            ["bash", "-e", "-c",
+             self._block("Run the consumer policy against the pinned sheet", "run")],
+            cwd=tmp, capture_output=True, text=True,
+            env={**os.environ, "PATH": f"{tmp / 'bin'}:{os.environ['PATH']}",
+                 "GITHUB_STEP_SUMMARY": str(tmp / "sum")})
+
+    @staticmethod
+    def _git_calls(tmp):
+        f = tmp / "git-calls"
+        return f.read_text() if f.exists() else ""
+
     def test_a_clone_that_fails_takes_the_step_down_with_it(self):
-        import subprocess, tempfile
+        import tempfile
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td)
-            (tmp / "bin").mkdir()
-            for name, script in (("git", 'if [ "$1" = "clone" ]; then exit 128; fi\nexit 0\n'),
-                                 ("node", 'echo "cannot find module" >&2\nexit 1\n')):
-                f = tmp / "bin" / name
-                f.write_text("#!/bin/sh\n" + script)
-                f.chmod(0o755)
-            (tmp / "docs").mkdir()
-            (tmp / "docs" / "index.html").write_text(
-                'src="https://cdn.jsdelivr.net/gh/x/design-system@v2.4.0/sc.css"\n')
-            r = subprocess.run(["bash", "-e", "-c",
-                                self._block("Run the consumer policy against the pinned sheet", "run")],
-                               cwd=tmp, capture_output=True, text=True,
-                               env={**os.environ, "PATH": f"{tmp / 'bin'}:{os.environ['PATH']}",
-                                    "GITHUB_STEP_SUMMARY": str(tmp / "sum")})
+            r = self._run_lint_step(
+                tmp, '#!/bin/sh\nif [ "$1" = "clone" ]; then exit 128; fi\nexit 0\n',
+                self.NODE_STUB)
             self.assertNotEqual(r.returncode, 0,
                                 "a step that could not fetch the sheet it lints must "
                                 f"not report success:\n{r.stdout}\n{r.stderr}")
-            self.assertIn("could not fetch design-system@v2.4.0", r.stdout + r.stderr,
+            self.assertIn(f"could not fetch design-system@{self.PIN_STUB}",
+                          r.stdout + r.stderr,
                           "…and it must say which thing it could not get")
+
+    def test_a_snapshot_that_will_not_verify_takes_the_step_down_first(self):
+        """The third failure mode, and the one the local snapshot introduced.
+
+        The pin is no longer a string grepped out of a page: it is the output
+        of a tool that verifies every digest in docs/design-system first. If
+        that tool refuses, there is no ref to clone and nothing to lint — so
+        the step must stop THERE, before a clone reports success against an
+        empty `$PIN` and the linter runs against whatever it dragged down.
+        `set -e` aborts an assignment whose command substitution failed; that
+        is executed here rather than assumed, because it is the whole guard.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            r = self._run_lint_step(
+                tmp, '#!/bin/sh\nmkdir -p /tmp/ds-unused\nexit 0\n',
+                '#!/bin/sh\ncase "$*" in\n'
+                '  *design_snapshot*) echo "Design asset changed outside the atomic'
+                ' snapshot: sc.css" >&2; exit 1 ;;\nesac\nexit 0\n')
+            self.assertNotEqual(r.returncode, 0,
+                                "a snapshot that will not verify has no ref to lint "
+                                f"against; the step must stop:\n{r.stdout}\n{r.stderr}")
+            self.assertNotIn("could not fetch design-system@", r.stdout + r.stderr,
+                             "…and it must stop at the snapshot, not carry an empty "
+                             "pin as far as the clone")
+            self.assertEqual("", self._git_calls(tmp),
+                             "…and git must not have been asked for anything at all: "
+                             "a clone against an empty ref is how a wrong sheet gets "
+                             "linted as if it were the right one")
 
     def test_a_linter_that_crashes_takes_the_step_down_too(self):
         """The other half, and the one only `pipefail` catches: the checkout
         arrives and the linter itself dies. `tee` returns 0 over it, which is
         why check.yml sets pipefail on the identical line and this file did
         not."""
-        import subprocess, tempfile, shutil as _sh
+        import tempfile, shutil as _sh
         ds = Path("/tmp/ds")
         had = ds.exists()
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td)
-            (tmp / "bin").mkdir()
-            (tmp / "bin" / "git").write_text(
-                "#!/bin/sh\nmkdir -p /tmp/ds && : > /tmp/ds/sc.css\nexit 0\n")
-            (tmp / "bin" / "node").write_text("#!/bin/sh\necho boom >&2\nexit 1\n")
-            for n in ("git", "node"):
-                (tmp / "bin" / n).chmod(0o755)
-            (tmp / "docs").mkdir()
-            (tmp / "docs" / "index.html").write_text('design-system@v2.4.0/sc.css\n')
             try:
-                r = subprocess.run(["bash", "-e", "-c",
-                                    self._block("Run the consumer policy against the pinned sheet", "run")],
-                                   cwd=tmp, capture_output=True, text=True,
-                                   env={**os.environ, "PATH": f"{tmp / 'bin'}:{os.environ['PATH']}",
-                                        "GITHUB_STEP_SUMMARY": str(tmp / "sum")})
+                r = self._run_lint_step(
+                    tmp, "#!/bin/sh\nmkdir -p /tmp/ds && : > /tmp/ds/sc.css\nexit 0\n",
+                    self.NODE_STUB)
+                calls = self._git_calls(tmp)
             finally:
                 if not had:
                     _sh.rmtree(ds, ignore_errors=True)
         self.assertNotEqual(r.returncode, 0,
                             "the checkout was there and the linter died; `tee` "
                             f"returns 0 over that unless pipefail is set:\n{r.stdout}\n{r.stderr}")
+        # The discriminator is not the stub's message — a blanket-failing `node`
+        # prints the same words from the snapshot step, and `set -e` aborts the
+        # assignment before the clone, so stdout looks identical. What differs
+        # is that the clone RAN: reaching the linter means the pin resolved and
+        # /tmp/ds/sc.css was there, so the death below it can only be the
+        # linter's. Measured from the git log, not read off the output.
+        self.assertIn(self.PIN_STUB, calls,
+                      "…and it must be the LINTER that died, not the snapshot step "
+                      "above it: nothing ever asked git for the verified pin, so "
+                      f"this would pass on a rule it does not name:\n{calls!r}")
+        self.assertNotIn("could not fetch design-system@", r.stdout + r.stderr,
+                         f"the clone guard fired, so the linter was never reached:"
+                         f"\n{r.stdout}\n{r.stderr}")
+        self.assertIn("cannot find module", r.stdout + r.stderr,
+                      f"the linter's own failure never reached the log:\n{r.stderr}")
 
     def _digest(self, outcome, candidates, report, has_issue):
         import subprocess, tempfile, json as _json

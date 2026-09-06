@@ -57,8 +57,8 @@ jobs:
           node-version: 24
       - name: Lint the pages against the design system they pin
         run: |
-          PIN=$(grep -oEm1 'design-system@[^/"]+' docs/index.html | cut -d@ -f2)
-          echo "pages pin design-system@$PIN"
+          PIN=$(node tools/design_snapshot.mjs --commit)
+          echo "verified local design snapshot: $PIN"
           git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/design-system \
             || { git clone https://github.com/spicyChicken59/design-system /tmp/design-system \
                  && git -C /tmp/design-system checkout "$PIN"; }
@@ -83,7 +83,7 @@ jobs:
       # else's CDN having a bad morning.
       - name: The design system the pages pin
         run: |
-          PIN=$(grep -oEm1 'design-system@[^/"]+' docs/index.html | cut -d@ -f2)
+          PIN=$(node tools/design_snapshot.mjs --commit)
           git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/design-system \
             || { git clone https://github.com/spicyChicken59/design-system /tmp/design-system \
                  && git -C /tmp/design-system checkout "$PIN"; }

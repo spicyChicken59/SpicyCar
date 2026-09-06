@@ -4491,6 +4491,14 @@ await step('a departure from one query is not a departure from the market', asyn
   if (!subject) {
     skip('the gone card counts a car still listed apart from the departures', 'no model on the sheet has a car that left a watch while still listed');
     skip('and the row says which watch it left and what it asks now', 'no such car');
+    // A sheet with no forwarded listings still has a movement count to check.
+    // Keep this assertion active; only the two forwarding-specific rows skip.
+    if (anyModel) {
+      await open(anyModel.w.q);
+      const r = await read();
+      ok('the movement tile counts only cars that left the market', new RegExp(`${goneCount(anyModel.m)} gone`).test(r.tile),
+         `tile "${(r.tile.match(/\d+ gone/) || ['(no gone clause)'])[0]}" · sheet ${goneCount(anyModel.m)} (no cars still listed)`);
+    } else skip('the movement tile counts only cars that left the market', 'no model holds a departure and two day rows');
   } else {
     await open(subject.w.q); await showAllGone();
     const r = await read();
@@ -4807,7 +4815,12 @@ await step('the floor delta names its cause', async () => {
     const floor = priced[0], next = priced[1];
     planted.listings = planted.listings.filter((x) => x !== floor);
     floor.series = (floor.series || []).filter((pt) => pt[0] <= prev.date);
-    if (!floor.series.length) floor.series = [[prev.date, floor.price]];
+    // Make the served history agree with the served daily floor. The real
+    // car may have cut its price today: preserving yesterday's older price
+    // while changing prev.min_price creates contradictory evidence, which
+    // the production renderer correctly refuses to describe as a departure.
+    const prevFetch = latest((planted.fetch_days || {})[floor.trim_id], prev.date) || prev.date;
+    floor.series = floor.series.filter((pt) => pt[0] < prevFetch).concat([[prevFetch, floor.price]]);
     prev.min_price = floor.price; today.min_price = next.price;
     planted.gone = (planted.gone || []).concat([{ ...floor, last_price: floor.price, last_seen: prev.date, likely: 'delisted', exact }]);
     const wantWhy = `the ${money(floor.price)} car ${exact ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
@@ -5189,7 +5202,9 @@ await step('a car is called what it is', async () => {
 await step('a car is new only on the day it arrives', async () => {
   plan('a car first seen before its model was last fetched does not wear the new chip',
        'and the tile counts what the table shows',
-       'a model behind the newest snapshot still counts its own arrivals');
+       'a model behind the newest snapshot still counts its own arrivals',
+       'and a model on its first fetch reports no movement at all',
+       'and the watchlist tile is the sum of the models it pools');
   const modelOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {});
   const asOf = (w) => modelOf(w).as_of || SHEET.data_through;
   const listingsOf = (w) => modelOf(w).listings || [];
@@ -5236,19 +5251,118 @@ await step('a car is new only on the day it arrives', async () => {
   // the only place that can pin which one is in force: its arrivals are the
   // ones of ITS day. Anchored on the record's newest day this tile reads 0 for
   // such a model however many cars arrived at its last fetch.
-  const behind = WATCHED.filter((w) => asOf(w) !== SHEET.data_through
+  //
+  // A model on its FIRST fetch is not a subject here, and excluding it is the
+  // page's own rule rather than a convenience: with one day in its series
+  // there is no previous snapshot of its own to move against, so the tile
+  // reads "movement shows from day 2" and every one of its cars is a car the
+  // tracker has just met, not a car that arrived. The record this was written
+  // against holds exactly that case — hyundai/ioniq9, one fetch on 2026-08-25,
+  // 37 cars all first seen that day — and reading it as "37 new" would be the
+  // count claiming a comparison that never happened. Checked against the page
+  // before it was written down: 0 rows wear the chip there, which is the same
+  // answer the tile gives.
+  //
+  // Every straggler is checked, not `behind[0]`: which model comes first is an
+  // accident of the watchlist's order, and a check that reads one of three
+  // subjects is a check that a cadence change can silently point somewhere
+  // else.
+  const daysOf = (w) => ((modelOf(w).daily) || []).length;
+  const behind = WATCHED.filter((w) => asOf(w) !== SHEET.data_through && daysOf(w) >= 2
     && listingsOf(w).some((x) => String(x.first_seen || '').slice(0, 10) === asOf(w)));
   if (!behind.length) return skip('a model behind the newest snapshot still counts its own arrivals',
-                                  'every model on the watchlist was fetched on the newest snapshot, or none of the stragglers gained a car at its last fetch');
-  const lag = behind[0];
-  const want = listingsOf(lag).filter((x) => String(x.first_seen || '').slice(0, 10) === asOf(lag)).length;
-  await open(lag.q);
-  const lagTile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))
-    ).find((t) => /new/.test(t)) || '';
-  const got = Number((lagTile.match(/(\d+)\s*new/) || [])[1]);
-  ok('a model behind the newest snapshot still counts its own arrivals', got === want,
-     `${lag.id} was last fetched ${asOf(lag)}, the record runs to ${SHEET.data_through}`
-     + ` · ${want} cars arrived at its own last fetch · the tile says ${Number.isFinite(got) ? got : 'nothing'}`);
+                                  'no model on the watchlist is behind the newest snapshot with a previous fetch of its own and a car that arrived at its last one');
+  const read = [];
+  for (const lag of behind) {
+    const want = listingsOf(lag).filter((x) => String(x.first_seen || '').slice(0, 10) === asOf(lag)).length;
+    await open(lag.q);
+    const lagTile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))
+      ).find((t) => /new/.test(t)) || '';
+    const got = Number((lagTile.match(/(\d+)\s*new/) || [])[1]);
+    read.push({ lag, want, got });
+  }
+  const off = read.filter((r) => r.got !== r.want);
+  ok('a model behind the newest snapshot still counts its own arrivals', off.length === 0,
+     read.map((r) => `${r.lag.id} last fetched ${asOf(r.lag)} (record runs to ${SHEET.data_through})`
+       + ` · ${r.want} arrived at its own last fetch · tile says ${Number.isFinite(r.got) ? r.got : 'nothing'}`
+     ).join(' | '));
+
+  // The other side of that exclusion, and it has to be asserted or the
+  // exclusion above is a hole rather than a rule: a model on its first fetch
+  // must report NO movement, not zero movement. "0 new · 0 gone" is a
+  // comparison the record cannot have made, and on a thirty-six model
+  // watchlist coming online a few at a time this is the state most of the
+  // page is in — twenty-nine models have never fetched and one has fetched
+  // once, against seven with a series to compare. It was pinned nowhere until
+  // the check above started depending on it.
+  const first = WATCHED.filter((w) => w.cars && daysOf(w) === 1);
+  if (!first.length) skip('and a model on its first fetch reports no movement at all',
+                          'every model holding cars has fetched more than once');
+  else {
+    const seen = [];
+    for (const w of first) {
+      await open(w.q);
+      const more2 = page.locator('[data-fkey="more:list"]');
+      if (await more2.count() && await more2.isVisible()) { await more2.click(); await page.waitForTimeout(400); }
+      const tile2 = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent.replace(/\s+/g, ' ').trim()))
+        ).find((t) => /previous snapshot/i.test(t)) || '';
+      const chips2 = await page.locator('#list-table tbody tr').evaluateAll((rows) => rows
+        .filter((r) => [...r.querySelectorAll('.sc-chip')].some((c) => c.textContent.trim() === 'new')).length);
+      seen.push({ w, tile: tile2, chips: chips2, counted: /\d+\s*new/.test(tile2) });
+    }
+    const wrong = seen.filter((x) => x.counted || x.chips);
+    ok('and a model on its first fetch reports no movement at all', wrong.length === 0,
+       seen.map((x) => `${x.w.id} (${x.w.cars} cars, one fetch on ${asOf(x.w)}) · tile "${x.tile.slice(-40)}" · ${x.chips} rows wear the chip`).join(' | '));
+  }
+
+  // The front page pools all of it into one number, and until this check the
+  // pooled one was the only movement figure on the site nothing opened. It is
+  // where a lost per-model gate actually shows: `anyPrev` is a `some`, so one
+  // model with a series is enough to print the SUM — and a model on its first
+  // fetch would then contribute its whole inventory as arrivals. Measured, not
+  // argued: ungating movementFor's `fresh` turns "32 new" into "69 new" here
+  // and puts Hyundai Ioniq 9 at the head of "most", while every model page
+  // stays correct, because the model tile is gated a second time on its own
+  // record. Two gates, one mechanism; this is the surface that reads the
+  // weaker one. It matters more each week — twenty-nine of the thirty-six
+  // models have never fetched, and each one arrives as a first-fetch model on
+  // its own day.
+  //
+  // Summed from the model tiles rather than from the sheet, because that is
+  // the arithmetic a reader can do: the front page's number should be the
+  // numbers on the pages it links to.
+  const parts = [];
+  for (const w of WATCHED.filter((x) => x.cars)) {
+    await open(w.q);
+    const t = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((x) => x.textContent.replace(/\s+/g, ' ').trim()))
+      ).find((x) => /previous snapshot/i.test(x)) || '';
+    const n = (t.match(/(\d+)\s*new/) || [])[1];
+    parts.push({ id: w.id, n: n == null ? null : Number(n) });
+  }
+  await open('');
+  const roof = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((x) => x.textContent.replace(/\s+/g, ' ').trim()))
+    ).find((x) => /previous snapshot/i.test(x)) || '';
+  const pooled = Number((roof.match(/(\d+)\s*new/) || [])[1]);
+  const summed = parts.reduce((a, x) => a + (x.n || 0), 0);
+  const silent = parts.filter((x) => x.n == null);
+  // The skip is conditioned on the MODEL PAGES, never on the pooled tile: a
+  // tile that has stopped naming a count is the failure this check exists for,
+  // and skipping on its silence is how it would report safety instead. Turning
+  // the tile's `some` into an `every` does exactly that — one model without a
+  // series silences the whole front page while six models still have one — and
+  // an earlier draft of this check skipped over it, printing "no model on it
+  // has a previous fetch" about a record where six models did.
+  const voiced = parts.filter((x) => x.n != null);
+  if (!voiced.length) skip('and the watchlist tile is the sum of the models it pools',
+                           'no model page names a count of new cars, so there is nothing for the watchlist to pool');
+  else ok('and the watchlist tile is the sum of the models it pools',
+          Number.isFinite(pooled) && pooled === summed,
+          (Number.isFinite(pooled)
+            ? `the watchlist says ${pooled} new`
+            : `the watchlist names no count at all, over ${voiced.length} model page(s) that do`)
+          + ` · the model pages sum to ${summed}`
+          + ` (${voiced.map((x) => `${x.id} ${x.n}`).join(', ')})`
+          + (silent.length ? ` · ${silent.map((x) => x.id).join(', ')} report no movement and so add nothing` : ''));
 });
 // --- the window the chart draws is the window it names ----------------------
 // The range chips are drawn after the rows, so on the first paint of a visit
@@ -5414,7 +5528,7 @@ await step('what a keyboard gets', async () => {
 // does NOT offer the "serve it over HTTP" advice, which is the answer to a
 // different question and was printed unconditionally.
 await step('when the design system does not load', async () => {
-  plan('a CDN outage says so instead of drawing a blank page',
+  plan('missing design assets say so instead of drawing a blank page',
        'and does not blame data.json for it');
   // The console errors this step provokes are the point of it, so they are
   // taken back out of the run's tally afterwards — but only the ones that are
@@ -5422,7 +5536,7 @@ await step('when the design system does not load', async () => {
   // swapped still counts, which is the difference between silencing a step and
   // silencing a page.
   const before = errors.length;
-  await ctx.route('**://cdn.jsdelivr.net/**', (r) =>
+  await ctx.route('**/design-system/**', (r) =>
     r.fulfill({ status: 503, contentType: 'text/plain', body: 'no' }));
   try {
     await page.goto(BASE + '/index.html', { waitUntil: 'load' });
@@ -5430,7 +5544,7 @@ await step('when the design system does not load', async () => {
     const notice = await page.locator('#notice').evaluate((n) => ({
       hidden: n.hidden, text: (n.textContent || '').replace(/\s+/g, ' ').trim(),
     }));
-    ok('a CDN outage says so instead of drawing a blank page',
+    ok('missing design assets say so instead of drawing a blank page',
        !notice.hidden && /design system/i.test(notice.text),
        notice.hidden ? 'the notice stayed hidden — the page is blank and silent'
                      : `"${notice.text.slice(0, 110)}"`);
@@ -5443,16 +5557,8 @@ await step('when the design system does not load', async () => {
     const mine = /jsdelivr|design system|SC is not defined|503/i;
     const raised = errors.splice(before);
     for (const e of raised) if (!mine.test(e)) errors.push(e);
-    // Put the checkout back for every step after this one.
-    await ctx.unroute('**://cdn.jsdelivr.net/**');
-    await ctx.route('**://cdn.jsdelivr.net/**', (route) => {
-      const path = new URL(route.request().url()).pathname;
-      if (path.includes('us-atlas')) return route.fulfill({ contentType: 'application/json', body: ATLAS });
-      const file = join(DS, path.replace(/^\/gh\/spicyChicken59\/design-system@[^/]+\//, ''));
-      return existsSync(file)
-        ? route.fulfill({ path: file, contentType: TYPES[extname(file)] })
-        : route.fulfill({ status: 404, body: 'not in the checkout: ' + path });
-    });
+    // Restore the real locally served snapshot for subsequent steps.
+    await ctx.unroute('**/design-system/**');
   }
 });
 
@@ -6401,7 +6507,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 291;
+const EXPECTED = 293;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

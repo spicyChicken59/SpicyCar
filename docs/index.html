@@ -29,10 +29,10 @@
      is the duplication it exists to resolve. Keep it equal to og:url above. -->
 <link rel="canonical" href="https://spicychicken59.github.io/SpicyCar/">
 <meta name="twitter:card" content="summary_large_image">
-<!-- SpicyChicken Design System v2.4.0, pinned by tag · DESIGN_SYSTEM.md §11 -->
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-avatar-tile.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/apple-touch-icon.png">
+<!-- SpicyChicken Design System · atomic local snapshot, see design-system/provenance.json -->
+<link rel="icon" href="design-system/assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="design-system/assets/sc-avatar-tile.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="design-system/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -43,12 +43,13 @@
      The no-op catch keeps a failing fetch from firing an unhandled rejection
      before the page's own handler below picks the same promise up. -->
 <script>window.__data = fetch('data.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); window.__data.catch(function () {});</script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc.css">
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-theme.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-charts.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/sc-map.js"></script>
+<link rel="stylesheet" href="design-system/sc.css">
+<script src="design-system/sc-theme.js"></script>
+<script src="design-system/sc-motion.js" defer></script>
+<script src="design-system/sc-charts.js"></script>
+<script src="design-system/sc-map.js"></script>
 <style>
-  /* Page-specific only. Everything generic now lives in sc.css v2.4.0 — the
+  /* Page-specific only. Everything generic now lives in sc.css v2.7.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
      frame's photo loader and the 44px touch targets were all promoted out of
      this file and are no longer maintained here. */
@@ -334,7 +335,7 @@
   }
 
   /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
-     masthead, theme toggle and footer are sc.css v2.4.0's own 44px block,
+     masthead, theme toggle and footer are sc.css v2.7.0's own 44px block,
      keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
      Two mechanisms, split by whether layout may move:
 
@@ -372,9 +373,15 @@
         sticky bar +20px on a tablet) and the input grows to 20px so the
         visible box matches the bigger target.
 
-     Promotion candidates for design-system v2.5.x (same shapes; upstream
-     .sc-details needs no :not() — .picks-group is this page's class).
-     Delete when the pin moves past a release that carries them. */
+     Promotion candidates (same shapes; upstream .sc-details needs no
+     :not() — .picks-group is this page's class). Delete when the pinned
+     sheet carries them, which is a thing to CHECK against the pin and not a
+     release to name: this comment read "candidates for v2.5.x" while the pin
+     went v2.4.0 → v2.7.0 without carrying one of them, so the number was the
+     only part of it that changed meaning. Checked at v2.7.0: the sheet's
+     three coarse-pointer blocks cover .sc-map__btn, .sc-signature,
+     .sc-brand-panel__label, .sc-theme-toggle button, .sc-masthead .sc-nav a,
+     .sc-brand and .sc-foot a — none of the five below. */
   @media (any-pointer: coarse) {
     .sc-link--quiet, .sc-legend__chip, .sc-tab { position: relative; }
     .sc-link--quiet::before, .sc-legend__chip::before, .sc-tab::before {
@@ -415,6 +422,77 @@
      to REST under it at full scroll — measured 68px of standing overlap.
      Clearance on the right, sized past the button's 14+62px footprint. */
   footer.sc-foot { padding-right: 88px; }
+
+  /* SpicyCar composition: a compact branded opening, one connected KPI strip,
+     and readable evidence. Values, filters and render order remain the app's. */
+  #car-heading { padding-top: var(--sc-s3); }
+  #car-heading .sc-cover { display: grid; grid-template-columns: minmax(0, 1fr) 132px; }
+  #car-heading .sc-cover__title { max-width: 28ch; }
+  #car-heading .sc-cover__dek { max-width: 82ch; font-size: var(--sc-text-md); }
+  #car-heading .sc-cover__art { gap: var(--sc-s2); }
+  #car-heading .sc-cover__caption { line-height: 1.7; }
+  #car-heading .sc-meta { margin-top: var(--sc-s2); }
+  #car-heading > .sc-tabs { padding: var(--sc-s1) 0; }
+  #main > .sc-card { box-shadow: none; }
+  #main > .sc-card > .sc-card__head { margin-bottom: var(--sc-s3); }
+  #main > .sc-card > .sc-card__head .sc-eyebrow { margin-bottom: var(--sc-s1); }
+  #hero-card { border-color: var(--sc-brand-line); padding: var(--sc-s4); }
+  #hero-cars { gap: var(--sc-s3); }
+  #hero-cars > .sc-tile { box-shadow: none; border: 0; border-top: 2px solid var(--sc-brand-line); border-radius: 0; background: var(--sc-raised); padding: var(--sc-s3); }
+  #hero-cars .sc-tile__label { font-weight: 600; }
+  #hero-cars .sc-tile__value { margin: var(--sc-s2) 0; font-size: clamp(34px, 4vw, 48px); letter-spacing: -.04em; }
+  #hero-cars .sc-tile__sub { font: 400 var(--sc-text-sm)/1.6 var(--sc-font-body); letter-spacing: 0; }
+  #hero-cars .sc-tile__spark { padding-top: var(--sc-s2); border-top: 1px solid var(--sc-border); }
+  #hero-cars .sc-delta { margin: var(--sc-s2) 0; line-height: 1.6; }
+  #hero-gap { margin-top: var(--sc-s3); padding-top: var(--sc-s3); border-top: 1px solid var(--sc-border); font: 400 var(--sc-text-sm)/1.7 var(--sc-font-body); }
+  #kpis { gap: 0; }
+  #kpis > .sc-tile { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+  #kpis > .sc-tile + .sc-tile { border-left: 1px solid var(--sc-border); }
+  #kpis .sc-tile__label { min-height: 3em; }
+  #kpis .sc-tile__value { font-size: clamp(26px, 2.9vw, 40px); }
+  #kpis .sc-tile__value--sm { font-size: clamp(22px, 2.4vw, 30px); }
+  #kpis .sc-tile__sub { font: 400 var(--sc-text-sm)/1.6 var(--sc-font-body); letter-spacing: 0; }
+  #promo-tiles .sc-tile { background: var(--sc-raised); box-shadow: none; }
+  #promo-tiles .sc-tile__sub { font-family: var(--sc-font-body); letter-spacing: 0; }
+  #notes-grid > div { padding-top: var(--sc-s2); border-top: 1px solid var(--sc-border); }
+  #map-card .sc-chart-caption, #chart-card .sc-chart-caption { margin-top: var(--sc-s3); }
+  #next-callout { margin-block: var(--sc-s5); }
+  @media (max-width: 1000px) and (min-width: 601px) {
+    #kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    #kpis > .sc-tile:nth-child(3) { border-left: 0; }
+    #kpis > .sc-tile:nth-child(n+3) { border-top: 1px solid var(--sc-border); }
+  }
+  @media (max-width: 600px) {
+    #car-heading .sc-cover { grid-template-columns: minmax(0, 1fr); position: relative; align-items: start; gap: var(--sc-s1); }
+    #car-heading .sc-cover__content > .sc-eyebrow, #car-heading .sc-cover__title { padding-right: 44px; }
+    #car-heading .sc-meta .sc-sep { display: none; }
+    #car-heading .sc-cover__art { position: absolute; top: var(--sc-s3); right: var(--sc-s3); padding-top: var(--sc-s0); }
+    #car-heading .sc-cover__art > img { width: 36px; max-width: 36px; }
+    #car-heading .sc-cover__caption { display: none; }
+    #car-heading .sc-cover__title { font-size: 30px; margin-top: var(--sc-s2); }
+    #hero-card { padding: var(--sc-s2); }
+    #hero-cars > .sc-tile { padding: var(--sc-s2); }
+    /* Keep both candidate headlines and the decision in one phone screen.
+       Evidence still opens in its existing disclosure; nothing is omitted. */
+    #main > #hero-card > .sc-card__head { margin-bottom: var(--sc-s1); }
+    #hero-card .sc-card__head .sc-eyebrow { display: none; }
+    #hero-cars { gap: var(--sc-s2); }
+    #hero-cars .sc-tile__value { margin: var(--sc-s0) 0; font-size: 32px; }
+    #hero-cars .sc-tile__sub { line-height: 1.5; margin-top: var(--sc-s0); }
+    #hero-cars .sc-delta { margin: var(--sc-s0) 0; line-height: 1.4; }
+    #hero-gap { margin-top: var(--sc-s1); padding-top: var(--sc-s1); line-height: 1.5; }
+    #kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #kpis > .sc-tile { padding: var(--sc-s2); }
+    #kpis > .sc-tile:nth-child(3) { border-left: 0; }
+    #kpis > .sc-tile:nth-child(n+3) { border-top: 1px solid var(--sc-border); }
+    #kpis .sc-tile__value { font-size: 27px; }
+    #kpis .sc-tile__value--sm { font-size: 22px; }
+  }
+  @media (max-width: 359px) {
+    #kpis { grid-template-columns: minmax(0, 1fr); }
+    #kpis > .sc-tile + .sc-tile { border-left: 0; border-top: 1px solid var(--sc-border); }
+    #kpis .sc-tile__label { min-height: 0; }
+  }
 </style>
 </head>
 <body>
@@ -422,8 +500,8 @@
 
 <header class="sc-masthead">
   <a class="sc-brand" href="./">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
-    <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">Used-car purchase analyzer</span></span>
+    <img class="sc-mark" src="design-system/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
+    <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">A SpicyChicken tool</span></span>
   </a>
   <div class="sc-masthead__right">
     <nav class="sc-nav" aria-label="Primary"><a href="how.html">How it works</a></nav>
@@ -439,11 +517,19 @@
 </header>
 
 <main class="sc-wrap sc-wrap--wide sc-stack" id="main">
-  <div class="sc-title">
-    <div class="sc-eyebrow sc-eyebrow--case" id="eyebrow">analyzer</div>
-    <h1 id="h1">Loading snapshot…</h1>
-    <p class="sc-dek" id="dek"></p>
-    <div class="sc-meta" id="meta"></div>
+  <div class="sc-title" id="car-heading">
+    <section class="sc-cover sc-cover--wine sc-cover--compact sc-on-ink sc-reveal" data-sc-motion="fade" aria-labelledby="h1">
+      <div class="sc-cover__content">
+        <div class="sc-eyebrow sc-eyebrow--case" id="eyebrow">analyzer</div>
+        <h1 class="sc-cover__title" id="h1">Loading snapshot…</h1>
+        <p class="sc-cover__dek" id="dek"></p>
+        <div class="sc-meta" id="meta"></div>
+      </div>
+      <div class="sc-cover__art" aria-hidden="true">
+        <img src="design-system/assets/sc-mark-mono-cream.svg" alt="" width="342" height="405">
+        <span class="sc-cover__caption">SpicyChicken<br>made for the decision</span>
+      </div>
+    </section>
     <div class="sc-tabs" id="tabs-brand" role="group" aria-label="Brand" hidden></div>
     <div class="sc-tabs" id="tabs" role="group" aria-label="Model" hidden></div>
   </div>
@@ -453,19 +539,21 @@
   <section class="sc-card" id="hero-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">the daily decision</div>
         <h2>The decision</h2>
         <p class="sc-hint" id="hero-hint"></p>
       </div>
     </div>
-    <div class="sc-grid sc-grid--2" id="hero-cars"></div>
+    <div class="sc-grid sc-grid--2 sc-stagger" id="hero-cars"></div>
     <p class="sc-note" id="hero-gap" hidden></p>
   </section>
 
-  <section class="sc-grid sc-grid--4" id="kpis" aria-label="Today at a glance"></section>
+  <section class="sc-stat-strip sc-stat-strip--4" id="kpis" aria-label="Today at a glance"></section>
 
   <section class="sc-card" id="promo-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">financing in context</div>
         <h2 id="promo-title">The promo, priced</h2>
         <p class="sc-hint" id="promo-hint"></p>
       </div>
@@ -479,7 +567,7 @@
     <div class="sc-filter-bar__head">
       <span class="sc-eyebrow">filters</span>
       <span class="sc-note" id="filter-count" role="status" aria-live="polite"></span>
-      <button class="sc-btn sc-btn--ghost sc-btn--sm sc-filter-bar__toggle" id="filter-toggle" type="button"
+      <button class="sc-btn sc-press sc-btn--ghost sc-btn--sm sc-filter-bar__toggle" id="filter-toggle" type="button"
               aria-expanded="false" aria-controls="filters">Filters</button>
     </div>
     <div class="sc-filters" id="filters">
@@ -545,6 +633,7 @@
   <section class="sc-card" id="compare-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">the comparison</div>
         <h2 id="compare-title">Side by side</h2>
         <p class="sc-hint" id="compare-hint"></p>
       </div>
@@ -555,20 +644,22 @@
   <section class="sc-card" id="finalists-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">your working set</div>
         <h2>Your shortlist, side by side</h2>
         <p class="sc-hint" id="finalists-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table sc-table--compact" id="finalists-table"></table></div>
+    <div class="sc-table-scroll"><table class="sc-table sc-table--compact sc-table--research" id="finalists-table"></table></div>
   </section>
 
   <div id="shortlist" hidden></div>
 
   <div id="takeaway" hidden></div>
 
-  <section class="sc-card" id="map-card" hidden>
+  <section class="sc-card sc-evidence sc-reveal" data-sc-motion="rise" id="map-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">market geography</div>
         <h2>The market on the map</h2>
         <p class="sc-hint" id="map-hint"></p>
       </div>
@@ -577,11 +668,19 @@
     <div class="sc-map" id="map" role="group" tabindex="0" aria-label="Map of the cars for sale. Use left and right arrow keys to step through cars west to east, Enter to open, Escape to clear."></div>
     <p class="sc-sr-only" id="map-say" role="status" aria-live="polite"></p>
     <div class="sc-sr-only" id="map-twin"></div>
+    <div class="sc-chart-caption">
+      <span>SpicyCar · the market record</span>
+      <span class="sc-signature sc-signature--small">
+        <span class="sc-adaptive-mark" aria-hidden="true"><img class="sc-adaptive-mark__dark" src="design-system/assets/sc-mark-color-dark.svg" alt="" width="342" height="405"><img class="sc-adaptive-mark__light" src="design-system/assets/sc-mark-color-light.svg" alt="" width="342" height="405"></span>
+        <span class="sc-signature__name">SpicyChicken</span>
+      </span>
+    </div>
   </section>
 
-  <section class="sc-card" id="notes-card" hidden>
+  <section class="sc-card sc-reveal" data-sc-motion="rise" id="notes-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">before you visit</div>
         <h2 id="notes-title">Know the model</h2>
         <p class="sc-hint">The good, the bad, and what to check before you go and look. Written by hand, not by the tracker.</p>
       </div>
@@ -590,9 +689,10 @@
     <div class="sc-grid sc-grid--3" id="notes-grid"></div>
   </section>
 
-  <section class="sc-card" id="chart-card" hidden>
+  <section class="sc-card sc-evidence sc-reveal" data-sc-motion="rise" id="chart-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">the market record</div>
         <h2 id="chart-title">Asking price over time</h2>
         <p class="sc-hint" id="chart-hint"></p>
       </div>
@@ -603,40 +703,50 @@
       </div>
     </div>
     <div class="sc-legend" id="legend"></div>
-    <div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div>
-    <details class="sc-details"><summary>Table view</summary><div class="sc-table-scroll" id="chart-table"></div></details>
+    <div class="sc-evidence__plot"><div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div></div>
+    <details class="sc-details sc-disclosure"><summary>Table view</summary><div class="sc-table-scroll" id="chart-table"></div></details>
+    <div class="sc-chart-caption">
+      <span>SpicyCar · the market record</span>
+      <span class="sc-signature sc-signature--small">
+        <span class="sc-adaptive-mark" aria-hidden="true"><img class="sc-adaptive-mark__dark" src="design-system/assets/sc-mark-color-dark.svg" alt="" width="342" height="405"><img class="sc-adaptive-mark__light" src="design-system/assets/sc-mark-color-light.svg" alt="" width="342" height="405"></span>
+        <span class="sc-signature__name">SpicyChicken</span>
+      </span>
+    </div>
   </section>
 
-  <section class="sc-card" id="scatter-card" hidden>
+  <section class="sc-card sc-evidence sc-reveal" data-sc-motion="rise" id="scatter-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">price &amp; mileage</div>
         <h2>Price against miles</h2>
         <p class="sc-hint" id="scatter-hint"></p>
       </div>
     </div>
     <div class="sc-legend" id="scatter-legend"></div>
-    <div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div>
+    <div class="sc-evidence__plot"><div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div></div>
     <p class="sc-sr-only" id="scatter-say" role="status" aria-live="polite"></p>
   </section>
 
-  <section class="sc-card" id="overview-card" hidden>
+  <section class="sc-card sc-reveal" data-sc-motion="rise" id="overview-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">the watchlist index</div>
         <h2>Model index</h2>
         <p class="sc-hint" id="overview-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table" id="overview-table"></table></div>
+    <div class="sc-table-scroll"><table class="sc-table sc-table--research" id="overview-table"></table></div>
   </section>
 
   <section class="sc-card" id="list-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">the cars in view</div>
         <h2 id="list-title">Listings</h2>
         <p class="sc-hint" id="list-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll" id="list-scroll"><table class="sc-table" id="list-table"></table></div>
+    <div class="sc-table-scroll" id="list-scroll"><table class="sc-table sc-table--research" id="list-table"></table></div>
     <div class="sc-stack" id="list-cards" hidden></div>
     <div class="sc-show-more" id="list-more" hidden></div>
   </section>
@@ -644,6 +754,7 @@
   <section class="sc-card" id="gone-card" hidden>
     <div class="sc-card__head">
       <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">the earlier record</div>
         <h2 id="gone-title">Missing from the latest snapshot</h2>
         <p class="sc-hint" id="gone-hint">Vehicles seen on an earlier snapshot but not on the latest — sold, pulled, re-listed under a new VIN, or (marked) priced above the day's cheapest-N cut-off and simply not fetched.</p>
       </div>
@@ -669,7 +780,7 @@
        was one project's footer wearing a different mark from every other. The
        footer is ink in both schemes, so the cream mono form needs no flip. -->
   <a class="sc-watermark" href="https://github.com/spicyChicken59" rel="author">
-    <img class="sc-mark" src="https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/sc-mark-mono-cream.svg" alt="">
+    <img class="sc-mark" src="design-system/assets/sc-mark-mono-cream.svg" alt="">
     <span class="sc-watermark__name">SpicyChicken</span>
   </a>
 </footer>
@@ -919,7 +1030,7 @@
   // whose absence decides it.
   const unplaced = (x) => !isLocal(x) && !String(x.state || '').trim();
   // The chick, in the form the surface calls for: the dark-surface form in dark mode, the light-surface form in light.
-  const ASSETS = 'https://cdn.jsdelivr.net/gh/spicyChicken59/design-system@v2.4.0/assets/';
+  const ASSETS = 'design-system/assets/';
   const isLightTheme = () => root.getAttribute('data-theme') === 'light' || (!root.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: light)').matches);
   const markImg = () => el('img', { class: 'sc-mark', 'data-mark': 'color', src: ASSETS + (isLightTheme() ? 'sc-mark-color-light.svg' : 'sc-mark-color-dark.svg'), alt: '', width: 22, height: 26 });
   // the faint chick that stands in when a dealer sent no photo
@@ -1223,7 +1334,7 @@
     series = series.filter((s) => s.points.length);
     const dates = [...new Set(series.flatMap((s) => s.points.map((p) => p.date)))].sort();
     const vals = series.flatMap((s) => s.points.map((p) => p.value));
-    if (!dates.length) { host.appendChild(el('p', { class: 'sc-empty' }, opts.empty || 'History starts with the next tracker run.')); return; }
+    if (!dates.length) { host.appendChild(brandedEmpty(opts.empty || 'History starts with the next tracker run.')); return; }
     const W = Math.max(320, host.clientWidth || 720), H = opts.height || 250;
     const m = { t: 18, r: opts.named ? 190 : 84, b: 34, l: 56 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
@@ -1344,7 +1455,7 @@
   // works. All four names are exported by the pinned files (sc-charts.js,
   // sc-map.js); a false positive would mean the pin moved.
   if (typeof SC === 'undefined' || !SC.geo || !SC.spark || !SC.toneRef || !SC.tooltip) {
-    fail('The design-system scripts did not load from cdn.jsdelivr.net. '
+    fail('The design-system scripts did not load. '
          + 'The data is fine — this page cannot draw without them.',
          'Could not load the design system');
     return;
@@ -3557,7 +3668,7 @@
   // the value chip in the corner; the reasoning and facts below.
   function pickCard(p) {
     const b = p.x;
-    const facts = [p.modelLabel, b.year, carTrim(b), b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
+    const facts = [b.year, carTrim(b), b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
     const url = safeUrl(b.url);
     // A 2% saving should not wear the same green as a 33% one.
@@ -3572,16 +3683,19 @@
       : el('div', { class: 'sc-photo-card__media' }, ...inner);
     const open = url ? el('p', null, el('a', { href: url, target: '_blank', rel: 'noopener', 'data-fkey': 'pick:' + (b.vin || '') + ':open' }, 'Open the listing →')) : null;
     const cohort = [p.year, p.modelLabel, p.trim].filter(Boolean).join(' ');
-    return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
+    return el('div', { class: 'sc-photo-card sc-dossier sc-hover-lift' }, media, el('div', { class: 'sc-photo-card__body sc-dossier__body' },
+      el('h3', { class: 'sc-dossier__title' }, p.modelLabel),
       el('div', { class: 'sc-nowrap' },
         p.shopping === undefined ? null
           : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') },
                p.shopping ? 'shopping' : 'comparison'),
         isNew(b) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'new') : null),
-      el('span', { class: 'sc-note', title: (cohortOf(b, p.modelLabel) || {}).words || null },
+      el('span', { class: 'sc-note sc-dossier__evidence', title: (cohortOf(b, p.modelLabel) || {}).words || null },
         `${money(p.under)} below a typical ${cohort} with similar mileage`
         + (p.n ? ` · ${p.n} such listing${p.n === 1 ? '' : 's'}` : '')),
-      el('p', null, `${facts}. ${where}.`), el('p', null, starButton(b)), open));
+      el('p', { class: 'sc-dossier__meta' }, `${facts}.`),
+      el('p', { class: 'sc-dossier__meta' }, `${where}.`),
+      el('div', { class: 'sc-dossier__actions' }, starButton(b), open)));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
   // the rest of the country. Front page: across every model; model view: within it.
@@ -3629,7 +3743,7 @@
   function shortlistCard(vin, note) {
     const hit = findVin(vin);
     if (!hit) {
-      return el('div', { class: 'sc-photo-card' }, el('div', { class: 'sc-photo-card__body' },
+      return el('div', { class: 'sc-photo-card sc-dossier sc-hover-lift' }, el('div', { class: 'sc-photo-card__body sc-dossier__body' },
         el('div', { class: 'sc-media__title' }, 'Not seen yet by the tracker'),
         el('div', { class: 'sc-media__code' }, vin),
         note ? el('span', { class: 'sc-note' }, note) : null));
@@ -3657,13 +3771,13 @@
         el('span', { class: 'sc-photo-card__price-sub' }, gone ? `last seen ${fmtDate(x.last_seen)}` : shipNote(x))),
       gone ? el('span', { class: 'sc-chip sc-photo-card__chip ' + (stillListed(x) ? 'sc-chip--info' : x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
            : (x.pick_stand === 'under' ? el('span', { class: 'sc-chip sc-chip--good sc-photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
-    return el('div', { class: 'sc-photo-card' }, media, el('div', { class: 'sc-photo-card__body' },
-      el('div', { class: 'sc-media__title' }, title),
+    return el('div', { class: 'sc-photo-card sc-dossier sc-hover-lift' }, media, el('div', { class: 'sc-photo-card__body sc-dossier__body' },
+      el('div', { class: 'sc-media__title sc-dossier__title' }, title),
       gone ? null : el('div', { class: 'sc-media__sub' }, `${x.miles != null ? num(x.miles) + ' mi · ' : ''}${placeTxt(x)}`),
       gone ? null : movement(x, daily),
       note ? el('span', { class: 'sc-note' }, `note: ${note}`) : null,
       el('div', { class: 'sc-media__code' }, x.vin),
-      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'sl:' + (x.vin || '') + ':open', onclick: (e) => { e.preventDefault(); goTo(bk, mk, x.vin); } }, 'Open this car →'))));
+      el('div', { class: 'sc-dossier__actions' }, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'sl:' + (x.vin || '') + ':open', onclick: (e) => { e.preventDefault(); goTo(bk, mk, x.vin); } }, 'Open this car →'))));
   }
   function renderShortlist(show) {
     const host = $('shortlist'); host.textContent = '';
@@ -3779,7 +3893,7 @@
   function starButton(x) {
     const st = starOf(x);
     return el('button', {
-      class: 'sc-btn sc-btn--ghost sc-btn--sm', type: 'button',
+      class: 'sc-btn sc-press sc-btn--ghost sc-btn--sm', type: 'button',
       'data-fkey': 'star:' + (x.vin || ''),
       'aria-pressed': st ? 'true' : 'false',
       title: st ? `${STAR_WORD[st]} — press to move to ${STAR_WORD[STAR_STEPS[(STAR_STEPS.indexOf(st) + 1) % STAR_STEPS.length]] || 'nothing'}`
@@ -4724,9 +4838,9 @@
     // needs — the cheapest car they can drive to — gets its own tile rather than
     // being left to the table. Median moves into the market tile's sub-line.
     const bestLocal = lowestBy(priced.filter(isLocal), 'price');
-    const tile1 = el('div', { class: 'sc-tile', 'data-vin': best ? (best.vin || '') : '' }, el('div', { class: 'sc-tile__label' }, scopedView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
-      el('div', { class: 'sc-tile__value' }, best ? money(best.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
+    const tile1 = el('div', { class: 'sc-tile sc-stat', 'data-vin': best ? (best.vin || '') : '' }, el('div', { class: 'sc-tile__label sc-stat__label' }, scopedView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'),
+      el('div', { class: 'sc-tile__value sc-stat__value' }, best ? money(best.price) : '—'),
+      el('div', { class: 'sc-tile__sub sc-stat__note' }, best ? `${best.year} · ${num(best.miles)} mi · ${placeTxt(best)}${best.local ? '' : (best.ship ? ` · + ${money(best.ship)} ship` : '')}` : 'No priced listings'));
     // The day-over-day move used to be dropped under any filter, because the
     // number behind it was the nation's. It is the selected scope's own floor
     // now, so it can stay — but only when the scope's newest day is ABOUT the
@@ -4740,27 +4854,27 @@
     if (best && today && today.min_price === best.price) {
       tile1.appendChild(deltaEl(today.min_price, prev && prev.min_price, prev && prev.date, true, record.length));
       const why = floorMoveCause(t, today, prev, best);
-      if (why) tile1.appendChild(el('div', { class: 'sc-tile__sub' }, why));
+      if (why) tile1.appendChild(el('div', { class: 'sc-tile__sub sc-stat__note' }, why));
     }
     host.appendChild(tile1);
 
-    const tile2 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, scopedView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
-      el('div', { class: 'sc-tile__value' }, bestLocal ? money(bestLocal.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestLocal
+    const tile2 = el('div', { class: 'sc-tile sc-stat' }, el('div', { class: 'sc-tile__label sc-stat__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, scopedView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'),
+      el('div', { class: 'sc-tile__value sc-stat__value' }, bestLocal ? money(bestLocal.price) : '—'),
+      el('div', { class: 'sc-tile__sub sc-stat__note' }, bestLocal
         ? `${bestLocal.year} · ${num(bestLocal.miles)} mi · ${placeTxt(bestLocal)} · no shipping`
         : 'Nothing drivable under these filters'));
     host.appendChild(tile2);
 
     const local = rows.filter(isLocal).length, noLoc = rows.filter(unplaced).length;
-    const tile3 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'),
-      el('div', { class: 'sc-tile__value' }, String(rows.length)),
-      el('div', { class: 'sc-tile__sub' }, `${local} drivable · ${rows.length - local - noLoc} beyond your states`
+    const tile3 = el('div', { class: 'sc-tile sc-stat' }, el('div', { class: 'sc-tile__label sc-stat__label' }, 'Vehicles on the market'),
+      el('div', { class: 'sc-tile__value sc-stat__value' }, String(rows.length)),
+      el('div', { class: 'sc-tile__sub sc-stat__note' }, `${local} drivable · ${rows.length - local - noLoc} beyond your states`
         + (noLoc ? ` · ${noLoc} with no state` : '')
         + (med != null ? ` · median ${money(med)}` : '')));
     // The median above pools two markets whenever dealer stock is in the scope,
     // so the tile says so on its face, with each side's own count and median.
     const split = stockSplit(priced);
-    if (split) tile3.appendChild(el('div', { class: 'sc-tile__sub', title: STOCK_WHY }, split));
+    if (split) tile3.appendChild(el('div', { class: 'sc-tile__sub sc-stat__note', title: STOCK_WHY }, split));
     // The spark follows the scope (its tile value does), but the "no trend yet"
     // line is a claim about the RECORD — gate it on the record, or a filter
     // tells a reader on day 8 that the tracker has only ever run once.
@@ -4813,7 +4927,7 @@
     // Tile 4 counts over `all` and says so in its own label — every gate on it
     // reads the record, never the filtered series.
     const sub = record.length >= 2
-      ? el('div', { class: 'sc-tile__sub' },
+      ? el('div', { class: 'sc-tile__sub sc-stat__note' },
           newToday > 0
             ? el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:new', onclick: showNewest,
                         title: 'Sort the listings by newest to the tracker' }, `${newToday} new`)
@@ -4822,11 +4936,11 @@
           ' · ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:gone', onclick: showGoneCard,
                     title: 'Jump to the vehicles missing from the latest snapshot' }, `${gone} gone`))
-      : el('div', { class: 'sc-tile__sub' }, 'movement shows from day 2');
+      : el('div', { class: 'sc-tile__sub sc-stat__note' }, 'movement shows from day 2');
     const cutsTxt = `${cuts} price cut${cuts === 1 ? '' : 's'}`;
-    const tile4 = el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' },
+    const tile4 = el('div', { class: 'sc-tile sc-stat' }, el('div', { class: 'sc-tile__label sc-stat__label' },
         filteredView ? 'Since the previous snapshot (all cars)' : 'Since the previous snapshot'),
-      el('div', { class: 'sc-tile__value sc-tile__value--sm' }, record.length < 2 ? '—'
+      el('div', { class: 'sc-tile__value sc-tile__value--sm sc-stat__value' }, record.length < 2 ? '—'
         : (cuts > 0
             ? el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'kpi:cuts', onclick: showCuts,
                         title: 'Sort the listings by the size of the cut at the latest snapshot' }, cutsTxt)
@@ -5028,6 +5142,15 @@
       what: t.label || S.model,
     };
   }
+  // A visual empty state only: the renderer supplies the same existing message.
+  function brandedEmpty(message) {
+    return el('div', { class: 'sc-empty sc-empty--brand' },
+      el('span', { class: 'sc-adaptive-mark', 'aria-hidden': 'true' },
+        el('img', { class: 'sc-adaptive-mark__dark', src: 'design-system/assets/sc-mark-color-dark.svg', alt: '', width: 342, height: 405 }),
+        el('img', { class: 'sc-adaptive-mark__light', src: 'design-system/assets/sc-mark-color-light.svg', alt: '', width: 342, height: 405 })),
+      el('p', null, message));
+  }
+
   function renderList(rows) {
     LIST_TOKEN++;   // any sync rebuild supersedes a pending deferred one
     const sc = listScope(), pooled = sc.pooled;
@@ -5087,7 +5210,7 @@
     const cardsHost = $('list-cards'); cardsHost.textContent = '';
     if (narrow()) {
       scroll.hidden = true; cardsHost.hidden = false;
-      if (!rows.length) cardsHost.appendChild(el('p', { class: 'sc-empty' }, 'Nothing matches these filters.'));
+      if (!rows.length) cardsHost.appendChild(brandedEmpty('Nothing matches these filters.'));
       for (const x of shown) cardsHost.appendChild(listingCard(x, dailyOf(x), pooled));
       return;
     }
@@ -5442,18 +5565,18 @@
     // the real national floor, which it had shown one click earlier, was
     // $10,524. The model page already swaps this label; the overview did not.
     const filteredView = !!filterBits(true).length;
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'), el('div', { class: 'sc-tile__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
+    host.appendChild(el('div', { class: 'sc-tile sc-stat' }, el('div', { class: 'sc-tile__label sc-stat__label', title: `Drivable — listed in one of your states (${scopeTxt()}): no shipping, you drive it home` }, filteredView ? 'Lowest drivable (filtered)' : 'Lowest drivable asking'), el('div', { class: 'sc-tile__value sc-stat__value' }, bestLocalRow ? money(bestLocalRow.bestLocal.price) : '—'),
       // The masthead says "data through Sep 4"; a tile whose car belongs to a
       // model on a slower cadence is older than that, and the reader has no
       // way to know which — the Ioniq 5 runs every third day, and its $19,980
       // led this tile two days after it was last fetched. The model index
       // prints each row's own date; the tile now does too, only when it
       // differs from the masthead's.
-      el('div', { class: 'sc-tile__sub' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping${asOfNote(bestLocalRow)}` : 'Nothing drivable under these filters')));
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value' }, bestRow ? money(bestRow.best.price) : '—'),
-      el('div', { class: 'sc-tile__sub' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}${asOfNote(bestRow)}` : 'No priced listings')));
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value' }, String(total)),
-      el('div', { class: 'sc-tile__sub' }, `${localTotal} drivable · ${total - localTotal - noLocTotal} beyond your states`
+      el('div', { class: 'sc-tile__sub sc-stat__note' }, bestLocalRow ? `${bestLocalRow.label} · ${placeTxt(bestLocalRow.bestLocal)} · no shipping${asOfNote(bestLocalRow)}` : 'Nothing drivable under these filters')));
+    host.appendChild(el('div', { class: 'sc-tile sc-stat' }, el('div', { class: 'sc-tile__label sc-stat__label' }, filteredView ? 'Lowest asking (filtered)' : 'Lowest asking nationwide'), el('div', { class: 'sc-tile__value sc-stat__value' }, bestRow ? money(bestRow.best.price) : '—'),
+      el('div', { class: 'sc-tile__sub sc-stat__note' }, bestRow ? `${bestRow.label} · ${placeTxt(bestRow.best)}${bestRow.best.local ? '' : (bestRow.best.ship ? ` · + ${money(bestRow.best.ship)} ship` : '')}${asOfNote(bestRow)}` : 'No priced listings')));
+    host.appendChild(el('div', { class: 'sc-tile sc-stat' }, el('div', { class: 'sc-tile__label sc-stat__label' }, 'Vehicles on the market'), el('div', { class: 'sc-tile__value sc-stat__value' }, String(total)),
+      el('div', { class: 'sc-tile__sub sc-stat__note' }, `${localTotal} drivable · ${total - localTotal - noLocTotal} beyond your states`
         + (noLocTotal ? ` · ${noLocTotal} with no state` : '')
         + ` · ${rows.length} model${rows.length === 1 ? '' : 's'}`)));
     // Tile 4 — the returning buyer's daily question, answered on the front
@@ -5473,7 +5596,7 @@
     const allTotal = modelsInView().reduce((a, { m }) => a + (m.listings || []).length, 0);
     const movers = mvs.filter((v) => v.cuts + v.fresh + v.gone > 0)
       .sort((a, b) => (b.cuts + b.fresh + b.gone) - (a.cuts + a.fresh + a.gone)).slice(0, 3);
-    const sub4 = el('div', { class: 'sc-tile__sub' });
+    const sub4 = el('div', { class: 'sc-tile__sub sc-stat__note' });
     if (!anyPrev) sub4.appendChild(document.createTextNode('movement shows from day 2'));
     else {
       sub4.appendChild(document.createTextNode(`${fresh} new · ${gone} gone`));
@@ -5484,10 +5607,10 @@
           onclick: (e) => { e.preventDefault(); goTo(v.bk, v.mk); } }, v.label));
       });
     }
-    host.appendChild(el('div', { class: 'sc-tile' }, el('div', { class: 'sc-tile__label',
+    host.appendChild(el('div', { class: 'sc-tile sc-stat' }, el('div', { class: 'sc-tile__label sc-stat__label',
         title: 'Each model against its own previous fetch — cadences differ, so the windows do too. A cut is any car whose latest tracked price is below its last one.' },
         total !== allTotal ? 'Since the previous snapshot (all cars)' : 'Since the previous snapshot'),
-      el('div', { class: 'sc-tile__value sc-tile__value--sm' }, anyPrev ? `${cuts} price cut${cuts === 1 ? '' : 's'}` : '—'),
+      el('div', { class: 'sc-tile__value sc-tile__value--sm sc-stat__value' }, anyPrev ? `${cuts} price cut${cuts === 1 ? '' : 's'}` : '—'),
       sub4));
   }
 
