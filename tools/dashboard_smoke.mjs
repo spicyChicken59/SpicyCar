@@ -2973,28 +2973,40 @@ await step('one car, one number', async () => {
       await ctx.unroute('**/data.json');
     }
   }
-  // Sightings over their span, car by car: the row's star button carries the
-  // VIN, so each label is checked against the car's own series — "6 of 12"
-  // has to be six sightings across twelve days, not a doubled count.
+  // Sightings over the FETCHES they span, car by car: the row's star button
+  // carries the VIN, so each label is checked against the car's own series.
+  // The denominator is how many times the car's target was fetched while the
+  // car was listed, not how many days passed — at the ten-day cadence
+  // twenty-eight models now run on, a car with a perfect record read "seen 4
+  // of 31 days" and a buyer reads that as a car that keeps disappearing.
+  const fetchDaysOf = (tid) => {
+    for (const b of Object.values(SHEET.brands || {}))
+      for (const m of Object.values(b.models || {}))
+        if ((m.fetch_days || {})[tid]) return m.fetch_days[tid];
+    return [];
+  };
   const seenOf = (x) => {
     const n = x.days_tracked || 0;
     if (!n) return null;
+    if (n === 1) return 'seen once';
     const s = x.series || [];
-    const span = s.length > 1 ? Math.round((Date.parse(s[s.length - 1][0] + 'T00:00:00Z') - Date.parse(s[0][0] + 'T00:00:00Z')) / 86400000) + 1 : 1;
-    return n === 1 ? 'seen once' : `seen ${n} of ${Math.max(span, n)} days`;
+    if (s.length < 2) return `seen ${n} times`;
+    const first = String(s[0][0]).slice(0, 10), last = String(s[s.length - 1][0]).slice(0, 10);
+    const looks = fetchDaysOf(x.trim_id).filter((d) => d >= first && d <= last).length;
+    return looks >= n ? `seen ${n} of ${looks} fetches` : `seen ${n} times`;
   };
   const byVin = new Map((mm.listings || []).map((x) => [x.vin, x]));
   await open(carried.q);
   const rows = await page.$$eval('#list-table tbody tr', (trs) => trs.map((tr) => {
     const b = tr.querySelector('[data-fkey^="star:"]');
-    const m = tr.innerText.match(/seen (?:once|\d+ of \d+ days)|tracked \d+d/);
+    const m = tr.innerText.match(/seen (?:once|\d+ times|\d+ of \d+ fetches)|tracked \d+d/);
     return { vin: b ? b.getAttribute('data-fkey').slice(5) : '', label: m ? m[0] : '' };
   }));
   const wrongRows = rows.filter((r) => byVin.has(r.vin) && (byVin.get(r.vin).days_tracked > 1) && r.label !== seenOf(byVin.get(r.vin)));
   await page.setViewportSize({ width: 390, height: 844 });
   await open(carried.q);
   const phoneText = await page.locator('#list-card').innerText();
-  const phoneLabels = [...phoneText.matchAll(/seen (?:once|\d+ of \d+ days)/g)].map((m) => m[0]);
+  const phoneLabels = [...phoneText.matchAll(/seen (?:once|\d+ times|\d+ of \d+ fetches)/g)].map((m) => m[0]);
   const expected = new Set((mm.listings || []).map(seenOf).filter(Boolean));
   await page.setViewportSize({ width: 1280, height: 1000 });
   ok('a car\'s sightings are counted, not aged',

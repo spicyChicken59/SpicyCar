@@ -3355,26 +3355,109 @@ class TestCutsThatStuck(unittest.TestCase):
 
 class TestSeenLabel(unittest.TestCase):
     """"tracked 21d" read as three weeks; it was twenty-one sightings on a
-    target fetched every second day, six weeks on the market. The label now
-    says what the count counts, and over what span."""
+    target fetched every second day. The count was fixed then and the
+    DENOMINATOR was not: it stayed calendar days between the first and last
+    sighting, which is the same thing only at a daily cadence.
 
-    def test_sightings_over_the_span_they_cover(self):
+    Twenty-eight of the thirty-six models run every tenth day now. A car
+    present at every single fetch of one read "seen 4 of 31 days" beside
+    another car's "seen 31 of 31 days", so a buyer reads a perfect record as
+    a car that keeps disappearing — a relisted car, a flaky dealer, something
+    to ask about. And 4-of-31 against 3-of-31 is a distinction no reader
+    makes, so it could not tell perfect attendance from a real gap either.
+    """
+
+    def setUp(self):
+        self._was = dict(T.FETCH_DAYS)
+        T.FETCH_DAYS.clear()
+
+    def tearDown(self):
+        T.FETCH_DAYS.clear()
+        T.FETCH_DAYS.update(self._was)
+
+    def test_the_denominator_is_the_fetches_not_the_days(self):
+        T.FETCH_DAYS["slow"] = [f"2026-08-{d:02d}" for d in (1, 11, 21, 31)]
+        every = {"days_tracked": 4, "trim_id": "slow",
+                 "series": [[f"2026-08-{d:02d}", 40000] for d in (1, 11, 21, 31)]}
+        self.assertEqual(T.seen_label(every), "seen 4 of 4 fetches",
+                         "a car there every time the query ran has a perfect "
+                         "record, and used to read 'seen 4 of 31 days'")
+
+    def test_and_a_real_gap_is_visible_beside_it(self):
+        """The half that makes the one above load-bearing: perfect attendance
+        and a missed fetch must not render the same."""
+        T.FETCH_DAYS["slow"] = [f"2026-08-{d:02d}" for d in (1, 11, 21, 31)]
+        missed = {"days_tracked": 3, "trim_id": "slow",
+                  "series": [[f"2026-08-{d:02d}", 40000] for d in (1, 11, 31)]}
+        self.assertEqual(T.seen_label(missed), "seen 3 of 4 fetches")
+
+    def test_a_daily_target_reads_exactly_as_it_always_did(self):
+        T.FETCH_DAYS["fast"] = [f"2026-08-{d:02d}" for d in range(1, 12)]
         series = [[f"2026-08-{d:02d}", 40000] for d in (1, 3, 5, 7, 9, 11)]
-        self.assertEqual(T.seen_label({"days_tracked": 6, "series": series}), "seen 6 of 11 days")
+        self.assertEqual(T.seen_label({"days_tracked": 6, "trim_id": "fast",
+                                       "series": series}), "seen 6 of 11 fetches")
+
+    def test_only_the_fetches_inside_the_car_s_own_span_are_counted(self):
+        """The target has been fetched for months; this car was on the market
+        for four of them. Counting every fetch ever would make a car that
+        arrived yesterday read "seen 1 of 40 fetches" — the same slander the
+        calendar-day denominator committed, one level up."""
+        T.FETCH_DAYS["slow"] = ([f"2026-06-{d:02d}" for d in (1, 11, 21)]
+                                + [f"2026-08-{d:02d}" for d in (1, 11, 21, 31)]
+                                + [f"2026-10-{d:02d}" for d in (1, 11)])
+        car = {"days_tracked": 4, "trim_id": "slow",
+               "series": [[f"2026-08-{d:02d}", 40000] for d in (1, 11, 21, 31)]}
+        self.assertEqual(T.seen_label(car), "seen 4 of 4 fetches",
+                         "five fetches lie outside this car's span and belong "
+                         "to no claim about it")
+
+    def test_build_outputs_is_what_fills_the_denominator(self):
+        """FETCH_DAYS is a global, so a caller that never builds one gets the
+        fallback on every row — which is what the record looked like before
+        this, and reads as a bare count rather than as a wrong one. Driven
+        through the real build rather than filled by hand, because the hand-
+        filled tests above cannot tell a populated global from an empty one.
+        """
+        T.FETCH_DAYS.clear()
+        rows = T.load_history()
+        days = sorted({r["snapshot_date"] for r in rows})
+        latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+        report, _, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        self.assertTrue(T.FETCH_DAYS, "build_outputs() populates it")
+        self.assertIn("bmw-i5-edrive40", T.FETCH_DAYS)
+        self.assertRegex(report, r"seen \d+ of \d+ fetches",
+                         "and the record it builds says fetches")
+
+    def test_no_fetch_record_says_what_is_known_and_no_more(self):
+        """An older sheet, or a caller that never built one. Dividing by the
+        wrong denominator is worse than not dividing."""
+        self.assertEqual(T.seen_label({"days_tracked": 4, "trim_id": "nope",
+                                       "series": [["2026-08-01", 1], ["2026-08-31", 1]]}),
+                         "seen 4 times")
 
     def test_one_sighting_is_once_and_no_series_is_just_the_count(self):
         self.assertEqual(T.seen_label({"days_tracked": 1, "series": [["2026-08-01", 1]]}), "seen once")
-        self.assertEqual(T.seen_label({"days_tracked": 3}), "seen 3 days")
+        self.assertEqual(T.seen_label({"days_tracked": 3}), "seen 3 times")
 
     def test_the_report_row_carries_it(self):
+        T.FETCH_DAYS["bmw-i5-edrive40"] = [f"2026-07-{d:02d}" for d in range(1, 22)]
         r = {k: "" for k in T.FIELDS}
         r.update({"target": "bmw-i5-edrive40", "vin": "V", "year": "2024", "trim": "eDrive40",
                   "price": 45000, "miles": 20000, "state": "IL", "city": "Chicago", "snapshot_date": T.TODAY})
-        series = [[f"2026-07-{d:02d}", 45000] for d in range(1, 22)]     # 21 sightings on 21 days
-        line = T.fmt_row(r, {"series": series, "days_tracked": 21, "first_seen": series[0][0]},
-                         T.TODAY)
-        self.assertIn("seen 21 of 21 days", line)
+        series = [[f"2026-07-{d:02d}", 45000] for d in range(1, 22)]     # 21 sightings, 21 fetches
+        line = T.fmt_row(r, {"series": series, "days_tracked": 21, "trim_id": "bmw-i5-edrive40",
+                             "first_seen": series[0][0]}, T.TODAY)
+        self.assertIn("seen 21 of 21 fetches", line)
         self.assertNotIn("tracked", line)
+
+    def test_the_committed_record_names_fetches_and_not_days(self):
+        """The rule reaches the file, not only the function: FETCH_DAYS is a
+        global that build_outputs() populates, so a caller that never built
+        one silently gets the fallback on every row."""
+        report = Path("REPORT.md").read_text()
+        self.assertNotIn(" days`", report.replace("seen ", "seen "))
+        self.assertNotRegex(report, r"seen \d+ of \d+ days")
+        self.assertRegex(report, r"seen \d+ of \d+ fetches")
 
 
 class TestPickUnderRoundsLikeThePage(unittest.TestCase):

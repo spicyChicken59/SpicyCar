@@ -121,11 +121,11 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 - $41,733 -> **$41,674** (Catonsville, MD) `WBY33FK04RCR68522`
 
 **Gone since 2026-09-04**
-- $38,990 · 2024 · Seattle, WA · seen 12 of 12 days `WBY33FK07RCS83186`
-- $41,905 · 2024 · The Woodlands, TX · seen 12 of 13 days `WBY33FK09RCS35723`
-- $42,500 · 2024 · Union City, GA · seen 13 of 13 days `WBY33FK02RCS61015`
-- $42,970 · 2024 · Plano, TX · seen 13 of 13 days `WBY33FK08RCR89549`
-- $43,568 · 2024 · Santa Clara, CA · seen 11 of 13 days `WBY33FK0XRCP37866`
+- $38,990 · 2024 · Seattle, WA · seen 12 of 12 fetches `WBY33FK07RCS83186`
+- $41,905 · 2024 · The Woodlands, TX · seen 12 of 13 fetches `WBY33FK09RCS35723`
+- $42,500 · 2024 · Union City, GA · seen 13 of 13 fetches `WBY33FK02RCS61015`
+- $42,970 · 2024 · Plano, TX · seen 13 of 13 fetches `WBY33FK08RCR89549`
+- $43,568 · 2024 · Santa Clara, CA · seen 11 of 13 fetches `WBY33FK0XRCP37866`
 
 **Ohio (1)**
 - **$40,980** · 40,138 mi · no shipping · 2024 · Cincinnati, OH · ~250 mi from Chicago
@@ -179,10 +179,10 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 - $50,986 -> **$51,476** (Fort Washington, PA) `WBY13HG00SCU51722`
 
 **Gone since 2026-09-03**
-- $49,495 · 2025 · West Palm Beach, FL · seen 7 of 12 days `WBY13HG01SCS85680`
-- $55,482 · 2025 · Fairfax, VA · seen 7 of 12 days `WBY13HG08SCS39361`
-- $56,297 · 2025 · Palmetto Bay, FL · seen 5 of 9 days `WBY13HG07SCS61030`
-- $61,489 · 2025 · Saint Louis, MO · seen 6 of 12 days `WBY13HG09SCU80068`
+- $49,495 · 2025 · West Palm Beach, FL · seen 7 of 7 fetches `WBY13HG01SCS85680`
+- $55,482 · 2025 · Fairfax, VA · seen 7 of 7 fetches `WBY13HG08SCS39361`
+- $56,297 · 2025 · Palmetto Bay, FL · seen 5 of 5 fetches `WBY13HG07SCS61030`
+- $61,489 · 2025 · Saint Louis, MO · seen 6 of 7 fetches `WBY13HG09SCU80068`
 
 **Illinois (1)**
 - **$53,052** · 27,530 mi · no shipping · 2025 · Ottawa, IL · ~75 mi from Chicago
@@ -233,7 +233,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 - $53,929 -> **$54,051** (Los Angeles, CA) `WBY43FK02RCP56898`
 
 **Gone since 2026-09-03**
-- $54,087 · 2024 · Peoria, AZ · seen 6 of 12 days `WBY43FK03RCP52259`
+- $54,087 · 2024 · Peoria, AZ · seen 6 of 7 fetches `WBY43FK03RCP52259`
 
 **Illinois (6)**
 - **$50,370** · 50,163 mi · no shipping · 2024 · Roselle, IL · ~25 mi from Chicago
@@ -388,9 +388,9 @@ _The other half of the decision, beside the i5 eDrive40._
 - $73,372 -> **$73,373** (Chicago, IL) `WBY43EJ08RCR02930`
 
 **Gone since 2026-09-04**
-- $68,670 · 2025 · Plano, TX · seen 4 of 4 days `WBY43EJ07SCT56417`
-- $72,470 · 2025 · Plano, TX · seen 4 of 4 days `WBY43EJ02SCU02560`
-- $75,998 · 2024 · Louisville, KY · seen 7 of 10 days `WBY43EJ01RCR54710`
+- $68,670 · 2025 · Plano, TX · seen 4 of 4 fetches `WBY43EJ07SCT56417`
+- $72,470 · 2025 · Plano, TX · seen 4 of 4 fetches `WBY43EJ02SCU02560`
+- $75,998 · 2024 · Louisville, KY · seen 7 of 8 fetches `WBY43EJ01RCR54710`
 
 **Illinois (3)**
 - **$58,995** · 19,411 mi · no shipping · 2024 · Palos Hills, IL · ~25 mi from Chicago

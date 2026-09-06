@@ -3656,14 +3656,34 @@
   // "tracked 6d" on another. The count is kept (a slower cadence must not be
   // able to inflate it) and the label says what it counts: sightings, over the
   // span from the first to the last, which the series already carries.
+  // Target id -> the days that target has rows for, across the whole sheet.
+  // Built once per sheet: seenLabel() runs on every row of every table.
+  let _fetchDays = null;
+  function fetchDaysOf(trimId) {
+    if (!_fetchDays) {
+      _fetchDays = {};
+      for (const { m } of allModels())
+        for (const [tid, days] of Object.entries(m.fetch_days || {})) _fetchDays[tid] = days;
+    }
+    return _fetchDays[trimId] || [];
+  }
+  // The denominator is how many times anyone LOOKED, not how many days
+  // passed. It was calendar days between the first and last sighting, which
+  // is the same thing only at a daily cadence — and twenty-eight of the
+  // thirty-six models run every tenth day now. A car present at every single
+  // fetch read "seen 4 of 31 days" beside another's "seen 31 of 31 days", so
+  // a buyer reads a perfect record as a car that keeps disappearing. Worse,
+  // it could not tell perfect attendance (4 of 31) from a real gap (3 of 31).
+  // seen_label() in Tracking.py is the same rule and changes with it.
   function seenLabel(x) {
     const n = x.days_tracked || 0;
     if (!n) return null;
+    if (n === 1) return 'seen once';
     const s = x.series || [];
-    const span = s.length > 1
-      ? Math.round((Date.parse(s[s.length - 1][0] + 'T00:00:00Z') - Date.parse(s[0][0] + 'T00:00:00Z')) / 86400000) + 1
-      : 1;
-    return n === 1 ? 'seen once' : `seen ${n} of ${Math.max(span, n)} days`;
+    if (s.length < 2) return `seen ${n} times`;
+    const first = String(s[0][0]).slice(0, 10), last = String(s[s.length - 1][0]).slice(0, 10);
+    const looks = fetchDaysOf(x.trim_id).filter((d) => d >= first && d <= last).length;
+    return looks >= n ? `seen ${n} of ${looks} fetches` : `seen ${n} times`;
   }
   function deltaEl(cur, before, prevDate, goodWhenDown, nDays) {
     if (cur == null || before == null) return el('div', { class: 'sc-delta sc-delta--flat' }, nDays < 2 ? 'first snapshot' : 'no prior value');
@@ -5131,7 +5151,7 @@
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, g.miles != null ? `${num(g.miles)} mi` : '— mi'),
       el('span', null, `last seen ${fmtDate(g.last_seen)}`),
-      el('span', null, `${seenLabel(g) || 'seen 0 days'}${drop}`),
+      el('span', null, `${seenLabel(g) || 'never seen'}${drop}`),
       g.likely && g.likely !== 'delisted'
         ? el('span', null, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null,
       (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
@@ -5224,14 +5244,14 @@
             : 'not checked that day') : null;
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
-          gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · ${seenLabel(g) || 'seen 0 days'}${drop}`) : null,
+          gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · ${seenLabel(g) || 'never seen'}${drop}`) : null,
           gCompact ? likely : null))),
         el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(g.last_price)), (g.flags || []).length ? el('span', { class: 'sc-note' }, g.flags.join(' · ')) : null),
         el('td', { class: 'sc-num' }, g.miles != null ? num(g.miles) : '—'),
         el('td', { class: 'sc-num' }, g.local ? el('span', { class: 'sc-note' }, 'none') : (g.ship ? money(g.ship) : '—')),
         el('td', { class: 'loc sc-nowrap' }, placeCell(g), el('br'), scopeChip(g)),
         gCompact ? null : el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), likely,
-          gSlim ? el('span', { class: 'sc-note' }, `${seenLabel(g) || 'seen 0 days'}${drop}`) : null),
+          gSlim ? el('span', { class: 'sc-note' }, `${seenLabel(g) || 'never seen'}${drop}`) : null),
         gSlim ? null : el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
     table.appendChild(body);
@@ -6708,6 +6728,7 @@
       const site = adapt(raw || {});
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }
       S.site = site;
+      _fetchDays = null;   // the memo below belongs to the sheet, not the page
       annotateValue(site);
       annotateFinance(site);
       loadPrefs();

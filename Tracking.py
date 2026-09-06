@@ -2997,28 +2997,49 @@ def days_listed(r):
         return (date.fromisoformat(TODAY) - since).days
 
 
-def seen_label(s):
-    """'seen 21 of 42 days', never 'tracked 21d'.
+FETCH_DAYS = {}     # target id -> the days that target has rows for. Populated
+                    # by build_outputs() beside INDEX_DATES and LOCAL_HISTORY,
+                    # and for the same reason: a global filled only on the live
+                    # path is empty for every other caller.
 
-    days_tracked is the length of the price series, and a series grows only on
-    days the car's target was fetched — every second day for half the targets
-    — so "tracked 21d" read as three weeks on a car that had been listed for
-    six. The count is kept, because a slower cadence must not be able to
-    inflate it, and the label says what it counts: sightings, over the span
-    from the first to the last. The dashboard's seenLabel() is the same rule.
+
+def seen_label(s):
+    """'seen 4 of 4 fetches', never 'seen 4 of 31 days'.
+
+    The label answers one question — has this car been consistently on the
+    market? — and the denominator has to be the number of times anyone LOOKED.
+    It was calendar days between the first and last sighting, which is the
+    same thing only at a daily cadence.
+
+    Twenty-eight of the thirty-six models run every tenth day now. A car
+    present at every single fetch of one of them read "seen 4 of 31 days"
+    beside another car's "seen 31 of 31 days", and a buyer reasonably
+    concludes the first keeps disappearing — a relisted car, a flaky dealer,
+    something to ask about. It had a perfect record. Worse, at that cadence
+    the old form could not tell perfect attendance from a real gap: 4-of-31
+    against 3-of-31 is a distinction no reader makes.
+
+    The docstring this replaces said the count is kept "because a slower
+    cadence must not be able to inflate it" — the count was right all along,
+    and the denominator is what a slower cadence deflated. The dashboard's
+    seenLabel() is the same rule and must change with it.
     """
     n = s.get("days_tracked", 0) or 0
     series = s.get("series") or []
     if n == 1:
         return "seen once"
     if len(series) < 2:
-        return f"seen {n} days"
-    try:
-        span = (date.fromisoformat(str(series[-1][0])[:10])
-                - date.fromisoformat(str(series[0][0])[:10])).days + 1
-    except (TypeError, ValueError):
-        return f"seen {n} days"
-    return f"seen {n} of {max(span, n)} days"
+        return f"seen {n} times"
+    first, last = str(series[0][0])[:10], str(series[-1][0])[:10]
+    # How many times this car's own target was fetched while the car was on
+    # the market. Days with rows, which is what a fetch that returned this
+    # target's cars leaves behind — see FETCH_DAYS.
+    looks = [d for d in FETCH_DAYS.get(s.get("trim_id"), []) if first <= d <= last]
+    if len(looks) >= n:
+        return f"seen {n} of {len(looks)} fetches"
+    # No fetch record for this target — an older sheet, or a caller that never
+    # built one. Say what is known rather than dividing by the wrong thing.
+    return f"seen {n} times"
 
 
 REACH_DAYS = 14
@@ -3746,6 +3767,11 @@ def build_outputs(today_rows, all_rows, hist):
     # how a rebuild would have quietly dropped the very fact it exists to carry.
     LOCAL_HISTORY.clear()
     LOCAL_HISTORY.update(build_local_history(all_rows))
+    FETCH_DAYS.clear()
+    for r in all_rows:
+        FETCH_DAYS.setdefault(r["target"], set()).add(r["snapshot_date"])
+    for tid in FETCH_DAYS:
+        FETCH_DAYS[tid] = sorted(FETCH_DAYS[tid])
     if INDEX_DATES:
         print("  ! listed_since " + ", ".join(sorted(INDEX_DATES))
               + " looks like an API index load, not a listing date — "
