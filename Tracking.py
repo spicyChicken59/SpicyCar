@@ -2501,6 +2501,38 @@ def fetch(source_name, source, sort, page, t):
     return None
 
 
+def is_battery_electric(rec):
+    """Is this listing a battery EV, as the record itself says?
+
+    Returns True, False, or None for "the feed did not say" — and None is not
+    False. An absent field is not evidence, and refusing on it would empty a
+    whole target the day a feed stopped populating it.
+
+    This exists because the watchlist is thirty-six battery EVs and NOTHING
+    checked that a listing was one. The listings API has no fuel parameter —
+    the query is make plus model — so every row on a nameplate shared with a
+    combustion car rests on a model string being exact. Porsche is the Taycan
+    rather than the better-selling Macan Electric for precisely that reason,
+    and Dodge, MINI, Ford, Genesis and Acura each ride on one string being
+    right. A string that is wrong the OTHER way — one that matches too much —
+    puts petrol cars in an EV screener, priced and ranked beside the rest,
+    with nothing anywhere to say so.
+
+    The record has carried the answer all along and dropped it: `vehicle.fuel`
+    reads "Electric" on the sample record, with `vehicle.type` and
+    `vehicle.engine` saying the same. A plug-in hybrid says "Electric" too —
+    inside "Plug-in Hybrid Electric" — so hybrid is checked first and refused,
+    because a PHEV is not what any of these targets is watching.
+    """
+    said = str(first(rec, ["vehicle.fuel", "vehicle.type", "vehicle.engine"],
+                     "")).strip().lower()
+    if not said:
+        return None
+    if "hybrid" in said:
+        return False
+    return "electric" in said or said in ("bev", "ev")
+
+
 def normalize(rec, t, dropped):
     global GEOCODED, UNPLACED
     # Match trims against the trim-bearing fields only, never the whole
@@ -2543,6 +2575,12 @@ def normalize(rec, t, dropped):
     if mm is not None and (miles is None or miles >= mm):
         # unknown mileage cannot prove "under the cap", so it is out too
         dropped["at/over max_miles"] += 1
+        return None
+    # …and it has to be an electric car. The query cannot ask for one — the
+    # API has no fuel parameter — so this is the only place it can be asked.
+    # False only, never None: a feed that stops saying must not empty a target.
+    if is_battery_electric(rec) is False:
+        dropped["not a battery EV"] += 1
         return None
     loc = rec.get("location")
     lat = lon = None

@@ -82,9 +82,15 @@ Two things are configured, separately:
   nameplate with a combustion one cannot be isolated at all. Where that happens the
   EV-only string is what goes in even when it costs the more popular model: Porsche is
   the Taycan and not the Macan Electric, because `vehicle.model=Macan` returns petrol
-  Macans that no client-side filter here can tell apart. The failure mode of a
-  too-specific string is an empty target, which the page says plainly; the failure mode
-  of a too-loose one is petrol cars in an EV screener, which nothing would catch. The
+  Macans the query cannot exclude. The failure mode of a too-specific string is an empty
+  target, which the page says plainly; the failure mode of a too-loose one is petrol cars
+  in an EV screener, and *nothing used to catch it*. The query cannot ask, but the
+  **response answers**: every listing carries `vehicle.fuel` (with `vehicle.type` and
+  `vehicle.engine` agreeing), the record had been reading past it since the first commit,
+  and a listing the feed calls petrol, diesel or hybrid is now refused on the way in and
+  counted in the run log's drop table. Said and not said are different: a feed that fills
+  none of the three is not evidence of petrol, and refusing on silence would empty a whole
+  target the day one stopped populating it — a total outage dressed as a quiet market. The
   same trap is live for Dodge (`Charger` is also a petrol six), MINI (`Countryman`),
   Ford (some feeds file the Mach-E under `Mustang`) and Genesis (`GV70`), and it is why
   the Acura ZDX row depends on the year filter: Acura sold a completely different,

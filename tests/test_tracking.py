@@ -2898,6 +2898,74 @@ class TestNamingNothingMeansNothingIsBeingShopped(unittest.TestCase):
         self.assertNotIn("## Shopping: Lucid Air", report)
 
 
+class TestAnEvScreenerChecksThatACarIsAnEv(unittest.TestCase):
+    """The watchlist is thirty-six battery EVs and nothing checked for one.
+
+    The listings API has no fuel parameter — the query is make plus model — so
+    every row on a nameplate shared with a combustion car rests on one string
+    being exact. Porsche is the Taycan rather than the better-selling Macan
+    Electric for exactly that reason, and Dodge, MINI, Ford, Genesis and Acura
+    each ride on one string being right. A string wrong the OTHER way, one
+    that matches too much, puts petrol cars in an EV screener, priced and
+    ranked beside the rest, with nothing anywhere to say so.
+
+    The record carried the answer all along and threw it away: the sample
+    record's `vehicle.fuel` reads "Electric", with `vehicle.type` and
+    `vehicle.engine` agreeing.
+    """
+
+    def setUp(self):
+        self.dropped = Counter()
+        self.t = T.TARGETS["bmw-i5-m60"]     # the sample record is an M60
+
+    def rec(self, **over):
+        r = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                           if not k.startswith("_")})
+        for k, v in over.items():
+            if v is None:
+                r["vehicle"].pop(k, None)
+            else:
+                r["vehicle"][k] = v
+        return r
+
+    def test_a_petrol_car_on_a_shared_nameplate_is_refused(self):
+        for fuel in ("Gasoline", "Gas", "Diesel", "Flex Fuel"):
+            d = Counter()
+            self.assertIsNone(T.normalize(self.rec(fuel=fuel, type=fuel, engine="3.0L I6"), self.t, d),
+                              f"{fuel!r} is not a battery EV")
+            self.assertEqual(d["not a battery EV"], 1, fuel)
+
+    def test_a_plug_in_hybrid_is_refused_though_it_says_electric(self):
+        """"Plug-in Hybrid Electric" contains the word. Hybrid is checked
+        first, because a PHEV is not what any of these targets watches."""
+        d = Counter()
+        self.assertIsNone(T.normalize(self.rec(fuel="Plug-in Hybrid Electric"), self.t, d))
+        self.assertEqual(d["not a battery EV"], 1)
+
+    def test_the_electric_car_the_sample_record_is_still_gets_through(self):
+        """The control. Without it a guard that refused everything would pass
+        every assertion above."""
+        d = Counter()
+        self.assertIsNotNone(T.normalize(self.rec(), self.t, d),
+                             "the shipped sample record is an electric M60")
+        self.assertEqual(d["not a battery EV"], 0)
+
+    def test_a_feed_that_says_nothing_is_not_evidence_of_petrol(self):
+        """None is not False. Refusing on an absent field would empty a whole
+        target the day a feed stopped populating it — a silent, total outage
+        dressed as a quiet market."""
+        self.assertIsNone(T.is_battery_electric(self.rec(fuel=None, type=None, engine=None)))
+        d = Counter()
+        self.assertIsNotNone(T.normalize(self.rec(fuel=None, type=None, engine=None), self.t, d))
+        self.assertEqual(d["not a battery EV"], 0)
+
+    def test_it_reads_whichever_of_the_three_fields_the_feed_filled(self):
+        self.assertIs(T.is_battery_electric(self.rec(fuel=None, type="Electric", engine=None)), True)
+        self.assertIs(T.is_battery_electric(self.rec(fuel=None, type=None, engine="Electric")), True)
+        self.assertIs(T.is_battery_electric(self.rec(fuel="Gasoline", type="Electric")), False,
+                      "the first field the feed filled is the one that answers")
+
+
 class TestDailySeries(unittest.TestCase):
     """A day row holds what the record knew on that day.
 
