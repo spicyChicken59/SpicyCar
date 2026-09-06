@@ -13,7 +13,7 @@ export function verifySnapshot() {
     throw new Error('The design snapshot must name its source repository and exact commit.');
   if (!/^\d+\.\d+\.\d+$/.test(manifest.version) || !manifest.files || !Object.keys(manifest.files).length)
     throw new Error('The design snapshot needs a version and file digests.');
-  for (const name of ['sc.css', 'sc-theme.js', 'sc-motion.js', 'sc-charts.js', 'sc-map.js'])
+  for (const name of ['sc.css', 'sc-theme.js', 'sc-motion.js', 'sc-reading.js', 'sc-charts.js', 'sc-map.js'])
     if (!manifest.files[name]) throw new Error(`The design snapshot is missing ${name}.`);
   for (const [name, digest] of Object.entries(manifest.files)) {
     const file = resolve(snapshotRoot, name), rel = relative(snapshotRoot, file);

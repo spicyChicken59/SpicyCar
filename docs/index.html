@@ -605,14 +605,14 @@
         <p class="sc-hint" id="finalists-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table sc-table--compact" id="finalists-table"></table></div>
+    <div class="sc-table-scroll"><table class="sc-table sc-table--compact sc-table--research" id="finalists-table"></table></div>
   </section>
 
   <div id="shortlist" hidden></div>
 
   <div id="takeaway" hidden></div>
 
-  <section class="sc-card sc-reveal" data-sc-motion="rise" id="map-card" hidden>
+  <section class="sc-card sc-evidence sc-reveal" data-sc-motion="rise" id="map-card" hidden>
     <div class="sc-card__head">
       <div>
         <div class="sc-eyebrow sc-eyebrow--muted">market geography</div>
@@ -645,7 +645,7 @@
     <div class="sc-grid sc-grid--3" id="notes-grid"></div>
   </section>
 
-  <section class="sc-card sc-reveal" data-sc-motion="rise" id="chart-card" hidden>
+  <section class="sc-card sc-evidence sc-reveal" data-sc-motion="rise" id="chart-card" hidden>
     <div class="sc-card__head">
       <div>
         <div class="sc-eyebrow sc-eyebrow--muted">the market record</div>
@@ -659,8 +659,8 @@
       </div>
     </div>
     <div class="sc-legend" id="legend"></div>
-    <div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div>
-    <details class="sc-details"><summary>Table view</summary><div class="sc-table-scroll" id="chart-table"></div></details>
+    <div class="sc-evidence__plot"><div class="sc-chart" id="chart" role="group" tabindex="0" aria-label="Asking price by snapshot day. Use left and right arrow keys to step through days."></div></div>
+    <details class="sc-details sc-disclosure"><summary>Table view</summary><div class="sc-table-scroll" id="chart-table"></div></details>
     <div class="sc-chart-caption">
       <span>SpicyCar · the market record</span>
       <span class="sc-signature sc-signature--small">
@@ -670,7 +670,7 @@
     </div>
   </section>
 
-  <section class="sc-card sc-reveal" data-sc-motion="rise" id="scatter-card" hidden>
+  <section class="sc-card sc-evidence sc-reveal" data-sc-motion="rise" id="scatter-card" hidden>
     <div class="sc-card__head">
       <div>
         <div class="sc-eyebrow sc-eyebrow--muted">price &amp; mileage</div>
@@ -679,7 +679,7 @@
       </div>
     </div>
     <div class="sc-legend" id="scatter-legend"></div>
-    <div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div>
+    <div class="sc-evidence__plot"><div class="sc-chart" id="scatter" role="group" tabindex="0" aria-label="Price against miles, one dot per car. Use left and right arrow keys to step through cars by mileage, Enter to open the listing."></div></div>
     <p class="sc-sr-only" id="scatter-say" role="status" aria-live="polite"></p>
   </section>
 
@@ -691,7 +691,7 @@
         <p class="sc-hint" id="overview-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table" id="overview-table"></table></div>
+    <div class="sc-table-scroll"><table class="sc-table sc-table--research" id="overview-table"></table></div>
   </section>
 
   <section class="sc-card" id="list-card" hidden>
@@ -702,7 +702,7 @@
         <p class="sc-hint" id="list-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll" id="list-scroll"><table class="sc-table" id="list-table"></table></div>
+    <div class="sc-table-scroll" id="list-scroll"><table class="sc-table sc-table--research" id="list-table"></table></div>
     <div class="sc-stack" id="list-cards" hidden></div>
     <div class="sc-show-more" id="list-more" hidden></div>
   </section>
@@ -3529,7 +3529,7 @@
   // the value chip in the corner; the reasoning and facts below.
   function pickCard(p) {
     const b = p.x;
-    const facts = [p.modelLabel, b.year, carTrim(b), b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
+    const facts = [b.year, carTrim(b), b.miles != null ? `${num(b.miles)} mi` : null, ...(b.flags || [])].filter(Boolean).join(' · ');
     const where = `${placeTxt(b)}${b.distance != null ? ` — ~${num(b.distance)} mi from ${homeName()}` : ''}${b.dealer ? ` · ${b.dealer}` : ''}`;
     const url = safeUrl(b.url);
     // A 2% saving should not wear the same green as a 33% one.
@@ -3544,16 +3544,19 @@
       : el('div', { class: 'sc-photo-card__media' }, ...inner);
     const open = url ? el('p', null, el('a', { href: url, target: '_blank', rel: 'noopener', 'data-fkey': 'pick:' + (b.vin || '') + ':open' }, 'Open the listing →')) : null;
     const cohort = [p.year, p.modelLabel, p.trim].filter(Boolean).join(' ');
-    return el('div', { class: 'sc-photo-card sc-hover-lift' }, media, el('div', { class: 'sc-photo-card__body' },
+    return el('div', { class: 'sc-photo-card sc-dossier sc-hover-lift' }, media, el('div', { class: 'sc-photo-card__body sc-dossier__body' },
+      el('h3', { class: 'sc-dossier__title' }, p.modelLabel),
       el('div', { class: 'sc-nowrap' },
         p.shopping === undefined ? null
           : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') },
                p.shopping ? 'shopping' : 'comparison'),
         isNew(b) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'new') : null),
-      el('span', { class: 'sc-note', title: (cohortOf(b, p.modelLabel) || {}).words || null },
+      el('span', { class: 'sc-note sc-dossier__evidence', title: (cohortOf(b, p.modelLabel) || {}).words || null },
         `${money(p.under)} below a typical ${cohort} with similar mileage`
         + (p.n ? ` · ${p.n} such listing${p.n === 1 ? '' : 's'}` : '')),
-      el('p', null, `${facts}. ${where}.`), el('p', null, starButton(b)), open));
+      el('p', { class: 'sc-dossier__meta' }, `${facts}.`),
+      el('p', { class: 'sc-dossier__meta' }, `${where}.`),
+      el('div', { class: 'sc-dossier__actions' }, starButton(b), open)));
   }
   // Spicy picks, under the current filters, in two lists: drivable cars, then
   // the rest of the country. Front page: across every model; model view: within it.
@@ -3601,7 +3604,7 @@
   function shortlistCard(vin, note) {
     const hit = findVin(vin);
     if (!hit) {
-      return el('div', { class: 'sc-photo-card sc-hover-lift' }, el('div', { class: 'sc-photo-card__body' },
+      return el('div', { class: 'sc-photo-card sc-dossier sc-hover-lift' }, el('div', { class: 'sc-photo-card__body sc-dossier__body' },
         el('div', { class: 'sc-media__title' }, 'Not seen yet by the tracker'),
         el('div', { class: 'sc-media__code' }, vin),
         note ? el('span', { class: 'sc-note' }, note) : null));
@@ -3622,13 +3625,13 @@
         el('span', { class: 'sc-photo-card__price-sub' }, gone ? `last seen ${fmtDate(x.last_seen)}` : shipNote(x))),
       gone ? el('span', { class: 'sc-chip sc-photo-card__chip ' + (stillListed(x) ? 'sc-chip--info' : x.likely === 'delisted' ? 'sc-chip--danger' : 'sc-chip--warn') }, goneLine)
            : (x.pick_stand === 'under' ? el('span', { class: 'sc-chip sc-chip--good sc-photo-card__chip' }, `${Math.round(x.pick_pct * 100)}% under typical`) : null));
-    return el('div', { class: 'sc-photo-card sc-hover-lift' }, media, el('div', { class: 'sc-photo-card__body' },
-      el('div', { class: 'sc-media__title' }, title),
+    return el('div', { class: 'sc-photo-card sc-dossier sc-hover-lift' }, media, el('div', { class: 'sc-photo-card__body sc-dossier__body' },
+      el('div', { class: 'sc-media__title sc-dossier__title' }, title),
       gone ? null : el('div', { class: 'sc-media__sub' }, `${x.miles != null ? num(x.miles) + ' mi · ' : ''}${placeTxt(x)}`),
       gone ? null : movement(x, daily),
       note ? el('span', { class: 'sc-note' }, `note: ${note}`) : null,
       el('div', { class: 'sc-media__code' }, x.vin),
-      el('div', null, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'sl:' + (x.vin || '') + ':open', onclick: (e) => { e.preventDefault(); goTo(bk, mk, x.vin); } }, 'Open this car →'))));
+      el('div', { class: 'sc-dossier__actions' }, quietLinks(x), el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'sl:' + (x.vin || '') + ':open', onclick: (e) => { e.preventDefault(); goTo(bk, mk, x.vin); } }, 'Open this car →'))));
   }
   function renderShortlist(show) {
     const host = $('shortlist'); host.textContent = '';

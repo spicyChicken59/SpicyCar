@@ -1,4 +1,4 @@
-/* SpicyChicken Design System — sc-motion.js v2.6.0
+/* SpicyChicken Design System — sc-motion.js v2.7.0
    Optional, visible-by-default motion. No application state or data is changed. */
 (function (w, d) {
   'use strict';
@@ -182,6 +182,8 @@
   function onPrint() { finishAll(); }
   function listen() {
     if (listening) return;
+    reduced = !!(preference && preference.matches);
+    if (reduced) finishAll();
     listening = true;
     d.addEventListener('focusin', onFocus, true);
     d.addEventListener('animationend', onEnd);
