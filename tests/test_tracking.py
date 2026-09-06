@@ -604,6 +604,23 @@ class TestPicks(unittest.TestCase):
         self.assertEqual(clear[46000]["pick_stand"], "under")
         self.assertIn("2% under typical", T.fmt_pick(clear[46000]))
 
+    def test_and_the_same_floor_holds_on_the_over_side(self):
+        """The mirror, which nothing held: the over half of the same ternary
+        could be moved anywhere with the suite green. "over" is printed on the
+        shortlist row and the decision tile, and 0.2% over is the same number
+        with no content that 0.2% under is."""
+        tight = [listing(price=47000) for _ in range(8)]
+        edge = {p["price"]: p for p in T.score_picks(tight + [listing(price=47100)], "M")}
+        self.assertLess(edge[47100]["pick_pct"], 0,
+                        "the precondition: this car is dearer than the median, "
+                        "so it is the over branch that decides it")
+        self.assertLess(abs(edge[47100]["pick_pct"]), 0.005)
+        self.assertEqual(edge[47100]["pick_stand"], "typical",
+                         "above the high edge, and by less than half a percent")
+        clear = {p["price"]: p for p in T.score_picks(tight + [listing(price=49000)], "M")}
+        self.assertEqual(clear[49000]["pick_stand"], "over",
+                         "…and a real margin over it still stands over")
+
     def test_the_walk_skips_a_typical_car_rather_than_stopping_at_it(self):
         """Picks are walked in margin order. A car sitting ON a wide interval's
         low edge can carry a bigger margin than a car below a narrow one — two
@@ -2720,6 +2737,74 @@ class TestDaysListedAnchor(unittest.TestCase):
             self.assertIsNone(T.days_listed(self.row("2026-08-15", "2026-08-09")))
         finally:
             T.INDEX_DATES.clear()
+
+
+class TestFlagsSayTheCarsHistory(unittest.TestCase):
+    """Owners and accidents, which no test in this repo could fail on.
+
+    flags() builds the `_1-owner · no accidents · ex-lease_` line under every
+    car in REPORT.md and the `flags` array on every row of docs/data.json. The
+    only class named for it fixed `owners: 1, accidents: 0` in its row factory
+    and asserted nothing but the usage words, so both branches of each could be
+    inverted with the whole suite and the whole browser run green — publishing
+    300 rows reading "1-owner" over cars with two owners, and 293 reading "no
+    accidents" over 74 that had one. Two of the four things a used-car buyer
+    checks before calling a dealer, and this is the only place either is said.
+    """
+
+    @staticmethod
+    def row(**kw):
+        r = {"usage": "Personal Use", "owners": None, "accidents": None}
+        r.update(kw)
+        return r
+
+    def test_one_owner_and_only_one(self):
+        self.assertIn("1-owner", T.flags(self.row(owners=1)))
+        self.assertNotIn("1-owner", T.flags(self.row(owners=2)))
+        self.assertNotIn("1-owner", T.flags(self.row(owners=0)))
+        self.assertNotIn("1-owner", T.flags(self.row(owners=None)))
+
+    def test_more_than_one_owner_is_counted(self):
+        self.assertIn("2 owners", T.flags(self.row(owners=2)))
+        self.assertIn("5 owners", T.flags(self.row(owners=5)))
+
+    def test_no_owner_line_at_all_when_the_sheet_does_not_say(self):
+        """0 is what the API sends for "not reported", and the page reads it
+        the same way — a fact the record must not invent."""
+        for v in (None, 0, "", "n/a"):
+            got = T.flags(self.row(owners=v))
+            self.assertFalse([w for w in got if "owner" in w],
+                             f"owners={v!r} produced {got}")
+
+    def test_no_accidents_means_zero_and_nothing_else(self):
+        self.assertIn("no accidents", T.flags(self.row(accidents=0)))
+        self.assertNotIn("no accidents", T.flags(self.row(accidents=1)))
+        self.assertNotIn("no accidents", T.flags(self.row(accidents=3)))
+
+    def test_an_accident_is_counted_and_pluralised(self):
+        self.assertIn("1 accident", T.flags(self.row(accidents=1)))
+        self.assertNotIn("1 accidents", T.flags(self.row(accidents=1)))
+        self.assertIn("3 accidents", T.flags(self.row(accidents=3)))
+
+    def test_an_unknown_accident_history_says_nothing_either_way(self):
+        """The complement is what the rule cannot support: a car the sheet
+        carries no accident count for is neither clean nor crashed."""
+        for v in (None, "", "n/a"):
+            got = T.flags(self.row(accidents=v))
+            self.assertFalse([w for w in got if "accident" in w],
+                             f"accidents={v!r} produced {got}")
+
+    def test_the_order_is_the_one_the_page_draws(self):
+        """Two surfaces that order the same facts differently read as
+        disagreeing — flagsCell() puts certification first, then usage, then
+        owners, then accidents, then the lease."""
+        self.assertEqual(
+            T.flags({"usage": "Lease", "owners": 2, "accidents": 1, "cpo": "1"}),
+            ["CPO", "2 owners", "1 accident", "ex-lease"])
+        self.assertEqual(
+            T.flags({"usage": "Rental Use", "owners": 1, "accidents": 0, "cpo": ""}),
+            ["rental", "1-owner", "no accidents"],
+            "and the usage word sits between the certification and the owners")
 
 
 class TestFlagsNameARental(unittest.TestCase):
@@ -5552,6 +5637,30 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                          "fortnight is not a price change today")
 
     # -- the overflow line counts what it holds -----------------------------
+
+    def test_the_bullets_and_the_overflow_add_up_to_the_cuts_there_were(self):
+        """One total split in two, and only the sentence was pinned. The number
+        of bullets printed and the number the line overflows FROM are two
+        separate 3s in build_today(); the three that compute the sentence are
+        each held by a test and the one that decides how many bullets go on
+        screen by none. Four bullets over "…and 2 more" is 6 claimed against 5.
+        Read off the rendered section rather than from the constant, so the
+        check is the reader's own arithmetic."""
+        import re
+        for n in (1, 3, 4, 7):
+            cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
+                           "state": "IL", "local": False},
+                     "label": "T", "amount": 500 + i, "shopping": 1} for i in range(n)]
+            sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
+            text = "\n".join(sec)
+            bullets = len(re.findall(r"^- ▼ \$[\d,]+ cut · ", text, re.M))
+            more = re.search(r"…and (\d+) more cuts? today", text)
+            rest = int(more.group(1)) if more else 0
+            self.assertEqual(bullets + rest, n,
+                             f"{n} cuts: {bullets} bullets over "
+                             f"{'a line saying ' + str(rest) if more else 'no overflow line'}"
+                             f"\n{text}")
+            self.assertLessEqual(bullets, 3, "and the section never grows past three")
 
     def test_the_overflow_line_counts_cuts_because_cuts_are_what_it_holds(self):
         """events["cuts"] takes only downward steps. The line under it said

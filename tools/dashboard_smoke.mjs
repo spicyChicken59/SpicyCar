@@ -403,8 +403,15 @@ const realBrand = Object.keys(brands).find((b) => Object.keys(brands[b].models |
 const ghost = realBrand && ['constructor', '__proto__'].find(
   (k) => !Object.prototype.hasOwnProperty.call(brands[realBrand].models, k));
 const protoUrls = ['?brand=__proto__', '?brand=constructor', '?model=constructor', '?m=constructor'];
+// The ghost URL carries TWO checks like every other one, so its absence has to
+// skip two — the tally below is exact only if every branch declares the same
+// number of checks whichever way it goes. Skipping one where the other branch
+// plans two is how a data-dependent total creeps in, and a total that moves
+// with the market is a total no constant can be compared against.
+const GHOST = ['a tracked brand plus a prototype-key model lands on the watchlist',
+               'and says the link missed and stops re-sharing itself'];
 if (ghost) protoUrls.push(`?brand=${encodeURIComponent(realBrand)}&m=${ghost}`);
-else skip('a tracked brand plus a prototype-key model lands on the watchlist',
+else for (const n of GHOST) skip(n,
   realBrand ? `${realBrand} really has a model called constructor and one called __proto__`
             : 'data.json has no brand with models — nothing to ask for');
 plan(...protoUrls.flatMap((q) => [`${q} lands on the watchlist, not on a car`,
@@ -663,8 +670,12 @@ const watched = Object.entries(site.brands || {}).flatMap(([bk, b]) =>
   Object.entries(b.models || {}).map(([mk, m]) => ({ bk, mk, nt: Object.keys(m.trims || {}).length })));
 const subject = watched.length > 1 ? watched.find((m) => m.nt > 1) : null;
 const chipStates = [['the watchlist', null]];      // whatever the check above left — chips pressed and not
+// Two themes per place, so a missing model page is two skips, not one — see
+// GHOST above for why the count has to be the same either way.
 if (subject) chipStates.push(['a model page', `?brand=${subject.bk}&m=${subject.mk}`]);
-else skip('every chip count is readable on a model page', 'no watched model has two trims today');
+else for (const theme of ['dark', 'light'])
+  skip(`every chip count is readable on a model page, in ${theme}`,
+       'no watched model has two trims today');
 plan(...chipStates.flatMap(([where]) => ['dark', 'light']
   .map((theme) => `every chip count is readable on ${where}, in ${theme}`)));
 for (const [where, query] of chipStates) {
@@ -5226,6 +5237,51 @@ await step('the record and the page tell one story about one model', async () =>
      rows.map((r) => `${r.id}: ${r.mdNew === r.pageNew ? `both ${r.mdNew || '—'} new` : `record ${r.mdNew || '—'} vs page ${r.pageNew || '—'}`}`).join(' · '));
 });
 
+// ---- the history the record publishes is the history the page draws -------
+// flags() builds the "_1-owner · no accidents · ex-lease_" line under every car
+// in REPORT.md and the `flags` array on every row of docs/data.json; the page
+// re-derives the same words twice, in flagsCell() and flagsNote(). Three
+// implementations of one rule, and until the unit tests beside them existed
+// every branch of the owner and accident halves could be inverted with this
+// suite green. Owners and accidents only: those are the words the two surfaces
+// spell identically. The certification chip deliberately differs ("cpo" here,
+// "CPO (seller not named BMW)" in the record, which says whose certification it
+// is), and the usage words ride the same cell but are already pinned in Python.
+await step('the history the record publishes is the history the page draws', async () => {
+  plan('every row draws the owner and accident words the sheet gives it');
+  const subject = WATCHED.find((w) => ((SHEET.brands[w.bk].models[w.mk] || {}).listings || [])
+    .some((x) => (x.flags || []).some((f) => /owner|accident/.test(f))));
+  if (!subject) return skipRest('no row on this sheet carries an owner or accident word');
+  await open(subject.q);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  const drawn = await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((tr) => {
+    const code = tr.querySelector('.sc-media__code');
+    const cell = tr.querySelector('.flags');
+    return { vin: code ? code.textContent.trim() : '', text: cell ? cell.innerText : '' };
+  }));
+  const want = new Map(((SHEET.brands[subject.bk].models[subject.mk] || {}).listings || [])
+    .map((x) => [x.vin, (x.flags || []).filter((f) => /owner|accident/.test(f))]));
+  const bad = [];
+  let checked = 0;
+  for (const row of drawn) {
+    if (!want.has(row.vin)) continue;
+    checked++;
+    const said = want.get(row.vin);
+    const missing = said.filter((f) => !row.text.includes(f));
+    // …and the inverse, which is the half that catches a swap: the page must
+    // not draw a history word the record does not give this car.
+    const invented = (row.text.match(/\b(?:1-owner|\d+ owners|no accidents|\d+ accidents?)\b/g) || [])
+      .filter((f) => !said.includes(f));
+    if (missing.length || invented.length)
+      bad.push(`${row.vin}: sheet says [${said.join(', ')}], cell reads "${row.text.replace(/\s+/g, ' ')}"`);
+  }
+  ok('every row draws the owner and accident words the sheet gives it',
+     bad.length === 0 && checked > 0,
+     bad.length ? bad.slice(0, 3).join(' | ')
+                : `${checked} rows on ${subject.id}, every one drawing exactly the sheet's owner and accident words`);
+});
+
 // ---- a trim chip counts what its query returned ---------------------------
 // A car two of a model's queries both returned is one row in the table, filed
 // under whichever copy was cheapest with ties broken by list order — so the
@@ -5581,13 +5637,20 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // four more. A count is the only thing that catches that, and a count written down
 // in a markdown file catches nothing.
 // Skips are legitimate and vary with the data — a shrunken watchlist genuinely has
-// fewer subjects, and some checks collapse into a coarser skip. So the assertion is
-// made where it is exact: when nothing skipped, every check had a subject and the
-// total must be the declared one. That is the case CI runs.
+// fewer subjects — but a skip is a RECORDED check, so the total is the declared
+// one whether a check found a subject or not. The assertion used to be made only
+// `when nothing skipped`, and the committed sheet produces one skip on every run,
+// so on the configuration CI actually executes this guard has never once fired:
+// six checks were added across two commits and it said nothing. (The per-step
+// guard above, added for the same reason, says as much in its own comment and
+// then leaves this one disarmed.) What the condition really needed was for the
+// declared total not to move with the data, which is a property of the branches
+// and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 251;
-if (!ONLY && !skipped && results.length !== EXPECTED) {
-  console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
-  console.log('     with nothing skipped. A check was lost or added silently.');
+const EXPECTED = 259;
+if (!ONLY && results.length !== EXPECTED) {
+  console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
+    + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
+  console.log('     A check was lost or added silently.');
 }
-process.exit(failed || errors.length || (!ONLY && !skipped && results.length !== EXPECTED) ? 1 : 0);
+process.exit(failed || errors.length || (!ONLY && results.length !== EXPECTED) ? 1 : 0);

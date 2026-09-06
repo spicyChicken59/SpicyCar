@@ -217,13 +217,22 @@ Three checks run on every push, and all three run locally:
 
 ```
 python -m unittest discover -s tests -t .                     # the tracker, and what the dashboard may assume of its data
-node tools/consumer_lint_ci.mjs <design-system> docs/*.html    # the pages against the exact sc.css they pin
+node tools/consumer_lint_ci.mjs <ds> docs/index.html docs/how.html tools/og_card.html
 node tools/dashboard_smoke.mjs <design-system>                 # the dashboard, opened in a real browser and asked if it works
 ```
+
+The linter takes the source of the og:image with the two pages, because it is a design-system
+consumer like they are and raw colour must not slip in through a file nobody checks — that is the
+list `check.yml` passes, and `docs/*.html` was a shorter one.
 
 The last one needs `playwright` and its Chromium (`npm i --no-save playwright && npx playwright install
 chromium`); without them it says so and passes, since a machine with no browser is not a broken
 dashboard. It reaches nothing off the machine — the design-system checkout answers every CDN request.
+It also asserts its own size: the number of checks it declares is a constant in the file, compared
+against the number it recorded, because this suite has three times been assembled green while
+quietly covering less. A skipped check still counts — it is a check that named itself and found no
+subject — and while that assertion was made only when nothing skipped, the committed sheet produced
+one skip on every run and the backstop never fired.
 
 ## Configuration
 
