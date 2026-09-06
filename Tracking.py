@@ -814,20 +814,31 @@ def ship_calibration():
             "calibrated": BUYER.get("ship_calibrated")}
 
 
-def adjusted(price, miles, ship=0):
-    """Asking plus shipping. The optional mileage adjustment (cents_per_mile,
-    off by default) is the only thing that could ever take it below asking."""
+def adjusted(price, ship=0):
+    """Asking plus shipping, and nothing else.
+
+    It used to fold in a buyer-level mileage allowance
+    (buyer.cents_per_mile, 0 in the shipped config), and that knob reached
+    exactly one surface: fmt_row() prints this number after the "+ $X shipping
+    =" sign, so turning it on published an equation that does not add up —
+    "$36,479 · + $1,031 shipping = $42,048" — while listing_entry()
+    deliberately drops the adjusted value from docs/data.json, so the dashboard
+    showed $37,510 for the same VIN. Two surfaces, one car, two landed totals,
+    under a README promising they state the same fact in the same words. And
+    README's own opening says the rule: "Miles are shown next to every price,
+    not priced in."
+
+    The mileage allowance that IS used lives under buyer.picks and ranks the
+    spicy picks — pick_value(), where a car's miles buy it a place in an order
+    and never a price on a screen."""
     if price is None:
         return None
-    base = to_int(BUYER.get("mileage_baseline")) or 20000
-    cpm = to_float(BUYER.get("cents_per_mile")) or 0
-    mileage = (miles - base) * cpm if (miles is not None and cpm) else 0
-    return int(price + ship + mileage)
+    return int(price + ship)
 
 
 def landed(r):
     ship = ship_for(r)
-    return adjusted(to_int(r["price"]), to_int(r["miles"]), ship), ship
+    return adjusted(to_int(r["price"]), ship), ship
 
 
 # --------------------------------------------------------------------------
@@ -2070,7 +2081,7 @@ def report_spend(row, hist):
         # reads "~0 unspent at this rate" whether the run is exactly on plan or
         # four hundred calls over it. A headroom meter that floors at zero is
         # silent in the only case worth printing, so overspend is now its own
-        # sentence and says how far over. The plan is deliberately tight — 915
+        # sentence and says how far over. The plan is deliberately tight — 884
         # of 1,000 — and a retry bills twice, so this is a live number, not a
         # defensive one.
         if projected > MONTHLY:
@@ -2599,9 +2610,11 @@ def build_local_history(all_rows):
 
     in_scope() reads the state field on the row, and a car's state field is not
     a constant: a listing can be moved between a dealer group's lots, or
-    re-listed by a different store. Nine VINs in this record have changed state
-    and three have crossed the buyer's own border doing it — WBY33FK09SCT64650
-    was in Indiana on 2026-09-01 and is in Missouri now.
+    re-listed by a different store. Ten VINs in this record had changed state
+    when this was written and three had crossed the buyer's own border doing it
+    — WBY33FK09SCT64650 was in Indiana on 2026-09-01 and in Missouri by
+    2026-09-05. Both counts only grow, so they are dated rather than quoted as
+    facts about the file: the argument is that it happens at all.
 
     The dashboard rebuilds a day's drivable count from the cars themselves
     whenever a filter is on, and the only state it holds per car is TODAY's, so
@@ -2610,9 +2623,12 @@ def build_local_history(all_rows):
     on the day — and the two series are supposed to be one definition in two
     languages, so the page needs the same fact.
 
-    Emitted only at CHANGE points, and only for a car that ever changed: three
-    of 1,209 VINs, about 150 bytes on an 876KB file. A car that never moved
-    says nothing and the page falls back to the flag it already has.
+    Emitted only at CHANGE points, and only for a car that ever changed — a
+    handful of VINs out of a four-figure record, a few hundred bytes on a
+    megabyte file. (It said "three of 1,209 VINs, about 150 bytes on an 876KB
+    file"; the record was 1,252 VINs and 1,030KB a few days later, which is
+    what a count of a growing thing does to a docstring.) A car that never
+    moved says nothing and the page falls back to the flag it already has.
     """
     per_day = defaultdict(dict)
     for r in all_rows:
@@ -2755,10 +2771,18 @@ def find_index_dates(all_rows, floor=20, ratio=10):
 
     listed_since comes from the API's `createdAt`, and createdAt is when the
     RECORD was created, which for a bulk load is the same instant for tens of
-    thousands of cars. On this sheet that day is 2026-08-09: 106 of the 321
-    rows of 2026-09-01 carry it, spread over 8 targets, 25 states and 85
-    different dealers, while 2026-08-08 carries one row and 2026-08-10 none.
-    Eighty-five dealers do not list on the same Tuesday and then stop.
+    thousands of cars. On this sheet that day is 2026-08-09, a Sunday: 465
+    distinct (target, VIN) pairs carry it against 11 on the Saturday before, 1
+    on the Monday after and 35 on the Tuesday — the nearest neighbour the ratio
+    test actually compares against. Cars are not listed in their hundreds on
+    one Sunday and then not at all on the Monday.
+
+    (This paragraph said "106 of the 321 rows of 2026-09-01 … 85 different
+    dealers … 2026-08-08 carries one row and 2026-08-10 none", and called the
+    day a Tuesday. Every figure in it was a count of a growing file, and none
+    of them survived a fortnight — the counts above are dated for the same
+    reason build_local_history()'s are. The property below is not, and it is
+    the one the code implements.)
 
     What it did to the published numbers is not subtle. median_days_listed came
     out at exactly (snapshot date - 2026-08-09) for six of the seven models,
@@ -3594,8 +3618,6 @@ def build_outputs(today_rows, all_rows, hist):
             # from it and the number is in the export rather than in a function
             # nobody calls.
             "ship_calibration": ship_calibration(),
-            "cents_per_mile": BUYER.get("cents_per_mile"),
-            "mileage_baseline": BUYER.get("mileage_baseline"),
             "shortlist": [{"vin": v, "note": n} for v, n in SHORTLIST.items()],
             "finance": finance_export(),
             "fees": fees_export(),

@@ -237,15 +237,27 @@ class TestDrivable(unittest.TestCase):
 # --------------------------------------------------------------------------
 class TestMoney(unittest.TestCase):
     def test_asking_plus_shipping_is_never_below_asking(self):
-        for miles in (0, 5000, 20000, 60000, 150000):
-            for ship in (0, 350, 1200):
-                total = T.adjusted(40000, miles, ship)
-                self.assertGreaterEqual(
-                    total, 40000,
-                    f"asking 40000 + ship {ship} at {miles} mi came to {total}; the "
-                    f"mileage adjustment must stay off (buyer.cents_per_mile = 0)")
+        for ship in (0, 350, 1200):
+            total = T.adjusted(40000, ship)
+            self.assertGreaterEqual(
+                total, 40000,
+                f"asking 40000 + ship {ship} came to {total}")
 
-    def test_mileage_adjustment_is_off_by_default(self):
+    def test_no_mileage_allowance_can_reach_a_displayed_total(self):
+        """The knob that could reach one is gone, and this is what it cost:
+        with buyer.cents_per_mile on, fmt_row() printed "$36,479 · + $1,031
+        shipping = $42,048" while the dashboard, which drops the adjusted value
+        on purpose, showed $37,510 for the same VIN. The allowance that ranks
+        the picks lives under buyer.picks and never prints."""
+        import inspect
+        was = {"cents_per_mile": 0.30, "mileage_baseline": 20000}
+        with unittest.mock.patch.dict(T.BUYER, was, clear=False):
+            self.assertEqual(T.adjusted(40000, 1200), 41200,
+                             "a buyer-level mileage allowance must not reach it")
+        # Structurally, not by configuration: the function cannot take a
+        # mileage at all, so no config can put one into a printed total.
+        self.assertEqual(list(inspect.signature(T.adjusted).parameters), ["price", "ship"])
+        self.assertNotIn("cents_per_mile", inspect.getsource(T.adjusted).split('"""')[-1])
         self.assertEqual(T.to_float(T.BUYER.get("cents_per_mile")) or 0, 0,
                          "buyer.cents_per_mile must be 0 so displayed totals equal "
                          "asking + shipping")
@@ -1377,24 +1389,18 @@ class TestLandedAndAdjusted(unittest.TestCase):
     """
 
     def test_shipping_is_added(self):
-        self.assertEqual(T.adjusted(40000, 20000, 1200), 41200)
-        self.assertEqual(T.adjusted(40000, 20000, 0), 40000)
+        self.assertEqual(T.adjusted(40000, 1200), 41200)
+        self.assertEqual(T.adjusted(40000, 0), 40000)
 
     def test_no_price_is_no_answer(self):
-        self.assertIsNone(T.adjusted(None, 20000, 1200))
+        self.assertIsNone(T.adjusted(None, 1200))
 
-    def test_the_mileage_term_is_signed_the_way_the_docstring_says(self):
-        """Off in the shipped config, so this patches it on rather than
-        asserting a dead branch stays dead: above the baseline COSTS, below it
-        credits, and a car with no mileage is not guessed at."""
-        with unittest.mock.patch.dict(T.BUYER, {"cents_per_mile": 0.30,
-                                                "mileage_baseline": 20000}, clear=False):
-            self.assertEqual(T.adjusted(40000, 30000, 0), 43000,
-                             "10,000 miles over the baseline at 30c is $3,000 more")
-            self.assertEqual(T.adjusted(40000, 10000, 0), 37000,
-                             "and 10,000 under it is $3,000 less")
-            self.assertEqual(T.adjusted(40000, None, 500), 40500,
-                             "a car with no mileage gets shipping and no guess")
+    def test_the_landed_total_is_the_page_s_own_arithmetic(self):
+        """The page's landed(x) is price plus shipping; this is the record's,
+        and they are the same sum, which is what stops the two surfaces printing
+        two totals for one car."""
+        for price, ship in ((40000, 0), (36479, 1031), (99999, 350)):
+            self.assertEqual(T.adjusted(price, ship), price + ship)
 
     def test_landed_reads_the_rows_own_shipping(self):
         r = {k: "" for k in T.FIELDS}
@@ -2931,6 +2937,104 @@ class TestTheDaysToSaleClauseNamesItsOwnDenominator(unittest.TestCase):
                                      "series": [], "trim_id": "bmw-i5-m60"}]
         st = T.sale_stats(rows)
         self.assertEqual((st["n_sold"], st["n_departures"]), (14, 14))
+
+
+class TestTheCutOffProseNamesBothAxes(unittest.TestCase):
+    """README: "a car can vanish from the data by being priced *above* the
+    day's cut-off … labelled 'priced above today's cut-off' on the dashboard".
+
+    Both halves were wrong for the nationwide certified watches, which sort by
+    mileage: window_dim() says so, the committed feed holds such a row, and the
+    label the two surfaces actually render says "fetch cut-off", not "priced
+    above". how.html spells the two-axis rule out in full, so README was the one
+    surface carrying half of it.
+    """
+
+    def test_the_axis_is_not_always_a_price(self):
+        dims = {t["id"]: T.window_dim(t) for t in T.TARGETS.values()}
+        self.assertIn("miles", dims.values(),
+                      "the watchlist should still carry a miles-sorted watch "
+                      "for this to be about")
+        self.assertIn("price", dims.values())
+
+    def test_and_the_readme_says_so(self):
+        readme = Path("README.md").read_text()
+        self.assertNotIn("priced above today's cut-off", readme,
+                         "that label is on neither surface")
+        self.assertIn("beyond that day's fetch cut-off", readme,
+                      "the label the dashboard really renders")
+        self.assertIn("sorted by", readme.lower())
+        self.assertIn("mileage", readme.split("beyond that day's fetch cut-off")[1][:600],
+                      "…and that one of the two axes is a mileage")
+
+    def test_the_label_readme_quotes_is_the_one_the_page_renders(self):
+        # The page holds it inside a single-quoted JS string, so the apostrophe
+        # is backslash-escaped in the source and not on the screen.
+        page = Path("docs/index.html").read_text().replace("\\'", "'")
+        self.assertIn("beyond that day's fetch cut-off", page,
+                      "README quotes the page; the page has to say it")
+        self.assertIn("beyond that day's fetch cut-off (price or miles)",
+                      Path("Tracking.py").read_text(),
+                      "…and the record says which axis it was")
+
+
+class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
+    """"BMW siblings run every other day, rival brands every third day", on a
+    watchlist where four of the six non-shopped BMW targets are on cadence 3.
+
+    The tier the prose described was by BRAND and the config is by TARGET, so
+    the sentence was false for the i7's own trims and for the whole iX. Both
+    surfaces carried it, and the call figures quoted beside it — 29 a day, 884
+    a month, worst day 32 of 40 — are the config's, not the sentence's.
+    """
+
+    def _by_cadence(self):
+        out = {}
+        for t in T.TARGETS.values():
+            out.setdefault(t["cadence"], []).append(t["id"])
+        return out
+
+    def test_no_surface_claims_a_cadence_tier_by_brand(self):
+        for name in ("README.md", "docs/how.html"):
+            text = Path(name).read_text()
+            self.assertNotIn("BMW siblings run every other day", text, name)
+            self.assertNotIn("BMW siblings are fetched every other day", text, name)
+
+    def test_the_daily_targets_are_shopped_trims_and_there_are_two(self):
+        daily = sorted(self._by_cadence().get(1, []))
+        self.assertEqual(len(daily), 2, f"the prose says two run daily: {daily}")
+        self.assertTrue(set(daily) <= set(T.SHOPPING),
+                        f"…and that they are shopped ones: {daily}")
+
+    def test_every_other_day_is_the_i5s_other_trims_and_nothing_else(self):
+        every_other = sorted(self._by_cadence().get(2, []))
+        self.assertEqual(len(every_other), 3,
+                         f"the prose says the i5's other three: {every_other}")
+        self.assertTrue(all(t.startswith("bmw-i5-") for t in every_other),
+                        f"…and that all three are the i5's: {every_other}")
+        self.assertIn("bmw-i5-cpo", every_other,
+                      "the prose names the certified watch as one of them")
+
+    def test_and_the_rest_is_one_third_day_tier(self):
+        rest = sorted(self._by_cadence().get(3, []))
+        others = {c for c in self._by_cadence() if c not in (1, 2, 3)}
+        self.assertFalse(others, f"the prose names three tiers, the config has {others}")
+        self.assertTrue(any(t.startswith("bmw-i7-") for t in rest)
+                        and any(t.startswith("bmw-ix") for t in rest)
+                        and any(not t.startswith("bmw-") for t in rest),
+                        f"the prose says the i7's other trims, the iX and every "
+                        f"rival share the third-day tier: {rest}")
+
+    def test_the_call_figures_both_surfaces_quote(self):
+        today, worst, avg = T.planned_calls()
+        for name, needed in (("README.md", []),
+                             ("docs/how.html", [f"about {round(avg)} calls a day",
+                                                f"roughly {round(avg * 30.5)} a month",
+                                                f"worst day in any fortnight at {worst}",
+                                                f"hard cap of {T.BUDGET}"])):
+            text = Path(name).read_text()
+            for want in needed:
+                self.assertIn(want, text, f"{name}: {want}")
 
 
 class TestTheComparisonPreambleDescribesTheQueriesItRan(unittest.TestCase):

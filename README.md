@@ -81,14 +81,19 @@ each. So each target is fetched twice — once filtered to the buyer's states pl
 (the API takes a comma list, so eight states cost one call) and once nationally — and each target
 has a *depth* (the two being shopped get both sorts at two pages **plus a newest-first page**, so a
 fresh listing is seen the day it appears instead of whenever it ranks among the cheapest; the rest
-get the cheapest 20) and a *cadence*: BMW siblings run every other day, rival brands every third
-day, spread evenly across the cycle in watchlist order. A hard `budget_per_day` makes the script
+get the cheapest 20) and a *cadence*, per target rather than per brand: the two shopped trims run
+daily, the i5's other three (the certified watch among them) every other day, and everything else —
+the i7's other trims, the iX and every rival — every third day, spread evenly across the cycle in
+watchlist order. A hard `budget_per_day` makes the script
 refuse to run if any day in the next two weeks would exceed it, and it prints the plan before it
 starts.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
-labelled "priced above today's cut-off" on the dashboard and left out of the report's "gone" list.
+labelled "beyond that day's fetch cut-off" on the dashboard and left out of the report's "gone"
+list. Cheapest N on the axis that query SORTED by: the ordinary targets sort by price, so the
+cut-off is a price, and the nationwide certified watches sort by mileage, so theirs is a mileage —
+a car can fall out of one of those by being driven further, not by asking more.
 
 **Scope by state, not coordinates.** The first version placed listings into city radii by their
 coordinates and returned one or two local cars a day while the same cars appeared nationally with
@@ -252,7 +257,7 @@ one skip on every run and the backstop never fired.
 | `ship_per_mile` | Legacy flat rate, used only when `ship_bands` is empty: `max(ship_min, straight_line_distance × ship_per_mile)`. Note it does **not** apply `ship_road_factor` — a bands-less config behaves exactly as it did before bands existed, byte for byte, and that is deliberate. Leave the bands set and this is never read. |
 | `ship_cost` | Flat shipping, used when distance is unknown or neither bands nor `ship_per_mile` are set. |
 | `ship_quotes`, `ship_calibrated` | Real hauler quotes (`{"miles": …, "price": …, "route": …}` — the key is `price`, and `miles` is the miles the BROKER quoted, not the great-circle figure) the run scores the bands against, and the date a human last did that. A quote missing either number is announced on the run log and skipped rather than silently ignored, and the run exports what it found — `{n, mean_error, worst, calibrated}` under `buyer.ship_calibration`, or `null` while no quotes exist. **Every shipping number on the page is an estimate until this is populated** — nothing fetches a quote, so the bands are a guess with a shape, not a price. |
-| `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
+| `cents_per_mile`, `mileage_baseline` | **Read by nothing, and kept only so an old config still loads.** They used to fold a mileage allowance into the "asking + shipping" figure, which reached one surface: the report printed a sum that did not add up while the dashboard, which drops that value on purpose, showed asking + shipping for the same car. Miles are shown next to every price and never priced into one. The allowance that ranks the picks is `picks.cents_per_mile` below. |
 | `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full; every other model is a one-line comparison. |
 | `shortlist` | The specific cars being decided on, by VIN: `["WBY33FK09RCR29277", {"vin": "…", "note": "called dealer 8/25"}]`. They open the report and pin to the dashboard's front page with price, movement and your note — and say loudly when one is cut, or gone. |
 | `picks` | How the spicy picks are chosen: `count` (per list), `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own cohort (trim and model year with six or more eligible cars, else the year, else the model) — never a separate drivable-only median — then split into two lists: drivable, and worth the ship. Only cars genuinely under typical qualify: below the 95% interval of the cohort's median, so a car inside that median's own sampling error is never called under typical, and a cohort of six to eight cars — whose interval is the whole sample — can call no car under at all. The cohort must also be comparable: every car in it wears the scored car's trim, or the page says too few comparable listings to say and prints no percentage anywhere, the best-value order included. Shown at asking price. |
