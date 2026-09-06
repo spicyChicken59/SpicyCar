@@ -3895,16 +3895,16 @@
         out.appendChild(el('figure', {
           class: 'sc-benchmark',
           style: `--sc-benchmark-position:${position}%;--sc-benchmark-reference:50%;--sc-benchmark-tone:${tone}`
-        }, [
+        },
           el('figcaption', { class: 'sc-sr-only' }, `${word} on a context scale from 20% over typical to 20% under typical`),
-          el('div', { class: 'sc-benchmark__track', 'aria-hidden': 'true' }, [
+          el('div', { class: 'sc-benchmark__track', 'aria-hidden': 'true' },
             el('span', { class: 'sc-benchmark__reference' }),
             el('span', { class: 'sc-benchmark__point' })
-          ]),
-          el('div', { class: 'sc-benchmark__scale', 'aria-hidden': 'true' }, [
+          ),
+          el('div', { class: 'sc-benchmark__scale', 'aria-hidden': 'true' },
             el('span', null, '20% over'), el('span', null, 'typical'), el('span', null, '20% under')
-          ])
-        ]));
+          )
+        ));
       }
       return out;
     });
