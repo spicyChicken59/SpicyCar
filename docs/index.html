@@ -49,7 +49,7 @@
 <script src="design-system/sc-charts.js"></script>
 <script src="design-system/sc-map.js"></script>
 <style>
-  /* Page-specific only. Everything generic now lives in sc.css v2.7.0 — the
+  /* Page-specific only. Everything generic now lives in sc.css v2.10.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
      frame's photo loader and the 44px touch targets were all promoted out of
      this file and are no longer maintained here. */
@@ -199,6 +199,10 @@
   #compare-table thead th > span { display: block; }   /* the header stacks; the chip inside the last one must not stretch to the column */
   #compare-table .cmp-swatch { margin-bottom: 4px; }
   #compare-table td { vertical-align: top; }
+  #compare-table .sc-benchmark { min-width: 136px; margin-top: var(--sc-s2); }
+  #compare-table .sc-benchmark__track { height: 16px; }
+  #compare-table .sc-benchmark__point { width: 10px; height: 10px; }
+  #compare-table .sc-benchmark__scale { font-size: 9px; }
   /* On a phone the scroll window is 348px and the metric column took 168 of
      it, so every right-aligned figure in the table started outside the strip:
      ten labels and no numbers until the reader scrolled each row. The metric
@@ -212,8 +216,10 @@
        687px inside a 348px window. Capped and wrapped, two columns come to
        96 + 124 + 124 = 344 and both are on screen at once, which is the whole
        point of the card; three or more scroll, with the metric column sticky. */
+    #compare-table.sc-signal-matrix { min-width: 100%; }
     #compare-table .cmp-metric { min-width: 96px; max-width: 96px; white-space: normal; }
     #compare-table thead th, #compare-table tbody td { min-width: 0; max-width: 124px; white-space: normal; overflow-wrap: anywhere; }
+    #compare-table .sc-benchmark { min-width: 112px; }
     #compare-table tbody td { text-align: left; }
     #compare-table thead th .sc-nowrap { white-space: normal; }
   }
@@ -335,7 +341,7 @@
   }
 
   /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
-     masthead, theme toggle and footer are sc.css v2.7.0's own 44px block,
+     masthead, theme toggle and footer are sc.css v2.10.0's own 44px block,
      keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
      Two mechanisms, split by whether layout may move:
 
@@ -377,11 +383,15 @@
      :not() — .picks-group is this page's class). Delete when the pinned
      sheet carries them, which is a thing to CHECK against the pin and not a
      release to name: this comment read "candidates for v2.5.x" while the pin
-     went v2.4.0 → v2.7.0 without carrying one of them, so the number was the
-     only part of it that changed meaning. Checked at v2.7.0: the sheet's
-     three coarse-pointer blocks cover .sc-map__btn, .sc-signature,
-     .sc-brand-panel__label, .sc-theme-toggle button, .sc-masthead .sc-nav a,
-     .sc-brand and .sc-foot a — none of the five below. */
+     went v2.4.0 → v2.7.0 → v2.10.0 without carrying one of them, so the
+     number was the only part of it that changed meaning. Re-checked at
+     v2.10.0, which added a benchmark rail, a print presentation and a signal
+     matrix and no touch targets: the sheet's three coarse-pointer blocks
+     cover .sc-map__btn, .sc-signature, .sc-brand-panel__label,
+     .sc-theme-toggle button, .sc-masthead .sc-nav a, .sc-brand and
+     .sc-foot a — none of the five below. That re-check is not a habit to
+     rely on; test_the_bridges_the_pages_keep_are_ones_the_pinned_sheet_does_not_carry
+     runs it against whatever the pin is. */
   @media (any-pointer: coarse) {
     .sc-link--quiet, .sc-legend__chip, .sc-tab { position: relative; }
     .sc-link--quiet::before, .sc-legend__chip::before, .sc-tab::before {
@@ -498,7 +508,7 @@
 <body>
 <a class="sc-skip" href="#main">Skip to content</a>
 
-<header class="sc-masthead">
+<header class="sc-masthead sc-screen-only">
   <a class="sc-brand" href="./">
     <img class="sc-mark" src="design-system/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">A SpicyChicken tool</span></span>
@@ -516,7 +526,9 @@
   </div>
 </header>
 
-<main class="sc-wrap sc-wrap--wide sc-stack" id="main">
+<main class="sc-wrap sc-wrap--wide sc-stack sc-print-report" id="main">
+  <div class="sc-print-head" aria-hidden="true"><span class="sc-signature sc-signature--small"><img src="design-system/assets/sc-mark-color-light.svg" alt="" width="342" height="405"><span class="sc-signature__name">SpicyCar</span></span><span>purchase intelligence / current watchlist</span></div>
+  <div class="sc-print-foot" aria-hidden="true"><span>SpicyChicken / decision tools</span><span>Asking prices · shipping stated per car</span></div>
   <div class="sc-title" id="car-heading">
     <section class="sc-cover sc-cover--wine sc-cover--compact sc-on-ink sc-reveal" data-sc-motion="fade" aria-labelledby="h1">
       <div class="sc-cover__content">
@@ -638,7 +650,7 @@
         <p class="sc-hint" id="compare-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table sc-table--compact" id="compare-table"></table></div>
+    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Vehicle comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values" id="compare-table"></table></div>
   </section>
 
   <section class="sc-card" id="finalists-card" hidden>
@@ -771,7 +783,7 @@
   </div>
 </main>
 
-<footer class="sc-foot">
+<footer class="sc-foot sc-screen-only">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <!-- The watermark, in the form DESIGN_SYSTEM.md §9 fixes for every page: the
        mono mark at 20px (sized by the sheet, no inline height) beside the
@@ -4050,7 +4062,29 @@
       const sub = !c ? whyUnscored(r)
         : c.mixed ? `too few comparable ${c.short} listings to say`
         : `${c.short}, n=${c.n}`;
-      return cmpCell(word, sub, false, c ? { kind: c.basis, title: c.words } : null);
+      const out = cmpCell(word, sub, false, c ? { kind: c.basis, title: c.words } : null);
+      if (p != null && st !== 'mixed') {
+        // A centered visual reading of the exact percentage already printed
+        // above. ±20% is explicitly a context scale, not another score; values
+        // beyond it clamp only the decorative point while the words stay exact.
+        const position = Math.max(0, Math.min(100, 50 + p * 250));
+        const tone = st === 'under' ? 'var(--sc-good)'
+          : st === 'over' ? 'var(--sc-warn)' : 'var(--sc-chart-emphasis)';
+        out.appendChild(el('figure', {
+          class: 'sc-benchmark',
+          style: `--sc-benchmark-position:${position}%;--sc-benchmark-reference:50%;--sc-benchmark-tone:${tone}`
+        },
+          el('figcaption', { class: 'sc-sr-only' }, `${word} on a context scale from 20% over typical to 20% under typical`),
+          el('div', { class: 'sc-benchmark__track', 'aria-hidden': 'true' },
+            el('span', { class: 'sc-benchmark__reference' }),
+            el('span', { class: 'sc-benchmark__point' })
+          ),
+          el('div', { class: 'sc-benchmark__scale', 'aria-hidden': 'true' },
+            el('span', null, '20% over'), el('span', null, 'typical'), el('span', null, '20% under')
+          )
+        ));
+      }
+      return out;
     });
     row('Where', 'Drivable means listed in one of your states — no shipping',
       (r) => cmpCell(placeCell(r.x), r.x.local ? 'drivable' : (r.x.distance != null ? `~${num(r.x.distance)} mi away` : 'distance n/a')));

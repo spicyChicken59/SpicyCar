@@ -57,7 +57,7 @@
   .dg-figure { font: 700 13.5px var(--sc-font-body); fill: var(--sc-heading); }
 
   /* Bridge, dense surfaces — the TOC's 21px-tall rows under a finger. (The
-     masthead, theme toggle and footer are sc.css v2.7.0's own 44px block,
+     masthead, theme toggle and footer are sc.css v2.10.0's own 44px block,
      keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
      Real growth keyed to (pointer: coarse) like the sheet's own block,
      because a shiftless halo cannot get there: TOC rows sit 6px apart, so
@@ -67,7 +67,7 @@
      the now-touching 44px rows). Promotion candidate. Delete when the
      pinned sheet carries it — checked against the pin rather than against a
      named release, because this comment said "v2.5.x" while the pin went
-     v2.4.0 → v2.7.0 and .sc-toc gained no touch target in either. At v2.7.0
+     v2.4.0 → v2.7.0 → v2.10.0 and .sc-toc gained no touch target in any. At v2.10.0
      the sheet's only .sc-toc rules are its flex layout and white-space. */
   @media (pointer: coarse) {
     .sc-toc a { display: inline-flex; align-items: center; min-height: 44px; }
@@ -110,7 +110,7 @@
 <body>
 <a class="sc-skip" href="#main">Skip to content</a>
 
-<header class="sc-masthead">
+<header class="sc-masthead sc-screen-only">
   <a class="sc-brand" href="./">
     <img class="sc-mark" src="design-system/assets/sc-mark-color-dark.svg" alt="">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">A SpicyChicken tool</span></span>
@@ -126,7 +126,9 @@
   </div>
 </header>
 
-<main class="sc-wrap sc-wrap--wide" id="main">
+<main class="sc-wrap sc-wrap--wide sc-print-report" id="main">
+  <div class="sc-print-head" aria-hidden="true"><span class="sc-signature sc-signature--small"><img src="design-system/assets/sc-mark-color-light.svg" alt="" width="342" height="405"><span class="sc-signature__name">SpicyCar</span></span><span>field guide / methodology</span></div>
+  <div class="sc-print-foot" aria-hidden="true"><span>SpicyChicken / field guide</span><span>Method and definitions</span></div>
   <section class="sc-cover sc-cover--paper sc-reveal" data-sc-motion="fade" id="method-cover" aria-labelledby="method-title">
     <div class="sc-cover__content">
       <div class="sc-eyebrow">SpicyCar · field guide</div>
@@ -332,7 +334,7 @@
   </div>
 </main>
 
-<footer class="sc-foot">
+<footer class="sc-foot sc-screen-only">
   <span>Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <!-- The watermark, in the form DESIGN_SYSTEM.md §9 fixes for every page: the
        mono mark at 20px (sized by the sheet, no inline height) beside the

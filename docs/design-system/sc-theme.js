@@ -1,4 +1,4 @@
-/* SpicyChicken Design System — sc-theme.js v2.7.0 · source: build/theme.js · link it from <head> (before paint) or inline it */
+/* SpicyChicken Design System — sc-theme.js v2.10.0 · source: build/theme.js · link it from <head> (before paint) or inline it */
 (function () {
   var KEY = 'sc-theme', root = document.documentElement, saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) {}
