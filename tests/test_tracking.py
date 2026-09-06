@@ -649,8 +649,8 @@ class TestPicks(unittest.TestCase):
         T.SHORTLIST.update({"N" * 17: ""})
         try:
             live = {"N" * 17: (x, "BMW i5")}
-            self.assertNotIn("under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: inside})))
-            self.assertIn("3% under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: below})))
+            self.assertNotIn("under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: inside}, T.TODAY)))
+            self.assertIn("3% under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: below}, T.TODAY)))
         finally:
             T.SHORTLIST.clear()
             T.SHORTLIST.update(old)
@@ -815,7 +815,7 @@ class TestASmallCutIsStillACut(unittest.TestCase):
                            "state": r["state"], "target": "t"} for r in tl}
         sec = []
         T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
-                      tl, rows, {}, [], "2026-09-03")
+                      tl, rows, {}, [], "2026-09-03", T.TODAY)
         lines = [l for l in sec if l.startswith("- $")]
         self.assertTrue(lines[0].startswith("- $51,500"), f"biggest first, got {lines[0]}")
         self.assertIn("$73,372", lines[1], "and the $1 move is kept, at the bottom")
@@ -1028,8 +1028,8 @@ class TestStillListedIsNotGone(unittest.TestCase):
         kept = {**base, "still_listed": {"trim_id": "t", "trim": "xDrive40", "price": 51476, "cpo": True}}
         t = {"id": "bmw-i5-cpo", "label": "CPO under 30k mi", "note": "", "years": [2025]}
         a, b = [], []
-        T.trim_detail(a, t, [], {}, {}, [lost], "2026-09-03")
-        T.trim_detail(b, t, [], {}, {}, [kept], "2026-09-03")
+        T.trim_detail(a, t, [], {}, {}, [lost], "2026-09-03", T.TODAY)
+        T.trim_detail(b, t, [], {}, {}, [kept], "2026-09-03", T.TODAY)
         self.assertIn("not certified", "\n".join(a))
         self.assertIn("still certified", "\n".join(b))
 
@@ -1045,7 +1045,7 @@ class TestStillListedIsNotGone(unittest.TestCase):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear(); T.SHORTLIST.update({"W" * 17: ""})
         try:
-            sec, subject = T.build_today({"cuts": [], "new": [], "gone": []})
+            sec, subject = T.build_today({"cuts": [], "new": [], "gone": []}, T.TODAY)
         finally:
             T.SHORTLIST.clear(); T.SHORTLIST.update(old)
         self.assertNotIn("Shortlist: GONE", "\n".join(sec))
@@ -1061,7 +1061,7 @@ class TestStillListedIsNotGone(unittest.TestCase):
         row["still_listed"] = {"trim_id": "bmw-i5-xdrive40", "trim": "xDrive40", "price": 51476}
         sec = []
         T.trim_detail(sec, {"id": "bmw-i5-cpo", "label": "CPO under 30k mi", "note": "", "years": [2025]},
-                      [], {}, T.build_history(rows), [row], d2)
+                      [], {}, T.build_history(rows), [row], d2, T.TODAY)
         text = "\n".join(sec)
         self.assertIn("Left this watch, the car still listed (1)", text)
         self.assertIn("the same VIN is listed as xDrive40 at $51,476, not certified", text)
@@ -1096,7 +1096,8 @@ class TestReachNotArrival(unittest.TestCase):
                  "listed_since": T.TODAY, "first_seen": T.TODAY, "days_listed": 0}
         sec, subject = T.build_today({"cuts": [], "gone": [],
                                       "new": [{"x": x_far, "label": "BMW i7", "pct": None, "shopping": True},
-                                              {"x": x_now, "label": "BMW i7", "pct": None, "shopping": True}]})
+                                              {"x": x_now, "label": "BMW i7", "pct": None, "shopping": True}]},
+                                     T.TODAY)
         text = "\n".join(sec)
         self.assertIn("2 new on the shopped models (1 listed 14+ days before the tracker saw it — reach, not arrival)", text)
         self.assertIn("2 new", subject)
@@ -1164,7 +1165,7 @@ class TestTwoPrices(unittest.TestCase):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear(); T.SHORTLIST.update({"WBY33FK05RCP99465": ""})
         try:
-            text = "\n".join(T.shortlist_section({"WBY33FK05RCP99465": (x, "BMW i5")}, {}, {}))
+            text = "\n".join(T.shortlist_section({"WBY33FK05RCP99465": (x, "BMW i5")}, {}, {}, T.TODAY))
         finally:
             T.SHORTLIST.clear(); T.SHORTLIST.update(old)
         self.assertIn("seen at $54,999 and $55,849", text)
@@ -1484,14 +1485,21 @@ class TestHistoryRoundTrip(unittest.TestCase):
 
 
 class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
-    """"## Today" describes the newest snapshot, not the wall clock.
+    """The leading section describes the newest snapshot, not the wall clock —
+    and says which day that was.
 
-    Its new/gone detectors were already data-relative; the CUT detector was
-    gated on TODAY. So a rebuild run on a day the tracker had not fetched —
+    Its gone detector was already data-relative; the CUT detector was gated on
+    TODAY. So a rebuild run on a day the tracker had not fetched —
     tools/rebuild_outputs.py, which is exactly what a dispatch runs — wrote a
     report whose Today section had lost every price-cut bullet while still
     printing "79 new · 31 gone" above it and per-model lines counting 42 price
     changes below. Three surfaces, one day, two different stories.
+
+    The cut detector moved to the data and the heading did not, so the same
+    rebuild then published yesterday's cuts under the word "today", four lines
+    above that model's own "Not fetched today — showing 2026-09-05". The
+    heading names the day whenever it is not today; on a live run it is, and
+    the section still reads "## Today".
     """
 
     @staticmethod
@@ -1509,14 +1517,232 @@ class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
                 self.row("K" * 17, before, 50000), self.row("K" * 17, yesterday, 50000)]
         today_rows = [r for r in rows if r["snapshot_date"] == yesterday]
         report, _, subject = T.build_outputs(today_rows, rows, T.build_history(rows))
-        self.assertIn("## Today", report,
-                      "the section is about the newest snapshot, whenever it was taken")
-        today = report.split("## Today")[1].split("\n## ")[0]
+        head = f"## The last fetch — {yesterday}"
+        self.assertIn(head, report,
+                      "the section is about the newest snapshot, whenever it was "
+                      "taken — and names the day when it was not today")
+        self.assertNotIn("## Today", report,
+                         "nothing here happened today; the model's own section "
+                         "one line below says so in those words")
+        today = report.split(head)[1].split("\n## ")[0]
         self.assertIn("▼", today,
                       "a $2,000 cut at the last fetch is a cut whether or not the "
                       "tracker has run again since")
         self.assertIn("cut", subject.lower(),
                       "and the subject line says so too")
+
+    def test_a_live_run_still_says_today(self):
+        """The other side of the same rule: when the newest snapshot IS today
+        the heading and every dated line read exactly as they always have."""
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        rows = [self.row("V" * 17, yesterday, 45000), self.row("V" * 17, T.TODAY, 43000),
+                self.row("W" * 17, yesterday, 46000), self.row("W" * 17, T.TODAY, 44000),
+                self.row("X" * 17, yesterday, 47000), self.row("X" * 17, T.TODAY, 45000),
+                self.row("Y" * 17, yesterday, 48000), self.row("Y" * 17, T.TODAY, 46000)]
+        today_rows = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today_rows, rows, T.build_history(rows))
+        self.assertIn("## Today", report)
+        self.assertNotIn("## The last fetch", report)
+        self.assertIn("1 more cut today", report,
+                      "the overflow line is dated by the same rule as the heading")
+
+    def test_a_model_not_in_the_newest_snapshot_contributes_nothing(self):
+        """The gate was the cadence SCHEDULE, so a model due today whose every
+        query failed kept passing it — and with its own as_of a day behind, the
+        cut detector matched on that older day and headlined yesterday's cuts
+        as today's, above its own section reading "Not fetched today"."""
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        before = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        i5 = [self.row("V" * 17, before, 45000), self.row("V" * 17, yesterday, 43000),
+              self.row("N" * 17, yesterday, 44000)]      # an arrival at ITS last fetch
+        i7 = []
+        for vin, p0, p1 in (("A" * 17, 90000, 90000), ("B" * 17, 91000, 91000)):
+            for day, price in ((before, p0), (yesterday, p1), (T.TODAY, p1)):
+                r = self.row(vin, day, price)
+                r.update({"target": "bmw-i7-edrive50", "trim": "eDrive50"})
+                i7.append(r)
+        rows = i5 + i7
+        today_rows = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today_rows, rows, T.build_history(rows))
+        head = report.split("\n## ")[1] if "\n## " in report else ""
+        self.assertNotIn("▼ $2,000", report.split("## Shopping")[0],
+                         "the i5's cut happened at ITS last fetch, which is not "
+                         "the day this record is newest at")
+        self.assertIn("_Not fetched today — showing " + yesterday + "._", report,
+                      "and the i5's own section says exactly that")
+        # …and the section still carries everything that fetch found. Gating
+        # this block on the model being IN the newest snapshot would empty it
+        # while the brief line above it counts one, and while the price-change
+        # and departure blocks below it go on describing the same fetch.
+        self.assertIn(f"**New on {yesterday} (1)**", report,
+                      "the i5's own section reports its own last fetch in full")
+
+
+class TestEveryDatedSentenceNamesItsOwnDay(unittest.TestCase):
+    """One record, built on a day it was not fetched, read four ways.
+
+    The report dated its changes by three different clocks: the cut bullets by
+    the model's own last fetch, "N new" and the NEW tag by the wall clock, the
+    shortlist's cut tag by the wall clock again — and the dashboard by the
+    record's newest day, under a comment in its own source claiming to mirror
+    the first. On the committed sheet rebuilt one day after its last fetch the
+    page called seven i5s and nine i7s new and the report said "0 new" for
+    both, out of one file.
+
+    Every sentence below is dated by the day its own subject was last seen, so
+    they can only be wrong together. On a live run that day is today and every
+    one of them reads exactly as it always has — which is what
+    TestTodaySectionIsRelativeToTheData.test_a_live_run_still_says_today pins.
+    """
+
+    @staticmethod
+    def row(vin, day, price, target="bmw-i5-edrive40", trim="eDrive40", **kw):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": target, "vin": vin, "snapshot_date": day,
+                  "price": price, "year": "2024", "trim": trim, "miles": 20000,
+                  "state": "IL", "city": "Chicago"})
+        r.update(kw)
+        return r
+
+    def setUp(self):
+        self.yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        before = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        self.cut_vin, self.new_vin = "V" * 17, "N" * 17
+        self.rows = [self.row(self.cut_vin, before, 45000),
+                     self.row(self.cut_vin, self.yesterday, 43000),
+                     self.row("K" * 17, before, 50000),
+                     self.row("K" * 17, self.yesterday, 50000),
+                     self.row(self.new_vin, self.yesterday, 44000)]
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({self.cut_vin: ""})
+        try:
+            self.report, self.site, _ = T.build_outputs(*self._record())
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(old)
+        self.i5 = self.site["brands"]["bmw"]["models"]["i5"]
+
+    def _record(self):
+        latest = [r for r in self.rows if r["snapshot_date"] == self.yesterday]
+        return latest, self.rows, T.build_history(self.rows)
+
+    def test_the_record_is_not_being_read_on_the_day_it_was_written(self):
+        """The precondition every assertion here rests on. Without it each one
+        passes on a record whose newest day IS today, where the wall clock and
+        the data agree and no anchor can be told from another."""
+        self.assertEqual(self.i5["as_of"], self.yesterday)
+        self.assertNotEqual(self.yesterday, T.TODAY)
+
+    def test_the_model_line_counts_the_arrivals_of_its_own_last_fetch(self):
+        line = next(l for l in self.report.splitlines() if " on the market · " in l)
+        self.assertIn("· 1 new ·", line,
+                      "one car arrived at this model's last fetch; dated by the "
+                      "wall clock instead, every model not fetched today counts "
+                      "0 new by construction")
+
+    def _tags(self, vin):
+        """The tag line the record prints under one car's row, or ""."""
+        block = self.report.split("**Illinois")[1]
+        rows = [r for r in block.split("\n- ") if vin in r]
+        if not rows:
+            self.fail(f"{vin} has no row in the record:\n{block[:800]}")
+        return next((l.strip() for l in rows[0].splitlines()
+                     if l.strip().startswith("_")), "")
+
+    def test_the_arrivals_block_is_there_and_names_its_day(self):
+        """It was gated on the cadence schedule as well as on having a previous
+        day, which was harmless while the arrivals were found by the wall clock
+        (an off-cadence model had none) and is not now: the block would vanish
+        from a section whose own line above it counts one."""
+        self.assertIn(f"**New on {self.yesterday} (1)** — first seen on "
+                      f"{self.yesterday},", self.report)
+        self.assertNotIn("**New today", self.report,
+                         "nothing arrived today; the section says which day it "
+                         "is describing, as its header three lines up does")
+
+    def test_a_shortlisted_departure_is_dated_by_its_own_models_fetch(self):
+        """The last dated sentence in the record: "missing today" is a claim
+        about a fetch that looked and did not find the car. Dated by the record
+        instead of by the model, it names a day on which nothing looked."""
+        d2 = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        d1 = self.yesterday
+        m60 = "bmw-i5-m60"                      # single-sort, so the window
+        self.assertTrue(T.window_reconstructable(T.TARGETS[m60]),
+                        "the premise: this target's window can be rebuilt from "
+                        "rows alone, which is what makes 'out of window' reachable "
+                        "with no live fetch signals")
+        rows = [self.row(f"W{i:02d}", d, 30000 + i * 500, target=m60, trim="M60")
+                for d in (d2, d1) for i in range(T.PER_PAGE)]
+        rows.append(self.row("H" * 17, d2, 41000, target=m60, trim="M60"))
+        for vin in ("A" * 17, "B" * 17):        # an i7 fetched today, so the
+            for d in (d2, d1, T.TODAY):         # record's newest day is today
+                rows.append(self.row(vin, d, 90000, target="bmw-i7-edrive50",
+                                     trim="eDrive50"))
+        latest = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        was, log = dict(T.SHORTLIST), T.FETCH_LOG
+        pw, ex, fs = dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"H" * 17: ""})
+        # No live signals and no committed fetch log: the window is rebuilt from
+        # the rows alone, which is the offline-rebuild case and the only one that
+        # reaches "out of window" without a fetch this run.
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+        try:
+            report, site, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+            T.FETCH_LOG = log
+            T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+            T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+            T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        self.assertEqual(site["brands"]["bmw"]["models"]["i5"]["as_of"], d1)
+        self.assertEqual(site["data_through"], T.TODAY,
+                         "the precondition: the record is newer than this "
+                         "model's last fetch, which is the only place the two "
+                         "candidate days differ")
+        line = next((l for l in report.splitlines() if "H" * 17 in l), "")
+        self.assertIn(f"missing on {d1} — beyond that fetch's cut-off", line,
+                      f"the i5 was last fetched {d1}; nothing looked for this "
+                      f"car on {T.TODAY} — the shortlist printed {line!r}")
+
+    def test_and_it_is_there_on_a_model_the_calendar_says_is_not_due(self):
+        """The case that tells the two gates apart. Every i5 trim runs daily,
+        so `due_on` is true for it on any day and the schedule gate cannot be
+        distinguished from the data one — until the trims are put on a cadence
+        that deterministically excludes today."""
+        i5 = [t for t in T.TARGETS.values() if t["model_key"] == "i5"]
+        was = [(t["cadence"], t["offset"]) for t in i5]
+        for t in i5:
+            t["cadence"], t["offset"] = 2, (1 - T.TODAY_ORD) % 2
+        try:
+            self.assertFalse(any(T.due_on(t, T.TODAY_ORD) for t in i5),
+                             "the precondition: the calendar says none of these "
+                             "trims runs today")
+            report, _, _ = T.build_outputs(*self._record())
+        finally:
+            for t, (c, o) in zip(i5, was):
+                t["cadence"], t["offset"] = c, o
+        self.assertIn(f"**New on {self.yesterday} (1)**", report,
+                      "the section describes this model's own last fetch, and "
+                      "the arrival at it is part of that fetch whatever the "
+                      "calendar says about today")
+
+    def test_and_that_arrival_wears_the_tag_in_the_rows_below(self):
+        self.assertIn("NEW", self._tags(self.new_vin),
+                      "the car that arrived at this model's last fetch is the "
+                      "one the rows mark")
+
+    def test_and_a_car_seen_on_both_days_does_not(self):
+        """The inverse, on the same record: the tag cannot simply be 'seen'."""
+        self.assertNotIn("NEW", self._tags("K" * 17))
+        self.assertFalse(T.is_new_on({"first_seen": "2026-01-01", "days_tracked": 1},
+                                     self.yesterday))
+
+    def test_the_shortlist_dates_its_cut_instead_of_calling_it_todays(self):
+        line = next((l for l in self.report.splitlines() if "CUT $" in l), "")
+        self.assertIn(f"▼ CUT $2,000 on {self.yesterday}", line,
+                      "the cut happened at the last fetch, which was not today "
+                      f"— the shortlist printed {line!r}")
+        self.assertNotIn("today", line)
 
 
 class TestWindowArithmetic(unittest.TestCase):
@@ -2147,7 +2373,7 @@ class TestDailySeries(unittest.TestCase):
 
 
 class TestNewToday(unittest.TestCase):
-    """"New today" means first seen on this snapshot.
+    """"New" means first seen on the snapshot the sentence is about.
 
     days_tracked is the length of a car's price series and a series only grows
     on days its target was fetched, so a car seen once on Monday still reads
@@ -2156,23 +2382,41 @@ class TestNewToday(unittest.TestCase):
     on 2026-09-01 were headlined as "first seen this run" on a quiet 09-04 —
     and the report's per-model "N new", the dashboard tile and the `new` chip
     all counted it again with them.
+
+    The day is a parameter, and was the wall clock: see
+    TestEveryDatedSentenceNamesItsOwnDay below for what that cost.
     """
 
-    def test_a_car_first_seen_today_is_new(self):
-        self.assertTrue(T.is_new_today({"first_seen": T.TODAY, "days_tracked": 1}))
+    def test_a_car_first_seen_on_that_day_is_new(self):
+        self.assertTrue(T.is_new_on({"first_seen": T.TODAY, "days_tracked": 1}, T.TODAY))
 
     def test_a_car_carried_forward_from_an_earlier_fetch_is_not(self):
         """The exact shape: seen once, days ago, its trim not fetched since."""
-        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 1}),
+        self.assertFalse(T.is_new_on({"first_seen": "2026-01-01", "days_tracked": 1}, T.TODAY),
                          "one sighting is not one DAY when the trim runs on a cadence")
 
     def test_a_car_seen_every_day_since_is_not_new_either(self):
-        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 40}))
+        self.assertFalse(T.is_new_on({"first_seen": "2026-01-01", "days_tracked": 40}, T.TODAY))
+
+    def test_the_day_is_the_one_the_caller_names_not_the_wall_clock(self):
+        """The whole change: the same car, two days, two answers — and the day
+        that decides is the one passed in. Anchored on TODAY this was False on
+        every build made after the fetch it describes."""
+        car = {"first_seen": "2026-09-05", "days_tracked": 1}
+        self.assertTrue(T.is_new_on(car, "2026-09-05"))
+        self.assertFalse(T.is_new_on(car, "2026-09-06"))
+        self.assertNotEqual(T.TODAY, "2026-09-05",
+                            "the point of the first assertion is that it does not "
+                            "depend on the day this test runs")
+
+    def test_a_day_the_record_does_not_have_makes_nothing_new(self):
+        """A model with no rows at all has no day; nothing is new on it."""
+        self.assertFalse(T.is_new_on({"first_seen": "2026-09-05", "days_tracked": 1}, None))
 
     def test_a_row_with_no_first_seen_falls_back(self):
         """An older sheet: better the old test than no answer at all."""
-        self.assertTrue(T.is_new_today({"days_tracked": 1}))
-        self.assertFalse(T.is_new_today({"days_tracked": 3}))
+        self.assertTrue(T.is_new_on({"days_tracked": 1}, T.TODAY))
+        self.assertFalse(T.is_new_on({"days_tracked": 3}, T.TODAY))
 
     def test_the_report_does_not_re_announce_an_old_car(self):
         """End to end, through the block that prints the headline."""
@@ -2230,7 +2474,8 @@ class TestOneCarTwoTargets(unittest.TestCase):
         self.assertEqual(e["series"][-1][1], 45000, "each day at the lowest of its copies")
         self.assertEqual(e["delta"], 45000 - 45998)
         self.assertEqual(e["cuts"], 1)
-        self.assertFalse(T.is_new_today(e), "a car listed for ten days is not new because a second query found it")
+        self.assertFalse(T.is_new_on(e, T.TODAY),
+                         "a car listed for ten days is not new because a second query found it")
 
 
 class TestCutsThatStuck(unittest.TestCase):
@@ -2281,7 +2526,8 @@ class TestSeenLabel(unittest.TestCase):
         r.update({"target": "bmw-i5-edrive40", "vin": "V", "year": "2024", "trim": "eDrive40",
                   "price": 45000, "miles": 20000, "state": "IL", "city": "Chicago", "snapshot_date": T.TODAY})
         series = [[f"2026-07-{d:02d}", 45000] for d in range(1, 22)]     # 21 sightings on 21 days
-        line = T.fmt_row(r, {"series": series, "days_tracked": 21, "first_seen": series[0][0]})
+        line = T.fmt_row(r, {"series": series, "days_tracked": 21, "first_seen": series[0][0]},
+                         T.TODAY)
         self.assertIn("seen 21 of 21 days", line)
         self.assertNotIn("tracked", line)
 
@@ -2474,7 +2720,7 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
         return e
 
     def headline(self, *events):
-        sec, _ = T.build_today({"cuts": [], "new": list(events), "gone": []})
+        sec, _ = T.build_today({"cuts": [], "new": list(events), "gone": []}, T.TODAY)
         return next(l for l in sec if "new on the shopped models" in l)
 
     def test_the_headline_names_the_cohort_the_mileage_and_the_kind_of_car(self):
@@ -2684,11 +2930,11 @@ class TestCutTag(unittest.TestCase):
         r.update({"target": "bmw-i5-edrive40", "vin": "V" * 17, "price": 39998,
                   "year": "2024", "miles": 20000, "state": "IL", "city": "Chicago"})
         back_up = T.fmt_row(r, {"cuts": 1, "delta": 0, "days_tracked": 5,
-                                "series": [["2026-08-01", 39998]]})
+                                "series": [["2026-08-01", 39998]]}, T.TODAY)
         self.assertIn("cut 1x, then back up", back_up)
         self.assertNotIn("down 1x", back_up)
         above = T.fmt_row(r, {"cuts": 2, "delta": 849, "days_tracked": 7,
-                              "series": [["2026-08-01", 42995]]})
+                              "series": [["2026-08-01", 42995]]}, T.TODAY)
         self.assertIn("above first seen", above)
 
 
@@ -3043,7 +3289,7 @@ class TestToday(unittest.TestCase):
                       "city": "Plano", "state": "TX"}}
 
     def test_quiet_day_has_an_honest_subject_and_no_section(self):
-        sec, subject = T.build_today({"cuts": [], "new": [], "gone": []})
+        sec, subject = T.build_today({"cuts": [], "new": [], "gone": []}, T.TODAY)
         self.assertEqual(sec, [])
         self.assertIn("quiet day", subject)
 
@@ -3052,7 +3298,7 @@ class TestToday(unittest.TestCase):
             "cuts": [self.cut(400, 45000, local=True),
                      self.cut(1200, 46000, local=False, shopping=False,
                               vin="V2", label="Kia EV6")],
-            "new": [], "gone": []})
+            "new": [], "gone": []}, T.TODAY)
         self.assertIn("▼$400 cut on drivable BMW i5 eDrive40", subject,
                       "a shopping-model drivable cut outranks a bigger rival cut")
         self.assertIn("## Today", sec[0])
@@ -3066,7 +3312,7 @@ class TestToday(unittest.TestCase):
                 "cuts": [self.cut(2500, 40000)],
                 "new": [],
                 "gone": [{"vin": "V9", "label": "BMW i7", "last_seen": "2026-08-25",
-                          "last_price": 62000, "shopping": True}]})
+                          "last_price": 62000, "shopping": True}]}, T.TODAY)
             self.assertTrue(subject.startswith(f"{T.APP} — shortlist car GONE"))
             self.assertIn("**Shortlist: GONE**", "\n".join(sec))
         finally:
@@ -3080,7 +3326,7 @@ class TestToday(unittest.TestCase):
                            "state": "TX", "local": False},
                      "label": "BMW i5", "pct": 0.06, "shopping": True}],
             "gone": [{"vin": "G1", "label": "BMW i5", "last_seen": "2026-08-25",
-                      "last_price": 47000, "shopping": True}]})
+                      "last_price": 47000, "shopping": True}]}, T.TODAY)
         self.assertIn("1 new", subject)
         self.assertIn("1 gone", subject)
         self.assertIn("best 6% under typical", "\n".join(sec))
@@ -3096,6 +3342,28 @@ class TestShortlist(unittest.TestCase):
         self.assertEqual(list(sl), ["WBY123", "WBA999"])
         self.assertEqual(sl["WBA999"], "called dealer")
 
+    def test_a_departure_is_missing_at_a_fetch_not_missing_today(self):
+        """"missing today" is a claim about a fetch, and the fetch is the car's
+        own model's — which on a three-day cadence is not today even on a live
+        run, and on any build without a fetch is not today for anything."""
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        row = {"vin": "GONE2", "likely": "out of window", "last_seen": "2026-08-25",
+               "last_price": 47000, "trim_label": "eDrive40", "city": "", "state": "",
+               "url": ""}
+        was = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"GONE2": ""})
+        try:
+            stale = "\n".join(T.shortlist_section({}, {"GONE2": (row, yesterday)},
+                                                  {}, yesterday))
+            live = "\n".join(T.shortlist_section({}, {"GONE2": (row, T.TODAY)},
+                                                 {}, T.TODAY))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+        self.assertIn(f"missing on {yesterday} — beyond that fetch's cut-off", stale)
+        self.assertNotIn("today", stale)
+        self.assertIn("missing today — beyond that fetch's cut-off", live,
+                      "and on the day it really was fetched, the word is today")
+
     def test_section_reports_live_gone_and_unseen(self):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear()
@@ -3107,11 +3375,13 @@ class TestShortlist(unittest.TestCase):
                                "cuts": 0, "delta": 0, "days_listed": 12,
                                "flags": [], "url": "https://x.example/1"},
                               "BMW i5")}
-            gone = {"GONE1": {"vin": "GONE1", "likely": "delisted",
-                              "last_seen": "2026-08-25", "last_price": 47000,
-                              "trim_label": "eDrive40", "city": "", "state": "",
-                              "url": ""}}
-            sec = "\n".join(T.shortlist_section(live, gone, {}))
+            # (row, the day its model was last fetched): "missing today" is a
+            # claim about a fetch, and the fetch is that model's own.
+            gone = {"GONE1": ({"vin": "GONE1", "likely": "delisted",
+                               "last_seen": "2026-08-25", "last_price": 47000,
+                               "trim_label": "eDrive40", "city": "", "state": "",
+                               "url": ""}, T.TODAY)}
+            sec = "\n".join(T.shortlist_section(live, gone, {}, T.TODAY))
             self.assertIn("$42,000", sec)
             self.assertIn("my favourite", sec)
             # not "sold or pulled": a listing ends four ways and three of them
@@ -3128,7 +3398,7 @@ class TestShortlist(unittest.TestCase):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear()
         try:
-            self.assertEqual(T.shortlist_section({}, {}, {}), [])
+            self.assertEqual(T.shortlist_section({}, {}, {}, T.TODAY), [])
         finally:
             T.SHORTLIST.update(old)
 
@@ -5142,7 +5412,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                 # which is exactly what shipped: 10 on a model where four had
                 # moved, 15 on one where eight had.
                 self._car("D" * 17, [54999, 55849, 54999, 55849, 55849])]
-        out = T.brief_lines({"daily": [], "gone": []}, cars, "2026-09-04")
+        out = T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, "2026-09-04")
         line = next(l for l in out if "price change" in l)
         self.assertIn("2 price changes", line,
                       "the cut and the raise count; the sawtooth does not")
@@ -5154,7 +5424,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         """Saying "0 more seen at two prices" on a clean pool is noise, and a
         clause that always fires stops being read."""
         cars = [self._car("A" * 17, [50000, 49000])]
-        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, "2026-09-04")
+        line = next(l for l in T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, "2026-09-04")
                     if "price change" in l)
         self.assertIn("1 price change ·", line)
         self.assertNotIn("not counted", line)
@@ -5166,7 +5436,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                 self._car("C" * 17, [54999, 55849, 54999, 55849])]
         sec = []
         T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
-                      cars, self._rows(cars), {}, [], "2026-09-04")
+                      cars, self._rows(cars), {}, [], "2026-09-04", T.TODAY)
         i = sec.index("**Price changes**")
         block = "\n".join(sec[i:sec.index("", i)])
         self.assertIn("A" * 17, block, "the real cut is listed")
@@ -5186,7 +5456,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
                        "state": "IL", "local": False},
                  "label": "T", "amount": 500 + i, "shopping": 1} for i in range(5)]
-        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
         text = "\n".join(sec)
         self.assertIn("2 more cuts today", text)
         self.assertNotIn("more price change", text)
@@ -5195,7 +5465,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
                        "state": "IL", "local": False},
                  "label": "T", "amount": 500 + i, "shopping": 1} for i in range(4)]
-        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
         self.assertIn("1 more cut today", "\n".join(sec))
 
     def test_the_overflow_line_promises_only_the_sections_that_exist(self):
@@ -5208,7 +5478,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                        "state": "IL", "local": False},
                  "label": "T", "amount": 900 - i, "shopping": 1 if i < 4 else 0}
                 for i in range(7)]
-        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
         text = "\n".join(sec)
         self.assertIn("4 more cuts today, 1 of them listed in the sections below", text,
                       "three of the four biggest are shown, so one shopped cut "
@@ -5220,7 +5490,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
                        "state": "IL", "local": False},
                  "label": "T", "amount": 500 + i, "shopping": 1} for i in range(5)]
-        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []})[0])
+        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)[0])
         self.assertIn("2 more cuts today, listed in the sections below", text)
         self.assertNotIn("of them", text)
 
@@ -5232,7 +5502,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                        "state": "IL", "local": False},
                  "label": "T", "amount": 900 - i, "shopping": 1 if i < 3 else 0}
                 for i in range(6)]
-        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []})[0])
+        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)[0])
         self.assertIn("3 more cuts today on models the sections below do not cover", text)
 
     # -- the stale tag names what it compared against -----------------------
@@ -5254,7 +5524,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         row = {**{k: "" for k in T.FIELDS}, "vin": "D" * 17, "price": 50000,
                "miles": 20000, "year": "2024", "trim": "T", "city": "Chicago",
                "state": "IL", "target": "t"}
-        out = T.fmt_row(row, {}, cars[3])
+        out = T.fmt_row(row, {}, T.TODAY, cars[3])
         # "the model's", because market_stats runs once per model over every
         # listing on it while the page's market sentence is recomputed for the
         # rows in view. On a trim view the two sat one line apart saying 92 and
@@ -5269,7 +5539,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         row = {**{k: "" for k in T.FIELDS}, "vin": "D" * 17, "price": 50000,
                "miles": 20000, "year": "2024", "trim": "T", "city": "Chicago",
                "state": "IL", "target": "t"}
-        self.assertIn("80% of the model", T.fmt_row(row, {}, entry))
+        self.assertIn("80% of the model", T.fmt_row(row, {}, T.TODAY, entry))
 
     # -- the typical-days clause borrows the page's floor and denominator ---
 
@@ -5363,7 +5633,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cars = [self._car("A" * 17, [50000], local=True, state="IL"),
                 self._car("B" * 17, [50000], local=False, state="CA"),
                 self._car("C" * 17, [50000], local=False, state="")]
-        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, None)
+        line = next(l for l in T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, None)
                     if "on the market" in l)
         self.assertIn("3 on the market · 1 drivable · 1 with no state", line,
                       "one is drivable, one is beyond, and the third is in "
@@ -5374,7 +5644,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         that always fires is a count nobody reads."""
         cars = [self._car("A" * 17, [50000], local=True, state="IL"),
                 self._car("B" * 17, [50000], local=False, state="CA")]
-        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, None)
+        line = next(l for l in T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, None)
                     if "on the market" in l)
         self.assertEqual(line, "- 2 on the market · 1 drivable")
 
@@ -5452,7 +5722,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cars = [self._car(f"{i:017d}", [50000 + i * 100]) for i in range(3)]
         sec = []
         T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
-                      cars, self._rows(cars), {}, [], "2026-09-04")
+                      cars, self._rows(cars), {}, [], "2026-09-04", T.TODAY)
         text = "\n".join(sec)
         self.assertIn("**Lowest asking beyond your states (shipping estimated)**", text)
         self.assertNotIn("Cheapest beyond", text)

@@ -3375,14 +3375,28 @@
   // the table mark them, so the count the page advertises is actually findable.
   // Nothing is "new" on the first snapshot day, when every car is one day old.
   const trackedDays = () => Math.max(0, ...allModels().map(({ m }) => (m.daily || []).length));
+  // The day a car's own model was last fetched — the day that model's card
+  // already prints, and the day its "gone" count is measured against. A car
+  // carries its model_key from adapt(), so a pooled table asks per row rather
+  // than per view. Falls back to the record's newest day for a row with no
+  // model on it (a hand-made fixture, an older sheet).
+  const asOfOf = (x) => {
+    const key = x && x.model_key;
+    if (key) { const hit = allModels().find((o) => modelKey(o.bk, o.mk) === key); if (hit && hit.m.as_of) return hit.m.as_of; }
+    return dataThrough();
+  };
   // First seen on THIS snapshot, not merely seen once. days_tracked is the
   // length of a car's price series and a series only grows on days its target
   // was fetched, so a car seen once on Monday still reads days_tracked === 1
   // on Thursday — and the chip, the tile's count and the report all called it
   // new again. Three cars first seen on 2026-09-01 wore the chip on 09-04.
-  // Mirrors Tracking.py's is_new_today(); an older sheet with no first_seen
+  // Mirrors Tracking.py's is_new_on(), including its anchor: the car's own
+  // model's last fetch day. Against the record's newest day it was 0 by
+  // construction for every model not fetched on it — the iX, the EV9 and the
+  // A6 e-tron on this very record, each showing "0 new" beside a gone count
+  // measured against its own last fetch. An older sheet with no first_seen
   // falls back to the old test rather than losing the chip entirely.
-  const isNew = (x) => (x.first_seen ? String(x.first_seen).slice(0, 10) === dataThrough()
+  const isNew = (x) => (x.first_seen ? String(x.first_seen).slice(0, 10) === asOfOf(x)
                                      : x.days_tracked === 1) && trackedDays() >= 2;
   // The chip already shows "—" for a car the sheet cannot place; its title said
   // "Outside your states", which is the claim that dash exists to refuse.

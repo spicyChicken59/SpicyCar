@@ -4655,15 +4655,24 @@ await step('a car is called what it is', async () => {
 // was written against were in exactly that state.
 //
 // Data-driven both ways: the subject is any car the sheet says was first seen
-// before the newest snapshot, and the check also holds the tile's count to the
-// chips underneath it, which is the thing a reader can verify by counting.
+// before its model's last fetch, and the check also holds the tile's count to
+// the chips underneath it, which is the thing a reader can verify by counting.
+//
+// The day is the MODEL's own last fetch, not the record's newest snapshot.
+// Against the record's, every model on a slower cadence counted 0 new by
+// construction — the iX, the EV9 and the A6 e-tron on the sheet this was
+// rewritten against, each showing "0 new" beside a gone count measured against
+// its own last fetch. Two clocks in one tile. The third check below is the one
+// that fails if the anchor goes back.
 await step('a car is new only on the day it arrives', async () => {
-  plan('a car first seen before today does not wear the new chip',
-       'and the tile counts what the table shows');
-  const dt = SHEET.data_through;
-  const listingsOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {}).listings || [];
+  plan('a car first seen before its model was last fetched does not wear the new chip',
+       'and the tile counts what the table shows',
+       'a model behind the newest snapshot still counts its own arrivals');
+  const modelOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {});
+  const asOf = (w) => modelOf(w).as_of || SHEET.data_through;
+  const listingsOf = (w) => modelOf(w).listings || [];
   const staleIn = (w) => listingsOf(w).filter(
-    (x) => x.days_tracked === 1 && String(x.first_seen || '').slice(0, 10) !== dt);
+    (x) => x.days_tracked === 1 && String(x.first_seen || '').slice(0, 10) !== asOf(w));
   // The model that HAS the subject, not the biggest one: a once-seen car whose
   // first sighting predates the newest snapshot is what wore the chip wrongly,
   // and the largest model is not reliably the one carrying any today.
@@ -4672,6 +4681,7 @@ await step('a car is new only on the day it arrives', async () => {
   if (!home || !home.cars) return skipRest('no model on the watchlist holds cars today');
   const held = listingsOf(home);
   const stale = staleIn(home);
+  const dt = asOf(home);
   const today = held.filter((x) => String(x.first_seen || '').slice(0, 10) === dt);
   await open(home.q);
   const more = page.locator('[data-fkey="more:list"]');
@@ -4680,11 +4690,11 @@ await step('a car is new only on the day it arrives', async () => {
   const chipped = await page.locator('#list-table tbody tr').evaluateAll((rows) => rows
     .filter((r) => [...r.querySelectorAll('.sc-chip')].some((c) => c.textContent.trim() === 'new'))
     .map((r) => { const c = r.querySelector('.sc-media__code'); return c ? c.textContent.trim() : ''; }));
-  if (!stale.length) skip('a car first seen before today does not wear the new chip',
+  if (!stale.length) skip('a car first seen before its model was last fetched does not wear the new chip',
                           `every once-seen car on ${home.id} really was first seen on ${dt}`);
   else {
     const wrong = stale.filter((x) => chipped.includes(x.vin));
-    ok('a car first seen before today does not wear the new chip', wrong.length === 0,
+    ok('a car first seen before its model was last fetched does not wear the new chip', wrong.length === 0,
        `${stale.length} cars on ${home.id} were seen once, before ${dt} · ${wrong.length} still wear it`
        + (wrong.length ? ` (e.g. ${wrong[0].vin}, first seen ${wrong[0].first_seen})` : ''));
   }
@@ -4698,6 +4708,25 @@ await step('a car is new only on the day it arrives', async () => {
   else ok('and the tile counts what the table shows',
           said === chipped.length && said === today.length,
           `tile says ${said} · ${chipped.length} chips in the table · ${today.length} cars in the sheet first seen ${dt}`);
+
+  // The anchor itself. A model whose own last fetch is behind the record's
+  // newest snapshot is the only place the two candidate rules differ, so it is
+  // the only place that can pin which one is in force: its arrivals are the
+  // ones of ITS day. Anchored on the record's newest day this tile reads 0 for
+  // such a model however many cars arrived at its last fetch.
+  const behind = WATCHED.filter((w) => asOf(w) !== SHEET.data_through
+    && listingsOf(w).some((x) => String(x.first_seen || '').slice(0, 10) === asOf(w)));
+  if (!behind.length) return skip('a model behind the newest snapshot still counts its own arrivals',
+                                  'every model on the watchlist was fetched on the newest snapshot, or none of the stragglers gained a car at its last fetch');
+  const lag = behind[0];
+  const want = listingsOf(lag).filter((x) => String(x.first_seen || '').slice(0, 10) === asOf(lag)).length;
+  await open(lag.q);
+  const lagTile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))
+    ).find((t) => /new/.test(t)) || '';
+  const got = Number((lagTile.match(/(\d+)\s*new/) || [])[1]);
+  ok('a model behind the newest snapshot still counts its own arrivals', got === want,
+     `${lag.id} was last fetched ${asOf(lag)}, the record runs to ${SHEET.data_through}`
+     + ` · ${want} cars arrived at its own last fetch · the tile says ${Number.isFinite(got) ? got : 'nothing'}`);
 });
 // --- the window the chart draws is the window it names ----------------------
 // The range chips are drawn after the rows, so on the first paint of a visit
@@ -5140,7 +5169,8 @@ await step('a split adds up to the total it named', async () => {
 // is caught by the sentence disagreeing rather than by anyone remembering.
 await step('the record and the page tell one story about one model', async () => {
   plan('the typical-days clause is the same on both surfaces',
-       'and so is the clause that counts cars asking less than they did');
+       'and so is the clause that counts cars asking less than they did',
+       'and so does the count of cars that arrived');
   const REPORT = join(ROOT, '..', 'REPORT.md');
   if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
   const md = readFileSync(REPORT, 'utf8');
@@ -5161,8 +5191,18 @@ await step('the record and the page tell one story about one model', async () =>
     // The second clause of the same sentence, which took its numerator over
     // the cars that are not sawtooth and its denominator over all of them.
     const held = (t) => ((t.match(/\d+ of \d+ ask less than when first seen/) || [''])[0]).trim();
+    // …and the arrival count, which each surface reached by its own clock:
+    // the record compared first_seen to the wall clock and the page to the
+    // record's newest day, under a comment in the page saying it mirrored the
+    // record. On the committed sheet rebuilt one day later the page said seven
+    // and nine and the record said "0 new" for both, out of one file.
+    const brief = (sect.match(/^- \d+ on the market .*$/m) || [''])[0];
+    const arrivals = (t) => ((t.match(/(\d+) new/) || [])[1] || '');
+    const tiles = await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent));
+    const tileNew = ((tiles.find((t) => /new/.test(t)) || '').match(/(\d+)\s*new/) || [])[1] || '';
     rows.push({ id: w.id, md: clause(line), page: clause(hint),
-                mdHeld: held(line), pageHeld: held(hint) });
+                mdHeld: held(line), pageHeld: held(hint),
+                mdNew: arrivals(brief), pageNew: tileNew });
   }
   if (!rows.length) return skipRest('no shopped model has a market line in the record');
   const off = rows.filter((r) => r.md !== r.page);
@@ -5172,6 +5212,10 @@ await step('the record and the page tell one story about one model', async () =>
   ok('and so is the clause that counts cars asking less than they did',
      offHeld.length === 0 && rows.some((r) => r.mdHeld),
      rows.map((r) => `${r.id}: ${r.mdHeld === r.pageHeld ? `both "${r.mdHeld}"` : `record "${r.mdHeld}" vs page "${r.pageHeld}"`}`).join(' · '));
+  const offNew = rows.filter((r) => r.mdNew !== r.pageNew);
+  ok('and so does the count of cars that arrived',
+     offNew.length === 0 && rows.some((r) => r.mdNew !== ''),
+     rows.map((r) => `${r.id}: ${r.mdNew === r.pageNew ? `both ${r.mdNew || '—'} new` : `record ${r.mdNew || '—'} vs page ${r.pageNew || '—'}`}`).join(' · '));
 });
 
 // ---- a car the sheet cannot place is not a car beyond your states ----------

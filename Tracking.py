@@ -1543,11 +1543,34 @@ def market_line(stats):
     return " · ".join(bits)
 
 
-def build_today(events):
-    """The day's changes, once: '## Today' lines for the report, and the
+def day_word(record_day):
+    """"today", or the day itself when the record's newest day is not today.
+
+    One rule for every sentence in the report that dates a change, because
+    there were three: the cut bullets matched on the model's own last fetch
+    day, "New today" matched on the wall clock, and the shortlist's cut tag on
+    the wall clock again — so a build without a fetch published cuts under the
+    word "today" while the same file said "0 new" and the model's own section
+    said "Not fetched today". A live run is unaffected: on it the record's
+    newest day IS today and every sentence reads exactly as it did."""
+    return ("today" if not record_day or str(record_day) == TODAY
+            else f"on {record_day}")
+
+
+def build_today(events, record_day):
+    """The day's changes, once: the report's leading section, and the
     fragments for an email subject that says what happened. Priority:
     shortlist alerts, then cuts (shopping and drivable first), then new
-    cars, then departures."""
+    cars, then departures.
+
+    `record_day` is the day the changes happened — the newest day the record
+    holds, which is TODAY on a live run and is not on a dispatch, an offline
+    rebuild, or a night every query failed. The heading and every dated line
+    below say which, because they used to say "today" regardless: a rebuild
+    the morning after published "▼ $2,416 cut · BMW i5 eDrive40 … today" four
+    lines above that model's own "Not fetched today — showing 2026-09-05",
+    about the same cut, on one screen."""
+    when = day_word(record_day)
     sec, bits = [], []
     for e in events["gone"]:
         if str(e["vin"]).upper() in SHORTLIST:
@@ -1583,7 +1606,7 @@ def build_today(events):
         # the reader can actually go and find.
         rest = len(cuts) - 3
         below = sum(1 for e in cuts[3:] if e["shopping"])
-        sec.append(f"- …and {rest} more cut{'s' if rest != 1 else ''} today"
+        sec.append(f"- …and {rest} more cut{'s' if rest != 1 else ''} {when}"
                    + (", listed in the sections below" if below == rest
                       else f", {below} of them listed in the sections below" if below
                       else " on models the sections below do not cover"))
@@ -1624,13 +1647,19 @@ def build_today(events):
     subject = (f"{APP} — " + " · ".join(bits[:3])) if bits else f"{APP} — quiet day · {TODAY}"
     if not sec:
         return [], subject
-    return ["## Today", ""] + sec + [""], subject
+    head = ("## Today" if when == "today"
+            else f"## The last fetch — {record_day}")
+    return [head, ""] + sec + [""], subject
 
 
-def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
+def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin, record_day):
     """The cars actually being decided on, first in the report. A live one
     shows its price and movement; a vanished one says so loudly, with the
-    honest read on whether it sold or just fell out of the fetch window."""
+    honest read on whether it sold or just fell out of the fetch window.
+
+    Its cut tag is dated by `record_day` like every other dated sentence: it
+    matched on TODAY, so on a build without a fetch the shortlist went quiet
+    about a cut the "## Today" section above it was still headlining."""
     if not SHORTLIST:
         return []
     sec = ["## Shortlist", "",
@@ -1653,9 +1682,10 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
             swing = two_prices(series)
             if swing:
                 tags.append(f"seen at {money(swing[0])} and {money(swing[1])}")
-            elif (len(series) >= 2 and series[-1][0] == TODAY
+            elif (len(series) >= 2 and series[-1][0] == record_day
                     and series[-1][1] < series[-2][1]):
-                tags.append(f"▼ CUT {money(series[-2][1] - series[-1][1])} today")
+                tags.append(f"▼ CUT {money(series[-2][1] - series[-1][1])} "
+                            f"{day_word(record_day)}")
             elif x.get("cuts"):
                 tags.append(cut_tag(x["cuts"], x.get("delta") or 0))
             if x.get("days_listed") is not None:
@@ -1667,18 +1697,23 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin):
             if tags:
                 line += f"\n  _{' · '.join(tags)}_"
         elif vin in gone_by_vin:
-            g = gone_by_vin[vin]
+            g, gone_day = gone_by_vin[vin]
             obj = g
             still = g.get("still_listed")
+            # "missing today" is a claim about a fetch, and the fetch is this
+            # car's own model's — which on a slower cadence is not today even
+            # on a live run, and on any build without a fetch is not today for
+            # anything. Same rule as the cut tag above and the section heading.
+            missing = f"missing {day_word(gone_day)}"
             verdict = {
                 # not "sold or pulled": that names two of the four ways a
                 # listing ends, and the other two look identical from outside
                 "delisted": "**GONE — the listing ended**",
-                "out of window": "missing today — beyond the day's fetch "
+                "out of window": f"{missing} — beyond that fetch's "
                                  "cut-off, probably still for sale",
                 "not checked": "missing — not checked since it was last "
                                "seen, so nothing is known yet",
-            }.get(g["likely"], "missing today")
+            }.get(g["likely"], missing)
             if still:
                 verdict = (f"left the {g.get('trim_label') or 'watch'} — the same VIN is "
                            f"listed as {still['trim'] or 'another trim'}"
@@ -2683,8 +2718,9 @@ def reach_not_arrival(x):
         return False
 
 
-def is_new_today(x):
-    """First seen on THIS snapshot, not merely seen once.
+def is_new_on(x, day):
+    """First seen on the day the caller names — the day this car's own model
+    was last fetched, never the day the file is built.
 
     days_tracked is the length of a car's price series, and a series only grows
     on days its target was fetched — so a car seen once on Monday still reads
@@ -2696,10 +2732,26 @@ def is_new_today(x):
     first_seen is the day of the first sighting, which is the thing the words
     actually claim. Where the record has no first_seen at all, fall back to the
     old test rather than announce nothing.
+
+    The day is a parameter, and the old name compared against TODAY, because
+    those are two different days on any build without a fetch — which every
+    dispatch is (days_listed() was moved off the wall clock for the same
+    reason, and says so). The dashboard has dated this against the record's
+    newest day since the chip was built, under a comment saying it mirrors
+    this function: on the committed record rebuilt a day later the page called
+    seven i5s and nine i7s new while the report said "0 new" for both, out of
+    one file.
+
+    The day is the MODEL's, not the record's, because the sentence it lands in
+    is a model's: a model fetched every third day carries a header naming its
+    own last fetch and a gone count measured against it, and a "new" count
+    anchored on the record's newest day is 0 for such a model by construction —
+    an artefact of the anchor printed as a count, on three of this record's own
+    models. On a live run the two days are the same day.
     """
     first = x.get("first_seen")
     if first:
-        return str(first)[:10] == TODAY
+        return str(first)[:10] == str(day)[:10]
     return x.get("days_tracked") == 1
 
 
@@ -2712,7 +2764,7 @@ def pick_display_rows(rows):
             for rs in by_vin.values()]
 
 
-def fmt_row(r, s, entry=None):
+def fmt_row(r, s, as_of, entry=None):
     miles = to_int(r["miles"])
     adj, ship = landed(r)
     bits = [f"**{money(to_int(r['price']))}**"]
@@ -2737,7 +2789,7 @@ def fmt_row(r, s, entry=None):
         tags.append(cut_tag(s["cuts"], s.get("delta") or 0))
     if s.get("days_tracked", 0) >= 21:
         tags.append(seen_label(s))
-    if is_new_today(s):
+    if is_new_on(s, as_of):
         tags.append("NEW")
     dl = days_listed(r)
     if dl is not None and dl >= 30:
@@ -3168,7 +3220,13 @@ def brief_lines(m_entry, listings, prev_day):
         return len(x["series"]) >= 2 and x["series"][-1][1] != x["series"][-2][1]
     swings = sum(1 for x in listings if moved(x) and two_prices(x.get("series")))
     movers = sum(1 for x in listings if moved(x) and not two_prices(x.get("series")))
-    new = sum(1 for x in listings if is_new_today(x)) if prev else 0
+    # …on the model's OWN last fetch day, which is the day this section's
+    # header names and the day the gone clause three lines down counts
+    # against. Anchored on the record's newest day instead, it was 0 for
+    # every model not fetched on it — not a count but an artefact of the
+    # anchor, printed beside a gone count measured the other way.
+    new = (sum(1 for x in listings if is_new_on(x, m_entry["as_of"]))
+           if prev else 0)
     # each trim vanishes on its own cadence — compare against the trim's own
     # previous fetch day, or a slower trim's departures never count
     gone = sum(1 for g in m_entry["gone"]
@@ -3195,7 +3253,7 @@ def brief_lines(m_entry, listings, prev_day):
     return out
 
 
-def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
+def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day, as_of):
     """Movers, departures, in-state cars by state, five lowest asking out of state."""
     best = next((x for x in tl if x["price"] is not None), None)
     head = f"### {t['label']} — {len(tl)} vehicles"
@@ -3263,7 +3321,7 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         sec.append(f"**{STATE_NAMES.get(st, st)} ({len(in_st)})**")
         for x in in_st:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
-                               summarize((t["id"], x["vin"]), hist), x))
+                               summarize((t["id"], x["vin"]), hist), as_of, x))
         sec.append("")
     best5 = [x for x in tl if x["price"] is not None and not x["local"]][:5]
     if best5:
@@ -3277,7 +3335,7 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day):
         sec.append("**Lowest asking beyond your states (shipping estimated)**")
         for x in best5:
             sec.append(fmt_row(rows_by_vin[x["vin"]],
-                               summarize((t["id"], x["vin"]), hist), x))
+                               summarize((t["id"], x["vin"]), hist), as_of, x))
         sec.append("")
 
 
@@ -3325,6 +3383,13 @@ def build_outputs(today_rows, all_rows, hist):
         print("  ! listed_since " + ", ".join(sorted(INDEX_DATES))
               + " looks like an API index load, not a listing date — "
                 "days on market withheld for those cars")
+    # The day every dated sentence in the record is measured against: the
+    # newest snapshot the file holds, which is what the dashboard has always
+    # dated by. It is TODAY on a live run and is not on any build without a
+    # fetch — a dispatch, an offline rebuild, or a night every query failed —
+    # and each of those used to date the "## Today" section by the wall clock
+    # while filling it from the data. See is_new_on() and build_today().
+    record_day = max((r["snapshot_date"] for r in all_rows), default=None)
     site = {
         "app": APP,
         "generated": TODAY,
@@ -3332,8 +3397,7 @@ def build_outputs(today_rows, all_rows, hist):
         # is the day this file was BUILT — an offline rebuild
         # (tools/rebuild_outputs.py) stamps it with no fetch — so the pages
         # date the numbers by data_through, never by generated.
-        "data_through": max((r["snapshot_date"] for r in all_rows),
-                            default=None),
+        "data_through": record_day,
         # The oldest day the DEPARTURE record can vouch for. delisted() retires
         # a car once it has been gone 60 days, to stop the gone list growing
         # forever, but snapshots.csv is never pruned — so before this date the
@@ -3425,7 +3489,19 @@ def build_outputs(today_rows, all_rows, hist):
                 "shopping": shopping,
                 "cadence": min(t["cadence"] for t in trims),
                 "as_of": as_of,
-                "fetched_today": any(due_on(t, TODAY_ORD) for t in trims),
+                # Whether this model is IN the day the record's changes are
+                # dated by — a fact about the rows, which is what the two
+                # detectors below need. It read `due_on(t, TODAY_ORD)`, the
+                # cadence SCHEDULE, so a model due today whose every query
+                # failed still passed the gate: with as_of a day behind, the
+                # cut detector below matched on that older day and headlined
+                # yesterday's cuts under "## Today", three lines above its own
+                # section saying "Not fetched today". Reproduced by dropping
+                # one model's newest rows and rebuilding.
+                "fetched_today": as_of is not None and as_of == record_day,
+                # …and the schedule fact under its own name, since it is a
+                # different thing and the page dates a target by as_of.
+                "due_today": any(due_on(t, TODAY_ORD) for t in trims),
                 "next_due": min(next_due(t) for t in trims),
                 "params": {"min_price": m0.get("min_price")},
                 "trims": {t["id"]: {"label": t["label"], "note": t["note"],
@@ -3469,7 +3545,7 @@ def build_outputs(today_rows, all_rows, hist):
             b_entry["models"][mkey] = m_entry
             if SHORTLIST:
                 for g in m_entry["gone"]:
-                    gone_by_vin.setdefault(str(g["vin"]).upper(), g)
+                    gone_by_vin.setdefault(str(g["vin"]).upper(), (g, as_of))
 
             if not m_rows:
                 if shopping:
@@ -3521,7 +3597,7 @@ def build_outputs(today_rows, all_rows, hist):
                         events["cuts"].append({"amount": s_[-2][1] - s_[-1][1],
                                                "x": x, "label": name,
                                                "shopping": shopping})
-                    if is_new_today(x):
+                    if is_new_on(x, as_of):
                         p = by_vin.get(x["vin"])
                         events["new"].append({"x": x, "label": name,
                                               # the margin only where the
@@ -3551,17 +3627,29 @@ def build_outputs(today_rows, all_rows, hist):
             if as_of != TODAY:
                 sec += [f"_Not fetched today — showing {as_of}._", ""]
             sec += brief_lines(m_entry, m_entry["listings"], prev_day) + [""]
-            # cars first seen this run lead the section — a well-priced new
-            # listing is the one thing the buyer must catch before it sells
-            if prev_day and m_entry["fetched_today"]:
+            # cars first seen at this model's last fetch lead the section — a
+            # well-priced new listing is the one thing the buyer must catch
+            # before it sells.
+            #
+            # Gated on prev_day alone. It also carried m_entry["fetched_today"],
+            # which was harmless while the arrivals were found by the wall clock
+            # (an off-cadence model had none by construction) and is not now:
+            # the block would have vanished from a section whose own brief line
+            # three lines above counted seven. Everything else in this section —
+            # the price changes, the departures, the picks — already describes
+            # the model's last fetch on every day since, and says which day that
+            # was; the arrivals were the one part that went silent instead.
+            if prev_day:
+                word = day_word(as_of)
                 by_vin = {p["vin"]: p for p in scored}
                 new_today = sorted(
-                    [x for x in m_entry["listings"] if is_new_today(x)],
+                    [x for x in m_entry["listings"] if is_new_on(x, as_of)],
                     key=lambda x: -(by_vin[x["vin"]]["pick_pct"]
                                     if x["vin"] in by_vin else -1.0))
                 if new_today:
                     reach = sum(1 for x in new_today if reach_not_arrival(x))
-                    sec += [f"**New today ({len(new_today)})** — first seen this run,"
+                    sec += [f"**New {word} ({len(new_today)})** — first seen "
+                            + ("this run" if word == "today" else word) + ","
                             + (f" {reach} of them listed {REACH_DAYS}+ days before the tracker saw "
                                f"{'it' if reach == 1 else 'them'} — reach, not arrival;" if reach else "")
                             + " best value first", ""]
@@ -3603,13 +3691,15 @@ def build_outputs(today_rows, all_rows, hist):
                 if not tl:
                     sec += [f"### {t['label']} — none found", ""]
                     continue
-                trim_detail(sec, t, tl, rows_by_vin, hist, m_entry["gone"], prev_day)
+                trim_detail(sec, t, tl, rows_by_vin, hist, m_entry["gone"], prev_day,
+                            as_of)
             full += sec
 
     scored_by_vin = {str(p["vin"]).upper(): p for p in all_scored}
-    today_sec, subject = build_today(events)
+    today_sec, subject = build_today(events, record_day)
     report = ([f"# {APP} — {TODAY}", ""]
-              + shortlist_section(live_by_vin, gone_by_vin, scored_by_vin)
+              + shortlist_section(live_by_vin, gone_by_vin, scored_by_vin,
+                                  record_day)
               + today_sec
               + full)
     top_local, top_ship = split_picks(all_scored, PICKS.get("count", 4),

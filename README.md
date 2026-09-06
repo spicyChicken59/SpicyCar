@@ -142,7 +142,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   cars beyond the buyer's states, each with its shipping estimate. It reads the same data the
   dashboard does and is held to the same rule: a figure carries the denominator that makes it
   true, or it is not printed. Where the two surfaces state the same fact they state it in the
-  same words.
+  same words. Every sentence that dates a change names the day it is dating — the day that
+  model was last fetched, never the day the file was built — so a rebuild, a dispatch or a
+  night whose queries all failed cannot publish an older fetch's cuts as today's.
 - The dashboard — "the watchlist" opens on **the decision**: one tile per model named in
   `buyer.shopping`, each holding the cheapest car of its watched trims all in — asking plus
   shipping plus tax and paperwork, because a California car and an Ohio car are not comparable on
