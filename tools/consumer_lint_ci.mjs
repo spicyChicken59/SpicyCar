@@ -77,7 +77,17 @@ try {
 }
 for (const p of pages) {
   const html = readFileSync(p, 'utf8');
-  bodies.set(p, html);
+  // Product composition styles are checked just like inline rules. The shared
+  // design-system snapshot is already verified above; do not relint its own
+  // implementation as if it were a consumer override.
+  const localStyles = [...html.matchAll(/<link\b[^>]*href="([^"?#]+\.css)"[^>]*>/g)]
+    .map((m) => m[1]).filter((href) => !href.startsWith('design-system/') && !/^(?:[a-z]+:|\/)/i.test(href));
+  const styles = localStyles.map((href) => {
+    const path = resolve(dirname(p), href);
+    if (!path.startsWith(resolve(dirname(p)) + '/')) throw new Error('Local stylesheet outside the page folder: ' + href);
+    return '<style>' + readFileSync(path, 'utf8') + '</style>';
+  });
+  bodies.set(p, html + styles.join('\n'));
   // tools/og_card.html is an archived rendering source, never a live page.
   const livePage = resolve(dirname(p)) === resolve(snapshotRoot, '..');
   if (livePage) {

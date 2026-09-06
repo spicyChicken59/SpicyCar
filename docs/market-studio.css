@@ -1,0 +1,743 @@
+/* SpicyCar / Market Studio
+ * A product composition over the checked-in SpicyChicken snapshot.
+ * Palette, mark geometry, status meanings, data and interaction rules stay
+ * with their existing owners. Load after the dashboard's compatibility CSS.
+ */
+
+/* An editorial cover, with the maker's mark in its own reserved art field. */
+.market-studio #car-heading {
+  margin-top: 0;
+  padding-top: var(--sc-s3);
+}
+
+.market-studio #car-heading .sc-cover {
+  grid-template-columns: minmax(0, 1fr) 192px;
+  gap: var(--sc-s4);
+  align-items: stretch;
+  padding: var(--sc-s3);
+  border-color: var(--sc-ink-line-strong);
+  border-radius: var(--sc-r-md);
+}
+
+.market-studio #car-heading .sc-cover__content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.market-studio #car-heading .sc-cover__title {
+  max-width: 24ch;
+  margin-block: var(--sc-s1);
+  font-size: clamp(36px, 4vw, 48px);
+  letter-spacing: -.045em;
+}
+
+.market-studio #car-heading .sc-cover__dek {
+  max-width: none;
+  font-size: var(--sc-text-md);
+}
+
+.market-studio #car-heading .sc-cover__content > .sc-eyebrow {
+  margin-bottom: 0;
+}
+
+.market-studio #car-heading > .sc-tabs {
+  margin-top: var(--sc-s1);
+  padding-block: var(--sc-s0);
+}
+
+.market-studio #car-heading .sc-meta {
+  margin-top: var(--sc-s1);
+}
+
+.market-studio #car-heading .sc-cover__art {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: center;
+  gap: var(--sc-s2);
+  min-height: 0;
+  padding: var(--sc-s1);
+  border-left: 1px solid var(--sc-ink-line-strong);
+}
+
+.market-studio #car-heading .sc-cover__art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url('design-system/assets/sc-pattern-wine.svg');
+  background-size: 256px auto;
+  opacity: .2;
+  pointer-events: none;
+}
+
+.market-cover__seal {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  gap: var(--sc-s0);
+  padding: 0;
+  background: var(--sc-brand-wine);
+  color: var(--sc-on-ink);
+  font: 500 10px/1.5 var(--sc-font-mono);
+  letter-spacing: .14em;
+  text-align: center;
+}
+
+.market-cover__seal > img,
+.market-studio #car-heading .sc-cover__art > img {
+  display: block;
+  width: 96px;
+  max-width: 96px;
+  height: auto;
+}
+
+.market-studio #car-heading .sc-cover__caption {
+  padding: var(--sc-s0) var(--sc-s1);
+  background: var(--sc-brand-wine);
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.market-cover__index {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sc-s0) var(--sc-s3);
+  margin-top: var(--sc-s1);
+  padding-top: var(--sc-s0);
+  border-top: 1px solid var(--sc-ink-line-strong);
+}
+
+.market-cover__index a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sc-s1);
+  min-height: 44px;
+  padding: var(--sc-s0) 0;
+  color: var(--sc-on-ink);
+  font: 500 11px/1.5 var(--sc-font-mono);
+  text-decoration: underline;
+  text-decoration-color: var(--sc-ink-line-strong);
+  text-underline-offset: 5px;
+  border-bottom: 0;
+  transition: text-decoration-color var(--sc-motion-fast) var(--sc-ease);
+}
+
+.market-cover__index a:hover {
+  text-decoration-color: currentColor;
+}
+
+.market-cover__index a:focus-visible {
+  outline: 2px solid var(--sc-on-ink);
+  outline-offset: 4px;
+  border-radius: var(--sc-r-sm);
+}
+
+/* Photo dossiers keep the existing evidence and disclosure structure.
+ * A float lets the exact headline remain a normal, selectable text block,
+ * without making a second version of the data for small screens.
+ */
+.market-studio #hero-card {
+  padding: var(--sc-s3);
+  border: 1px solid var(--sc-brand-line);
+  border-top: 3px solid var(--sc-brand-strong);
+  background: var(--sc-surface);
+}
+
+.market-studio #hero-cars {
+  gap: var(--sc-s2);
+}
+
+.market-studio #hero-cars > .market-candidate {
+  display: flow-root;
+  position: relative;
+  min-width: 0;
+  padding: var(--sc-s3);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-r-sm);
+  background: var(--sc-bg);
+  box-shadow: none;
+}
+
+.market-candidate__media {
+  position: relative;
+  float: right;
+  width: 42%;
+  max-width: 216px;
+  margin: 0 0 var(--sc-s2) var(--sc-s2);
+  overflow: hidden;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-r-sm);
+  background: var(--sc-raised);
+  aspect-ratio: 8 / 5;
+}
+
+.market-candidate__media > .sc-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.market-candidate__media .sc-frame__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.market-candidate__media .sc-frame--empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sc-s0);
+  padding: var(--sc-s0);
+}
+
+.market-candidate__media .sc-frame--empty .sc-frame__mark {
+  width: 32px;
+  height: auto;
+  max-height: 40px;
+}
+
+.market-candidate__media .sc-frame--empty::after {
+  content: 'photo unavailable';
+  color: var(--sc-text-2);
+  font: 500 9px/1.3 var(--sc-font-mono);
+  text-align: center;
+}
+
+.market-candidate__index {
+  position: absolute;
+  inset: auto 0 0;
+  display: block;
+  padding: var(--sc-s0) var(--sc-s1);
+  background: var(--sc-ink);
+  color: var(--sc-on-ink);
+  font: 500 9px/1.5 var(--sc-font-mono);
+  letter-spacing: .04em;
+}
+
+.market-candidate__media:has(.sc-frame--empty) .market-candidate__index {
+  display: none;
+}
+
+.market-studio #hero-cars .market-candidate > .sc-tile__label {
+  font-size: var(--sc-text-sm);
+  line-height: 1.5;
+  color: var(--sc-text-2);
+}
+
+.market-studio #hero-cars .market-candidate > .sc-tile__value {
+  margin: var(--sc-s1) 0;
+  font-size: clamp(32px, 3.5vw, 46px);
+  line-height: 1.1;
+}
+
+.market-studio #hero-cars .market-candidate .sc-tile__spark {
+  clear: both;
+}
+
+.market-studio #hero-cars .market-candidate > .sc-delta {
+  clear: both;
+  padding-top: var(--sc-s1);
+  border-top: 1px solid var(--sc-border);
+}
+
+/* The matrix is visible on arrival, not a reward for finding a control.
+ * Do not remove native table display or hide columns on smaller screens.
+ */
+.market-studio #signal-card {
+  padding: var(--sc-s2);
+  margin-top: var(--sc-s2);
+  border-color: var(--sc-brand-line);
+  background: var(--sc-surface);
+}
+
+.market-studio #signal-card > .sc-card__head {
+  align-items: flex-start;
+  margin-bottom: var(--sc-s1);
+  padding-bottom: var(--sc-s1);
+  border-bottom: 1px solid var(--sc-border);
+}
+
+.market-studio #signal-card > .sc-card__head > div {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.market-studio #signal-card .sc-hint {
+  max-width: none;
+}
+
+.market-studio #signal-card .sc-card__head h2 {
+  font-size: var(--sc-h2);
+  letter-spacing: -.025em;
+}
+
+.market-studio #signal-card .sc-table-scroll {
+  margin: 0;
+  padding: var(--sc-s0);
+  border: 0;
+  border-radius: var(--sc-r-sm);
+}
+
+.market-studio #signal-card .sc-table-scroll:focus-visible {
+  outline: 2px solid var(--sc-focus);
+  outline-offset: 3px;
+}
+
+.market-studio #decision-matrix {
+  width: 100%;
+  min-width: 740px;
+  border-spacing: 6px;
+  table-layout: fixed;
+}
+
+.market-studio #decision-matrix thead th {
+  padding-block: var(--sc-s1);
+  color: var(--sc-text-2);
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.market-studio #decision-matrix thead th:first-child,
+.market-studio #decision-matrix tbody th {
+  width: 23%;
+  background: var(--sc-surface);
+}
+
+.market-studio #decision-matrix tbody th {
+  padding: var(--sc-s1);
+  border-color: var(--sc-brand-line);
+}
+
+/* Native table rows take the height of their tallest identity cell. Carry
+ * each signal's fill on the cell too, so that height never exposes empty
+ * white bands around the evidence. No new status or palette is introduced. */
+.market-studio #decision-matrix tbody td {
+  background: var(--sc-raised);
+}
+
+.market-studio #decision-matrix tbody td:has(.sc-signal--good) {
+  background: var(--sc-good-fill);
+}
+
+.market-studio #decision-matrix tbody td:has(.sc-signal--caution) {
+  background: var(--sc-warn-fill);
+}
+
+.market-studio #decision-matrix tbody td:has(.sc-signal--info) {
+  background: var(--sc-info-fill);
+}
+
+.market-studio #decision-matrix tbody td:has(.sc-signal--blocked) {
+  background: var(--sc-danger-fill);
+}
+
+.market-studio #decision-matrix .sc-signal-matrix__name {
+  font: 700 var(--sc-text-md)/1.3 var(--sc-font-display);
+}
+
+.market-studio #decision-matrix .sc-signal-matrix__note {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.market-studio #decision-matrix .market-matrix__price {
+  display: block;
+  margin-top: var(--sc-s0);
+  color: var(--sc-heading);
+  font: 700 24px/1.1 var(--sc-font-display);
+  letter-spacing: -.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.market-studio #decision-matrix .sc-signal {
+  grid-template-columns: 22px minmax(0, 1fr);
+  justify-items: start;
+  align-content: center;
+  column-gap: var(--sc-s1);
+  row-gap: var(--sc-s0);
+  min-height: 96px;
+  height: 100%;
+  padding: var(--sc-s1) var(--sc-s2);
+  text-align: left;
+}
+
+.market-studio #decision-matrix .sc-signal__glyph {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  align-self: center;
+  font-size: 22px;
+}
+
+.market-studio #decision-matrix .sc-signal__label {
+  grid-column: 2;
+  max-width: 20ch;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.market-studio #decision-matrix .market-matrix__note {
+  grid-column: 2;
+  color: var(--sc-text-2);
+  font: 400 11px/1.45 var(--sc-font-body);
+  overflow-wrap: anywhere;
+}
+
+.market-studio #decision-matrix tbody th > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (min-width: 1001px) {
+  .market-studio #signal-card .market-matrix__scroll {
+    display: none;
+  }
+}
+
+.market-studio #signal-card .market-matrix__scroll {
+  margin: var(--sc-s1) 0;
+  color: var(--sc-text-2);
+  font: 500 11px/1.5 var(--sc-font-mono);
+}
+
+.market-studio #signal-card .market-matrix__foot {
+  margin-top: var(--sc-s1);
+  font: 400 11px/1.5 var(--sc-font-body);
+}
+
+/* Bring the existing atlas forward; keep the data drawing unobstructed. */
+.market-studio #map-card {
+  border-top: 3px solid var(--sc-brand-strong);
+}
+
+.market-studio #map-card > .sc-card__head {
+  padding-bottom: var(--sc-s2);
+  border-bottom: 1px solid var(--sc-border);
+}
+
+.market-studio #map-card .sc-card__head h2 {
+  font-size: var(--sc-h2);
+  letter-spacing: -.025em;
+}
+
+.market-studio #map-legend {
+  margin-block: var(--sc-s2);
+}
+
+.market-studio #map {
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-r-sm);
+  background: var(--sc-bg);
+}
+
+.market-studio #map-card .sc-chart-caption {
+  margin-top: var(--sc-s2);
+}
+
+@media (min-width: 601px) and (max-width: 1000px) {
+  .market-studio #car-heading .sc-cover {
+    grid-template-columns: minmax(0, 1fr) 152px;
+    gap: var(--sc-s3);
+    padding: var(--sc-s3);
+  }
+
+  .market-cover__seal > img,
+  .market-studio #car-heading .sc-cover__art > img {
+    width: 88px;
+    max-width: 88px;
+  }
+
+  .market-studio #hero-cars > .market-candidate {
+    padding: 12px var(--sc-s2);
+  }
+
+  .market-candidate__media {
+    width: 36%;
+    margin-left: var(--sc-s1);
+  }
+}
+
+@media (max-width: 600px) {
+  .market-studio #car-heading {
+    padding-top: var(--sc-s1);
+  }
+
+  .market-studio #car-heading .sc-cover {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sc-s1);
+    padding: var(--sc-s2);
+  }
+
+  .market-studio #car-heading .sc-cover__title {
+    font-size: clamp(30px, 8vw, 38px);
+    margin-block: var(--sc-s0);
+    padding-right: 48px;
+  }
+
+  .market-studio #car-heading .sc-cover__content > .sc-eyebrow {
+    padding-right: 48px;
+  }
+
+  .market-studio #car-heading .sc-cover__dek {
+    font-size: var(--sc-text-sm);
+    line-height: 1.5;
+  }
+
+  .market-studio #car-heading .sc-meta {
+    gap: var(--sc-s0) var(--sc-s1);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .market-studio #car-heading .sc-cover__art {
+    position: absolute;
+    top: var(--sc-s2);
+    right: var(--sc-s2);
+    min-height: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .market-studio #car-heading .sc-cover__art::before,
+  .market-studio #car-heading .sc-cover__caption,
+  .market-cover__seal > :not(img) {
+    display: none;
+  }
+
+  .market-cover__seal {
+    padding: 0;
+    gap: 0;
+    background: none;
+  }
+
+  .market-cover__seal > img,
+  .market-studio #car-heading .sc-cover__art > img {
+    width: 38px;
+    max-width: 38px;
+  }
+
+  .market-cover__index {
+    gap: 0 var(--sc-s2);
+    margin-top: var(--sc-s0);
+    padding-top: 0;
+  }
+
+  .market-cover__index a {
+    font-size: 10px;
+  }
+
+  .market-studio #hero-card,
+  .market-studio #signal-card {
+    padding: var(--sc-s2);
+  }
+
+  .market-studio #signal-card {
+    padding: 12px;
+  }
+
+  .market-studio #signal-card .sc-card__head .sc-eyebrow {
+    font-size: 10px;
+    margin-bottom: var(--sc-s0);
+  }
+
+  .market-studio #signal-card .sc-card__head h2 {
+    font-size: 26px;
+  }
+
+  .market-studio #signal-card .sc-hint {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .market-studio #signal-card .market-matrix__scroll {
+    margin-block: var(--sc-s0);
+  }
+
+  .market-studio #hero-cars {
+    gap: var(--sc-s1);
+  }
+
+  .market-studio #hero-cars > .market-candidate {
+    padding: var(--sc-s1);
+  }
+
+  .market-candidate__media {
+    width: 84px;
+    max-width: 30%;
+    margin: 0 0 var(--sc-s1) var(--sc-s1);
+    aspect-ratio: 4 / 3;
+  }
+
+  .market-candidate__index {
+    padding: 2px var(--sc-s0);
+    font-size: 8px;
+  }
+
+  .market-candidate__media .sc-frame--empty .sc-frame__mark {
+    width: 20px;
+    max-height: 24px;
+  }
+
+  .market-candidate__media .sc-frame--empty::after {
+    font-size: 8px;
+  }
+
+  .market-studio #hero-cars .market-candidate > .sc-tile__label {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .market-studio #hero-cars .market-candidate > .sc-tile__value {
+    margin-block: var(--sc-s0);
+    font-size: 32px;
+  }
+
+  .market-studio #hero-cars .market-candidate > .sc-delta {
+    padding-top: var(--sc-s0);
+  }
+
+  .market-studio #decision-matrix {
+    min-width: 650px;
+    border-spacing: 4px;
+  }
+
+  .market-studio #signal-card > .sc-card__head > .sc-chip {
+    display: none;
+  }
+
+  .market-studio #decision-matrix thead th:first-child,
+  .market-studio #decision-matrix tbody th {
+    width: 136px;
+    min-width: 136px;
+  }
+
+  .market-studio #decision-matrix tbody th {
+    padding: var(--sc-s1);
+  }
+
+  .market-studio #decision-matrix .sc-signal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    place-content: center;
+    justify-items: center;
+    min-height: 142px;
+    padding-inline: var(--sc-s1);
+    text-align: center;
+  }
+
+  .market-studio #decision-matrix .sc-signal__glyph,
+  .market-studio #decision-matrix .sc-signal__label,
+  .market-studio #decision-matrix .market-matrix__note {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .market-studio #map-card .sc-card__head h2 {
+    font-size: 24px;
+  }
+
+}
+
+@media (max-width: 359px) {
+  .market-candidate__media .sc-frame--empty .sc-frame__mark {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .market-cover__index a,
+  .market-candidate__media .sc-frame__img {
+    transition: none;
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .market-studio #car-heading .sc-cover__art::before {
+    display: none;
+  }
+
+  .market-cover__seal,
+  .market-candidate__index,
+  .market-studio #decision-matrix tbody td,
+  .market-studio #decision-matrix tbody td:has(.sc-signal),
+  .market-studio #decision-matrix .sc-signal {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .market-studio #decision-matrix tbody :is(th, td),
+  .market-studio #hero-cars > .market-candidate,
+  .market-studio #map {
+    border-color: CanvasText;
+  }
+
+  .market-cover__index a:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+@media print {
+  .market-cover__index,
+  .market-studio #car-heading .sc-cover__art,
+  .market-candidate__media,
+  .market-studio #signal-card .market-matrix__scroll {
+    display: none;
+  }
+
+  .market-studio #car-heading .sc-cover {
+    display: block;
+  }
+
+  .market-studio #signal-card {
+    break-inside: avoid;
+  }
+
+  .market-studio #signal-card .sc-table-scroll {
+    overflow: visible;
+  }
+
+  .market-studio #decision-matrix {
+    min-width: 0;
+    border-spacing: 2pt;
+    font-size: 9pt;
+  }
+
+  .market-studio #decision-matrix thead th,
+  .market-studio #decision-matrix tbody th {
+    position: static;
+    min-width: 0;
+    padding: 4pt;
+  }
+
+  .market-studio #decision-matrix tbody td {
+    min-width: 0;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .market-studio #decision-matrix .sc-signal {
+    min-height: 44pt;
+    padding: 4pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .market-studio #decision-matrix .sc-signal__label {
+    font-size: 8pt;
+  }
+}

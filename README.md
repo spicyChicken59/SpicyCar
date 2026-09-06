@@ -284,6 +284,20 @@ The dashboard and field guide use the same SpicyChicken cover, original chick ma
 metric strip, chart signature, responsive typography and restrained motion. Motion is
 progressive enhancement and follows the device's reduced-motion preference.
 
+The watchlist opens with a visible **signal matrix** for the exact daily-decision
+candidates: their estimated totals, existing value context, reach, certification,
+and accident record. Unknown facts stay neutral. Exact-car photographs accompany
+the detailed decision below; the map comes before the longer picks and listings.
+The cover's native section links follow the visible filtered state. All scoring,
+eligibility, financing, and data remain owned by the existing tracker and helpers.
+
+`docs/market-studio.css` is the product composition over that shared snapshot;
+consumer lint checks it alongside the page's inline styles. The shared system's
+[Decision brief recipe](https://spicychicken59.github.io/design-system/templates/decision-brief.html)
+demonstrates the reusable matrix-first pattern using only existing system classes.
+The dashboard smoke suite includes phone/tablet/desktop, light/dark, keyboard,
+unknown-data, photo-source, reduced-motion, forced-color and print checks for it.
+
 The authored pages are `docs/index.html` and `docs/how.html`. The daily tracker writes
 `docs/data.json` and `REPORT.md`; it does not regenerate the HTML, so the visual design
 survives every daily update without touching the tracker or its data.
