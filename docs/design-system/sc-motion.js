@@ -1,4 +1,4 @@
-/* SpicyChicken Design System — sc-motion.js v2.7.0
+/* SpicyChicken Design System — sc-motion.js v2.8.0
    Optional, visible-by-default motion. No application state or data is changed. */
 (function (w, d) {
   'use strict';

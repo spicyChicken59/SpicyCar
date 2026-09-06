@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SpicyChicken Design System — sc.css  v2.7.0
+   SpicyChicken Design System — sc.css  v2.8.0
    Mohammed Tahir Madni · github.com/spicyChicken59
 
    One file, no build step. Drop it in (or link it) and every page shares the
@@ -919,6 +919,28 @@ img.sc-mark--lg { height: 48px; }
 .sc-report__body { padding: clamp(24px, 5vw, 56px); }
 .sc-report__body > :first-child { margin-top: 0; }
 .sc-report__footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--sc-s2); padding: var(--sc-s3) clamp(24px, 5vw, 56px); border-top: 1px solid var(--sc-border); font: 500 11px/1.6 var(--sc-font-mono); color: var(--sc-text-2); }
+
+/* Letter sheets — an explicit paged composition for reports and handoffs.
+   Each sheet owns its running furniture, so browser and PDF pagination agree. */
+.sc-sheet-stack { display: grid; justify-items: center; gap: var(--sc-s5); padding: var(--sc-s5) var(--sc-s3); background: var(--sc-raised); }
+.sc-sheet { color-scheme: light; box-sizing: border-box; width: min(100%, 8.5in); min-height: 11in; display: flex; flex-direction: column; padding: .62in .68in .54in; background: var(--sc-brand-paper); color: var(--sc-on-paper); border: 1px solid var(--sc-paper-line); box-shadow: var(--sc-shadow-md); --sc-heading: var(--sc-on-paper); --sc-text: var(--sc-on-paper); --sc-text-2: var(--sc-on-paper-2); --sc-text-3: var(--sc-on-paper-2); --sc-surface: var(--sc-white); --sc-raised: var(--sc-cobalt-50); --sc-hover: var(--sc-gray-100); --sc-border: var(--sc-paper-line); --sc-border-strong: var(--sc-gray-400); --sc-border-control: var(--sc-gray-500); --sc-brand-fill: var(--sc-cobalt-100); --sc-brand-line: var(--sc-cobalt-700); --sc-accent: var(--sc-spice-700); --sc-accent-hover: var(--sc-spice-800); --sc-on-accent: var(--sc-white); --sc-focus: var(--sc-spice-700); }
+.sc-sheet--cover { background: var(--sc-brand-wine); color: var(--sc-on-ink); border-color: var(--sc-ink-line-strong); --sc-heading: var(--sc-on-ink); --sc-text: var(--sc-on-ink); --sc-text-2: var(--sc-on-ink-2); --sc-text-3: var(--sc-on-ink-3); --sc-border: var(--sc-ink-line-strong); --sc-border-strong: var(--sc-ink-line-strong); --sc-surface: var(--sc-cobalt-900); --sc-raised: var(--sc-cobalt-900); --sc-hover: var(--sc-ink-fill); --sc-brand-fill: var(--sc-cobalt-900); --sc-brand-line: var(--sc-cobalt-300); --sc-accent: var(--sc-spice-400); --sc-accent-hover: var(--sc-spice-300); --sc-on-accent: var(--sc-night-950); --sc-focus: var(--sc-spice-400); }
+.sc-sheet__head, .sc-sheet__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s3); font: 500 10px/1.5 var(--sc-font-mono); color: var(--sc-text-2); }
+.sc-sheet__head { min-height: 28px; padding-bottom: var(--sc-s2); border-bottom: 1px solid var(--sc-border); }
+.sc-sheet__head .sc-signature img { height: 18px; }
+.sc-sheet__body { flex: 1; min-height: 0; padding-block: var(--sc-s5); }
+.sc-sheet__body > :first-child { margin-top: 0; }
+.sc-sheet__body > :last-child { margin-bottom: 0; }
+.sc-sheet__foot { min-height: 24px; padding-top: var(--sc-s2); border-top: 1px solid var(--sc-border); }
+.sc-sheet__folio { white-space: nowrap; color: var(--sc-heading); }
+.sc-sheet--cover .sc-sheet__body { display: flex; flex-direction: column; justify-content: center; }
+.sc-sheet--cover .sc-cover { padding-inline: 0; border: 0; }
+.sc-sheet--dense .sc-sheet__body { padding-block: var(--sc-s3); }
+.sc-sheet--dense .sc-chapter { padding-block: var(--sc-s1); }
+.sc-sheet--dense .sc-measure-note { margin-block: var(--sc-s2); }
+.sc-sheet--preview { width: min(100%, 360px); min-height: 440px; padding: var(--sc-s3); }
+.sc-sheet--preview .sc-sheet__body { padding-block: var(--sc-s4); }
+.sc-print-head, .sc-print-foot { display: none; }
 @media (max-width: 720px) {
   .sc-cover { gap: var(--sc-s4); }
   .sc-cover__title { max-width: 18ch; }
@@ -942,6 +964,11 @@ img.sc-mark--lg { height: 48px; }
   .sc-stat-strip { grid-template-columns: minmax(0,1fr); }
   .sc-stat-strip > .sc-stat + .sc-stat { border-left: 0; border-top: 1px solid var(--sc-border); }
 }
+@media (max-width: 720px) {
+  .sc-sheet-stack { padding: 0; gap: var(--sc-s3); background: var(--sc-bg); }
+  .sc-sheet { width: 100%; min-height: 0; padding: var(--sc-s4) var(--sc-s3); border-inline: 0; box-shadow: none; }
+  .sc-sheet__body { padding-block: var(--sc-s4); }
+}
 @media (forced-colors: active) {
   .sc-brand-panel__pattern, .sc-ghost { display: none; }
   .sc-cover, .sc-brand-panel, .sc-report, .sc-stat-strip { border: 1px solid CanvasText; }
@@ -954,6 +981,18 @@ img.sc-mark--lg { height: 48px; }
   .sc-report__footer { padding: 12pt 0; }
   .sc-chapter { break-after: avoid; }
   .sc-stat-strip, .sc-facts { break-inside: avoid; }
+  @page { size: Letter; margin: 0; }
+  .sc-sheet-stack { display: block; padding: 0; background: #fff; }
+  .sc-sheet { width: 8.5in; min-height: 11in; max-height: 11in; margin: 0; padding: .62in .68in .54in; border: 0; box-shadow: none; overflow: hidden; break-after: page; page-break-after: always; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .sc-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .sc-print-head, .sc-print-foot { position: fixed; left: 0; right: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12pt; color: #2F3741; font: 500 8pt/1.4 var(--sc-font-mono); }
+  .sc-print-head { top: -30pt; padding-bottom: 6pt; border-bottom: .5pt solid #CFD6DE; }
+  .sc-print-foot { bottom: -26pt; padding-top: 6pt; border-top: .5pt solid #CFD6DE; }
+  .sc-print-head img, .sc-print-foot img { width: auto; height: 14pt; }
+  .sc-print-report { position: relative; }
+  .sc-screen-only { display: none !important; }
+  .sc-print-section { break-before: page; page-break-before: always; }
+  .sc-print-keep { break-inside: avoid; page-break-inside: avoid; }
 }
 
 /* 4e. VISUAL LIBRARY START */
