@@ -199,6 +199,10 @@
   #compare-table thead th > span { display: block; }   /* the header stacks; the chip inside the last one must not stretch to the column */
   #compare-table .cmp-swatch { margin-bottom: 4px; }
   #compare-table td { vertical-align: top; }
+  #compare-table .sc-benchmark { min-width: 136px; margin-top: var(--sc-s2); }
+  #compare-table .sc-benchmark__track { height: 16px; }
+  #compare-table .sc-benchmark__point { width: 10px; height: 10px; }
+  #compare-table .sc-benchmark__scale { font-size: 9px; }
   /* On a phone the scroll window is 348px and the metric column took 168 of
      it, so every right-aligned figure in the table started outside the strip:
      ten labels and no numbers until the reader scrolled each row. The metric
@@ -215,6 +219,7 @@
     #compare-table.sc-signal-matrix { min-width: 100%; }
     #compare-table .cmp-metric { min-width: 96px; max-width: 96px; white-space: normal; }
     #compare-table thead th, #compare-table tbody td { min-width: 0; max-width: 124px; white-space: normal; overflow-wrap: anywhere; }
+    #compare-table .sc-benchmark { min-width: 112px; }
     #compare-table tbody td { text-align: left; }
     #compare-table thead th .sc-nowrap { white-space: normal; }
   }
@@ -3879,7 +3884,29 @@
       const sub = !c ? whyUnscored(r)
         : c.mixed ? `too few comparable ${c.short} listings to say`
         : `${c.short}, n=${c.n}`;
-      return cmpCell(word, sub, false, c ? { kind: c.basis, title: c.words } : null);
+      const out = cmpCell(word, sub, false, c ? { kind: c.basis, title: c.words } : null);
+      if (p != null && st !== 'mixed') {
+        // A centered visual reading of the exact percentage already printed
+        // above. ±20% is explicitly a context scale, not another score; values
+        // beyond it clamp only the decorative point while the words stay exact.
+        const position = Math.max(0, Math.min(100, 50 + p * 250));
+        const tone = st === 'under' ? 'var(--sc-good)'
+          : st === 'over' ? 'var(--sc-warn)' : 'var(--sc-chart-emphasis)';
+        out.appendChild(el('figure', {
+          class: 'sc-benchmark',
+          style: `--sc-benchmark-position:${position}%;--sc-benchmark-reference:50%;--sc-benchmark-tone:${tone}`
+        }, [
+          el('figcaption', { class: 'sc-sr-only' }, `${word} on a context scale from 20% over typical to 20% under typical`),
+          el('div', { class: 'sc-benchmark__track', 'aria-hidden': 'true' }, [
+            el('span', { class: 'sc-benchmark__reference' }),
+            el('span', { class: 'sc-benchmark__point' })
+          ]),
+          el('div', { class: 'sc-benchmark__scale', 'aria-hidden': 'true' }, [
+            el('span', null, '20% over'), el('span', null, 'typical'), el('span', null, '20% under')
+          ])
+        ]));
+      }
+      return out;
     });
     row('Where', 'Drivable means listed in one of your states — no shipping',
       (r) => cmpCell(placeCell(r.x), r.x.local ? 'drivable' : (r.x.distance != null ? `~${num(r.x.distance)} mi away` : 'distance n/a')));
