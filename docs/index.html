@@ -3284,6 +3284,18 @@
   // reader built instead of to a watchlist they have to rebuild it from.
   function goTo(bk, mk, vin) {
     S.brand = bk; S.model = mk; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; S.vinAsk = null; syncUrl(); rerender('nav');
+    // A link that names a car is a request to see THAT car, and the shared
+    // filters are not cleared with the trim and the year — S.where is
+    // remembered across visits — so "Open this car →" scrolled to the top of a
+    // page that did not hold it, taking the card that named it with it. Only
+    // when the car is really out of view, so an ordinary open keeps the
+    // reader's filters.
+    if (vin && !filtered().some((x) => x.vin === vin)
+        && (model().listings || []).some((x) => x.vin === vin)) {
+      S.where = new Set(); S.miles = 0; S.clean = false; S.rental = false;
+      S.cpo = false; S.hideNew = false;
+      savePrefs(); buildFilters(); rerender('trim');
+    }
     if (!(vin && landOnCar(vin))) window.scrollTo(0, 0);
   }
   // One tap lands on the car, not the model. Every tile that names a car
@@ -5238,7 +5250,8 @@
                       modelsInView().reduce((a, { m }) => a + (m.listings || []).length, 0));
     renderSinceVisit();
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
-    renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car');
+    renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car',
+               filterBits(true));
     filterCount();
   }
 
@@ -5501,7 +5514,14 @@
     row('Lowest drivable asking', `Listed in one of your states (${scopeTxt()}) — no shipping`,
       stat.map((v) => cmpCell(v.bestLocal ? money(v.bestLocal.price) : '—',
         v.bestLocal ? `${v.bestLocal.year} · ${num(v.bestLocal.miles)} mi · ${placeTxt(v.bestLocal)}` : 'nothing drivable')));
-    row('Lowest asking anywhere', 'The cheapest one on the market, wherever it is',
+    // "anywhere" is a claim about the market, and this row is built from the
+    // filtered columns: under the OH where-chip it read $60,396 for an i7 whose
+    // lowest asking anywhere is $48,909. Same rule and same word as the model
+    // index's own heading one card down.
+    const narrowed = filterBits(S.brand === 'all', true);
+    row(narrowed.length ? 'Lowest asking (filtered)' : 'Lowest asking anywhere',
+      narrowed.length ? `The cheapest one you are looking at — ${narrowed.join(' · ')}`
+                      : 'The cheapest one on the market, wherever it is',
       stat.map((v) => cmpCell(v.best ? money(v.best.price) : '—',
         v.best ? `${v.best.year} · ${num(v.best.miles)} mi · ${placeTxt(v.best)}${v.best.local ? '' : (v.best.ship ? ` · + ${money(v.best.ship)} ship` : '')}` : 'no priced listings')));
     row('Cheapest landed', 'Asking plus shipping — what it costs to have one in the driveway',
@@ -5632,7 +5652,14 @@
 
   // The page ends on the answer it just computed, not on a third link to the
   // methodology. Falls back to the methodology when there is nothing to point at.
-  function renderNext(best, scope) {
+  // The page's last word, and the one card the design gives the accent — so it
+  // is the one a reader acts from. It took the FILTERED rows and stated them as
+  // the day's answer: with year=2026 pressed on the i7 it read "The cheapest
+  // BMW i7 you can drive to today: $189,960" one line under a tile that said
+  // "Lowest drivable (filtered) $189,960" and one press after the same card had
+  // said $48,909. The tiles were taught this rule and this sentence was not, so
+  // it names what narrowed it in the tiles' own word.
+  function renderNext(best, scope, bits) {
     const fig = $('next-figure'), body = $('next-body');
     fig.textContent = ''; body.textContent = '';
     const url = best && safeUrl(best.x.url);
@@ -5642,7 +5669,9 @@
       body.appendChild(el('a', { href: 'how.html' }, 'How it works →'));
       return;
     }
-    fig.textContent = `The cheapest ${scope} you can drive to today: ${money(best.x.price)}`;
+    fig.textContent = `The cheapest ${scope} you can drive to today`
+      + ((bits && bits.length) ? ` (filtered: ${bits.join(' · ')})` : '')
+      + `: ${money(best.x.price)}`;
     body.appendChild(document.createTextNode(
       `${best.label} · ${best.x.year || ''} · ${best.x.miles != null ? num(best.x.miles) + ' mi' : ''} · ${placeTxt(best.x)} — no shipping. `.replace(/\s+·\s+·/g, ' ·')));
     if (url) body.appendChild(el('a', { href: url, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
@@ -5727,19 +5756,38 @@
   // a windshield lands on its own facts rather than on a table to walk. Only
   // when nothing else claims the slot: an emptied selection or a dead part of
   // the link says its own thing there first.
-  function renderVinInHand(t) {
+  // The VIN field is for a buyer standing at a dealer with seventeen characters
+  // off a windshield, and the sentence under the card was unconditional: "Its
+  // row is in the list below" over a list the shared filters had already
+  // excluded the car from. S.where survives the visit in localStorage and
+  // applyUrl() deliberately leaves it alone, so a plain reload with no query at
+  // all reaches this — one remembered where-chip and the page names a Florida
+  // car over two Ohio rows. The recovery it offered was false too: "the star
+  // keeps it" is a button on the card, and the card is what disappears.
+  function renderVinInHand(t, rows) {
     if (!S.vinAsk) return;
     const n = $('notice');
     const hit = findVin(S.vinAsk);
     if (!hit || hit.mk !== S.model || !n.hidden) return;
+    const inList = (rows || []).some((x) => String(x.vin || '').toUpperCase() === S.vinAsk);
+    const bits = filterBits(false);
     n.appendChild(el('div', { class: 'sc-callout sc-callout--core', 'data-vin-in-hand': S.vinAsk },
       el('div', { class: 'sc-callout__label' }, 'the car in hand'),
       el('div', { class: 'sc-grid picks-grid' }, shortlistCard(S.vinAsk, '')),
-      el('p', { class: 'sc-hint' }, hit.gone
-        ? (stillListed(hit.x)
+      el('p', { class: 'sc-hint' }, ...(hit.gone
+        ? [stillListed(hit.x)
             ? `${stillTxt(hit.x, hit.x.trim_label)} — that watch last returned it ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}.`
-            : `This car has left the model's rows — last seen ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}${hit.x.likely === 'delisted' ? ', and its listing ended' : ', and it may only have fallen outside a fetch window'}.`)
-        : `Its row is in the list below, ${t.label || S.model}'s own; the star keeps it.`)));
+            : `This car has left the model's rows — last seen ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}${hit.x.likely === 'delisted' ? ', and its listing ended' : ', and it may only have fallen outside a fetch window'}.`]
+        : inList
+          ? [`Its row is in the list below, ${t.label || S.model}'s own; the star keeps it.`]
+          : ['Its row is not in the list below: ',
+             el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:vin-clear', onclick: (e) => {
+               e.preventDefault();
+               S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false;
+               S.rental = false; S.cpo = false; S.hideNew = false; S.trims = new Set();
+               savePrefs(); buildFilters(); rerender('trim');
+             } }, bits.length ? `clear ${bits.join(' · ')}` : 'clear the filters'),
+             ' to bring it back. The star keeps it either way.']))));
     n.hidden = false;
   }
   function renderEmptyNotice(shown, total) {
@@ -5916,9 +5964,10 @@
     // silently skipped the notice: pressing "CPO under 30k mi 0" on the i5 left
     // 136 cars' worth of page as dashes with nothing said and no way back.
     renderEmptyNotice(rows.length, (t.listings || []).length);
-    renderVinInHand(t);
+    renderVinInHand(t, rows);
     const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
-    renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
+    renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label,
+               filterBits(false));
     filterCount();
   }
 
@@ -6140,11 +6189,15 @@
     const h = card && !card.hidden ? Math.round(card.getBoundingClientRect().height) : 0;
     root.style.setProperty('--bar-h', h + 'px');
   }
-  function filterBits(overview) {
+  // `sharedOnly` leaves out the model and trim selection: for a card whose
+  // COLUMNS are that selection — the comparison — those are what it is about,
+  // not a narrowing of it, and counting them made an unfiltered comparison
+  // label itself filtered.
+  function filterBits(overview, sharedOnly) {
     const bits = [];
     if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
-    if (S.models.size && overview) bits.push(modelsInView().map(({ m, mk }) => m.label || mk).join(' + '));
-    if (S.trims.size && !overview) bits.push(selectedTrims(model()).map((id) => trimLabel(model(), id)).join(' + '));
+    if (S.models.size && overview && !sharedOnly) bits.push(modelsInView().map(({ m, mk }) => m.label || mk).join(' + '));
+    if (S.trims.size && !overview && !sharedOnly) bits.push(selectedTrims(model()).map((id) => trimLabel(model(), id)).join(' + '));
     if (S.year !== 'all') bits.push(S.year);
     if (S.miles) bits.push(`under ${num(S.miles)} mi`);
     if (S.clean) bits.push('no accidents');

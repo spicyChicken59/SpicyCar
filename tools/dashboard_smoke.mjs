@@ -5237,6 +5237,128 @@ await step('the record and the page tell one story about one model', async () =>
      rows.map((r) => `${r.id}: ${r.mdNew === r.pageNew ? `both ${r.mdNew || '—'} new` : `record ${r.mdNew || '—'} vs page ${r.pageNew || '—'}`}`).join(' · '));
 });
 
+// ---- a sentence does not outrun the view it was built from -----------------
+// renderKpis() was taught to say "(filtered)" so "a floor under a filter is
+// never quoted as the nation's", and how.html repeats it. Two sentences built
+// from the same filtered rows were not: the next-callout — the page's last word
+// and its only accent action — stated "The cheapest BMW i7 you can drive to
+// today: $189,960" with year=2026 pressed, one line under a tile correctly
+// reading "Lowest drivable (filtered) $189,960", where the answer without the
+// filter is $48,909; and the comparison's "Lowest asking anywhere", under a
+// title reading "The cheapest one on the market, wherever it is", showed
+// $60,396 for that same i7 with the OH chip on.
+await step('a sentence does not outrun the view it was built from', async () => {
+  plan('the next card names the filter it was built under',
+       'and says nothing of the sort when there is none',
+       'the comparison stops saying anywhere when it is not anywhere');
+  const sub = WATCHED.find((w) => {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    const years = new Set((m.listings || []).filter((x) => x.local && x.price).map((x) => String(x.year)));
+    return years.size > 1;
+  });
+  if (!sub) return skipRest('no watched model has drivable cars from more than one model year');
+  await open(sub.q);
+  const clean = (await page.textContent('#next-figure')) || '';
+  ok('and says nothing of the sort when there is none', !/filtered/.test(clean) && /\$/.test(clean),
+     `unfiltered the card reads ${JSON.stringify(clean.trim().slice(0, 90))}`);
+  const m = SHEET.brands[sub.bk].models[sub.mk];
+  const years = [...new Set((m.listings || []).filter((x) => x.local && x.price).map((x) => String(x.year)))].sort();
+  await page.selectOption('#f-year', years[years.length - 1]);
+  await page.waitForTimeout(500);
+  const narrowed = (await page.textContent('#next-figure')) || '';
+  const tile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))).find((t) => /drivable/i.test(t)) || '';
+  ok('the next card names the filter it was built under',
+     /\(filtered/.test(narrowed) && /filtered/.test(tile),
+     `with ${years[years.length - 1]} pressed the tile says ${JSON.stringify(tile.slice(0, 40))}`
+     + ` and the card says ${JSON.stringify(narrowed.trim().slice(0, 110))}`);
+  // …and the comparison row whose label is a claim about the whole market.
+  const two = WATCHED.slice(0, 2);
+  const wheres = ((SHEET.buyer || {}).states || []);
+  if (two.length < 2 || !wheres.length)
+    return skip('the comparison stops saying anywhere when it is not anywhere',
+                'this sheet has fewer than two models or no buyer states to filter on');
+  await open(`?models=${two.map((w) => `${w.bk}-${w.mk}`).join(',')}`);
+  const before = (await page.textContent('#compare-table')) || '';
+  const chips = page.locator('#f-where button');
+  const names = await chips.evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
+  const i = names.findIndex((t) => t.startsWith(wheres[0]));
+  if (i < 0) return skip('the comparison stops saying anywhere when it is not anywhere',
+                         `no where chip for ${wheres[0]}`);
+  await chips.nth(i).click(); await page.waitForTimeout(600);
+  const after = (await page.textContent('#compare-table')) || '';
+  ok('the comparison stops saying anywhere when it is not anywhere',
+     /Lowest asking anywhere/.test(before) && !/Lowest asking anywhere/.test(after)
+     && /Lowest asking \(filtered\)/.test(after),
+     `unfiltered the row is labelled `
+     + JSON.stringify(((before.match(/Lowest asking[^$]*/) || [''])[0]).trim().slice(0, 40))
+     + `; with ${wheres[0]} pressed it is `
+     + JSON.stringify(((after.match(/Lowest asking[^$]*/) || [''])[0]).trim().slice(0, 40)));
+});
+
+// ---- the car in hand is a car the reader can find --------------------------
+// The VIN field is for a buyer standing at a dealer with seventeen characters
+// off a windshield. The card's sentence was unconditional — "Its row is in the
+// list below" — while the list is filtered(), and S.where is the one filter this
+// page remembers between visits, so a plain reload with no query at all reaches
+// it: a Florida car named over two Ohio rows. Its offered recovery, "the star
+// keeps it", is a button on the card, and the card is what disappeared.
+await step('the car in hand is a car the reader can find', async () => {
+  plan('the card does not claim a row the filters have removed',
+       'and its way out really brings the row back',
+       'and "Open this car" lands on the car rather than the top of the page');
+  const sub = WATCHED.find((w) => {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    return (m.listings || []).some((x) => x.price && x.state
+      && !((SHEET.buyer || {}).states || []).includes(x.state));
+  });
+  const states = ((SHEET.buyer || {}).states || []);
+  if (!sub || !states.length) return skipRest('no watched model holds a car outside the buyer states');
+  const m = SHEET.brands[sub.bk].models[sub.mk];
+  const far = (m.listings || []).find((x) => x.price && x.state && !states.includes(x.state));
+  const keep = states[0];
+  const prefs = JSON.stringify({ where: [keep], range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' });
+  await open(sub.q);
+  await page.evaluate((p) => localStorage.setItem('spicycar.prefs', p), prefs);
+  await open(`?brand=${sub.bk}&m=${sub.mk}&vin=${far.vin}`);
+  const inList = () => page.locator('#list-table tbody tr').evaluateAll((trs, v) => trs.some((t) => t.innerText.includes(v)), far.vin);
+  const said = (await page.textContent('#notice')) || '';
+  ok('the card does not claim a row the filters have removed',
+     !(await inList()) && !/row is in the list below/.test(said) && /not in the list below/.test(said),
+     `${far.vin} is in ${far.city}, ${far.state} and the list is filtered to ${keep};`
+     + ` the card says ${JSON.stringify(said.replace(/\s+/g, ' ').slice(-95))}`);
+  if (!(await page.locator('[data-fkey="notice:vin-clear"]').count()))
+    skip('and its way out really brings the row back', 'the card offered no way out to press');
+  else {
+    await page.click('[data-fkey="notice:vin-clear"]');
+    await page.waitForTimeout(600);
+    const back = (await page.textContent('#notice')) || '';
+    ok('and its way out really brings the row back',
+       (await inList()) && /row is in the list below/.test(back),
+       `after pressing it the count reads ${JSON.stringify(((await page.textContent('#filter-count')) || '').trim())}`
+       + ` and the card says ${JSON.stringify(back.replace(/\s+/g, ' ').slice(-70))}`);
+  }
+  // The card's own link, from the same remembered filter: it cleared the trim
+  // and the year and not the shared filters, so it scrolled to the top of a
+  // page that did not hold the car, taking the card that named it along.
+  await open(sub.q);
+  await page.evaluate((p) => localStorage.setItem('spicycar.prefs', p), prefs);
+  await open(`?brand=${sub.bk}&m=${sub.mk}&vin=${far.vin}`);
+  const opener = page.locator('#notice [data-fkey$=":open"]').first();
+  if (!(await opener.count())) return skip('and "Open this car" lands on the car rather than the top of the page',
+                                           'the card has no open link on this sheet');
+  await opener.click();
+  await page.waitForTimeout(800);
+  const y = await page.evaluate(() => Math.round(window.scrollY));
+  ok('and "Open this car" lands on the car rather than the top of the page',
+     (await inList()) && y > 0,
+     `the row is ${(await inList()) ? 'on screen' : 'still filtered out'} and the page sits at y=${y}`);
+  // This step is the only one that writes a where-chip into localStorage and
+  // then leaves the page on a model, so it puts the profile back itself:
+  // recover() runs only after a step that THREW, and a filter left behind here
+  // reads as a failure three steps later, in checks that never touched it.
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+});
+
 // ---- the history the record publishes is the history the page draws -------
 // flags() builds the "_1-owner · no accidents · ex-lease_" line under every car
 // in REPORT.md and the `flags` array on every row of docs/data.json; the page
@@ -5647,7 +5769,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 259;
+const EXPECTED = 265;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

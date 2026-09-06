@@ -199,6 +199,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   most recent first. A VIN field (and `?vin=`) opens one car by its full VIN or its last six
   characters — the model page with the car at the top and its row landed on; a tail that fits two
   cars says so and opens nothing, and a VIN nobody has seen goes through the dead-link notice.
+  If a filter you left on hides that car's row, the card says so and offers to clear the one that
+  did it, rather than claiming a row the list does not hold — and opening the car clears it for
+  you, because a link that names a car is a request to see that car.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home. The `via` column records which queries returned each row (`National:miles.asc|States:price.asc`), because a target fetching two sorts has two windows and without it a car pushed out of one cannot be told from a car that left the market. Blank on every row written before the column existed — that provenance is genuinely unrecoverable, which is why exit prices are currently withheld for multi-sort targets.
 
 ## Run it yourself
