@@ -72,7 +72,14 @@
     "pages": 2
   },
 
-  "legacy_ids": { "i5-edrive40": "bmw-i5-edrive40" },
+  "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is.",
+  "legacy_ids": {
+    "i5-edrive40": "bmw-i5-edrive40",
+    "chevrolet-equinox-ev-rs": "chevrolet-equinox-ev",
+    "lucid-air-touring": null,
+    "lucid-air-grand-touring": null,
+    "bmw-i7": null
+  },
 
   "watchlist": {
     "bmw": {

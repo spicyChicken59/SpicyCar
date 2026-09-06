@@ -2721,7 +2721,11 @@ def load_history():
     with SNAPSHOTS.open(newline="", encoding="utf-8-sig") as f:
         for r in csv.DictReader(f):
             row = {k: r.get(k, "") or "" for k in FIELDS}
-            row["target"] = LEGACY_IDS.get(row["target"], row["target"])
+            # `or row["target"]`, not a default: a NULL value in legacy_ids
+            # means "these rows are known about and deliberately orphaned",
+            # which is a different statement from a missing key and is what
+            # test_every_target_in_the_record_is_accounted_for reads.
+            row["target"] = LEGACY_IDS.get(row["target"]) or row["target"]
             row["state"] = row["state"].strip().upper()
             # distance means miles from the buyer's home; recompute it from
             # the stored coordinates so every row carries the same meaning

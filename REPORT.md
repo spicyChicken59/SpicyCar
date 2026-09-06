@@ -618,9 +618,9 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 - **$52,997** · BMW iX · 2023 · 15,258 mi · drivable · no shipping · Huntley, IL
   _spicy pick: 13% under typical for a 2023 BMW iX M60 ($7,875 less, from 10 such cars)_ · _1-owner · no accidents · ex-lease_
   [listing](https://www.autolist.com/bmw-ix#vin=WB533CF08PCK79196) `WB533CF08PCK79196`
-- **$47,428** · Hyundai Ioniq 9 · 2026 · 51 mi · drivable · no shipping · Norwalk, OH
-  _spicy pick: 7% under typical for a 2026 Hyundai Ioniq 9 S ($3,020 less, from 11 such cars)_
-  [listing](https://www.autolist.com/hyundai-ioniq+9#vin=7YAMS5S15TY005885) `7YAMS5S15TY005885`
+- **$27,248** · Chevrolet Equinox EV · 2024 · 14,534 mi · drivable · no shipping · Maumee, OH
+  _spicy pick: 8% under typical for a 2024 Chevrolet Equinox EV 2RS ($2,189 less, from 9 such cars)_
+  [listing](https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP4RS270893) `3GN7DSRP4RS270893`
 
 ### Worth the ship — nationwide
 
@@ -646,7 +646,7 @@ _By asking price, with a shipping estimate per car, on a slower cadence: the 20 
 - **Kia EV9** — 34 cars · 19 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $35,259 _(every 4 days · as of 2026-09-04)_
 - **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,698 _(every 4 days · as of 2026-09-03)_
 - **Lucid Air** — not fetched yet · first run 2026-09-06 _(every 4 days)_
-- **Chevrolet Equinox EV** — not fetched yet · first run 2026-09-09 _(every 4 days)_
+- **Chevrolet Equinox EV** — 31 cars · 12 drivable · lowest asking $19,600 (Wake Forest, NC) + $766 shipping · drivable from $24,385 (Greenwood, IN) · median asking $25,648 _(every 4 days · as of 2026-08-27)_
 - **Tesla Model Y** — not fetched yet · first run 2026-09-11 _(every 10 days)_
 - **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-10 _(every 10 days)_
 - **GMC Hummer EV** — not fetched yet · first run 2026-09-09 _(every 10 days)_

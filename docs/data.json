@@ -39418,7 +39418,7 @@
      ],
      "shopping": false,
      "cadence": 4,
-     "as_of": null,
+     "as_of": "2026-08-27",
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
@@ -39445,15 +39445,1778 @@
        "market_total": null
       }
      },
-     "listings": [],
-     "daily": [],
+     "listings": [
+      {
+       "vin": "3GN7DNRP1RS232152",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "NC",
+       "local": false,
+       "lat": 35.9003,
+       "lon": -78.76218,
+       "distance": 625,
+       "ship": 766,
+       "miles": 95465,
+       "price": 19600,
+       "msrp": null,
+       "dealer": "westgate dodge ram wake forest",
+       "city": "Wake Forest",
+       "url": "https://westgatedodgeram.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-f75ca788ac1846fa1e332511bc9d94b5.htm",
+       "image": "https://retail.photos.vin/3GN7DNRP1RS232152-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP1RS232152&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 2,
+       "accidents": 1,
+       "usage": "Multiple Use",
+       "flags": [
+        "multi-use",
+        "2 owners",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-13",
+       "days_listed": 14,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         19600
+        ],
+        [
+         "2026-08-27",
+         19600
+        ]
+       ],
+       "stale_pct": 0.5,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP0SS156413",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "MO",
+       "local": false,
+       "lat": 39.78521,
+       "lon": -94.80444,
+       "distance": 400,
+       "ship": 566,
+       "miles": 36271,
+       "price": 21599,
+       "msrp": 43400,
+       "dealer": "Victory GMC",
+       "city": "Saint Joseph",
+       "url": "https://www.carfax.com/vehicle/3GN7DSRP0SS156413",
+       "image": "https://retail.photos.vin/3GN7DSRP0SS156413-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP0SS156413&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 1,
+       "delta": -396,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         21995
+        ],
+        [
+         "2026-08-27",
+         21599
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP3RS263921",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "UT",
+       "local": false,
+       "lat": 40.34935,
+       "lon": -111.72754,
+       "distance": 1250,
+       "ship": 1164,
+       "miles": 10610,
+       "price": 21750,
+       "msrp": null,
+       "dealer": "nexgen motors",
+       "city": "Lindon",
+       "url": "https://drivenexgen.com/inventory/2024-chevrolet-equinox-ev-rs-3GN7DSRP3RS263921",
+       "image": "https://retail.photos.vin/3GN7DSRP3RS263921-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP3RS263921&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 1,
+       "delta": -695,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         22445
+        ],
+        [
+         "2026-08-27",
+         21750
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DNRP4RS217354",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "MD",
+       "local": false,
+       "lat": 38.83153,
+       "lon": -76.9347,
+       "distance": 600,
+       "ship": 746,
+       "miles": 38732,
+       "price": 23000,
+       "msrp": null,
+       "dealer": "ourisman chevrolet of marlow heights",
+       "city": "Temple Hills",
+       "url": "https://ourismanchevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-marlow-heights-md-4798d841ac1813cdd93b4713fdaa6182.htm",
+       "image": "https://retail.photos.vin/3GN7DNRP4RS217354-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP4RS217354&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         23000
+        ],
+        [
+         "2026-08-27",
+         23000
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DNRP8RS239549",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "CA",
+       "local": false,
+       "lat": 34.1351,
+       "lon": -117.304,
+       "distance": 1700,
+       "ship": 1327,
+       "miles": 54786,
+       "price": 24314,
+       "msrp": null,
+       "dealer": "diamond ford",
+       "city": "Lancaster",
+       "url": "https://www.diamondfordav.com/used-Lancaster-2024-Chevrolet-Equinox+EV-RS-3GN7DNRP8RS239549",
+       "image": "https://retail.photos.vin/3GN7DNRP8RS239549-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP8RS239549&partner=FRD_2",
+       "color": "Sterling Gray Metallic",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-04",
+       "days_listed": 23,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         24314
+        ],
+        [
+         "2026-08-27",
+         24314
+        ]
+       ],
+       "stale_pct": 0.8,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP1RS270365",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IN",
+       "local": true,
+       "lat": 39.97091,
+       "lon": -86.00516,
+       "distance": 150,
+       "ship": 0,
+       "miles": 36023,
+       "price": 24385,
+       "msrp": null,
+       "dealer": "lockhart cadillac greenwood",
+       "city": "Greenwood",
+       "url": "https://greenwoodcadillac.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-6faf6e64ac185005b9496b418c9b062d.htm",
+       "image": "https://retail.photos.vin/3GN7DSRP1RS270365-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP1RS270365&partner=FRD_2",
+       "color": "Sterling Gray Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 1,
+       "delta": -900,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25285
+        ],
+        [
+         "2026-08-27",
+         24385
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DRRP6RS279247",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "NC",
+       "local": false,
+       "lat": 35.8673,
+       "lon": -78.5381,
+       "distance": 650,
+       "ship": 787,
+       "miles": 37848,
+       "price": 24669,
+       "msrp": null,
+       "dealer": "leith toyota",
+       "city": "Raleigh",
+       "url": "https://leithtoyota.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-2196a6bcac18461266c5431879aaafdf.htm",
+       "image": "https://retail.photos.vin/3GN7DRRP6RS279247-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP6RS279247&partner=FRD_2",
+       "color": "Radiant Red Tintcoat",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         24669
+        ],
+        [
+         "2026-08-27",
+         24669
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP0SS170084",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "AZ",
+       "local": false,
+       "lat": 33.63832,
+       "lon": -112.23262,
+       "distance": 1450,
+       "ship": 1238,
+       "miles": 39910,
+       "price": 24898,
+       "msrp": 43400,
+       "dealer": "Arrowhead Cadillac",
+       "city": "Glendale",
+       "url": "https://www.berkshirehathawayautomotive.com/catcher.esl?vin=3GN7DSRP0SS170084&atc_ownerid=autolist&utm_source=autolist&utm_medium=referral&utm_campaign=vdp_deep_link",
+       "image": "https://retail.photos.vin/3GN7DSRP0SS170084-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP0SS170084&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-13",
+       "days_listed": 14,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         24898
+        ],
+        [
+         "2026-08-27",
+         24898
+        ]
+       ],
+       "stale_pct": 0.5,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP6SS121018",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "FL",
+       "local": false,
+       "lat": 25.98002,
+       "lon": -80.2068,
+       "distance": 1175,
+       "ship": 1124,
+       "miles": 34630,
+       "price": 25097,
+       "msrp": null,
+       "dealer": "auto trust usa",
+       "city": "Miramar",
+       "url": "https://www.autotrustusa.com/inventory/used-2025-chevrolet-equinox-ev-rs-3gn7dsrp6ss121018-in-miramar-fl",
+       "image": "https://retail.photos.vin/3GN7DSRP6SS121018-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP6SS121018&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-11",
+       "days_listed": 16,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25097
+        ],
+        [
+         "2026-08-27",
+         25097
+        ]
+       ],
+       "stale_pct": 0.65,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP2SS146269",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "VA",
+       "local": false,
+       "lat": 37.14599,
+       "lon": -76.52496,
+       "distance": 675,
+       "ship": 808,
+       "miles": 51752,
+       "price": 25279,
+       "msrp": 43400,
+       "dealer": "Southern Hyundai Newport News",
+       "city": "Newport News",
+       "url": "https://www.carfax.com/vehicle/3GN7DSRP2SS146269",
+       "image": "https://retail.photos.vin/3GN7DSRP2SS146269-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP2SS146269&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 1,
+       "delta": -370,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25649
+        ],
+        [
+         "2026-08-27",
+         25279
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP0RS295354",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "lat": 41.50686,
+       "lon": -87.85018,
+       "distance": 25,
+       "ship": 0,
+       "miles": 24677,
+       "price": 25288,
+       "msrp": null,
+       "dealer": "phillips chevrolet frankfort",
+       "city": "Frankfort",
+       "url": "https://phillipschevy.com/wholesale-used/Chevrolet/2024-Chevrolet-Equinox-EV-frankfort-il-dbc8778aac181f7423508e313bd92fcd.htm",
+       "image": "https://retail.photos.vin/3GN7DSRP0RS295354-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP0RS295354&partner=FRD_2",
+       "color": "Sterling Gray Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 1,
+       "delta": -140,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25428
+        ],
+        [
+         "2026-08-27",
+         25288
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP9RS253555",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "lat": 41.68254,
+       "lon": -88.07006,
+       "distance": 25,
+       "ship": 0,
+       "miles": 36612,
+       "price": 25364,
+       "msrp": null,
+       "dealer": "advantage chevrolet of bolingbrook",
+       "city": "Bolingbrook",
+       "url": "https://advantagechevbb.com/wholesale-used/Chevrolet/2024-Chevrolet-Equinox-EV-252c17bbac185c30491eeacb360e4a53.htm",
+       "image": "https://retail.photos.vin/3GN7DSRP9RS253555-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP9RS253555&partner=FRD_2",
+       "color": "Galaxy Gray Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-22",
+       "days_listed": 5,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25364
+        ],
+        [
+         "2026-08-27",
+         25364
+        ]
+       ],
+       "stale_pct": 0.15,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP9RS286958",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "FL",
+       "local": false,
+       "lat": 28.81207,
+       "lon": -81.34124,
+       "distance": 975,
+       "ship": 1018,
+       "miles": 36477,
+       "price": 25394,
+       "msrp": 43400,
+       "dealer": "Driver's Mart Sanford",
+       "city": "Sanford",
+       "url": "https://www.carfax.com/vehicle/3GN7DSRP9RS286958",
+       "image": "https://retail.photos.vin/3GN7DSRP9RS286958-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP9RS286958&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-22",
+       "days_listed": 5,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25394
+        ],
+        [
+         "2026-08-27",
+         25394
+        ]
+       ],
+       "stale_pct": 0.15,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP6SS113761",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "MO",
+       "local": false,
+       "lat": 39.78521,
+       "lon": -94.80444,
+       "distance": 400,
+       "ship": 566,
+       "miles": 17033,
+       "price": 25399,
+       "msrp": 43400,
+       "dealer": "Victory GMC",
+       "city": "Saint Joseph",
+       "url": "https://www.carfax.com/vehicle/3GN7DSRP6SS113761",
+       "image": "https://retail.photos.vin/3GN7DSRP6SS113761-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP6SS113761&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 1,
+       "delta": -200,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25599
+        ],
+        [
+         "2026-08-27",
+         25399
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP7SS241927",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "CA",
+       "local": false,
+       "lat": 33.98933,
+       "lon": -118.39309,
+       "distance": 1750,
+       "ship": 1344,
+       "miles": 21195,
+       "price": 25637,
+       "msrp": 43400,
+       "dealer": "Chevrolet of Culver City",
+       "city": "Culver City",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP7SS241927",
+       "image": "https://retail.photos.vin/3GN7DSRP7SS241927-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP7SS241927&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-22",
+       "days_listed": 5,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25637
+        ],
+        [
+         "2026-08-27",
+         25637
+        ]
+       ],
+       "stale_pct": 0.15,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP7RS278938",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "OH",
+       "local": true,
+       "lat": 39.88807,
+       "lon": -82.88862,
+       "distance": 275,
+       "ship": 0,
+       "miles": 27163,
+       "price": 25648,
+       "msrp": 43400,
+       "dealer": "Ricart Ford",
+       "city": "Groveport",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP7RS278938",
+       "image": "https://retail.photos.vin/3GN7DSRP7RS278938-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP7RS278938&partner=FRD_2",
+       "color": "White",
+       "cpo": true,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [
+        "CPO (seller not named Chevrolet)"
+       ],
+       "listed_since": "2026-07-28",
+       "days_listed": 30,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25648
+        ],
+        [
+         "2026-08-27",
+         25648
+        ]
+       ],
+       "stale_pct": 0.95,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP3SS199613",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "NJ",
+       "local": false,
+       "lat": 40.21964,
+       "lon": -74.1305,
+       "distance": 700,
+       "ship": 828,
+       "miles": 23996,
+       "price": 25794,
+       "msrp": 43400,
+       "dealer": "Automotive Avenues",
+       "city": "Wall Township",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP3SS199613",
+       "image": "https://retail.photos.vin/3GN7DSRP3SS199613-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP3SS199613&partner=FRD_2",
+       "color": "White",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 1,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "1 accident"
+       ],
+       "listed_since": "2026-08-22",
+       "days_listed": 5,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         25794
+        ],
+        [
+         "2026-08-27",
+         25794
+        ]
+       ],
+       "stale_pct": 0.15,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DNRP7RS233712",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "CA",
+       "local": false,
+       "lat": 34.1351,
+       "lon": -117.304,
+       "distance": 1700,
+       "ship": 1327,
+       "miles": 21318,
+       "price": 25814,
+       "msrp": null,
+       "dealer": "diamond ford",
+       "city": "Lancaster",
+       "url": "https://www.diamondfordav.com/used-Lancaster-2024-Chevrolet-Equinox+EV-RS-3GN7DNRP7RS233712",
+       "image": "https://retail.photos.vin/3GN7DNRP7RS233712-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRP7RS233712&partner=FRD_2",
+       "color": "Sterling Gray Metallic",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-04",
+       "days_listed": 23,
+       "first_seen": "2026-08-27",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-27",
+         25814
+        ]
+       ],
+       "stale_pct": 0.8,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP8RS285381",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "MI",
+       "local": false,
+       "lat": 42.78953,
+       "lon": -86.08192,
+       "distance": 100,
+       "ship": 350,
+       "miles": 19505,
+       "price": 26119,
+       "msrp": 43400,
+       "dealer": "Robert DeNooyer Chevrolet",
+       "city": "Holland",
+       "url": "https://www.denooyerchevy.com/used-Holland-2024-Chevrolet-Equinox+EV-2RS-3GN7DSRP8RS285381",
+       "image": "https://retail.photos.vin/3GN7DSRP8RS285381-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP8RS285381&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-25",
+       "days_listed": 2,
+       "first_seen": "2026-08-27",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-27",
+         26119
+        ]
+       ],
+       "stale_pct": 0.05,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP2RS271010",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "lat": 41.96904,
+       "lon": -88.71941,
+       "distance": 50,
+       "ship": 0,
+       "miles": 20745,
+       "price": 26389,
+       "msrp": null,
+       "dealer": "kunes honda of sycamore",
+       "city": "Sycamore",
+       "url": "https://kuneshondasycamore.com/inventory/Used-2024-Chevrolet-Equinox_EV-RS-3GN7DSRP2RS271010-131",
+       "image": "https://retail.photos.vin/3GN7DSRP2RS271010-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP2RS271010&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         26389
+        ],
+        [
+         "2026-08-27",
+         26389
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DNRPXRS222154",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IN",
+       "local": true,
+       "lat": 39.97091,
+       "lon": -86.00516,
+       "distance": 150,
+       "ship": 0,
+       "miles": 23105,
+       "price": 26455,
+       "msrp": null,
+       "dealer": "lockhart cadillac greenwood",
+       "city": "Greenwood",
+       "url": "https://greenwoodcadillac.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-d6ab4eb5ac1820f392fe2f00e180898c.htm",
+       "image": "https://retail.photos.vin/3GN7DNRPXRS222154-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRPXRS222154&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-17",
+       "days_listed": 10,
+       "first_seen": "2026-08-25",
+       "cuts": 1,
+       "delta": -400,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         26855
+        ],
+        [
+         "2026-08-27",
+         26455
+        ]
+       ],
+       "stale_pct": 0.4,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP5RS291722",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "lat": 41.52336,
+       "lon": -88.12751,
+       "distance": 25,
+       "ship": 0,
+       "miles": 23940,
+       "price": 26499,
+       "msrp": null,
+       "dealer": "golf mill chevrolet",
+       "city": "Niles",
+       "url": "https://golfmillchevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-f5bf3250ac183894c9dd0fae112a8858.htm",
+       "image": "https://retail.photos.vin/3GN7DSRP5RS291722-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP5RS291722&partner=FRD_2",
+       "color": "Summit White",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-08",
+       "days_listed": 19,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         26499
+        ],
+        [
+         "2026-08-27",
+         26499
+        ]
+       ],
+       "stale_pct": 0.7,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DRRP9RS270820",
+       "year": 2024,
+       "trim": "3RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "KY",
+       "local": false,
+       "lat": 38.2281,
+       "lon": -84.8697,
+       "distance": 300,
+       "ship": 425,
+       "miles": null,
+       "price": 26500,
+       "msrp": null,
+       "dealer": "neil huffman honda of frankfort",
+       "city": "Frankfort",
+       "url": "https://neilhuffmanhondafrankfort.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-3eee0b61ac18090da9ed9f9da831fbba.htm",
+       "image": "https://retail.photos.vin/3GN7DRRP9RS270820-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP9RS270820&partner=FRD_2",
+       "color": "Summit White",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-27",
+       "days_listed": 0,
+       "first_seen": "2026-08-27",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-27",
+         26500
+        ]
+       ],
+       "stale_pct": 0.0,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DRRP9RS256318",
+       "year": 2024,
+       "trim": "3RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IN",
+       "local": true,
+       "lat": 39.76078,
+       "lon": -86.43225,
+       "distance": 150,
+       "ship": 0,
+       "miles": 29501,
+       "price": 26531,
+       "msrp": 45400,
+       "dealer": "Champion Chevrolet",
+       "city": "Avon",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DRRP9RS256318",
+       "image": "https://retail.photos.vin/3GN7DRRP9RS256318-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP9RS256318&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-23",
+       "days_listed": 4,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         26531
+        ],
+        [
+         "2026-08-27",
+         26531
+        ]
+       ],
+       "stale_pct": 0.1,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DRRP7RS272338",
+       "year": 2024,
+       "trim": "3RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "MO",
+       "local": false,
+       "lat": 38.22,
+       "lon": -91.1624,
+       "distance": 325,
+       "ship": 460,
+       "miles": 22543,
+       "price": 26615,
+       "msrp": 45400,
+       "dealer": "Laura Chevrolet Buick GMC of Sullivan",
+       "city": "Sullivan",
+       "url": "https://www.laurabgofsullivan.com/used-Sullivan-2024-Chevrolet-Equinox+EV-3RS-3GN7DRRP7RS272338",
+       "image": "https://retail.photos.vin/3GN7DRRP7RS272338-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DRRP7RS272338&partner=FRD_2",
+       "color": "White",
+       "cpo": true,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [
+        "CPO"
+       ],
+       "listed_since": "2026-08-15",
+       "days_listed": 12,
+       "first_seen": "2026-08-27",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-27",
+         26615
+        ]
+       ],
+       "stale_pct": 0.45,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP8SS116872",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "MO",
+       "local": false,
+       "lat": 39.78521,
+       "lon": -94.80444,
+       "distance": 400,
+       "ship": 566,
+       "miles": 10508,
+       "price": 26700,
+       "msrp": 43400,
+       "dealer": "Victory GMC",
+       "city": "Saint Joseph",
+       "url": "https://www.carfax.com/vehicle/3GN7DSRP8SS116872",
+       "image": "https://retail.photos.vin/3GN7DSRP8SS116872-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP8SS116872&partner=FRD_2",
+       "color": "Orange",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-27",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-27",
+         26700
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP8SS170883",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "OH",
+       "local": true,
+       "lat": 41.21081,
+       "lon": -82.58296,
+       "distance": 275,
+       "ship": 0,
+       "miles": 32882,
+       "price": 26939,
+       "msrp": 43400,
+       "dealer": "Baumann Chevrolet Norwalk",
+       "city": "Norwalk",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP8SS170883",
+       "image": "https://retail.photos.vin/3GN7DSRP8SS170883-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP8SS170883&partner=FRD_2",
+       "color": "Black",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-07",
+       "days_listed": 20,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         26939
+        ],
+        [
+         "2026-08-27",
+         26939
+        ]
+       ],
+       "stale_pct": 0.75,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DNRPXRS231405",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "lat": 41.50686,
+       "lon": -87.85018,
+       "distance": 25,
+       "ship": 0,
+       "miles": 21617,
+       "price": 26950,
+       "msrp": null,
+       "dealer": "phillips chevrolet frankfort",
+       "city": "Frankfort",
+       "url": "https://phillipschevy.com/wholesale-used/Chevrolet/2024-Chevrolet-Equinox-EV-frankfort-il-f3265eb0ac180706beba7998b0850a6d.htm",
+       "image": "https://retail.photos.vin/3GN7DNRPXRS231405-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DNRPXRS231405&partner=FRD_2",
+       "color": "Sterling Gray Metallic",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "2026-08-12",
+       "days_listed": 15,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         26950
+        ],
+        [
+         "2026-08-27",
+         26950
+        ]
+       ],
+       "stale_pct": 0.6,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP4SS125181",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "OH",
+       "local": true,
+       "lat": 40.97265,
+       "lon": -81.77756,
+       "distance": 300,
+       "ship": 0,
+       "miles": 19431,
+       "price": 26966,
+       "msrp": 43400,
+       "dealer": "Laria Chevrolet Buick",
+       "city": "Rittman",
+       "url": "https://www.lariachevybuick.com/used-Rittman+-2025-Chevrolet-Equinox+EV-RS-3GN7DSRP4SS125181",
+       "image": "https://retail.photos.vin/3GN7DSRP4SS125181-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP4SS125181&partner=FRD_2",
+       "color": "Blue",
+       "cpo": false,
+       "owners": 1,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ],
+       "listed_since": "",
+       "days_listed": null,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         26966
+        ],
+        [
+         "2026-08-27",
+         26966
+        ]
+       ],
+       "stale_pct": null,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP9RS263406",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "MO",
+       "local": false,
+       "lat": 38.79985,
+       "lon": -90.61703,
+       "distance": 275,
+       "ship": 389,
+       "miles": 29800,
+       "price": 26974,
+       "msrp": 43400,
+       "dealer": "Lou Fusz Chevrolet",
+       "city": "Saint Peters",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP9RS263406",
+       "image": "https://retail.photos.vin/3GN7DSRP9RS263406-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP9RS263406&partner=FRD_2",
+       "color": "Red",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-01",
+       "days_listed": 26,
+       "first_seen": "2026-08-27",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 1,
+       "series": [
+        [
+         "2026-08-27",
+         26974
+        ]
+       ],
+       "stale_pct": 0.9,
+       "stale_of": 20
+      },
+      {
+       "vin": "3GN7DSRP4RS270893",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "OH",
+       "local": true,
+       "lat": 41.58638,
+       "lon": -83.66864,
+       "distance": 200,
+       "ship": 0,
+       "miles": 14534,
+       "price": 27248,
+       "msrp": 43400,
+       "dealer": "PricePro",
+       "city": "Maumee",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DSRP4RS270893",
+       "image": "https://retail.photos.vin/3GN7DSRP4RS270893-1.jpg",
+       "carfax": "https://www.carfax.com/VehicleHistory/p/Report.cfx?vin=3GN7DSRP4RS270893&partner=FRD_2",
+       "color": "Gray",
+       "cpo": false,
+       "owners": null,
+       "accidents": null,
+       "usage": "",
+       "flags": [],
+       "listed_since": "2026-08-21",
+       "days_listed": 6,
+       "first_seen": "2026-08-25",
+       "cuts": 0,
+       "delta": 0,
+       "days_tracked": 2,
+       "series": [
+        [
+         "2026-08-25",
+         27248
+        ],
+        [
+         "2026-08-27",
+         27248
+        ]
+       ],
+       "stale_pct": 0.35,
+       "stale_of": 20
+      }
+     ],
+     "daily": [
+      {
+       "date": "2026-08-25",
+       "n": 32,
+       "n_local": 19,
+       "min_price": 19600,
+       "median_price": 25721
+      },
+      {
+       "date": "2026-08-27",
+       "n": 31,
+       "n_local": 12,
+       "min_price": 19600,
+       "median_price": 25648
+      }
+     ],
      "daily_by_trim": {
-      "chevrolet-equinox-ev": []
+      "chevrolet-equinox-ev": [
+       {
+        "date": "2026-08-25",
+        "n": 32,
+        "n_local": 19,
+        "min_price": 19600,
+        "median_price": 25721
+       },
+       {
+        "date": "2026-08-27",
+        "n": 31,
+        "n_local": 12,
+        "min_price": 19600,
+        "median_price": 25648
+       }
+      ]
      },
      "fetch_days": {
-      "chevrolet-equinox-ev": []
+      "chevrolet-equinox-ev": [
+       "2026-08-25",
+       "2026-08-27"
+      ]
      },
-     "gone": []
+     "gone": [
+      {
+       "likely": "delisted",
+       "exact": true,
+       "vin": "3GN7DSRP1RS253520",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IN",
+       "local": true,
+       "distance": 150,
+       "ship": 0,
+       "miles": 10234,
+       "last_price": 26470,
+       "city": "Noblesville",
+       "dealer": "Hare Chevrolet",
+       "url": "https://www.harechevy.com/used-Indianapolis-2024-Chevrolet-Equinox+EV-2RS-3GN7DSRP1RS253520",
+       "last_seen": "2026-08-25",
+       "listed_since": "",
+       "prev_fetch_day": "2026-08-25",
+       "first_seen": "2026-08-25",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         26470
+        ]
+       ],
+       "flags": [
+        "multi-use",
+        "2 owners",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "delisted",
+       "exact": true,
+       "vin": "3GN7DSRR7RS267021",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "distance": 25,
+       "ship": 0,
+       "miles": 20850,
+       "last_price": 26850,
+       "city": "Glen Ellyn",
+       "dealer": "jerry haggerty chevrolet",
+       "url": "https://jerryhaggertychevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-b8625903ac183b7cfe9e7d6973d2e7a3.htm",
+       "last_seen": "2026-08-25",
+       "listed_since": "",
+       "prev_fetch_day": "2026-08-25",
+       "first_seen": "2026-08-25",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         26850
+        ]
+       ],
+       "flags": [
+        "multi-use",
+        "2 owners",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "exact": true,
+       "vin": "3GN7DNRP7RS235217",
+       "year": 2024,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "distance": 25,
+       "ship": 0,
+       "miles": 10805,
+       "last_price": 27313,
+       "city": "Lake Bluff",
+       "dealer": "kunes lakes chevrolet inc",
+       "url": "https://kuneslakeschevrolet.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-19cbb9b2ac1846fa1e332511eefa8891.htm",
+       "last_seen": "2026-08-25",
+       "listed_since": "2026-08-20",
+       "prev_fetch_day": "2026-08-25",
+       "first_seen": "2026-08-25",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         27313
+        ]
+       ],
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "exact": true,
+       "vin": "3GN7DSRP1SS118799",
+       "year": 2025,
+       "trim": "RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "IL",
+       "local": true,
+       "distance": 125,
+       "ship": 0,
+       "miles": 21496,
+       "last_price": 27352,
+       "city": "Morton",
+       "dealer": "Bob Grimm Chevrolet",
+       "url": "https://www.grimmchevy.com/used-Morton-2025-Chevrolet-Equinox+EV-RS-3GN7DSRP1SS118799",
+       "last_seen": "2026-08-25",
+       "listed_since": "",
+       "prev_fetch_day": "2026-08-25",
+       "first_seen": "2026-08-25",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "accidents": 0,
+       "usage": "Personal Use",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         27352
+        ]
+       ],
+       "flags": [
+        "1-owner",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "exact": true,
+       "vin": "3GN7DRRP2RS292948",
+       "year": 2024,
+       "trim": "3RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "OH",
+       "local": true,
+       "distance": 250,
+       "ship": 0,
+       "miles": 11874,
+       "last_price": 27500,
+       "city": "Sandusky",
+       "dealer": "foster chevrolet cadillac",
+       "url": "https://fostersandusky.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-47aa1d1cac183200ff5014800e548325.htm",
+       "last_seen": "2026-08-25",
+       "listed_since": "",
+       "prev_fetch_day": "2026-08-25",
+       "first_seen": "2026-08-25",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "accidents": 0,
+       "usage": "Multiple Use",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         27500
+        ]
+       ],
+       "flags": [
+        "multi-use",
+        "2 owners",
+        "no accidents"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "exact": true,
+       "vin": "3GN7DSRP3RS270514",
+       "year": 2024,
+       "trim": "2RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "OH",
+       "local": true,
+       "distance": 200,
+       "ship": 0,
+       "miles": 16644,
+       "last_price": 27599,
+       "city": "Sylvania",
+       "dealer": "dave white chevrolet",
+       "url": "https://davewhitechevy.com/used/Chevrolet/2024-Chevrolet-Equinox-EV-sylvania-oh-2492ef8aac185cc92880da0795802fb5.htm",
+       "last_seen": "2026-08-25",
+       "listed_since": "",
+       "prev_fetch_day": "2026-08-25",
+       "first_seen": "2026-08-25",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "accidents": 1,
+       "usage": "Multiple Use",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         27599
+        ]
+       ],
+       "flags": [
+        "multi-use",
+        "2 owners",
+        "1 accident"
+       ]
+      },
+      {
+       "likely": "out of window",
+       "exact": true,
+       "vin": "3GN7DRRP4RS254654",
+       "year": 2024,
+       "trim": "3RS",
+       "trim_id": "chevrolet-equinox-ev",
+       "trim_label": "all trims",
+       "state": "OH",
+       "local": true,
+       "distance": 250,
+       "ship": 0,
+       "miles": 19949,
+       "last_price": 27611,
+       "city": "Marysville",
+       "dealer": "Coughlin Chevrolet Buick of Marysville",
+       "url": "https://www.autolist.com/chevrolet-equinox+ev#vin=3GN7DRRP4RS254654",
+       "last_seen": "2026-08-25",
+       "listed_since": "2026-07-15",
+       "prev_fetch_day": "2026-08-25",
+       "first_seen": "2026-08-25",
+       "days_tracked": 1,
+       "cuts": 0,
+       "delta": 0,
+       "accidents": null,
+       "usage": "",
+       "cpo": false,
+       "series": [
+        [
+         "2026-08-25",
+         27611
+        ]
+       ],
+       "flags": []
+      }
+     ],
+     "market": {
+      "median_days_listed": 13,
+      "days_split": null,
+      "dated": 20,
+      "n": 31,
+      "tracked_2d": 25,
+      "cut_share": 0.28,
+      "median_cut": 396,
+      "n_cuts": 7,
+      "net_down": 7,
+      "restored": 0,
+      "median_net_drop": 396,
+      "two_priced": 0,
+      "n_sold": 0,
+      "n_departures": 2,
+      "median_days_to_sale": null,
+      "n_exits": 2,
+      "median_exit_price": 26660,
+      "exit_watched": 0,
+      "exit_cut_while_watched": 0,
+      "one_trim": true
+     }
     }
    }
   },

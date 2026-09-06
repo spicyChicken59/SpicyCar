@@ -3153,6 +3153,83 @@ class TestAQueryThatRanAndFoundNothingSaysSo(unittest.TestCase):
             T.RAW_N.clear(); T.RAW_N.update(was[1])
 
 
+class TestEveryTargetInTheRecordIsAccountedFor(unittest.TestCase):
+    """A target id in the CSV that no current target claims is either a
+    rename nobody carried over, or a deliberate orphan. It must be one of
+    them on purpose, and this is what says which.
+
+    The bug it exists for: when the Lucid Air's two trim targets merged into
+    one trimless `lucid-air` and `chevrolet-equinox-ev-rs` became
+    `chevrolet-equinox-ev`, `legacy_ids` was not touched. Both models then
+    read "not fetched yet" on every surface while the committed CSV held 257
+    Lucid rows over 4 fetch days and 63 Equinox rows over 2 — indistinguishable
+    from the twenty-eight brands that genuinely have never run. 463 green tests
+    said nothing, because nothing was checking.
+
+    The two are NOT the same case, and the difference is measured rather than
+    argued. Chevrolet is mapped: 0 of its 31 live rows are pre-2024, and its
+    old window (cheapest-20 of the model, then filtered to RS) was a SUBSET of
+    the new target's, so a cut-off reconstructed from its kept rows sits BELOW
+    the truth — conservative, and the opposite of the defect that made
+    delisted() manufacture departures. Lucid is not: 53 of its 68 live rows
+    are model year 2022 or 2023, which a 2024+ watchlist can never return
+    again, so remapping would publish 53 cars as current inventory that no
+    query on this sheet could produce. And merging two trim-sliced cheapest-20
+    windows gives max(window A, window B), which is WIDER than either — the
+    manufacturing case exactly.
+    """
+
+    def test_every_target_in_the_record_is_accounted_for(self):
+        import csv as _csv
+        cfg = json.loads(Path("targets.json").read_text())
+        legacy = cfg.get("legacy_ids", {})
+        inactive = set()
+        for bk, b in cfg["watchlist"].items():
+            for mk, m in b["models"].items():
+                dead = (not b.get("active", True)) or (not m.get("active", True))
+                trims = m.get("trims") or {None: {}}
+                for tk, tr in trims.items():
+                    tid = f"{bk}-{mk}" + (f"-{tk}" if tk else "")
+                    if dead or not tr.get("active", True):
+                        inactive.add(tid)
+        with open("data/snapshots.csv", newline="", encoding="utf-8-sig") as f:
+            seen = {r["target"] for r in _csv.DictReader(f)}
+        stray = sorted(t for t in seen
+                       if T.LEGACY_IDS.get(t, t) not in T.TARGETS
+                       and t not in inactive and t not in legacy)
+        self.assertEqual(stray, [], "\n".join([
+            "target ids in data/snapshots.csv that no current target claims,",
+            "that belong to no model marked inactive, and that legacy_ids does",
+            "not mention. Either map them, or list them in legacy_ids with a",
+            "null value to say the orphaning is deliberate:", *stray]))
+
+    def test_the_chevrolet_rename_carries_its_history_over(self):
+        rows = T.load_history()
+        self.assertTrue([r for r in rows if r["target"] == "chevrolet-equinox-ev"],
+                        "the RS rows are the Equinox EV's history")
+        self.assertFalse([r for r in rows if r["target"] == "chevrolet-equinox-ev-rs"],
+                         "…under the new id, not the old one")
+
+    def test_the_lucid_rows_are_deliberately_left_where_they_are(self):
+        """Pinned here rather than in a commit message, which is where this
+        decision lived and where nothing could check it."""
+        self.assertIn("lucid-air-touring", T.LEGACY_IDS)
+        self.assertIsNone(T.LEGACY_IDS["lucid-air-touring"])
+        rows = T.load_history()
+        kept = [r for r in rows if r["target"] == "lucid-air"]
+        self.assertFalse(kept, "the old rows must not surface under the new id")
+        orphan = [r for r in rows if r["target"].startswith("lucid-air-")]
+        self.assertTrue(orphan, "…and they must still be in the file, untouched")
+        # the measured reason, so a later session cannot 'fix' this by mapping
+        last = max(r["snapshot_date"] for r in orphan)
+        live = [r for r in orphan if r["snapshot_date"] == last]
+        pre = [r for r in live if r["year"] and int(r["year"]) < 2024]
+        self.assertGreater(len(pre) / len(live), 0.5,
+                           "most of these cars are outside the 2024+ rule the "
+                           "whole watchlist is built on, which is why mapping "
+                           "them would publish inventory no query can return")
+
+
 class TestDailySeries(unittest.TestCase):
     """A day row holds what the record knew on that day.
 
