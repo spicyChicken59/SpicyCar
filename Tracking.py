@@ -2102,6 +2102,15 @@ def spend_report(planned_today):
     # starts working. So it is named separately and kept out of `banked`.
     silent = sorted(t["id"] for t in due if not SPENT.get(t["id"]))
     lost = sum(calls_for(t) for t in due if not SPENT.get(t["id"]))
+    # A target that billed a call and got zero RAW records back is neither
+    # silent nor working, and it is the count the owner needs: thirty of the
+    # thirty-six models have never run and their model strings are unverified
+    # guesses, so a string naming something the API does not know bills a call
+    # every cadence, returns `data: []`, and is invisible on every published
+    # surface. RAW_N, not the kept rows: a filter dropping everything is a
+    # different fault from a query finding nothing.
+    empty = sorted(t["id"] for t in due if SPENT.get(t["id"])
+                   and not sum(n for (tid, _), n in RAW_N.items() if tid == t["id"]))
     return {
         "planned": planned_today,
         "actual": actual,
@@ -2110,6 +2119,7 @@ def spend_report(planned_today):
         "banked": planned_today - actual - lost,
         "unrun": lost,
         "silent_targets": silent,
+        "empty_targets": empty,
         "targets_due": len(due),
         "exhausted": len(EXHAUSTED),
         "failed": FAILED_FETCHES,
@@ -2126,6 +2136,10 @@ def report_spend(row, hist):
           + (f" · {banked} banked by {row['exhausted']} exhausted quer"
              f"{'y' if row['exhausted'] == 1 else 'ies'}" if banked > 0 else "")
           + (f" · {row['failed']} wasted on retries" if row["failed"] else ""))
+    if row.get("empty_targets"):
+        print(f"  ! {len(row['empty_targets'])} target(s) spent a call and the API "
+              f"returned nothing — check the model string in targets.json: "
+              f"{', '.join(row['empty_targets'])}")
     if row.get("silent_targets"):
         print(f"  ! {row['unrun']} calls' worth of targets were due and never ran — "
               f"NOT headroom: {', '.join(row['silent_targets'])}")
@@ -3691,11 +3705,15 @@ def trim_detail(sec, t, tl, rows_by_vin, hist, gone, prev_day, as_of):
 def compact_line(m_entry, label):
     """One line per comparison model: counts, the floor, the in-state floor."""
     xs = m_entry["listings"]
-    if not xs and not m_entry["as_of"]:
+    # "not fetched yet" is a claim about the QUERY, so it is false the moment
+    # one has run — even, and especially, when it came back with nothing.
+    if not xs and not m_entry["as_of"] and not m_entry.get("last_asked"):
         return (f"- **{label}** — not fetched yet · first run "
                 f"{m_entry['next_due']} _(every {m_entry['cadence']} days)_")
     if not xs:
-        line = f"- **{label}** — nothing found"
+        line = (f"- **{label}** — nothing found"
+                + (f", asked {m_entry['last_asked']}"
+                   if m_entry.get("last_asked") and not m_entry["as_of"] else ""))
     else:
         priced = [x for x in xs if x["price"] is not None]    # sorted by asking
         local = [x for x in priced if x["local"]]
@@ -3818,6 +3836,10 @@ def build_outputs(today_rows, all_rows, hist):
     full, compact, all_scored = [], [], []      # report sections, assembled at the end
     live_by_vin, gone_by_vin = {}, {}           # shortlist lookups, across every model
     events = {"cuts": [], "new": [], "gone": []}    # what changed today, once
+    # Which days each target was ASKED, from the run's own fetch log. Read
+    # once here rather than per model: delisted() already loads the same file
+    # for every model, and this is the only other reader.
+    asked_log = load_fetch_log()
     for bkey, models in tree.items():
         b_entry = {"label": WATCHLIST[bkey].get("label", bkey),
                    "models": {}}
@@ -3855,6 +3877,24 @@ def build_outputs(today_rows, all_rows, hist):
                 "shopping": shopping,
                 "cadence": min(t["cadence"] for t in trims),
                 "as_of": as_of,
+                # …and the day this model's queries were last ASKED, which is
+                # a different fact and the one "not fetched yet" is really
+                # about. A query that runs and finds nothing writes no row, so
+                # as_of stays None and every surface said "not fetched yet ·
+                # first run <ten days from now>" — the opposite of what
+                # happened — for ever, because next_due always rolls forward.
+                # Thirty of the thirty-six models have never run and their
+                # model strings are unverified guesses; a broken one bills a
+                # call every cadence and is indistinguishable from a target
+                # that has not come round yet.
+                #
+                # Beside as_of and not instead of it: as_of means "the day
+                # this model's cars were last seen" and is_new_on(), the cut
+                # detector, the staleness note and the page's data-through
+                # line all read it. Moving it onto asked-days would make "new
+                # today" compare against a day no listing can carry.
+                "last_asked": max((d for d, per in asked_log.items()
+                                   if tids & set(per or {})), default=None),
                 # Whether this model is IN the day the record's changes are
                 # dated by — a fact about the rows, which is what the two
                 # detectors below need. It read `due_on(t, TODAY_ORD)`, the

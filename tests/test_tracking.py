@@ -3066,6 +3066,93 @@ class TestTheTwoFactsThatNarrowAThirtySixModelMarket(unittest.TestCase):
                          "and it does not divide by an empty night")
 
 
+class TestAQueryThatRanAndFoundNothingSaysSo(unittest.TestCase):
+    """"Not fetched yet" is a claim about the QUERY, not about the cars.
+
+    A query that runs and comes back empty writes no row, so `as_of` stays
+    None — and every surface said "not fetched yet · first run <ten days from
+    now>", which is the opposite of what happened, for ever, because
+    next_due() always rolls forward. Thirty of the thirty-six models have
+    never run and their model strings are unverified guesses ("Countryman
+    Electric,Countryman SE,Countryman SE ALL4", "3,Polestar 3", "VF 8,VF8"):
+    a string naming something the API does not know bills a call every
+    cadence and is indistinguishable from a target that has not come round.
+
+    The record already knew. fetch_log_row() writes {raw: 0, exhausted: true,
+    failed: false} for exactly this, and nothing read it. `last_asked` is that
+    day, carried BESIDE as_of and not instead of it — as_of means "the day
+    this model's cars were last seen" and is_new_on(), the cut detector and
+    the page's data-through line all depend on that.
+    """
+
+    def entry(self, **over):
+        e = {"label": "Tesla Model Y", "listings": [], "as_of": None,
+             "last_asked": None, "next_due": "2026-09-11", "cadence": 10}
+        e.update(over)
+        return e
+
+    def test_a_model_no_query_has_reached_still_says_not_fetched_yet(self):
+        line = T.compact_line(self.entry(), "Tesla Model Y")
+        self.assertIn("not fetched yet", line)
+        self.assertIn("first run 2026-09-11", line)
+
+    def test_a_query_that_ran_and_found_nothing_says_that_instead(self):
+        line = T.compact_line(self.entry(last_asked="2026-09-01"), "Tesla Model Y")
+        self.assertNotIn("not fetched yet", line,
+                         "the query ran; saying it has not is false")
+        self.assertIn("nothing found", line)
+        self.assertIn("asked 2026-09-01", line,
+                      "…and when, or the reader cannot tell a string broken "
+                      "today from one broken a month ago")
+
+    def test_a_model_with_cars_is_untouched_by_either(self):
+        """The control: last_asked must not leak into the ordinary line."""
+        e = self.entry(as_of="2026-09-05", last_asked="2026-09-05",
+                       listings=[{"price": 40000, "local": True, "ship": 0,
+                                  "state": "IL", "city": "Chicago"}])
+        line = T.compact_line(e, "Tesla Model Y")
+        self.assertIn("1 cars", line)
+        self.assertNotIn("nothing found", line)
+        self.assertNotIn("asked", line)
+
+    def test_the_sheet_carries_the_day_the_targets_were_asked(self):
+        rows = T.load_history()
+        days = sorted({r["snapshot_date"] for r in rows})
+        latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+        _, site, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        entries = [m for b in site["brands"].values() for m in b["models"].values()]
+        self.assertTrue(all("last_asked" in m for m in entries),
+                        "every model block carries it, or the page's own "
+                        "predicate reads undefined")
+        asked = [m for m in entries if m["last_asked"]]
+        self.assertTrue(asked, "the committed fetch log names targets that ran")
+        for m in asked:
+            self.assertGreaterEqual(m["last_asked"], "2026-01-01")
+
+    def test_a_target_that_billed_a_call_for_nothing_is_reported(self):
+        """`silent_targets` cannot catch it — a call WAS billed, so the target
+        is not silent. It is the count that tells the owner a model string is
+        wrong, and it had no name."""
+        was = (dict(T.SPENT), dict(T.RAW_N))
+        T.SPENT.clear(); T.RAW_N.clear()
+        try:
+            due = [t for t in T.TARGETS.values() if T.due_on(t, T.TODAY_ORD)]
+            self.assertTrue(due)
+            broken, working = due[0], due[1]
+            T.SPENT[broken["id"]] = 1                       # billed
+            T.SPENT[working["id"]] = 2
+            T.RAW_N[(working["id"], "National")] = 20       # …and got rows
+            row = T.spend_report(T.planned_calls()[0])
+            self.assertIn(broken["id"], row["empty_targets"])
+            self.assertNotIn(working["id"], row["empty_targets"])
+            self.assertNotIn(broken["id"], row["silent_targets"],
+                             "it billed a call, so it is not silent — which is "
+                             "exactly why the existing field cannot catch it")
+        finally:
+            T.SPENT.clear(); T.SPENT.update(was[0])
+            T.RAW_N.clear(); T.RAW_N.update(was[1])
+
+
 class TestDailySeries(unittest.TestCase):
     """A day row holds what the record knew on that day.
 

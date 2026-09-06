@@ -122,6 +122,16 @@ Two things are configured, separately:
   budget filter is the lever that exists; a notion of class is the one that does not,
   and it is on the roadmap rather than quietly patched.
 
+  **Thirty of the thirty-six have never been fetched, and their model strings are
+  unverified guesses.** A string that names something the API does not know bills a call
+  every cadence and comes back empty — and an empty answer writes no row, so the model
+  looks exactly like one whose turn has not come round. Both surfaces tell them apart
+  now: a model no query has reached says "not fetched yet" and names its first run, one
+  whose query ran and found nothing says "asked <date>, nothing found", and the run log
+  names every target that spent a call for zero records. That is the count that says a
+  model string is wrong, and it had no name before — `silent_targets` cannot catch it,
+  because a call *was* billed.
+
   The list is meant to move with the decision. When it narrowed to the i5 against the i7, the
   i4 stood down — at full depth on a daily cadence it was ten calls a day, a third of the whole
   plan, to benchmark a drivetrain the two shopped pages now show directly — and the iX kept its

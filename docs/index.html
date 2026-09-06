@@ -4511,14 +4511,27 @@
     $('dek').textContent = [note, `Asking prices as listed; shipping stated per car.`].filter(Boolean).join(' ');
     const daily = dailyFor(t), nDays = daily.length, nTrims = trimIds(t).length;
     const p = t.params || {}, minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
-    const unfetched = !t.as_of && t.next_due;
+    // "Not fetched yet" is a claim about the QUERY, and it is false the
+    // moment one has run — even, and especially, when it came back empty. A
+    // query that finds nothing writes no row, so as_of stays null and this
+    // said "Not fetched yet · first run <ten days out>" for ever, because
+    // next_due always rolls forward. `last_asked` is the day the model's
+    // targets were last ASKED, off the run's own fetch log.
+    const unfetched = !t.as_of && !t.last_asked && t.next_due;
     metaRow([
-      unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}` : `Data through ${fmtDateLong(t.as_of || dataThrough())}`,
+      unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}`
+        : t.as_of ? `Data through ${fmtDateLong(t.as_of)}`
+        : `Asked ${fmtDateLong(t.last_asked)}, nothing found`,
       t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
       // the day count is the SELECTED VIEW's, so a brand-new trim on a
       // fetched model (a CPO watch before its first run) says so instead of
       // claiming a day it does not have; a never-fetched model claims nothing
-      unfetched ? null : nDays ? `${nDays} snapshot day${nDays === 1 ? '' : 's'}` : 'first fetch pending for this view',
+      // …and a query that already ran and found nothing has no first fetch
+      // pending either. Two clauses of one line contradicted each other the
+      // moment the clause above learned to say "asked, nothing found": the
+      // headline said the query had run and this one said it had not.
+      unfetched || (!t.as_of && t.last_asked) ? null
+        : nDays ? `${nDays} snapshot day${nDays === 1 ? '' : 's'}` : 'first fetch pending for this view',
       nTrims > 1 && !trim ? (comparingTrims() ? `${S.trims.size} of ${nTrims} trims` : `${nTrims} trims`) : null,
       // A CPO watch names its own window instead of the generic depth label —
       // "Deep fetch" describes a cheapest-N sweep, which is not what it does.

@@ -843,6 +843,49 @@ ok('and the meta row never counts the same models twice', !dup,
    dup ? `"${dup}"` : metas.map((m) => '"' + m.replace(/^Data through [^·]+· /, '') + '"').join(' · '));
 });
 
+// --- a query that ran and found nothing is not a query that never ran --------
+// A query that comes back empty writes no row, so `as_of` stays null and the
+// model meta read "Not fetched yet · first run <ten days out>" for ever, since
+// next_due always rolls forward. Thirty of the thirty-six models have never
+// run and their model strings are unverified guesses, so the state this is
+// about — a string that names something the API does not know, billing a call
+// every cadence — is the likeliest thing to happen next on this watchlist.
+await step('a query that found nothing is not a query that never ran', async () => {
+plan('a model no query has reached says it has not been fetched',
+     'and one whose query ran and found nothing says THAT instead');
+const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const victim = (() => {
+  for (const [bk, b] of Object.entries(site.brands || {}))
+    for (const [mk, m] of Object.entries(b.models || {}))
+      if (!(m.listings || []).length && !m.as_of && !m.last_asked) return { bk, mk, m };
+  return null;
+})();
+if (!victim) return skipRest('every model on this sheet has been fetched');
+const meta = () => page.evaluate(() => (document.getElementById('meta').innerText || '').replace(/\s+/g, ' ').trim());
+await open(`?brand=${victim.bk}&m=${victim.mk}`);
+const never = await meta();
+ok('a model no query has reached says it has not been fetched',
+   /Not fetched yet/.test(never) && /first run/.test(never), `"${never}"`);
+// Served: the same model, with the day its query ASKED. Same empty listings,
+// same null as_of — one field different, and the sentence has to change.
+await ctx.route('**/data.json', async (route) => {
+  const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+  sheet.brands[victim.bk].models[victim.mk].last_asked = '2026-09-01';
+  return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+});
+let asked;
+try { await open(`?brand=${victim.bk}&m=${victim.mk}`); asked = await meta(); }
+finally { await ctx.unroute('**/data.json'); }
+ok('and one whose query ran and found nothing says THAT instead',
+   !/Not fetched yet/.test(asked) && /nothing found/i.test(asked) && /Sep 1, 2026|September 1, 2026/.test(asked)
+     // …and no other clause of the same line may still say it has not run.
+     // Both were true at once on the first pass: "Asked Tue, September 1,
+     // 2026, nothing found · Fetched every 4 days · first fetch pending for
+     // this view".
+     && !/first fetch pending/.test(asked),
+   `"${asked}"`);
+});
+
 // ---- ns/NS-09 ----
 await step('the filter count announces itself', async () => {
 // Pressing a chip rewrote the tiles, the map, the chart and the table and
@@ -6147,7 +6190,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 281;
+const EXPECTED = 283;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
