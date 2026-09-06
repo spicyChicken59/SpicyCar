@@ -985,6 +985,106 @@ ok('and every brand is still reachable, pressed one scrolled into view',
 await page.setViewportSize({ width: 1280, height: 1000 });
 });
 
+// --- five chart colours cannot carry thirty-four brands ----------------------
+// brandTone() hands a categorical slot to the first five brands in watchlist
+// order and `chart-other` to the rest — which is not what `other` is for: the
+// sheet folds a SIXTH category into it, singular, not twenty-nine separate
+// ones. Measured on a full-size record, 29 of 36 lines came out byte-identical
+// under a hint that said "colored by brand". Nothing in this file read a
+// stroke, so the whole channel was unasserted.
+await step('the chart draws out what the reader is comparing', async () => {
+plan('the lines a reader is not comparing share one context tone',
+     'and the ones they are get a slot each, and their name at the end',
+     'the legend lists what is drawn and nothing else',
+     'and no sentence on the page says colour is the brand',
+     'and pressing two models nobody is shopping draws THOSE out');
+// Per series, not aggregated: a model with a single day draws as circles and
+// no path at all, so counting paths and comparing the total to the number of
+// series is off by one and says nothing about which line wears which tone.
+const styles = () => page.evaluate(() => {
+  // The LINE's stroke, and only that: the end-point marker is a filled dot
+  // with a white halo stroke, so reading every element's stroke reports
+  // rgb(255,255,255) on every series and a single-day series reports nothing
+  // else at all. `.sc-chart__series` is the path.
+  const tones = {};
+  for (const n of document.querySelectorAll('#chart path.sc-chart__series[data-sid]'))
+    (tones[n.getAttribute('data-sid')] = tones[n.getAttribute('data-sid')] || new Set())
+      .add(getComputedStyle(n).stroke);
+  const by = {};
+  for (const n of document.querySelectorAll('#chart .sc-chart__series')) {
+    const cs = getComputedStyle(n); const k = `${cs.stroke}|${cs.strokeDasharray}`;
+    by[k] = (by[k] || 0) + 1;
+  }
+  return { by, tones: Object.fromEntries(Object.entries(tones).map(([k, v]) => [k, [...v]])),
+           n: document.querySelectorAll('#chart .sc-chart__series').length,
+           context: getComputedStyle(document.documentElement).getPropertyValue('--sc-chart-context').trim(),
+           labels: [...document.querySelectorAll('#chart text')].map((t) => t.textContent)
+             .filter((t) => /[A-Za-z]/.test(t) && !/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(t)),
+           chips: [...document.querySelectorAll('#legend .sc-legend__chip')].map((c) => c.textContent.trim()),
+           drawn: [...new Set([...document.querySelectorAll('#chart [data-sid]')].map((n) => n.getAttribute('data-sid')))],
+           hint: (document.getElementById('chart-hint') || {}).textContent || '' };
+});
+await open('');
+const o = await styles();
+if (!o.n) return skipRest('no model on this sheet has price history to draw');
+// The shopped models are BMW's, so every non-BMW line must share one tone.
+const shoppedBrands = new Set(Object.entries(SHEET.brands)
+  .filter(([, b]) => Object.values(b.models || {}).some((m) => m.shopping)).map(([bk]) => bk));
+const otherDrawn = o.drawn.filter((id) => !shoppedBrands.has(id.split('/')[0]));
+// Each series against the context colour the sheet itself defines, so a
+// palette change cannot quietly satisfy this.
+const ctx = o.context.toLowerCase();
+const asRgb = (hex) => { const h = hex.replace('#', '');
+  return `rgb(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)})`; };
+const want = ctx.startsWith('#') ? asRgb(ctx) : ctx;
+// A series with no path drew a single point and has no line tone to judge.
+const lined = (id) => (o.tones[id] || []).length > 0;
+const offFocus = otherDrawn.filter((id) => lined(id) && o.tones[id].some((t) => t !== want));
+const onFocus = o.drawn.filter((id) => shoppedBrands.has(id.split('/')[0])
+  && lined(id) && o.tones[id].some((t) => t === want));
+ok('the lines a reader is not comparing share one context tone',
+   offFocus.length === 0 && onFocus.length === 0,
+   `context ${want} · ${otherDrawn.filter(lined).length} lined series outside the shopped brands`
+   + (offFocus.length ? ` · NOT context: ${offFocus.join(', ')}` : '')
+   + (onFocus.length ? ` · shopped but grey: ${onFocus.join(', ')}` : '')
+   + ` · ${JSON.stringify(o.tones)}`);
+ok('and the ones they are get a slot each, and their name at the end',
+   [...shoppedBrands].every((bk) => o.labels.some((l) => o.drawn.some((id) => id.startsWith(bk + '/'))
+     && l.includes(SHEET.brands[bk].label || bk))),
+   `end labels ${JSON.stringify(o.labels)} · shopped ${[...shoppedBrands].join(',')}`);
+ok('the legend lists what is drawn and nothing else',
+   o.chips.length === o.drawn.length,
+   `${o.chips.length} chips over ${o.drawn.length} drawn series (was 36 chips over 7)`);
+const prose = [o.hint, await page.textContent('#map-hint').catch(() => '')].join(' ');
+ok('and no sentence on the page says colour is the brand',
+   !/colou?red by brand|colou?r is the brand/i.test(prose)
+     // …and the sentence that replaced it counts BRANDS, which is the
+     // population the hue channel would have to carry. It said "36 models"
+     // beside the right number, which is this repo's oldest defect shape.
+     && new RegExp(`cannot carry ${Object.keys(SHEET.brands || {}).length} brands`).test(prose),
+   `"${prose.replace(/\s+/g, ' ').slice(0, 200)}"`);
+
+// A SECOND state, because with nothing pressed the focus set IS the shopped
+// brands and `labeled: focus.has(bk)` cannot be told from `labeled:
+// m.shopping` — which is a mutant that survived on the first pass. Pressing
+// two models nobody is shopping is the state that separates them.
+const unshopped = Object.entries(SHEET.brands)
+  .filter(([, b]) => Object.values(b.models || {}).every((m) => !m.shopping))
+  .flatMap(([bk, b]) => Object.entries(b.models || {}).map(([mk, m]) => ({ bk, mk, m })))
+  .filter(({ m }) => (m.daily || []).length >= 2).slice(0, 2);
+if (unshopped.length < 2) skip('and pressing two models nobody is shopping draws THOSE out',
+                               'fewer than two unshopped models have history to draw');
+else {
+  await open('?models=' + unshopped.map(({ bk, mk }) => `${bk}-${mk}`).join(','));
+  const p2 = await styles();
+  const wanted = unshopped.map(({ bk, mk }) => `${bk}/${mk}`);
+  const named = wanted.every(({ }, i) => p2.labels.some((l) => l.includes(unshopped[i].m.label)));
+  const coloured = wanted.every((id) => (p2.tones[id] || []).every((t) => t !== want));
+  ok('and pressing two models nobody is shopping draws THOSE out', named && coloured,
+     `${wanted.join(', ')} · end labels ${JSON.stringify(p2.labels)} · tones ${JSON.stringify(p2.tones)}`);
+}
+});
+
 // ---- ns/NS-09 ----
 await step('the filter count announces itself', async () => {
 // Pressing a chip rewrote the tiles, the map, the chart and the table and
@@ -6301,7 +6401,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 286;
+const EXPECTED = 291;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

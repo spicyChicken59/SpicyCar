@@ -1884,7 +1884,13 @@
     const more = [offMap ? `${offMap} more beyond the lower 48` : '', noLoc ? `${noLoc} with no location` : ''].filter(Boolean);
     $('map-hint').textContent = `${onMap} cars under the current filters`
       + (more.length ? ` (${more.join(', ')})` : '')
-      + (mode === 'model' ? ' — tap a dot for the car' : ', colored by brand — tap a dot for the car')
+      // Filled and hollow lead, because that is the channel this map can
+      // really carry at a thousand dots: five categorical slots against
+      // thirty-four brands means most of them share one grey, and saying
+      // "colored by brand" told the reader a channel was carrying something
+      // it is not. The five it does colour are named rather than implied.
+      + (mode === 'model' ? ' — tap a dot for the car'
+         : ' — filled dots are drivable, hollow ones pay shipping; tap a dot for the car')
       + (noPointer
           ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
           : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
@@ -5486,9 +5492,40 @@
   }
 
   // the chart: every model's lowest asking price over time — one line per
-  // model, colored by brand, dashed by model within the brand, the shopped
-  // models drawn heavier. The legend is the control: click a chip to hide
-  // or show a model; hover one to pick its line out of the crowd.
+  // model, dashed by model within its brand, with colour and weight on the
+  // models being compared and everything else in context grey. The legend is
+  // the control: click a chip to hide or show a model; hover one to pick its
+  // line out of the crowd.
+  // Which series hue is actually carrying, and it is not the brand any more.
+  // Five categorical slots exist — sc.css: "Categorical: fixed order, never
+  // cycled. 5 slots; a 6th folds to 'Other'" — and the watchlist has
+  // thirty-four brands. brandTone() hands a slot to the first five in
+  // watchlist order and `chart-other` to the rest, which is not what `other`
+  // is for: the sheet folds a SIXTH category into it, singular, not
+  // twenty-nine separate ones. Measured on the full-size record, 29 of 36
+  // lines came out byte-identical — same stroke, no dash, same width — under
+  // a hint that said "colored by brand", so a grey line at $28K was Tesla or
+  // Rolls-Royce or Fiat with equal probability.
+  //
+  // §8's answer for this case is Emphasis: "the series that matters in
+  // --sc-chart-emphasis, the rest in --sc-chart-context gray". The series
+  // that matters is the one the reader is comparing — the models they
+  // pressed, or the ones they are shopping when they have pressed nothing —
+  // so hue keeps working for the two or three lines anybody is actually
+  // reading and stops pretending for the other thirty. Brands, not models,
+  // because dash still separates a brand's own models and that channel is
+  // documented and works.
+  function chartFocus(inView) {
+    const base = S.models.size ? inView : inView.filter(({ m }) => m.shopping);
+    const brands = [...new Set(base.map(({ bk }) => bk))].slice(0, BRAND_TONES.length);
+    return new Map(brands.map((bk, i) => [bk, BRAND_TONES[i]]));
+  }
+  const focusTone = (focus, bk) => focus.get(bk) || 'chart-context';
+  // One rule for every surface that draws a model against the others, so a
+  // sparkline in the index and a line in the chart can never disagree about
+  // which brand is being drawn out.
+  const modelTone = (bk) => focusTone(chartFocus(modelsInView()), bk);
+
   function renderOverviewChart(rows) {
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'The market over time';
@@ -5499,6 +5536,8 @@
     const nDays = drawn.length;
     const obits = filterBits(true);
     chartScopeChip(obits);
+    const hintFocus = chartFocus(modelsInView());
+    const focusNames = [...hintFocus.keys()].map((bk) => brandLabel(bk));
     // Describe the days actually drawn, not the record: spanText() with no
     // argument reports every model's national history, which was the right
     // answer only while these lines were national. Under a filter it claimed
@@ -5507,7 +5546,15 @@
     $('chart-hint').textContent = (nDays === 0
       ? `No tracked car matches these filters, so there is no history to draw${obits.length ? ` — ${obits.join(' · ')}` : ''}. `
       : (nDays >= 2
-          ? 'Lowest asking price each day among the cars in view — one line per model, colored by brand, the models being shopped drawn heavier. '
+          ? 'Lowest asking price each day among the cars in view, one line per model. '
+            + (focusNames.length
+                // BRANDS, not models: the palette has five categorical slots
+                // and the constraint is how many brands there are to tell
+                // apart, which is what the hue channel would have to carry.
+                // Saying "36 models" named the wrong population beside the
+                // right number.
+                ? `Colour and weight are on ${focusNames.join(' and ')}; every other model is context grey, because five chart colours cannot carry ${Object.keys((S.site || {}).brands || {}).length} brands. `
+                : 'No model is named as one you are shopping and none is selected, so no line is drawn out — press a model chip to pick some out. ')
           : allModels().some(({ m }) => (m.daily || []).length >= 2)
             ? 'Only one snapshot day has a car in this scope. '
             : 'One snapshot so far for most models — lines fill in as daily runs accumulate. ')
@@ -5517,11 +5564,19 @@
     const highlightSeries = (id) => {
       for (const n of $('chart').querySelectorAll('[data-sid]')) n.style.opacity = (!id || n.getAttribute('data-sid') === id) ? '' : '0.15';
     };
+    // A chip toggles a LINE, so a chip for a model with no line is a control
+    // that does nothing. Thirty-six chips stood over six lines — 243px of
+    // legend on a desktop and 1,070px on a phone, taller than the 340px chart
+    // it belongs to — because thirty of the thirty-six models have no history
+    // to draw yet. The legend lists what is drawn.
+    const inView = modelsInView();
+    const focus = chartFocus(inView);
+    const drawable = inView.filter(({ bk, mk }) => (seriesOf.get(bk + '/' + mk) || []).length);
     const lg = $('legend'); lg.textContent = '';
-    for (const { bk, mk, m } of modelsInView()) {
+    for (const { bk, mk, m } of drawable) {
       const id = bk + '/' + mk, off = S.hidden.has(id);
       const sample = svgEl('svg', { width: 24, height: 10, viewBox: '0 0 24 10', 'aria-hidden': 'true' },
-        svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, style: 'stroke:' + SC.toneRef(brandTone(bk)), 'stroke-width': m.shopping ? 3 : 2,
+        svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, style: 'stroke:' + SC.toneRef(focusTone(focus, bk)), 'stroke-width': m.shopping ? 3 : 2,
                         'stroke-dasharray': modelDash(bk, mk) || null, 'stroke-linecap': 'round', opacity: off ? 0.35 : 1 }));
       lg.appendChild(el('button', { class: 'sc-legend__chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
         'data-fkey': 'legend:' + id,
@@ -5533,11 +5588,15 @@
         onmouseleave: () => highlightSeries(null) },
         sample, el('span', null, m.label)));
     }
-    lineChart($('chart'), modelsInView()
+    lineChart($('chart'), drawable
       .filter(({ bk, mk }) => !S.hidden.has(bk + '/' + mk))
       .map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label, emphasis: !!m.shopping,
-        tone: brandTone(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
-        labeled: !!m.shopping, points: seriesOf.get(bk + '/' + mk) || [] })),
+        tone: focusTone(focus, bk), dash: modelDash(bk, mk), width: focus.has(bk) ? 2.5 : 1.5,
+        // Every focused line is end-labelled, not only the shopped ones. §8:
+        // "a line chart that reaches slots 4-5 end-labels or marks its series
+        // (1 and 4 merge under deuteranopia)". Audi is slot 4 and its line is
+        // drawn on the committed page today, labelled by nothing.
+        labeled: focus.has(bk), points: seriesOf.get(bk + '/' + mk) || [] })),
       { named: true, height: 340, empty: 'No car in this scope has price history yet.' });
     const tb = $('chart-table'); tb.textContent = '';
     const dates = [...new Set(rows.flatMap((r) => seriesFor(r).map((p) => p.date)))].sort().reverse();
@@ -5802,7 +5861,7 @@
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'open:' + r.bk + '/' + r.mk, onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
       const data = oBandSlim ? null : el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, dataTxt));
-      const trend = oBandSlim ? null : el('td', null, spark(r.trend, 80, 26, false, brandTone(r.bk)));
+      const trend = oBandSlim ? null : el('td', null, spark(r.trend, 80, 26, false, modelTone(r.bk)));
       obody.appendChild(el('tr', { class: 'is-clickable', title: 'Open ' + r.label,
         onclick: (e) => { if (e.target.closest('a, button')) return; goTo(r.bk, r.mk); } },
         modelCell,

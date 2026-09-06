@@ -262,14 +262,14 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   actually have it. Below
   that: **your shortlist**, a table of the cars you starred yourself, side by side (four states per
   star — none, shortlisted, called, ruled out — kept in the browser, because a config edit needs a
-  commit and a decision does not); spicy picks, brand-coloured trend lines, a **model index** table, a **market map** — on the front page
+  commit and a decision does not); spicy picks, trend lines, a **model index** table, a **market map** — on the front page
   and every model page: each car at its own coordinates, filled when drivable, hollow when it pays
   shipping, spicy picks ringed and shortlisted
   cars drawn in the accent, photos on hover (on a phone, tap previews and a second tap opens),
   and a view that zooms to whatever the Where filter selects (plus pinch or Ctrl-scroll zoom and
   drag pan) — and one
   **market-over-time chart** —
-  colour is the brand, the dash is the model, the shopped models are drawn heavier, an
+  colour and weight are on the models you are comparing and every other line is context grey (five chart colours cannot carry thirty-four brands), the dash is the model within its brand, an
   interactive legend hides, shows and highlights any line, and 30d / 90d / All chips set a
   remembered time window with the price scale fitted to it. A **budget** — all in, or a month —
   narrows every one of them and is remembered between visits; when it empties one of the models you
