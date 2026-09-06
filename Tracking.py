@@ -1941,8 +1941,18 @@ def window_dim(t):
     """Which axis a target's fetch window lives on. A cheapest-N fetch is
     bounded in dollars; the CPO watches sort by miles.asc only, so their
     window is bounded in miles — judging their departures by a price
-    cut-off would compare against a number that never gated anything."""
-    return "price" if "price.asc" in (t.get("sorts") or []) else "miles"
+    cut-off would compare against a number that never gated anything.
+
+    The sorts a run FETCHES, not the sorts a config lists. Eleven of the
+    fourteen targets name both price.asc and miles.asc and are `light` depth,
+    which opens only the first of them — the same config-versus-fetch gap
+    departures_are_separable() and window_reconstructable() already ask
+    sorts_pages() about. It is right today only because price.asc happens to be
+    written first everywhere: list a light target as miles.asc, price.asc and
+    the run would open a MILES window while this said price, and every one of
+    that target's departures would be judged against a number that never gated
+    anything — which is the sentence above, inverted."""
+    return "price" if "price.asc" in sorts_pages(t)[0] else "miles"
 EXHAUSTED = set()      # (target id, source): a query came back short, so it returned
                        # that scope's ENTIRE result set — no cheapest-N cut-off applies
 FAILED_FETCHES = 0     # requests that still failed after the retry

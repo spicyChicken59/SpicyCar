@@ -2986,6 +2986,49 @@ class TestTheDaysToSaleClauseNamesItsOwnDenominator(unittest.TestCase):
         self.assertEqual((st["n_sold"], st["n_departures"]), (14, 14))
 
 
+class TestTheWindowAxisIsTheOneTheRunOpened(unittest.TestCase):
+    """window_dim() read the sorts a config LISTS, not the ones a run fetches.
+
+    Eleven of the fourteen targets name both price.asc and miles.asc and are
+    `light` depth, which opens only the first — the same config-versus-fetch gap
+    departures_are_separable() and window_reconstructable() already close by
+    asking sorts_pages(). It gave the right answer only because price.asc
+    happens to be written first everywhere.
+    """
+
+    @staticmethod
+    def target(**kw):
+        t = {"id": "t", "sorts": ["price.asc", "miles.asc"], "pages": 2,
+             "depth": "light"}
+        t.update(kw)
+        return t
+
+    def test_a_light_target_is_judged_on_the_sort_it_actually_opens(self):
+        self.assertEqual(T.window_dim(self.target(sorts=["miles.asc", "price.asc"])),
+                         "miles",
+                         "light depth opens the first sort only, and that one is "
+                         "bounded in miles")
+        self.assertEqual(T.window_dim(self.target(sorts=["price.asc", "miles.asc"])),
+                         "price")
+
+    def test_a_full_target_is_judged_on_all_of_them(self):
+        self.assertEqual(T.window_dim(self.target(depth="full",
+                                                  sorts=["miles.asc", "price.asc"])),
+                         "price", "a full target really opens both")
+        self.assertEqual(T.window_dim(self.target(depth="full", sorts=["miles.asc"])),
+                         "miles")
+
+    def test_the_shipped_watchlist_is_unchanged_by_the_fix(self):
+        """It was right on every target, and by accident: price.asc is written
+        first in each of the eleven. This is the check that says the fix moved
+        nothing today."""
+        for t in T.TARGETS.values():
+            want = "price" if "price.asc" in T.sorts_pages(t)[0] else "miles"
+            self.assertEqual(T.window_dim(t), want, t["id"])
+        self.assertEqual(T.window_dim(T.TARGETS["bmw-i5-cpo"]), "miles",
+                         "the certified watch sorts by mileage and always did")
+
+
 class TestThePlanCoversAWholeCycle(unittest.TestCase):
     """The budget guard looked fourteen days ahead at a schedule that repeats
     on the LCM of the cadences.
