@@ -361,6 +361,20 @@ Parameters resolve trim ← model ← brand ← defaults:
 | `newest` | extra newest-first (`createdAt.desc`) pages per source, so brand-new listings are caught the day they list. On for the shopped targets; new cars lead their report section as **New today**. Skipped automatically when a query already returned its whole scope. |
 | `years` | model years; sent as a range and also filtered client-side |
 
+**Two columns the record keeps and nothing reads yet.** `seats` and `drivetrain` are how a
+person goes from every EV on sale to the six worth looking at — "three rows", "all-wheel
+drive" — and neither was recoverable from anything else the CSV held: seats appears nowhere,
+and drivetrain only inside the trim string, and only for the brands whose trim encodes it (an
+i5 eDrive40 against an xDrive40, but a Model Y Long Range against a Model Y Long Range AWD,
+and nothing at all on most of the rest). They are recorded before they are read on purpose:
+the filters they are for are worth building once the record shows the feed *fills* them, and
+this repo has one sample listing to judge that from. The run log prints the coverage every
+night — "seats on 312 of 323 (97%)" — and one real night decides whether those filters get
+built or the columns come back out. `drivetrain` is folded to AWD / RWD / FWD, because that
+is the question a buyer asks and because 4WD and AWD are the same answer to it on a car with
+no transfer case; an unrecognised string is dropped rather than passed through, so the column
+holds a vocabulary and not whatever a dealer typed.
+
 A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as
 another key under `watchlist`; the dashboard grows a brand tab. Check the printed call plan after
 any change — it shows today, the worst day of the cycle it covers, and the monthly average. The

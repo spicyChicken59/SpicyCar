@@ -2944,11 +2944,35 @@ class TestAnEvScreenerChecksThatACarIsAnEv(unittest.TestCase):
 
     def test_the_electric_car_the_sample_record_is_still_gets_through(self):
         """The control. Without it a guard that refused everything would pass
-        every assertion above."""
+        every assertion above.
+
+        And it is only a control if the fixture SAYS electric. It did not: the
+        `clean` record carried 9 of the 21 vehicle fields the API returns, with
+        no fuel among them, so this passed on a record that says nothing rather
+        than on one that says Electric — a control that could not tell the two
+        apart. The fixture mirrors the real record field for field now, and
+        test_the_clean_fixture_is_shaped_like_a_real_record keeps it that way.
+        """
+        self.assertIs(T.is_battery_electric(self.rec()), True,
+                      "the fixture has to SAY electric for this to control "
+                      "anything")
         d = Counter()
         self.assertIsNotNone(T.normalize(self.rec(), self.t, d),
                              "the shipped sample record is an electric M60")
         self.assertEqual(d["not a battery EV"], 0)
+
+    def test_the_clean_fixture_is_shaped_like_a_real_record(self):
+        """A fixture missing a field the API always sends is a fixture
+        describing a response the API does not produce, and every test built
+        on it is asking a question the real feed never asks. `clean` had
+        drifted to 9 of 21 vehicle fields; this is what stops it drifting
+        again, and it names data/sample_record.json — a genuine API response
+        the run itself wrote — as the standard."""
+        real = json.loads(Path("data/sample_record.json").read_text())
+        missing = sorted(set(real["vehicle"]) - set(FIXTURES["clean"]["vehicle"]))
+        self.assertEqual(missing, [],
+                         "the clean fixture is missing vehicle fields the API "
+                         f"really returns: {missing}")
 
     def test_a_feed_that_says_nothing_is_not_evidence_of_petrol(self):
         """None is not False. Refusing on an absent field would empty a whole
@@ -2964,6 +2988,82 @@ class TestAnEvScreenerChecksThatACarIsAnEv(unittest.TestCase):
         self.assertIs(T.is_battery_electric(self.rec(fuel=None, type=None, engine="Electric")), True)
         self.assertIs(T.is_battery_electric(self.rec(fuel="Gasoline", type="Electric")), False,
                       "the first field the feed filled is the one that answers")
+
+
+class TestTheTwoFactsThatNarrowAThirtySixModelMarket(unittest.TestCase):
+    """`seats` and `drivetrain` — kept, and honest about not being read yet.
+
+    "Three rows" and "all-wheel drive" are how a person goes from every EV on
+    sale to the six worth looking at, and neither was recoverable from
+    anything the record kept: seats appears nowhere else, and drivetrain only
+    inside the trim string, only for the brands whose trim encodes it — an i5
+    eDrive40 against an xDrive40, but a Model Y Long Range against a Model Y
+    Long Range AWD, and nothing at all on most of the rest.
+
+    They are recorded before they are read on purpose. The filters they are
+    for are worth building once the record shows the feed FILLS them, and this
+    repo has one sample listing to judge that from, which is not evidence. The
+    run log counts the coverage so one real night decides it.
+    """
+
+    def setUp(self):
+        self.dropped = Counter()
+        self.t = T.TARGETS["bmw-i5-m60"]
+
+    def rec(self, **over):
+        r = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                           if not k.startswith("_")})
+        for k, v in over.items():
+            if v is None:
+                r["vehicle"].pop(k, None)
+            else:
+                r["vehicle"][k] = v
+        return r
+
+    def test_both_are_kept_from_the_record_the_api_really_returns(self):
+        n = T.normalize(self.rec(), self.t, self.dropped)
+        self.assertEqual(n["seats"], 5)
+        self.assertEqual(n["drivetrain"], "AWD")
+
+    def test_the_drivetrain_column_holds_a_vocabulary_not_a_dealer_string(self):
+        """Folded to three words, because that is the question a buyer asks
+        and because 4WD and AWD are the same answer to it on a car with no
+        transfer case. An unrecognised string is dropped rather than passed
+        through, or the column is whatever a dealer typed."""
+        for raw, want in (("AWD", "AWD"), ("4WD", "AWD"), ("4x4", "AWD"),
+                          ("All Wheel Drive", "AWD"), ("all-wheel drive", "AWD"),
+                          ("RWD", "RWD"), ("Rear Wheel Drive", "RWD"),
+                          ("FWD", "FWD"), ("Front-Wheel Drive", "FWD"),
+                          ("Direct Drive", ""), ("", ""), ("wat", "")):
+            self.assertEqual(T.drivetrain_of(self.rec(drivetrain=raw)), want, raw)
+
+    def test_a_feed_that_says_nothing_leaves_them_blank_not_wrong(self):
+        n = T.normalize(self.rec(seats=None, drivetrain=None), self.t, self.dropped)
+        self.assertEqual(n["seats"], "")
+        self.assertEqual(n["drivetrain"], "")
+
+    def test_the_columns_are_in_the_file_and_old_rows_read_blank(self):
+        """load_history() normalises every row to FIELDS, so a column added
+        today is "" on every row written before it rather than a KeyError in
+        whatever reads it next."""
+        self.assertIn("seats", T.FIELDS)
+        self.assertIn("drivetrain", T.FIELDS)
+        rows = T.load_history()
+        self.assertTrue(rows)
+        self.assertTrue(all("seats" in r and "drivetrain" in r for r in rows))
+        self.assertEqual({r["drivetrain"] for r in rows}, {""},
+                         "every committed row predates the column")
+
+    def test_the_run_says_how_often_the_feed_filled_them(self):
+        """The coverage line is the whole justification for keeping a field
+        nothing reads. Without it the columns are a guess that never resolves.
+        """
+        rows = [{"seats": 5, "drivetrain": "AWD"}, {"seats": "", "drivetrain": "RWD"},
+                {"seats": 7, "drivetrain": ""}, {"seats": "", "drivetrain": ""}]
+        self.assertEqual(T.field_coverage(rows, ("seats", "drivetrain")),
+                         {"seats": 2, "drivetrain": 2})
+        self.assertEqual(T.field_coverage([], ("seats",)), {"seats": 0},
+                         "and it does not divide by an empty night")
 
 
 class TestDailySeries(unittest.TestCase):

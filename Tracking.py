@@ -111,6 +111,10 @@ FIELDS = ["snapshot_date", "target", "vin", "year", "trim", "miles",
           "price", "dealer", "city", "state", "listed_since", "url",
           "msrp", "color", "cpo", "owners", "accidents", "usage", "image",
           "carfax", "lat", "lon", "distance",
+          # See normalize(): the two facts that narrow a thirty-six-model
+          # market. Blank on every row written before this column existed,
+          # and blank whenever the feed does not say.
+          "seats", "drivetrain",
           # WHICH QUERIES RETURNED THIS ROW, pipe-joined "Source:sort" tokens
           # (e.g. "National:miles.asc|States:price.asc"). A target fetching
           # both price.asc and miles.asc has TWO windows, and without this
@@ -1989,6 +1993,22 @@ SOURCE_VINS = {}       # (target id, source) -> the VINs that source returned to
                        # brought back.
 
 
+def field_coverage(rows, fields):
+    """How often the feed actually filled each of `fields`, over today's rows.
+
+    A field the record keeps and nothing reads is worth exactly as much as the
+    evidence that it is populated. `seats` and `drivetrain` are kept so that
+    "three rows" and "all-wheel drive" can one day narrow thirty-six models to
+    six — and this repo has ONE sample listing to judge coverage from, which is
+    not evidence. So the run says it, every night, and one real night decides
+    whether those filters are worth building or whether the fields should come
+    back out.
+    """
+    n = len(rows)
+    return {f: sum(1 for r in rows if str(r.get(f, "")).strip() not in ("", "0"))
+            for f in fields} if n else {f: 0 for f in fields}
+
+
 def source_overlap(rows):
     """What the States query bought today that National did not already bring.
 
@@ -2501,6 +2521,26 @@ def fetch(source_name, source, sort, page, t):
     return None
 
 
+DRIVETRAINS = {"AWD": "AWD", "ALL WHEEL DRIVE": "AWD", "ALL-WHEEL DRIVE": "AWD",
+               "4WD": "AWD", "4X4": "AWD", "FOUR WHEEL DRIVE": "AWD",
+               "RWD": "RWD", "REAR WHEEL DRIVE": "RWD", "REAR-WHEEL DRIVE": "RWD",
+               "FWD": "FWD", "FRONT WHEEL DRIVE": "FWD", "FRONT-WHEEL DRIVE": "FWD"}
+
+
+def drivetrain_of(rec):
+    """AWD / RWD / FWD, or "" when the feed did not say.
+
+    Folded to three words because that is the question a buyer asks — in
+    Chicago, in February — and because 4WD and AWD are the same answer to it
+    on an electric car: none of these thirty-six has a transfer case. An
+    unrecognised string is dropped rather than passed through, so the column
+    holds a vocabulary and not whatever a dealer typed.
+    """
+    raw = str(first(rec, ["vehicle.drivetrain", "vehicle.driveType",
+                          "vehicle.drive"], "")).strip().upper()
+    return DRIVETRAINS.get(raw, "")
+
+
 def is_battery_electric(rec):
     """Is this listing a battery EV, as the record itself says?
 
@@ -2623,6 +2663,21 @@ def normalize(rec, t, dropped):
         "owners": int_or_blank(dig(rec, "history.ownerCount")),
         "accidents": int_or_blank(dig(rec, "history.accidentCount")),
         "usage": first(rec, ["history.usageType"]),
+        # The two facts that narrow a thirty-six-model market to a shortlist,
+        # and the two the record threw away. "Three rows" and "all-wheel
+        # drive" are how a person goes from every EV on sale to the six worth
+        # looking at, and neither was recoverable from anything kept: seats is
+        # nowhere else at all, and drivetrain is only in the trim string, and
+        # only for the brands whose trim happens to encode it (an i5 eDrive40
+        # against an xDrive40 — but a Model Y Long Range against a Model Y
+        # Long Range AWD, and nothing at all on most of the rest).
+        #
+        # Recorded before they are read: the filters they are for are worth
+        # building once the record shows the feed FILLS them, and this repo
+        # has one sample listing to go on. The run log counts the coverage
+        # (see fetch_coverage) so one real night answers it.
+        "seats": int_or_blank(dig(rec, "vehicle.seats")),
+        "drivetrain": drivetrain_of(rec),
         "image": first(rec, ["retailListing.primaryImage"]),
         "carfax": first(rec, ["retailListing.carfaxUrl"]),
         "lat": "" if lat is None else round(lat, 5),
@@ -4255,6 +4310,17 @@ def main():
     print(f"API calls made: {CALLS}"
           + (f" · {FAILED_FETCHES} failed after retry" if FAILED_FETCHES else "")
           + (f" · {len(EXHAUSTED)} exhaustive queries" if EXHAUSTED else ""))
+    cov = field_coverage(list(rows.values()), ("seats", "drivetrain"))
+    if rows:
+        print("Coverage of the fields nothing reads yet: "
+              # pct(), like every other share this file prints: the guard on
+              # :.0% is blunt on purpose and it is right to be, even though
+              # nothing recomputes THIS line — one rounding rule everywhere
+              # is cheaper than an exemption list.
+              + " · ".join(f"{f} on {n} of {len(rows)} ({pct(n / len(rows))}%)"
+                           for f, n in cov.items())
+              + "\n  (a filter for either is worth building only once this is "
+                "high — see normalize())")
     OVERLAP.update(source_overlap(rows))
     report_source_overlap(OVERLAP)
     save_overlap_history(OVERLAP)
