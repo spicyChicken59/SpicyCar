@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SpicyChicken Design System — sc.css  v2.8.0
+   SpicyChicken Design System — sc.css  v2.9.0
    Mohammed Tahir Madni · github.com/spicyChicken59
 
    One file, no build step. Drop it in (or link it) and every page shares the
@@ -497,6 +497,29 @@ a.sc-btn[aria-disabled="true"] { pointer-events: none; }   /* stops the click, n
 .sc-table .sc-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sc-table--compact tbody td { padding: 7px 10px; font-size: 13px; }
 
+/* Signal matrix — a visual cross-check for candidates × criteria. It remains
+   a native table: color reinforces the written label and never carries meaning alone. */
+.sc-signal-matrix { border-collapse: separate; border-spacing: 4px; min-width: 680px; }
+.sc-signal-matrix thead th { position: sticky; top: 0; z-index: 2; padding: 8px 10px; border: 0; background: var(--sc-surface); text-align: center; }
+.sc-signal-matrix thead th:first-child { left: 0; z-index: 4; text-align: left; }
+.sc-signal-matrix tbody tr, .sc-signal-matrix tbody tr:hover { background: transparent; }
+.sc-signal-matrix tbody :is(th,td) { min-width: 104px; padding: 0; overflow: hidden; border: 1px solid var(--sc-border); border-radius: var(--sc-r-sm); background: var(--sc-surface); vertical-align: stretch; transition: border-color var(--sc-motion) var(--sc-ease), box-shadow var(--sc-motion) var(--sc-ease); }
+.sc-signal-matrix tbody th { position: sticky; left: 0; z-index: 3; min-width: 168px; padding: 12px; color: var(--sc-heading); text-align: left; font-weight: 650; }
+.sc-signal-matrix tbody tr:hover :is(th,td), .sc-signal-matrix tbody tr:focus-within :is(th,td) { border-color: var(--sc-border-control); }
+.sc-signal-matrix tbody td.is-best { border-color: var(--sc-accent); box-shadow: inset 0 3px 0 var(--sc-accent); background: var(--sc-accent-fill); }
+.sc-signal-matrix--values tbody td { padding: 12px; line-height: 1.45; }
+.sc-signal-matrix tbody td.sc-signal-matrix__value { padding: 12px; line-height: 1.45; }
+.sc-signal-matrix__name { display: block; }
+.sc-signal-matrix__note { display: block; margin-top: 3px; color: var(--sc-text-2); font: 500 10px/1.45 var(--sc-font-mono); }
+.sc-signal { box-sizing: border-box; display: grid; place-content: center; justify-items: center; gap: 5px; min-height: 72px; padding: 10px 8px; color: var(--sc-text-2); background: var(--sc-raised); text-align: center; }
+.sc-signal__glyph { color: var(--sc-heading); font: 700 18px/1 var(--sc-font-mono); }
+.sc-signal__label { font: 600 10px/1.3 var(--sc-font-mono); letter-spacing: .25px; text-transform: lowercase; }
+.sc-signal--good { color: var(--sc-good); background: var(--sc-good-fill); }
+.sc-signal--caution { color: var(--sc-warn); background: var(--sc-warn-fill); }
+.sc-signal--blocked { color: var(--sc-danger); background: var(--sc-danger-fill); }
+.sc-signal--info { color: var(--sc-info); background: var(--sc-info-fill); }
+.sc-signal--good .sc-signal__glyph, .sc-signal--caution .sc-signal__glyph, .sc-signal--blocked .sc-signal__glyph, .sc-signal--info .sc-signal__glyph { color: currentColor; }
+
 /* Tooltip — ink surface, values lead. Hidden from AT while off (visibility), fades on. */
 .sc-tooltip { position: absolute; z-index: 5; pointer-events: none; background: var(--sc-ink); color: var(--sc-on-ink); border: 1px solid var(--sc-border-strong); border-radius: var(--sc-r-sm); padding: 8px 11px; font: 400 13px/1.5 var(--sc-font-body); min-width: 150px; box-shadow: var(--sc-shadow-pop); opacity: 0; visibility: hidden; transition: opacity var(--sc-motion) var(--sc-ease), visibility 0s linear var(--sc-motion); }
 .sc-tooltip.is-on { opacity: 1; visibility: visible; transition-delay: 0s; }
@@ -963,6 +986,9 @@ img.sc-mark--lg { height: 48px; }
 @media (max-width: 480px) {
   .sc-stat-strip { grid-template-columns: minmax(0,1fr); }
   .sc-stat-strip > .sc-stat + .sc-stat { border-left: 0; border-top: 1px solid var(--sc-border); }
+  .sc-signal-matrix { min-width: 600px; }
+  .sc-signal-matrix tbody :is(th,td) { min-width: 92px; }
+  .sc-signal-matrix tbody th { min-width: 136px; }
 }
 @media (max-width: 720px) {
   .sc-sheet-stack { padding: 0; gap: var(--sc-s3); background: var(--sc-bg); }
@@ -972,6 +998,7 @@ img.sc-mark--lg { height: 48px; }
 @media (forced-colors: active) {
   .sc-brand-panel__pattern, .sc-ghost { display: none; }
   .sc-cover, .sc-brand-panel, .sc-report, .sc-stat-strip { border: 1px solid CanvasText; }
+  .sc-signal-matrix tbody :is(th,td), .sc-signal { border: 1px solid CanvasText; }
 }
 @media print {
   .sc-cover { break-inside: avoid; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
