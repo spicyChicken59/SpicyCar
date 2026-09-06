@@ -1,0 +1,27 @@
+{
+  "repository": "spicyChicken59/design-system",
+  "commit": "7dbfd57e4d76601faf1ea5ab4b1a492576c00f04",
+  "version": "2.6.0",
+  "files": {
+    "sc.css": "e33a6035c5ecc7c131c923a3bedf4bec293172b95b89b928e3b32634ce73b555",
+    "sc-theme.js": "874b6f28c798c430222e958fd313ac3a7eab8ffaa0de4813494d87d11c913ad3",
+    "sc-charts.js": "056f5a8280b0d81e5fb270d5639774395528ef1ebbbca4421b8cf82a3e38a79d",
+    "sc-map.js": "61dcedb137215d815231aa1a3d0d3ee1bbcf968e1a67f89a58546df5964b7231",
+    "sc-motion.js": "92cbd6dfe05439fa050061ba138353b78adbc6cc1ff9c5ef5c83e50e7a492f3b",
+    "assets/apple-touch-icon.png": "5a86780d62829e950541c8b66cdfe7bf5c6dbd587d1664d4f91fa9dcdfa97177",
+    "assets/favicon-512.png": "e71e4dab85a0d706a7f82acf5ea178b6b510e9fa8848a7367bfe4d4aed65b52d",
+    "assets/favicon.ico": "1290eef86ae1af2266eec58aaac3f6d0f72c7ed4829d080d30b5c4ee7d0999d4",
+    "assets/sc-avatar-tile.svg": "9121794d5632085d4a5c978519829d5187b41887cf573537da0e7f95f64a6499",
+    "assets/sc-lockup-cream.png": "7d54c76ffdca05a98c08060cb1db87b8dc8bf3925657bc7143923b37837da26e",
+    "assets/sc-lockup-cream.svg": "be1787a3164d3648d2acbc639550798c5e643f4a5c1defe7f9a68edfdc752a59",
+    "assets/sc-lockup-ink.png": "6313cb94229e277ca8843ca395fa55553e7c91cb26f21d4c95f45c11a07ce4b5",
+    "assets/sc-lockup-ink.svg": "db1e89a2d20f62ea6fe3d67a7d8bc4c0a7baedc04ac04e50e1730b7cd6ad4ce5",
+    "assets/sc-mark-color-dark.svg": "4706f372f265bf8d4626b3b5e8a61bd2ecdab780adfa8c8b4df8cc189ec9fe1e",
+    "assets/sc-mark-color-light.svg": "06ba108fddaa59f9a01d8b486d0a8deba04dd5eba85c49057e3a55c342c13937",
+    "assets/sc-mark-mono-cream.svg": "92980ebc35f1b86dbf252a4444b9aa0499cd5023967e4fab77099adc12ecaaf2",
+    "assets/sc-mark-mono-ink.svg": "32c771ad796fce2ef0f7a6b45aeeaa2b5994ff2ed69b328798612aedecd53b39",
+    "assets/sc-pattern-ink.svg": "24ef5abac6a55f4f259a6b2fc08c2da02af30d2274d577f08f4562511bf26283",
+    "assets/sc-pattern-paper.svg": "d760c6f77fcac737ce15c5f1950feffd8ccadeef8d4aa478e4abbee3b62fa21b",
+    "assets/sc-pattern-wine.svg": "859cc5f083ae93ab0e70dab57f6571ed5201cc37f2d639b5619cad74980af576"
+  }
+}

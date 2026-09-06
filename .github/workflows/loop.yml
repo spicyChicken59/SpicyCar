@@ -30,7 +30,7 @@ jobs:
       - name: Run the consumer policy against the pinned sheet
         id: lint
         run: |
-          PIN=$(grep -oEm1 'design-system@[^/"]+' docs/index.html | cut -d@ -f2)
+          PIN=$(node tools/design_snapshot.mjs --commit)
           git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/ds \
             || { git clone https://github.com/spicyChicken59/design-system /tmp/ds && git -C /tmp/ds checkout "$PIN"; }
           # tee so the report is both the log and the issue body
