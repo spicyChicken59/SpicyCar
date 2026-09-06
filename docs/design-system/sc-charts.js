@@ -1,4 +1,4 @@
-/* SpicyChicken Design System — sc-charts.js v2.7.0 · source: build/charts.js · needs sc.css; defer it or load at the end of <body> */
+/* SpicyChicken Design System — sc-charts.js v2.8.0 · source: build/charts.js · needs sc.css; defer it or load at the end of <body> */
 (function (w) {
   'use strict';
   var SC = w.SC = (w.SC || {});

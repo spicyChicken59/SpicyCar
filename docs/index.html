@@ -454,7 +454,7 @@
 <body>
 <a class="sc-skip" href="#main">Skip to content</a>
 
-<header class="sc-masthead">
+<header class="sc-masthead sc-screen-only">
   <a class="sc-brand" href="./">
     <img class="sc-mark" src="design-system/assets/sc-mark-color-dark.svg" alt="" width="22" height="26">
     <span><span class="sc-brand__name">SpicyCar</span><span class="sc-brand__sub">A SpicyChicken tool</span></span>
@@ -472,7 +472,9 @@
   </div>
 </header>
 
-<main class="sc-wrap sc-wrap--wide sc-stack" id="main">
+<main class="sc-wrap sc-wrap--wide sc-stack sc-print-report" id="main">
+  <div class="sc-print-head" aria-hidden="true"><span class="sc-signature sc-signature--small"><img src="design-system/assets/sc-mark-color-light.svg" alt="" width="342" height="405"><span class="sc-signature__name">SpicyCar</span></span><span>purchase intelligence / current watchlist</span></div>
+  <div class="sc-print-foot" aria-hidden="true"><span>SpicyChicken / decision tools</span><span>Asking prices · shipping stated per car</span></div>
   <div class="sc-title" id="car-heading">
     <section class="sc-cover sc-cover--wine sc-cover--compact sc-on-ink sc-reveal" data-sc-motion="fade" aria-labelledby="h1">
       <div class="sc-cover__content">
@@ -727,7 +729,7 @@
   </div>
 </main>
 
-<footer class="sc-foot">
+<footer class="sc-foot sc-screen-only">
   <span><span id="foot-left">Source: auto.dev listings API · runs daily 11:00 UTC via GitHub Actions</span> · <a href="how.html">How it works</a> · <a href="https://github.com/spicyChicken59/SpicyCar" rel="noopener">GitHub</a></span>
   <!-- The watermark, in the form DESIGN_SYSTEM.md §9 fixes for every page: the
        mono mark at 20px (sized by the sheet, no inline height) beside the

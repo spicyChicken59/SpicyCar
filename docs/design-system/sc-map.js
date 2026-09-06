@@ -1,4 +1,4 @@
-/* SpicyChicken Design System — sc-map.js v2.7.0 · source: build/map.js · projection, topojson and the pan/zoom view engine */
+/* SpicyChicken Design System — sc-map.js v2.8.0 · source: build/map.js · projection, topojson and the pan/zoom view engine */
 (function (w) {
   'use strict';
   var SC = w.SC = (w.SC || {});
