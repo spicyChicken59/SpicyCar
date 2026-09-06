@@ -212,6 +212,7 @@
        687px inside a 348px window. Capped and wrapped, two columns come to
        96 + 124 + 124 = 344 and both are on screen at once, which is the whole
        point of the card; three or more scroll, with the metric column sticky. */
+    #compare-table.sc-signal-matrix { min-width: 100%; }
     #compare-table .cmp-metric { min-width: 96px; max-width: 96px; white-space: normal; }
     #compare-table thead th, #compare-table tbody td { min-width: 0; max-width: 124px; white-space: normal; overflow-wrap: anywhere; }
     #compare-table tbody td { text-align: left; }
@@ -596,7 +597,7 @@
         <p class="sc-hint" id="compare-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table sc-table--compact" id="compare-table"></table></div>
+    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Vehicle comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values" id="compare-table"></table></div>
   </section>
 
   <section class="sc-card" id="finalists-card" hidden>
