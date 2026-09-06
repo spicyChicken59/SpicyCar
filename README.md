@@ -17,7 +17,7 @@
 **A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i7 being shopped —
 including a nationwide watch on every certified (CPO) i5 under 30,000 miles, where the
 promo rate on certified EVs (2.99% on the i5) makes the financing the story — with their
-siblings behind them and, on a slower cadence, one battery EV from each of the other 32
+siblings behind them and, on a slower cadence, one battery EV from each of the other 33
 brands selling a 2024-or-newer one in the US. Each car is priced as what it would actually cost
 to land in a specific buyer's driveway, and the result is published as a dashboard, with a
 committed Markdown report beside it as the day's record. (An email path exists and is switched
@@ -76,6 +76,29 @@ Two things are configured, separately:
   Audi's A6 e-tron. `buyer.shopping` names the targets that lead the report in full;
   everything else gets one line.
 
+  **Two limits of that rule, written down because neither is visible from the output.**
+  First, the listings API has no fuel or powertrain parameter — the query is make plus
+  model — so "every EV" has to be enumerated brand by brand, and a battery car sharing a
+  nameplate with a combustion one cannot be isolated at all. Where that happens the
+  EV-only string is what goes in even when it costs the more popular model: Porsche is
+  the Taycan and not the Macan Electric, because `vehicle.model=Macan` returns petrol
+  Macans that no client-side filter here can tell apart. The failure mode of a
+  too-specific string is an empty target, which the page says plainly; the failure mode
+  of a too-loose one is petrol cars in an EV screener, which nothing would catch. The
+  same trap is live for Dodge (`Charger` is also a petrol six), MINI (`Countryman`),
+  Ford (some feeds file the Mach-E under `Mustang`) and Genesis (`GV70`), and it is why
+  the Acura ZDX row depends on the year filter: Acura sold a completely different,
+  petrol ZDX from 2010 to 2013.
+
+  Second, **"most popular" systematically picks the cheapest nameplate at a premium
+  brand**, which is backwards for a buyer shopping an i5 against an i7. Mercedes's
+  best-seller is the EQB at around $35,000 used, not the EQE SUV; Volvo's is the EX30,
+  not the EX90; Genesis's is the GV60, not the Electrified GV70; Tesla's is the Model Y,
+  not the Model S. Five of the rows are therefore market coverage rather than
+  cross-shops. Nothing in the config expresses that difference yet, so a $30,000
+  completeness row wins any cheapest-first ranking against every genuine rival — which
+  is a real defect and is listed on the roadmap rather than quietly patched.
+
   The list is meant to move with the decision. When it narrowed to the i5 against the i7, the
   i4 stood down — at full depth on a daily cadence it was ten calls a day, a third of the whole
   plan, to benchmark a drivetrain the two shopped pages now show directly — and the iX kept its
@@ -94,7 +117,7 @@ seen the day it appears instead of whenever it ranks among the cheapest; the res
 20) and a *cadence*, per target rather than per brand: the two shopped trims run daily, the i5's
 other three (the certified watch among them) every other day, the i7's other trims and the iX every
 third day, the five models already carrying a record every fourth day, and one EV from each of the
-other 27 brands every tenth day. Spread evenly across the cycle in watchlist order. A hard
+other 28 brands every tenth day. Spread evenly across the cycle in watchlist order. A hard
 `budget_per_day` makes the script refuse to run if any day of the cadence cycle would exceed it — a
 fortnight at least, and longer when the cadences repeat over more than that, which they now do: the
 cycle is 60 days — and it prints the plan before it starts.
@@ -329,6 +352,11 @@ window finally meets the peak.
 - ~~Distance-based "drivable" instead of state lines.~~ Tried, then removed on purpose: states are the buyer's own answer to "will I go get it?", and a straight-line radius makes road claims it cannot keep.
 - A second buyer profile — the config is already shaped for it.
 - Drill below state: county or metro.
+- **Say which rows are cross-shops and which are market coverage.** One EV per brand puts
+  a $30,000 Equinox EV and a $75,000 Rivian R1S in one ranking, and cheapest-first hands
+  the front page to the coverage rows forever. A per-model flag, and the picks and the
+  best-value order reading it, is the fix; the counts and the market chart should keep
+  every row.
 
 ## Author
 

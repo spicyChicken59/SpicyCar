@@ -673,7 +673,8 @@ _By asking price, with a shipping estimate per car, on a slower cadence: the 20 
 - **Maserati Grecale Folgore** — not fetched yet · first run 2026-09-08 _(every 10 days)_
 - **Lotus Eletre** — not fetched yet · first run 2026-09-07 _(every 10 days)_
 - **Rolls-Royce Spectre** — not fetched yet · first run 2026-09-06 _(every 10 days)_
-- **Jaguar I-PACE** — not fetched yet · first run 2026-09-15 _(every 10 days)_
+- **Fiat 500e** — not fetched yet · first run 2026-09-15 _(every 10 days)_
+- **Jaguar I-PACE** — not fetched yet · first run 2026-09-14 _(every 10 days)_
 
 ---
 _1258 vehicle histories across 14 days · outputs rebuilt from the snapshot on disk — no calls made._

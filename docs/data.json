@@ -40827,6 +40827,59 @@
     }
    }
   },
+  "fiat": {
+   "label": "Fiat",
+   "models": {
+    "500e": {
+     "label": "Fiat 500e",
+     "note": "",
+     "notes": {},
+     "years": [
+      "2024",
+      "2025",
+      "2026",
+      "2027"
+     ],
+     "shopping": false,
+     "cadence": 10,
+     "as_of": null,
+     "fetched_today": false,
+     "due_today": false,
+     "next_due": "2026-09-15",
+     "params": {
+      "min_price": 8000
+     },
+     "trims": {
+      "fiat-500e": {
+       "label": "all trims",
+       "note": "",
+       "depth": "light",
+       "cadence": 10,
+       "shopping": false,
+       "years": [
+        "2024",
+        "2025",
+        "2026",
+        "2027"
+       ],
+       "min_price": 8000,
+       "max_miles": null,
+       "cpo_only": false,
+       "market_total": null
+      }
+     },
+     "listings": [],
+     "daily": [],
+     "daily_by_trim": {
+      "fiat-500e": []
+     },
+     "fetch_days": {
+      "fiat-500e": []
+     },
+     "gone": []
+    }
+   }
+  },
   "jaguar": {
    "label": "Jaguar",
    "models": {
@@ -40845,7 +40898,7 @@
      "as_of": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-15",
+     "next_due": "2026-09-14",
      "params": {
       "min_price": 8000
      },

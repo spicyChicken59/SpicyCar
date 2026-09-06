@@ -1,948 +1,581 @@
 {
- "budget_per_day": 40,
- "budget_per_month": 1000,
- "buyer": {
-  "id": "chicago",
-  "label": "Chicago",
-  "anchor": [
-   41.8781,
-   -87.6298
-  ],
-  "states": [
-   "IL",
-   "OH",
-   "IN",
-   "WI"
-  ],
-  "search_states": [
-   "MI",
-   "IA",
-   "MO",
-   "KY"
-  ],
-  "shopping": [
-   "bmw-i5-cpo",
-   "bmw-i5-edrive40",
-   "bmw-i7-edrive50"
-  ],
-  "shortlist": [],
-  "// finance": "What the car costs per month, which is the number this buyer actually decides on. A promo applies ONLY to a certified car of its own model \u2014 a non-CPO i5 finances at fallback_apr like anything else. Past its expires date a promo stops applying and the page says so; it is never silently kept alive. fallback_apr is a real rate that drifts: fallback_checked is when it was last verified, and the page warns when that goes stale.",
-  "finance": {
-   "fallback_apr": 6.9,
-   "fallback_checked": "2026-09-01",
-   "default_term": 60,
-   "terms": [
-    36,
-    48,
-    60,
-    72
-   ],
-   "down": 0,
-   "promos": [
-    {
-     "model": "bmw/i5",
-     "cpo_only": true,
-     "apr": 2.99,
-     "max_term": 60,
-     "expires": "2026-10-31",
-     "label": "BMW FS certified 2.99%"
+  "budget_per_day": 40,
+  "budget_per_month": 1000,
+
+  "buyer": {
+    "id": "chicago",
+    "label": "Chicago",
+    "anchor": [41.8781, -87.6298],
+    "states": ["IL", "OH", "IN", "WI"],
+    "search_states": ["MI", "IA", "MO", "KY"],
+    "shopping": ["bmw-i5-cpo", "bmw-i5-edrive40", "bmw-i7-edrive50"],
+    "shortlist": [],
+
+    "// finance": "What the car costs per month, which is the number this buyer actually decides on. A promo applies ONLY to a certified car of its own model — a non-CPO i5 finances at fallback_apr like anything else. Past its expires date a promo stops applying and the page says so; it is never silently kept alive. fallback_apr is a real rate that drifts: fallback_checked is when it was last verified, and the page warns when that goes stale.",
+    "finance": {
+      "fallback_apr": 6.9,
+      "fallback_checked": "2026-09-01",
+      "default_term": 60,
+      "terms": [36, 48, 60, 72],
+      "down": 0,
+      "promos": [
+        { "model": "bmw/i5", "cpo_only": true, "apr": 2.99, "max_term": 60, "expires": "2026-10-31",
+          "label": "BMW FS certified 2.99%" },
+        { "model": "bmw/ix", "cpo_only": true, "apr": 2.49, "max_term": 60, "expires": "2026-10-31",
+          "label": "BMW FS certified 2.49%" }
+      ]
     },
-    {
-     "model": "bmw/ix",
-     "cpo_only": true,
-     "apr": 2.49,
-     "max_term": 60,
-     "expires": "2026-10-31",
-     "label": "BMW FS certified 2.49%"
+
+    "ship_per_mile": 0.65,
+    "ship_min": 350,
+    "ship_cost": 1100,
+    "ship_road_factor": 1.18,
+    "ship_bands": [
+      { "to": 500, "per_mile": 1.20 },
+      { "to": 1000, "per_mile": 0.70 },
+      { "to": 1500, "per_mile": 0.45 },
+      { "to": null, "per_mile": 0.30 }
+    ],
+    "ship_calibrated": null,
+    "ship_quotes": [],
+    "fees": {
+      "tax_rate": 0.0925,
+      "tax_note": "Illinois taxes a vehicle at the BUYER's home rate wherever it is bought, so this applies to every car on the page, not just the local ones. Chicago/Cook combined — verify against the current rate before trusting a total.",
+      "doc_fee": 358,
+      "title": 165,
+      "registration": 151,
+      "ev_surcharge": 100,
+      "finance_shipping": false,
+      "checked": null
+    },
+    "cents_per_mile": 0,
+    "mileage_baseline": 20000,
+    "picks": {
+      "count": 4,
+      "per_model": 2,
+      "reserve_shopping": 2,
+      "max_miles": 50000,
+      "cents_per_mile": 0.30,
+      "mileage_baseline": 20000,
+      "exclude_accidents": true,
+      "exclude_rental": true
     }
-   ]
   },
-  "ship_per_mile": 0.65,
-  "ship_min": 350,
-  "ship_cost": 1100,
-  "ship_road_factor": 1.18,
-  "ship_bands": [
-   {
-    "to": 500,
-    "per_mile": 1.2
-   },
-   {
-    "to": 1000,
-    "per_mile": 0.7
-   },
-   {
-    "to": 1500,
-    "per_mile": 0.45
-   },
-   {
-    "to": null,
-    "per_mile": 0.3
-   }
-  ],
-  "ship_calibrated": null,
-  "ship_quotes": [],
-  "fees": {
-   "tax_rate": 0.0925,
-   "tax_note": "Illinois taxes a vehicle at the BUYER's home rate wherever it is bought, so this applies to every car on the page, not just the local ones. Chicago/Cook combined \u2014 verify against the current rate before trusting a total.",
-   "doc_fee": 358,
-   "title": 165,
-   "registration": 151,
-   "ev_surcharge": 100,
-   "finance_shipping": false,
-   "checked": null
+
+  "// years": "One EV per brand, model year 2024 and newer. The rule lives HERE and nowhere else: years resolves trim <- model <- brand <- defaults like every other parameter, and it used to be written out once per model, which is four places for one decision to rot. The range runs to 2027 because \"2024 and above\" has no upper bound and 2027 cars list in 2026 — every range this replaced stopped at 2026 and would have excluded them in silence.",
+  "defaults": {
+    "min_price": 8000,
+    "depth": "light",
+    "cadence": 1,
+    "years": ["2024", "2025", "2026", "2027"],
+    "sorts": ["price.asc", "miles.asc"],
+    "pages": 2
   },
-  "cents_per_mile": 0,
-  "mileage_baseline": 20000,
-  "picks": {
-   "count": 4,
-   "per_model": 2,
-   "reserve_shopping": 2,
-   "max_miles": 50000,
-   "cents_per_mile": 0.3,
-   "mileage_baseline": 20000,
-   "exclude_accidents": true,
-   "exclude_rental": true
+
+  "legacy_ids": { "i5-edrive40": "bmw-i5-edrive40" },
+
+  "watchlist": {
+    "bmw": {
+      "label": "BMW",
+      "make": "BMW",
+      "models": {
+        "i5": {
+          "label": "BMW i5",
+          "model": "i5",
+          "min_price": 20000,
+          "notes": {
+            "good": ["CPO promo: 2.99% APR financing on certified i5s — at today's used prices that rate changes the payment maths", "Quiet, refined and built like a 5-Series; the eDrive40 is EPA-rated around 295 miles", "Heavy lease-return supply keeps used prices well under new", "iDrive 8.5 is quick, and most cars carry Driving Assistance packages"],
+            "bad": ["Fast charging peaks near 205 kW and tapers early, so road trips are slower than the range suggests", "Over 5,000 lb — expect tire wear and a firm ride on big wheels", "Equipment varies a lot by package; two cars at the same price can be very different"],
+            "watch": ["Confirm the software is current — early 2024 cars had bugs fixed over the air", "Check which packages the specific VIN has (Driving Assistance Pro, Premium, heated seats)", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
+          },
+          "trims": {
+            "cpo":      { "label": "CPO under 30k mi", "trim_query": "eDrive40,xDrive40", "trim_match": "drive40",
+                          "cadence": 2,
+                          "depth": "full", "sorts": ["miles.asc"], "pages": 2,
+                          "max_miles": 30000, "cpo_only": true, "national_only": true,
+                          "note": "The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country — the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it — the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call." },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1,
+                          "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50." },
+            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },
+            "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
+          }
+        },
+        "i7": {
+          "label": "BMW i7",
+          "model": "i7",
+          "min_price": 35000,
+          "notes": {
+            "good": ["Depreciation is the whole story: well over $100k new, and used ones now sit far below that — the cheapest a nearly-new 7-Series has ever been", "One of the quietest cars made, and the rear seat is the point — Executive Lounge cars recline the right rear seat and add the 31-inch Theatre Screen", "eDrive50 is the rear-drive single-motor car, xDrive60 the dual-motor one; both are rated around 300 miles depending on wheels", "Same 400-volt platform and service network as the i5, so nothing about owning it is exotic"],
+            "bad": ["Nearly 6,000 lb on 19–21 in tires: consumables, brakes and a tow all cost what the car cost new implies", "Charging peaks around 195 kW and tapers, so for the money it is not a fast road-tripper", "Equipment swing is enormous — two i7s at the same asking price can be $30k apart in options", "It is a very large car; measure the garage before falling for one"],
+            "watch": ["Confirm the CPO rate that applies to the i7 specifically — the promo's headline numbers differ by model (2.99% on the i5, 2.49% on the iX)", "Check what the VIN actually has: Executive Lounge, Theatre Screen, automatic doors, Bowers & Wilkins — options move the price more than mileage does", "Air suspension and big wheels: look for leaks and kerbed rims before making the drive", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
+          },
+          "trims": {
+            "cpo":      { "label": "CPO under 30k mi", "trim_query": "eDrive50,xDrive60", "trim_match": "drive", "trim_exclude": "m70",
+                          "cadence": 2,
+                          "depth": "full", "sorts": ["miles.asc"], "pages": 2,
+                          "max_miles": 30000, "cpo_only": true, "national_only": true, "active": false,
+                          "note": "Stood down BEFORE IT EVER RAN, on a prediction rather than a measurement — which is the honest way to say this and the first version of this note did not. It was added at 02:38 on 2026-09-01 with offset 1 on a cadence of 2, so its first due day was 2026-09-02: it never fetched once and never billed a call. The 30 calls a month it would have cost is a plan figure, not a spend. What is measured is the mechanism: the query takes the 40 lowest-mileage i7s in the country on miles.asc and then filters to certified under 30,000 miles, and in the i7 rows actually observed, ranks 1-42 are 2026 cars at 1-14 miles — new inventory, none certified — so the first certified i7 sits below the window. The i5 version of the same recipe returns cars, and its one structural difference is years [2024, 2025], no current model year. Dropping 2026 here may well fix it, and that is worth two calls to find out; it is not a target that cannot work, it is a target not worth 30 calls a month on this shopping list while the ordinary edrive50 query already holds certified sub-30k i7s. One flag brings it back." },
+            "edrive50": { "label": "eDrive50", "trim_query": "eDrive50", "trim_match": "edrive50", "depth": "full", "pages": 2, "newest": 1,
+                          "note": "The other half of the decision, beside the i5 eDrive40." },
+            "xdrive60": { "label": "xDrive60", "trim_query": "xDrive60", "trim_match": "xdrive60", "cadence": 3 },
+            "m70":      { "label": "M70",      "trim_query": "M70",      "trim_match": "m70", "min_price": 60000, "cadence": 3 }
+          }
+        },
+        "ix": {
+          "label": "BMW iX",
+          "model": "iX",
+          "min_price": 25000,
+          "cadence": 3,
+          "notes": {
+            "good": ["CPO promo: 2.49% APR financing on certified iXs — the best rate in the whole promo, on the deepest-depreciating car in it", "One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size", "Depreciation has been brutal — $90k cars now sit in the $40k–60k range", "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"],
+            "bad": ["Divisive looks, and the big grille is a plastic sensor panel that is expensive if damaged", "21–22 in tires and a heavy car: consumables cost real money", "2022 cars had high-voltage battery and software recalls; charging peaks near 195 kW"],
+            "watch": ["Confirm the battery recall and software campaigns are done on the VIN", "Know which generation you are looking at: 2022–2025 xDrive50 / M60, or the 2026 xDrive45 / xDrive60 / M70 with bigger batteries", "Check tire life and the windshield (the camera glass is pricey); verify Driving Assistance Pro and the Sport package"]
+          },
+          "trims": {
+            "cpo":    { "label": "CPO under 30k mi", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive",
+                        "cadence": 2,
+                        "depth": "full", "sorts": ["miles.asc"], "pages": 2,
+                        "max_miles": 30000, "cpo_only": true, "national_only": true, "active": false,
+                        "note": "Stood down when the decision became the i5 against the i7. A nationwide certified sweep is what you run on a car you are buying — it is the most expensive thing on the watchlist per model, and the 2.49% rate only matters to someone signing for one. One flag brings it back." },
+            "xdrive": { "label": "xDrive (45 / 50 / 60)", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive" },
+            "m":      { "label": "M (M60 / M70)",         "trim_query": "M60,M70", "trim_match": "", "trim_exclude": "xdrive", "min_price": 35000 }
+          }
+        },
+        "i4": {
+          "label": "BMW i4",
+          "model": "i4",
+          "cadence": 2,
+          "active": false,
+          "notes": {
+            "good": ["Drives like a 4-Series; the eDrive40 does about 300 miles", "One of the better reliability records among EVs, and cheap used", "Hatchback practicality with a proper trunk opening"],
+            "bad": ["2022 and early 2023 cars had infotainment and charging glitches, mostly cured by updates", "Low roof: rear headroom is tight", "eDrive35 has the smaller battery — roughly 260 miles, and slower charging"],
+            "watch": ["Ask for proof that open recalls and software campaigns are done", "Check the 12V battery — a weak one causes odd faults", "Verify heated seats and steering wheel; not every car has them"]
+          },
+          "trims": {
+            "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "active": false },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "Stood down with the rest of the i4: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the i5 and i7 pages now show directly." },
+            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "active": false },
+            "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
+          }
+        }
+      }
+    },
+
+    "hyundai": {
+      "label": "Hyundai",
+      "make": "Hyundai",
+      "models": {
+        "ioniq5": {
+          "label": "Hyundai Ioniq 5",
+          "model": "Ioniq 5,IONIQ 5",
+          "active": false,
+          "notes": {
+            "good": ["800-volt platform: 10 to 80% in about 18 minutes on a fast charger", "Flat floor and a huge cabin for the footprint", "Strong value used; the N is a genuine performance car"],
+            "bad": ["The ICCU (charging control unit) has failed widely across 2022–2024 cars and can leave the car dead", "No rear wiper until the 2025 refresh; soft ride and road noise", "Dealer EV service quality varies a lot"],
+            "watch": ["Make sure the ICCU recall and 12V battery campaign are completed on the VIN", "The 2025 refresh added a bigger battery, a rear wiper and the NACS port — worth the premium if you road-trip", "Hyundai's 10-year battery warranty shrinks for the second owner; read the terms"]
+          }
+        },
+        "ioniq9": {
+          "label": "Hyundai Ioniq 9",
+          "model": "Ioniq 9,IONIQ 9",
+          "cadence": 4,
+          "notes": {
+            "good": ["Three rows, a 110 kWh battery and around 335 miles rear-drive", "800-volt charging and a NACS port from day one", "Almost every used one is a near-new car"],
+            "bad": ["Brand new: thin used supply and prices close to new", "First model year — expect software updates", "Very large and heavy for city parking"],
+            "watch": ["Compare against a new one with incentives before paying near-new money", "Confirm the trim (S, SE, SEL, Limited) — equipment differs a lot"]
+          }
+        }
+      }
+    },
+
+    "kia": {
+      "label": "Kia",
+      "make": "Kia",
+      "models": {
+        "ev6": {
+          "label": "Kia EV6",
+          "model": "EV6",
+          "active": false,
+          "notes": {
+            "good": ["Same 800-volt platform as the Ioniq 5 — 18-minute fast charging", "Sportier setup and sharper looks; GT-Line is the sweet spot", "Deep depreciation makes clean examples a bargain"],
+            "bad": ["Shares the Ioniq 5's ICCU problem", "Firmer ride and poor rear visibility", "Cargo space is modest for the size"],
+            "watch": ["ICCU recall and 12V campaign completed on the VIN", "The 2025 refresh (bigger battery, NACS) is worth seeking if you can", "Check that the charge-port door and DC charging work — do a fast-charge test if possible"]
+          }
+        },
+        "ev9": {
+          "label": "Kia EV9",
+          "model": "EV9",
+          "cadence": 4,
+          "notes": {
+            "good": ["A proper three-row EV at a sane price, with 800-volt charging", "Around 280–300 miles; Land and GT-Line interiors are plush", "Heavy rebates on new ones have pushed used prices down"],
+            "bad": ["Heavy, so tires go fast and efficiency is middling", "Early builds had trim and rattle complaints", "Same platform ICCU risk as the EV6 and Ioniq 5"],
+            "watch": ["Recalls completed; check the 12V", "Second row: captain's chairs or bench — decide before you shop", "Listen for wind noise from the door seals on a test drive"]
+          }
+        }
+      }
+    },
+
+    "audi": {
+      "label": "Audi",
+      "make": "Audi",
+      "models": {
+        "a6-etron": {
+          "label": "Audi A6 e-tron",
+          "model": "A6 e-tron,A6 E-Tron,e-tron A6",
+          "cadence": 4,
+          "notes": {
+            "good": ["800-volt PPE platform shared with the Q6: 270 kW charging, and the Sportback can exceed 350 miles", "A proper luxury sedan interior in a market full of crossovers", "Early lease returns are starting to land well under sticker"],
+            "bad": ["Brand new: used supply is thin and prices still sit close to new", "First model year — expect software updates and early-build niggles", "The sloping roof costs rear headroom, and there is no Apple CarPlay projection on early software"],
+            "watch": ["Confirm every over-the-air update and campaign has been applied", "Sportback vs. standard body and RWD vs. quattro change range meaningfully — check the exact spec", "Compare against a new one with incentives before paying near-new money"]
+          }
+        },
+        "q4-etron": {
+          "label": "Audi Q4 e-tron",
+          "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4",
+          "active": false,
+          "notes": {
+            "good": ["Quiet, comfortable and upscale inside for the money", "Steep depreciation — often the cheapest premium-badge EV", "Solid VW-group hardware underneath"],
+            "bad": ["Slow DC charging (roughly 125–170 kW) and a 400-volt system", "Infotainment can be sluggish and buggy on early cars", "2022–2023 range is only around 240 miles"],
+            "watch": ["2024 and later got a bigger battery and faster charging — target those", "Ask for the software update history; several campaigns fixed 12V and charging faults", "Verify heated seats and wheel; option packages vary"]
+          }
+        },
+        "q6-etron": {
+          "label": "Audi Q6 e-tron",
+          "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6",
+          "active": false,
+          "notes": {
+            "good": ["New 800-volt platform shared with the Porsche Macan EV: fast charging and 300+ miles", "Excellent interior and driving refinement"],
+            "bad": ["New model: used supply is thin and prices sit close to new", "First-year software complaints are common"],
+            "watch": ["Compare with a new one after incentives", "Confirm all over-the-air updates have been applied", "Check panel and door alignment on early builds"]
+          }
+        }
+      }
+    },
+
+    "lucid": {
+      "label": "Lucid",
+      "make": "Lucid",
+      "models": {
+        "air": {
+          "label": "Lucid Air",
+          "model": "Air",
+          "min_price": 30000,
+          "cadence": 4,
+          "notes": {
+            "good": ["Class-leading efficiency and range — a Grand Touring can exceed 500 miles", "Among the fastest-charging cars sold", "Used prices collapsed: six-figure cars now sell for $40k"],
+            "bad": ["A young company: service centers are sparse and parts can take time", "2022 cars had software and build-quality issues", "Resale is unpredictable"],
+            "watch": ["Check the distance to the nearest Lucid service center before anything else", "Confirm every software campaign and recall on the VIN", "Verify the warranty transfers, and test the door handles, glass roof and charge port"]
+          }
+        }
+      }
+    },
+
+    "chevrolet": {
+      "label": "Chevrolet",
+      "make": "Chevrolet",
+      "models": {
+        "equinox-ev": {
+          "label": "Chevrolet Equinox EV",
+          "model": "Equinox EV",
+          "cadence": 4,
+          "notes": {
+            "good": ["Around 319 miles front-drive, roomy, and cheap used", "Super Cruise is available on the RS", "Simple, honest EV on GM's Ultium platform"],
+            "bad": ["No Apple CarPlay or Android Auto — Google built-in only", "DC charging around 150 kW", "Early software glitches and plain interior plastics"],
+            "watch": ["Check GM's software recall campaigns are done", "Super Cruise may need a subscription after the trial", "Confirm front-drive vs all-wheel-drive on the specific car"]
+          }
+        },
+        "blazer-ev": {
+          "label": "Chevrolet Blazer EV",
+          "model": "Blazer EV",
+          "active": false,
+          "notes": {
+            "good": ["Sharp looks and a comfortable, quiet cabin", "RS trims run roughly 280–320 miles depending on drivetrain", "Heavy discounts made used ones cheap"],
+            "bad": ["The 2024 launch was stopped for software faults; fixed by updates, but ask", "No Apple CarPlay or Android Auto", "Middling efficiency"],
+            "watch": ["Confirm the software recall was completed and the car has been updated", "RS came front-, rear- and all-wheel-drive — check which", "Look at the service history for charging faults"]
+          },
+          "trims": { "rs": { "label": "RS", "trim_query": "RS,2RS,3RS", "trim_match": "rs" } }
+        }
+      }
+    },
+
+    "tesla": {
+      "label": "Tesla",
+      "make": "Tesla",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "model-y": { "label": "Tesla Model Y", "model": "Model Y" }
+      }
+    },
+
+    "ford": {
+      "label": "Ford",
+      "make": "Ford",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "mustang-mach-e": { "label": "Ford Mustang Mach-E", "model": "Mustang Mach-E,Mach-E,Mustang Mach E" }
+      }
+    },
+
+    "gmc": {
+      "label": "GMC",
+      "make": "GMC",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "hummer-ev": { "label": "GMC Hummer EV", "model": "Hummer EV,Hummer EV Pickup,Hummer EV SUV" }
+      }
+    },
+
+    "genesis": {
+      "label": "Genesis",
+      "make": "Genesis",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "gv60": { "label": "Genesis GV60", "model": "GV60" }
+      }
+    },
+
+    "nissan": {
+      "label": "Nissan",
+      "make": "Nissan",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "ariya": { "label": "Nissan Ariya", "model": "Ariya,ARIYA" }
+      }
+    },
+
+    "mercedes": {
+      "label": "Mercedes-Benz",
+      "make": "Mercedes-Benz",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "eqb": { "label": "Mercedes-Benz EQB", "model": "EQB,EQB 250+,EQB 300,EQB 350" }
+      }
+    },
+
+    "porsche": {
+      "label": "Porsche",
+      "make": "Porsche",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "taycan": { "label": "Porsche Taycan", "model": "Taycan" }
+      }
+    },
+
+    "volkswagen": {
+      "label": "Volkswagen",
+      "make": "Volkswagen",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "id4": { "label": "Volkswagen ID.4", "model": "ID.4,ID4,ID 4" }
+      }
+    },
+
+    "volvo": {
+      "label": "Volvo",
+      "make": "Volvo",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "ex30": { "label": "Volvo EX30", "model": "EX30" }
+      }
+    },
+
+    "polestar": {
+      "label": "Polestar",
+      "make": "Polestar",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "polestar-3": { "label": "Polestar 3", "model": "3,Polestar 3" }
+      }
+    },
+
+    "mini": {
+      "label": "MINI",
+      "make": "MINI",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "countryman-electric": { "label": "MINI Countryman Electric", "model": "Countryman Electric,Countryman SE,Countryman SE ALL4" }
+      }
+    },
+
+    "cadillac": {
+      "label": "Cadillac",
+      "make": "Cadillac",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "lyriq": { "label": "Cadillac Lyriq", "model": "LYRIQ,Lyriq" }
+      }
+    },
+
+    "jeep": {
+      "label": "Jeep",
+      "make": "Jeep",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "wagoneer-s": { "label": "Jeep Wagoneer S", "model": "Wagoneer S" }
+      }
+    },
+
+    "dodge": {
+      "label": "Dodge",
+      "make": "Dodge",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "charger-daytona": { "label": "Dodge Charger Daytona", "model": "Charger Daytona" }
+      }
+    },
+
+    "ram": {
+      "label": "Ram",
+      "make": "Ram",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "promaster-ev": { "label": "Ram ProMaster EV", "model": "ProMaster EV" }
+      }
+    },
+
+    "rivian": {
+      "label": "Rivian",
+      "make": "Rivian",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "r1s": { "label": "Rivian R1S", "model": "R1S" }
+      }
+    },
+
+    "vinfast": {
+      "label": "VinFast",
+      "make": "VinFast",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "vf8": { "label": "VinFast VF 8", "model": "VF 8,VF8" }
+      }
+    },
+
+    "fisker": {
+      "label": "Fisker",
+      "make": "Fisker",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "ocean": { "label": "Fisker Ocean", "model": "Ocean" }
+      }
+    },
+
+    "toyota": {
+      "label": "Toyota",
+      "make": "Toyota",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "bz4x": { "label": "Toyota bZ4X", "model": "bZ4X,bZ,BZ4X" }
+      }
+    },
+
+    "honda": {
+      "label": "Honda",
+      "make": "Honda",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "prologue": { "label": "Honda Prologue", "model": "Prologue" }
+      }
+    },
+
+    "acura": {
+      "label": "Acura",
+      "make": "Acura",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "zdx": { "label": "Acura ZDX", "model": "ZDX" }
+      }
+    },
+
+    "lexus": {
+      "label": "Lexus",
+      "make": "Lexus",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "rz": { "label": "Lexus RZ", "model": "RZ,RZ 300e,RZ 450e" }
+      }
+    },
+
+    "subaru": {
+      "label": "Subaru",
+      "make": "Subaru",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "solterra": { "label": "Subaru Solterra", "model": "Solterra" }
+      }
+    },
+
+    "maserati": {
+      "label": "Maserati",
+      "make": "Maserati",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "grecale-folgore": { "label": "Maserati Grecale Folgore", "model": "Grecale Folgore" }
+      }
+    },
+
+    "lotus": {
+      "label": "Lotus",
+      "make": "Lotus",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "eletre": { "label": "Lotus Eletre", "model": "Eletre" }
+      }
+    },
+
+    "rolls-royce": {
+      "label": "Rolls-Royce",
+      "make": "Rolls-Royce",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "spectre": { "label": "Rolls-Royce Spectre", "model": "Spectre" }
+      }
+    },
+
+    "fiat": {
+      "label": "Fiat",
+      "make": "Fiat",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "500e": { "label": "Fiat 500e", "model": "500e,500E" }
+      }
+    },
+
+    "jaguar": {
+      "label": "Jaguar",
+      "make": "Jaguar",
+      "national_only": true,
+      "cadence": 10,
+      "models": {
+        "i-pace": { "label": "Jaguar I-PACE", "model": "I-PACE,I-Pace,IPACE" }
+      }
+    }
   }
- },
- "defaults": {
-  "min_price": 8000,
-  "depth": "light",
-  "cadence": 1,
-  "sorts": [
-   "price.asc",
-   "miles.asc"
-  ],
-  "pages": 2,
-  "years": [
-   "2024",
-   "2025",
-   "2026",
-   "2027"
-  ]
- },
- "legacy_ids": {
-  "i5-edrive40": "bmw-i5-edrive40"
- },
- "watchlist": {
-  "bmw": {
-   "label": "BMW",
-   "make": "BMW",
-   "models": {
-    "i5": {
-     "label": "BMW i5",
-     "model": "i5",
-     "min_price": 20000,
-     "notes": {
-      "good": [
-       "CPO promo: 2.99% APR financing on certified i5s \u2014 at today's used prices that rate changes the payment maths",
-       "Quiet, refined and built like a 5-Series; the eDrive40 is EPA-rated around 295 miles",
-       "Heavy lease-return supply keeps used prices well under new",
-       "iDrive 8.5 is quick, and most cars carry Driving Assistance packages"
-      ],
-      "bad": [
-       "Fast charging peaks near 205 kW and tapers early, so road trips are slower than the range suggests",
-       "Over 5,000 lb \u2014 expect tire wear and a firm ride on big wheels",
-       "Equipment varies a lot by package; two cars at the same price can be very different"
-      ],
-      "watch": [
-       "Confirm the software is current \u2014 early 2024 cars had bugs fixed over the air",
-       "Check which packages the specific VIN has (Driving Assistance Pro, Premium, heated seats)",
-       "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"
-      ]
-     },
-     "trims": {
-      "cpo": {
-       "label": "CPO under 30k mi",
-       "trim_query": "eDrive40,xDrive40",
-       "trim_match": "drive40",
-       "cadence": 2,
-       "depth": "full",
-       "sorts": [
-        "miles.asc"
-       ],
-       "pages": 2,
-       "max_miles": 30000,
-       "cpo_only": true,
-       "national_only": true,
-       "note": "The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country \u2014 the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it \u2014 the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call."
-      },
-      "edrive40": {
-       "label": "eDrive40",
-       "trim_query": "eDrive40",
-       "trim_match": "edrive40",
-       "depth": "full",
-       "pages": 2,
-       "newest": 1,
-       "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50."
-      },
-      "xdrive40": {
-       "label": "xDrive40",
-       "trim_query": "xDrive40",
-       "trim_match": "xdrive40",
-       "cadence": 2
-      },
-      "m60": {
-       "label": "M60",
-       "trim_query": "M60",
-       "trim_match": "m60",
-       "min_price": 30000,
-       "cadence": 2
-      }
-     }
-    },
-    "i7": {
-     "label": "BMW i7",
-     "model": "i7",
-     "min_price": 35000,
-     "notes": {
-      "good": [
-       "Depreciation is the whole story: well over $100k new, and used ones now sit far below that \u2014 the cheapest a nearly-new 7-Series has ever been",
-       "One of the quietest cars made, and the rear seat is the point \u2014 Executive Lounge cars recline the right rear seat and add the 31-inch Theatre Screen",
-       "eDrive50 is the rear-drive single-motor car, xDrive60 the dual-motor one; both are rated around 300 miles depending on wheels",
-       "Same 400-volt platform and service network as the i5, so nothing about owning it is exotic"
-      ],
-      "bad": [
-       "Nearly 6,000 lb on 19\u201321 in tires: consumables, brakes and a tow all cost what the car cost new implies",
-       "Charging peaks around 195 kW and tapers, so for the money it is not a fast road-tripper",
-       "Equipment swing is enormous \u2014 two i7s at the same asking price can be $30k apart in options",
-       "It is a very large car; measure the garage before falling for one"
-      ],
-      "watch": [
-       "Confirm the CPO rate that applies to the i7 specifically \u2014 the promo's headline numbers differ by model (2.99% on the i5, 2.49% on the iX)",
-       "Check what the VIN actually has: Executive Lounge, Theatre Screen, automatic doors, Bowers & Wilkins \u2014 options move the price more than mileage does",
-       "Air suspension and big wheels: look for leaks and kerbed rims before making the drive",
-       "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"
-      ]
-     },
-     "trims": {
-      "cpo": {
-       "label": "CPO under 30k mi",
-       "trim_query": "eDrive50,xDrive60",
-       "trim_match": "drive",
-       "trim_exclude": "m70",
-       "cadence": 2,
-       "depth": "full",
-       "sorts": [
-        "miles.asc"
-       ],
-       "pages": 2,
-       "max_miles": 30000,
-       "cpo_only": true,
-       "national_only": true,
-       "active": false,
-       "note": "Stood down BEFORE IT EVER RAN, on a prediction rather than a measurement \u2014 which is the honest way to say this and the first version of this note did not. It was added at 02:38 on 2026-09-01 with offset 1 on a cadence of 2, so its first due day was 2026-09-02: it never fetched once and never billed a call. The 30 calls a month it would have cost is a plan figure, not a spend. What is measured is the mechanism: the query takes the 40 lowest-mileage i7s in the country on miles.asc and then filters to certified under 30,000 miles, and in the i7 rows actually observed, ranks 1-42 are 2026 cars at 1-14 miles \u2014 new inventory, none certified \u2014 so the first certified i7 sits below the window. The i5 version of the same recipe returns cars, and its one structural difference is years [2024, 2025], no current model year. Dropping 2026 here may well fix it, and that is worth two calls to find out; it is not a target that cannot work, it is a target not worth 30 calls a month on this shopping list while the ordinary edrive50 query already holds certified sub-30k i7s. One flag brings it back."
-      },
-      "edrive50": {
-       "label": "eDrive50",
-       "trim_query": "eDrive50",
-       "trim_match": "edrive50",
-       "depth": "full",
-       "pages": 2,
-       "newest": 1,
-       "note": "The other half of the decision, beside the i5 eDrive40."
-      },
-      "xdrive60": {
-       "label": "xDrive60",
-       "trim_query": "xDrive60",
-       "trim_match": "xdrive60",
-       "cadence": 3
-      },
-      "m70": {
-       "label": "M70",
-       "trim_query": "M70",
-       "trim_match": "m70",
-       "min_price": 60000,
-       "cadence": 3
-      }
-     }
-    },
-    "ix": {
-     "label": "BMW iX",
-     "model": "iX",
-     "min_price": 25000,
-     "cadence": 3,
-     "notes": {
-      "good": [
-       "CPO promo: 2.49% APR financing on certified iXs \u2014 the best rate in the whole promo, on the deepest-depreciating car in it",
-       "One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size",
-       "Depreciation has been brutal \u2014 $90k cars now sit in the $40k\u201360k range",
-       "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"
-      ],
-      "bad": [
-       "Divisive looks, and the big grille is a plastic sensor panel that is expensive if damaged",
-       "21\u201322 in tires and a heavy car: consumables cost real money",
-       "2022 cars had high-voltage battery and software recalls; charging peaks near 195 kW"
-      ],
-      "watch": [
-       "Confirm the battery recall and software campaigns are done on the VIN",
-       "Know which generation you are looking at: 2022\u20132025 xDrive50 / M60, or the 2026 xDrive45 / xDrive60 / M70 with bigger batteries",
-       "Check tire life and the windshield (the camera glass is pricey); verify Driving Assistance Pro and the Sport package"
-      ]
-     },
-     "trims": {
-      "cpo": {
-       "label": "CPO under 30k mi",
-       "trim_query": "xDrive50,xDrive45,xDrive60",
-       "trim_match": "xdrive",
-       "cadence": 2,
-       "depth": "full",
-       "sorts": [
-        "miles.asc"
-       ],
-       "pages": 2,
-       "max_miles": 30000,
-       "cpo_only": true,
-       "national_only": true,
-       "active": false,
-       "note": "Stood down when the decision became the i5 against the i7. A nationwide certified sweep is what you run on a car you are buying \u2014 it is the most expensive thing on the watchlist per model, and the 2.49% rate only matters to someone signing for one. One flag brings it back."
-      },
-      "xdrive": {
-       "label": "xDrive (45 / 50 / 60)",
-       "trim_query": "xDrive50,xDrive45,xDrive60",
-       "trim_match": "xdrive"
-      },
-      "m": {
-       "label": "M (M60 / M70)",
-       "trim_query": "M60,M70",
-       "trim_match": "",
-       "trim_exclude": "xdrive",
-       "min_price": 35000
-      }
-     }
-    },
-    "i4": {
-     "label": "BMW i4",
-     "model": "i4",
-     "cadence": 2,
-     "active": false,
-     "notes": {
-      "good": [
-       "Drives like a 4-Series; the eDrive40 does about 300 miles",
-       "One of the better reliability records among EVs, and cheap used",
-       "Hatchback practicality with a proper trunk opening"
-      ],
-      "bad": [
-       "2022 and early 2023 cars had infotainment and charging glitches, mostly cured by updates",
-       "Low roof: rear headroom is tight",
-       "eDrive35 has the smaller battery \u2014 roughly 260 miles, and slower charging"
-      ],
-      "watch": [
-       "Ask for proof that open recalls and software campaigns are done",
-       "Check the 12V battery \u2014 a weak one causes odd faults",
-       "Verify heated seats and steering wheel; not every car has them"
-      ]
-     },
-     "trims": {
-      "edrive35": {
-       "label": "eDrive35",
-       "trim_query": "eDrive35",
-       "trim_match": "edrive35",
-       "active": false
-      },
-      "edrive40": {
-       "label": "eDrive40",
-       "trim_query": "eDrive40",
-       "trim_match": "edrive40",
-       "depth": "full",
-       "pages": 2,
-       "newest": 1,
-       "cadence": 1,
-       "note": "Stood down with the rest of the i4: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the i5 and i7 pages now show directly."
-      },
-      "xdrive40": {
-       "label": "xDrive40",
-       "trim_query": "xDrive40",
-       "trim_match": "xdrive40",
-       "active": false
-      },
-      "m50": {
-       "label": "M50",
-       "trim_query": "M50",
-       "trim_match": "m50",
-       "min_price": 25000
-      }
-     }
-    }
-   }
-  },
-  "hyundai": {
-   "label": "Hyundai",
-   "make": "Hyundai",
-   "models": {
-    "ioniq5": {
-     "label": "Hyundai Ioniq 5",
-     "model": "Ioniq 5,IONIQ 5",
-     "notes": {
-      "good": [
-       "800-volt platform: 10 to 80% in about 18 minutes on a fast charger",
-       "Flat floor and a huge cabin for the footprint",
-       "Strong value used; the N is a genuine performance car"
-      ],
-      "bad": [
-       "The ICCU (charging control unit) has failed widely across 2022\u20132024 cars and can leave the car dead",
-       "No rear wiper until the 2025 refresh; soft ride and road noise",
-       "Dealer EV service quality varies a lot"
-      ],
-      "watch": [
-       "Make sure the ICCU recall and 12V battery campaign are completed on the VIN",
-       "The 2025 refresh added a bigger battery, a rear wiper and the NACS port \u2014 worth the premium if you road-trip",
-       "Hyundai's 10-year battery warranty shrinks for the second owner; read the terms"
-      ]
-     },
-     "active": false
-    },
-    "ioniq9": {
-     "label": "Hyundai Ioniq 9",
-     "model": "Ioniq 9,IONIQ 9",
-     "notes": {
-      "good": [
-       "Three rows, a 110 kWh battery and around 335 miles rear-drive",
-       "800-volt charging and a NACS port from day one",
-       "Almost every used one is a near-new car"
-      ],
-      "bad": [
-       "Brand new: thin used supply and prices close to new",
-       "First model year \u2014 expect software updates",
-       "Very large and heavy for city parking"
-      ],
-      "watch": [
-       "Compare against a new one with incentives before paying near-new money",
-       "Confirm the trim (S, SE, SEL, Limited) \u2014 equipment differs a lot"
-      ]
-     },
-     "cadence": 4
-    }
-   }
-  },
-  "kia": {
-   "label": "Kia",
-   "make": "Kia",
-   "models": {
-    "ev6": {
-     "label": "Kia EV6",
-     "model": "EV6",
-     "active": false,
-     "notes": {
-      "good": [
-       "Same 800-volt platform as the Ioniq 5 \u2014 18-minute fast charging",
-       "Sportier setup and sharper looks; GT-Line is the sweet spot",
-       "Deep depreciation makes clean examples a bargain"
-      ],
-      "bad": [
-       "Shares the Ioniq 5's ICCU problem",
-       "Firmer ride and poor rear visibility",
-       "Cargo space is modest for the size"
-      ],
-      "watch": [
-       "ICCU recall and 12V campaign completed on the VIN",
-       "The 2025 refresh (bigger battery, NACS) is worth seeking if you can",
-       "Check that the charge-port door and DC charging work \u2014 do a fast-charge test if possible"
-      ]
-     }
-    },
-    "ev9": {
-     "label": "Kia EV9",
-     "model": "EV9",
-     "notes": {
-      "good": [
-       "A proper three-row EV at a sane price, with 800-volt charging",
-       "Around 280\u2013300 miles; Land and GT-Line interiors are plush",
-       "Heavy rebates on new ones have pushed used prices down"
-      ],
-      "bad": [
-       "Heavy, so tires go fast and efficiency is middling",
-       "Early builds had trim and rattle complaints",
-       "Same platform ICCU risk as the EV6 and Ioniq 5"
-      ],
-      "watch": [
-       "Recalls completed; check the 12V",
-       "Second row: captain's chairs or bench \u2014 decide before you shop",
-       "Listen for wind noise from the door seals on a test drive"
-      ]
-     },
-     "cadence": 4
-    }
-   }
-  },
-  "audi": {
-   "label": "Audi",
-   "make": "Audi",
-   "models": {
-    "a6-etron": {
-     "label": "Audi A6 e-tron",
-     "model": "A6 e-tron,A6 E-Tron,e-tron A6",
-     "notes": {
-      "good": [
-       "800-volt PPE platform shared with the Q6: 270 kW charging, and the Sportback can exceed 350 miles",
-       "A proper luxury sedan interior in a market full of crossovers",
-       "Early lease returns are starting to land well under sticker"
-      ],
-      "bad": [
-       "Brand new: used supply is thin and prices still sit close to new",
-       "First model year \u2014 expect software updates and early-build niggles",
-       "The sloping roof costs rear headroom, and there is no Apple CarPlay projection on early software"
-      ],
-      "watch": [
-       "Confirm every over-the-air update and campaign has been applied",
-       "Sportback vs. standard body and RWD vs. quattro change range meaningfully \u2014 check the exact spec",
-       "Compare against a new one with incentives before paying near-new money"
-      ]
-     },
-     "cadence": 4
-    },
-    "q4-etron": {
-     "label": "Audi Q4 e-tron",
-     "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4",
-     "active": false,
-     "notes": {
-      "good": [
-       "Quiet, comfortable and upscale inside for the money",
-       "Steep depreciation \u2014 often the cheapest premium-badge EV",
-       "Solid VW-group hardware underneath"
-      ],
-      "bad": [
-       "Slow DC charging (roughly 125\u2013170 kW) and a 400-volt system",
-       "Infotainment can be sluggish and buggy on early cars",
-       "2022\u20132023 range is only around 240 miles"
-      ],
-      "watch": [
-       "2024 and later got a bigger battery and faster charging \u2014 target those",
-       "Ask for the software update history; several campaigns fixed 12V and charging faults",
-       "Verify heated seats and wheel; option packages vary"
-      ]
-     }
-    },
-    "q6-etron": {
-     "label": "Audi Q6 e-tron",
-     "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6",
-     "active": false,
-     "notes": {
-      "good": [
-       "New 800-volt platform shared with the Porsche Macan EV: fast charging and 300+ miles",
-       "Excellent interior and driving refinement"
-      ],
-      "bad": [
-       "New model: used supply is thin and prices sit close to new",
-       "First-year software complaints are common"
-      ],
-      "watch": [
-       "Compare with a new one after incentives",
-       "Confirm all over-the-air updates have been applied",
-       "Check panel and door alignment on early builds"
-      ]
-     }
-    }
-   }
-  },
-  "lucid": {
-   "label": "Lucid",
-   "make": "Lucid",
-   "models": {
-    "air": {
-     "label": "Lucid Air",
-     "model": "Air",
-     "min_price": 30000,
-     "notes": {
-      "good": [
-       "Class-leading efficiency and range \u2014 a Grand Touring can exceed 500 miles",
-       "Among the fastest-charging cars sold",
-       "Used prices collapsed: six-figure cars now sell for $40k"
-      ],
-      "bad": [
-       "A young company: service centers are sparse and parts can take time",
-       "2022 cars had software and build-quality issues",
-       "Resale is unpredictable"
-      ],
-      "watch": [
-       "Check the distance to the nearest Lucid service center before anything else",
-       "Confirm every software campaign and recall on the VIN",
-       "Verify the warranty transfers, and test the door handles, glass roof and charge port"
-      ]
-     },
-     "cadence": 4
-    }
-   }
-  },
-  "chevrolet": {
-   "label": "Chevrolet",
-   "make": "Chevrolet",
-   "models": {
-    "equinox-ev": {
-     "label": "Chevrolet Equinox EV",
-     "model": "Equinox EV",
-     "notes": {
-      "good": [
-       "Around 319 miles front-drive, roomy, and cheap used",
-       "Super Cruise is available on the RS",
-       "Simple, honest EV on GM's Ultium platform"
-      ],
-      "bad": [
-       "No Apple CarPlay or Android Auto \u2014 Google built-in only",
-       "DC charging around 150 kW",
-       "Early software glitches and plain interior plastics"
-      ],
-      "watch": [
-       "Check GM's software recall campaigns are done",
-       "Super Cruise may need a subscription after the trial",
-       "Confirm front-drive vs all-wheel-drive on the specific car"
-      ]
-     },
-     "cadence": 4
-    },
-    "blazer-ev": {
-     "label": "Chevrolet Blazer EV",
-     "model": "Blazer EV",
-     "active": false,
-     "notes": {
-      "good": [
-       "Sharp looks and a comfortable, quiet cabin",
-       "RS trims run roughly 280\u2013320 miles depending on drivetrain",
-       "Heavy discounts made used ones cheap"
-      ],
-      "bad": [
-       "The 2024 launch was stopped for software faults; fixed by updates, but ask",
-       "No Apple CarPlay or Android Auto",
-       "Middling efficiency"
-      ],
-      "watch": [
-       "Confirm the software recall was completed and the car has been updated",
-       "RS came front-, rear- and all-wheel-drive \u2014 check which",
-       "Look at the service history for charging faults"
-      ]
-     },
-     "trims": {
-      "rs": {
-       "label": "RS",
-       "trim_query": "RS,2RS,3RS",
-       "trim_match": "rs"
-      }
-     }
-    }
-   }
-  },
-  "tesla": {
-   "label": "Tesla",
-   "make": "Tesla",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "model-y": {
-     "label": "Tesla Model Y",
-     "model": "Model Y"
-    }
-   }
-  },
-  "ford": {
-   "label": "Ford",
-   "make": "Ford",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "mustang-mach-e": {
-     "label": "Ford Mustang Mach-E",
-     "model": "Mustang Mach-E,Mach-E"
-    }
-   }
-  },
-  "gmc": {
-   "label": "GMC",
-   "make": "GMC",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "hummer-ev": {
-     "label": "GMC Hummer EV",
-     "model": "Hummer EV,Hummer EV Pickup,Hummer EV SUV"
-    }
-   }
-  },
-  "genesis": {
-   "label": "Genesis",
-   "make": "Genesis",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "gv60": {
-     "label": "Genesis GV60",
-     "model": "GV60"
-    }
-   }
-  },
-  "nissan": {
-   "label": "Nissan",
-   "make": "Nissan",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "ariya": {
-     "label": "Nissan Ariya",
-     "model": "Ariya,ARIYA"
-    }
-   }
-  },
-  "mercedes": {
-   "label": "Mercedes-Benz",
-   "make": "Mercedes-Benz",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "eqb": {
-     "label": "Mercedes-Benz EQB",
-     "model": "EQB,EQB 250+,EQB 300,EQB 350"
-    }
-   }
-  },
-  "porsche": {
-   "label": "Porsche",
-   "make": "Porsche",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "taycan": {
-     "label": "Porsche Taycan",
-     "model": "Taycan"
-    }
-   }
-  },
-  "volkswagen": {
-   "label": "Volkswagen",
-   "make": "Volkswagen",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "id4": {
-     "label": "Volkswagen ID.4",
-     "model": "ID.4,ID4"
-    }
-   }
-  },
-  "volvo": {
-   "label": "Volvo",
-   "make": "Volvo",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "ex30": {
-     "label": "Volvo EX30",
-     "model": "EX30"
-    }
-   }
-  },
-  "polestar": {
-   "label": "Polestar",
-   "make": "Polestar",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "polestar-3": {
-     "label": "Polestar 3",
-     "model": "3,Polestar 3"
-    }
-   }
-  },
-  "mini": {
-   "label": "MINI",
-   "make": "MINI",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "countryman-electric": {
-     "label": "MINI Countryman Electric",
-     "model": "Countryman Electric,Countryman SE"
-    }
-   }
-  },
-  "cadillac": {
-   "label": "Cadillac",
-   "make": "Cadillac",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "lyriq": {
-     "label": "Cadillac Lyriq",
-     "model": "LYRIQ,Lyriq"
-    }
-   }
-  },
-  "jeep": {
-   "label": "Jeep",
-   "make": "Jeep",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "wagoneer-s": {
-     "label": "Jeep Wagoneer S",
-     "model": "Wagoneer S"
-    }
-   }
-  },
-  "dodge": {
-   "label": "Dodge",
-   "make": "Dodge",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "charger-daytona": {
-     "label": "Dodge Charger Daytona",
-     "model": "Charger Daytona"
-    }
-   }
-  },
-  "ram": {
-   "label": "Ram",
-   "make": "Ram",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "promaster-ev": {
-     "label": "Ram ProMaster EV",
-     "model": "ProMaster EV"
-    }
-   }
-  },
-  "rivian": {
-   "label": "Rivian",
-   "make": "Rivian",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "r1s": {
-     "label": "Rivian R1S",
-     "model": "R1S"
-    }
-   }
-  },
-  "vinfast": {
-   "label": "VinFast",
-   "make": "VinFast",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "vf8": {
-     "label": "VinFast VF 8",
-     "model": "VF 8,VF8"
-    }
-   }
-  },
-  "fisker": {
-   "label": "Fisker",
-   "make": "Fisker",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "ocean": {
-     "label": "Fisker Ocean",
-     "model": "Ocean"
-    }
-   }
-  },
-  "toyota": {
-   "label": "Toyota",
-   "make": "Toyota",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "bz4x": {
-     "label": "Toyota bZ4X",
-     "model": "bZ4X,bZ"
-    }
-   }
-  },
-  "honda": {
-   "label": "Honda",
-   "make": "Honda",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "prologue": {
-     "label": "Honda Prologue",
-     "model": "Prologue"
-    }
-   }
-  },
-  "acura": {
-   "label": "Acura",
-   "make": "Acura",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "zdx": {
-     "label": "Acura ZDX",
-     "model": "ZDX"
-    }
-   }
-  },
-  "lexus": {
-   "label": "Lexus",
-   "make": "Lexus",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "rz": {
-     "label": "Lexus RZ",
-     "model": "RZ,RZ 300e,RZ 450e"
-    }
-   }
-  },
-  "subaru": {
-   "label": "Subaru",
-   "make": "Subaru",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "solterra": {
-     "label": "Subaru Solterra",
-     "model": "Solterra"
-    }
-   }
-  },
-  "maserati": {
-   "label": "Maserati",
-   "make": "Maserati",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "grecale-folgore": {
-     "label": "Maserati Grecale Folgore",
-     "model": "Grecale Folgore"
-    }
-   }
-  },
-  "lotus": {
-   "label": "Lotus",
-   "make": "Lotus",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "eletre": {
-     "label": "Lotus Eletre",
-     "model": "Eletre"
-    }
-   }
-  },
-  "rolls-royce": {
-   "label": "Rolls-Royce",
-   "make": "Rolls-Royce",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "spectre": {
-     "label": "Rolls-Royce Spectre",
-     "model": "Spectre"
-    }
-   }
-  },
-  "jaguar": {
-   "label": "Jaguar",
-   "make": "Jaguar",
-   "national_only": true,
-   "cadence": 10,
-   "models": {
-    "i-pace": {
-     "label": "Jaguar I-PACE",
-     "model": "I-PACE,I-Pace"
-    }
-   }
-  }
- }
 }

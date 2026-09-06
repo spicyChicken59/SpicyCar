@@ -3350,8 +3350,15 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
                          f"…and that they are the ones that kept both queries: {kept}")
 
     def test_the_tenth_day_tier_is_one_national_only_ev_a_brand(self):
+        """Derived, not counted. This asserted `== 27` and went red the moment
+        a brand was added — which is the guard working, and also a literal
+        doing a rule's job. The rule is: every brand outside BMW that is not
+        one of the five with a record, one target each, national query only.
+        The prose's own number is pinned separately, against the config."""
         ref = sorted(self._by_cadence().get(10, []))
-        self.assertEqual(len(ref), 27, f"the prose says 27 brands: {len(ref)}")
+        kept = {T.TARGETS[t]["brand"] for t in self._by_cadence().get(4, [])}
+        self.assertEqual({T.TARGETS[t]["brand"] for t in ref},
+                         {t["brand"] for t in T.TARGETS.values()} - kept - {"bmw"})
         self.assertTrue(all(T.TARGETS[t].get("national_only") for t in ref),
                         "the prose says national query only")
         self.assertEqual(len({T.TARGETS[t]["brand"] for t in ref}), len(ref),
