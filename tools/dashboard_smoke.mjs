@@ -2467,10 +2467,18 @@ await step('the market sentence describes the trim in view', async () => {
     const tracked = rows.filter((x) => (x.days_tracked || 0) >= 2), swings = tracked.filter(swing), counted = tracked.filter((x) => !swing(x)), cut = counted.filter((x) => x.cuts);
     const drops = [];
     for (const x of rows) { if (swing(x)) continue; const s = x.series || []; for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]); }
+    // `departures` before the listing-date filter, because the median's n is
+    // not the number of departures and both surfaces printed it as one. The
+    // still-listed clause is the page's own stillListed(): a VIN that left one
+    // watch and is listed under another trim did not leave the market.
+    const stillL = (g) => !!(g && g.still_listed && (g.still_listed.trim || g.still_listed.trim_id));
     const spans = [], seen = new Set();
+    let departures = 0;
     for (const g of gone) {
-      if (g.likely !== 'delisted' || g.exact !== true || !g.listed_since) continue;
+      if (g.likely !== 'delisted' || g.exact !== true || stillL(g)) continue;
       const k = String(g.vin || '').toUpperCase(); if (seen.has(k)) continue; seen.add(k);
+      departures++;
+      if (!g.listed_since) continue;
       spans.push(Math.max(0, Math.round((Date.parse(String(g.last_seen).slice(0, 10) + 'T00:00:00Z') - Date.parse(String(g.listed_since).slice(0, 10) + 'T00:00:00Z')) / 86400000)));
     }
     const out = [];
@@ -2488,7 +2496,7 @@ await step('the market sentence describes the trim in view', async () => {
       out.push(`${netDown.length} of ${counted.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
       out.push(`${counted.length ? Math.round(cut.length / counted.length * 100) : 0}% of ${counted.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')} of ${drops.length} cut${drops.length === 1 ? '' : 's'}` : '') + (swings.length ? ` · ${swings.length} seen at two prices, not counted` : ''));
     }
-    if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
+    if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} of ${departures} dated)`);
     return { out, spans: spans.length };
   };
   const dedupe = (rows) => { const seen = new Set(); return rows.filter((g) => { const k = String(g.vin || '').toUpperCase(); if (seen.has(k)) return false; seen.add(k); return true; }); };
@@ -5394,6 +5402,64 @@ await step('the car in hand is a car the reader can find', async () => {
   await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
 });
 
+// ---- a figure names the population it is over ------------------------------
+// Two sentences counted one thing and named another. The scatter said "148
+// priced cars" on a page whose market tile says 151 cars are priced — its own
+// 49 + 99 add to 148 because three i7s publish no mileage and cannot be
+// plotted, which is a fact about the PLOT and not about pricing. And the promo
+// footnote said "13 of the 31 certified cars … BMW FS certified 2.99%" on the
+// watchlist, where 31 is 23 i5s at 2.99% plus 8 iXs at 2.49%: two offers pooled
+// under the name of one, and the iX cars are not certified for it at all.
+await step('a figure names the population it is over', async () => {
+  plan('the scatter counts what it can plot, and says so',
+       'the promo footnote counts the promo it names');
+  const sub = WATCHED.find((w) => {
+    const L = (SHEET.brands[w.bk].models[w.mk] || {}).listings || [];
+    return L.some((x) => x.price && x.miles == null) && L.some((x) => x.price && x.miles != null);
+  });
+  if (!sub) skip('the scatter counts what it can plot, and says so',
+                 'no watched model mixes cars with and without a mileage, so the plot and the priced set are the same population');
+  else {
+    await open(sub.q);
+    const L = (SHEET.brands[sub.bk].models[sub.mk] || {}).listings || [];
+    const priced = L.filter((x) => x.price != null).length;
+    const plottable = L.filter((x) => x.price != null && x.miles != null).length;
+    const hint = ((await page.textContent('#scatter-hint')) || '').replace(/\s+/g, ' ');
+    const said = Number((hint.match(/^(\d+)/) || [])[1]);
+    ok('the scatter counts what it can plot, and says so',
+       said === plottable && plottable !== priced && !/priced cars/.test(hint),
+       `${sub.id}: ${priced} cars carry a price and ${plottable} carry a price and a mileage;`
+       + ` the hint opens "${hint.slice(0, 70)}"`);
+  }
+  // …and the footnote, whose denominator must be the offer in its own heading.
+  const promos = (((SHEET.buyer || {}).finance || {}).promos || []).filter((p) => p.active && p.apr != null);
+  if (promos.length < 2) return skip('the promo footnote counts the promo it names',
+                                     'this buyer has fewer than two live promos, so nothing can be pooled');
+  await open('');
+  const all = ((await page.textContent('#promo-foot')) || '').replace(/\s+/g, ' ');
+  const head = ((await page.textContent('#promo-card')) || '').replace(/\s+/g, ' ');
+  const named = promos.find((p) => head.includes(p.label));
+  if (!named || !/of the \d+ certified/.test(all))
+    return skip('the promo footnote counts the promo it names',
+                `the watchlist card names ${named ? named.label : 'no promo'} and its footnote says ${JSON.stringify(all.slice(0, 60))}`);
+  // Which cars a promo reaches is computed in the browser (annotateFinance),
+  // so the sheet cannot answer it — but the page of the model that promo
+  // belongs to can, and that view holds exactly the promo's own cars. The
+  // watchlist pools every model in view, so the two disagreed: 13 of 31 there
+  // against 11 of 23 here, for one offer.
+  const home = WATCHED.find((w) => `${w.bk}/${w.mk}` === named.model)
+    || WATCHED.find((w) => named.model && String(named.model).includes(w.mk));
+  if (!home) return skip('the promo footnote counts the promo it names',
+                         `no watched model matches ${named.label}'s own model key ${named.model}`);
+  await open(home.q);
+  const one = ((await page.textContent('#promo-foot')) || '').replace(/\s+/g, ' ');
+  const nums = (t) => (t.match(/(\d+) of the (\d+) certified/) || []).slice(1, 3).join('/');
+  ok('the promo footnote counts the promo it names',
+     nums(all) !== '' && nums(all) === nums(one),
+     `${named.label}: the watchlist says ${nums(all) || '(nothing)'} and its own`
+     + ` model page says ${nums(one) || '(nothing)'}`);
+});
+
 // ---- the history the record publishes is the history the page draws -------
 // flags() builds the "_1-owner · no accidents · ex-lease_" line under every car
 // in REPORT.md and the `flags` array on every row of docs/data.json; the page
@@ -5804,7 +5870,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 266;
+const EXPECTED = 268;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

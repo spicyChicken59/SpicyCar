@@ -2208,7 +2208,13 @@
     }
     const touch = window.matchMedia('(hover: none)').matches;
     const stock = stockCounts(pts);
-    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters.`
+    // "priced cars" is a population this page counts elsewhere and it is not
+    // this one: the plot needs a price AND a mileage, so three i7s that publish
+    // no mileage are not on it — and the tile one card up says "151", with its
+    // own "3 publish no mileage and are in neither". The parts under this
+    // sentence (49 stock + 99 used) add to the number it names either way; what
+    // was wrong was which total the reader would find it against.
+    $('scatter-hint').textContent = `${pts.length} car${pts.length === 1 ? '' : 's'} with a price and a mileage under the current filters.`
       // The column of dots at the left edge is a different market, and a
       // year's line fitted through it is fitted through dealer stock.
       + (stock.nNew >= 5 ? ` ${stock.nNew} of them sit under ${NEW_STOCK_MILES} miles — dealer stock priced near sticker, the column at the left edge — and the ${stock.nUsed} used cars are the rest.` : '')
@@ -2336,12 +2342,19 @@
       const s = x.series || [];
       for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]);
     }
+    // `departures` is counted before the listing-date filter, because the
+    // median's n is not the number of departures and the record printed it as
+    // one: "(30 gone)" on a model where 38 cars left, the other 8 dropped for
+    // having no usable listing date.
     const spans = [], seen = new Set();
+    let departures = 0;
     for (const g of gone) {
-      if (g.likely !== 'delisted' || g.exact !== true || stillListed(g) || !g.listed_since) continue;
+      if (g.likely !== 'delisted' || g.exact !== true || stillListed(g)) continue;
       const k = String(g.vin || '').toUpperCase();
       if (k && seen.has(k)) continue;
       if (k) seen.add(k);
+      departures++;
+      if (!g.listed_since) continue;
       const a = Date.parse(String(g.listed_since).slice(0, 10) + 'T00:00:00Z');
       const b = Date.parse(String(g.last_seen || '').slice(0, 10) + 'T00:00:00Z');
       if (isNaN(a) || isNaN(b)) continue;
@@ -2374,7 +2387,7 @@
       // the median no denominator — and the honest answer to "could a $1
       // move be propping this up": a median of $600 over 139 steps cannot be.
       n_cuts: drops.length,
-      n_sold: spans.length,
+      n_sold: spans.length, n_departures: departures,
       median_days_to_sale: spans.length ? Math.trunc(median(spans)) : null,
     };
   }
@@ -4324,7 +4337,19 @@
     // car put a 2.49% iX under a heading that said 2.99%.
     const promo = live.find((p) => p.apr === chosen.x.apr && p.model === chosen.x.model_key)
       || live.find((p) => p.apr === chosen.x.apr) || live[0];
-    return { promo, rows, named, best: chosen, unnamed: rows.length - named.length };
+    // …and the footnote's denominator is THAT promo's cars, for the same reason
+    // the heading is that promo. `rows` is every car in view any live promo
+    // reaches, and on the watchlist that is two offers pooled: it read "13 of
+    // the 31 certified cars … BMW FS certified 2.99%", where 31 is 23 i5s at
+    // 2.99% plus 8 iXs at 2.49% and 13 is 11 plus 2. The eight iXs are not
+    // certified for the offer the sentence names, and the two of them it counts
+    // as excluded were never candidates for the figures they are said to be
+    // excluded from — those are one i5's payment, interest and price.
+    const mine = rows.filter((x) => x.apr === promo.apr
+      && (promo.model == null || x.model_key === promo.model));
+    const on = mine.length ? mine : rows;
+    return { promo, rows: on, named: on.filter((x) => !x.apr_seller_unnamed),
+             best: chosen, unnamed: on.filter((x) => x.apr_seller_unnamed).length };
   }
   // What a car financed at the ordinary rate would have to COST to match a
   // payment. financed() is linear in price — price x (1 + tax) + paperwork —
@@ -4909,7 +4934,7 @@
     // the ad actually ended somewhere after that. Twelve because the number
     // is printed bare, and below twelve its own interval is wider than the
     // claim (at eight, "~19d" spans 3 to 57 days).
-    if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 12) mbits.push(`listings ran at least ~${mk.median_days_to_sale}d (${mk.n_sold} gone)`);
+    if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 12) mbits.push(`listings ran at least ~${mk.median_days_to_sale}d (${mk.n_sold} of ${mk.n_departures || mk.n_sold} dated)`);
     // the full list is scannable nowhere — show the first slice, offer the rest
     const LIMIT = 30;
     const shown = S.showAllList ? rows : rows.slice(0, LIMIT);

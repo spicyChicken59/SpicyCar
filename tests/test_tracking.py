@@ -2888,6 +2888,85 @@ class TestANumberThatIsNotOneIsNone(unittest.TestCase):
                             f"location[{i}] = 1e400 produced a distance of {d!r}")
 
 
+class TestTheDaysToSaleClauseNamesItsOwnDenominator(unittest.TestCase):
+    """"listings ran at least ~6d (30 gone)" — where 38 cars had gone.
+
+    sale_stats() builds a span only for a departure that also carries a usable
+    listing date (missing dates, and dates find_index_dates() withheld, are
+    skipped), and returned that count as `n_sold`. market_line() printed it
+    under the word this report uses for departures. Three words to its left the
+    same sentence already says "(85 of 134 dated)" for exactly this reason.
+    """
+
+    @staticmethod
+    def gone(n, dated, day="2026-08-20"):
+        out = []
+        for i in range(n):
+            g = {"vin": f"V{i:016d}", "likely": "delisted", "exact": True,
+                 "last_seen": "2026-09-05", "last_price": 40000 + i,
+                 "series": [], "trim_id": "bmw-i5-m60"}
+            if i < dated:
+                g["listed_since"] = day
+            out.append(g)
+        return out
+
+    def test_the_count_is_the_spans_over_the_departures(self):
+        st = T.sale_stats(self.gone(38, 30))
+        self.assertEqual((st["n_sold"], st["n_departures"]), (30, 38))
+        line = T.market_line({**st, "n": 100, "dated": 0})
+        self.assertIn("(30 of 38 dated)", line)
+        self.assertNotIn("(30 gone)", line,
+                         "the median's n is not the number of cars that left")
+
+    def test_a_record_where_every_departure_is_dated_says_so_plainly(self):
+        st = T.sale_stats(self.gone(20, 20))
+        self.assertIn("(20 of 20 dated)", T.market_line({**st, "n": 100, "dated": 0}))
+
+    def test_a_departure_that_is_not_evidence_is_in_neither(self):
+        """The count sits inside the same gate the spans do, so a car that
+        merely fell out of a window does not swell the denominator either."""
+        rows = self.gone(14, 14) + [{"vin": "W" * 17, "likely": "out of window",
+                                     "exact": True, "last_seen": "2026-09-05",
+                                     "last_price": 1, "listed_since": "2026-08-01",
+                                     "series": [], "trim_id": "bmw-i5-m60"}]
+        st = T.sale_stats(rows)
+        self.assertEqual((st["n_sold"], st["n_departures"]), (14, 14))
+
+
+class TestTheComparisonPreambleDescribesTheQueriesItRan(unittest.TestCase):
+    """"the 20 lowest asking … per model", over models the same block lists at
+    66 and 68.
+
+    The scan is per TARGET. Every comparison model on this watchlist carries two
+    trim targets, each fetching one page of PER_PAGE from each of two sources,
+    so the cap is 40 a target and 80 a model — and the union of two trim-sliced
+    queries is not "the 20 lowest asking" of the model at all.
+    """
+
+    def test_the_counts_it_prints_can_run_past_the_number_it_names(self):
+        """The preamble is checked against the arithmetic of the plan, not
+        against today's market: a model with two trims can hold twice the cap
+        of one, and the sentence has to allow for it."""
+        multi = [mk for mk in {t["model_key"] for t in T.TARGETS.values()}
+                 if len([t for t in T.TARGETS.values()
+                         if t["model_key"] == mk and not t["shopping"]]) > 1]
+        self.assertTrue(multi, "the watchlist should still have a two-trim "
+                               "comparison model for this to be about")
+        report = Path("REPORT.md").read_text()
+        if "## Comparison" not in report:
+            self.skipTest("the committed record has no comparison block")
+        pre = report.split("## Comparison")[1].split("\n\n")[1]
+        self.assertIn(f"the {T.PER_PAGE} lowest asking", pre)
+        self.assertIn("per TRIM queried", pre,
+                      "the cap is per target, and a model can carry several")
+        for line in report.split("## Comparison")[1].splitlines():
+            m = re.match(r"- \*\*(.+?)\*\* — (\d+) cars", line)
+            if m and int(m.group(2)) > 2 * T.PER_PAGE:
+                self.assertIn("run past 20", pre,
+                              f"{m.group(1)} holds {m.group(2)} cars under a "
+                              f"sentence naming {T.PER_PAGE}")
+
+
 class TestTheNonMonotoneIllustrationIsAboutTheseBands(unittest.TestCase):
     """The figures README and band_cost() use to argue for marginal banding.
 

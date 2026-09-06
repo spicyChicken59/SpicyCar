@@ -1426,7 +1426,7 @@ def sale_stats(gone):
     left: days from the listing date (or first sighting, when the dealer
     never said) to the last day the car was seen. Out-of-window and
     unchecked departures are not sales and are left out."""
-    spans = []
+    spans, departures = [], 0
     for g in gone:
         if g.get("likely") != "delisted":
             continue
@@ -1434,6 +1434,13 @@ def sale_stats(gone):
         # not evidence that a car left. See departure_is_evidence().
         if not departure_is_evidence(g):
             continue
+        # Counted before the listing-date filter below, because the median's n
+        # is not the number of departures and was printed as one — see
+        # market_line(): "(30 gone)" on a model where 38 cars left, with the
+        # other 8 dropped for having no usable listing date. The same clause
+        # three words to the left already carries "(85 of 134 dated)" for
+        # exactly this reason.
+        departures += 1
         # The listing date, and ONLY the listing date. first_seen used to stand
         # in for it, which measured how long the TRACKER had been watching: on a
         # ten-day-old record no span could exceed ten days, so "listings ran at
@@ -1483,7 +1490,7 @@ def sale_stats(gone):
         if len(series) >= 2:
             first = to_int(series[0][1]) if len(series[0]) > 1 else None
             cuts.append(1 if (first and first > last) else 0)
-    return {"n_sold": len(spans),
+    return {"n_sold": len(spans), "n_departures": departures,
             "median_days_to_sale": int(median(spans)) if spans else None,
             # Deliberately not "sold_price": see above.
             "n_exits": len(exits),
@@ -1583,8 +1590,12 @@ def market_line(stats):
     # understates listing life by around 17% and makes the market look faster
     # than it is; "ran at least" is the same number without the overclaim.
     if stats.get("median_days_to_sale") is not None and stats.get("n_sold", 0) >= 12:
+        # …over how many of how many. n_sold is the spans the median is taken
+        # over, which is the departures that carried a usable listing date, and
+        # it was printed under the word this report uses for departures.
         bits.append(f"listings ran at least ~{stats['median_days_to_sale']}d "
-                    f"({stats['n_sold']} gone)")
+                    f"({stats['n_sold']} of "
+                    f"{stats.get('n_departures') or stats['n_sold']} dated)")
     # Model level only. A median mixing an eDrive50 with an M70 describes no car
     # that exists — exit_stats() says so and refuses to compute one per model —
     # so the report shows this ONLY where a model has a single trim. Everywhere
@@ -3908,8 +3919,11 @@ def build_outputs(today_rows, all_rows, hist):
     if compact:
         report += ["## Comparison", "",
                    "_By asking price, with a shipping estimate per car, on a slower "
-                   f"cadence: the 20 lowest asking in {'/'.join(SEARCH_STATES) or 'your states'} "
-                   "and the 20 lowest asking nationwide per model. Every car is on the "
+                   f"cadence: the {PER_PAGE} lowest asking in "
+                   f"{'/'.join(SEARCH_STATES) or 'your states'} and the {PER_PAGE} lowest "
+                   "asking nationwide per TRIM queried — a model with two trims on the "
+                   "watchlist is the union of two such queries, which is why these counts "
+                   "run past 20. Every car is on the "
                    "dashboard._", ""]
         report += compact + [""]
     # CALLS is this PROCESS's counter, and an offline rebuild makes none — so

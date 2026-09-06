@@ -366,7 +366,7 @@ _Worth the ship:_
   [listing](https://atlantabmw.com/exotic-used/BMW/2026-BMW-i7-atlanta-ga-57062c16ac185191c275d2adae278bdb.htm) `WBY43EJ06TCW32247`
 
 _151 vehicles across 3 trims · IL 19 · OH 2 · IN 3 · WI 1 · beyond 126_
-_typical car 29d on market (113 of 151 dated) — 49 dealer stock at 78d, 61 used at 21d, 3 with no mileage · 23 of 125 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 gone)_
+_typical car 29d on market (113 of 151 dated) — 49 dealer stock at 78d, 61 used at 21d, 3 with no mileage · 23 of 125 ask less than when first seen, median $1,131 less · 3 cut and put back · 21% of 125 cut while tracked, median $758 of 37 cuts · 15 seen at two prices, not counted · listings ran at least ~6d (30 of 38 dated)_
 
 ### eDrive50 — 92 vehicles · lowest asking $54,000 (Marietta, GA)
 
@@ -642,7 +642,7 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 
 ## Comparison
 
-_By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per model. Every car is on the dashboard._
+_By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per TRIM queried — a model with two trims on the watchlist is the union of two such queries, which is why these counts run past 20. Every car is on the dashboard._
 
 - **BMW iX** — 66 cars · 29 drivable · lowest asking $30,084 (Sacramento, CA) + $1,353 shipping · drivable from $30,980 (Schererville, IN) · median asking $45,313 _(every 3 days · as of 2026-09-03)_
 - **Hyundai Ioniq 5** — 27 cars · 18 drivable · lowest asking $14,999 (Plantation, FL) + $1,124 shipping · drivable from $17,943 (Columbus, OH) · median asking $20,998 _(every 3 days · as of 2026-09-05)_
