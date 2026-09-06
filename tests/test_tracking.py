@@ -17,6 +17,7 @@ import html as html_mod
 import json
 import os
 import re
+import shutil
 import struct
 import unittest
 import unittest.mock
@@ -2791,6 +2792,276 @@ class TestDaysListedAnchor(unittest.TestCase):
             self.assertIsNone(T.days_listed(self.row("2026-08-15", "2026-08-09")))
         finally:
             T.INDEX_DATES.clear()
+
+
+class TestTheWeeklyLoopKnowsWhenItDidNotLook(unittest.TestCase):
+    """The one automation whose stated job is "the remembering".
+
+    Its lint step pipes the linter through `tee`, and this file — unlike
+    check.yml, which runs the identical line — set no `pipefail`, so a crash
+    returned 0. `set -e` does not abort on a failure inside a `||` list either,
+    so both clones could fail and the script carried on. `continue-on-error`
+    would have swallowed the step's status regardless. What reached the digest
+    was an empty /tmp/report.txt and an unset `open_candidates`, and
+    `Number('') === 0` — so a run that looked at nothing read as a run that
+    found nothing, and the digest commented "every candidate has a recorded
+    verdict and the pin is current. Closing." and closed the tracking issue.
+
+    Both halves are executed here rather than read: the shell against a stub
+    git and node, the digest script against a stub `github`.
+    """
+
+    @staticmethod
+    def _block(name, key):
+        text = (Path(__file__).parent.parent / ".github/workflows/loop.yml").read_text()
+        head = text.index(f"- name: {name}\n")
+        at = text.index(f"{key}: |\n", head) + len(f"{key}: |\n")
+        lines = text[at:].split("\n")
+        indent = len(lines[0]) - len(lines[0].lstrip(" "))
+        body = []
+        for ln in lines:
+            if ln.strip() == "":
+                body.append("")
+                continue
+            if len(ln) - len(ln.lstrip(" ")) < indent:
+                break
+            body.append(ln[indent:])
+        return "\n".join(body).rstrip() + "\n"
+
+    def test_a_clone_that_fails_takes_the_step_down_with_it(self):
+        import subprocess, tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            (tmp / "bin").mkdir()
+            for name, script in (("git", 'if [ "$1" = "clone" ]; then exit 128; fi\nexit 0\n'),
+                                 ("node", 'echo "cannot find module" >&2\nexit 1\n')):
+                f = tmp / "bin" / name
+                f.write_text("#!/bin/sh\n" + script)
+                f.chmod(0o755)
+            (tmp / "docs").mkdir()
+            (tmp / "docs" / "index.html").write_text(
+                'src="https://cdn.jsdelivr.net/gh/x/design-system@v2.4.0/sc.css"\n')
+            r = subprocess.run(["bash", "-e", "-c",
+                                self._block("Run the consumer policy against the pinned sheet", "run")],
+                               cwd=tmp, capture_output=True, text=True,
+                               env={**os.environ, "PATH": f"{tmp / 'bin'}:{os.environ['PATH']}",
+                                    "GITHUB_STEP_SUMMARY": str(tmp / "sum")})
+            self.assertNotEqual(r.returncode, 0,
+                                "a step that could not fetch the sheet it lints must "
+                                f"not report success:\n{r.stdout}\n{r.stderr}")
+            self.assertIn("could not fetch design-system@v2.4.0", r.stdout + r.stderr,
+                          "…and it must say which thing it could not get")
+
+    def test_a_linter_that_crashes_takes_the_step_down_too(self):
+        """The other half, and the one only `pipefail` catches: the checkout
+        arrives and the linter itself dies. `tee` returns 0 over it, which is
+        why check.yml sets pipefail on the identical line and this file did
+        not."""
+        import subprocess, tempfile, shutil as _sh
+        ds = Path("/tmp/ds")
+        had = ds.exists()
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            (tmp / "bin").mkdir()
+            (tmp / "bin" / "git").write_text(
+                "#!/bin/sh\nmkdir -p /tmp/ds && : > /tmp/ds/sc.css\nexit 0\n")
+            (tmp / "bin" / "node").write_text("#!/bin/sh\necho boom >&2\nexit 1\n")
+            for n in ("git", "node"):
+                (tmp / "bin" / n).chmod(0o755)
+            (tmp / "docs").mkdir()
+            (tmp / "docs" / "index.html").write_text('design-system@v2.4.0/sc.css\n')
+            try:
+                r = subprocess.run(["bash", "-e", "-c",
+                                    self._block("Run the consumer policy against the pinned sheet", "run")],
+                                   cwd=tmp, capture_output=True, text=True,
+                                   env={**os.environ, "PATH": f"{tmp / 'bin'}:{os.environ['PATH']}",
+                                        "GITHUB_STEP_SUMMARY": str(tmp / "sum")})
+            finally:
+                if not had:
+                    _sh.rmtree(ds, ignore_errors=True)
+        self.assertNotEqual(r.returncode, 0,
+                            "the checkout was there and the linter died; `tee` "
+                            f"returns 0 over that unless pipefail is set:\n{r.stdout}\n{r.stderr}")
+
+    def _digest(self, outcome, candidates, report, has_issue):
+        import subprocess, tempfile, json as _json
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the digest script through")
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            (tmp / "digest.js").write_text(self._block("Open or update the digest issue", "script"))
+            (tmp / "report.txt").write_text(report)
+            (tmp / "run.mjs").write_text(RUN_DIGEST_HARNESS.replace("REPORT_PATH", str(tmp / "report.txt")))
+            r = subprocess.run(["node", str(tmp / "run.mjs"), str(tmp / "digest.js")],
+                               capture_output=True, text=True,
+                               env={**os.environ, "LINT_OUTCOME": outcome,
+                                    "OPEN_CANDIDATES": candidates,
+                                    "HAS_ISSUE": "1" if has_issue else ""})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            return _json.loads(r.stdout)
+
+    def test_a_run_that_could_not_check_says_so_and_closes_nothing(self):
+        acts = self._digest("failure", "", "", has_issue=True)
+        self.assertNotIn("closed", [a[1] for a in acts],
+                         f"it must not close the tracking issue: {acts}")
+        self.assertTrue(any("could not run" in str(a) for a in acts),
+                        f"…and it must say why: {acts}")
+
+    def test_a_success_with_nothing_to_show_is_not_a_clean_run_either(self):
+        """A step can exit 0 and produce no report — a linter that dies after
+        its own exit code is set, a redirect that goes nowhere. There is no
+        report to read "nothing open" out of, so there is no all-clear to
+        give."""
+        acts = self._digest("success", "0", "", has_issue=True)
+        self.assertNotIn("closed", [a[1] for a in acts], f"{acts}")
+
+    def test_a_run_that_checked_and_found_nothing_still_closes(self):
+        """The other side: the all-clear is right when it was earned."""
+        acts = self._digest("success", "0", "ok    pin v2.4.0 is the newest\nconsumer-lint policy: clean\n",
+                            has_issue=True)
+        self.assertIn("closed", [a[1] for a in acts], f"{acts}")
+
+    def test_and_an_open_candidate_still_opens_the_issue(self):
+        acts = self._digest("success", "2", "note  index.html — 2 candidate(s)\n", has_issue=False)
+        self.assertEqual([a[0] for a in acts][:1], ["create"], f"{acts}")
+
+
+RUN_DIGEST_HARNESS = """
+import * as realfs from 'node:fs';
+const body = realfs.readFileSync(process.argv[2], 'utf8');
+const acts = [];
+const github = { rest: { issues: {
+  createLabel: async () => ({}),
+  listForRepo: async () => ({ data: process.env.HAS_ISSUE ? [{ number: 7 }] : [] }),
+  createComment: async (a) => acts.push(['comment', String(a.body).split('\\n')[1]]),
+  update: async (a) => acts.push(['update', a.state || ('body: ' + String(a.body).split('\\n')[1])]),
+  create: async (a) => (acts.push(['create', a.title]), { data: { number: 9 } }),
+} } };
+const context = { repo: { owner: 'o', repo: 'r' } };
+const core = { info: (m) => acts.push(['info', m]) };
+const fs = { readFileSync: (p, e) => realfs.readFileSync(p === '/tmp/report.txt' ? 'REPORT_PATH' : p, e),
+             existsSync: (p) => realfs.existsSync(p === '/tmp/report.txt' ? 'REPORT_PATH' : p) };
+const require = (m) => (m === 'fs' ? fs : null);
+const fn = new Function('github', 'context', 'core', 'require', 'process',
+  '"use strict"; return (async () => {' + body + '})();');
+await fn(github, context, core, require, process);
+console.log(JSON.stringify(acts));
+"""
+
+
+class TestASecondRunOfTheDayLeavesOneAnswer(unittest.TestCase):
+    """The fetch log is the only record of what was ASKED, and the CSV keeps
+    only what the last run KEPT.
+
+    save_fetch_log() merged a second run of the same day by taking the widest
+    window either reached, reasoning that "the union is what the day actually
+    saw" — while main() rebuilds the CSV as every row that is not today's plus
+    this run's, so the first run's rows are gone. The log then claimed a reach
+    the surviving rows cannot support, and delisted() turned "pushed out of the
+    window" into a confirmed departure on every later read: tomorrow's run,
+    tools/rebuild_outputs.py, the workflow's own exit-3 rebuild. That verdict
+    carries exact=True, which departure_is_evidence() admits into the published
+    exit prices and the "N gone" headline.
+
+    ALLOW_REFETCH is not a corner: it is a tick-box on the workflow's manual
+    dispatch, put there for exactly this case.
+    """
+
+    TID = "bmw-i5-xdrive40"
+
+    def setUp(self):
+        import tempfile
+        self._keep = (dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES),
+                      dict(T.RAW_N), T.FETCH_LOG)
+        self._td = tempfile.TemporaryDirectory()
+        T.FETCH_LOG = Path(self._td.name) / "fetch_log.json"
+
+    def tearDown(self):
+        pw, ex, fs, raw, log = self._keep
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        T.RAW_N.clear(); T.RAW_N.update(raw)
+        T.FETCH_LOG = log
+        self._td.cleanup()
+
+    def _run(self, window, raw=40, exhausted=False, failed=False):
+        """One run of the day, through the real fetch_log_row()/save_fetch_log()."""
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear(); T.RAW_N.clear()
+        for src in ("States", "National"):
+            key = (self.TID, src)
+            T.PRICE_WINDOW[key] = window
+            T.RAW_N[key] = raw
+            if exhausted: T.EXHAUSTED.add(key)
+            if failed: T.FAILED_SCOPES.add(key)
+
+    def _rows(self):
+        d1 = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": self.TID, "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2025", "trim": "xDrive40",
+                      "miles": 9000, "state": "IL", "city": "Chicago"})
+            return r
+        # The dear car was seen by the FIRST run and its row is gone: the CSV
+        # holds only what the second run kept, which is the cheap one.
+        return [row("V" * 17, d1, 59000), row("K" * 17, d1, 40000),
+                row("K" * 17, T.TODAY, 40000)]
+
+    def _verdicts(self, rows, live):
+        if not live:
+            T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear(); T.RAW_N.clear()
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        return {g["vin"]: (g["likely"], g.get("exact"))
+                for g in T.delisted({self.TID}, rows, today, T.build_history(rows))}
+
+    def test_the_rebuild_publishes_what_the_run_published(self):
+        rows = self._rows()
+        self._run(60000); T.save_fetch_log(T.fetch_log_row())     # run 1 reached the car
+        self._run(50000)                                          # run 2 did not
+        live = self._verdicts(rows, live=True)
+        T.save_fetch_log(T.fetch_log_row())
+        rebuilt = self._verdicts(rows, live=False)
+        self.assertEqual(live["V" * 17], ("out of window", True),
+                         "the precondition: the run that wrote the rows knows "
+                         "this car sat above its own cut-off")
+        self.assertEqual(rebuilt, live,
+                         "and every later read of the same file says the same "
+                         "thing — a departure the run called uncertain was "
+                         "published as confirmed, with an exit price")
+
+    def test_the_reach_is_the_last_runs_and_the_spend_is_the_days(self):
+        self._run(60000, raw=40); T.save_fetch_log(T.fetch_log_row())
+        self._run(50000, raw=40); T.save_fetch_log(T.fetch_log_row())
+        day = json.loads(T.FETCH_LOG.read_text())[T.TODAY][self.TID]
+        self.assertEqual({k: v["window"] for k, v in day.items()},
+                         {"States": 50000, "National": 50000},
+                         "the window describes the rows that survived")
+        self.assertEqual({k: v["raw"] for k, v in day.items()},
+                         {"States": 80, "National": 80},
+                         "…and the raw count is what the day really spent, which "
+                         "no row has to survive for")
+
+    def test_an_exhausted_first_run_does_not_vouch_for_a_narrower_second(self):
+        """The same defect on the other field: "this query saw the whole
+        market" made every absence a confirmed departure."""
+        self._run(60000, exhausted=True); T.save_fetch_log(T.fetch_log_row())
+        self._run(50000, exhausted=False); T.save_fetch_log(T.fetch_log_row())
+        day = json.loads(T.FETCH_LOG.read_text())[T.TODAY][self.TID]
+        self.assertEqual([v["exhausted"] for v in day.values()], [False, False])
+
+    def test_a_target_the_second_run_never_asked_keeps_no_entry(self):
+        """Its rows went with the day, so an entry for it is a reach with
+        nothing behind it — the same defect, reached another way. Silence puts
+        delisted() back on what the rows can prove."""
+        self._run(60000); T.save_fetch_log(T.fetch_log_row())
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear(); T.RAW_N.clear()
+        key = ("bmw-i5-m60", "National")
+        T.PRICE_WINDOW[key] = 70000; T.RAW_N[key] = 20
+        T.save_fetch_log(T.fetch_log_row())
+        day = json.loads(T.FETCH_LOG.read_text())[T.TODAY]
+        self.assertEqual(sorted(day), ["bmw-i5-m60"],
+                         f"the second run asked only the M60; the log holds {sorted(day)}")
 
 
 class TestTheCommittedRecordIsThisCodesOwn(unittest.TestCase):

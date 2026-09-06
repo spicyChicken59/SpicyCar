@@ -2140,9 +2140,37 @@ def fetch_log_row():
 
 
 def save_fetch_log(row, path=None, keep=400):
-    """Today's fetch facts, merged into the log. A second run of the same day
-    MERGES rather than replaces: the two runs asked different questions and the
-    union is what the day actually saw."""
+    """Today's fetch facts. A second run of the same day REPLACES them, except
+    the raw counts, which sum.
+
+    It used to take the union — the widest window either run reached, exhaustion
+    ORed — reasoning that "the two runs asked different questions and the union
+    is what the day actually saw". The day did see it; the RECORD does not keep
+    it. main() rebuilds the file as `[r for r in load_history() if
+    r["snapshot_date"] != TODAY] + today_rows`, so the second run's rows replace
+    the first's entirely, and a log claiming the wider reach describes rows that
+    are no longer there.
+
+    What that cost, driven through the real functions: run 1 reaches $60,000 and
+    returns a car at $59,000; run 2 (ALLOW_REFETCH, the workflow's own tick-box)
+    reaches $50,000 and does not. The live run publishes "out of window", which
+    is right — and the merged log then says the day looked as deep as $60,000
+    and did not find it, so tomorrow's run, every offline rebuild, and the
+    workflow's own exit-3 rebuild publish "delisted", exact, which
+    departure_is_evidence() admits into the exit prices and the "N gone"
+    headline. Same day, same rows, same file, two answers — which is the exact
+    thing fetch_log_row()'s docstring promises this file prevents: "an offline
+    rebuild reproduces the live labels exactly instead of approximating them".
+
+    `raw` still sums, because it is a fact about SPEND rather than about reach:
+    a National query that made two 40-record calls really did cost 80 records,
+    and no row has to survive for that to be true.
+
+    A target the last run did not ask keeps no entry at all, for the same
+    reason: its rows were replaced by a day that did not include it, and a log
+    entry without rows behind it is the defect above with a different trigger.
+    Where the log is silent, delisted() falls back to what the rows can prove
+    and says "not checked" for the rest."""
     if not row:
         return {}
     # Resolved at CALL time, not bound as a default: a default argument freezes
@@ -2155,19 +2183,14 @@ def save_fetch_log(row, path=None, keep=400):
         hist = {}
     if not isinstance(hist, dict):
         hist = {}
-    day = hist.get(TODAY) if isinstance(hist.get(TODAY), dict) else {}
+    was = hist.get(TODAY) if isinstance(hist.get(TODAY), dict) else {}
+    day = {}
     for tid, sources in row.items():
         for src, fact in sources.items():
-            prior = (day.get(tid) or {}).get(src)
+            prior = (was.get(tid) or {}).get(src)
             if isinstance(prior, dict):
-                # the widest window either run reached, and exhaustion/failure
-                # ORed: a scope that failed once and answered once did answer
-                w = [v for v in (prior.get("window"), fact.get("window")) if v is not None]
-                fact = {**fact,
-                        "window": max(w) if w else None,
-                        "exhausted": bool(prior.get("exhausted")) or fact["exhausted"],
-                        "failed": bool(prior.get("failed")) and fact["failed"],
-                        "raw": (to_int(prior.get("raw")) or 0) + fact["raw"]}
+                # Reach is this run's; spend is the day's. See the docstring.
+                fact = {**fact, "raw": (to_int(prior.get("raw")) or 0) + fact["raw"]}
             day.setdefault(tid, {})[src] = fact
     hist[TODAY] = day
     for d in sorted(hist)[:-keep]:
