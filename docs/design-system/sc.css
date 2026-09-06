@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SpicyChicken Design System — sc.css  v2.6.0
+   SpicyChicken Design System — sc.css  v2.7.0
    Mohammed Tahir Madni · github.com/spicyChicken59
 
    One file, no build step. Drop it in (or link it) and every page shares the
@@ -825,7 +825,7 @@ img.sc-mark--lg { height: 48px; }
    density cannot change text contrast. The pattern SVG reuses the locked mark. */
 .sc-brand-panel { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: flex-end; min-height: 260px; padding: var(--sc-s3); border-radius: var(--sc-r-lg); background: var(--sc-ink); border: 1px solid var(--sc-ink-line-strong); }
 .sc-brand-panel--wine { background: var(--sc-brand-wine); }
-.sc-brand-panel--paper { background: var(--sc-brand-paper); border-color: var(--sc-paper-line); }
+.sc-brand-panel--paper { background: var(--sc-brand-paper); color: var(--sc-on-paper); border-color: var(--sc-paper-line); }
 .sc-brand-panel { --sc-focus: var(--sc-spice-400); }
 .sc-brand-panel--paper { --sc-focus: var(--sc-spice-700); }
 .sc-brand-panel__pattern { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; user-select: none; }
@@ -1192,6 +1192,123 @@ img.sc-mark--lg { height: 48px; }
   .sc-loader { border-color: GrayText; border-top-color: CanvasText; }
   .sc-loading-dots > span { background: CanvasText; }
   .sc-progress { forced-color-adjust: auto; }
+}
+
+/* Composable pages — shared rhythm, not specimen-only styling. */
+.sc-page, .sc-wrap.sc-page, .sc-wrap--wide.sc-page { padding-block: var(--sc-s4) var(--sc-s8); }
+.sc-page > section + section { margin-top: var(--sc-s6); }
+.sc-page figure, .sc-report figure { margin-inline: 0; }
+.sc-split { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--sc-s4); align-items: start; }
+.sc-split > * { min-width: 0; }
+.sc-standfirst { font: 600 clamp(26px, 3vw, 40px)/1.25 var(--sc-font-display); letter-spacing: -.025em; margin: 0; }
+.sc-measure-note { max-width: 68ch; margin-block: var(--sc-s3); color: var(--sc-text-2); font-size: var(--sc-text-md); line-height: 1.7; }
+.sc-plot-grid { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: var(--sc-s1); }
+.sc-plot-grid__y { display: flex; flex-direction: column; justify-content: space-between; }
+.sc-plot-grid__x, .sc-plot-grid__y { font: 500 var(--sc-text-xs)/1.4 var(--sc-font-mono); color: var(--sc-text-2); }
+.sc-plot-grid svg { display: block; width: 100%; height: auto; }
+.sc-plot-grid__x { grid-column: 2; display: flex; justify-content: space-between; }
+.sc-brand-panel--tall { min-height: 340px; }
+.sc-report-wrap { padding-inline: var(--sc-s2); }
+.sc-report--wide { max-width: 1120px; overflow: clip; }
+
+/* Brand stage — a reserved art region with architectural linework. The mark
+   remains untouched; no ornament is ever layered over evidence or copy. */
+.sc-brand-stage { position: relative; isolation: isolate; overflow: hidden; min-height: 250px; display: grid; place-items: center; align-content: center; gap: var(--sc-s3); padding: var(--sc-s4); }
+.sc-brand-stage > img, .sc-brand-stage > .sc-adaptive-mark { position: relative; z-index: 1; width: min(42%, 160px); height: auto; }
+.sc-brand-stage > .sc-adaptive-mark img { width: 100%; height: auto; }
+.sc-brand-stage::before, .sc-brand-stage::after { content: ''; position: absolute; pointer-events: none; z-index: -1; border: 1px solid currentColor; opacity: .13; }
+.sc-brand-stage--orbit::before { width: 72%; aspect-ratio: 1; border-radius: 50%; }
+.sc-brand-stage--orbit::after { width: 116%; aspect-ratio: 1; border-radius: 50%; }
+.sc-brand-stage--ledger::before { inset: var(--sc-s3); border-block-width: 1px; border-inline: 0; }
+.sc-brand-stage--ledger::after { inset: var(--sc-s1) var(--sc-s5); border-inline-width: 1px; border-block: 0; }
+.sc-brand-stage__caption { position: relative; z-index: 1; max-width: 26ch; text-align: center; font: 500 var(--sc-text-xs)/1.6 var(--sc-font-mono); color: inherit; }
+.sc-brand-stage--compact { min-height: 180px; }
+.sc-brand-stage--compact > img { max-width: 80px; }
+
+/* Evidence — a defined reading surface for plots, findings and source notes. */
+.sc-evidence { min-width: 0; margin: 0; }
+.sc-evidence__plot { padding: var(--sc-s3); border: 1px solid var(--sc-border); border-radius: var(--sc-r-md); background: var(--sc-surface); }
+.sc-evidence__plot:focus-within { border-color: var(--sc-border-control); }
+.sc-evidence__source { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--sc-s1) var(--sc-s3); padding-block: var(--sc-s2); border-top: 1px solid var(--sc-border); color: var(--sc-text-2); font-size: var(--sc-text-sm); line-height: 1.6; }
+.sc-insight { padding: var(--sc-s3); border-left: 3px solid var(--sc-brand-line); background: var(--sc-brand-fill); border-radius: 0 var(--sc-r-sm) var(--sc-r-sm) 0; color: var(--sc-text); font-size: var(--sc-text-md); line-height: 1.7; }
+.sc-insight > :first-child { margin-top: 0; }
+.sc-insight > :last-child { margin-bottom: 0; }
+
+/* Native disclosure — a complete control with room for a finger and a label.
+   The open state is always owned by details, including without JavaScript. */
+.sc-disclosure { margin-block: var(--sc-s2); border: 1px solid var(--sc-border); border-radius: var(--sc-r-md); background: var(--sc-surface); min-width: 0; }
+.sc-disclosure > summary { display: flex; align-items: center; gap: var(--sc-s2); min-height: 48px; padding: var(--sc-s2) var(--sc-s3); cursor: pointer; list-style: none; color: var(--sc-heading); font: 600 var(--sc-text-sm)/1.5 var(--sc-font-body); text-transform: none; letter-spacing: 0; }
+.sc-disclosure > summary::-webkit-details-marker { display: none; }
+.sc-disclosure > summary::before { content: '+'; content: '+' / ''; display: grid; place-items: center; width: 20px; height: 20px; flex: 0 0 20px; color: var(--sc-brand); font: 400 22px/1 var(--sc-font-body); transition: transform var(--sc-motion-fast) var(--sc-ease); }
+.sc-disclosure[open] > summary::before { content: '+'; content: '+' / ''; transform: rotate(45deg); }
+.sc-disclosure[open] > summary { border-bottom: 1px solid var(--sc-border); }
+.sc-disclosure > :not(summary) { margin: var(--sc-s3); }
+.sc-disclosure > .sc-table-scroll { max-width: calc(100% - 2 * var(--sc-s3)); padding: 0; }
+.sc-disclosure__body { font-size: var(--sc-text-md); line-height: 1.7; }
+.sc-disclosure__body > :last-child { margin-bottom: 0; }
+.sc-disclosure[open] > .sc-disclosure__body { animation: sc-disclosure-open var(--sc-motion-fast) var(--sc-ease) both; }
+@keyframes sc-disclosure-open { from { opacity: .55; } to { opacity: 1; } }
+
+/* Research tables — identity, measures, and explanation form distinct columns. */
+.sc-table--research { font-size: var(--sc-text-sm); }
+.sc-table--research thead th { padding: var(--sc-s2) var(--sc-s3); font-size: var(--sc-text-xs); line-height: 1.5; }
+.sc-table--research tbody td, .sc-table--research tbody th { padding: var(--sc-s3); vertical-align: top; line-height: 1.6; border-bottom: 1px solid var(--sc-border); }
+.sc-table--research tbody th { text-align: left; font-weight: 600; }
+.sc-table--research tbody :is(td, th):first-child { border-right: 1px solid var(--sc-border); }
+.sc-table--research tbody tr:focus-within { background: var(--sc-hover); }
+.sc-table-scroll .sc-table--research tbody tr:focus-within :is(td, th):first-child { background: var(--sc-hover); }
+.sc-table--research .sc-num { font-weight: 600; }
+.sc-table--research .sc-table__group > th { color: var(--sc-text-2); background: var(--sc-raised); font: 600 var(--sc-text-xs)/1.5 var(--sc-font-mono); text-align: left; border-right: 0; }
+
+/* Dossier — media, identity, evidence and actions have their own rhythm. */
+.sc-dossier { overflow: hidden; min-width: 0; }
+.sc-dossier__body { display: flex; flex-direction: column; gap: var(--sc-s2); padding: var(--sc-s3); }
+.sc-dossier__body > * { margin: 0; }
+.sc-dossier__title { color: var(--sc-heading); font: 700 22px/1.2 var(--sc-font-display); letter-spacing: -.025em; }
+.sc-dossier__meta { color: var(--sc-text-2); font-size: var(--sc-text-sm); line-height: 1.6; }
+.sc-dossier__evidence { padding-block: var(--sc-s2); border-block: 1px solid var(--sc-border); color: var(--sc-text); font-size: var(--sc-text-sm); line-height: 1.65; }
+.sc-dossier__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sc-s1) var(--sc-s2); margin-top: auto; padding-top: var(--sc-s2); }
+.sc-dossier__actions :is(a, button) { min-height: 44px; display: inline-flex; align-items: center; }
+.sc-empty--inline { display: flex; align-items: center; justify-content: flex-start; gap: var(--sc-s3); min-height: 0; text-align: left; padding: var(--sc-s3); }
+.sc-empty--inline > .sc-adaptive-mark { flex: 0 0 36px; width: 36px; }
+.sc-empty--inline > .sc-adaptive-mark img { width: 100%; height: auto; }
+.sc-empty--inline p { margin: 0; font-size: var(--sc-text-sm); line-height: 1.7; }
+
+/* Chapter navigation — native anchors first, optional location highlighting. */
+.sc-reading { display: grid; grid-template-columns: minmax(160px, 220px) minmax(0, 1fr); align-items: start; gap: var(--sc-s6); }
+.sc-reading__body { min-width: 0; max-width: 78ch; }
+.sc-reading__body > section { scroll-margin-top: var(--sc-s4); }
+.sc-chapter-nav { display: flex; flex-wrap: wrap; gap: var(--sc-s1) var(--sc-s3); padding-block: var(--sc-s2); border-block: 1px solid var(--sc-border); }
+.sc-chapter-nav a { display: inline-flex; align-items: center; gap: var(--sc-s2); min-height: 44px; padding-block: var(--sc-s1); border-bottom: 2px solid transparent; color: var(--sc-text-2); font-size: var(--sc-text-sm); line-height: 1.5; text-decoration: none; }
+.sc-chapter-nav a:hover, .sc-chapter-nav a[aria-current="location"] { color: var(--sc-heading); border-bottom-color: var(--sc-brand-line); }
+.sc-chapter-nav a[aria-current="location"] { font-weight: 600; }
+.sc-chapter-nav__index { font: 500 var(--sc-text-xs)/1.5 var(--sc-font-mono); color: var(--sc-text-3); }
+.sc-chapter-nav--rail { position: sticky; top: var(--sc-s4); flex-direction: column; gap: 0; }
+.sc-chapter-nav--rail a { border-bottom: 2px solid var(--sc-border); padding: var(--sc-s2) 0; }
+.sc-chapter-nav--rail a[aria-current="location"] { border-bottom-color: var(--sc-brand-line); }
+@media (max-width: 720px) {
+  .sc-split, .sc-reading { grid-template-columns: minmax(0, 1fr); gap: var(--sc-s3); }
+  .sc-chapter-nav--rail { position: static; flex-direction: row; flex-wrap: wrap; gap: var(--sc-s1) var(--sc-s3); }
+  .sc-brand-stage { min-height: 160px; }
+  .sc-cover .sc-brand-stage { min-height: 0; padding: var(--sc-s2); grid-template-columns: auto 1fr; }
+  .sc-cover .sc-brand-stage > img { width: 48px; max-width: 48px; }
+  .sc-cover .sc-brand-stage__caption { text-align: left; }
+  .sc-evidence__plot { padding: var(--sc-s2) 0; border-inline: 0; border-radius: 0; }
+  .sc-table--research tbody td, .sc-table--research tbody th { padding: var(--sc-s2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-disclosure > summary::before { transition: none; }
+  .sc-disclosure[open] > .sc-disclosure__body { animation: none; }
+}
+html[data-sc-motion-paused="true"] .sc-disclosure > summary::before { transition: none; }
+html[data-sc-motion-paused="true"] .sc-disclosure[open] > .sc-disclosure__body { animation: none; }
+@media print {
+  .sc-page, .sc-wrap.sc-page, .sc-wrap--wide.sc-page { padding: 0; }
+  .sc-reading, .sc-split { display: block; }
+  .sc-chapter-nav, .sc-brand-stage::before, .sc-brand-stage::after { display: none; }
+  .sc-disclosure > summary::before { transition: none; }
+  .sc-disclosure[open] > .sc-disclosure__body { animation: none; }
+  .sc-dossier, .sc-insight { break-inside: avoid; }
 }
 
 /* 4e. VISUAL LIBRARY END */
