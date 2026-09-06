@@ -5402,6 +5402,42 @@ await step('the car in hand is a car the reader can find', async () => {
   await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
 });
 
+// ---- the way out of an empty page is a way out -----------------------------
+// "All 134 cars are filtered out … Clear the filters" over a link that cleared
+// seven filters and not the budget — so in the one state a budget can create,
+// the page's only offered recovery changed nothing: the same count, the same
+// notice, the budget still in localStorage. filterBits() lists the budget and
+// the count line names it ("0 of 134 cars · under $20,000 all in"), so it is a
+// filter by every other rule this page follows.
+await step('the way out of an empty page is a way out', async () => {
+  plan('a budget nothing fits empties the page and says so',
+       'and clearing the filters really clears it');
+  const sub = WATCHED.find((w) => ((SHEET.brands[w.bk].models[w.mk] || {}).listings || []).length > 3);
+  if (!sub) return skipRest('no watched model holds enough cars to empty');
+  await open(sub.q);
+  await page.evaluate(() => localStorage.setItem('spicycar.prefs', JSON.stringify(
+    { where: [], range: '90', term: null, down: 0, stars: {}, budget: 1000, budgetKind: 'otd' })));
+  await open(sub.q);
+  const count = () => page.textContent('#filter-count').then((t) => (t || '').replace(/\s+/g, ' ').trim());
+  const said = (await page.textContent('#notice')) || '';
+  const before = await count();
+  ok('a budget nothing fits empties the page and says so',
+     /showing 0 of/.test(before) && /filtered out/.test(said),
+     `the count reads ${JSON.stringify(before)} and the notice ${JSON.stringify(said.replace(/\s+/g, ' ').slice(0, 90))}`);
+  if (!(await page.locator('[data-fkey="notice:clear"]').count())) {
+    await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+    return skip('and clearing the filters really clears it', 'the notice offered no way out to press');
+  }
+  await page.click('[data-fkey="notice:clear"]');
+  await page.waitForTimeout(600);
+  const after = await count();
+  const left = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').budget) || 0; } catch { return 0; } });
+  ok('and clearing the filters really clears it',
+     !/showing 0 of/.test(after) && left === 0,
+     `the count now reads ${JSON.stringify(after)} and the remembered budget is ${left}`);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+});
+
 // ---- a figure names the population it is over ------------------------------
 // Two sentences counted one thing and named another. The scatter said "148
 // priced cars" on a page whose market tile says 151 cars are priced — its own
@@ -5870,7 +5906,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 268;
+const EXPECTED = 270;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

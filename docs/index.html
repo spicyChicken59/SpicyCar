@@ -5810,6 +5810,7 @@
                e.preventDefault();
                S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false;
                S.rental = false; S.cpo = false; S.hideNew = false; S.trims = new Set();
+               S.budget = 0;      // named in the link's own text via filterBits()
                savePrefs(); buildFilters(); rerender('trim');
              } }, bits.length ? `clear ${bits.join(' · ')}` : 'clear the filters'),
              ' to bring it back. The star keeps it either way.']))));
@@ -5911,6 +5912,15 @@
         el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
           S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false; S.hideNew = false;
+          // …and the budget, which is a filter by every other rule this page
+          // follows: filterBits() lists it and the count line names it ("0 of
+          // 134 cars · under $20,000 all in"). It was the one this handler did
+          // not clear, so a budget nothing fits produced "All 134 cars are
+          // filtered out … Clear the filters" over a link that changed nothing
+          // — the same count, the same notice, the budget still in
+          // localStorage. The one recovery the page offers, and it was a dead
+          // end in exactly the state it exists for.
+          S.budget = 0;
           // The comparison is NOT a filter and does not clear with them: it is
           // what the reader came to look at, it took several presses to build,
           // and clearing it here would land them on the watchlist with no way

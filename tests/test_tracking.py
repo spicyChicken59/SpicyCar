@@ -686,6 +686,53 @@ class TestPicks(unittest.TestCase):
             T.SHORTLIST.clear()
             T.SHORTLIST.update(old)
 
+    def test_the_shortlist_names_the_cohort_its_margin_was_measured_against(self):
+        """"25% under typical" is the same claim the picks block prints as
+        "25% under typical for a 2024 BMW i5 M60 ($14,926 less, from 24 such
+        cars)". The arrivals block was swept for exactly this — "the day's best
+        arrival names what it beat" — and the shortlist, which is the cars
+        actually being decided on and opens the report, was not. One phrase,
+        one function, three places."""
+        cars = [listing(price=p, vin=f"S{i:016d}", year=2024, trim="M60")
+                for i, p in enumerate((40000, 44000, 44500, 45000, 45500,
+                                       46000, 46500, 47000, 47500))]
+        scored = {p["vin"]: p for p in T.score_picks(cars, "BMW i5")}
+        pick = scored["S" + "0" * 15 + "0"]
+        self.assertEqual(pick["pick_stand"], "under", "the precondition: a real margin")
+        was = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({pick["vin"]: ""})
+        try:
+            line = "\n".join(T.shortlist_section({pick["vin"]: (cars[0], "BMW i5")},
+                                                 {}, scored, T.TODAY))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+        cohort = T.cohort_of(pick)
+        self.assertTrue(cohort, "the fixture gives this car a cohort to be measured against")
+        self.assertIn(f"under typical for a {cohort}", line,
+                      "the shortlist must name it, as the picks block does")
+        self.assertIn(T.from_n(pick).strip(), line,
+                      "…and how many cars are in it")
+        # The same words as the block twenty-five lines below it.
+        self.assertIn(f"under typical for a {cohort}", T.fmt_pick(pick))
+
+    def test_and_prints_no_cohort_where_there_is_none_to_print(self):
+        """cohort_of() falls back trim -> year -> model and stamps only what it
+        used; where it can say nothing the clause is dropped rather than
+        rendered with a hole in it."""
+        x = listing(price=44200, vin="H" * 17)
+        bare = {**x, "pick_pct": 0.06, "pick_under": 1300, "pick_stand": "under",
+                "pick_n": 0, "pick_basis": None, "pick_year": None, "pick_trim": None}
+        was = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"H" * 17: ""})
+        try:
+            line = "\n".join(T.shortlist_section({"H" * 17: (x, "BMW i5")}, {},
+                                                 {"H" * 17: bare}, T.TODAY))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+        self.assertIn("6% under typical", line)
+        self.assertNotIn("for a  ", line)
+        self.assertNotIn("such cars", line)
+
     def test_the_days_best_new_car_is_measured_against_its_interval(self):
         """End to end: nine eDrive40s, eight seen yesterday and one first seen
         today at $44,200 — 3% under the median of nine and exactly ON the low
@@ -2937,6 +2984,59 @@ class TestTheDaysToSaleClauseNamesItsOwnDenominator(unittest.TestCase):
                                      "series": [], "trim_id": "bmw-i5-m60"}]
         st = T.sale_stats(rows)
         self.assertEqual((st["n_sold"], st["n_departures"]), (14, 14))
+
+
+class TestThePlanCoversAWholeCycle(unittest.TestCase):
+    """The budget guard looked fourteen days ahead at a schedule that repeats
+    on the LCM of the cadences.
+
+    Today's 1/2/3 have an LCM of 6, so fourteen happens to cover it. Add a
+    cadence of 4 and 5 — ordinary values for a documented knob — and the cycle
+    is 60 days: the guard would see a strict subset of it, its answer would
+    depend on the day it ran, and check.yml's promise that "a config edit that
+    would overspend the free API plan fails here, not on the invoice" would be
+    false. Worse than the missed overspend is the other direction: main() runs
+    the same check, so as the window slid forward it would meet the day CI never
+    looked at and the scheduled run would start exiting 1 with "Plan too big",
+    days after CI approved the config.
+    """
+
+    def test_the_horizon_covers_the_cadence_cycle(self):
+        import math as _math
+        cycle = 1
+        for t in T.TARGETS.values():
+            cycle = _math.lcm(cycle, max(1, int(t["cadence"])))
+        self.assertGreaterEqual(T.plan_horizon(), cycle,
+                                f"the cadences repeat every {cycle} days")
+
+    def test_and_never_less_than_the_fortnight_the_prose_promises(self):
+        self.assertGreaterEqual(T.plan_horizon(), 14)
+
+    def test_a_cadence_the_fortnight_would_miss_widens_it(self):
+        """The case the flat fourteen could not see. Patched on rather than
+        asserted dead, because today's watchlist cannot reach it."""
+        one = next(iter(T.TARGETS.values()))
+        was = one["cadence"]
+        try:
+            one["cadence"] = 5
+            self.assertEqual(T.plan_horizon(), 30,
+                             "5 against the existing 1/2/3 is an LCM of 30, and "
+                             "a fortnight sees less than half of it")
+            one["cadence"] = 4
+            self.assertEqual(T.plan_horizon(), 14,
+                             "…while 4 gives an LCM of 12, which the fortnight "
+                             "already covers, so the floor is what applies")
+        finally:
+            one["cadence"] = was
+        self.assertEqual(T.plan_horizon(), 14, "and the shipped config is back")
+
+    def test_the_worst_day_is_the_worst_of_that_horizon(self):
+        """Not of an arbitrary fortnight: the number main() refuses to run on."""
+        _, worst, _ = T.planned_calls()
+        days = [sum(T.calls_for(t) for t in T.TARGETS.values()
+                    if T.due_on(t, T.TODAY_ORD + k)) for k in range(T.plan_horizon())]
+        self.assertEqual(worst, max(days))
+        self.assertLessEqual(worst, T.BUDGET, "and the shipped config fits under the cap")
 
 
 class TestTheCutOffProseNamesBothAxes(unittest.TestCase):

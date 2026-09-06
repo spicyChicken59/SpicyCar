@@ -245,10 +245,32 @@ def next_due(t):
     return TODAY
 
 
+def plan_horizon():
+    """How many days a plan has to cover to have seen every day of it.
+
+    due_on() is periodic with the LEAST COMMON MULTIPLE of the cadences, and
+    the window was a flat fourteen days. Today's 1/2/3 have an LCM of 6, so
+    fourteen happens to cover it — add a cadence of 4 and 5, both ordinary
+    values for a documented knob, and the LCM is 60: the guard would then see a
+    strict subset of the cycle and its answer would depend on the day it ran.
+    check.yml's own header says "a config edit that would overspend the free API
+    plan fails here, not on the invoice", and worse than the missed overspend is
+    the other direction — main() runs the same check, so as the window slides it
+    eventually meets the day CI never looked at and the scheduled run starts
+    exiting 1 with "Plan too big", days after CI approved the config.
+
+    Still at least a fortnight, because the printed line is a forecast a human
+    reads and one cycle of an all-daily watchlist is one day."""
+    cycle = 1
+    for t in TARGETS.values():
+        cycle = math.lcm(cycle, max(1, int(t["cadence"])))
+    return max(14, cycle)
+
+
 def planned_calls():
-    """(calls today, worst day in the next two weeks, daily average)."""
+    """(calls today, worst day of the cycle, daily average over it)."""
     days = [sum(calls_for(t) for t in TARGETS.values()
-                if due_on(t, TODAY_ORD + k)) for k in range(14)]
+                if due_on(t, TODAY_ORD + k)) for k in range(plan_horizon())]
     return days[0], max(days), sum(days) / len(days)
 
 
@@ -1774,7 +1796,15 @@ def shortlist_section(live_by_vin, gone_by_vin, scored_by_vin, record_day):
                 tags.append(f"on market {x['days_listed']}d")
             p = scored_by_vin.get(vin)
             if p and p.get("pick_stand") == "under":
-                tags.append(f"{pct(p['pick_pct'])} under typical")
+                # …for a WHAT, and against how many. The arrivals block was
+                # swept for exactly this ("best 10% under typical" was the same
+                # claim the picks below printed with its cohort) and the
+                # shortlist — the cars actually being decided on, at the top of
+                # the report — was not. cohort_of()/from_n() are the one place
+                # that phrase is built, so all three read alike.
+                coh = cohort_of(p)
+                tags.append(f"{pct(p['pick_pct'])} under typical"
+                            + (f" for a {coh}" if coh else "") + from_n(p))
             tags += x.get("flags") or []
             if tags:
                 line += f"\n  _{' · '.join(tags)}_"
@@ -3991,7 +4021,8 @@ def main():
     today_calls, worst, avg = planned_calls()
     monthly = avg * 30.5
     print(f"{len(TARGETS)} targets · API calls today {today_calls} · worst day "
-          f"{worst} (cap {BUDGET}) · average {avg:.1f}/day ≈ {monthly:,.0f}/month "
+          f"{worst} of the next {plan_horizon()} (cap {BUDGET}) · average "
+          f"{avg:.1f}/day ≈ {monthly:,.0f}/month "
           f"(plan {MONTHLY:,})")
     if worst > BUDGET or monthly > MONTHLY:
         sys.exit(f"Plan too big: worst day {worst} vs budget_per_day={BUDGET}, "

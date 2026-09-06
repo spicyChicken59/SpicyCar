@@ -85,7 +85,8 @@ get the cheapest 20) and a *cadence*, per target rather than per brand: the two 
 daily, the i5's other three (the certified watch among them) every other day, and everything else —
 the i7's other trims, the iX and every rival — every third day, spread evenly across the cycle in
 watchlist order. A hard `budget_per_day` makes the script
-refuse to run if any day in the next two weeks would exceed it, and it prints the plan before it
+refuse to run if any day of the cadence cycle would exceed it — a fortnight at least, and longer
+when the cadences repeat over more than that — and it prints the plan before it
 starts.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
@@ -266,7 +267,7 @@ one skip on every run and the backstop never fired.
 
 | Key | Meaning |
 |---|---|
-| `budget_per_month`, `budget_per_day` | The API plan (checked on the average over the next two weeks) and a cap on any single day; the script refuses to run if either would be exceeded. |
+| `budget_per_month`, `budget_per_day` | The API plan (checked on the average over a whole cadence cycle, a fortnight at least) and a cap on any single day; the script refuses to run if either would be exceeded. |
 | `defaults` | Fallbacks for the per-target parameters below. |
 | `legacy_ids` | Old target ids → new ids, so history carries over when the config is restructured. |
 | `watchlist.<brand>` | `label`, `make` (as the API spells it), `active`, parameter overrides, and `models`. |
@@ -286,7 +287,10 @@ Parameters resolve trim ← model ← brand ← defaults:
 
 A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as
 another key under `watchlist`; the dashboard grows a brand tab. Check the printed call plan after
-any change — it shows today, the worst day in the next two weeks, and the monthly average.
+any change — it shows today, the worst day of the cycle it covers, and the monthly average. The
+window is the least common multiple of the cadences, floored at a fortnight: at a flat fourteen
+days a config using cadences of 4 and 5 would repeat over 60 and the guard would only ever see a
+quarter of it, so its answer would depend on the day it ran.
 
 ## Roadmap
 
