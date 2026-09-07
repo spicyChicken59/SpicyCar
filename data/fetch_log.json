@@ -203,5 +203,128 @@
     "window": 41990
    }
   }
+ },
+ "2026-09-07": {
+  "bmw-i5-cpo": {
+   "National": {
+    "dim": "miles",
+    "exhausted": false,
+    "failed": false,
+    "raw": 40,
+    "window": 12323
+   }
+  },
+  "bmw-i5-edrive40": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 100,
+    "window": 43815
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 5,
+    "window": 47359
+   }
+  },
+  "bmw-i5-m60": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 57431
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 12,
+    "window": 74957
+   }
+  },
+  "bmw-i5-xdrive40": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 57990
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 4,
+    "window": 76365
+   }
+  },
+  "bmw-i7-edrive50": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 100,
+    "window": 71905
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 6,
+    "window": 120000
+   }
+  },
+  "bmw-i7-m70": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 173367
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 2,
+    "window": 190862
+   }
+  },
+  "bmw-i7-xdrive60": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 58196
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 65649
+   }
+  },
+  "kia-ev9": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 33276
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 40990
+   }
+  }
  }
 }

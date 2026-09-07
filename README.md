@@ -384,10 +384,10 @@ What it measures today, on the committed record:
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 8 | 411 | 99 KB | 40% |
-| every target fetching | 20 | 820 | 155 KB | 62% |
-| …three fetches deep on each | 20 | 820 | 165 KB | 66% |
-| …seven fetches deep on each | 20 | 820 | 180 KB | 72% |
+| as committed | 8 | 408 | 102 KB | 41% |
+| every target fetching | 20 | 847 | 161 KB | 64% |
+| …three fetches deep on each | 20 | 847 | 171 KB | 69% |
+| …seven fetches deep on each | 20 | 847 | 186 KB | 75% |
 
 At thirty-six models that last row read **110%** — the build going red on its own record, in about a
 quarter. That is what the trim was for, and it is why the number is re-measured on every config
@@ -503,6 +503,20 @@ Mohammed Tahir Madni — [github.com/spicyChicken59](https://github.com/spicyChi
 The dashboard and field guide use the same SpicyChicken cover, original chick mark,
 metric strip, chart signature, responsive typography and restrained motion. Motion is
 progressive enhancement and follows the device's reduced-motion preference.
+
+The watchlist opens with a visible **signal matrix** for the exact daily-decision
+candidates: their estimated totals, existing value context, reach, certification,
+and accident record. Unknown facts stay neutral. Exact-car photographs accompany
+the detailed decision below; the map comes before the longer picks and listings.
+The cover's native section links follow the visible filtered state. All scoring,
+eligibility, financing, and data remain owned by the existing tracker and helpers.
+
+`docs/market-studio.css` is the product composition over that shared snapshot;
+consumer lint checks it alongside the page's inline styles. The shared system's
+[Decision brief recipe](https://spicychicken59.github.io/design-system/templates/decision-brief.html)
+demonstrates the reusable matrix-first pattern using only existing system classes.
+The dashboard smoke suite includes phone/tablet/desktop, light/dark, keyboard,
+unknown-data, photo-source, reduced-motion, forced-color and print checks for it.
 
 The authored pages are `docs/index.html` and `docs/how.html`. The daily tracker writes
 `docs/data.json` and `REPORT.md`; it does not regenerate the HTML, so the visual design

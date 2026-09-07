@@ -9,6 +9,13 @@
     "Delete an entry to put its rule back on the agenda."
   ],
   "verdicts": {
+    "market-studio-composition": {
+      "selectors": [".market-cover__seal", ".market-cover__index", ".market-candidate__media", ".market-candidate__index", ".market-candidate__media::before, .market-candidate__media::after", ".market-candidate__media::before", ".market-candidate__media::after"],
+      "page": "index.html",
+      "verdict": "not promoted",
+      "why": "These compose SpicyCar's own first screen: a field-note cover index and exact-listing photo inserts sized around the existing decision evidence. The shared sc-dossier--studio recipe already owns the contained photo and corner-frame composition. These adapter pseudo-elements reserve this page's 28px caption and enlarged phone float while keeping its existing decision-height budget; another product need not use those dimensions or legacy markup. The cover, dossier, signal matrix, theme, and logo already belong to the shared system; its Decision brief demonstrates their reuse.",
+      "reopen_when": "A second consumer needs the same compact exact-object photo insert or product-specific cover index layout."
+    },
     "dg-*": {
       "selectors": [".dg-box", ".dg-box--core", ".dg-title", ".dg-sub", ".dg-side",
                     ".dg-line", ".dg-head", ".dg-bar-ask", ".dg-bar-ship", ".dg-figure"],

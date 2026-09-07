@@ -8868,19 +8868,39 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
     def test_the_state_footer_puts_an_unplaced_car_in_neither_column(self):
         """The tiles and the brief line stopped counting a car with no state as
         "beyond". This footer is the same claim about the same cars one section
-        further down, and went on doing it."""
+        further down, and went on doing it.
+
+        The "no state" half used to be asserted flat, on the strength of the
+        pool holding such a car the day it was written — so it was green by
+        accident and went red the morning every car came back with a state.
+        Both directions now, off the record: a pool with an unplaced car must
+        name it, and a pool without one must not invent the column. The sum is
+        the invariant that holds either way.
+        """
         rows = T.load_history()
         latest = max(r["snapshot_date"] for r in rows)
-        report = T.build_outputs([r for r in rows if r["snapshot_date"] == latest],
-                                 rows, T.build_history(rows))[0]
+        report, site, _ = T.build_outputs([r for r in rows if r["snapshot_date"] == latest],
+                                          rows, T.build_history(rows))
         foot = next(l for l in report.splitlines()
                     if "vehicles across" in l and "beyond" in l)
         n = int(foot.split("vehicles across")[0].strip("_ "))
         parts = dict(p.rsplit(" ", 1) for p in foot.strip("_").split(" · ")[1:])
         self.assertEqual(sum(int(v) for v in parts.values()), n,
                          f"the columns must add to the model's own count: {foot}")
-        self.assertIn("no state", foot,
-                      "and today's i5 pool holds one such car, so it is named")
+        # which model the footer is about, found by its own count rather than named
+        pools = [m for b in site["brands"].values() for m in b["models"].values()
+                 if len(m.get("listings") or []) == n]
+        self.assertTrue(pools, f"no model on the sheet holds the {n} cars this footer counts")
+        unplaced = min(sum(1 for x in (m.get("listings") or []) if not x.get("state"))
+                       for m in pools)
+        if unplaced:
+            self.assertIn(f"no state {unplaced}", foot,
+                          f"{unplaced} cars in this pool carry no state and the footer "
+                          f"does not name them: {foot}")
+        else:
+            self.assertNotIn("no state", foot,
+                             f"every car in this pool has a state and the footer "
+                             f"invents a column: {foot}")
 
     # -- the record's vocabulary, checked on the record it prints ----------
 

@@ -199,10 +199,10 @@
   #compare-table thead th > span { display: block; }   /* the header stacks; the chip inside the last one must not stretch to the column */
   #compare-table .cmp-swatch { margin-bottom: 4px; }
   #compare-table td { vertical-align: top; }
-  #compare-table .sc-benchmark { min-width: 136px; margin-top: var(--sc-s2); }
-  #compare-table .sc-benchmark__track { height: 16px; }
-  #compare-table .sc-benchmark__point { width: 10px; height: 10px; }
-  #compare-table .sc-benchmark__scale { font-size: 9px; }
+  #finalists-table .sc-benchmark { min-width: 136px; margin-top: var(--sc-s2); }
+  #finalists-table .sc-benchmark__track { height: 16px; }
+  #finalists-table .sc-benchmark__point { width: 10px; height: 10px; }
+  #finalists-table .sc-benchmark__scale { font-size: 9px; }
   /* On a phone the scroll window is 348px and the metric column took 168 of
      it, so every right-aligned figure in the table started outside the strip:
      ten labels and no numbers until the reader scrolled each row. The metric
@@ -219,7 +219,7 @@
     #compare-table.sc-signal-matrix { min-width: 100%; }
     #compare-table .cmp-metric { min-width: 96px; max-width: 96px; white-space: normal; }
     #compare-table thead th, #compare-table tbody td { min-width: 0; max-width: 124px; white-space: normal; overflow-wrap: anywhere; }
-    #compare-table .sc-benchmark { min-width: 112px; }
+    #finalists-table .sc-benchmark { min-width: 112px; }
     #compare-table tbody td { text-align: left; }
     #compare-table thead th .sc-nowrap { white-space: normal; }
   }
@@ -324,17 +324,32 @@
      and not one number in it is. Measured on the real page at four viewports;
      the same row was 70px when the watchlist was six brands.
 
-     Capped to three rows with an internal scroll, the self-limiting shape
-     #filters-card above already uses and this audit confirmed works: a row
-     is 31px on a 8px gap, so three rows are 109px and the decision card
-     comes back to y=509. Keyed to the same 720px edge sc.css folds the
-     filter bar at, because the cost is proportional to how much of the
-     screen the row eats — 18% of a 768px tablet is fine and 45% of a phone
-     is not. Nothing is unreachable behind the scroll: every brand is also a
-     Models chip in the filter bar and a row in the model index, and
-     renderTabs() scrolls the pressed one into view. */
+     This was capped to three wrapped rows — 109px — which fixed the 45% but
+     kept the row's height a function of the market: nineteen brands filled
+     all three, and the next model added would have started scrolling. It is
+     ONE row scrolled sideways now, which is 37px whatever the watchlist
+     does, and that is the whole point: a phone's first screen is the
+     scarcest space on the site and navigation must cost a constant.
+     The three-row version was measured against a page whose first card was
+     the decision; the Signal Matrix leads now and takes 667px of the 844, so
+     the 72px this gives back is the difference between the first figure
+     being on screen and being cut in half.
+
+     Keyed to the same 720px edge sc.css folds the filter bar at, because the
+     cost is proportional to how much of the screen the row eats — 18% of a
+     768px tablet is fine and 45% of a phone is not. Nothing is unreachable
+     behind the scroll: every brand is also a Models chip in the filter bar
+     and a row in the model index, and renderTabs() scrolls the pressed one
+     into view. */
   @media (max-width: 720px) {
-    #tabs-brand { max-height: 109px; overflow-y: auto; overscroll-behavior: contain; }
+    #tabs-brand {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scrollbar-width: none;
+    }
+    #tabs-brand::-webkit-scrollbar { display: none; }
+    #tabs-brand > * { flex: 0 0 auto; }
   }
   @media (max-height: 560px) {
     #filters-card { max-height: 45vh; overflow-y: auto; }
@@ -504,8 +519,9 @@
     #kpis .sc-tile__label { min-height: 0; }
   }
 </style>
+<link rel="stylesheet" href="market-studio.css">
 </head>
-<body>
+<body class="market-studio">
 <a class="sc-skip" href="#main">Skip to content</a>
 
 <header class="sc-masthead sc-screen-only">
@@ -536,10 +552,19 @@
         <h1 class="sc-cover__title" id="h1">Loading snapshot…</h1>
         <p class="sc-cover__dek" id="dek"></p>
         <div class="sc-meta" id="meta"></div>
+        <nav class="market-cover__index" aria-label="On this page">
+          <a href="#signal-card"><span aria-hidden="true">01</span> Signal matrix</a>
+          <a href="#hero-card"><span aria-hidden="true">02</span> Decision</a>
+          <a href="#map-card"><span aria-hidden="true">03</span> Map</a>
+          <a href="#list-card"><span aria-hidden="true">04</span> Listings</a>
+        </nav>
       </div>
       <div class="sc-cover__art" aria-hidden="true">
-        <img src="design-system/assets/sc-mark-mono-cream.svg" alt="" width="342" height="405">
-        <span class="sc-cover__caption">SpicyChicken<br>made for the decision</span>
+        <div class="market-cover__seal">
+          <span class="market-cover__edition">SC / FIELD NOTES</span>
+          <img src="design-system/assets/sc-mark-mono-cream.svg" alt="" width="342" height="405">
+          <span class="sc-cover__caption">SpicyChicken<br>made for the decision</span>
+        </div>
       </div>
     </section>
     <div class="sc-tabs" id="tabs-brand" role="group" aria-label="Brand" hidden></div>
@@ -558,6 +583,22 @@
     </div>
     <div class="sc-grid sc-grid--2 sc-stagger" id="hero-cars"></div>
     <p class="sc-note" id="hero-gap" hidden></p>
+  </section>
+
+  <section class="sc-card" id="signal-card" hidden aria-labelledby="signal-title">
+    <div class="sc-card__head">
+      <div>
+        <div class="sc-eyebrow sc-eyebrow--muted">the decision, decoded</div>
+        <h2 id="signal-title">The signal matrix</h2>
+        <p class="sc-hint" id="signal-hint">Today’s decision candidates, decoded. The exact cars and prices follow below — no blended score.</p>
+      </div>
+      <span class="sc-chip sc-chip--neutral">facts, side by side</span>
+    </div>
+    <p class="sc-note market-matrix__scroll" id="signal-scroll">Scroll across for every signal <span aria-hidden="true">↔</span></p>
+    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Decision signal matrix" aria-describedby="signal-hint signal-scroll">
+      <table class="sc-table sc-signal-matrix" id="decision-matrix"></table>
+    </div>
+    <p class="sc-note market-matrix__foot">Unknown is not a pass. Value is relative to each car’s own comparable listings; certification is as listed, not a financing guarantee.</p>
   </section>
 
   <section class="sc-stat-strip sc-stat-strip--4" id="kpis" aria-label="Today at a glance"></section>
@@ -661,7 +702,7 @@
         <p class="sc-hint" id="finalists-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll"><table class="sc-table sc-table--compact sc-table--research" id="finalists-table"></table></div>
+    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Shortlisted car comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values" id="finalists-table"></table></div>
   </section>
 
   <div id="shortlist" hidden></div>
@@ -4321,6 +4362,59 @@
           ? ` · ${gap} over ${ty} months, shipping counted`
           : ` over ${ty} mo, against ${perMo(payFor(x))} over ${tx} mo · ${gap} by the end of each loan, shipping counted`));
   }
+  // A second reading of the exact candidates renderHero has already chosen.
+  // This is presentation only: no separate pool, rank, eligibility, or score.
+  // Missing values stay neutral, especially accident counts (null is not zero).
+  function renderDecisionMatrix(chosen) {
+    const card = $('signal-card'), table = $('decision-matrix');
+    table.textContent = '';
+    card.hidden = !chosen.some((r) => r.x);
+    if (card.hidden) return;
+    table.appendChild(el('caption', { class: 'sc-sr-only' },
+      'The decision candidates compared by value context, reach, certification and accident record'));
+    table.appendChild(el('thead', null, el('tr', null,
+      ...['Car', 'Value context', 'Reach', 'Certification', 'Accident record'].map((word) => el('th', { scope: 'col' }, word)))));
+    const body = el('tbody');
+    const signal = (tone, glyph, label, note, title) => el('td', null,
+      el('div', { class: 'sc-signal' + (tone ? ' sc-signal--' + tone : ''), title: title || null },
+        el('span', { class: 'sc-signal__glyph', 'aria-hidden': 'true' }, glyph),
+        el('span', { class: 'sc-signal__label' }, label),
+        note ? el('span', { class: 'market-matrix__note' }, note) : null));
+    for (const { o, x, total } of chosen) {
+      const name = o.m.label || o.mk;
+      const row = el('tr', { 'data-signal-vin': x ? x.vin : null });
+      row.appendChild(el('th', { scope: 'row' },
+        el('span', { class: 'sc-signal-matrix__name' }, name),
+        x ? el('span', { class: 'sc-signal-matrix__note' }, `${x.year || ''} ${carTrim(x)}`.trim()) : null,
+        x ? el('span', { class: 'market-matrix__price' }, money(total)) : null,
+        x ? el('span', { class: 'sc-signal-matrix__note' }, feesCfg() ? 'all in, estimated' : 'landed, shipping estimated') : null,
+        x ? el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'signal:' + (x.vin || ''),
+          onclick: (e) => { e.preventDefault(); goTo(o.bk, o.mk, x.vin); } }, `Open ${name} candidate →`) : null));
+      if (!x) {
+        row.appendChild(el('td', { colspan: '4' }, el('div', { class: 'sc-signal' },
+          el('span', { class: 'sc-signal__label' }, 'No eligible car in this selection'))));
+        body.appendChild(row); continue;
+      }
+      const c = cohortOf(x, name), stand = x.pick_stand;
+      const known = c && x.pick_pct != null && stand !== 'mixed';
+      const value = !known ? 'Not enough evidence'
+        : stand === 'under' ? `${Math.round(x.pick_pct * 100)}% under typical`
+        : stand === 'over' ? `${Math.round(-x.pick_pct * 100)}% over typical` : 'About typical';
+      row.appendChild(signal(known && stand === 'under' ? 'good' : known && stand === 'over' ? 'caution' : '',
+        !known ? '?' : stand === 'under' ? '↓' : stand === 'over' ? '↑' : '≈', value,
+        c ? `${c.short} · n=${c.n}` : 'Comparable listings unavailable', c ? c.words : null));
+      row.appendChild(signal(x.local ? 'info' : unplaced(x) ? '' : 'info', x.local ? '↗' : unplaced(x) ? '?' : '→',
+        x.local ? 'Drivable' : unplaced(x) ? 'State not reported' : 'Shipping', placeCell(x)));
+      row.appendChild(signal(x.cpo === true ? 'good' : '', x.cpo === true ? '✓' : '—', x.cpo === true ? 'CPO' : 'Not marked CPO',
+        x.cpo === true ? 'Confirm certification with seller' : 'As recorded in the listing'));
+      row.appendChild(signal(x.accidents === 0 ? 'good' : x.accidents > 0 ? 'caution' : '',
+        x.accidents === 0 ? '✓' : x.accidents > 0 ? '!' : '?',
+        x.accidents === 0 ? 'None reported' : x.accidents > 0 ? `${x.accidents} reported` : 'Unknown',
+        x.accidents == null ? 'Accident count not supplied' : 'Not an inspection or title check'));
+      body.appendChild(row);
+    }
+    table.appendChild(body);
+  }
   function renderHero() {
     const card = $('hero-card'), host = $('hero-cars'), gap = $('hero-gap');
     const models = heroModels();
@@ -4329,13 +4423,19 @@
       // Nothing NAMED is a different state from nothing left after the
       // reader's own chips, and only one of them is worth a sentence. A
       // watchlist with an empty buyer.shopping is what a person browsing
-      // thirty-six models has before they have chosen anything — and the
-      // front page answered it by removing its most important block without
-      // a word, which is the one state where a reader most needs telling
-      // what to do next. When the reader's own model chips are what emptied
-      // it, they know: the card stays away, as it always has.
+      // twenty models has before they have chosen anything — and the front
+      // page answered it by removing its most important block without a
+      // word, which is the one state where a reader most needs telling what
+      // to do next. When the reader's own model chips are what emptied it,
+      // they know: the card stays away, as it always has.
+      //
+      // The matrix is cleared on BOTH exits, not just the silent one: it is
+      // a separate card and leaving it drawn under a hero that has just said
+      // there is no decision to lay out is the two-surfaces-one-mechanism
+      // shape. main added the call on the single early return this replaced.
       gap.hidden = true;
       const named = (((S.site || {}).buyer || {}).shopping || []).length;
+      renderDecisionMatrix([]);
       if (named) { card.hidden = true; return; }
       card.hidden = false;
       $('hero-hint').removeAttribute('title');
@@ -4422,7 +4522,11 @@
         return v != null && v < best.v && pickExcuse(y, P);
       });
       const reasons = [...new Set(cutOut.map((y) => pickExcuse(y, P)))];
-      host.appendChild(el('div', { class: 'sc-tile' },
+      const media = el('div', { class: 'market-candidate__media' }, thumbFor(x, true),
+        el('span', { class: 'market-candidate__index' }, `${String(chosen.length).padStart(2, '0')} / ${o.m.label || o.mk}`));
+      const photo = media.querySelector('img.sc-frame__img');
+      if (photo) { photo.loading = 'eager'; photo.decoding = 'async'; }
+      host.appendChild(el('div', { class: 'sc-tile market-candidate' }, media,
         // the key only where hue or dash tells two models apart — on one model it says nothing
         el('div', { class: 'sc-tile__label' }, models.length >= 2 ? keyLine(brandTone(o.bk), modelDash(o.bk, o.mk), true) : null, ' ',
           `${o.m.label || o.mk} — cheapest ${allIn ? 'all in, estimated' : 'landed, shipping estimated'}`),
@@ -4479,6 +4583,7 @@
     // page prices in, and only between two priced cars. With one shopped model
     // or a filtered-out one there is no comparison to make and nothing is said
     // rather than a zero.
+    renderDecisionMatrix(chosen);
     const have = chosen.filter((c) => c.x);
     const basis = costBasisNote().trim()
       + ' Best value is a different question, and the picks below answer it.';
@@ -6139,14 +6244,14 @@
   // the order is readable in one place instead of emerging from .after() calls
   // scattered through two render paths.
   const SECTION_ORDER = {
-    overview: ['notice', 'hero-card', 'kpis', 'promo-card', 'filters-card', 'compare-card', 'finalists-card', 'shortlist', 'takeaway', 'list-card', 'map-card', 'chart-card', 'overview-card', 'next-callout'],
-    model: ['notice', 'kpis', 'promo-card', 'filters-card', 'compare-card', 'finalists-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card', 'next-callout'],
+    overview: ['notice', 'signal-card', 'hero-card', 'kpis', 'filters-card', 'compare-card', 'finalists-card', 'map-card', 'promo-card', 'shortlist', 'takeaway', 'list-card', 'chart-card', 'overview-card', 'next-callout'],
+    model: ['notice', 'kpis', 'promo-card', 'filters-card', 'compare-card', 'finalists-card', 'map-card', 'takeaway', 'list-card', 'scatter-card', 'chart-card', 'notes-card', 'gone-card', 'next-callout'],
   };
   // Supporting sections (the evidence and the reference material) wear the
   // smaller heading; the chapter starts get the wider gap above them.
   const SUPPORT = new Set(['scatter-card', 'chart-card', 'map-card', 'notes-card', 'gone-card']);
   const CHAPTERS = {
-    overview: new Set(['hero-card', 'compare-card', 'finalists-card', 'takeaway', 'map-card', 'next-callout']),
+    overview: new Set(['hero-card', 'signal-card', 'compare-card', 'finalists-card', 'takeaway', 'map-card', 'next-callout']),
     model: new Set(['compare-card', 'finalists-card', 'takeaway', 'list-card', 'scatter-card', 'notes-card', 'next-callout']),
   };
   // Filtering to nothing used to make the picks, the scatter and the map simply
@@ -6371,6 +6476,13 @@
       n.classList.toggle('sc-section--chapter', CHAPTERS[view].has(id));
       prev = n;
     }
+    syncCoverIndex();
+  }
+  function syncCoverIndex() {
+    for (const link of document.querySelectorAll('.market-cover__index a')) {
+      const target = document.querySelector(link.getAttribute('href'));
+      link.hidden = !target || target.hidden;
+    }
   }
 
   function render() {
@@ -6378,6 +6490,7 @@
     if (S.brand === 'all') { renderOverview(); return; }
     $('overview-card').hidden = true;
     $('hero-card').hidden = true;    // overview-only: orderSections('model') never lists it, so nothing else would
+    $('signal-card').hidden = true;
     renderHeader();
     renderShortlist(false);      // front page only — model rows carry a chip instead
     renderNotes(model());
@@ -6399,6 +6512,7 @@
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (tok !== LIST_TOKEN) return;   // superseded — a newer render owns the list
       renderList(rows);
+      syncCoverIndex();
       restoreFocus(fk, false);   // a list-internal focus died with the old rows — re-land it
     }));
   }
@@ -6813,6 +6927,7 @@
       case 'nav': buildFilters(); render(); break;
       default: render(); break;
     }
+    syncCoverIndex();
     restoreFocus(fk, scope === 'nav');
     if (anchorScope) {
       settling = true;
