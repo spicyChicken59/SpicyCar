@@ -175,7 +175,8 @@
   border: 1px solid var(--sc-ink-line-strong);
   border-radius: var(--sc-r-sm);
   background: var(--sc-ink);
-  aspect-ratio: 2.3;
+  /* Near-4:3 dealer photographs need enough height to fill this wide stage. */
+  aspect-ratio: 16 / 10;
   min-height: 168px;
 }
 

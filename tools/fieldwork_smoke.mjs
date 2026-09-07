@@ -29,7 +29,9 @@ const BASE = `http://127.0.0.1:${server.address().port}`;
 if (SHOTS) await mkdir(SHOTS, { recursive: true });
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-const PIXEL = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675"><rect width="1200" height="675" fill="#dce5ef"/><rect x="8" y="8" width="1184" height="659" fill="none" stroke="#23384d" stroke-width="16"/><text x="600" y="340" text-anchor="middle" font-family="sans-serif" font-size="34" fill="#23384d">IMAGE GEOMETRY FIXTURE · NOT A LISTING PHOTO</text></svg>');
+// The live candidates use near-4:3 photographs; a cinematic 16:9 stand-in
+// understates how much stage height their complete, uncropped images need.
+const PIXEL = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="953" height="768"><rect width="953" height="768" fill="#dce5ef"/><rect x="8" y="8" width="937" height="752" fill="none" stroke="#23384d" stroke-width="16"/><text x="476.5" y="384" text-anchor="middle" font-family="sans-serif" font-size="26" fill="#23384d">IMAGE GEOMETRY FIXTURE · NOT A LISTING PHOTO</text></svg>');
 const stateSource = readFileSync(join(DS, 'sc-map.js'), 'utf8').match(/STATE_ABBR\s*=\s*(\{[\s\S]*?\});/)[1];
 const names = [...stateSource.matchAll(/'?([A-Za-z][A-Za-z .]*?)'?\s*:\s*'[A-Z]{2}'/g)].map((item) => item[1].trim());
 const arcs = [], geometries = [];
@@ -82,7 +84,9 @@ const inspect = () => page.evaluate(() => {
     photos: [...document.querySelectorAll('.market-candidate__media')].map((media) => {
       const image = media.querySelector('img.sc-frame__img'), frame = media.querySelector('.sc-frame'), caption = media.querySelector('.market-candidate__index');
       return { media: box(media), frame: box(frame), caption: box(caption), tile: box(media.parentElement),
-        naturalWidth: image?.naturalWidth, fit: image && getComputedStyle(image).objectFit, transform: image && getComputedStyle(image).transform };
+        naturalWidth: image?.naturalWidth, naturalHeight: image?.naturalHeight,
+        drawnWidth: image && Math.min(image.clientWidth, image.clientHeight * image.naturalWidth / image.naturalHeight),
+        fit: image && getComputedStyle(image).objectFit, transform: image && getComputedStyle(image).transform };
     }),
     contrast: [...strip.querySelectorAll('.sc-tile__label,.sc-tile__value,.sc-tile__sub,a,.sc-delta')].map((node) => contrast(getComputedStyle(node).color, stripBg)),
     values: [...strip.querySelectorAll('.sc-tile__value')].map((node) => ({ box: box(node), parent: box(node.parentElement), whiteSpace: getComputedStyle(node).whiteSpace })),
@@ -102,7 +106,8 @@ try {
     const shape = await inspect();
     check(`${width}px ${theme}: image stage fits, preserves full image and separates its caption`, shape.overflow <= 1
       && shape.photos.length === 2 && shape.photos.every((p) => p.media.w >= (width <= 600 ? 110 : p.tile.w - 50) && p.media.h >= (width <= 600 ? 112 : 168)
-        && p.naturalWidth === 1200 && p.fit === 'contain' && p.transform === 'none' && p.frame.bottom <= p.caption.y + 1), JSON.stringify(shape.photos));
+        && p.naturalWidth === 953 && p.naturalHeight === 768 && (width < 1000 || p.drawnWidth >= p.media.w * .65)
+        && p.fit === 'contain' && p.transform === 'none' && p.frame.bottom <= p.caption.y + 1), JSON.stringify(shape.photos));
     check(`${width}px ${theme}: first signal stays on arrival and instrument values remain legible`, shape.firstSignal > 0 && shape.firstSignal < height
       && (width > 600 || shape.heroHeight <= height + 60)
       && shape.contrast.every((ratio) => ratio >= 4.5) && shape.values.every((v) => v.box.x >= v.parent.x && v.box.x + v.box.w <= v.parent.x + v.parent.w), JSON.stringify({ firstSignal: shape.firstSignal, minimumContrast: Math.min(...shape.contrast) }));
