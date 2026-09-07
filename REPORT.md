@@ -52,37 +52,6 @@ _Worth the ship:_
 _131 vehicles across 4 trims (5 listed under two of them) · IL 5 · OH 2 · IN 6 · WI 3 · beyond 115_
 _typical car 18d on market (83 of 131 dated) · 73 of 116 ask less than when first seen, median $1,000 less · 7 cut and put back · 69% of 116 cut while tracked, median $600 of 151 cuts · 11 seen at two prices, not counted · listings ran at least ~20d (12 of 25 dated)_
 
-### CPO under 30k mi — 7 vehicles · lowest asking $48,084 (Carlsbad, CA)
-
-_The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country — the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it — the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call._
-
-**Price changes**
-- $56,000 -> **$55,500** (Miami, FL) `WBY13HG08SCT19677`
-
-_Nothing drivable (IL/OH/IN/WI)._
-
-**Lowest asking beyond your states (shipping estimated)**
-- **$48,084** · 8,794 mi · + $1,336 shipping = $49,420 · 2024 · Carlsbad, CA · ~1,725 mi from Chicago
-  _CPO · 1-owner · no accidents · ex-lease_
-  BMW of Carlsbad — [listing](https://bmwencinitas.com/certified/BMW/2024-BMW-i5-6d13da60ac183b721f3e02235ecd37e5.htm)
-  `WBY33FK07RCR76727`
-- **$51,353** · 9,184 mi · + $1,265 shipping = $52,618 · 2025 · Las Vegas, NV · ~1,525 mi from Chicago
-  _down 1x (-$235) · CPO · 1-owner · no accidents · ex-lease_
-  BMW of Las Vegas — [listing](https://bmwvegas.com/certified/BMW/2025-BMW-i5-b9b2a649ac18131151cd1f59eab9849b.htm)
-  `WBY33FK09SCT65958`
-- **$51,476** · 2,590 mi · + $787 shipping = $52,263 · 2025 · Fort Washington, PA · ~650 mi from Chicago
-  _down 1x (-$1,000) · CPO · 1-owner · no accidents_
-  BMW of Fort Washington — [listing](https://bmwoffortwashington.com/certified/BMW/2025-BMW-i5-78a10dd9ac181588e4b749d9b0cef905.htm)
-  `WBY13HG00SCU51722`
-- **$54,999** · 10,510 mi · + $991 shipping = $55,990 · 2025 · Denver, CO · ~925 mi from Chicago
-  _NEW · CPO · 1-owner · no accidents · ex-lease_
-  BMW of Denver Downtown — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG02SCU85189)
-  `WBY13HG02SCU85189`
-- **$57,585** · 12,323 mi · + $1,137 shipping = $58,722 · 2025 · Miami, FL · ~1,200 mi from Chicago
-  _down 1x (-$500) · CPO · 1-owner · no accidents · ex-lease_
-  BMW of South Miami — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG08SCT19677)
-  `WBY13HG08SCT19677`
-
 ### eDrive40 — 77 vehicles · lowest asking $34,989 (Seffner, FL)
 
 _The rear-drive i5, one half of the decision beside the i7 eDrive50._
@@ -263,6 +232,37 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   BMW of Downtown Los Angeles — [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK02RCP56898)
   `WBY43FK02RCP56898`
 
+### CPO under 30k mi — 7 vehicles · lowest asking $48,084 (Carlsbad, CA)
+
+_Certified BMW i5s under 30,000 miles that fall inside the 40 lowest-mileage BMW i5s in the country — the query is miles.asc over 2 pages, then filtered, so it is that end of the market rather than all of it. Derived from buyer.cpo_watch for every car named in buyer.shopping: no model has to ask for one, and none of them names itself. The 2.99% APR certified promo is the reason to watch these._
+
+**Price changes**
+- $56,000 -> **$55,500** (Miami, FL) `WBY13HG08SCT19677`
+
+_Nothing drivable (IL/OH/IN/WI)._
+
+**Lowest asking beyond your states (shipping estimated)**
+- **$48,084** · 8,794 mi · + $1,336 shipping = $49,420 · 2024 · Carlsbad, CA · ~1,725 mi from Chicago
+  _CPO · 1-owner · no accidents · ex-lease_
+  BMW of Carlsbad — [listing](https://bmwencinitas.com/certified/BMW/2024-BMW-i5-6d13da60ac183b721f3e02235ecd37e5.htm)
+  `WBY33FK07RCR76727`
+- **$51,353** · 9,184 mi · + $1,265 shipping = $52,618 · 2025 · Las Vegas, NV · ~1,525 mi from Chicago
+  _down 1x (-$235) · CPO · 1-owner · no accidents · ex-lease_
+  BMW of Las Vegas — [listing](https://bmwvegas.com/certified/BMW/2025-BMW-i5-b9b2a649ac18131151cd1f59eab9849b.htm)
+  `WBY33FK09SCT65958`
+- **$51,476** · 2,590 mi · + $787 shipping = $52,263 · 2025 · Fort Washington, PA · ~650 mi from Chicago
+  _down 1x (-$1,000) · CPO · 1-owner · no accidents_
+  BMW of Fort Washington — [listing](https://bmwoffortwashington.com/certified/BMW/2025-BMW-i5-78a10dd9ac181588e4b749d9b0cef905.htm)
+  `WBY13HG00SCU51722`
+- **$54,999** · 10,510 mi · + $991 shipping = $55,990 · 2025 · Denver, CO · ~925 mi from Chicago
+  _NEW · CPO · 1-owner · no accidents · ex-lease_
+  BMW of Denver Downtown — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG02SCU85189)
+  `WBY13HG02SCU85189`
+- **$57,585** · 12,323 mi · + $1,137 shipping = $58,722 · 2025 · Miami, FL · ~1,200 mi from Chicago
+  _down 1x (-$500) · CPO · 1-owner · no accidents · ex-lease_
+  BMW of South Miami — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG08SCT19677)
+  `WBY13HG08SCT19677`
+
 ## Shopping: BMW i7
 
 - Lowest asking **$54,000** (Marietta, GA) · + $725 shipping · = vs 2026-09-06
@@ -301,7 +301,7 @@ _Worth the ship:_
   _spicy pick: 14% under typical for a 2026 BMW i7 eDrive50 ($16,039 less, from 45 such cars)_
   [listing](http://details.vast.com/details/cars/ob-48ae10cec45c5264c0c05239af7ac2c3eda678223f9171ac63be6a3107cd3db63b027b96ef83ac88fd6ccb42933d4f3c6bf26f82a637df6dbf6160746a741de2b1548cbb08370338e1296a10dd467c59d8237f1ed07c3f4d1a6d7eb99dd120e1d8ebe52a81b5057b515228b213e0e17810f11e5abb9d1883e36eb6ab2f19b4e6fb7f16011f22412ebedeee38685f0721f74c31246e538ff42db94d2ceb09e6950fb15e40f90d9a2a0fa486f173a58cc4/?pl=85&context=1e0d811633d20dd94c351375e543927eda3d8b1a) `WBY43EJ09TCX64211`
 
-_115 vehicles across 3 trims · IL 5 · OH 1 · IN 2 · WI 0 · beyond 107_
+_115 vehicles across 4 trims · IL 5 · OH 1 · IN 2 · WI 0 · beyond 107_
 _typical car 27d on market (89 of 115 dated) — 51 dealer stock at 75d, 37 used at 17d, 1 with no mileage · 16 of 106 ask less than when first seen, median $1,435 less · 6 cut and put back · 21% of 106 cut while tracked, median $834 of 33 cuts · 6 seen at two prices, not counted · listings ran at least ~13d (14 of 16 dated)_
 
 ### eDrive50 — 90 vehicles · lowest asking $54,000 (Marietta, GA)
@@ -427,6 +427,8 @@ _The other half of the decision, beside the i5 eDrive40._
   _cut 1x, then back up · 1-owner · 1 accident_
   jaguar land rover jacksonville — [listing](https://landroverjacksonville.com/electric-used/BMW/2024-BMW-i7-4a369591ac18005db88bfdc486b5e7fe.htm)
   `WBY83EH03RCP65371`
+
+### CPO under 30k mi — none found
 
 ## Spicy picks across the watchlist
 

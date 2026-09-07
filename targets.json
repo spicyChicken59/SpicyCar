@@ -8,7 +8,15 @@
     "anchor": [41.8781, -87.6298],
     "states": ["IL", "OH", "IN", "WI"],
     "search_states": ["MI", "IA", "MO", "KY"],
-    "shopping": ["bmw-i5-cpo", "bmw-i5-edrive40", "bmw-i7-edrive50"],
+    "// shopping": "The cars being bought, by target id. This is the ONE list that says what the tool is for; nothing in the watchlist names a car as special. Everything a shopped car gets — the depth below, the newest sweep, the daily cadence, the nationwide certified watch — is derived from being named here, so changing this list changes what the API plan is spent on. It used to name the CPO watch as a target of its own; that target is derived now, so name the car and the watch follows.",
+    "shopping": ["bmw-i5-edrive40", "bmw-i7-edrive50"],
+
+    "// shopping_fetch": "How hard a car in `shopping` is looked at. Applied over the target's own settings, so being shopped can only add depth. These four values were typed onto two BMW trims by hand until they moved here: with them on the car rather than on the decision, pointing `shopping` at any other car left it on a light one-page query on its comparison cadence while the BMWs kept full depth and a daily fetch — measured by rebuilding with shopping = [\"kia-ev9\"] and reading the targets back.",
+    "shopping_fetch": { "depth": "full", "pages": 2, "newest": 1, "cadence": 1 },
+
+    "// cpo_watch": "The nationwide certified sweep, derived once per shopped MODEL. Certified cars are the ones a manufacturer promo applies to, so this asks the whole country for the lowest-mileage certified examples of whatever is being shopped and filters to the mileage cap after — the cpo and mileage query params are unverified on this API, so the filtering happens in normalize(). Three of these were hand-written trims on the i5, i7 and iX, which meant a buyer shopping anything else got no certified watch at all. Set enabled false to switch every one of them off; a model narrows its own query or stands its own watch down with a `cpo` block beside its `trims`. Cost is len(sorts) x pages calls per fetch day, national only, so one sort over two pages every second day is 30 calls a month per shopped model.",
+    "cpo_watch": { "enabled": true, "depth": "full", "sorts": ["miles.asc"], "pages": 2, "cadence": 2, "max_miles": 30000, "cpo_only": true, "national_only": true },
+
     "shortlist": [],
 
     "// finance": "What the car costs per month, which is the number this buyer actually decides on. A promo applies ONLY to a certified car of its own model — a non-CPO i5 finances at fallback_apr like anything else. Past its expires date a promo stops applying and the page says so; it is never silently kept alive. fallback_apr is a real rate that drifts: fallback_checked is when it was last verified, and the page warns when that goes stale.",
@@ -72,14 +80,15 @@
     "pages": 2
   },
 
-  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 88%. All 28 of the LONG-TAIL TARGETS are light -- a different 28 from the 28 observations above, which is why this says which --  so their National query returns the twenty cheapest of that model IN AMERICA. The split is measured on the light targets the log could see and applied to these by depth: source_overlap() needs two sources to compare, so a national_only target cannot contribute an observation and not one of these is in the window. Paid for out of cadence, not budget: 10 -> 15 days buys the second source at 905 calls/month against 1000 and a worst day of 38 against 40, and 15 keeps plan_horizon() at 60 days where 13 and 14 push it to 156 and 84. The cost is real and is freshness: twice a month instead of three times. bmw-i5-cpo keeps national_only and is not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call.",
-  "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is.",
+  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 88%. All 28 of the LONG-TAIL TARGETS are light -- a different 28 from the 28 observations above, which is why this says which --  so their National query returns the twenty cheapest of that model IN AMERICA. The split is measured on the light targets the log could see and applied to these by depth: source_overlap() needs two sources to compare, so a national_only target cannot contribute an observation and not one of these is in the window. Paid for out of cadence, not budget: 10 -> 15 days buys the second source at 935 calls/month against 1000 and a worst day of 38 against 40, and 15 keeps plan_horizon() at 60 days where 13 and 14 push it to 156 and 84. The cost is real and is freshness: twice a month instead of three times. The certified watches keep national_only and are not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call. How many of them there are follows buyer.shopping rather than this file, since one is derived per shopped model.",
+  "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is. bmw-ix-cpo is one row from 2026-08-31, from the hand-written iX certified trim that existed before the watch was derived from buyer.shopping. There is no target to map it to unless the iX is shopped, and mapping it conditionally on that would make a row appear and disappear with the buyer's mind, so it stays orphaned; naming the iX in buyer.shopping rebuilds bmw-ix-cpo under the same id and the row joins it.",
   "legacy_ids": {
     "i5-edrive40": "bmw-i5-edrive40",
     "chevrolet-equinox-ev-rs": "chevrolet-equinox-ev",
     "lucid-air-touring": null,
     "lucid-air-grand-touring": null,
-    "bmw-i7": null
+    "bmw-i7": null,
+    "bmw-ix-cpo": null
   },
 
   "watchlist": {
@@ -96,13 +105,11 @@
             "bad": ["Fast charging peaks near 205 kW and tapers early, so road trips are slower than the range suggests", "Over 5,000 lb — expect tire wear and a firm ride on big wheels", "Equipment varies a lot by package; two cars at the same price can be very different"],
             "watch": ["Confirm the software is current — early 2024 cars had bugs fixed over the air", "Check which packages the specific VIN has (Driving Assistance Pro, Premium, heated seats)", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
           },
+          "// cpo": "Narrows the certified watch buyer.cpo_watch derives for this model. Optional everywhere: a model that says nothing gets a sweep of the whole model, which is what makes the watch work for a car nobody has written a line about. M60s are excluded on purpose — they are not this buyer's shopping pool, and the narrower query buys deeper coverage per call.",
+          "cpo": { "trim_query": "eDrive40,xDrive40", "trim_match": "drive40",
+                   "note": "The 2.99% APR certified promo is the reason to watch these." },
           "trims": {
-            "cpo":      { "label": "CPO under 30k mi", "trim_query": "eDrive40,xDrive40", "trim_match": "drive40",
-                          "cadence": 2,
-                          "depth": "full", "sorts": ["miles.asc"], "pages": 2,
-                          "max_miles": 30000, "cpo_only": true, "national_only": true,
-                          "note": "The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country — the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it — the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call." },
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1,
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40",
                           "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },
             "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
@@ -117,13 +124,12 @@
             "bad": ["Nearly 6,000 lb on 19–21 in tires: consumables, brakes and a tow all cost what the car cost new implies", "Charging peaks around 195 kW and tapers, so for the money it is not a fast road-tripper", "Equipment swing is enormous — two i7s at the same asking price can be $30k apart in options", "It is a very large car; measure the garage before falling for one"],
             "watch": ["Confirm the CPO rate that applies to the i7 specifically — the promo's headline numbers differ by model (2.99% on the i5, 2.49% on the iX)", "Check what the VIN actually has: Executive Lounge, Theatre Screen, automatic doors, Bowers & Wilkins — options move the price more than mileage does", "Air suspension and big wheels: look for leaks and kerbed rims before making the drive", "The battery warranty is 8 years / 100,000 miles from the original in-service date, not from your purchase"]
           },
+          "// cpo": "Narrows the certified watch buyer.cpo_watch derives for this model. The M70 is spelled with xDrive, so the query alone cannot keep it out — trim_exclude must. This watch has never fetched: as a hand-written trim it was stood down before its first due day on a prediction, and deriving it from buyer.shopping brings it back, which is what naming the i7 as a car being bought is supposed to mean. The prediction is worth recording because the first fetch tests it: in the i7 rows actually observed, ranks 1-42 on miles.asc are 2026 cars at 1-14 miles — new inventory, none certified — so the first certified i7 may sit below the forty-car window. The i5 version of the same recipe returns cars, and its one structural difference is a year list without the current model year. If two weeks of empty results say the prediction was right, narrow the years here rather than standing the car down.",
+          "cpo": { "trim_query": "eDrive50,xDrive60", "trim_match": "drive", "trim_exclude": "m70",
+                   "years": ["2024", "2025"],
+                   "note": "The current model year is left out of THIS watch and no other, because on the i7 it is the whole window: sorting the observed i7 rows by miles and asking where the first certified car sits, it is rank 52-80 on every day the record holds and rank 6-18 once 2026 is dropped, against a forty-record window. The i5 needs no such narrowing, measured the same way on the same days: rank 3-26 with every year in." },
           "trims": {
-            "cpo":      { "label": "CPO under 30k mi", "trim_query": "eDrive50,xDrive60", "trim_match": "drive", "trim_exclude": "m70",
-                          "cadence": 2,
-                          "depth": "full", "sorts": ["miles.asc"], "pages": 2,
-                          "max_miles": 30000, "cpo_only": true, "national_only": true, "active": false,
-                          "note": "Stood down BEFORE IT EVER RAN, on a prediction rather than a measurement — which is the honest way to say this and the first version of this note did not. It was added at 02:38 on 2026-09-01 with offset 1 on a cadence of 2, so its first due day was 2026-09-02: it never fetched once and never billed a call. The 30 calls a month it would have cost is a plan figure, not a spend. What is measured is the mechanism: the query takes the 40 lowest-mileage i7s in the country on miles.asc and then filters to certified under 30,000 miles, and in the i7 rows actually observed, ranks 1-42 are 2026 cars at 1-14 miles — new inventory, none certified — so the first certified i7 sits below the window. The i5 version of the same recipe returns cars, and its one structural difference is years [2024, 2025], no current model year. Dropping 2026 here may well fix it, and that is worth two calls to find out; it is not a target that cannot work, it is a target not worth 30 calls a month on this shopping list while the ordinary edrive50 query already holds certified sub-30k i7s. One flag brings it back." },
-            "edrive50": { "label": "eDrive50", "trim_query": "eDrive50", "trim_match": "edrive50", "depth": "full", "pages": 2, "newest": 1,
+            "edrive50": { "label": "eDrive50", "trim_query": "eDrive50", "trim_match": "edrive50",
                           "note": "The other half of the decision, beside the i5 eDrive40." },
             "xdrive60": { "label": "xDrive60", "trim_query": "xDrive60", "trim_match": "xdrive60", "cadence": 3 },
             "m70":      { "label": "M70",      "trim_query": "M70",      "trim_match": "m70", "min_price": 60000, "cadence": 3 }
@@ -139,12 +145,9 @@
             "bad": ["Divisive looks, and the big grille is a plastic sensor panel that is expensive if damaged", "21–22 in tires and a heavy car: consumables cost real money", "2022 cars had high-voltage battery and software recalls; charging peaks near 195 kW"],
             "watch": ["Confirm the battery recall and software campaigns are done on the VIN", "Know which generation you are looking at: 2022–2025 xDrive50 / M60, or the 2026 xDrive45 / xDrive60 / M70 with bigger batteries", "Check tire life and the windshield (the camera glass is pricey); verify Driving Assistance Pro and the Sport package"]
           },
+          "// cpo": "Narrows the certified watch buyer.cpo_watch derives for this model, to the xDrives. Nothing here switches it on: a nationwide certified sweep is what you run on a car you are buying, and it runs when the iX is named in buyer.shopping and not before. The 2.49% rate only matters to someone signing for one.",
+          "cpo": { "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive" },
           "trims": {
-            "cpo":    { "label": "CPO under 30k mi", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive",
-                        "cadence": 2,
-                        "depth": "full", "sorts": ["miles.asc"], "pages": 2,
-                        "max_miles": 30000, "cpo_only": true, "national_only": true, "active": false,
-                        "note": "Stood down when the decision became the i5 against the i7. A nationwide certified sweep is what you run on a car you are buying — it is the most expensive thing on the watchlist per model, and the 2.49% rate only matters to someone signing for one. One flag brings it back." },
             "xdrive": { "label": "xDrive (45 / 50 / 60)", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive" },
             "m":      { "label": "M (M60 / M70)",         "trim_query": "M60,M70", "trim_match": "", "trim_exclude": "xdrive", "min_price": 35000 }
           }
@@ -162,7 +165,7 @@
           },
           "trims": {
             "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "active": false },
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "Stood down with the rest of the i4: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the i5 and i7 pages now show directly." },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "note": "Stood down with the rest of the i4: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the i5 and i7 pages now show directly." },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "active": false },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }

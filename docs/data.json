@@ -34,9 +34,10 @@
   ],
   "scope_label": "IL/OH/IN/WI",
   "shopping": [
-   "bmw-i5-cpo",
    "bmw-i5-edrive40",
-   "bmw-i7-edrive50"
+   "bmw-i5-cpo",
+   "bmw-i7-edrive50",
+   "bmw-i7-cpo"
   ],
   "picks": {
    "count": 4,
@@ -163,23 +164,6 @@
       "min_price": 20000
      },
      "trims": {
-      "bmw-i5-cpo": {
-       "label": "CPO under 30k mi",
-       "note": "The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country \u2014 the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it \u2014 the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call.",
-       "depth": "full",
-       "cadence": 2,
-       "shopping": true,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 20000,
-       "max_miles": 30000,
-       "cpo_only": true,
-       "market_total": null
-      },
       "bmw-i5-edrive40": {
        "label": "eDrive40",
        "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50.",
@@ -244,6 +228,23 @@
        "exit_watched": 10,
        "exit_cut_seen": 4,
        "exit_days": 17
+      },
+      "bmw-i5-cpo": {
+       "label": "CPO under 30k mi",
+       "note": "Certified BMW i5s under 30,000 miles that fall inside the 40 lowest-mileage BMW i5s in the country \u2014 the query is miles.asc over 2 pages, then filtered, so it is that end of the market rather than all of it. Derived from buyer.cpo_watch for every car named in buyer.shopping: no model has to ask for one, and none of them names itself. The 2.99% APR certified promo is the reason to watch these.",
+       "depth": "full",
+       "cadence": 2,
+       "shopping": true,
+       "years": [
+        "2024",
+        "2025",
+        "2026",
+        "2027"
+       ],
+       "min_price": 20000,
+       "max_miles": 30000,
+       "cpo_only": true,
+       "market_total": null
       }
      },
      "listings": [
@@ -11227,71 +11228,6 @@
       }
      ],
      "daily_by_trim": {
-      "bmw-i5-cpo": [
-       {
-        "date": "2026-08-30",
-        "n": 1,
-        "n_local": 0,
-        "min_price": 51588,
-        "median_price": 51588
-       },
-       {
-        "date": "2026-08-31",
-        "n": 1,
-        "n_local": 0,
-        "min_price": 51588,
-        "median_price": 51588
-       },
-       {
-        "date": "2026-09-01",
-        "n": 6,
-        "n_local": 0,
-        "min_price": 45998,
-        "median_price": 55280
-       },
-       {
-        "date": "2026-09-02",
-        "n": 6,
-        "n_local": 0,
-        "min_price": 45998,
-        "median_price": 55280
-       },
-       {
-        "date": "2026-09-03",
-        "n": 2,
-        "n_local": 0,
-        "min_price": 54476,
-        "median_price": 56280
-       },
-       {
-        "date": "2026-09-04",
-        "n": 2,
-        "n_local": 0,
-        "min_price": 54476,
-        "median_price": 56280
-       },
-       {
-        "date": "2026-09-05",
-        "n": 4,
-        "n_local": 0,
-        "min_price": 48084,
-        "median_price": 57922
-       },
-       {
-        "date": "2026-09-06",
-        "n": 4,
-        "n_local": 0,
-        "min_price": 48084,
-        "median_price": 57922
-       },
-       {
-        "date": "2026-09-07",
-        "n": 7,
-        "n_local": 0,
-        "min_price": 48084,
-        "median_price": 54999
-       }
-      ],
       "bmw-i5-edrive40": [
        {
         "date": "2026-08-23",
@@ -11633,16 +11569,74 @@
         "min_price": 46995,
         "median_price": 56970
        }
+      ],
+      "bmw-i5-cpo": [
+       {
+        "date": "2026-08-30",
+        "n": 1,
+        "n_local": 0,
+        "min_price": 51588,
+        "median_price": 51588
+       },
+       {
+        "date": "2026-08-31",
+        "n": 1,
+        "n_local": 0,
+        "min_price": 51588,
+        "median_price": 51588
+       },
+       {
+        "date": "2026-09-01",
+        "n": 6,
+        "n_local": 0,
+        "min_price": 45998,
+        "median_price": 55280
+       },
+       {
+        "date": "2026-09-02",
+        "n": 6,
+        "n_local": 0,
+        "min_price": 45998,
+        "median_price": 55280
+       },
+       {
+        "date": "2026-09-03",
+        "n": 2,
+        "n_local": 0,
+        "min_price": 54476,
+        "median_price": 56280
+       },
+       {
+        "date": "2026-09-04",
+        "n": 2,
+        "n_local": 0,
+        "min_price": 54476,
+        "median_price": 56280
+       },
+       {
+        "date": "2026-09-05",
+        "n": 4,
+        "n_local": 0,
+        "min_price": 48084,
+        "median_price": 57922
+       },
+       {
+        "date": "2026-09-06",
+        "n": 4,
+        "n_local": 0,
+        "min_price": 48084,
+        "median_price": 57922
+       },
+       {
+        "date": "2026-09-07",
+        "n": 7,
+        "n_local": 0,
+        "min_price": 48084,
+        "median_price": 54999
+       }
       ]
      },
      "fetch_days": {
-      "bmw-i5-cpo": [
-       "2026-08-30",
-       "2026-09-01",
-       "2026-09-03",
-       "2026-09-05",
-       "2026-09-07"
-      ],
       "bmw-i5-edrive40": [
        "2026-08-23",
        "2026-08-24",
@@ -11677,6 +11671,13 @@
        "2026-08-24",
        "2026-08-26",
        "2026-08-28",
+       "2026-08-30",
+       "2026-09-01",
+       "2026-09-03",
+       "2026-09-05",
+       "2026-09-07"
+      ],
+      "bmw-i5-cpo": [
        "2026-08-30",
        "2026-09-01",
        "2026-09-03",
@@ -15360,6 +15361,21 @@
        "min_price": 60000,
        "max_miles": null,
        "cpo_only": false,
+       "market_total": null
+      },
+      "bmw-i7-cpo": {
+       "label": "CPO under 30k mi",
+       "note": "Certified BMW i7s under 30,000 miles that fall inside the 40 lowest-mileage BMW i7s in the country \u2014 the query is miles.asc over 2 pages, then filtered, so it is that end of the market rather than all of it. Derived from buyer.cpo_watch for every car named in buyer.shopping: no model has to ask for one, and none of them names itself. The current model year is left out of THIS watch and no other, because on the i7 it is the whole window: sorting the observed i7 rows by miles and asking where the first certified car sits, it is rank 52-80 on every day the record holds and rank 6-18 once 2026 is dropped, against a forty-record window. The i5 needs no such narrowing, measured the same way on the same days: rank 3-26 with every year in.",
+       "depth": "full",
+       "cadence": 2,
+       "shopping": true,
+       "years": [
+        "2024",
+        "2025"
+       ],
+       "min_price": 35000,
+       "max_miles": 30000,
+       "cpo_only": true,
        "market_total": null
       }
      },
@@ -23360,7 +23376,8 @@
         "min_price": 66196,
         "median_price": 139349
        }
-      ]
+      ],
+      "bmw-i7-cpo": []
      },
      "fetch_days": {
       "bmw-i7-edrive50": [
@@ -23396,7 +23413,8 @@
        "2026-09-01",
        "2026-09-04",
        "2026-09-07"
-      ]
+      ],
+      "bmw-i7-cpo": []
      },
      "gone": [
       {

@@ -27,7 +27,7 @@ import unittest.mock
 import contextlib
 import copy
 import io as _io
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 
@@ -359,9 +359,11 @@ class TestNormalize(unittest.TestCase):
         rec["retailListing"]["cpo"] = True
         self.assertIsNone(T.normalize(rec, target("bmw-i5-cpo"), self.dropped))
         self.assertEqual(self.dropped["trim mismatch"], 1)
-        # Read from the config rather than TARGETS: the i7 watch is stood
-        # down, and this rule has to survive the day it comes back.
-        i7cpo = json.loads(Path("targets.json").read_text())["watchlist"]["bmw"]["models"]["i7"]["trims"]["cpo"]
+        # Read the target that RUNS. This used to read the watchlist trim,
+        # because the i7 watch was stood down and had no target; it is derived
+        # from buyer.shopping now, so the thing to assert about is the one the
+        # fetch will use.
+        i7cpo = T.TARGETS["bmw-i7-cpo"]
         self.assertNotIn("m70", i7cpo["trim_query"].lower())
         self.assertEqual(i7cpo["trim_exclude"], "m70",
                          "the i7 M70 is spelled with xDrive, so the query "
@@ -387,10 +389,24 @@ class TestNormalize(unittest.TestCase):
             r["vehicle"]["trim"] = trim
             r["vehicle"]["series"] = trim
             return r
+
+        def excluded_car(t):
+            """A record that reaches the exclusion rather than dying before it.
+
+            The exclude word ALONE only works on a target whose trim_match is
+            empty. bmw-i7-cpo matches "drive" and excludes "m70" — an M70 is
+            spelled with xDrive in the series field, which is the whole reason
+            the exclusion exists — so a record whose trim is bare "m70" is
+            refused for mismatching, and the test would then be watching a
+            different rule refuse it. Carrying both words is what a real M70
+            looks like to normalize()."""
+            word = t["trim_exclude"]
+            match = t.get("trim_match", "")
+            return f"{match} {word}".strip() if match else word
         excluders = [t for t in T.TARGETS.values() if t.get("trim_exclude")]
         self.assertTrue(excluders, "no live target relies on trim_exclude")
         for n, t in enumerate(excluders, start=1):
-            word = t["trim_exclude"]
+            word = excluded_car(t)
             self.assertIsNone(T.normalize(rec_with(word), t, self.dropped), t["id"])
             self.assertEqual(self.dropped["trim excluded"], n,
                              f"{t['id']} must refuse a car whose trim reads "
@@ -4212,6 +4228,51 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
                          json.loads(out.stdout),
                          "the page and the report spell the schedule differently")
 
+    def test_the_page_and_the_report_name_the_same_brand_on_a_certified_car(self):
+        """The page's own annotateFinance, executed, against Tracking's flags().
+
+        The page tested the seller's name against the literal 'bmw' inside a
+        loop over every brand, while `flags()` has always taken the brand off
+        the target. Reproduced before it was fixed, by running the pre-fix
+        function over a Kia promo: a certified Kia at "Kia of Chicago" came
+        back flagged, so the page told the buyer their own brand's dealer was
+        not their own brand's dealer while the report said the opposite. Two
+        surfaces, two answers, on the sentence that decides a payment.
+
+        Executed rather than compared as source, because the defect is one
+        argument in one call and both files read plausibly.
+        """
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the page's own function")
+        import subprocess
+        page = Path("docs/index.html").read_text()
+        fn = re.search(r"  function annotateFinance\(site\) \{.*?\n  \}\n", page, re.S)
+        sn = re.search(r"  const sellerNamed = \(x, brand\) =>[^\n]*\n", page)
+        for got, what in ((fn, "annotateFinance"), (sn, "sellerNamed")):
+            self.assertIsNotNone(got, f"the page no longer defines {what} — "
+                                      "this check has lost its subject")
+        cars = [{"vin": "A", "cpo": True, "dealer": "Kia of Chicago"},
+                {"vin": "B", "cpo": True, "dealer": "Niello Acura"}]
+        site = {"buyer": {"finance": {"fallback_apr": 6.9, "promos": [
+                    {"model": "kia/ev9", "cpo_only": True, "apr": 2.99,
+                     "active": True, "label": "Kia certified 2.99%"}]}},
+                "brands": {"kia": {"label": "Kia", "models": {
+                    "ev9": {"listings": cars}}}}}
+        script = (sn.group(0) + fn.group(0)
+                  + f"const site = {json.dumps(site)};\nannotateFinance(site);\n"
+                  "console.log(JSON.stringify(site.brands.kia.models.ev9.listings"
+                  ".map((x) => [!!x.apr_seller_unnamed, x.apr_seller_brand])));")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(json.loads(out.stdout),
+                         [[False, "Kia"], [True, "Kia"]],
+                         "the page must test the seller's name against the "
+                         "car's OWN brand, and say which brand it checked")
+        # …and the report's rule agrees on the same two names. Its target is
+        # looked up by id, so this drives it through a real one.
+        rows = [{"dealer": c["dealer"], "cpo": "1", "target": "bmw-i5-cpo"} for c in cars]
+        self.assertEqual([T.seller_named(r, "kia") for r in rows], [True, False])
+
     def test_the_page_spells_an_age_the_same_way_the_report_does(self):
         """The page's own formatter, executed, against Python's. Not a
         comparison of two source files: `days_ago` and `daysAgo` are four lines
@@ -4819,14 +4880,29 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         self.assertTrue(set(daily) <= set(T.SHOPPING),
                         f"…and that they are shopped ones: {daily}")
 
-    def test_every_other_day_is_the_i5s_other_trims_and_nothing_else(self):
+    def test_every_other_day_is_the_i5s_other_trims_and_the_certified_watches(self):
+        """Both surfaces say "the i5's other two trims and the two certified
+        watches". The watches are derived per shopped model now, so their
+        number follows buyer.shopping — which is exactly why the counts are
+        read off the config and compared against the words, rather than being
+        a literal three that was true while only one watch existed."""
         every_other = sorted(self._by_cadence().get(2, []))
-        self.assertEqual(len(every_other), 3,
-                         f"the prose says the i5's other three: {every_other}")
-        self.assertTrue(all(t.startswith("bmw-i5-") for t in every_other),
-                        f"…and that all three are the i5's: {every_other}")
-        self.assertIn("bmw-i5-cpo", every_other,
-                      "the prose names the certified watch as one of them")
+        watches = [t for t in every_other
+                   if T.TARGETS[t].get("derived") == T.CPO_KEY]
+        trims = [t for t in every_other if t not in watches]
+        self.assertTrue(all(t.startswith("bmw-i5-") for t in trims),
+                        f"the prose says the other trims on this tier are the "
+                        f"i5's: {trims}")
+        self.assertEqual(sorted(watches),
+                         sorted(tid for tid, t in T.TARGETS.items()
+                                if t.get("derived") == T.CPO_KEY),
+                         "…and that every certified watch is on it")
+        said = (f"the i5's other {NUMBER_WORD[len(trims)]} trims and the "
+                f"{NUMBER_WORD[len(watches)]} certified watches every other day")
+        for name, text in (("README.md", " ".join(Path("README.md").read_text().split())),
+                           ("docs/how.html", html_mod.unescape(
+                               " ".join(Path("docs/how.html").read_text().split())))):
+            self.assertIn(said, text.replace("\u2019", "'"), name)
 
     def test_the_third_day_tier_is_the_i7s_other_trims_and_the_ix(self):
         """It used to hold every rival too. One EV per brand moved the rivals
@@ -6449,8 +6525,11 @@ class TestShortlist(unittest.TestCase):
 # Config resolution and small parsers.
 # --------------------------------------------------------------------------
 class TestConfig(unittest.TestCase):
-    def test_a_parameter_resolves_through_all_four_layers(self):
-        """trim ← model ← brand ← defaults, one live example of each.
+    def test_a_parameter_resolves_through_all_five_layers(self):
+        """shopping_fetch ← trim ← model ← brand ← defaults, one live example
+        of each. The fifth is the decision rather than the car and is asserted
+        in test_being_shopped_can_only_add_depth; the four below are the
+        watchlist's own.
 
         This used to read the years off the model, which is where the 2024+
         rule used to be written four times over. It is one line in `defaults`
@@ -6492,6 +6571,12 @@ class TestConfig(unittest.TestCase):
                          "and the 2024+ rule from defaults, which no target "
                          "restates")
         self.assertEqual(target("bmw-i5-m60")["make"], "BMW")
+        # The fifth layer, in the one respect this test can show it: an
+        # unshopped trim is untouched by it, and its shopped sibling is not.
+        self.assertEqual(target("bmw-i5-m60")["depth"],
+                         T.DEFAULTS.get("depth", "light"))
+        self.assertEqual(target("bmw-i5-edrive40")["depth"],
+                         T.SHOPPING_FETCH["depth"])
 
     def test_a_model_without_trims_is_one_target(self):
         """Read off the config rather than naming one model: most of this
@@ -6512,18 +6597,172 @@ class TestConfig(unittest.TestCase):
             self.assertIn(tid, T.TARGETS)
             self.assertEqual(T.TARGETS[tid]["trim_key"], "all", tid)
 
-    def test_shopping_is_the_i5_and_the_i7(self):
-        # The decision is between the i5 and the i7 now. The iX came off the
-        # shopping list and the i7 — removed once before, when it was not in
-        # the running — came back onto it; each shopped model brings its
-        # nationwide CPO watch, because the certified promo rate is what makes
-        # any of them affordable, plus the daily hunt on the trim being bought.
-        shopped = sorted(t for t, v in T.TARGETS.items() if v["shopping"])
-        # The i7's certified watch is stood down — see
-        # test_the_i7_certified_watch_cannot_reach_a_certified_i7 — so the i7
-        # is shopped through its edrive50 hunt alone.
-        self.assertEqual(shopped, ["bmw-i5-cpo", "bmw-i5-edrive40",
-                                   "bmw-i7-edrive50"])
+    def test_shopping_names_cars_and_the_watches_follow(self):
+        """buyer.shopping names CARS. Everything else about being shopped —
+        the depth, the newest sweep, the daily cadence, the nationwide
+        certified watch — is derived from being named there, so this asserts
+        the derivation rather than a list somebody typed twice.
+
+        It used to name `bmw-i5-cpo` as a target of its own, which is why the
+        expected list here was a literal: the watch was a hand-written trim on
+        three BMW models and no other car could have one."""
+        cfg = json.loads(Path("targets.json").read_text())
+        named = cfg["buyer"]["shopping"]
+        self.assertEqual(named, ["bmw-i5-edrive40", "bmw-i7-edrive50"],
+                         "the decision is the i5 against the i7")
+        for tid in named:
+            self.assertNotIn(T.CPO_KEY, T.TARGETS[tid]["trim_key"],
+                             "shopping names the car, not its certified watch")
+        # One derived watch per shopped MODEL — not per target, since two
+        # trims of one model would otherwise ask the country the same question
+        # twice — and every one of them flagged shopping.
+        models = {(t["brand"], t["model_key"]) for t in T.TARGETS.values() if t["shopping"]}
+        want = {f"{b}-{m}-{T.CPO_KEY}" for b, m in models}
+        derived = {tid for tid, t in T.TARGETS.items() if t.get("derived") == T.CPO_KEY}
+        self.assertEqual(derived, want,
+                         "every shopped model gets a certified watch and no "
+                         "unshopped one does")
+        self.assertEqual(T.shopping_ids(),
+                         ["bmw-i5-edrive40", "bmw-i5-cpo",
+                          "bmw-i7-edrive50", "bmw-i7-cpo"],
+                         "and the resolved list is what the sheet publishes")
+
+    def test_pointing_the_tool_at_another_car_moves_the_spending(self):
+        """The defect this replaced, kept as a test because it was invisible.
+
+        The depth, the newest sweep and the daily cadence were typed onto two
+        BMW trims, so `buyer.shopping = ["kia-ev9"]` left the shopped car on a
+        light one-page query every fourth day while the three unshopped BMW
+        targets kept full depth and a daily fetch — and planned_calls()
+        returned the same three numbers either way. Reproduced by rebuilding
+        with that config and reading the targets back, which is what this does.
+        """
+        cfg = json.loads(Path("targets.json").read_text())
+        cfg["buyer"]["shopping"] = ["kia-ev9"]
+        built = self._rebuild(cfg)
+        ev9 = built["kia-ev9"]
+        for k, v in cfg["buyer"]["shopping_fetch"].items():
+            self.assertEqual(ev9[k], v, f"a shopped Kia EV9 is fetched at {k}={v}")
+        self.assertIn("kia-ev9-cpo", built,
+                      "and it gets the certified watch the BMWs used to own")
+        self.assertTrue(built["kia-ev9-cpo"]["national_only"])
+        for tid in ("bmw-i5-edrive40", "bmw-i7-edrive50"):
+            self.assertFalse(built[tid]["shopping"])
+            self.assertEqual(built[tid]["depth"], "light",
+                             f"{tid} is a comparison car now and is fetched like one")
+            self.assertEqual(built[tid]["newest"], 0)
+        self.assertNotIn("bmw-i5-cpo", built,
+                         "nobody is shopping an i5, so nothing sweeps the "
+                         "country for a certified one")
+
+    # ---- The seven mutants that survived the first pass over this work. Each
+    # one is a rule the shipped config cannot exercise: nothing is shopped that
+    # also sets a slower cadence, no model stands its own watch down, the
+    # recipe is enabled, no key is in both the recipe and a narrowing, no trim
+    # is keyed `cpo`, and the one mileage cap in the file is a round number.
+    # They are the rules a person changing this config will hit first.
+
+    def test_being_shopped_can_only_add_depth(self):
+        """shopping_fetch is applied AFTER the trim's own layer, so a car the
+        watchlist was tracking slowly is fetched properly once it is named.
+        Reversed, the trim wins and naming a slow comparison car as the one you
+        are buying leaves it on its comparison schedule."""
+        cfg = json.loads(Path("targets.json").read_text())
+        # On the TRIM, which is the layer this is about. Setting it on the
+        # model does not distinguish the two orders — a mutant that runs the
+        # shopped layer before the trim still beats the model, so the first
+        # version of this test passed on the defect it names.
+        tr = cfg["watchlist"]["bmw"]["models"]["i5"]["trims"]["edrive40"]
+        tr["cadence"], tr["depth"], tr["newest"] = 9, "light", 0
+        t = self._rebuild(cfg)["bmw-i5-edrive40"]
+        self.assertEqual((t["cadence"], t["depth"], t["newest"]), (1, "full", 1),
+                         "the shopped layer has to sit after the trim's own")
+        # …and the same trim, unshopped, keeps what it asked for — otherwise
+        # this passes on a build that ignores the trim layer altogether.
+        cfg["buyer"]["shopping"] = []
+        u = self._rebuild(cfg)["bmw-i5-edrive40"]
+        self.assertEqual((u["cadence"], u["depth"], u["newest"]), (9, "light", 0))
+
+    def test_a_model_can_stand_its_own_certified_watch_down(self):
+        cfg = json.loads(Path("targets.json").read_text())
+        cfg["watchlist"]["bmw"]["models"]["i5"]["cpo"]["active"] = False
+        built = self._rebuild(cfg)
+        self.assertNotIn("bmw-i5-cpo", built)
+        self.assertIn("bmw-i7-cpo", built, "and only its own")
+
+    def test_the_certified_watch_can_be_switched_off_for_every_car(self):
+        cfg = json.loads(Path("targets.json").read_text())
+        cfg["buyer"]["cpo_watch"]["enabled"] = False
+        built = self._rebuild(cfg)
+        self.assertEqual([tid for tid in built if tid.endswith("-cpo")], [])
+        self.assertIn("bmw-i5-edrive40", built, "the cars themselves stay")
+
+    def test_a_models_cpo_block_overrides_the_recipe(self):
+        """The narrowing is the last layer. Under it, a model could not slow
+        or deepen its own watch and the recipe would silently win."""
+        cfg = json.loads(Path("targets.json").read_text())
+        self.assertEqual(cfg["buyer"]["cpo_watch"]["cadence"], 2, "precondition")
+        cfg["watchlist"]["bmw"]["models"]["i5"]["cpo"]["cadence"] = 7
+        self.assertEqual(self._rebuild(cfg)["bmw-i5-cpo"]["cadence"], 7)
+
+    def test_cpo_is_a_reserved_trim_key(self):
+        """A hand-written `cpo` trim and the derived watch both claim
+        brand-model-cpo. One of the two would win silently — and which one is
+        an ordering accident — so the run refuses to start."""
+        cfg = json.loads(Path("targets.json").read_text())
+        cfg["watchlist"]["kia"]["models"]["ev9"]["trims"] = {
+            "cpo": {"label": "hand-written", "trim_query": "GT-Line"}}
+        with self.assertRaises(SystemExit) as e:
+            self._rebuild(cfg)
+        self.assertIn("kia-ev9-cpo", str(e.exception))
+
+    def test_the_watchs_label_states_the_cap_it_applies(self):
+        """The label is derived so it cannot say one number while the filter
+        uses another. Every cap in this file is round, so the round branch is
+        the only one the shipped config reaches."""
+        self.assertEqual(T.cpo_label(30000), "CPO under 30k mi")
+        self.assertEqual(T.cpo_label(45000), "CPO under 45k mi")
+        self.assertEqual(T.cpo_label(12500), "CPO under 12,500 mi")
+        self.assertEqual(T.cpo_label(None), "CPO")
+        self.assertEqual(T.TARGETS["bmw-i5-cpo"]["label"],
+                         T.cpo_label(T.TARGETS["bmw-i5-cpo"]["max_miles"]))
+
+    def test_the_i5_watch_does_not_spend_its_window_on_m_cars(self):
+        """The i5's narrowing exists to keep the M60 out of the query, not
+        merely out of the results: the watch has a forty-record window and an
+        M60 inside it is a slot spent on a car this buyer is not shopping.
+
+        The client-side match cannot stand in for this. No i5 M60 in the record
+        spells its trim with a drive word — 294 rows, all bare "M60" — so
+        widening trim_match to "drive" refuses the M60 anyway, and the test
+        beside this one passes either way. The query is what has to be pinned.
+        """
+        query = T.TARGETS["bmw-i5-cpo"]["trim_query"].lower()
+        self.assertTrue(query, "the i5 narrows its watch")
+        for m_trim in ("m60", "m"):
+            self.assertNotIn(m_trim, [q.strip() for q in query.split(",")])
+        self.assertEqual(sorted(q.strip() for q in query.split(",")),
+                         ["edrive40", "xdrive40"])
+
+    def _rebuild(self, cfg):
+        """build_targets() over a config that is not the shipped one.
+
+        Patches the module globals build_targets() reads, because the config
+        is resolved at import and there is no second entry point. Restored on
+        the way out, so the shipped TARGETS every other test reads is
+        untouched."""
+        was = {k: getattr(T, k) for k in
+               ("WATCHLIST", "DEFAULTS", "SHOPPING", "SHOPPING_FETCH", "CPO_WATCH")}
+        T.WATCHLIST = cfg["watchlist"]
+        T.DEFAULTS = cfg.get("defaults", {})
+        T.SHOPPING = list(cfg["buyer"].get("shopping", []))
+        T.SHOPPING_FETCH = dict(cfg["buyer"].get("shopping_fetch") or {})
+        T.CPO_WATCH = dict(cfg["buyer"].get("cpo_watch") or {})
+        try:
+            return T.build_targets()
+        finally:
+            for k, v in was.items():
+                setattr(T, k, v)
 
     def test_the_i4_paid_for_the_i7(self):
         """The i4 was already a benchmark rather than a candidate, and at full
@@ -6566,46 +6805,74 @@ class TestConfig(unittest.TestCase):
                          "two watches on the same days doubles the worst-day "
                          "cost for no coverage gain")
 
-    def test_the_i7_certified_watch_cannot_reach_a_certified_i7(self):
-        """Stood down because it cannot work, not because it was expensive.
+    def test_the_i7_watch_reaches_a_certified_i7_only_without_the_new_year(self):
+        """The i7's certified watch was stood down because it could not work;
+        it runs now, and this is the measurement that says why it can.
 
-        Stood down before it ever ran, on a prediction rather than a
-        measurement — added 2026-09-01 with offset 1 on cadence 2, first due
-        2026-09-02, stood down the same day: 0 rows, 0 calls, and the 30 calls
-        a month is a plan figure, not a spend. The mechanism is what is
-        measured: the query takes the 40 lowest-mileage i7s nationally on
-        miles.asc and then filters to certified under 30,000 miles, and in the
-        i7 rows observed the whole 40-record window is 2026 new inventory at
-        1-4 miles, none certified. Deeper pagination would eventually reach a
-        certified car, but not for 30 calls a month while the ordinary eDrive50
-        query already holds certified sub-30k i7s.
+        The watch takes the N lowest-mileage i7s nationally on miles.asc and
+        then filters to certified under 30,000 miles, so it returns nothing
+        unless a certified car ranks inside that window. Sorting the i7 rows
+        this repo has actually recorded by mileage and asking where the first
+        certified one sits: rank 52-80 on every day the record holds with the
+        current model year in the query, and rank 6-18 with it out. So the
+        year list is what makes the watch work, and dropping it back in turns
+        a target that costs 30 calls a month into one that returns nothing.
 
-        This test exists so it cannot be switched back on without the fix. The
-        i5 watch is left alone: it works, on a narrower year range.
+        The old version of this test asserted the watch was OFF, and its
+        guidance said the i5 watch works "precisely because its years stop at
+        2025". That was false — the i5 watch asks for the same four years as
+        everything else and its first certified car ranks 3-26 on the same
+        days. Both halves are measured below rather than asserted from prose.
         """
-        cfg = json.loads(Path("targets.json").read_text())
-        i7cpo = cfg["watchlist"]["bmw"]["models"]["i7"]["trims"]["cpo"]
-        # The guidance rides on the assertion rather than sitting behind an
-        # `if active:` branch below it — that branch could never run, because
-        # the line above has already asserted active is False, so the one thing
-        # a person re-enabling this needs to read would never have printed.
-        self.assertIs(i7cpo.get("active"), False,
-                      "Re-enabling this needs more than a flag: miles.asc alone "
-                      "cannot reach a certified i7 while 2026 is in its years. "
-                      "Drop 2026 first (the i5 watch works precisely because "
-                      "its years stop at 2025), or switch the sort.")
-        self.assertNotIn("bmw-i7-cpo", T.TARGETS)
-        self.assertNotIn("bmw-i7-cpo", cfg["buyer"]["shopping"],
-                         "a stood-down target must not stay on the shopping list")
+        watch = T.TARGETS["bmw-i7-cpo"]
+        _, pages = T.sorts_pages(watch)
+        window = len(T.sorts_pages(watch)[0]) * pages * T.PER_PAGE
+        this_year = str(date.today().year)
+        self.assertNotIn(this_year, [str(y) for y in watch["years"]],
+                         f"the i7 watch cannot reach a certified i7 with "
+                         f"{this_year} in its years: new inventory at single-"
+                         f"digit mileage fills the whole {window}-record window")
+        self.assertIn(this_year, [str(y) for y in T.TARGETS["bmw-i5-cpo"]["years"]],
+                      "and the i5 needs no such narrowing — this is the i7's "
+                      "own fact, not the watch's")
 
-    def test_no_history_is_orphaned_by_standing_it_down(self):
-        """Retiring a target that HAD rows would strand them: the report reads
-        history through TARGETS. The i7 watch never returned one, so there is
-        nothing to strand — and this checks that rather than assuming it."""
+        def first_certified_rank(prefix, years):
+            """Per recorded day: where the lowest-mileage certified car sits
+            among that day's rows for the model, deduplicated by VIN because
+            several targets return the same car."""
+            per_day = defaultdict(dict)
+            for r in self._snapshot_rows():
+                if not r["target"].startswith(prefix):
+                    continue
+                if years is not None and r["year"] not in years:
+                    continue
+                if not (r["miles"] or "").strip():
+                    continue
+                per_day[r["snapshot_date"]][r["vin"]] = r
+            out = {}
+            for day, vins in per_day.items():
+                ordered = sorted(vins.values(), key=lambda r: int(r["miles"]))
+                out[day] = next((i + 1 for i, r in enumerate(ordered)
+                                 if r["cpo"] == "1"), None)
+            return {d: v for d, v in out.items() if v is not None}
+
+        asked = [str(y) for y in watch["years"]]
+        wide = first_certified_rank("bmw-i7", None)
+        narrow = first_certified_rank("bmw-i7", asked)
+        self.assertTrue(wide and narrow, "the record has to hold i7 days to read")
+        self.assertTrue(all(v > window for v in wide.values()),
+                        f"with every year in, the first certified i7 must sit "
+                        f"outside the {window}-record window: {sorted(wide.values())}")
+        self.assertTrue(all(v <= window for v in narrow.values()),
+                        f"and inside it on {asked}: {sorted(narrow.values())}")
+        i5 = first_certified_rank("bmw-i5", None)
+        self.assertTrue(i5 and all(v <= window for v in i5.values()),
+                        f"the i5 control, unnarrowed: {sorted(i5.values())}")
+
+    def _snapshot_rows(self):
         import csv as _csv
-        seen = {r["target"] for r in _csv.DictReader(
-            (Path(__file__).parent.parent / "data/snapshots.csv").open(newline=""))}
-        self.assertNotIn("bmw-i7-cpo", seen)
+        with (Path(__file__).parent.parent / "data/snapshots.csv").open(newline="") as fh:
+            return list(_csv.DictReader(fh))
 
     def test_one_ev_per_brand_outside_bmw(self):
         """The rule that replaced the old reduction.

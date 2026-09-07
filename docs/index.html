@@ -2914,7 +2914,14 @@
           // it flags rather than excludes and why the wording says what was
           // actually checked. A false flag costs a sentence; the silence it
           // replaces cost a payment the buyer cannot get.
-          x.apr_seller_unnamed = !!gets && !sellerNamed(x, 'bmw');
+          // The BRAND, read off the watchlist key, not the word 'bmw' typed
+          // here. Tracking.py's flags() has always taken it from the target
+          // ("CPO (seller not named Kia)"), so a hard-coded brand on this side
+          // was one surface naming the buyer's car and the other naming the
+          // car the file was written around — and the sentences below say
+          // which brand, so they carry it too.
+          x.apr_seller_unnamed = !!gets && !sellerNamed(x, bk);
+          x.apr_seller_brand = gets ? (b.label || bk) : '';
         }
       }
     }
@@ -3190,7 +3197,7 @@
     if (saves > 0 && !capped) bits.push(`saves ${money(saves)}/mo`);
     // The rate is only reachable where the lender writes it; say so on the row
     // rather than let a promo rate stand unqualified over a Nissan lot.
-    if (x.apr_seller_unnamed) bits.push('seller is not named as a BMW centre');
+    if (x.apr_seller_unnamed) bits.push(`seller is not named as a ${x.apr_seller_brand || 'manufacturer'} centre`);
     // payFor clamps a down payment that covers the whole car to a $0 payment.
     // The tooltip has to clamp with it: subtracting straight through printed
     // "60 months on -$4,200 financed" under a row reading $0/mo, which is not
@@ -3207,7 +3214,7 @@
     const unchecked = (f && !f.checked
       ? ` · includes ${(100 * (f.tax_rate || 0)).toFixed(2)}% tax and fees, ESTIMATE, rates not verified` : '')
       + (x.apr_seller_unnamed
-        ? ` · this car is flagged certified, but the seller's name does not say BMW and ${x.apr_label || 'this rate'} is written at a BMW centre — confirm before counting on it`
+        ? ` · this car is flagged certified, but the seller's name does not say ${x.apr_seller_brand || 'the manufacturer'} and ${x.apr_label || 'this rate'} is written at a ${x.apr_seller_brand || 'manufacturer'} centre — confirm before counting on it`
         : '');
     return el('span', { class: 'sc-note', title: (owed <= 0 ? on
       : x.apr_promo ? `${x.apr_label || 'Promotional rate'} — ${on}`
@@ -4101,7 +4108,7 @@
       row('Per month', 'At this car\'s own rate — a certified car on a promo can beat a cheaper one that is not',
         (r) => cell(r.gone ? '—' : perMo(payFor(r.x)),
           r.gone ? '' : `${r.x.apr}%${r.x.apr_promo ? ' promo' : ''} · ${termFor(r.x)}mo`
-            + (r.x.apr_seller_unnamed ? ' · seller not named BMW' : ''),
+            + (r.x.apr_seller_unnamed ? ` · seller not named ${r.x.apr_seller_brand}` : ''),
           !r.gone && payFor(r.x) != null && payFor(r.x) === bestPay, 'lowest payment'));
     }
     const bestMiles = lowest((r) => r.x.miles);
@@ -4536,7 +4543,7 @@
           + (allIn ? ` + tax and paperwork` : '')),
         pay != null ? el('div', { class: 'sc-tile__sub' },
           `${perMo(pay)} at ${x.apr}%${x.apr_promo ? ' promo' : ''} over ${termFor(x)} months`
-          + (x.apr_seller_unnamed ? ' · seller not named BMW' : '')) : null,
+          + (x.apr_seller_unnamed ? ` · seller not named ${x.apr_seller_brand}` : '')) : null,
         el('div', { class: 'sc-tile__sub' },
           `${x.year || ''} ${carTrim(x)} · ${x.miles != null ? num(x.miles) + ' mi' : 'mileage not published'}`.replace(/\s+/g, ' ').trim()),
         el('div', { class: 'sc-tile__sub' },

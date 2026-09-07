@@ -62,6 +62,26 @@ SEARCH_STATES = STATES + [s for s in
                           (str(x).strip().upper() for x in BUYER.get("search_states", []))
                           if s and s not in STATES]
 SHOPPING = [str(s) for s in BUYER.get("shopping", [])]   # target ids being shopped
+# WHAT BEING SHOPPED BUYS A TARGET. Both of these used to be typed onto BMW
+# trims by hand, so the depth followed the car the file was written around
+# rather than the decision. Measured before it was changed, by rebuilding with
+# buyer.shopping = ["kia-ev9"] and reading the targets back: the shopped car
+# got depth light, no newest sweep and a fetch every fourth day, the three
+# unshopped BMW targets kept full depth, a newest page and a daily cadence,
+# and planned_calls() returned the same three numbers either way — changing
+# which car you are buying changed nothing about what the plan was spent on.
+#
+# shopping_fetch is an override layer applied to any target named in
+# buyer.shopping, after its own trim layer, so being shopped can speed a
+# target up rather than only agreeing with what it already said.
+SHOPPING_FETCH = dict(BUYER.get("shopping_fetch") or {})
+# cpo_watch is the nationwide certified sweep, derived once per shopped MODEL
+# from one recipe instead of written out per car. See cpo_target().
+CPO_WATCH = dict(BUYER.get("cpo_watch") or {})
+# The derived watch's trim key, and therefore reserved in the watchlist: a
+# hand-written trim of the same name would collide with the derived id and
+# one of the two would silently win.
+CPO_KEY = "cpo"
 
 
 def _parse_shortlist(raw):
@@ -128,8 +148,165 @@ FIELDS = ["snapshot_date", "target", "vin", "year", "trim", "miles",
           "via"]
 
 
+def to_int(v):
+    """A number, or None. Never raises — which is how every caller uses it.
+
+    OverflowError was not in the list, and int(float(...)) raises it: json.loads
+    accepts `Infinity`, `-Infinity` and any literal above ~1e308 by default, so
+    one record whose price, miles, ownerCount, accidentCount or baseMsrp came
+    back non-finite took normalize() down INSIDE the fetch loop — after the
+    calls made so far were billed and before write_rows(), save_fetch_log() or
+    save_spend_history() had run, so the day left no snapshot row, no spend
+    record and no fetch log. A value this function cannot turn into a number is
+    the case it exists for, and infinity is one of those."""
+    try:
+        f = float(str(v).replace(",", "").replace("$", ""))
+        return int(f) if math.isfinite(f) else None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def sorts_pages(t):
+    """Which sorts, and how many pages each, a target fetches per source.
+
+    Reads with .get() so a partial or unknown target answers "no sorts" rather
+    than raising: this is called from honesty gates that run over rows whose
+    trim id may name a target the current watchlist no longer carries, and a
+    KeyError there would take down a rebuild over a car that left in July.
+    build_targets() fills depth, sorts and pages for every real target, so this
+    is byte-identical for them.
+    """
+    sorts = list(t.get("sorts") or [])
+    if t.get("depth") == "full":
+        return sorts, int(t.get("pages") or 1)
+    return sorts[:1], 1
+
+
+# The sort a certified watch runs on, in the words its note has to use. A sort
+# nobody has named here still builds a target; the note just describes it by
+# the query rather than by an adjective it cannot justify.
+SORT_PHRASE = {"miles.asc": "lowest-mileage", "miles.desc": "highest-mileage",
+               "price.asc": "cheapest", "price.desc": "priciest"}
+
+
+def _finish(t, m_offset, seen):
+    """The tail every target shares: the shapes a missing key falls back to,
+    the two integers that must be integers, and the day of the cycle.
+
+    One copy, because the derived certified watch is a target like any other
+    and a second copy of this is a second set of defaults free to drift from
+    the first."""
+    t.setdefault("years", [])
+    t.setdefault("sorts", ["price.asc"])
+    t.setdefault("pages", 1)
+    t.setdefault("depth", "light")
+    try:
+        t["newest"] = max(0, int(t.get("newest") or 0))
+    except (TypeError, ValueError):
+        t["newest"] = 0
+    try:
+        t["cadence"] = max(1, int(t.get("cadence") or 1))
+    except (TypeError, ValueError):
+        t["cadence"] = 1
+    cad = t["cadence"]
+    if cad not in m_offset:
+        m_offset[cad] = seen[cad] % cad
+        seen[cad] += 1
+    t["offset"] = m_offset[cad]
+    return t
+
+
+def cpo_label(max_miles):
+    """"CPO under 30k mi" from the cap the query actually applies, so the
+    label cannot say one number while the filter uses another."""
+    m = to_int(max_miles)
+    if not m:
+        return "CPO"
+    return f"CPO under {m // 1000}k mi" if m % 1000 == 0 else f"CPO under {m:,} mi"
+
+
+def cpo_note(t):
+    """What a certified watch asks, in words, read off the target it will
+    send. Every number here comes from the query — a note that retyped them
+    would be a second copy of the recipe, free to drift from the one that
+    runs, which is what the three hand-written watches this replaced did."""
+    label = t["model_label"]
+    sorts, pages = sorts_pages(t)
+    window = len(sorts) * pages * PER_PAGE
+    cap = to_int(t.get("max_miles"))
+    under = f" under {cap:,} miles" if cap else ""
+    where = "in the country" if t.get("national_only") else "in the states searched"
+    lead = SORT_PHRASE.get(sorts[0]) if len(sorts) == 1 else None
+    head = (f"the {window} {lead} {label}s {where}" if lead else
+            f"the {window} {label}s {where} that {' and '.join(sorts) or 'the query'} returns")
+    pg = f"{pages} page" + ("s" if pages != 1 else "")
+    return (f"Certified {label}s{under} that fall inside {head} — the query is "
+            f"{', '.join(sorts) or 'unsorted'} over {pg}, then filtered, so it is "
+            f"that end of the market rather than all of it. Derived from "
+            f"buyer.cpo_watch for every car named in buyer.shopping: no model "
+            f"has to ask for one, and none of them names itself.")
+
+
+def cpo_target(bkey, b, mkey, m, made, m_offset, seen):
+    """The nationwide certified sweep for a model the buyer is shopping.
+
+    buyer.cpo_watch holds the recipe once and every shopped model gets one
+    built from it, so the watch follows the decision instead of being typed
+    onto whichever car the file was written around. Three of these were
+    hand-written trims on the i5, i7 and iX; a buyer who shopped anything else
+    got no certified watch at all, and the two that were stood down were
+    stood down by editing the car rather than the decision.
+
+    A model may narrow the query with its own `cpo` block — the same
+    trim_query / trim_match / trim_exclude a trim carries — or stand the
+    watch down with "active": false and a reason, the same vocabulary every
+    other stand-down in the file uses. Both are optional: a model that says
+    nothing gets a sweep of the whole model, which is what makes this work
+    for a car nobody has written a line about.
+
+    Returns None when there is no watch to build."""
+    if not CPO_WATCH or not CPO_WATCH.get("enabled", True):
+        return None
+    if not any(t["shopping"] for t in made):
+        return None
+    narrow = m.get(CPO_KEY) or {}
+    if not narrow.get("active", True):
+        return None
+    t = {}
+    for layer in (DEFAULTS, b, m, CPO_WATCH, narrow):
+        for k in PARAM_KEYS:
+            if k in layer:
+                t[k] = layer[k]
+    t.update({
+        "id": f"{bkey}-{mkey}-{CPO_KEY}",
+        "brand": bkey, "brand_label": b.get("label", bkey),
+        "make": b["make"],
+        "model_key": mkey, "model_label": m.get("label", mkey),
+        "model": m.get("model", mkey),
+        "model_note": m.get("note", ""),
+        "model_notes": m.get("notes", {}),
+        "trim_key": CPO_KEY,
+        "trim_query": narrow.get("trim_query", ""),
+        "trim_match": narrow.get("trim_match", ""),
+        "trim_exclude": narrow.get("trim_exclude", ""),
+        # Not a trim anyone wrote down. Surfaces that explain where a target
+        # came from need to be able to tell, and the sheet carries it.
+        "derived": CPO_KEY,
+    })
+    _finish(t, m_offset, seen)
+    t["shopping"] = True
+    t["label"] = narrow.get("label") or cpo_label(t.get("max_miles"))
+    note = cpo_note(t)
+    if narrow.get("note"):
+        note = f"{note} {narrow['note']}"
+    t["note"] = note
+    return t
+
+
 # --------------------------------------------------------------------------
-# Config resolution: defaults <- brand <- model <- trim
+# Config resolution: defaults <- brand <- model <- trim, then, for a target
+# the buyer is shopping, <- buyer.shopping_fetch. The certified watch is
+# derived from buyer.cpo_watch for every model being shopped.
 # --------------------------------------------------------------------------
 def build_targets():
     targets = {}
@@ -151,11 +328,22 @@ def build_targets():
             # offset, landed on the Ioniq 5's and Lucid's day, and pushed the
             # worst day from 34 to 36 of 40 while the month went DOWN.
             m_offset = {}
+            made = []
             for tkey, tr in trims.items():
                 if not tr.get("active", True):
                     continue
+                if tkey == CPO_KEY:
+                    sys.exit(f"targets.json: {bkey}/{mkey} writes a trim keyed "
+                             f"'{CPO_KEY}'. That name is reserved — the certified "
+                             f"watch is derived from buyer.cpo_watch for every car "
+                             f"in buyer.shopping, and both would claim the id "
+                             f"{bkey}-{mkey}-{CPO_KEY}.")
                 t = {}
-                for layer in (DEFAULTS, b, m, tr):
+                # The fifth layer is the decision rather than the car: a target
+                # named in buyer.shopping is fetched the way the buyer fetches
+                # a car they are buying, whatever car that turns out to be.
+                shopped = f"{bkey}-{mkey}" + (f"-{tkey}" if tkey else "") in SHOPPING
+                for layer in (DEFAULTS, b, m, tr) + ((SHOPPING_FETCH,) if shopped else ()):
                     for k in PARAM_KEYS:
                         if k in layer:
                             t[k] = layer[k]
@@ -174,50 +362,37 @@ def build_targets():
                     "trim_match": tr.get("trim_match", ""),
                     "trim_exclude": tr.get("trim_exclude", ""),
                 })
-                t.setdefault("years", [])
-                t.setdefault("sorts", ["price.asc"])
-                t.setdefault("pages", 1)
-                t.setdefault("depth", "light")
-                try:
-                    t["newest"] = max(0, int(t.get("newest") or 0))
-                except (TypeError, ValueError):
-                    t["newest"] = 0
-                try:
-                    t["cadence"] = max(1, int(t.get("cadence") or 1))
-                except (TypeError, ValueError):
-                    t["cadence"] = 1
-                cad = t["cadence"]
-                if cad not in m_offset:
-                    m_offset[cad] = seen[cad] % cad
-                    seen[cad] += 1
-                t["offset"] = m_offset[cad]
+                _finish(t, m_offset, seen)
                 t["shopping"] = t["id"] in SHOPPING
                 targets[t["id"]] = t
+                made.append(t)
+            # Built after the trims, from the same per-model offset table, so
+            # the watch shares a fetch day with the trims that run at its rate
+            # rather than claiming one of its own.
+            watch = cpo_target(bkey, b, mkey, m, made, m_offset, seen)
+            if watch is not None:
+                targets[watch["id"]] = watch
     return targets
 
 
 TARGETS = build_targets()
+
+
+def shopping_ids():
+    """The target ids being shopped: the cars buyer.shopping names and the
+    certified watch derived for each of them, in watchlist order so a car and
+    its own watch sit together.
+
+    Read live from TARGETS rather than from SHOPPING, because a derived watch
+    is shopped without being named."""
+    return [tid for tid, t in TARGETS.items() if t["shopping"]]
+
+
 # Each source is a dict of extra query params. The States source asks the
 # API for the buyer's states and search_states directly (comma = OR), one
 # call per sort/page.
 SOURCES = ([("States", {"retailListing.state": ",".join(SEARCH_STATES)})]
            if SEARCH_STATES else []) + [("National", None)]
-
-
-def sorts_pages(t):
-    """Which sorts, and how many pages each, a target fetches per source.
-
-    Reads with .get() so a partial or unknown target answers "no sorts" rather
-    than raising: this is called from honesty gates that run over rows whose
-    trim id may name a target the current watchlist no longer carries, and a
-    KeyError there would take down a rebuild over a car that left in July.
-    build_targets() fills depth, sorts and pages for every real target, so this
-    is byte-identical for them.
-    """
-    sorts = list(t.get("sorts") or [])
-    if t.get("depth") == "full":
-        return sorts, int(t.get("pages") or 1)
-    return sorts[:1], 1
 
 
 def sources_for(t):
@@ -232,11 +407,13 @@ def sources_for(t):
     which is why 28 targets stopped being national_only and this docstring
     stopped saying "subset" as though it were a fact about all of them.
 
-    The one target left carrying the flag is a nationwide certified watch,
-    which is national BY DEFINITION rather than to save a call — and the flag
-    makes its own premise untestable, since source_overlap() needs two sources
-    to compare and this target has one. That is worth saying rather than
-    leaving as an assumption the log looks like it has checked."""
+    The targets left carrying the flag are the nationwide certified watches —
+    one derived per shopped model, so how many there are follows
+    buyer.shopping and is not a fact about this file. They are national BY
+    DEFINITION rather than to save a call, and the flag makes their own
+    premise untestable, since source_overlap() needs two sources to compare
+    and these have one. That is worth saying rather than leaving as an
+    assumption the log looks like it has checked."""
     if t.get("national_only"):
         return [("National", None)]
     return SOURCES
@@ -310,24 +487,6 @@ def first(obj, paths, default=""):
         if v not in (None, "", [], {}):
             return v
     return default
-
-
-def to_int(v):
-    """A number, or None. Never raises — which is how every caller uses it.
-
-    OverflowError was not in the list, and int(float(...)) raises it: json.loads
-    accepts `Infinity`, `-Infinity` and any literal above ~1e308 by default, so
-    one record whose price, miles, ownerCount, accidentCount or baseMsrp came
-    back non-finite took normalize() down INSIDE the fetch loop — after the
-    calls made so far were billed and before write_rows(), save_fetch_log() or
-    save_spend_history() had run, so the day left no snapshot row, no spend
-    record and no fetch log. A value this function cannot turn into a number is
-    the case it exists for, and infinity is one of those."""
-    try:
-        f = float(str(v).replace(",", "").replace("$", ""))
-        return int(f) if math.isfinite(f) else None
-    except (TypeError, ValueError, OverflowError):
-        return None
 
 
 def to_float(v):
@@ -3964,14 +4123,19 @@ def build_outputs(today_rows, all_rows, hist):
             "anchor": ([HOME[0], HOME[1]]
                        if (ANCHOR and coords_ok(*HOME)) else None),
             "scope_label": scope_label(),
-            # A COPY. This exported the live module-level list, so the
-            # published sheet aliased it and anything that touched SHOPPING
+            # What buyer.shopping RESOLVES to: the cars named there, each
+            # followed by the certified watch derived for it. The named list
+            # alone would leave the derived watches out of every surface that
+            # reads buyer.shopping off the sheet — the report's ordering, the
+            # hero's model list, the picks' reserve — while the targets
+            # themselves are flagged shopping, which is the two-vocabularies
+            # shape. Read off TARGETS rather than exported from a module-level
+            # list, which also settles the aliasing this used to have: the
+            # published sheet aliased SHOPPING, so anything that touched it
             # after build_outputs() silently rewrote what had already been
-            # built — which nothing in production does, and which is exactly
-            # why it would not be noticed. Found by a test that emptied
-            # SHOPPING, built, restored it, and read the restored value back
-            # out of the sheet it had just built.
-            "shopping": list(SHOPPING),
+            # built. Found by a test that emptied SHOPPING, built, restored
+            # it, and read the restored value back out of the sheet.
+            "shopping": shopping_ids(),
             "picks": {"count": PICKS.get("count", 4), "per_model": PICKS.get("per_model", 2),
                       # the page hard-coded 2 and nothing published it; both
                       # sides read this now, and 0 means "rank by margin alone"
