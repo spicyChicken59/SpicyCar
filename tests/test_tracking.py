@@ -6513,8 +6513,30 @@ class TestConfig(unittest.TestCase):
                             if t["brand"] != "bmw")
         extra = {b: n for b, n in per_brand.items() if n > 1}
         self.assertFalse(extra, f"one target per brand outside BMW: {extra}")
-        self.assertGreater(len(per_brand), 25,
-                           "…across the brands that sell a 2024-or-newer EV")
+        # This was `> 25` — a floor typed when the watchlist held 33 non-BMW
+        # brands, which says nothing about the RULE and fails the day someone
+        # deliberately trims the list. Re-typing it as 23 would just move the
+        # rot. What is worth guarding is that a brand leaves ON PURPOSE: the
+        # config's own `active` flag stands a model down and keeps its research
+        # notes, and a stood-down model must say why beside the flag, so a
+        # watchlist that has quietly shrunk is not mistakable for one that was
+        # cut.
+        cfg = json.loads(Path("targets.json").read_text())["watchlist"]
+        silent = []
+        for bk, b in cfg.items():
+            if bk.startswith("//") or not isinstance(b, dict):
+                continue
+            for mk, m in (b.get("models") or {}).items():
+                if mk.startswith("//") or not isinstance(m, dict):
+                    continue
+                if m.get("active", True) is False and not m.get("// active"):
+                    silent.append(f"{bk}/{mk}")
+        self.assertEqual([], silent,
+                         "these models are stood down with no reason beside the flag; "
+                         "a watchlist that shrank by accident reads exactly like one "
+                         f"that was trimmed: {silent}")
+        self.assertGreaterEqual(len(per_brand), 1,
+                                "…and at least one brand outside BMW is still watched")
 
     def test_site_dates_the_data_not_the_build(self):
         """generated is the day the file was BUILT (an offline rebuild stamps

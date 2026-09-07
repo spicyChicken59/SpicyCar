@@ -72,7 +72,7 @@
     "pages": 2
   },
 
-  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 88%. All 28 of the LONG-TAIL TARGETS are light -- a different 28 from the 28 observations above, which is why this says which --  so their National query returns the twenty cheapest of that model IN AMERICA. The split is measured on the light targets the log could see and applied to these by depth: source_overlap() needs two sources to compare, so a national_only target cannot contribute an observation and not one of these is in the window. Paid for out of cadence, not budget: 10 -> 15 days buys the second source at 973 calls/month against 1000 and a worst day of 38 against 40, and 15 keeps plan_horizon() at 60 days where 13 and 14 push it to 156 and 84. The cost is real and is freshness: twice a month instead of three times. bmw-i5-cpo keeps national_only and is not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call.",
+  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 88%. All 28 of the LONG-TAIL TARGETS are light -- a different 28 from the 28 observations above, which is why this says which --  so their National query returns the twenty cheapest of that model IN AMERICA. The split is measured on the light targets the log could see and applied to these by depth: source_overlap() needs two sources to compare, so a national_only target cannot contribute an observation and not one of these is in the window. Paid for out of cadence, not budget: 10 -> 15 days buys the second source at 932 calls/month against 1000 and a worst day of 38 against 40, and 15 keeps plan_horizon() at 60 days where 13 and 14 push it to 156 and 84. The cost is real and is freshness: twice a month instead of three times. bmw-i5-cpo keeps national_only and is not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call.",
   "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is.",
   "legacy_ids": {
     "i5-edrive40": "bmw-i5-edrive40",
@@ -154,6 +154,7 @@
           "model": "i4",
           "cadence": 2,
           "active": false,
+          "// active": "stood down when the list narrowed to the i5 against the i7: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the two shopped pages now show directly.",
           "notes": {
             "good": ["Drives like a 4-Series; the eDrive40 does about 300 miles", "One of the better reliability records among EVs, and cheap used", "Hatchback practicality with a proper trunk opening"],
             "bad": ["2022 and early 2023 cars had infotainment and charging glitches, mostly cured by updates", "Low roof: rear headroom is tight", "eDrive35 has the smaller battery — roughly 260 miles, and slower charging"],
@@ -177,6 +178,7 @@
           "label": "Hyundai Ioniq 5",
           "model": "Ioniq 5,IONIQ 5",
           "active": false,
+          "// active": "Hyundai's place on the watchlist is the Ioniq 9; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["800-volt platform: 10 to 80% in about 18 minutes on a fast charger", "Flat floor and a huge cabin for the footprint", "Strong value used; the N is a genuine performance car"],
             "bad": ["The ICCU (charging control unit) has failed widely across 2022–2024 cars and can leave the car dead", "No rear wiper until the 2025 refresh; soft ride and road noise", "Dealer EV service quality varies a lot"],
@@ -204,6 +206,7 @@
           "label": "Kia EV6",
           "model": "EV6",
           "active": false,
+          "// active": "Kia's place on the watchlist is the EV9; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["Same 800-volt platform as the Ioniq 5 — 18-minute fast charging", "Sportier setup and sharper looks; GT-Line is the sweet spot", "Deep depreciation makes clean examples a bargain"],
             "bad": ["Shares the Ioniq 5's ICCU problem", "Firmer ride and poor rear visibility", "Cargo space is modest for the size"],
@@ -241,6 +244,7 @@
           "label": "Audi Q4 e-tron",
           "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4",
           "active": false,
+          "// active": "Audi's place on the watchlist is the A6 e-tron; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["Quiet, comfortable and upscale inside for the money", "Steep depreciation — often the cheapest premium-badge EV", "Solid VW-group hardware underneath"],
             "bad": ["Slow DC charging (roughly 125–170 kW) and a 400-volt system", "Infotainment can be sluggish and buggy on early cars", "2022–2023 range is only around 240 miles"],
@@ -251,6 +255,7 @@
           "label": "Audi Q6 e-tron",
           "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6",
           "active": false,
+          "// active": "Audi's place on the watchlist is the A6 e-tron; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["New 800-volt platform shared with the Porsche Macan EV: fast charging and 300+ miles", "Excellent interior and driving refinement"],
             "bad": ["New model: used supply is thin and prices sit close to new", "First-year software complaints are common"],
@@ -296,6 +301,7 @@
           "label": "Chevrolet Blazer EV",
           "model": "Blazer EV",
           "active": false,
+          "// active": "Chevrolet's place on the watchlist is the Equinox EV; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["Sharp looks and a comfortable, quiet cabin", "RS trims run roughly 280–320 miles depending on drivetrain", "Heavy discounts made used ones cheap"],
             "bad": ["The 2024 launch was stopped for software faults; fixed by updates, but ask", "No Apple CarPlay or Android Auto", "Middling efficiency"],
@@ -329,7 +335,7 @@
       "make": "GMC",
       "cadence": 15,
       "models": {
-        "hummer-ev": { "label": "GMC Hummer EV", "model": "Hummer EV,Hummer EV Pickup,Hummer EV SUV" }
+        "hummer-ev": { "label": "GMC Hummer EV", "model": "Hummer EV,Hummer EV Pickup,Hummer EV SUV", "active": false, "// active": "~$100k and a few thousand a year; the used market is thin at a price this buyer is not shopping." }
       }
     },
 
@@ -338,7 +344,7 @@
       "make": "Genesis",
       "cadence": 15,
       "models": {
-        "gv60": { "label": "Genesis GV60", "model": "GV60" }
+        "gv60": { "label": "Genesis GV60", "model": "GV60", "active": false, "// active": "Genesis's lowest-volume EV, a couple of thousand a year." }
       }
     },
 
@@ -437,7 +443,7 @@
       "make": "Ram",
       "cadence": 15,
       "models": {
-        "promaster-ev": { "label": "Ram ProMaster EV", "model": "ProMaster EV" }
+        "promaster-ev": { "label": "Ram ProMaster EV", "model": "ProMaster EV", "active": false, "// active": "a commercial cargo van, not a car anyone here is choosing between." }
       }
     },
 
@@ -455,7 +461,7 @@
       "make": "VinFast",
       "cadence": 15,
       "models": {
-        "vf8": { "label": "VinFast VF 8", "model": "VF 8,VF8" }
+        "vf8": { "label": "VinFast VF 8", "model": "VF 8,VF8", "active": false, "// active": "VinFast's US volume is a few thousand and its support presence is unsettled." }
       }
     },
 
@@ -464,7 +470,7 @@
       "make": "Fisker",
       "cadence": 15,
       "models": {
-        "ocean": { "label": "Fisker Ocean", "model": "Ocean" }
+        "ocean": { "label": "Fisker Ocean", "model": "Ocean", "active": false, "// active": "Fisker is bankrupt (June 2024). No production, no warranty, no app support -- an orphaned car, whatever the price." }
       }
     },
 
@@ -518,7 +524,7 @@
       "make": "Maserati",
       "cadence": 15,
       "models": {
-        "grecale-folgore": { "label": "Maserati Grecale Folgore", "model": "Grecale Folgore" }
+        "grecale-folgore": { "label": "Maserati Grecale Folgore", "model": "Grecale Folgore", "active": false, "// active": "the electric Folgore trim is a fraction of a marque that already sells few." }
       }
     },
 
@@ -527,7 +533,7 @@
       "make": "Lotus",
       "cadence": 15,
       "models": {
-        "eletre": { "label": "Lotus Eletre", "model": "Eletre" }
+        "eletre": { "label": "Lotus Eletre", "model": "Eletre", "active": false, "// active": "~$230k new and barely sold in the US. Same reason as the Spectre." }
       }
     },
 
@@ -536,7 +542,7 @@
       "make": "Rolls-Royce",
       "cadence": 15,
       "models": {
-        "spectre": { "label": "Rolls-Royce Spectre", "model": "Spectre" }
+        "spectre": { "label": "Rolls-Royce Spectre", "model": "Spectre", "active": false, "// active": "~$420k new; sells in the hundreds a year. Not a car in this buyer's range." }
       }
     },
 
@@ -545,7 +551,7 @@
       "make": "Fiat",
       "cadence": 15,
       "models": {
-        "500e": { "label": "Fiat 500e", "model": "500e,500E" }
+        "500e": { "label": "Fiat 500e", "model": "500e,500E", "active": false, "// active": "relaunched in the US in 2024 at very low volume; a city car a long way from the rest of this list." }
       }
     },
 
@@ -554,7 +560,7 @@
       "make": "Jaguar",
       "cadence": 15,
       "models": {
-        "i-pace": { "label": "Jaguar I-PACE", "model": "I-PACE,I-Pace,IPACE" }
+        "i-pace": { "label": "Jaguar I-PACE", "model": "I-PACE,I-Pace,IPACE", "active": false, "// active": "out of production and ageing; the used market is thin and shrinking." }
       }
     }
   }

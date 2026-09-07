@@ -17,7 +17,7 @@
 **A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i7 being shopped —
 including a nationwide watch on every certified (CPO) i5 under 30,000 miles, where the
 promo rate on certified EVs (2.99% on the i5) makes the financing the story — with their
-siblings behind them and, on a slower cadence, one battery EV from each of the other 33
+siblings behind them and, on a slower cadence, one battery EV from each of the other 23
 brands selling a 2024-or-newer one in the US. Each car is priced as what it would actually cost
 to land in a specific buyer's driveway, and the result is published as a dashboard, with a
 committed Markdown report beside it as the day's record. (An email path exists and is switched
@@ -141,7 +141,7 @@ Two things are configured, separately:
 
 ## Design decisions
 
-**It runs on about 32 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
+**It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
 each. So a target is fetched twice — once filtered to the buyer's states plus `search_states`
 (the API takes a comma list, so eight states cost one call) and once nationally — unless it is
 `national_only`, which now means the nationwide certified watch and nothing else. Each target has a *depth* (the
@@ -150,7 +150,7 @@ seen the day it appears instead of whenever it ranks among the cheapest; the res
 20) and a *cadence*, per target rather than per brand: the two shopped trims run daily, the i5's
 other three (the certified watch among them) every other day, the i7's other trims and the iX every
 third day, the five models already carrying a record every fourth day, and one EV from each of the
-other 28 brands every fifteenth day. Spread evenly across the cycle in watchlist order. A hard
+other 18 brands every fifteenth day. Spread evenly across the cycle in watchlist order. A hard
 `budget_per_day` makes the script refuse to run if any day of the cadence cycle would exceed it — a
 fortnight at least, and longer when the cadences repeat over more than that, which they now do: the
 cycle is 60 days — and it prints the plan before it starts.
@@ -189,7 +189,7 @@ be measured. The first fetch of each is what will confirm or refute it, and the 
 without being asked.
 
 They ask both queries now, and it is paid for out of cadence rather than budget: every tenth day
-became every fifteenth, which buys the second source at 973 calls a month against 1,000 and a worst
+became every fifteenth, which buys the second source at 932 calls a month against 1,000 and a worst
 day of 38 against 40. Fifteen rather than thirteen or fourteen because it keeps the cadence cycle at
 60 days, where those push it to 156 and 84. The cost is real and it is freshness — twice a month
 instead of three times, so a car listed and sold inside a fortnight can pass unseen. That is the
@@ -385,19 +385,28 @@ What it measures today, on the committed record:
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
 | as committed | 7 | 479 | 92 KB | 37% |
-| every target fetching | 36 | 1,581 | 219 KB | 88% |
-| …three fetches deep on each | 36 | 1,581 | 242 KB | 97% |
-| …seven fetches deep on each | 36 | 1,581 | 275 KB | **110% — over** |
+| every target fetching | 26 | 1,201 | 175 KB | 70% |
+| …three fetches deep on each | 26 | 1,201 | 190 KB | 76% |
+| …seven fetches deep on each | 26 | 1,201 | 212 KB | 85% |
 
-So the first full cycle after the watchlist goes live lands at 88%, and the build goes red at about
-seven fetches per long-tail model. There is no field to cut for it: measured by deleting each one in
-turn, the largest are `series` at 13% of the file and `url` at 9%, and both are load-bearing — the
-series is what the sparkline draws and what the cut detector reads, and the url is how a reader opens
-the listing. Everything else is under 3%. The sheet is not carrying fat; it is carrying three times
-the models. **That makes it an architectural decision — a per-model fetch like the ledger's, or a
-deliberately larger budget — and it is written down here rather than answered, because inventing a
-policy for a threshold nobody has crossed is how this project's notes record two fixes being worse
-than their bugs.**
+At thirty-six models those last two rows read 97% and **110%** — the build going red on its own
+record, in about a quarter. That is what the trim below was for, and it is why the number is
+measured on every config change rather than argued: there is no field to cut instead. Measured by
+deleting each in turn, `series` is 13% of the file and `url` 9%, both load-bearing — the series is
+what the sparkline draws and what the cut detector reads, and the url is how a reader opens the
+listing — and everything else is under 3%. The sheet was never carrying fat; it was carrying too
+many models.
+
+**Ten models are stood down for it**, and the reason sits beside each `active` flag in
+`targets.json` rather than in a commit message: four are priced far outside anything this buyer is
+shopping (Rolls-Royce Spectre, Lotus Eletre, Maserati Grecale Folgore, GMC Hummer EV), one is not a
+car anyone chooses between (Ram ProMaster EV), two are orphaned or barely present in the US (Fisker,
+whose maker is bankrupt, and VinFast), and three are the thinnest used markets on the list (Jaguar
+I-PACE, out of production; Fiat 500e; Genesis GV60). **None of that is measured** — the record holds
+no rows for any of them, because a model that has never fetched has nothing to be counted — so it is
+a judgement about the US market, written down as one, and every one of them is a single flag from
+coming back. The 41 calls a month it frees are deliberately not spent: cadence 10 fits again at
+969/1000, but a faster cadence only reaches those depths sooner.
 
 ## Configuration
 

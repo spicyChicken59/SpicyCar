@@ -1,21 +1,23 @@
-# SpicyCar — 2026-09-06
+# SpicyCar — 2026-09-07
 
-## Today
+## The last fetch — 2026-09-06
 
 - ▼ $3,000 cut · BMW i7 eDrive50 · now $70,373 · Chicago, IL · drivable `WBY43EJ08RCR02930`
 - ▼ $1,730 cut · BMW i5 eDrive40 · now $43,987 · Madison, WI · drivable `WBY33FK09RCP96469`
 - ▼ $6,695 cut · BMW i7 eDrive50 · now $65,930 · Plano, TX `WBY43EJ08SCU12462`
-- …and 39 more cuts today, 15 of them listed in the sections below
+- …and 39 more cuts on 2026-09-06, 15 of them listed in the sections below
 - 5 new on the shopped models (2 listed 14+ days before the tracker saw them — reach, not arrival) · best 8% under typical for a 2024 BMW i7 eDrive50 ($60,494, Silver Spring, MD · 12,947 mi, from 25 such cars)
 - 9 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
+_Not fetched today — showing 2026-09-06._
+
 - Lowest asking **$34,989** (Seffner, FL) · + $1,031 shipping · ▼ $1,490 vs 2026-09-05
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
 - 134 on the market · 18 drivable · 1 with no state · 22 price changes (2 more moved, seen at two prices, not counted) · 2 new · 7 gone
 
-**New today (2)** — first seen this run, best value first
+**New on 2026-09-06 (2)** — first seen on 2026-09-06, best value first
 
 - **$50,273** · 2025 · 7,392 mi · + $1,031 shipping · Orlando, FL · listed 1d ago
   [listing](https://www.autolist.com/bmw-i5#vin=WBY33FK01SCU81655) `WBY33FK01SCU81655`
@@ -283,11 +285,13 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 ## Shopping: BMW i7
 
+_Not fetched today — showing 2026-09-06._
+
 - Lowest asking **$48,909** (Indianapolis, IN) · = vs 2026-09-05
 - Lowest drivable **$48,909** (Indianapolis, IN) · no shipping
 - 150 on the market · 25 drivable · 26 price changes (6 more moved, seen at two prices, not counted) · 3 new · 2 gone
 
-**New today (3)** — first seen this run, 2 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
+**New on 2026-09-06 (3)** — first seen on 2026-09-06, 2 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
 
 - **$60,494** · 2024 · 12,947 mi · + $746 shipping · Silver Spring, MD · listed 1d ago
   _8% under typical for a 2024 BMW i7 eDrive50 ($5,285 less, from 25 such cars)_
@@ -590,40 +594,30 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 
 _By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per TRIM queried — a model with two trims on the watchlist is the union of two such queries, which is why these counts run past 20. Every car is on the dashboard._
 
-- **BMW iX** — 71 cars · 30 drivable · lowest asking $30,084 (Sacramento, CA) + $1,353 shipping · drivable from $30,980 (Schererville, IN) · median asking $45,900 _(every 3 days)_
+- **BMW iX** — 71 cars · 30 drivable · lowest asking $30,084 (Sacramento, CA) + $1,353 shipping · drivable from $30,980 (Schererville, IN) · median asking $45,900 _(every 3 days · as of 2026-09-06)_
 - **Hyundai Ioniq 9** — 37 cars · 20 drivable · lowest asking $46,249 (Carson City, NV) + $1,327 shipping · drivable from $47,428 (Norwalk, OH) · median asking $48,989 _(as of 2026-08-25, 12 days ago · past its 4-day cadence)_
 - **Kia EV9** — 34 cars · 19 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $35,259 _(every 4 days · as of 2026-09-04, 2 days ago)_
-- **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,735 _(every 4 days)_
-- **Lucid Air** — not fetched yet · first run 2026-09-06 _(every 4 days)_
+- **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,735 _(every 4 days · as of 2026-09-06)_
+- **Lucid Air** — not fetched yet · first run 2026-09-10 _(every 4 days)_
 - **Chevrolet Equinox EV** — 31 cars · 12 drivable · lowest asking $19,600 (Wake Forest, NC) + $766 shipping · drivable from $24,385 (Greenwood, IN) · median asking $25,648 _(as of 2026-08-27, 10 days ago · past its 4-day cadence)_
 - **Tesla Model Y** — not fetched yet · first run 2026-09-16 _(every 15 days)_
 - **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-15 _(every 15 days)_
-- **GMC Hummer EV** — not fetched yet · first run 2026-09-14 _(every 15 days)_
-- **Genesis GV60** — not fetched yet · first run 2026-09-13 _(every 15 days)_
-- **Nissan Ariya** — not fetched yet · first run 2026-09-12 _(every 15 days)_
-- **Mercedes-Benz EQB** — not fetched yet · first run 2026-09-11 _(every 15 days)_
-- **Porsche Taycan** — not fetched yet · first run 2026-09-10 _(every 15 days)_
-- **Volkswagen ID.4** — not fetched yet · first run 2026-09-09 _(every 15 days)_
-- **Volvo EX30** — not fetched yet · first run 2026-09-08 _(every 15 days)_
-- **Polestar 3** — not fetched yet · first run 2026-09-07 _(every 15 days)_
-- **MINI Countryman Electric** — not fetched yet · first run 2026-09-06 _(every 15 days)_
-- **Cadillac Lyriq** — not fetched yet · first run 2026-09-20 _(every 15 days)_
-- **Jeep Wagoneer S** — not fetched yet · first run 2026-09-19 _(every 15 days)_
-- **Dodge Charger Daytona** — not fetched yet · first run 2026-09-18 _(every 15 days)_
-- **Ram ProMaster EV** — not fetched yet · first run 2026-09-17 _(every 15 days)_
-- **Rivian R1S** — not fetched yet · first run 2026-09-16 _(every 15 days)_
-- **VinFast VF 8** — not fetched yet · first run 2026-09-15 _(every 15 days)_
-- **Fisker Ocean** — not fetched yet · first run 2026-09-14 _(every 15 days)_
-- **Toyota bZ4X** — not fetched yet · first run 2026-09-13 _(every 15 days)_
-- **Honda Prologue** — not fetched yet · first run 2026-09-12 _(every 15 days)_
-- **Acura ZDX** — not fetched yet · first run 2026-09-11 _(every 15 days)_
-- **Lexus RZ** — not fetched yet · first run 2026-09-10 _(every 15 days)_
-- **Subaru Solterra** — not fetched yet · first run 2026-09-09 _(every 15 days)_
-- **Maserati Grecale Folgore** — not fetched yet · first run 2026-09-08 _(every 15 days)_
-- **Lotus Eletre** — not fetched yet · first run 2026-09-07 _(every 15 days)_
-- **Rolls-Royce Spectre** — not fetched yet · first run 2026-09-06 _(every 15 days)_
-- **Fiat 500e** — not fetched yet · first run 2026-09-20 _(every 15 days)_
-- **Jaguar I-PACE** — not fetched yet · first run 2026-09-19 _(every 15 days)_
+- **Nissan Ariya** — not fetched yet · first run 2026-09-14 _(every 15 days)_
+- **Mercedes-Benz EQB** — not fetched yet · first run 2026-09-13 _(every 15 days)_
+- **Porsche Taycan** — not fetched yet · first run 2026-09-12 _(every 15 days)_
+- **Volkswagen ID.4** — not fetched yet · first run 2026-09-11 _(every 15 days)_
+- **Volvo EX30** — not fetched yet · first run 2026-09-10 _(every 15 days)_
+- **Polestar 3** — not fetched yet · first run 2026-09-09 _(every 15 days)_
+- **MINI Countryman Electric** — not fetched yet · first run 2026-09-08 _(every 15 days)_
+- **Cadillac Lyriq** — not fetched yet · first run 2026-09-07 _(every 15 days)_
+- **Jeep Wagoneer S** — not fetched yet · first run 2026-09-21 _(every 15 days)_
+- **Dodge Charger Daytona** — not fetched yet · first run 2026-09-20 _(every 15 days)_
+- **Rivian R1S** — not fetched yet · first run 2026-09-19 _(every 15 days)_
+- **Toyota bZ4X** — not fetched yet · first run 2026-09-18 _(every 15 days)_
+- **Honda Prologue** — not fetched yet · first run 2026-09-17 _(every 15 days)_
+- **Acura ZDX** — not fetched yet · first run 2026-09-16 _(every 15 days)_
+- **Lexus RZ** — not fetched yet · first run 2026-09-15 _(every 15 days)_
+- **Subaru Solterra** — not fetched yet · first run 2026-09-14 _(every 15 days)_
 
 ---
 _1279 vehicle histories across 15 days · outputs rebuilt from the snapshot on disk — no calls made._

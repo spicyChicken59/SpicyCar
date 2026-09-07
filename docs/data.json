@@ -1,8 +1,8 @@
 {
  "app": "SpicyCar",
- "generated": "2026-09-06",
+ "generated": "2026-09-07",
  "data_through": "2026-09-06",
- "departures_from": "2026-07-08",
+ "departures_from": "2026-07-09",
  "buyer": {
   "id": "chicago",
   "label": "Chicago",
@@ -76,7 +76,7 @@
   "finance": {
    "fallback_apr": 6.9,
    "fallback_checked": "2026-09-01",
-   "stale_days": 5,
+   "stale_days": 6,
    "default_term": 60,
    "terms": [
     36,
@@ -94,7 +94,7 @@
      "expires": "2026-10-31",
      "label": "BMW FS certified 2.99%",
      "active": true,
-     "days_left": 55
+     "days_left": 54
     },
     {
      "model": "bmw/ix",
@@ -104,7 +104,7 @@
      "expires": "2026-10-31",
      "label": "BMW FS certified 2.49%",
      "active": true,
-     "days_left": 55
+     "days_left": 54
     }
    ]
   },
@@ -158,7 +158,7 @@
      "last_asked": "2026-09-06",
      "fetched_today": true,
      "due_today": true,
-     "next_due": "2026-09-06",
+     "next_due": "2026-09-07",
      "params": {
       "min_price": 20000
      },
@@ -14663,7 +14663,7 @@
      "last_asked": "2026-09-06",
      "fetched_today": true,
      "due_today": true,
-     "next_due": "2026-09-06",
+     "next_due": "2026-09-07",
      "params": {
       "min_price": 35000
      },
@@ -29962,8 +29962,8 @@
      "overdue": false,
      "last_asked": "2026-09-06",
      "fetched_today": true,
-     "due_today": true,
-     "next_due": "2026-09-06",
+     "due_today": false,
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 25000
      },
@@ -39558,7 +39558,7 @@
      "overdue": false,
      "last_asked": "2026-09-06",
      "fetched_today": true,
-     "due_today": false,
+     "due_today": true,
      "next_due": "2026-09-07",
      "params": {
       "min_price": 8000
@@ -41210,8 +41210,8 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-06",
+     "due_today": false,
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 30000
      },
@@ -43193,118 +43193,6 @@
     }
    }
   },
-  "gmc": {
-   "label": "GMC",
-   "models": {
-    "hummer-ev": {
-     "label": "GMC Hummer EV",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-14",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "gmc-hummer-ev": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "gmc-hummer-ev": []
-     },
-     "fetch_days": {
-      "gmc-hummer-ev": []
-     },
-     "gone": []
-    }
-   }
-  },
-  "genesis": {
-   "label": "Genesis",
-   "models": {
-    "gv60": {
-     "label": "Genesis GV60",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-13",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "genesis-gv60": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "genesis-gv60": []
-     },
-     "fetch_days": {
-      "genesis-gv60": []
-     },
-     "gone": []
-    }
-   }
-  },
   "nissan": {
    "label": "Nissan",
    "models": {
@@ -43326,7 +43214,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-12",
+     "next_due": "2026-09-14",
      "params": {
       "min_price": 8000
      },
@@ -43382,7 +43270,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-11",
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 8000
      },
@@ -43438,7 +43326,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-10",
+     "next_due": "2026-09-12",
      "params": {
       "min_price": 8000
      },
@@ -43494,7 +43382,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-09",
+     "next_due": "2026-09-11",
      "params": {
       "min_price": 8000
      },
@@ -43550,7 +43438,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-08",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 8000
      },
@@ -43606,7 +43494,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-07",
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -43661,8 +43549,8 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-06",
+     "due_today": false,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -43717,8 +43605,8 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-20",
+     "due_today": true,
+     "next_due": "2026-09-07",
      "params": {
       "min_price": 8000
      },
@@ -43774,7 +43662,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-19",
+     "next_due": "2026-09-21",
      "params": {
       "min_price": 8000
      },
@@ -43830,7 +43718,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-18",
+     "next_due": "2026-09-20",
      "params": {
       "min_price": 8000
      },
@@ -43865,62 +43753,6 @@
     }
    }
   },
-  "ram": {
-   "label": "Ram",
-   "models": {
-    "promaster-ev": {
-     "label": "Ram ProMaster EV",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-17",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "ram-promaster-ev": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "ram-promaster-ev": []
-     },
-     "fetch_days": {
-      "ram-promaster-ev": []
-     },
-     "gone": []
-    }
-   }
-  },
   "rivian": {
    "label": "Rivian",
    "models": {
@@ -43942,7 +43774,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-16",
+     "next_due": "2026-09-19",
      "params": {
       "min_price": 8000
      },
@@ -43977,118 +43809,6 @@
     }
    }
   },
-  "vinfast": {
-   "label": "VinFast",
-   "models": {
-    "vf8": {
-     "label": "VinFast VF 8",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-15",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "vinfast-vf8": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "vinfast-vf8": []
-     },
-     "fetch_days": {
-      "vinfast-vf8": []
-     },
-     "gone": []
-    }
-   }
-  },
-  "fisker": {
-   "label": "Fisker",
-   "models": {
-    "ocean": {
-     "label": "Fisker Ocean",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-14",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "fisker-ocean": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "fisker-ocean": []
-     },
-     "fetch_days": {
-      "fisker-ocean": []
-     },
-     "gone": []
-    }
-   }
-  },
   "toyota": {
    "label": "Toyota",
    "models": {
@@ -44110,7 +43830,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-13",
+     "next_due": "2026-09-18",
      "params": {
       "min_price": 8000
      },
@@ -44166,7 +43886,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-12",
+     "next_due": "2026-09-17",
      "params": {
       "min_price": 8000
      },
@@ -44222,7 +43942,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-11",
+     "next_due": "2026-09-16",
      "params": {
       "min_price": 8000
      },
@@ -44278,7 +43998,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-10",
+     "next_due": "2026-09-15",
      "params": {
       "min_price": 8000
      },
@@ -44334,7 +44054,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-09",
+     "next_due": "2026-09-14",
      "params": {
       "min_price": 8000
      },
@@ -44364,286 +44084,6 @@
      },
      "fetch_days": {
       "subaru-solterra": []
-     },
-     "gone": []
-    }
-   }
-  },
-  "maserati": {
-   "label": "Maserati",
-   "models": {
-    "grecale-folgore": {
-     "label": "Maserati Grecale Folgore",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-08",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "maserati-grecale-folgore": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "maserati-grecale-folgore": []
-     },
-     "fetch_days": {
-      "maserati-grecale-folgore": []
-     },
-     "gone": []
-    }
-   }
-  },
-  "lotus": {
-   "label": "Lotus",
-   "models": {
-    "eletre": {
-     "label": "Lotus Eletre",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-07",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "lotus-eletre": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "lotus-eletre": []
-     },
-     "fetch_days": {
-      "lotus-eletre": []
-     },
-     "gone": []
-    }
-   }
-  },
-  "rolls-royce": {
-   "label": "Rolls-Royce",
-   "models": {
-    "spectre": {
-     "label": "Rolls-Royce Spectre",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-06",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "rolls-royce-spectre": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "rolls-royce-spectre": []
-     },
-     "fetch_days": {
-      "rolls-royce-spectre": []
-     },
-     "gone": []
-    }
-   }
-  },
-  "fiat": {
-   "label": "Fiat",
-   "models": {
-    "500e": {
-     "label": "Fiat 500e",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-20",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "fiat-500e": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "fiat-500e": []
-     },
-     "fetch_days": {
-      "fiat-500e": []
-     },
-     "gone": []
-    }
-   }
-  },
-  "jaguar": {
-   "label": "Jaguar",
-   "models": {
-    "i-pace": {
-     "label": "Jaguar I-PACE",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-19",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "jaguar-i-pace": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "jaguar-i-pace": []
-     },
-     "fetch_days": {
-      "jaguar-i-pace": []
      },
      "gone": []
     }
