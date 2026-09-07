@@ -5655,6 +5655,7 @@ await step('what a keyboard gets', async () => {
   if (!mapDots) skip('the map says which car its arrow keys are on', 'the map drew no dots today'),
                 skip('and a mouse moving over the same dots stays silent', 'the map drew no dots today');
   else {
+    await page.locator('#car-atlas-switch').click();
     await page.locator('#map').focus();
     await page.keyboard.press('ArrowRight');
     await page.waitForTimeout(250);

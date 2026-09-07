@@ -94,6 +94,8 @@ jobs:
           set -o pipefail
           node tools/dashboard_smoke.mjs /tmp/design-system --shots /tmp/shots | tee /tmp/smoke.txt
           { echo '### dashboard'; echo '```'; cat /tmp/smoke.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify geographic browsing and graceful fallback
+        run: node tools/discovery_smoke.mjs
       # what the checks were looking at, when one of them disagrees
       - uses: actions/upload-artifact@v4
         if: always()
