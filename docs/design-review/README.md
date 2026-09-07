@@ -1,5 +1,8 @@
 # SpicyCar design review · 6 September 2026
 
+The next design pass is documented in [Fieldwork: the photograph and the facts](fieldwork.md):
+larger uncropped candidate photographs, an ink instrument strip and preserved phone decision access.
+
 The desktop images below are real captures of the public SpicyCar page, not mockups. They preserve
 the visual review of the matrix-first redesign in [PR #62](https://github.com/spicyChicken59/SpicyCar/pull/62).
 The figures and dealer photographs are the site's snapshot on that date; they
