@@ -221,9 +221,22 @@ def sorts_pages(t):
 
 
 def sources_for(t):
-    """A national_only target asks the country one question; the States
-    query would only re-fetch a subset of the same national answer, so it
-    is skipped — which is what makes the nationwide CPO watches affordable."""
+    """A national_only target asks the country one question and skips the
+    States query.
+
+    This used to say the States query "would only re-fetch a subset of the same
+    national answer". `data/source_overlap.json` exists to test that and now
+    has: it is true only where the national catch is large relative to the
+    local market. Across the frozen window a `depth: full` target lost 21% of
+    its States catch by going national_only and a `depth: light` one lost 88%,
+    which is why 28 targets stopped being national_only and this docstring
+    stopped saying "subset" as though it were a fact about all of them.
+
+    The one target left carrying the flag is a nationwide certified watch,
+    which is national BY DEFINITION rather than to save a call — and the flag
+    makes its own premise untestable, since source_overlap() needs two sources
+    to compare and this target has one. That is worth saying rather than
+    leaving as an assumption the log looks like it has checked."""
     if t.get("national_only"):
         return [("National", None)]
     return SOURCES
@@ -2114,6 +2127,22 @@ def source_overlap(rows):
         nat = SOURCE_VINS.get((tid, "National"))
         if st is None or nat is None:
             continue          # national_only, or not due today: nothing to compare
+        # …and a scope that DIED is not a scope that looked. When a page fails
+        # after its retry the fetch loop keeps what it has and records the
+        # scope in FAILED_SCOPES; comparing a half-fetched National set against
+        # a whole States one archives the pages that never arrived as cars the
+        # States query bought. Driven through this function with the state a
+        # half-failed National fetch leaves behind — 7 States, 4 National, one
+        # failed scope — it wrote states_only 3, which is the shape of a real
+        # finding and is entirely the failure.
+        #
+        # Skipped rather than flagged: this log has one job, and a row that has
+        # to be remembered as untrustworthy by every later reader is a row that
+        # will eventually be read by one that forgets. A day's observation for
+        # one target is cheap; the file is a running audit, not a ledger with
+        # gaps that matter.
+        if (tid, "States") in FAILED_SCOPES or (tid, "National") in FAILED_SCOPES:
+            continue
         only_st = st - nat
         out[tid] = {
             "states": len(st), "national": len(nat),
@@ -3090,20 +3119,20 @@ FETCH_DAYS = {}     # target id -> the days that target has rows for. Populated
 
 
 def seen_label(s):
-    """'seen 4 of 4 fetches', never 'seen 4 of 31 days'.
+    """'seen 3 of 3 fetches', never 'seen 3 of 31 days'.
 
     The label answers one question — has this car been consistently on the
     market? — and the denominator has to be the number of times anyone LOOKED.
     It was calendar days between the first and last sighting, which is the
     same thing only at a daily cadence.
 
-    Twenty-eight of the thirty-six models run every tenth day now. A car
-    present at every single fetch of one of them read "seen 4 of 31 days"
+    Twenty-eight of the thirty-six models run every fifteenth day now. A car
+    present at every single fetch of one of them read "seen 3 of 31 days"
     beside another car's "seen 31 of 31 days", and a buyer reasonably
     concludes the first keeps disappearing — a relisted car, a flaky dealer,
     something to ask about. It had a perfect record. Worse, at that cadence
-    the old form could not tell perfect attendance from a real gap: 4-of-31
-    against 3-of-31 is a distinction no reader makes.
+    the old form could not tell perfect attendance from a real gap: 3-of-31
+    against 2-of-31 is a distinction no reader makes.
 
     The docstring this replaces said the count is kept "because a slower
     cadence must not be able to inflate it" — the count was right all along,
@@ -4017,7 +4046,7 @@ def build_outputs(today_rows, all_rows, hist):
                 # as_of stays None and every surface said "not fetched yet ·
                 # first run <ten days from now>" — the opposite of what
                 # happened — for ever, because next_due always rolls forward.
-                # Thirty of the thirty-six models have never run and their
+                # Twenty-nine of the thirty-six models have never run and their
                 # model strings are unverified guesses; a broken one bills a
                 # call every cadence and is indistinguishable from a target
                 # that has not come round yet.

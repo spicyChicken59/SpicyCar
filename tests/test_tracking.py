@@ -3554,11 +3554,11 @@ class TestSeenLabel(unittest.TestCase):
     DENOMINATOR was not: it stayed calendar days between the first and last
     sighting, which is the same thing only at a daily cadence.
 
-    Twenty-eight of the thirty-six models run every tenth day now. A car
-    present at every single fetch of one read "seen 4 of 31 days" beside
+    Twenty-eight of the thirty-six models run every fifteenth day now. A car
+    present at every single fetch of one read "seen 3 of 31 days" beside
     another car's "seen 31 of 31 days", so a buyer reads a perfect record as
     a car that keeps disappearing — a relisted car, a flaky dealer, something
-    to ask about. And 4-of-31 against 3-of-31 is a distinction no reader
+    to ask about. And 3-of-31 against 2-of-31 is a distinction no reader
     makes, so it could not tell perfect attendance from a real gap either.
     """
 
@@ -3576,7 +3576,7 @@ class TestSeenLabel(unittest.TestCase):
                  "series": [[f"2026-08-{d:02d}", 40000] for d in (1, 11, 21, 31)]}
         self.assertEqual(T.seen_label(every), "seen 4 of 4 fetches",
                          "a car there every time the query ran has a perfect "
-                         "record, and used to read 'seen 4 of 31 days'")
+                         "record, and used to read 'seen 3 of 31 days'")
 
     def test_and_a_real_gap_is_visible_beside_it(self):
         """The half that makes the one above load-bearing: perfect attendance
@@ -4234,6 +4234,191 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
         want = [T.days_ago(n) for n in (1, 2, 3, 12, 15, 100)]
         self.assertEqual(want, got,
                          "the page and the report spell the same age differently")
+
+
+class TestTheOverlapLogRecordsOnlyQueriesThatFinished(unittest.TestCase):
+    """The log the States-query decision rests on must not archive a half-fetch.
+
+    When a page fails after its retry the fetch loop keeps what it has and
+    records the scope in FAILED_SCOPES. source_overlap() compared the two sets
+    anyway, so a National query that lost half its pages was written down as
+    evidence that the States query had bought the cars it never reached — the
+    shape of a real finding, and entirely the failure. Reproduced through the
+    real function before it was fixed: 7 States, 4 National, one failed scope,
+    archived as states_only 3.
+    """
+
+    def setUp(self):
+        self._vins = dict(T.SOURCE_VINS)
+        self._failed = set(T.FAILED_SCOPES)
+        T.SOURCE_VINS.clear(); T.FAILED_SCOPES.clear()
+
+    def tearDown(self):
+        T.SOURCE_VINS.clear(); T.SOURCE_VINS.update(self._vins)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(self._failed)
+
+    TID = "bmw-i7-edrive50"
+
+    def _serve(self, states, national):
+        T.SOURCE_VINS[(self.TID, "States")] = {f"S{i}" for i in range(states)}
+        T.SOURCE_VINS[(self.TID, "National")] = {f"S{i}" for i in range(national)}
+
+    def test_a_run_where_both_scopes_finished_is_recorded(self):
+        """The precondition: without it every assertion below passes on a
+        function that records nothing at all."""
+        self._serve(7, 4)
+        o = T.source_overlap({})
+        self.assertIn(self.TID, o, "a clean run must still be measured")
+        self.assertEqual(3, o[self.TID]["states_only"])
+
+    def test_a_scope_that_died_is_not_a_scope_that_looked(self):
+        for scope in ("National", "States"):
+            with self.subTest(scope=scope):
+                T.FAILED_SCOPES.clear()
+                self._serve(7, 4)
+                T.FAILED_SCOPES.add((self.TID, scope))
+                self.assertNotIn(self.TID, T.source_overlap({}),
+                                 f"a failed {scope} fetch was archived as a measurement; "
+                                 "the pages that never arrived read as cars the other "
+                                 "source bought")
+
+    def test_another_targets_failure_does_not_suppress_this_one(self):
+        """Keyed on the target AND the scope, so one broken query does not
+        empty the day's audit."""
+        self._serve(7, 4)
+        T.FAILED_SCOPES.add(("some-other-target", "National"))
+        self.assertIn(self.TID, T.source_overlap({}))
+
+
+class TestNoCommentCitesALineNumber(unittest.TestCase):
+    """Cite the function, not `file.py:NN`.
+
+    This repo's rule, and nothing enforced it. Six citations named lines of
+    docs/index.html — :3818 twice, :3833, :3586, :3580 and :2392 — and every
+    one of them pointed at unrelated code: :3818 was meant to be
+    buildFilters()'s `#f-model-field` hide rule and lands on a chip-building
+    ternary, :3833 was the seen-label comment and lands on a design note. Four
+    were already wrong before the round that moved them further, which is the
+    shape exactly: a line number is a citation that rots on somebody else's
+    commit, silently, and reads as precision.
+
+    Line numbers inside a STRING are left alone — an error message quoting a
+    traceback is not a citation — so this looks only at comments.
+    """
+
+    ROOTS = ("Tracking.py", "tools", "tests", "docs/index.html", "docs/how.html")
+    # A source filename followed by a colon and a line, and the bare
+    # parenthesised colon-line form the smoke script used. Written as a pattern
+    # rather than shown by example, because an example of a citation IS one —
+    # the first draft of this comment carried two and the check found them,
+    # which is the check working and the comment being wrong.
+    CITE = re.compile(r"(?:[A-Za-z_][\w.-]*\.(?:py|mjs|js|html|json|md)\s*:\s*\d{2,})"
+                      r"|(?:\(\s*:\d{3,}\s*\))")
+
+    def _files(self):
+        out = []
+        for r in self.ROOTS:
+            p = Path(r)
+            if p.is_file():
+                out.append(p)
+            elif p.is_dir():
+                out += [f for f in p.rglob("*")
+                        if f.suffix in (".py", ".mjs", ".js", ".html")
+                        and "node_modules" not in f.parts]
+        return out
+
+    @staticmethod
+    def _comments(text, suffix):
+        """Comment text only, so a line number inside a string is not a hit."""
+        out = []
+        for i, line in enumerate(text.split("\n"), 1):
+            if suffix == ".py":
+                # after the last quote on the line, a # is a comment; inside a
+                # docstring every line counts, which is where the prose lives
+                at = line.find("#")
+                if at >= 0 and line.count('"', 0, at) % 2 == 0 and line.count("'", 0, at) % 2 == 0:
+                    out.append((i, line[at:]))
+            else:
+                at = line.find("//")
+                if at >= 0 and line.count("'", 0, at) % 2 == 0 and line.count('"', 0, at) % 2 == 0:
+                    out.append((i, line[at:]))
+                at2 = line.find("/*")
+                if at2 >= 0:
+                    out.append((i, line[at2:]))
+        return out
+
+    def test_no_comment_names_a_line_of_another_file(self):
+        hits = []
+        for f in self._files():
+            text = f.read_text(errors="replace")
+            for n, body in self._comments(text, f.suffix):
+                m = self.CITE.search(body)
+                if m:
+                    hits.append(f"  {f}:{n} cites {m.group(0)!r} — {body.strip()[:70]}")
+        self.assertEqual([], hits,
+                         "cite the function, not the line: a line number is a citation "
+                         "that rots on somebody else's commit and reads as precision.\n"
+                         + "\n".join(hits))
+
+    def test_the_docstrings_carry_prose_this_would_search(self):
+        """The precondition. If the walker stopped finding comments at all —
+        a suffix filter that matches nothing, a comment parser that returns
+        empty — the check above would pass over an empty set and report a rule
+        it was no longer applying."""
+        seen = sum(len(self._comments(f.read_text(errors="replace"), f.suffix))
+                   for f in self._files())
+        self.assertGreater(seen, 500,
+                           f"only {seen} comment lines found across {len(self._files())} "
+                           "files — the walker has lost its subject")
+
+
+class TestTheWorkedExampleFollowsTheCadenceItIsDrawnFrom(unittest.TestCase):
+    """Three files carry the same worked example for seen_label's old form, and
+    its numbers are a function of the long tail's cadence.
+
+    "Twenty-eight of the thirty-six models run every tenth day now. A car
+    present at every single fetch of one of them read 'seen 4 of 31 days'" —
+    four, because a 31-day span holds four fetch days at cadence 10. The tier
+    moved to 15 and all three copies went on saying ten and four, in the
+    present tense, in the sentence that is the whole justification for the
+    label's shape. The prose that was pinned (README, how.html) moved; the
+    prose that was not did not.
+
+    Pinned here against the config the same way the surface counts are, so the
+    next cadence change fails rather than rots. The span is left as prose — it
+    is an illustration, not a measurement — but the fetch count inside it has
+    to be the one that cadence produces.
+    """
+
+    SPAN = 31
+    FILES = ("Tracking.py", "docs/index.html", "tests/test_tracking.py")
+
+    def test_every_copy_names_the_tier_the_config_actually_runs(self):
+        want = f"run every {TAIL_CADENCE_WORD} day now"
+        for name in self.FILES:
+            text = Path(name).read_text()
+            if "run every" not in text:
+                continue
+            self.assertIn(want, text,
+                          f"{name} names a cadence tier the config does not run "
+                          f"(the tier is {TAIL_CADENCE})")
+
+    def test_the_fetch_count_in_the_example_is_the_one_that_cadence_gives(self):
+        """A 31-day span holds ceil(31 / cadence) fetch days for a model on that
+        cadence — 4 at ten, 3 at fifteen. The example's "seen N of 31 days" has
+        to be that N, and the gap it is contrasted with has to be N-1, or the
+        sentence stops making the point it is there to make."""
+        n = -(-self.SPAN // TAIL_CADENCE)
+        self.assertGreaterEqual(n, 2, "the example needs a gap to contrast with")
+        for name in self.FILES:
+            text = Path(name).read_text()
+            if f"of {self.SPAN} days" not in text and f"of {self.SPAN})" not in text:
+                continue
+            self.assertIn(f"seen {n} of {self.SPAN} days", text,
+                          f"{name}: at cadence {TAIL_CADENCE} a {self.SPAN}-day span "
+                          f"holds {n} fetches, and the example says otherwise")
+            self.assertNotIn(f"{n + 1}-of-{self.SPAN}", text,
+                             f"{name}: the contrast pair is still the old cadence's")
 
 
 class TestTheStatesQueryPaidForItself(unittest.TestCase):

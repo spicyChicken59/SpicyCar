@@ -163,9 +163,9 @@ eight calls a day, ~240 a month, reserved and never spent. `data/spend.json` rec
 and not headroom.
 
 **Why every model asks its own states, and what that cost.** Half a target's calls go to asking
-the buyer's own eight states the question the national query just asked, and whether that is worth
-paying for is an empirical question `data/source_overlap.json` has been answering since the audit
-that added it. It has now answered it. Over the 28 observations recorded between 2026-09-02 and
+the buyer's four states, plus the four watched from beyond them, the question the national query
+just asked — and whether that is worth paying for is an empirical question
+`data/source_overlap.json` has been answering since the audit that added it. It has now answered it. Over the 28 observations recorded between 2026-09-02 and
 2026-09-06 the States query found 310 cars and 232 of them were invisible to the national one,
 because the twenty cheapest in the country and the twenty cheapest within driving range are almost
 disjoint sets.
@@ -175,10 +175,18 @@ query is allowed**. Of what the States query brings back, a `depth: full` target
 cars nationally — loses 21% by dropping its States half, which is the redundancy `sources_for()`
 describes and it is real there. A `depth: light` target fetches twenty, the whole country, cheapest
 first, and loses **88%**. The denominator is the States catch, not the model's whole day: the
-national query keeps what it found either way. The 28 one-EV-a-brand targets
-are all light, so their national query was returning the twenty cheapest of that model *in America*
-and almost none of them were drivable. For 28 of 36 models the page could not show a car this buyer
-could go and see.
+national query keeps what it found either way. About 84% of that States-only catch was in the four
+drivable states; the rest was in the four watched from beyond them, and is priced with shipping like
+anything else.
+
+**That split is measured on the light targets the log could see, and applied to the 28 by depth.**
+It has to be: `source_overlap()` compares two sources and skips a target that only has one, so a
+`national_only` target can never contribute an observation — not one of the 28 is in the window, and
+between them they hold 0 of the record's 4,997 rows. What carries the inference is the mechanism
+rather than the sample: the 28 are all `depth: light`, so their national query returns the twenty
+cheapest of that model *in America*, which is the same query shape that lost 88% everywhere it could
+be measured. The first fetch of each is what will confirm or refute it, and the log will say so
+without being asked.
 
 They ask both queries now, and it is paid for out of cadence rather than budget: every tenth day
 became every fifteenth, which buys the second source at 973 calls a month against 1,000 and a worst
@@ -190,7 +198,9 @@ trade, and it is the right way round: a car you cannot drive to is not a car you
 `bmw-i5-cpo` keeps `national_only` and is not part of this. A nationwide certified watch is national
 by definition, not to save a call — and at `depth: full` it is the case where the States half really
 is close to redundant. Standing a model down again is a two-field edit — `national_only: true` and a
-slower cadence — and the overlap log is what should decide it.
+slower cadence — and the overlap log is what should decide it. For that one target the log cannot
+help: a `national_only` target has no second source to compare, so the flag makes its own premise
+untestable, which is worth knowing before it is trusted anywhere else.
 
 Those figures are a measurement, not a constant. The log they come from is appended to, committed
 every day, and pruned to the newest 120 days, so the window they were read off is frozen in
@@ -397,7 +407,7 @@ Parameters resolve trim ← model ← brand ← defaults:
 |---|---|
 | `min_price` | listings below this are ignored — monthly payments or typos, not cars |
 | `depth` | `light` (1 call per source) or `full` (`sorts` × `pages` calls per source) |
-| `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked with its own day — "as of" in the report, "data through" on the dashboard — and with how many days ago that was, since the day alone made a reader subtract from a schedule the record was not keeping. Where the gap is wider than the cadence itself, both surfaces say so in place of the schedule rather than beside it |
+| `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked with its own day — "as of" in the report, "data through" on the dashboard — and with how many days ago that was, since the day alone made a reader subtract from a schedule the record was not keeping. Once the gap reaches the cadence itself — one due day passed without a refresh — both surfaces say so in place of the schedule rather than beside it |
 | `sorts`, `pages` | what `full` depth fetches (defaults: `price.asc` + `miles.asc`, 2 pages) |
 | `newest` | extra newest-first (`createdAt.desc`) pages per source, so brand-new listings are caught the day they list. On for the shopped targets; new cars lead their report section as **New today**. Skipped automatically when a query already returned its whole scope. |
 | `years` | model years; sent as a range and also filtered client-side |

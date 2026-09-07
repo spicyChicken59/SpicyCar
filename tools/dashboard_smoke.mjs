@@ -274,8 +274,8 @@ await step('the watchlist', async () => {
   ok('four tiles', (await page.locator('#kpis .sc-tile').count()) === 4);
   // Two of these six are claims about a watchlist with more than one model on
   // it — the index draws a row EACH, and the model chips are a group only where
-  // there is something to tell apart (index.html hides #f-model-field below two
-  // models, :3818) — and two are claims about a watchlist with a car on it. The
+  // there is something to tell apart (buildFilters() hides #f-model-field below
+  // two models) — and two are claims about a watchlist with a car on it. The
   // rest hold on any sheet. Below either line the check has nothing to look at,
   // which is a thinner watchlist and not a broken page.
   const several = WATCHED.length > 1;
@@ -319,8 +319,8 @@ await step('a model page', async () => {
 
 // --- comparing trims -------------------------------------------------------
 // This presses the SECOND chip and then the THIRD, so it wants a model the
-// sheet gives at least three trims — and index.html renders no chip at all
-// below two (:3833), which is how `#f-trim button` .nth(1) used to end the
+// sheet gives at least three trims — and buildFilters() renders no trim chip
+// at all below two, which is how `#f-trim button` .nth(1) used to end the
 // whole run on the morning a model dropped to one. The first such model, so a
 // reordered watchlist does not move the subject.
 const trio = WATCHED.find((w) => w.trims.length >= 3);
@@ -352,8 +352,8 @@ await step('comparing trims', async () => {
 });
 
 // --- comparing models ------------------------------------------------------
-// The other crash site, and the same shape: index.html hides #f-model-field
-// below two models (:3818), so on a single-model watchlist the chip is in the
+// The other crash site, and the same shape: buildFilters() hides
+// #f-model-field below two models, so on a single-model watchlist the chip is in the
 // DOM but never visible and `.first().click()` sat there for 30s and then took
 // the process down with it.
 await step('comparing models', async () => {
@@ -770,11 +770,11 @@ await step('what a note may say', async () => {
 // the page prints from a note may carry a dated commitment, because a date in
 // the dek rots silently on a page that is published every day.
 //
-// Asserted over the DATA, because every note reaches a dek (index.html:2392)
-// and a chip title (:3586), and a rule enforced on one URL is the gap that let
+// Asserted over the DATA, because every note reaches both a dek and a chip
+// title, and a rule enforced on one URL is the gap that let
 // rather than named here — naming bmw-i5-edrive40 would test the config, and
 // would pass vacuously the day that trim is renamed or the i5 drops to one
-// trim (chips render only when tIds.length > 1, :3580).
+// trim (buildFilters() renders trim chips only when tIds.length > 1).
 plan('no note on the watchlist carries a dated commitment', 'a described trim reaches the dek',
      'and the chip it sits beside says the same', 'and neither reads as a deadline');
 const DATED = /\b(decide|decision|deadline)\s+by\b|\bby\s+(mid|early|late)[- ]?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
