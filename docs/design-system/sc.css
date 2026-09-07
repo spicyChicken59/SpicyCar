@@ -1563,6 +1563,10 @@ html[data-sc-motion-paused="true"] .sc-disclosure[open] > .sc-disclosure__body {
 
 @media print {
   :root { color-scheme: light; }
+  /* A paper report has no scrollbar: release bounded tables so later rows
+     participate in pagination. Screen scroll and sticky identity stay intact. */
+  .sc-table-scroll { max-height: none; overflow: visible; }
+  .sc-table-scroll :is(th, td) { position: static !important; }
   body { background: #fff; color: #2F3741; font-size: 11pt; }
   .sc-masthead, .sc-foot { background: #111F31 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   pre, .sc-callout--ink, .sc-tooltip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
