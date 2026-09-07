@@ -179,6 +179,11 @@
        "min_price": 20000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc",
+        "miles.asc"
+       ],
        "market_total": null
       },
       "bmw-i5-xdrive40": {
@@ -196,6 +201,10 @@
        "min_price": 20000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 9,
        "exit_price": 55215,
@@ -220,6 +229,10 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 11,
        "exit_price": 60955,
@@ -244,6 +257,10 @@
        "min_price": 20000,
        "max_miles": 30000,
        "cpo_only": true,
+       "national_only": true,
+       "sorts": [
+        "miles.asc"
+       ],
        "market_total": null
       }
      },
@@ -15320,6 +15337,11 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc",
+        "miles.asc"
+       ],
        "market_total": null
       },
       "bmw-i7-xdrive60": {
@@ -15337,6 +15359,10 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 8,
        "exit_price": 115495,
@@ -15361,6 +15387,10 @@
        "min_price": 60000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       },
       "bmw-i7-cpo": {
@@ -15376,6 +15406,10 @@
        "min_price": 35000,
        "max_miles": 30000,
        "cpo_only": true,
+       "national_only": true,
+       "sorts": [
+        "miles.asc"
+       ],
        "market_total": null
       }
      },
@@ -31211,6 +31245,10 @@
        "min_price": 25000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       },
       "bmw-ix-m": {
@@ -31228,6 +31266,10 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -36174,6 +36216,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -37858,6 +37904,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 12,
        "exit_price": 35616,
@@ -40847,6 +40897,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 10,
        "exit_price": 44477,
@@ -42499,6 +42553,10 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       },
       "lucid-air-touring": {
@@ -42516,6 +42574,10 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       },
       "lucid-air-grand-touring": {
@@ -42533,6 +42595,10 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -47338,6 +47404,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49157,6 +49227,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49213,6 +49287,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49269,6 +49347,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49325,6 +49407,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49381,6 +49467,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49437,6 +49527,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49493,6 +49587,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49549,6 +49647,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49605,6 +49707,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49661,6 +49767,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49717,6 +49827,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -49773,6 +49887,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },

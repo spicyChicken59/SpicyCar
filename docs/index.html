@@ -2963,7 +2963,9 @@
           // was one surface naming the buyer's car and the other naming the
           // car the file was written around — and the sentences below say
           // which brand, so they carry it too.
-          x.apr_seller_unnamed = !!gets && !sellerNamed(x, bk);
+          // Either spelling: the key is a slug and the label is what a
+          // dealer puts on a sign, and the sentence below names the label.
+          x.apr_seller_unnamed = !!gets && !sellerNamed(x, bk) && !sellerNamed(x, b.label || bk);
           x.apr_seller_brand = gets ? (b.label || bk) : '';
         }
       }
@@ -2972,7 +2974,26 @@
   const financeCfg = () => ((S.site || {}).buyer || {}).finance || null;
   // Whether the seller's NAME carries the brand — the only thing the page can
   // check about who wrote the sale. See the flag above for why it is a flag.
-  const sellerNamed = (x, brand) => new RegExp('\\b' + String(brand || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(x.dealer || '');
+  // Every run of non-alphanumerics is a separator on both sides, and the
+  // brand's words have to appear in order. \b on the raw key could not do it:
+  // /\brolls-royce\b/ matched "Rolls-Royce Motor Cars" and missed "Rolls
+  // Royce of Chicago", while Tracking.py looked for the key as ONE word and so
+  // could never match a hyphenated brand at all — three answers for one car,
+  // under a Python docstring saying the two surfaces could not disagree.
+  const nameWords = (s) => String(s || '').replace(/[^a-z0-9]+/gi, ' ').toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const nameCarries = (name, brand) => {
+    const want = nameWords(brand), got = nameWords(name);
+    if (!want.length || want.length > got.length) return false;
+    return got.some((_, i) => want.every((w, j) => got[i + j] === w));
+  };
+  const sellerNamed = (x, brand) => nameCarries(x.dealer, brand);
+
+  // A sort in the words a reader would use, for the lines that describe what a
+  // query asked. Unknown sorts get no clause rather than a guessed one.
+  const SORT_WORDS = {
+    'miles.asc': 'lowest-mileage first', 'miles.desc': 'highest-mileage first',
+    'price.asc': 'cheapest first', 'price.desc': 'priciest first',
+  };
   // The reader's term, clamped to what a promo will actually write. A 2.99%
   // offer capped at 60 months does not finance 72 — quoting it at 72 would
   // invent a payment no lender has offered, and it is exactly the car the
@@ -4847,8 +4868,14 @@
       'financed() is linear in price, so this is the exact price that yields the same monthly figure at the ordinary rate.');
     const bits = [];
     if (c.unnamed) {
-      bits.push(`${c.unnamed} of the ${c.rows.length} certified ${c.unnamed === 1 ? 'car is' : 'cars are'} listed by a seller whose name does not say BMW`
-        + ` — ${promo.label || 'this rate'} is written at a BMW centre, so confirm before counting on it. They are excluded from the figures above.`);
+      // The brand annotateFinance() stamped on the rows, not a typed "BMW".
+      // Five other surfaces already read it; this one did not, so a promo on
+      // any other car told the buyer their own brand's dealers were not their
+      // own brand's dealers, on the card the promo is the whole subject of.
+      const marque = (c.rows.find((r) => r.apr_seller_brand) || {}).apr_seller_brand
+        || 'the manufacturer';
+      bits.push(`${c.unnamed} of the ${c.rows.length} certified ${c.unnamed === 1 ? 'car is' : 'cars are'} listed by a seller whose name does not say ${marque}`
+        + ` — ${promo.label || 'this rate'} is written at a ${marque} centre, so confirm before counting on it. They are excluded from the figures above.`);
     }
     bits.push(costBasisNote().trim());
     $('promo-foot').textContent = bits.filter(Boolean).join(' ');
@@ -4949,7 +4976,16 @@
       nTrims > 1 && !trim ? (comparingTrims() ? `${S.trims.size} of ${nTrims} trims` : `${nTrims} trims`) : null,
       // A CPO watch names its own window instead of the generic depth label —
       // "Deep fetch" describes a cheapest-N sweep, which is not what it does.
-      trim && trim.cpo_only ? `Certified cars under ${num(trim.max_miles)} mi, nationwide, lowest-mileage first`
+      // Built from what the trim carries, not from the recipe this watch
+      // happened to be written with: "nationwide, lowest-mileage first" was
+      // typed here, so a model that narrowed its own watch to price.asc
+      // within the search states had the page describing a query it does not
+      // run — and "under undefined mi" when it set no cap.
+      trim && trim.cpo_only ? [
+        trim.max_miles ? `Certified cars under ${num(trim.max_miles)} mi` : 'Certified cars',
+        trim.national_only ? 'nationwide' : null,
+        SORT_WORDS[(trim.sorts || [])[0]] || null,
+      ].filter(Boolean).join(', ')
         : trim && trim.depth ? (trim.depth === 'full' ? 'Deep fetch' : 'Light fetch — cheapest 20 per query') : null,
       minPrice ? `Listings under ${money(minPrice)} ignored` : null,
     ]);
@@ -5726,7 +5762,11 @@
         // sentence called them cars: "7 electric cars" over a sheet holding
         // 502 of them. One EV per brand made it "35 electric cars" over 444,
         // which is the same falsehood at a size somebody would notice.
-        : `${rows.length} electric models, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
+        // "electric models" was true of the watchlist that was here and is a
+        // claim about the CARS, which the buyer chooses. The ingest does still
+        // refuse a non-EV listing (is_ev in Tracking.py), but that is a fact
+        // about what got in, not about what this line is counting.
+        : `${rows.length} models, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
     // Three clauses, and the last two used to be able to say the same number
     // twice in two different shapes: with a chip pressed on a model nobody is

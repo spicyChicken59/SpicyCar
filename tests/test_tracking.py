@@ -4296,10 +4296,20 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
         import subprocess
         page = Path("docs/index.html").read_text()
         fn = re.search(r"  function annotateFinance\(site\) \{.*?\n  \}\n", page, re.S)
-        sn = re.search(r"  const sellerNamed = \(x, brand\) =>[^\n]*\n", page)
-        for got, what in ((fn, "annotateFinance"), (sn, "sellerNamed")):
+        # sellerNamed's helpers come with it: it was one arrow function and is
+        # now three, and pulling only the last one out gave this check a
+        # ReferenceError instead of an answer.
+        # One SLICE from the first helper to sellerNamed, not one regex per
+        # name: nameCarries spans several lines, so a per-line match captured
+        # its signature and dropped its body, and node answered with a
+        # SyntaxError instead of a comparison.
+        sn = re.search(r"  const nameWords = .*?  const sellerNamed = [^\n]*\n",
+                       page, re.S)
+        for got, what in ((fn, "annotateFinance"), (sn, "sellerNamed and its helpers")):
             self.assertIsNotNone(got, f"the page no longer defines {what} — "
                                       "this check has lost its subject")
+        for name in ("nameWords", "nameCarries", "sellerNamed"):
+            self.assertIn(f"const {name}", sn.group(0), name)
         cars = [{"vin": "A", "cpo": True, "dealer": "Kia of Chicago"},
                 {"vin": "B", "cpo": True, "dealer": "Niello Acura"}]
         site = {"buyer": {"finance": {"fallback_apr": 6.9, "promos": [
@@ -4321,6 +4331,78 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
         # looked up by id, so this drives it through a real one.
         rows = [{"dealer": c["dealer"], "cpo": "1", "target": "bmw-i5-cpo"} for c in cars]
         self.assertEqual([T.seller_named(r, "kia") for r in rows], [True, False])
+        # And the two rules agree on a brand whose key is not one word, which
+        # is where they used to give three different answers: the page's \b
+        # regex matched the hyphenated spelling and missed the spaced one,
+        # Python's word-set matched neither, and the docstring said they could
+        # not disagree.
+        spellings = ["Rolls-Royce Motor Cars Chicago", "Rolls Royce of Chicago",
+                     "rolls royce chicago", "Braman Motors", "ROLLSROYCE Ltd"]
+        script = (sn.group(0)
+                  + f"const names = {json.dumps(spellings)};\n"
+                  "console.log(JSON.stringify(names.map((n) => "
+                  "sellerNamed({dealer: n}, 'rolls-royce'))));")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(json.loads(out.stdout),
+                         [T.seller_named({"dealer": n}, "rolls-royce") for n in spellings])
+        self.assertEqual(json.loads(out.stdout), [True, True, True, False, False],
+                         "both spellings count, and neither surface matches a "
+                         "name that merely contains the letters")
+
+    def test_the_promo_card_names_the_brand_it_actually_checked(self):
+        """The sweep that made annotateFinance read the brand off the car left
+        one surface behind: renderPromo's footnote typed "BMW" twice, on the
+        card whose entire subject is the promo. Reproduced by running the
+        clause over a Kia promo — "does not say BMW … written at a BMW centre"
+        under a label reading "Kia Finance certified 2.99%"."""
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the page's own clause")
+        import subprocess
+        page = Path("docs/index.html").read_text()
+        m = re.search(r"    if \(c\.unnamed\) \{[\s\S]*?\n    \}\n", page)
+        self.assertIsNotNone(m, "renderPromo's footnote clause is gone — this "
+                                "check has lost its subject")
+        body = (m.group(0).replace("    if (c.unnamed) {\n", "", 1)
+                .rstrip()[:-1].rstrip())
+        script = ("const c = {unnamed: 2, rows: [{apr_seller_brand: 'Kia'},"
+                  "{apr_seller_brand: 'Kia'},{apr_seller_brand: 'Kia'}]};\n"
+                  "const promo = {label: 'Kia Finance certified 2.99%'};\n"
+                  "const bits = [];\n" + body + "\nconsole.log(bits[0]);")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(0, out.returncode, out.stderr)
+        said = out.stdout.strip()
+        self.assertIn("does not say Kia", said)
+        self.assertIn("at a Kia centre", said)
+        self.assertNotIn("BMW", said, "the card types a brand instead of "
+                                      "reading the one on the rows")
+
+    def test_a_certified_watch_describes_the_query_it_really_runs(self):
+        """The meta line typed "nationwide, lowest-mileage first" and a mileage
+        cap, which are cpo_watch's defaults and not facts about any particular
+        watch. A model that narrows its own to price.asc inside the search
+        states had the page describing a query it does not run, and one that
+        sets no cap printed "under undefined mi"."""
+        page = Path("docs/index.html").read_text()
+        clause = re.search(r"trim && trim\.cpo_only \? \[(.*?)\]\.filter", page, re.S)
+        self.assertIsNotNone(clause, "the certified watch's meta line is gone")
+        for key in ("trim.max_miles", "trim.national_only", "trim.sorts"):
+            self.assertIn(key, clause.group(1),
+                          f"the line does not read {key} off the trim")
+        # …and the sheet carries what the line needs, on every certified watch.
+        sheet = json.loads(Path("docs/data.json").read_text())
+        watches = [tr for b in sheet["brands"].values()
+                   for m in b["models"].values()
+                   for tr in (m.get("trims") or {}).values() if tr.get("cpo_only")]
+        self.assertTrue(watches, "no certified watch in the published sheet")
+        for tr in watches:
+            self.assertIn("national_only", tr)
+            self.assertTrue(tr.get("sorts"), tr.get("label"))
+            self.assertEqual(tr["sorts"],
+                             list(T.sorts_pages(T.TARGETS[[
+                                 k for k, v in T.TARGETS.items()
+                                 if v.get("label") == tr["label"]
+                                 and v.get("cpo_only")][0]])[0]))
 
     def test_the_page_spells_an_age_the_same_way_the_report_does(self):
         """The page's own formatter, executed, against Python's. Not a

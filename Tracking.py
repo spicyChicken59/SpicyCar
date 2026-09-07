@@ -3385,20 +3385,36 @@ def seller_named(r, brand):
     certified watch, at "niello acura". The dashboard has said so since the
     promo strip was built; the report printed a bare CPO.
 
-    Whole word, not substring, and the brand KEY rather than its label — the
-    same test docs/index.html's sellerNamed() makes with /\bbmw\b/i, so the two
-    surfaces cannot disagree about which sellers count. The word set below is
-    that regex without importing one: every run of non-alphanumeric characters
-    is a separator, which is where \b falls for these names — "bmw of
-    chicago" and "bmw-of-chicago" match, "bmwofchicago" and "3bmw" do not,
-    exactly as the page has them. An empty dealer name fails it, which is the
-    conservative direction: a certification nobody is named for is exactly the
-    one to confirm.
+    Whole words, not substring, and the brand's words in order — the same test
+    docs/index.html's sellerNamed() makes, so the two surfaces cannot disagree
+    about which sellers count. Every run of non-alphanumeric characters is a
+    separator on BOTH sides, which is what a hyphenated brand needs: this used
+    to look for the key as one word, so "rolls-royce" could never match any
+    dealer name at all — it is two words after splitting — while the page's
+    /\brolls-royce\b/ matched "Rolls-Royce Motor Cars" and not "Rolls Royce
+    of Chicago", so the surfaces disagreed three ways on one car under a
+    docstring saying they could not. "bmw of chicago" and "bmw-of-chicago"
+    match, "bmwofchicago" and "3bmw" do not, exactly as the page has them.
+    An empty dealer name fails it, which is the conservative direction: a
+    certification nobody is named for is exactly the one to confirm.
     """
-    b = str(brand or "").strip().lower()
-    name = str(r.get("dealer") or "")
-    words = set("".join(c if c.isalnum() else " " for c in name).lower().split())
-    return bool(b) and b in words
+    return name_carries(str(r.get("dealer") or ""), brand)
+
+
+def name_words(text):
+    """A name as the words a reader would say, lower-cased. Every run of
+    non-alphanumerics is a separator, so "Rolls-Royce" and "Rolls Royce" are
+    the same two words and the brand key, the brand label and the dealer's
+    own spelling all normalise together."""
+    return "".join(c if c.isalnum() else " " for c in str(text or "")).lower().split()
+
+
+def name_carries(name, brand):
+    """Does `name` contain `brand`'s words, in order, on word boundaries?"""
+    want, got = name_words(brand), name_words(name)
+    if not want or len(want) > len(got):
+        return False
+    return any(got[i:i + len(want)] == want for i in range(len(got) - len(want) + 1))
 
 
 def flags(r):
@@ -3406,8 +3422,14 @@ def flags(r):
     if is_cpo(r):
         t = TARGETS.get(r.get("target")) or {}
         brand = t.get("brand")
-        out.append("CPO" if not brand or seller_named(r, brand)
-                   else f"CPO (seller not named {t.get('brand_label') or str(brand).upper()})")
+        label = t.get("brand_label") or str(brand).upper()
+        # Either spelling counts. The key is a slug ("rolls-royce") and the
+        # label is what a dealer would put on a sign ("Rolls-Royce"); the
+        # sentence names the label, so a seller who spells it that way is
+        # named, and a config whose key and label differ does not turn every
+        # one of its dealers into a warning.
+        named = not brand or seller_named(r, brand) or seller_named(r, label)
+        out.append("CPO" if named else f"CPO (seller not named {label})")
     # Right after the certified chip, which is the slot flagsCell() uses on the
     # page — the report and the dashboard describe the same car from the same
     # list, and two surfaces that order it differently are two surfaces that
@@ -4519,6 +4541,15 @@ def build_outputs(today_rows, all_rows, hist):
                                     "min_price": t.get("min_price"),
                                     "max_miles": t.get("max_miles"),
                                     "cpo_only": bool(t.get("cpo_only")),
+                                    # What the query really asks, so the page
+                                    # can describe it instead of describing
+                                    # the recipe a certified watch happened to
+                                    # be written with: it printed "nationwide,
+                                    # lowest-mileage first" over a watch a
+                                    # model had narrowed to price.asc within
+                                    # the search states.
+                                    "national_only": bool(t.get("national_only")),
+                                    "sorts": list(sorts_pages(t)[0]),
                                     "market_total": TOTALS.get((t["id"], "National")),
                                     # Per TRIM, not per model: a median mixing an
                                     # eDrive50 with an M70 describes no car that
