@@ -4766,12 +4766,22 @@ await step('a headline figure carries its own date', async () => {
     ageTo(sheet, day);
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
+  // Two days is a gap most cadences account for — but not a DAILY one, where
+  // fetch_overdue is true at a gap of 1, so the tile correctly adds the count
+  // and this check, anchored on "no count" with a trailing $, went red on a
+  // page that was right. Which model leads the tile is whatever the market
+  // makes cheapest, so that was a latent CI failure waiting on a shopped model
+  // to lead. The expectation follows the cadence the way the page does.
+  const leadCadence = ((SHEET.brands[leader.bk] || {}).models[leader.mk] || {}).cadence || 1;
+  const gap = Date.parse(through + 'T00:00:00Z') - Date.parse(aged + 'T00:00:00Z');
+  const agedOverdue = Math.round(gap / 86400000) >= Math.max(1, leadCadence);
+  const stamp = agedOverdue ? `· as of [A-Z][a-z]{2} \\d+, \\d+ days? ago$` : `· as of [A-Z][a-z]{2} \\d+$`;
   await serve(aged);
   try {
     await open('');
     const t1 = (await lead()) || '';
-    ok('a tile led by a model fetched on an older day says so', new RegExp(`· as of [A-Z][a-z]{2} \\d+$`).test(t1.trim()) && t1.includes(leadLabel),
-       `${leader.label} aged to ${aged} under data through ${through}: "${t1.trim()}"`);
+    ok('a tile led by a model fetched on an older day says so', new RegExp(stamp).test(t1.trim()) && t1.includes(leadLabel),
+       `${leader.label} aged to ${aged} (2d on a ${leadCadence}-day cadence — ${agedOverdue ? 'overdue, so the count belongs' : 'inside its cadence, so the date alone'}) under data through ${through}: "${t1.trim()}"`);
   } finally {
     await ctx.unroute('**/data.json');
   }

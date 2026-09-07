@@ -16,6 +16,7 @@ key is set here before the import.
 import html as html_mod
 import io
 import json
+import math
 import os
 import re
 import shutil
@@ -4290,6 +4291,73 @@ class TestTheOverlapLogRecordsOnlyQueriesThatFinished(unittest.TestCase):
         self.assertIn(self.TID, T.source_overlap({}))
 
 
+class TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives(unittest.TestCase):
+    """The round's own arithmetic, in the two places it is argued.
+
+    docs/how.html's copies of the plan figures are derived from
+    planned_calls() and pinned. README's decision paragraph and targets.json's
+    "// national_only" comment carry the same numbers — 973 a month, a worst
+    day of 38 against 40, and the horizons that ruled out 13 and 14 — and were
+    held by nothing. Rewriting the config comment to "700 calls/month", "a
+    worst day of 12 against 40" and "plan_horizon() at 7 days" left the whole
+    suite green, which is the state a comment is in when it is the only record
+    of why a decision was made.
+
+    The horizons are recomputed rather than trusted: 13 and 14 are named as
+    rejected BECAUSE of what they do to the cycle, so the sentence is only true
+    while that is still what they do.
+    """
+
+    @staticmethod
+    def _horizon_at(cad):
+        """plan_horizon() if the long tail ran at `cad`, by its own rule."""
+        cycle = 1
+        for t in T.TARGETS.values():
+            c = cad if t["cadence"] == TAIL_CADENCE else t["cadence"]
+            cycle = math.lcm(cycle, max(1, int(c)))
+        return max(14, cycle)
+
+    def test_both_surfaces_quote_the_plan_this_config_produces(self):
+        today, worst, avg = T.planned_calls()
+        month = round(avg * 30.5)
+        readme = " ".join(Path("README.md").read_text().split())
+        cfg = json.loads(Path("targets.json").read_text())
+        comment = cfg["// national_only"]
+        for where, text in (("README", readme), ("targets.json's comment", comment)):
+            self.assertIn(str(month), text, f"{where} does not name the monthly plan ({month})")
+            self.assertIn(str(worst), text, f"{where} does not name the worst day ({worst})")
+            self.assertIn(str(T.BUDGET), text, f"{where} does not name the daily cap ({T.BUDGET})")
+            self.assertIn(str(T.MONTHLY), text.replace(",", ""),
+                          f"{where} does not name the monthly cap ({T.MONTHLY})")
+
+    def test_the_horizons_that_ruled_out_thirteen_and_fourteen_still_do(self):
+        """Both surfaces say fifteen was chosen because it keeps the cycle at
+        60 where 13 and 14 push it to 156 and 84. Those three numbers are a
+        function of every other cadence on the watchlist, so adding one model
+        at a new cadence can make the sentence false without touching it."""
+        readme = " ".join(Path("README.md").read_text().split())
+        comment = json.loads(Path("targets.json").read_text())["// national_only"]
+        here = T.plan_horizon()
+        self.assertEqual(here, self._horizon_at(TAIL_CADENCE),
+                         "the recomputation disagrees with plan_horizon() at the "
+                         "cadence actually configured — the helper is wrong, not the prose")
+        for text, where in ((readme, "README"), (comment, "targets.json's comment")):
+            self.assertIn(str(here), text, f"{where} does not name the cycle it keeps ({here})")
+            for cad in (13, 14):
+                self.assertIn(str(self._horizon_at(cad)), text,
+                              f"{where} says {cad} was rejected but does not name what it "
+                              f"costs ({self._horizon_at(cad)} days)")
+
+    def test_the_tier_the_prose_argues_from_is_the_one_the_config_runs(self):
+        """"every tenth day became every fifteenth" is a claim about a real
+        move, and the second half of it has to be where the config is. Only
+        that half: the first names where the tier came FROM, which is history
+        and does not move with the config."""
+        readme = " ".join(Path("README.md").read_text().split())
+        self.assertIn(f"became every {TAIL_CADENCE_WORD}", readme,
+                      f"README says the tier moved somewhere other than {TAIL_CADENCE}")
+
+
 class TestNoCommentCitesALineNumber(unittest.TestCase):
     """Cite the function, not `file.py:NN`.
 
@@ -6833,19 +6901,23 @@ class TestFinance(unittest.TestCase):
 class TestSourceOverlap(unittest.TestCase):
     """What the States query buys that National does not already bring.
 
-    Half of most targets' calls go to asking the buyer's eight states the same
-    question the national query just asked, and the obvious saving — make the
-    benchmark models national_only — is worth about 120 calls a month, the
-    States half of the eleven non-shopping targets at today's cadences. Whether
-    it is FREE is a different question: National sorted by price returns the
-    twenty cheapest in the country, which on a model whose cheap end sits in
-    California can be twenty cars none of them drivable, while the States query
-    is the only thing surfacing the Ohio one.
+    Half of most targets' calls go to asking the buyer's four states — plus the
+    four watched from beyond them, one comma list, one call — the same question
+    the national query just asked. This docstring used to argue the saving from
+    flipping the benchmark models to `national_only`, and to say the flag would
+    be flipped "when this audit has watched `states_only` sit at zero for a
+    while". The audit ran and the answer went the other way: `states_only` did
+    not sit at zero, it sat at 88% of the States catch on every shallow target,
+    and twenty-eight targets came OFF the flag rather than going onto it. One
+    is left, and it is national by definition rather than to save a call.
 
-    So the flag is not flipped on an argument. It is flipped when this audit
-    has watched `states_only` sit at zero for a while. These tests hold the
-    measurement itself honest, because a saving justified by a broken
-    instrument is the most expensive kind.
+    So the paragraph is inverted but its point stands, and it is the reason
+    these tests exist: the flag is not set or cleared on an argument, it is
+    decided by this measurement — which makes a broken instrument the most
+    expensive thing in the file. A National query that died mid-fetch used to
+    be archived as a complete comparison, which is the shape of a real finding
+    and entirely the failure; TestTheOverlapLogRecordsOnlyQueriesThatFinished
+    holds that half.
     """
 
     def setUp(self):
