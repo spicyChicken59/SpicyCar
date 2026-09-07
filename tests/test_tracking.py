@@ -4291,6 +4291,79 @@ class TestTheOverlapLogRecordsOnlyQueriesThatFinished(unittest.TestCase):
         self.assertIn(self.TID, T.source_overlap({}))
 
 
+class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
+    """A row the watchlist has moved out from under is not current inventory.
+
+    `watchlist_moved()` was only ever asked about a row that VANISHED. A row
+    still sitting in the latest snapshot went onto the page as a live listing
+    whatever its model year — so narrowing a target's `years` left its old cars
+    there, priced, counted, and folded into the floor.
+
+    Found by doing it: splitting the Lucid Air back into trims rebuilt two
+    target ids the record already held, and 53 of the 68 listings that came
+    back were model year 2022 and 2023 — cars no query on this sheet can return
+    again. The departure path had always known that; the live path had never
+    been asked.
+    """
+
+    def _rows(self, tid, years, day="2026-09-06"):
+        base = {k: "" for k in T.FIELDS}
+        out = []
+        for i, y in enumerate(years):
+            r = dict(base)
+            r.update({"snapshot_date": day, "target": tid, "year": str(y),
+                      "vin": f"V{i:016d}"[:17], "price": "45000", "miles": "12000"})
+            out.append(r)
+        return out
+
+    def test_a_row_outside_its_targets_years_is_not_a_live_listing(self):
+        tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
+        rows = self._rows(tid, [2022, 2023, 2024, 2025])
+        kept = T.current_rows(rows, {tid})
+        self.assertEqual(["2024", "2025"], sorted(r["year"] for r in kept),
+                         "a model year this watchlist can no longer return was "
+                         "published as a car on the market")
+
+    def test_a_row_inside_them_still_is(self):
+        """The precondition. Without it the rule above is satisfied by a
+        function that returns nothing."""
+        tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
+        rows = self._rows(tid, [2024, 2024, 2025])
+        self.assertEqual(3, len(T.current_rows(rows, {tid})))
+
+    def test_only_the_latest_day_survives_either_way(self):
+        """The function's original job, which the scope rule must not break."""
+        tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
+        rows = self._rows(tid, [2024, 2025], day="2026-09-01") + \
+               self._rows(tid, [2024], day="2026-09-06")
+        kept = T.current_rows(rows, {tid})
+        self.assertEqual(["2026-09-06"], sorted({r["snapshot_date"] for r in kept}))
+
+    def test_a_target_the_config_no_longer_knows_keeps_its_rows(self):
+        """An id with no target cannot be scope-checked against anything, and
+        dropping its rows would silently delete history rather than scope it."""
+        rows = self._rows("some-retired-target", [2019, 2024])
+        kept = T.current_rows(rows, {"some-retired-target"})
+        self.assertEqual(2, len(kept),
+                         "rows whose target has left the config were dropped; "
+                         "there is nothing to judge them against")
+
+    def test_the_published_sheet_holds_no_car_its_own_watchlist_excludes(self):
+        """The end-to-end statement, over the committed record."""
+        site = json.loads(Path("docs/data.json").read_text())
+        bad = []
+        for bk, b in site["brands"].items():
+            for mk, m in b["models"].items():
+                years = set(m.get("years") or [])
+                if not years:
+                    continue
+                for x in (m.get("listings") or []):
+                    if str(x.get("year")) and str(x.get("year")) not in years:
+                        bad.append(f'{bk}/{mk} {x.get("year")} {x.get("vin")}')
+        self.assertEqual([], bad[:10],
+                         f"{len(bad)} live listings the watchlist cannot return: {bad[:5]}")
+
+
 class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
     """The sheet's size is a published number and the file grows every day.
 
@@ -4714,6 +4787,10 @@ class TestTheStatesQueryPaidForItself(unittest.TestCase):
                            "and README's paragraph is out of date.")
 
 
+NUMBER_WORD = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
+               7: "seven", 8: "eight", 9: "nine", 10: "ten"}
+
+
 class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
     """"BMW siblings run every other day, rival brands every third day", on a
     watchlist where four of the six non-shopped BMW targets are on cadence 3.
@@ -4761,8 +4838,14 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
                         f"the prose says the i7's other trims and the iX: {rest}")
 
     def test_the_fourth_day_tier_is_the_models_that_already_have_a_record(self):
+        """Derived from the prose rather than a literal five. The Lucid Air was
+        on this tier and left it: its record is 257 rows of which most are model
+        years the 2024+ watchlist can no longer return, so it was here on the
+        strength of history the config cannot reproduce."""
         kept = sorted(self._by_cadence().get(4, []))
-        self.assertEqual(len(kept), 5, f"the prose says five: {kept}")
+        readme = " ".join(Path("README.md").read_text().split())
+        self.assertIn(f"the {NUMBER_WORD[len(kept)]} models already carrying a record", readme,
+                      f"the tier holds {len(kept)} and README says otherwise: {kept}")
         self.assertFalse([t for t in kept if t.startswith("bmw-")],
                          f"…and that none of them is a BMW: {kept}")
         self.assertFalse([t for t in kept if T.TARGETS[t].get("national_only")],
@@ -4788,8 +4871,10 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
                          {t["brand"] for t in T.TARGETS.values()} - kept - {"bmw"})
         self.assertFalse([t for t in ref if T.TARGETS[t].get("national_only")],
                          "the prose says every one of them asks its own states too")
-        self.assertEqual(len({T.TARGETS[t]["brand"] for t in ref}), len(ref),
-                         "…one EV from each")
+        self.assertEqual(len({T.TARGETS[t]["brand"] for t in ref}),
+                         len({T.TARGETS[t]["model_key"] for t in ref}),
+                         "…one nameplate from each — a brand may carry trims of it, "
+                         "the way the Lucid Air does, but not a second model")
 
     def test_the_config_has_no_tier_the_prose_does_not_name(self):
         named = {1, 2, 3, 4, TAIL_CADENCE}
@@ -4817,17 +4902,28 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         """
         brands = {t["brand"] for t in T.TARGETS.values()}
         others = len(brands - {"bmw"})
-        tail = len([t for t in T.TARGETS.values() if t["cadence"] == TAIL_CADENCE])
+        # BRANDS, because that is the noun the sentence uses. It counted
+        # targets, which was the same number only while every tail model was
+        # trimless; the Lucid Air carries three trims now and would have made
+        # the prose claim seventeen brands where there are fifteen.
+        tail = len({t["brand"] for t in T.TARGETS.values() if t["cadence"] == TAIL_CADENCE})
         word = TAIL_CADENCE_WORD
         readme = " ".join(Path("README.md").read_text().split())
         how = " ".join(Path("docs/how.html").read_text().split())
         self.assertIn(f"each of the other {others} brands", readme)
         self.assertIn(f"other {tail} brands every {word} day", readme)
         self.assertIn(f"other {tail} brands every {word} day", how)
-        self.assertEqual(others, tail + 5,
-                         "the two tiers outside BMW are the five with a record "
-                         "and the rest; if that stops being true the sentences "
-                         "above describe a watchlist that no longer exists")
+        # The `5` here was a literal for the fourth-day tier and went stale the
+        # moment the Lucid Air left it. Derived from the config, so the
+        # invariant survives a tier changing size: outside BMW there are
+        # exactly two tiers, the ones with a record and the rest, and every
+        # brand is in one of them.
+        recorded = len({t["brand"] for t in T.TARGETS.values() if t["cadence"] == 4})
+        self.assertEqual(others, tail + recorded,
+                         f"outside BMW there are two tiers — {recorded} brands with a "
+                         f"record and {tail} in the tail — and they should account for "
+                         f"all {others}; if they do not, the sentences above describe a "
+                         "watchlist that no longer exists")
 
     def test_the_cycle_length_both_surfaces_quote(self):
         """README says the cycle is 60 days in prose and how.html names it in
@@ -6392,8 +6488,11 @@ class TestConfig(unittest.TestCase):
         trimless = [(bk, mk) for bk, b in cfg.items() if b.get("active", True)
                     for mk, m in b["models"].items()
                     if m.get("active", True) and not m.get("trims")]
-        self.assertGreater(len(trimless), 20,
-                           "one EV per brand is a watchlist of trimless models")
+        # This was `> 20`, a floor typed when the tail was thirty-odd. The rule
+        # it sits in is that a model with no trims resolves to exactly one
+        # target, which is checked below and does not depend on how many there
+        # are; the floor only says the watchlist has not been emptied.
+        self.assertTrue(trimless, "the watchlist has no trimless model left to check")
         for bk, mk in trimless:
             tid = f"{bk}-{mk}"
             self.assertIn(tid, T.TARGETS)
@@ -6509,10 +6608,22 @@ class TestConfig(unittest.TestCase):
             self.assertNotIn("q4-etron", tid)
         self.assertIn("audi-a6-etron", T.TARGETS)
         self.assertIn("chevrolet-equinox-ev", T.TARGETS)
-        per_brand = Counter(t["brand"] for t in T.TARGETS.values()
+        # One NAMEPLATE per brand, not one target. It was one target, which was
+        # the same thing only while every non-BMW model was trimless — and the
+        # Lucid Air stopped being: one trimless watch fetched the twenty
+        # cheapest Airs, which on a model whose prices collapsed is twenty
+        # Pures and no Grand Touring in sight, so it carries Pure / Touring /
+        # Grand Touring the way the i5 carries its own. Counting targets would
+        # have made that read as a second Lucid.
+        per_brand = Counter(t["model_key"] for t in T.TARGETS.values()
                             if t["brand"] != "bmw")
-        extra = {b: n for b, n in per_brand.items() if n > 1}
-        self.assertFalse(extra, f"one target per brand outside BMW: {extra}")
+        by_brand = Counter()
+        for t in T.TARGETS.values():
+            if t["brand"] != "bmw":
+                by_brand[t["brand"]] = len({x["model_key"] for x in T.TARGETS.values()
+                                            if x["brand"] == t["brand"]})
+        extra = {b: n for b, n in by_brand.items() if n > 1}
+        self.assertFalse(extra, f"one nameplate per brand outside BMW: {extra}")
         # This was `> 25` — a floor typed when the watchlist held 33 non-BMW
         # brands, which says nothing about the RULE and fails the day someone
         # deliberately trims the list. Re-typing it as 23 would just move the

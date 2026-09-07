@@ -3669,15 +3669,44 @@ def listing_entry(r, s):
 # --------------------------------------------------------------------------
 def current_rows(all_rows, tids):
     """The latest snapshot for each target: today's rows, or the last day a
-    slower-cadence target was fetched."""
+    slower-cadence target was fetched — minus the ones the watchlist has since
+    moved out from under.
+
+    `watchlist_moved()` was only ever asked about a row that VANISHED, and a
+    row that is still sitting in the latest snapshot was published as current
+    inventory whatever its model year. Narrowing a target's `years` therefore
+    left its old cars on the page: splitting the Lucid Air back into trims
+    rebuilt two target ids the record already held, and 53 of the 68 listings
+    that came back were model year 2022 and 2023 — cars no query on this sheet
+    can return again, shown as on the market, with prices and a floor computed
+    over them.
+
+    The same rule as the departure path, asked one step earlier: a row outside
+    its target's `years` did not leave the market, the query left it, and
+    either way it is not something this watchlist found. The departure path
+    still labels the ones that vanish "out of scope"; this stops the ones that
+    did not vanish from being called live.
+
+    Only the model year, for exactly the reasons watchlist_moved() gives: it is
+    fixed at the factory and stored verbatim, so a row outside the range can
+    only have got there by an edit to targets.json. Every other filter is
+    mutable or unreconstructable, and dropping a row on one of those would hide
+    a car that really did leave.
+    """
     by_target = defaultdict(list)
     for r in all_rows:
         if r["target"] in tids:
             by_target[r["target"]].append(r)
     out = []
-    for rs in by_target.values():
+    for tid, rs in by_target.items():
         last = max(r["snapshot_date"] for r in rs)
-        out += [r for r in rs if r["snapshot_date"] == last]
+        t = TARGETS.get(tid)
+        for r in rs:
+            if r["snapshot_date"] != last:
+                continue
+            if t is not None and watchlist_moved(t, r):
+                continue
+            out.append(r)
     return out
 
 
