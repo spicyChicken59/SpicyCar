@@ -4291,6 +4291,63 @@ class TestTheOverlapLogRecordsOnlyQueriesThatFinished(unittest.TestCase):
         self.assertIn(self.TID, T.source_overlap({}))
 
 
+class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
+    """The sheet's size is a published number and the file grows every day.
+
+    The browser suite fails the build past 250 KB gzipped, and README now
+    quotes what the sheet weighs today and what it will weigh once every target
+    is fetching. The first of those moves with every snapshot the daily job
+    commits, so it is held to the file rather than to a memory of it — this is
+    the fifth number in this repo's prose to be worth pinning, and the previous
+    four all rotted.
+
+    The projections are NOT pinned here: they take a synthetic full watchlist
+    and would turn CI red on a day the market moved, which is a test whose
+    answer depends on the day it runs. `tools/measure_sheet.py` recomputes them
+    in under three seconds and README says to run it.
+    """
+
+    BUDGET_KB = 250
+
+    @staticmethod
+    def _row():
+        """The table's first row, as the sheet on disk makes it."""
+        import gzip
+        site = json.loads(Path("docs/data.json").read_text())
+        blob = json.dumps(site, indent=1).encode()
+        cars = sum(len(m.get("listings") or [])
+                   for b in site["brands"].values() for m in b["models"].values())
+        live = sum(1 for b in site["brands"].values() for m in b["models"].values()
+                   if m.get("listings"))
+        gz = len(gzip.compress(blob, 9))
+        return (f"| as committed | {live} | {cars:,} | {round(gz / 1024)} KB | "
+                f"{round(gz / (250 * 1024) * 100)}% |")
+
+    def test_the_committed_row_is_the_sheet_on_disk(self):
+        readme = " ".join(Path("README.md").read_text().split())
+        self.assertIn("| the sheet | models | cars | gzipped | of budget |", readme,
+                      "README no longer carries the sheet-size table")
+        self.assertIn(self._row(), readme,
+                      "README's first row is not the sheet that is committed beside it; "
+                      f"it should read {self._row()!r}")
+
+    def test_the_measuring_tool_derives_its_cap_from_the_page_size(self):
+        """LIGHT_CARS is what a light target actually reaches, and it has to
+        follow PER_PAGE rather than be typed: a page-size change would leave
+        the projection describing a fetch the code no longer makes."""
+        src = Path("tools/measure_sheet.py").read_text()
+        self.assertIn("LIGHT_CARS = 2 * T.PER_PAGE", src,
+                      "the tool's per-model cap is no longer derived from PER_PAGE")
+
+    def test_the_budget_the_tool_checks_is_the_one_the_browser_suite_fails_on(self):
+        """Two files, one threshold. The smoke script fails the build at it and
+        the tool reports against it; if they drift, the tool reports comfort
+        the build does not share."""
+        smoke = Path("tools/dashboard_smoke.mjs").read_text()
+        self.assertIn(f"'data.json': {self.BUDGET_KB} * 1024", smoke)
+        self.assertIn(f"cap = {self.BUDGET_KB} * 1024", Path("tools/measure_sheet.py").read_text())
+
+
 class TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives(unittest.TestCase):
     """The round's own arithmetic, in the two places it is argued.
 

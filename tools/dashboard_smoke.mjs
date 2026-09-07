@@ -4982,7 +4982,21 @@ await step('spice is for events, the key is for models', async () => {
 await step('the chick keeps watch in the large frame only', async () => {
   plan('small empty frames say "no photo"', 'and large empty frames hold the mark');
   await open(carried.q);
-  await page.waitForTimeout(600);
+  // A frame becomes `.sc-frame--empty` when its image FAILS, which is an
+  // onerror away rather than a paint away — so a fixed wait here is a bet on
+  // how loaded the machine is. It lost once: this step passed alone and failed
+  // in the same full run, reporting "0 of 0 small frames", which is the count
+  // before the first fallback rather than a page that had stopped saying "no
+  // photo". Waited on the condition now, with the timeout as the real failure
+  // it would be — no frame ever falling back is worth a red build, and it says
+  // so instead of silently reporting zero of zero.
+  try {
+    await page.waitForFunction(
+      () => [...document.querySelectorAll('.sc-frame--empty')]
+        .some((f) => !f.classList.contains('sc-frame--lg')), null, { timeout: 10000 });
+  } catch {
+    /* fall through: the assertion below reports the empty count as the failure */
+  }
   const frames = await page.evaluate(() => {
     const all = [...document.querySelectorAll('.sc-frame--empty')];
     const small = all.filter((f) => !f.classList.contains('sc-frame--lg'));

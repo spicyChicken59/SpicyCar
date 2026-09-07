@@ -371,6 +371,34 @@ quietly covering less. A skipped check still counts — it is a check that named
 subject — and while that assertion was made only when nothing skipped, the committed sheet produced
 one skip on every run and the backstop never fired.
 
+**The sheet has a transfer budget, and the watchlist is going to spend it.** The browser suite fails
+the build when `docs/index.html` passes 200 KB gzipped or `docs/data.json` passes 250 KB — the page
+fetches the sheet on load, so its size is a fact about how the site feels, not a housekeeping number.
+`tools/measure_sheet.py` answers what it will weigh, by BUILDING the file rather than multiplying:
+it clones real rows onto every target that has never fetched, at the cap a `depth: light` target
+actually reaches, and runs them through `src`'s own writer, because `indent=1` is most of the raw
+size and a compact estimate is not the file a browser fetches. Two estimates of the sibling ledger
+once disagreed by a factor of two and only building it settled which was right.
+
+What it measures today, on the committed record:
+
+| the sheet | models | cars | gzipped | of budget |
+|---|---|---|---|---|
+| as committed | 7 | 479 | 92 KB | 37% |
+| every target fetching | 36 | 1,581 | 219 KB | 88% |
+| …three fetches deep on each | 36 | 1,581 | 242 KB | 97% |
+| …seven fetches deep on each | 36 | 1,581 | 275 KB | **110% — over** |
+
+So the first full cycle after the watchlist goes live lands at 88%, and the build goes red at about
+seven fetches per long-tail model. There is no field to cut for it: measured by deleting each one in
+turn, the largest are `series` at 13% of the file and `url` at 9%, and both are load-bearing — the
+series is what the sparkline draws and what the cut detector reads, and the url is how a reader opens
+the listing. Everything else is under 3%. The sheet is not carrying fat; it is carrying three times
+the models. **That makes it an architectural decision — a per-model fetch like the ledger's, or a
+deliberately larger budget — and it is written down here rather than answered, because inventing a
+policy for a threshold nobody has crossed is how this project's notes record two fixes being worse
+than their bugs.**
+
 ## Configuration
 
 ### buyer
