@@ -49,7 +49,7 @@
 <script src="design-system/sc-charts.js"></script>
 <script src="design-system/sc-map.js"></script>
 <style>
-  /* Page-specific only. Everything generic now lives in sc.css v2.4.0 — the
+  /* Page-specific only. Everything generic now lives in sc.css v2.10.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
      frame's photo loader and the 44px touch targets were all promoted out of
      this file and are no longer maintained here. */
@@ -296,14 +296,67 @@
      Same at 320x256. Neither was in the fault this rule was written for, and
      in both the cap is an improvement, not a regression — but it does fire
      there, and a reader tracing the 560px number should not be surprised by
-     it. Above 560px tall nothing changes: max-height computes to none at
-     390x844, 768x1024 and 1280x1000, measured. */
+     it.
+
+     "Above 560px tall nothing changes: max-height computes to none at 390x844,
+     768x1024 and 1280x1000, measured" — that sentence stood here, and it was a
+     measurement of a SEVEN-MODEL watchlist, not of the viewport. One EV per
+     brand made the model filter 35 chips and the brand tabs 34, and the panel
+     measures 1848px on a 390x844 phone and 1584px on 430x932: a sticky element
+     taller than the screen it is stuck to, whose lower two-thirds cannot be
+     scrolled to at any offset, because the sticky top pins them there. Every
+     chip below the first screenful was unreachable on a phone — found by the
+     browser suite timing out trying to press one, which is the check scaling
+     with the config while the CSS did not.
+
+     So the cap is unconditional now, and it is self-limiting: a panel shorter
+     than 60vh is unaffected, which is every desktop (417px of 1000) and the
+     watchlist this rule was written under. 768x1024 goes from 767px to 614px,
+     a viewport that fitted and is better for it — three quarters of an iPad
+     screen was filters. The landscape rule below stays and stays tighter: a
+     short viewport can spare less, and being later in the cascade it wins in
+     its own band. */
+  #filters-card { max-height: 60vh; overflow-y: auto; }
+
+  /* The brand row was six pills and is thirty-five. At 390x844 it stands
+     382px tall — 45% of the first screen — and pushes "The decision", the
+     card this product exists for, to y=782 of 844: its heading is on screen
+     and not one number in it is. Measured on the real page at four viewports;
+     the same row was 70px when the watchlist was six brands.
+
+     This was capped to three wrapped rows — 109px — which fixed the 45% but
+     kept the row's height a function of the market: nineteen brands filled
+     all three, and the next model added would have started scrolling. It is
+     ONE row scrolled sideways now, which is 37px whatever the watchlist
+     does, and that is the whole point: a phone's first screen is the
+     scarcest space on the site and navigation must cost a constant.
+     The three-row version was measured against a page whose first card was
+     the decision; the Signal Matrix leads now and takes 667px of the 844, so
+     the 72px this gives back is the difference between the first figure
+     being on screen and being cut in half.
+
+     Keyed to the same 720px edge sc.css folds the filter bar at, because the
+     cost is proportional to how much of the screen the row eats — 18% of a
+     768px tablet is fine and 45% of a phone is not. Nothing is unreachable
+     behind the scroll: every brand is also a Models chip in the filter bar
+     and a row in the model index, and renderTabs() scrolls the pressed one
+     into view. */
+  @media (max-width: 720px) {
+    #tabs-brand {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scrollbar-width: none;
+    }
+    #tabs-brand::-webkit-scrollbar { display: none; }
+    #tabs-brand > * { flex: 0 0 auto; }
+  }
   @media (max-height: 560px) {
     #filters-card { max-height: 45vh; overflow-y: auto; }
   }
 
   /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
-     masthead, theme toggle and footer are sc.css v2.4.0's own 44px block,
+     masthead, theme toggle and footer are sc.css v2.10.0's own 44px block,
      keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
      Two mechanisms, split by whether layout may move:
 
@@ -341,9 +394,19 @@
         sticky bar +20px on a tablet) and the input grows to 20px so the
         visible box matches the bigger target.
 
-     Promotion candidates for design-system v2.5.x (same shapes; upstream
-     .sc-details needs no :not() — .picks-group is this page's class).
-     Delete when the pin moves past a release that carries them. */
+     Promotion candidates (same shapes; upstream .sc-details needs no
+     :not() — .picks-group is this page's class). Delete when the pinned
+     sheet carries them, which is a thing to CHECK against the pin and not a
+     release to name: this comment read "candidates for v2.5.x" while the pin
+     went v2.4.0 → v2.7.0 → v2.10.0 without carrying one of them, so the
+     number was the only part of it that changed meaning. Re-checked at
+     v2.10.0, which added a benchmark rail, a print presentation and a signal
+     matrix and no touch targets: the sheet's three coarse-pointer blocks
+     cover .sc-map__btn, .sc-signature, .sc-brand-panel__label,
+     .sc-theme-toggle button, .sc-masthead .sc-nav a, .sc-brand and
+     .sc-foot a — none of the five below. That re-check is not a habit to
+     rely on; test_the_bridges_the_pages_keep_are_ones_the_pinned_sheet_does_not_carry
+     runs it against whatever the pin is. */
   @media (any-pointer: coarse) {
     .sc-link--quiet, .sc-legend__chip, .sc-tab { position: relative; }
     .sc-link--quiet::before, .sc-legend__chip::before, .sc-tab::before {
@@ -1900,7 +1963,7 @@
     // returning reader met a map missing a whole model with nothing on screen
     // naming the filter. S.hidden is the price chart's legend and stops there.
     const inSel = (e) => (mode === 'model'
-      ? (!S.trims.size || S.trims.has(e.c.x.trim_id))
+      ? (!S.trims.size || [...S.trims].some((id) => inTrim(e.c.x, id)))
       : (!S.models.size || S.models.has(modelKey(e.c.bk, e.c.mk))));
     const entryVisible = (e) => inSel(e) && passesShared(e.c.x);
     // literally the same pick sets as the cards above the map
@@ -1985,7 +2048,13 @@
     const more = [offMap ? `${offMap} more beyond the lower 48` : '', noLoc ? `${noLoc} with no location` : ''].filter(Boolean);
     $('map-hint').textContent = `${onMap} cars under the current filters`
       + (more.length ? ` (${more.join(', ')})` : '')
-      + (mode === 'model' ? ' — tap a dot for the car' : ', colored by brand — tap a dot for the car')
+      // Filled and hollow lead, because that is the channel this map can
+      // really carry at a thousand dots: five categorical slots against
+      // thirty-four brands means most of them share one grey, and saying
+      // "colored by brand" told the reader a channel was carrying something
+      // it is not. The five it does colour are named rather than implied.
+      + (mode === 'model' ? ' — tap a dot for the car'
+         : ' — filled dots are drivable, hollow ones pay shipping; tap a dot for the car')
       + (noPointer
           ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
           : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
@@ -2347,7 +2416,13 @@
     }
     const touch = window.matchMedia('(hover: none)').matches;
     const stock = stockCounts(pts);
-    $('scatter-hint').textContent = `${pts.length} priced cars under the current filters.`
+    // "priced cars" is a population this page counts elsewhere and it is not
+    // this one: the plot needs a price AND a mileage, so three i7s that publish
+    // no mileage are not on it — and the tile one card up says "151", with its
+    // own "3 publish no mileage and are in neither". The parts under this
+    // sentence (49 stock + 99 used) add to the number it names either way; what
+    // was wrong was which total the reader would find it against.
+    $('scatter-hint').textContent = `${pts.length} car${pts.length === 1 ? '' : 's'} with a price and a mileage under the current filters.`
       // The column of dots at the left edge is a different market, and a
       // year's line fitted through it is fitted through dealer stock.
       + (stock.nNew >= 5 ? ` ${stock.nNew} of them sit under ${NEW_STOCK_MILES} miles — dealer stock priced near sticker, the column at the left edge — and the ${stock.nUsed} used cars are the rest.` : '')
@@ -2359,7 +2434,39 @@
 
   // ---------- data access ----------
   function model() { return S.site.brands[S.brand].models[S.model]; }
-  function trimRows(rows) { return S.trims.size ? rows.filter((x) => S.trims.has(x.trim_id)) : rows; }
+  // A car two of a model's queries both returned is ONE row in the table — the
+  // cheapest copy, which is README's rule and the record's — and a car in each
+  // of their trim sections, at each query's own price. `also` carries the other
+  // copies. Without it the trim chips could only answer from the chosen copy:
+  // the certified watch's chip counted 2 on a day the watch returned 4, and the
+  // committed record's own section said "lowest asking $64,491" against the
+  // $48,084 that watch had found. A comment here used to record that as a
+  // consequence of one row per VIN; it is not one, and the export closed it.
+  const inTrim = (x, id) => x.trim_id === id || (x.also || []).some((a) => a.trim_id === id);
+  // …and under ONE trim, the row IS that query's listing. Membership alone
+  // would price it wrong: of the nine VIN-days this record holds in two
+  // targets, four carry two prices, and one is certified at $58,085 in the
+  // watch and NOT certified at $56,000 in its sibling. The value score goes
+  // with the price it was computed for, so a swapped row carries none and
+  // sorts with the unscored rather than claiming a margin off the other
+  // listing's asking.
+  const asListedUnder = (x, id) => {
+    const a = x.trim_id === id ? null : (x.also || []).find((o) => o.trim_id === id);
+    return a ? { ...x, trim_id: id, trim_label: a.trim_label || x.trim_label,
+                 price: a.price, cpo: a.cpo, url: a.url || x.url, dealer: a.dealer || x.dealer,
+                 pick_stand: null, pick_pct: null, pick_under: null, pick_n: null,
+                 pick_lo: null, pick_hi: null }
+             : x;
+  };
+  function trimRows(rows) {
+    if (!S.trims.size) return rows;
+    const ids = [...S.trims];
+    const kept = rows.filter((x) => ids.some((id) => inTrim(x, id)));
+    // One trim selected is the only view with a single answer to "at what
+    // price"; with two or more pressed the page is comparing them and the row
+    // keeps its own, the table's rule.
+    return ids.length === 1 ? kept.map((x) => asListedUnder(x, ids[0])) : kept;
+  }
   // Departures are keyed (target, vin), not by VIN alone, so a car two trim
   // targets both matched leaves two rows — and any scope holding both trims
   // would list it twice and count it twice as gone. Unconditional on purpose:
@@ -2443,12 +2550,19 @@
       const s = x.series || [];
       for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]);
     }
+    // `departures` is counted before the listing-date filter, because the
+    // median's n is not the number of departures and the record printed it as
+    // one: "(30 gone)" on a model where 38 cars left, the other 8 dropped for
+    // having no usable listing date.
     const spans = [], seen = new Set();
+    let departures = 0;
     for (const g of gone) {
-      if (g.likely !== 'delisted' || g.exact !== true || stillListed(g) || !g.listed_since) continue;
+      if (g.likely !== 'delisted' || g.exact !== true || stillListed(g)) continue;
       const k = String(g.vin || '').toUpperCase();
       if (k && seen.has(k)) continue;
       if (k) seen.add(k);
+      departures++;
+      if (!g.listed_since) continue;
       const a = Date.parse(String(g.listed_since).slice(0, 10) + 'T00:00:00Z');
       const b = Date.parse(String(g.last_seen || '').slice(0, 10) + 'T00:00:00Z');
       if (isNaN(a) || isNaN(b)) continue;
@@ -2481,7 +2595,7 @@
       // the median no denominator — and the honest answer to "could a $1
       // move be propping this up": a median of $600 over 139 steps cannot be.
       n_cuts: drops.length,
-      n_sold: spans.length,
+      n_sold: spans.length, n_departures: departures,
       median_days_to_sale: spans.length ? Math.trunc(median(spans)) : null,
     };
   }
@@ -3391,6 +3505,18 @@
   // reader built instead of to a watchlist they have to rebuild it from.
   function goTo(bk, mk, vin) {
     S.brand = bk; S.model = mk; S.trims = new Set(); S.year = 'all'; S.showAllList = S.showAllGone = false; S.vinAsk = null; syncUrl(); rerender('nav');
+    // A link that names a car is a request to see THAT car, and the shared
+    // filters are not cleared with the trim and the year — S.where is
+    // remembered across visits — so "Open this car →" scrolled to the top of a
+    // page that did not hold it, taking the card that named it with it. Only
+    // when the car is really out of view, so an ordinary open keeps the
+    // reader's filters.
+    if (vin && !filtered().some((x) => x.vin === vin)
+        && (model().listings || []).some((x) => x.vin === vin)) {
+      S.where = new Set(); S.miles = 0; S.clean = false; S.rental = false;
+      S.cpo = false; S.hideNew = false;
+      savePrefs(); buildFilters(); rerender('trim');
+    }
     if (!(vin && landOnCar(vin))) window.scrollTo(0, 0);
   }
   // One tap lands on the car, not the model. Every tile that names a car
@@ -3423,7 +3549,58 @@
     if (ids.length <= 1) { host.hidden = true; return; }
     host.hidden = false;
     for (const id of ids) host.appendChild(el('button', { class: 'sc-tab' + (caseClass ? ' sc-tab--case' : ''), type: 'button', 'aria-pressed': id === current ? 'true' : 'false', 'data-fkey': fkey ? fkey + ':' + id : null, onclick: () => onPick(id) }, labelOf(id)));
+    // The brand row is capped and scrolls inside itself on a phone (see the
+    // rule beside #filters-card), so the pressed tab can be below the cap on a
+    // link that opens a brand directly — which would read as "my brand is not
+    // on the list". Only when the host really is scrolling: scrollTop on a row
+    // that fits is a no-op, but so is the branch, and one less thing to
+    // reason about on a desktop.
+    if (host.scrollHeight > host.clientHeight + 1) {
+      const on = host.querySelector('[aria-pressed="true"]');
+      // Rects, not offsetTop: #tabs-brand sets no `position`, so offsetTop is
+      // measured against whatever ancestor happens to be the offsetParent and
+      // the first version of this scrolled the row to 273px with the pressed
+      // tab still out of view. Caught by measuring what the reader can see
+      // rather than by trusting the arithmetic.
+      if (on) {
+        const hb = host.getBoundingClientRect(), ob = on.getBoundingClientRect();
+        host.scrollTop = Math.max(0, host.scrollTop + (ob.top - hb.top) - (hb.height - ob.height) / 2);
+      }
+    }
   }
+  // One spelling of an age, and one of the schedule beside it, for every
+  // surface that shows either. Both mirror Tracking.py (days_ago,
+  // schedule_phrase) and a test runs these exact functions through node
+  // against them, so the report and the page cannot drift apart.
+  //
+  // Module scope because FOUR surfaces render this — the model card's meta
+  // row, the watchlist's two price tiles, and the model index table — and the
+  // round that added the first three left the fourth on the old spelling. The
+  // result was one page saying both things about one model: the tile read
+  // "Chevrolet Equinox EV · as of Aug 27, 10 days ago" while the index row
+  // three inches below read "Aug 27 · every 4 days", and the Ioniq 9's row
+  // still carried the exact sentence that round existed to delete. Three
+  // copies of a rule is how the third one gets missed.
+  const daysAgo = (n) => (n === 1 ? '1 day ago' : `${n} days ago`);
+  // "No fetch since" was the daily wording and claimed a fetch did not HAPPEN
+  // — which fetch_overdue()'s own contract says no surface may claim, since a
+  // run that found nothing looks identical from here. It also broke the shape
+  // the browser checks look for. "Past its daily cadence" says what is
+  // measured: the gap against the schedule.
+  const schedulePhrase = (cadence, overdue) => {
+    const c = Math.max(1, Number(cadence) || 1);
+    if (overdue) return c === 1 ? 'past its daily cadence' : `past its ${c}-day cadence`;
+    return c === 1 ? '' : `every ${c} days`;
+  };
+  // What a model's freshness reads as, from the two fields Tracking.py writes.
+  // A sheet from before they existed has neither and gets the old line back
+  // rather than a confident zero.
+  const freshness = (m) => {
+    const age = Number.isFinite(m && m.age_days) ? m.age_days : null;
+    const over = !!(m && m.overdue === true);
+    return { age, over, ago: age ? daysAgo(age) : '', sched: schedulePhrase(m && m.cadence, over) };
+  };
+
   function metaRow(bits) {
     const meta = $('meta'); meta.textContent = '';
     bits.filter(Boolean).forEach((b, i) => { if (i) meta.appendChild(el('span', { class: 'sc-sep' }, '·')); meta.appendChild(el('span', null, b)); });
@@ -3514,14 +3691,28 @@
   // the table mark them, so the count the page advertises is actually findable.
   // Nothing is "new" on the first snapshot day, when every car is one day old.
   const trackedDays = () => Math.max(0, ...allModels().map(({ m }) => (m.daily || []).length));
+  // The day a car's own model was last fetched — the day that model's card
+  // already prints, and the day its "gone" count is measured against. A car
+  // carries its model_key from adapt(), so a pooled table asks per row rather
+  // than per view. Falls back to the record's newest day for a row with no
+  // model on it (a hand-made fixture, an older sheet).
+  const asOfOf = (x) => {
+    const key = x && x.model_key;
+    if (key) { const hit = allModels().find((o) => modelKey(o.bk, o.mk) === key); if (hit && hit.m.as_of) return hit.m.as_of; }
+    return dataThrough();
+  };
   // First seen on THIS snapshot, not merely seen once. days_tracked is the
   // length of a car's price series and a series only grows on days its target
   // was fetched, so a car seen once on Monday still reads days_tracked === 1
   // on Thursday — and the chip, the tile's count and the report all called it
   // new again. Three cars first seen on 2026-09-01 wore the chip on 09-04.
-  // Mirrors Tracking.py's is_new_today(); an older sheet with no first_seen
+  // Mirrors Tracking.py's is_new_on(), including its anchor: the car's own
+  // model's last fetch day. Against the record's newest day it was 0 by
+  // construction for every model not fetched on it — the iX, the EV9 and the
+  // A6 e-tron on this very record, each showing "0 new" beside a gone count
+  // measured against its own last fetch. An older sheet with no first_seen
   // falls back to the old test rather than losing the chip entirely.
-  const isNew = (x) => (x.first_seen ? String(x.first_seen).slice(0, 10) === dataThrough()
+  const isNew = (x) => (x.first_seen ? String(x.first_seen).slice(0, 10) === asOfOf(x)
                                      : x.days_tracked === 1) && trackedDays() >= 2;
   // The chip already shows "—" for a car the sheet cannot place; its title said
   // "Outside your states", which is the claim that dash exists to refuse.
@@ -3651,8 +3842,15 @@
     // are indistinguishable from outside, which market_line() and exitNote()
     // both say at length. The claim the data supports is that it stopped being
     // advertised.
+    // Four words, not three. 'out of scope' is the watchlist moving rather
+    // than the car going — see watchlist_moved() in Tracking.py — and the
+    // else branch below used to swallow it into 'not checked recently',
+    // which tells the reader a fetch is owed on a car no fetch will ever ask
+    // for again.
     const goneLine = gone ? (stillTxt(x) || (x.likely === 'delisted' ? 'GONE — the listing ended'
-      : (x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale' : 'not checked recently'))) : null;
+      : x.likely === 'out of window' ? 'missing — beyond the day\'s fetch cut-off, probably still for sale'
+      : x.likely === 'out of scope' ? 'no longer watched — outside the model years this watch now asks for'
+      : 'not checked recently')) : null;
     const price = gone ? x.last_price : x.price;
     const media = el('div', { class: 'sc-photo-card__media' }, thumbFor(gone ? null : x, true),
       el('div', { class: 'sc-photo-card__price' }, `${money(price)}${gone ? '' : ' asking'}`,
@@ -3701,14 +3899,34 @@
   // "tracked 6d" on another. The count is kept (a slower cadence must not be
   // able to inflate it) and the label says what it counts: sightings, over the
   // span from the first to the last, which the series already carries.
+  // Target id -> the days that target has rows for, across the whole sheet.
+  // Built once per sheet: seenLabel() runs on every row of every table.
+  let _fetchDays = null;
+  function fetchDaysOf(trimId) {
+    if (!_fetchDays) {
+      _fetchDays = {};
+      for (const { m } of allModels())
+        for (const [tid, days] of Object.entries(m.fetch_days || {})) _fetchDays[tid] = days;
+    }
+    return _fetchDays[trimId] || [];
+  }
+  // The denominator is how many times anyone LOOKED, not how many days
+  // passed. It was calendar days between the first and last sighting, which
+  // is the same thing only at a daily cadence — and twenty-eight of the
+  // thirty-six models run every fifteenth day now. A car present at every single
+  // fetch read "seen 3 of 31 days" beside another's "seen 31 of 31 days", so
+  // a buyer reads a perfect record as a car that keeps disappearing. Worse,
+  // it could not tell perfect attendance (3 of 31) from a real gap (2 of 31).
+  // seen_label() in Tracking.py is the same rule and changes with it.
   function seenLabel(x) {
     const n = x.days_tracked || 0;
     if (!n) return null;
+    if (n === 1) return 'seen once';
     const s = x.series || [];
-    const span = s.length > 1
-      ? Math.round((Date.parse(s[s.length - 1][0] + 'T00:00:00Z') - Date.parse(s[0][0] + 'T00:00:00Z')) / 86400000) + 1
-      : 1;
-    return n === 1 ? 'seen once' : `seen ${n} of ${Math.max(span, n)} days`;
+    if (s.length < 2) return `seen ${n} times`;
+    const first = String(s[0][0]).slice(0, 10), last = String(s[s.length - 1][0]).slice(0, 10);
+    const looks = fetchDaysOf(x.trim_id).filter((d) => d >= first && d <= last).length;
+    return looks >= n ? `seen ${n} of ${looks} fetches` : `seen ${n} times`;
   }
   function deltaEl(cur, before, prevDate, goodWhenDown, nDays) {
     if (cur == null || before == null) return el('div', { class: 'sc-delta sc-delta--flat' }, nDays < 2 ? 'first snapshot' : 'no prior value');
@@ -4201,7 +4419,32 @@
     const card = $('hero-card'), host = $('hero-cars'), gap = $('hero-gap');
     const models = heroModels();
     host.textContent = '';
-    if (!models.length) { card.hidden = true; gap.hidden = true; renderDecisionMatrix([]); return; }
+    if (!models.length) {
+      // Nothing NAMED is a different state from nothing left after the
+      // reader's own chips, and only one of them is worth a sentence. A
+      // watchlist with an empty buyer.shopping is what a person browsing
+      // twenty models has before they have chosen anything — and the front
+      // page answered it by removing its most important block without a
+      // word, which is the one state where a reader most needs telling what
+      // to do next. When the reader's own model chips are what emptied it,
+      // they know: the card stays away, as it always has.
+      //
+      // The matrix is cleared on BOTH exits, not just the silent one: it is
+      // a separate card and leaving it drawn under a hero that has just said
+      // there is no decision to lay out is the two-surfaces-one-mechanism
+      // shape. main added the call on the single early return this replaced.
+      gap.hidden = true;
+      const named = (((S.site || {}).buyer || {}).shopping || []).length;
+      renderDecisionMatrix([]);
+      if (named) { card.hidden = true; return; }
+      card.hidden = false;
+      $('hero-hint').removeAttribute('title');
+      $('hero-hint').textContent = 'No models are named as the ones you are shopping, '
+        + 'so there is no decision to lay out yet. Press two model chips to put any two '
+        + 'of them side by side, all in — or name their trims in buyer.shopping to pin '
+        + 'them here every day.';
+      return;
+    }
     card.hidden = false;
     const allIn = !!feesCfg();
     const bits = filterBits(true);
@@ -4488,7 +4731,19 @@
     // car put a 2.49% iX under a heading that said 2.99%.
     const promo = live.find((p) => p.apr === chosen.x.apr && p.model === chosen.x.model_key)
       || live.find((p) => p.apr === chosen.x.apr) || live[0];
-    return { promo, rows, named, best: chosen, unnamed: rows.length - named.length };
+    // …and the footnote's denominator is THAT promo's cars, for the same reason
+    // the heading is that promo. `rows` is every car in view any live promo
+    // reaches, and on the watchlist that is two offers pooled: it read "13 of
+    // the 31 certified cars … BMW FS certified 2.99%", where 31 is 23 i5s at
+    // 2.99% plus 8 iXs at 2.49% and 13 is 11 plus 2. The eight iXs are not
+    // certified for the offer the sentence names, and the two of them it counts
+    // as excluded were never candidates for the figures they are said to be
+    // excluded from — those are one i5's payment, interest and price.
+    const mine = rows.filter((x) => x.apr === promo.apr
+      && (promo.model == null || x.model_key === promo.model));
+    const on = mine.length ? mine : rows;
+    return { promo, rows: on, named: on.filter((x) => !x.apr_seller_unnamed),
+             best: chosen, unnamed: on.filter((x) => x.apr_seller_unnamed).length };
   }
   // What a car financed at the ordinary rate would have to COST to match a
   // payment. financed() is linear in price — price x (1 + tax) + paperwork —
@@ -4605,14 +4860,42 @@
     $('dek').textContent = [note, `Asking prices as listed; shipping stated per car.`].filter(Boolean).join(' ');
     const daily = dailyFor(t), nDays = daily.length, nTrims = trimIds(t).length;
     const p = t.params || {}, minPrice = trim && trim.min_price != null ? trim.min_price : p.min_price;
-    const unfetched = !t.as_of && t.next_due;
+    // "Not fetched yet" is a claim about the QUERY, and it is false the
+    // moment one has run — even, and especially, when it came back empty. A
+    // query that finds nothing writes no row, so as_of stays null and this
+    // said "Not fetched yet · first run <ten days out>" for ever, because
+    // next_due always rolls forward. `last_asked` is the day the model's
+    // targets were last ASKED, off the run's own fetch log.
+    const unfetched = !t.as_of && !t.last_asked && t.next_due;
+    // How old these cars are, in the report's words and off the report's own
+    // field. Both surfaces used to print the SCHEDULE beside an absolute date
+    // and leave the subtraction to the reader: "Data through Tue, August 25,
+    // 2026 · Fetched every 4 days" over cars that were twelve days old, three
+    // due days past that cadence. The age is computed once in Tracking.py
+    // (fetch_age/fetch_overdue) and carried on the model, so a record written
+    // before those fields existed has neither and keeps the old line rather
+    // than being given a confident zero. `days_ago` mirrors days_ago() there;
+    // a test mails one model through both and compares the words.
+    const fr = freshness(t);
+    const cap = (w) => (w ? w[0].toUpperCase() + w.slice(1) : '');
     metaRow([
-      unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}` : `Data through ${fmtDateLong(t.as_of || dataThrough())}`,
-      t.cadence > 1 ? `Fetched every ${t.cadence} days` : null,
+      unfetched ? `Not fetched yet · first run ${fmtDateLong(t.next_due)}`
+        : t.as_of ? `Data through ${fmtDateLong(t.as_of)}` + (fr.ago ? ` · ${fr.ago}` : '')
+        : `Asked ${fmtDateLong(t.last_asked)}, nothing found`,
+      // The schedule is dropped where the clause beside it is about to say it
+      // was not kept — one number, said once, as the fact it is. Both branches
+      // come from schedulePhrase, so "Fetched every 4 days" and "Past its
+      // 4-day cadence" cannot drift apart or leave a cadence uncovered.
+      fr.sched ? (fr.over ? cap(fr.sched) : `Fetched ${fr.sched}`) : null,
       // the day count is the SELECTED VIEW's, so a brand-new trim on a
       // fetched model (a CPO watch before its first run) says so instead of
       // claiming a day it does not have; a never-fetched model claims nothing
-      unfetched ? null : nDays ? `${nDays} snapshot day${nDays === 1 ? '' : 's'}` : 'first fetch pending for this view',
+      // …and a query that already ran and found nothing has no first fetch
+      // pending either. Two clauses of one line contradicted each other the
+      // moment the clause above learned to say "asked, nothing found": the
+      // headline said the query had run and this one said it had not.
+      unfetched || (!t.as_of && t.last_asked) ? null
+        : nDays ? `${nDays} snapshot day${nDays === 1 ? '' : 's'}` : 'first fetch pending for this view',
       nTrims > 1 && !trim ? (comparingTrims() ? `${S.trims.size} of ${nTrims} trims` : `${nTrims} trims`) : null,
       // A CPO watch names its own window instead of the generic depth label —
       // "Deep fetch" describes a cheapest-N sweep, which is not what it does.
@@ -5082,7 +5365,7 @@
     // the ad actually ended somewhere after that. Twelve because the number
     // is printed bare, and below twelve its own interval is wider than the
     // claim (at eight, "~19d" spans 3 to 57 days).
-    if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 12) mbits.push(`listings ran at least ~${mk.median_days_to_sale}d (${mk.n_sold} gone)`);
+    if (mk.median_days_to_sale != null && (mk.n_sold || 0) >= 12) mbits.push(`listings ran at least ~${mk.median_days_to_sale}d (${mk.n_sold} of ${mk.n_departures || mk.n_sold} dated)`);
     // the full list is scannable nowhere — show the first slice, offer the rest
     const LIMIT = 30;
     const shown = S.showAllList ? rows : rows.slice(0, LIMIT);
@@ -5221,7 +5504,7 @@
     const foot = el('div', { class: 'sc-media__foot' },
       el('span', null, g.miles != null ? `${num(g.miles)} mi` : '— mi'),
       el('span', null, `last seen ${fmtDate(g.last_seen)}`),
-      el('span', null, `${seenLabel(g) || 'seen 0 days'}${drop}`),
+      el('span', null, `${seenLabel(g) || 'never seen'}${drop}`),
       g.likely && g.likely !== 'delisted'
         ? el('span', null, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null,
       (g.flags || []).length ? el('span', null, g.flags.join(' · ')) : null);
@@ -5252,11 +5535,18 @@
     const nDel = gone.filter(isDep).length;
     const nStill = gone.filter(stillListed).length;
     const nOow = gone.filter((g) => !stillListed(g) && g.likely === 'out of window').length;
-    const nNc = gone.length - nDel - nStill - nOow;
+    // Counted, not left to the subtraction: nNc is a remainder, so every word
+    // this function does not name becomes 'not checked on the day they
+    // vanished' — a sentence that is false about a car the watchlist stopped
+    // asking for, and one that would have been printed 84 times the night
+    // this repo's own years were narrowed to 2024+.
+    const nOos = gone.filter((g) => !stillListed(g) && g.likely === 'out of scope').length;
+    const nNc = gone.length - nDel - nStill - nOow - nOos;
     const splitTxt = [
       `${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
       nStill ? `${nStill} left a watch while the ${nStill === 1 ? 'car is' : 'cars are'} still listed above` : null,
       nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
+      nOos ? `${nOos} dropped by a watchlist change, not by leaving the market` : null,
       nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null,
     ].filter(Boolean).join(' · ');
     // The card holds every absence, and only some absences are departures —
@@ -5301,17 +5591,20 @@
     for (const g of shownG) {
       const drop = g.cuts ? ` · ${g.cuts} cut${g.cuts > 1 ? 's' : ''}` : '';
       const likely = stillListed(g) ? el('span', { class: 'sc-note' }, stillTxt(g))
-        : g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' }, g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off' : 'not checked that day') : null;
+        : g.likely && g.likely !== 'delisted' ? el('span', { class: 'sc-note' },
+            g.likely === 'out of window' ? 'beyond that day\'s fetch cut-off'
+            : g.likely === 'out of scope' ? 'outside the model years now watched'
+            : 'not checked that day') : null;
       body.appendChild(el('tr', null,
         el('td', null, el('div', { class: 'sc-media' }, el('div', { class: 'sc-media__body' }, el('div', { class: 'sc-media__title' }, `${g.year || ''} ${g.trim || ''}`.trim()), el('div', { class: 'sc-media__code' }, g.vin),
-          gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · ${seenLabel(g) || 'seen 0 days'}${drop}`) : null,
+          gCompact ? el('div', { class: 'sc-note' }, `last seen ${fmtDate(g.last_seen)} · ${seenLabel(g) || 'never seen'}${drop}`) : null,
           gCompact ? likely : null))),
         el('td', { class: 'sc-num' }, el('span', { class: 'sc-figure' }, money(g.last_price)), (g.flags || []).length ? el('span', { class: 'sc-note' }, g.flags.join(' · ')) : null),
         el('td', { class: 'sc-num' }, g.miles != null ? num(g.miles) : '—'),
         el('td', { class: 'sc-num' }, g.local ? el('span', { class: 'sc-note' }, 'none') : (g.ship ? money(g.ship) : '—')),
         el('td', { class: 'loc sc-nowrap' }, placeCell(g), el('br'), scopeChip(g)),
         gCompact ? null : el('td', { class: 'sc-mono sc-nowrap' }, fmtDate(g.last_seen), likely,
-          gSlim ? el('span', { class: 'sc-note' }, `${seenLabel(g) || 'seen 0 days'}${drop}`) : null),
+          gSlim ? el('span', { class: 'sc-note' }, `${seenLabel(g) || 'never seen'}${drop}`) : null),
         gSlim ? null : el('td', { class: 'sc-mono sc-nowrap' }, `${g.days_tracked || 0}d${drop}`)));
     }
     table.appendChild(body);
@@ -5378,11 +5671,26 @@
       ? `${rows.length} models side by side, priced for one buyer in ${homeName()} — every car in one table, cheapest first.`
       : S.models.size
         ? `One model of the watchlist, priced for one buyer in ${homeName()} — press another to compare.`
-        : `${rows.length} electric cars, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
+        // MODELS, and it has to say so. `rows` is the model list — the meta
+        // row one line below counts the same array as "N models" — and the
+        // sentence called them cars: "7 electric cars" over a sheet holding
+        // 502 of them. One EV per brand made it "35 electric cars" over 444,
+        // which is the same falsehood at a size somebody would notice.
+        : `${rows.length} electric models, priced for one buyer in ${homeName()} — cheapest anywhere, cheapest you can drive to.`;
     const nShop = rows.filter((r) => r.shopping).length;
+    // Three clauses, and the last two used to be able to say the same number
+    // twice in two different shapes: with a chip pressed on a model nobody is
+    // shopping, this read "1 of 36 models · 1 models" — the count repeated,
+    // and un-pluralised. It was always reachable and it is now the ordinary
+    // case, because thirty-four of the thirty-six models are not shopped, so
+    // almost any chip a reader presses lands on it. The selection clause
+    // already carries the count when there is a selection; the last clause is
+    // the shopping split, and it stands alone only when nothing is selected.
+    const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
     metaRow([`Data through ${fmtDateLong(dataThrough())}`,
-      S.models.size ? `${rows.length} of ${allModels().length} models` : null,
-      nShop ? `${nShop} shopping · ${rows.length - nShop} comparison` : `${rows.length} models`]);
+      S.models.size ? `${rows.length} of ${plural(allModels().length, 'model')}` : null,
+      nShop ? `${nShop} shopping · ${rows.length - nShop} comparison`
+            : S.models.size ? null : plural(rows.length, 'model')]);
   }
   function renderOverview() {
     const site = S.site;
@@ -5423,14 +5731,29 @@
                       modelsInView().reduce((a, { m }) => a + (m.listings || []).length, 0));
     renderSinceVisit();
     const bestLocalRow = rows.filter((r) => r.bestLocal).reduce((a, r) => (!a || r.bestLocal.price < a.bestLocal.price ? r : a), null);
-    renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car');
+    renderNext(bestLocalRow ? { x: bestLocalRow.bestLocal, label: bestLocalRow.label } : null, 'car',
+               filterBits(true));
     filterCount();
   }
 
   // " · as of Sep 2" when the row's model was last fetched before the
-  // masthead's date; nothing when they agree, and never a count of days —
-  // fmtDate of the export's own as_of, so a tab left open does not age it.
-  const asOfNote = (r) => (r.as_of && dataThrough() && r.as_of < dataThrough() ? ` · as of ${fmtDate(r.as_of)}` : '');
+  // masthead's date, and nothing when they agree.
+  //
+  // The count of days used to be refused here, on the grounds that a tab left
+  // open would age it. That objection is answered rather than overruled:
+  // `age_days` is computed against the record's newest day when the file is
+  // BUILT (Tracking.py's fetch_age), so it is as static as the date beside it
+  // and a tab left open cannot move it. What it is NOT is unconditional — a
+  // count on every tile is a count nobody reads. It appears only when the
+  // model is further behind than its own cadence can account for, which is the
+  // case where the date alone misleads: these two tiles quote a PRICE as the
+  // day's answer, and "as of Aug 25" under a headline figure reads as recent
+  // until you know the model claims to run every four days.
+  const asOfNote = (r) => {
+    if (!(r.as_of && dataThrough() && r.as_of < dataThrough())) return '';
+    const fr = freshness(r.m || {});
+    return ` · as of ${fmtDate(r.as_of)}` + (fr.over && fr.ago ? `, ${fr.ago}` : '');
+  };
   function renderOverviewKpis(rows) {
     // tiles
     const total = rows.reduce((a, r) => a + r.n, 0), localTotal = rows.reduce((a, r) => a + r.n_local, 0);
@@ -5493,9 +5816,40 @@
   }
 
   // the chart: every model's lowest asking price over time — one line per
-  // model, colored by brand, dashed by model within the brand, the shopped
-  // models drawn heavier. The legend is the control: click a chip to hide
-  // or show a model; hover one to pick its line out of the crowd.
+  // model, dashed by model within its brand, with colour and weight on the
+  // models being compared and everything else in context grey. The legend is
+  // the control: click a chip to hide or show a model; hover one to pick its
+  // line out of the crowd.
+  // Which series hue is actually carrying, and it is not the brand any more.
+  // Five categorical slots exist — sc.css: "Categorical: fixed order, never
+  // cycled. 5 slots; a 6th folds to 'Other'" — and the watchlist has
+  // thirty-four brands. brandTone() hands a slot to the first five in
+  // watchlist order and `chart-other` to the rest, which is not what `other`
+  // is for: the sheet folds a SIXTH category into it, singular, not
+  // twenty-nine separate ones. Measured on the full-size record, 29 of 36
+  // lines came out byte-identical — same stroke, no dash, same width — under
+  // a hint that said "colored by brand", so a grey line at $28K was Tesla or
+  // Rolls-Royce or Fiat with equal probability.
+  //
+  // §8's answer for this case is Emphasis: "the series that matters in
+  // --sc-chart-emphasis, the rest in --sc-chart-context gray". The series
+  // that matters is the one the reader is comparing — the models they
+  // pressed, or the ones they are shopping when they have pressed nothing —
+  // so hue keeps working for the two or three lines anybody is actually
+  // reading and stops pretending for the other thirty. Brands, not models,
+  // because dash still separates a brand's own models and that channel is
+  // documented and works.
+  function chartFocus(inView) {
+    const base = S.models.size ? inView : inView.filter(({ m }) => m.shopping);
+    const brands = [...new Set(base.map(({ bk }) => bk))].slice(0, BRAND_TONES.length);
+    return new Map(brands.map((bk, i) => [bk, BRAND_TONES[i]]));
+  }
+  const focusTone = (focus, bk) => focus.get(bk) || 'chart-context';
+  // One rule for every surface that draws a model against the others, so a
+  // sparkline in the index and a line in the chart can never disagree about
+  // which brand is being drawn out.
+  const modelTone = (bk) => focusTone(chartFocus(modelsInView()), bk);
+
   function renderOverviewChart(rows) {
     $('chart-card').hidden = false;
     $('chart-title').textContent = 'The market over time';
@@ -5506,6 +5860,8 @@
     const nDays = drawn.length;
     const obits = filterBits(true);
     chartScopeChip(obits);
+    const hintFocus = chartFocus(modelsInView());
+    const focusNames = [...hintFocus.keys()].map((bk) => brandLabel(bk));
     // Describe the days actually drawn, not the record: spanText() with no
     // argument reports every model's national history, which was the right
     // answer only while these lines were national. Under a filter it claimed
@@ -5514,7 +5870,15 @@
     $('chart-hint').textContent = (nDays === 0
       ? `No tracked car matches these filters, so there is no history to draw${obits.length ? ` — ${obits.join(' · ')}` : ''}. `
       : (nDays >= 2
-          ? 'Lowest asking price each day among the cars in view — one line per model, colored by brand, the models being shopped drawn heavier. '
+          ? 'Lowest asking price each day among the cars in view, one line per model. '
+            + (focusNames.length
+                // BRANDS, not models: the palette has five categorical slots
+                // and the constraint is how many brands there are to tell
+                // apart, which is what the hue channel would have to carry.
+                // Saying "36 models" named the wrong population beside the
+                // right number.
+                ? `Colour and weight are on ${focusNames.join(' and ')}; every other model is context grey, because five chart colours cannot carry ${Object.keys((S.site || {}).brands || {}).length} brands. `
+                : 'No model is named as one you are shopping and none is selected, so no line is drawn out — press a model chip to pick some out. ')
           : allModels().some(({ m }) => (m.daily || []).length >= 2)
             ? 'Only one snapshot day has a car in this scope. '
             : 'One snapshot so far for most models — lines fill in as daily runs accumulate. ')
@@ -5524,11 +5888,19 @@
     const highlightSeries = (id) => {
       for (const n of $('chart').querySelectorAll('[data-sid]')) n.style.opacity = (!id || n.getAttribute('data-sid') === id) ? '' : '0.15';
     };
+    // A chip toggles a LINE, so a chip for a model with no line is a control
+    // that does nothing. Thirty-six chips stood over six lines — 243px of
+    // legend on a desktop and 1,070px on a phone, taller than the 340px chart
+    // it belongs to — because thirty of the thirty-six models have no history
+    // to draw yet. The legend lists what is drawn.
+    const inView = modelsInView();
+    const focus = chartFocus(inView);
+    const drawable = inView.filter(({ bk, mk }) => (seriesOf.get(bk + '/' + mk) || []).length);
     const lg = $('legend'); lg.textContent = '';
-    for (const { bk, mk, m } of modelsInView()) {
+    for (const { bk, mk, m } of drawable) {
       const id = bk + '/' + mk, off = S.hidden.has(id);
       const sample = svgEl('svg', { width: 24, height: 10, viewBox: '0 0 24 10', 'aria-hidden': 'true' },
-        svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, style: 'stroke:' + SC.toneRef(brandTone(bk)), 'stroke-width': m.shopping ? 3 : 2,
+        svgEl('line', { x1: 2, y1: 5, x2: 22, y2: 5, style: 'stroke:' + SC.toneRef(focusTone(focus, bk)), 'stroke-width': m.shopping ? 3 : 2,
                         'stroke-dasharray': modelDash(bk, mk) || null, 'stroke-linecap': 'round', opacity: off ? 0.35 : 1 }));
       lg.appendChild(el('button', { class: 'sc-legend__chip', type: 'button', 'aria-pressed': off ? 'false' : 'true',
         'data-fkey': 'legend:' + id,
@@ -5540,11 +5912,15 @@
         onmouseleave: () => highlightSeries(null) },
         sample, el('span', null, m.label)));
     }
-    lineChart($('chart'), modelsInView()
+    lineChart($('chart'), drawable
       .filter(({ bk, mk }) => !S.hidden.has(bk + '/' + mk))
       .map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label, emphasis: !!m.shopping,
-        tone: brandTone(bk), dash: modelDash(bk, mk), width: m.shopping ? 2.5 : 1.5,
-        labeled: !!m.shopping, points: seriesOf.get(bk + '/' + mk) || [] })),
+        tone: focusTone(focus, bk), dash: modelDash(bk, mk), width: focus.has(bk) ? 2.5 : 1.5,
+        // Every focused line is end-labelled, not only the shopped ones. §8:
+        // "a line chart that reaches slots 4-5 end-labels or marks its series
+        // (1 and 4 merge under deuteranopia)". Audi is slot 4 and its line is
+        // drawn on the committed page today, labelled by nothing.
+        labeled: focus.has(bk), points: seriesOf.get(bk + '/' + mk) || [] })),
       { named: true, height: 340, empty: 'No car in this scope has price history yet.' });
     const tb = $('chart-table'); tb.textContent = '';
     const dates = [...new Set(rows.flatMap((r) => seriesFor(r).map((p) => p.date)))].sort().reverse();
@@ -5686,7 +6062,14 @@
     row('Lowest drivable asking', `Listed in one of your states (${scopeTxt()}) — no shipping`,
       stat.map((v) => cmpCell(v.bestLocal ? money(v.bestLocal.price) : '—',
         v.bestLocal ? `${v.bestLocal.year} · ${num(v.bestLocal.miles)} mi · ${placeTxt(v.bestLocal)}` : 'nothing drivable')));
-    row('Lowest asking anywhere', 'The cheapest one on the market, wherever it is',
+    // "anywhere" is a claim about the market, and this row is built from the
+    // filtered columns: under the OH where-chip it read $60,396 for an i7 whose
+    // lowest asking anywhere is $48,909. Same rule and same word as the model
+    // index's own heading one card down.
+    const narrowed = filterBits(S.brand === 'all', true);
+    row(narrowed.length ? 'Lowest asking (filtered)' : 'Lowest asking anywhere',
+      narrowed.length ? `The cheapest one you are looking at — ${narrowed.join(' · ')}`
+                      : 'The cheapest one on the market, wherever it is',
       stat.map((v) => cmpCell(v.best ? money(v.best.price) : '—',
         v.best ? `${v.best.year} · ${num(v.best.miles)} mi · ${placeTxt(v.best)}${v.best.local ? '' : (v.best.ship ? ` · + ${money(v.best.ship)} ship` : '')}` : 'no priced listings')));
     row('Cheapest landed', 'Asking plus shipping — what it costs to have one in the driveway',
@@ -5794,7 +6177,13 @@
       oBandSlim ? null : el('th', null, 'Trend'), oBandSlim ? null : el('th', null, 'Data through'))));
     const obody = el('tbody');
     for (const r of rows) {
-      const dataTxt = r.as_of ? `${fmtDate(r.as_of)}${r.cadence > 1 ? ` · every ${r.cadence} days` : ''}` : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—');
+      // Same two fields, same two words, as the card and the tiles. This row
+      // kept `· every N days` beside a bare date long after the other three
+      // stopped, so the page contradicted itself about the same model.
+      const rf = freshness(r.m || r);
+      const dataTxt = r.as_of
+        ? `${fmtDate(r.as_of)}${rf.ago ? ` · ${rf.ago}` : ''}${rf.sched ? ` · ${rf.sched}` : ''}`
+        : (r.next_due ? `first run ${fmtDate(r.next_due)}` : '—');
       const modelCell = el('td', { class: 'col-model' }, el('div', { class: 'sc-media' }, thumbFor(r.photo, !oBandSlim, r.photos), el('div', { class: 'sc-media__body' },
         el('div', { class: 'sc-media__title' }, r.label),
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),
@@ -5802,7 +6191,7 @@
         el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'open:' + r.bk + '/' + r.mk, onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
       const data = oBandSlim ? null : el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, dataTxt));
-      const trend = oBandSlim ? null : el('td', null, spark(r.trend, 80, 26, false, brandTone(r.bk)));
+      const trend = oBandSlim ? null : el('td', null, spark(r.trend, 80, 26, false, modelTone(r.bk)));
       obody.appendChild(el('tr', { class: 'is-clickable', title: 'Open ' + r.label,
         onclick: (e) => { if (e.target.closest('a, button')) return; goTo(r.bk, r.mk); } },
         modelCell,
@@ -5817,7 +6206,14 @@
 
   // The page ends on the answer it just computed, not on a third link to the
   // methodology. Falls back to the methodology when there is nothing to point at.
-  function renderNext(best, scope) {
+  // The page's last word, and the one card the design gives the accent — so it
+  // is the one a reader acts from. It took the FILTERED rows and stated them as
+  // the day's answer: with year=2026 pressed on the i7 it read "The cheapest
+  // BMW i7 you can drive to today: $189,960" one line under a tile that said
+  // "Lowest drivable (filtered) $189,960" and one press after the same card had
+  // said $48,909. The tiles were taught this rule and this sentence was not, so
+  // it names what narrowed it in the tiles' own word.
+  function renderNext(best, scope, bits) {
     const fig = $('next-figure'), body = $('next-body');
     fig.textContent = ''; body.textContent = '';
     const url = best && safeUrl(best.x.url);
@@ -5827,7 +6223,9 @@
       body.appendChild(el('a', { href: 'how.html' }, 'How it works →'));
       return;
     }
-    fig.textContent = `The cheapest ${scope} you can drive to today: ${money(best.x.price)}`;
+    fig.textContent = `The cheapest ${scope} you can drive to today`
+      + ((bits && bits.length) ? ` (filtered: ${bits.join(' · ')})` : '')
+      + `: ${money(best.x.price)}`;
     body.appendChild(document.createTextNode(
       `${best.label} · ${best.x.year || ''} · ${best.x.miles != null ? num(best.x.miles) + ' mi' : ''} · ${placeTxt(best.x)} — no shipping. `.replace(/\s+·\s+·/g, ' ·')));
     if (url) body.appendChild(el('a', { href: url, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
@@ -5889,17 +6287,25 @@
       const less = live.filter((x) => { const then = priceOn(x, since); return then != null && hasPrice(x) && x.price < then; }).length;
       const liveVins = new Set((o.m.listings || []).map((x) => x.vin));
       const gone = (o.m.gone || []).filter((g) => tids.has(g.trim_id) && g.last_seen >= since && !liveVins.has(g.vin));
-      const exact = gone.filter((g) => g.exact && g.likely === 'delisted').length, unseen = gone.length - exact;
+      // A car the watchlist stopped asking for did not stop being seen — the
+      // sentence is about what the MARKET did since your last visit, and
+      // `unseen` is a remainder, so without this split an edit to `years`
+      // would report itself as cars vanishing from the market. It is still
+      // said out loud, because those rows do leave the page.
+      const moved = gone.filter((g) => g.likely === 'out of scope').length;
+      const real = gone.filter((g) => g.likely !== 'out of scope');
+      const exact = real.filter((g) => g.exact && g.likely === 'delisted').length, unseen = real.length - exact;
       const ledger = floorLedger(o, P);
       const then = ledger && ledger.drawn.filter((d) => d.day <= since).pop();
       const floor = then && ledger.last
         ? (then.v === ledger.last.v ? `floor unchanged at ${money(ledger.last.v)}` : `floor ${money(then.v)} → ${money(ledger.last.v)}`)
         : '';
-      const left = !gone.length ? 'none gone'
+      const left = !real.length ? 'none gone'
         : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen`
         : exact ? `${exact} gone`
         : `${unseen} stopped being seen, none confirmed gone`;
-      bits.push(`${o.m.label || o.mk} — ${[floor, `${fresh} new`, `${less} ask less than then`, left].filter(Boolean).join(', ')}`);
+      const dropped = moved ? `${moved} dropped from the watchlist` : '';
+      bits.push(`${o.m.label || o.mk} — ${[floor, `${fresh} new`, `${less} ask less than then`, left, dropped].filter(Boolean).join(', ')}`);
     }
     if (!bits.length) return;
     n.appendChild(el('p', { class: 'sc-hint', 'data-since': since }, `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.`));
@@ -5912,19 +6318,39 @@
   // a windshield lands on its own facts rather than on a table to walk. Only
   // when nothing else claims the slot: an emptied selection or a dead part of
   // the link says its own thing there first.
-  function renderVinInHand(t) {
+  // The VIN field is for a buyer standing at a dealer with seventeen characters
+  // off a windshield, and the sentence under the card was unconditional: "Its
+  // row is in the list below" over a list the shared filters had already
+  // excluded the car from. S.where survives the visit in localStorage and
+  // applyUrl() deliberately leaves it alone, so a plain reload with no query at
+  // all reaches this — one remembered where-chip and the page names a Florida
+  // car over two Ohio rows. The recovery it offered was false too: "the star
+  // keeps it" is a button on the card, and the card is what disappears.
+  function renderVinInHand(t, rows) {
     if (!S.vinAsk) return;
     const n = $('notice');
     const hit = findVin(S.vinAsk);
     if (!hit || hit.mk !== S.model || !n.hidden) return;
+    const inList = (rows || []).some((x) => String(x.vin || '').toUpperCase() === S.vinAsk);
+    const bits = filterBits(false);
     n.appendChild(el('div', { class: 'sc-callout sc-callout--core', 'data-vin-in-hand': S.vinAsk },
       el('div', { class: 'sc-callout__label' }, 'the car in hand'),
       el('div', { class: 'sc-grid picks-grid' }, shortlistCard(S.vinAsk, '')),
-      el('p', { class: 'sc-hint' }, hit.gone
-        ? (stillListed(hit.x)
+      el('p', { class: 'sc-hint' }, ...(hit.gone
+        ? [stillListed(hit.x)
             ? `${stillTxt(hit.x, hit.x.trim_label)} — that watch last returned it ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}.`
-            : `This car has left the model's rows — last seen ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}${hit.x.likely === 'delisted' ? ', and its listing ended' : ', and it may only have fallen outside a fetch window'}.`)
-        : `Its row is in the list below, ${t.label || S.model}'s own; the star keeps it.`)));
+            : `This car has left the model's rows — last seen ${fmtDate(hit.x.last_seen)} at ${money(hit.x.last_price)}${hit.x.likely === 'delisted' ? ', and its listing ended' : ', and it may only have fallen outside a fetch window'}.`]
+        : inList
+          ? [`Its row is in the list below, ${t.label || S.model}'s own; the star keeps it.`]
+          : ['Its row is not in the list below: ',
+             el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:vin-clear', onclick: (e) => {
+               e.preventDefault();
+               S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false;
+               S.rental = false; S.cpo = false; S.hideNew = false; S.trims = new Set();
+               S.budget = 0;      // named in the link's own text via filterBits()
+               savePrefs(); buildFilters(); rerender('trim');
+             } }, bits.length ? `clear ${bits.join(' · ')}` : 'clear the filters'),
+             ' to bring it back. The star keeps it either way.']))));
     n.hidden = false;
   }
   function renderEmptyNotice(shown, total) {
@@ -6023,6 +6449,15 @@
         el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'notice:clear', onclick: (e) => {
           e.preventDefault();
           S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false; S.cpo = false; S.hideNew = false;
+          // …and the budget, which is a filter by every other rule this page
+          // follows: filterBits() lists it and the count line names it ("0 of
+          // 134 cars · under $20,000 all in"). It was the one this handler did
+          // not clear, so a budget nothing fits produced "All 134 cars are
+          // filtered out … Clear the filters" over a link that changed nothing
+          // — the same count, the same notice, the budget still in
+          // localStorage. The one recovery the page offers, and it was a dead
+          // end in exactly the state it exists for.
+          S.budget = 0;
           // The comparison is NOT a filter and does not clear with them: it is
           // what the reader came to look at, it took several presses to build,
           // and clearing it here would land them on the watchlist with no way
@@ -6110,9 +6545,10 @@
     // silently skipped the notice: pressing "CPO under 30k mi 0" on the i5 left
     // 136 cars' worth of page as dashes with nothing said and no way back.
     renderEmptyNotice(rows.length, (t.listings || []).length);
-    renderVinInHand(t);
+    renderVinInHand(t, rows);
     const bestDriveModel = lowestBy(rows.filter(hasPrice).filter(isLocal), 'price');
-    renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label);
+    renderNext(bestDriveModel ? { x: bestDriveModel, label: t.label } : null, t.label,
+               filterBits(false));
     filterCount();
   }
 
@@ -6263,14 +6699,15 @@
       ? 'Models — pick any; two or more compares them; none selected means every model'
       : 'Compare with — opens this car beside the one you are looking at');
     // Trim: a chip per trim of this model, same rule. The count on each chip is
-    // what the page has, not what the API has — the CPO watch reads 0 because
-    // every certified car it finds is also filed under the trim it is, and one
-    // row per VIN is the whole point of the list below.
+    // what the page has, not what the API has — but it now counts every car the
+    // query returned, not only the ones whose cheapest copy came from it. See
+    // inTrim(): the certified watch read 2 on a day it returned 4, because
+    // every certified car it finds is also filed under the trim it is.
     const ft = $('f-trim'); ft.textContent = '';
     const tIds = t ? trimIds(t) : [];
     if (t && tIds.length > 1) {
       const counts = {};
-      for (const x of (t.listings || [])) counts[x.trim_id] = (counts[x.trim_id] || 0) + 1;
+      for (const x of (t.listings || [])) for (const id of tIds) if (inTrim(x, id)) counts[id] = (counts[id] || 0) + 1;
       for (const id of tIds) {
         const q = t.trims[id] || {};
         chipInto(ft, 'trim:' + id, q.label || id,
@@ -6333,11 +6770,15 @@
     const h = card && !card.hidden ? Math.round(card.getBoundingClientRect().height) : 0;
     root.style.setProperty('--bar-h', h + 'px');
   }
-  function filterBits(overview) {
+  // `sharedOnly` leaves out the model and trim selection: for a card whose
+  // COLUMNS are that selection — the comparison — those are what it is about,
+  // not a narrowing of it, and counting them made an unfiltered comparison
+  // label itself filtered.
+  function filterBits(overview, sharedOnly) {
     const bits = [];
     if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
-    if (S.models.size && overview) bits.push(modelsInView().map(({ m, mk }) => m.label || mk).join(' + '));
-    if (S.trims.size && !overview) bits.push(selectedTrims(model()).map((id) => trimLabel(model(), id)).join(' + '));
+    if (S.models.size && overview && !sharedOnly) bits.push(modelsInView().map(({ m, mk }) => m.label || mk).join(' + '));
+    if (S.trims.size && !overview && !sharedOnly) bits.push(selectedTrims(model()).map((id) => trimLabel(model(), id)).join(' + '));
     if (S.year !== 'all') bits.push(S.year);
     if (S.miles) bits.push(`under ${num(S.miles)} mi`);
     if (S.clean) bits.push('no accidents');
@@ -6723,6 +7164,7 @@
       const site = adapt(raw || {});
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }
       S.site = site;
+      _fetchDays = null;   // the memo below belongs to the sheet, not the page
       annotateValue(site);
       annotateFinance(site);
       loadPrefs();

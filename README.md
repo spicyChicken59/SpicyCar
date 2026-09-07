@@ -1,4 +1,4 @@
-<!-- The hero is a real capture of the dashboard, taken against data_through 2026-08-31, and
+<!-- The hero is a real capture of the dashboard, taken against data_through 2026-09-05, and
      it DATES: the numbers in it are the numbers of that morning and the live dashboard has
      moved on. That is the deal a screenshot makes; the alt below is deliberately structural
      (a chip row, a tile row, what changed) and names no figure, so it stays true after the
@@ -16,10 +16,12 @@
 
 **A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i7 being shopped —
 including a nationwide watch on every certified (CPO) i5 under 30,000 miles, where the
-promo rate on certified EVs (2.99% on the i5) makes the financing the story — their siblings
-and rivals follow on their own cadence. Each car is priced as what it would actually cost to land in a
-specific buyer's driveway, and the result is published as a dashboard, with a committed Markdown
-report beside it as the day's record. (An email path exists and is switched off: see below.)
+promo rate on certified EVs (2.99% on the i5) makes the financing the story — with their
+siblings behind them and, on a slower cadence, one battery EV from each of the other 17
+brands selling a 2024-or-newer one in the US. Each car is priced as what it would actually cost
+to land in a specific buyer's driveway, and the result is published as a dashboard, with a
+committed Markdown report beside it as the day's record. (An email path exists and is switched
+off: see below.)
 
 It runs on the free tier of one API, GitHub Actions, and GitHub Pages. No servers, no database — a
 CSV in the repository is the ledger.
@@ -63,9 +65,72 @@ Two things are configured, separately:
   ordinary trim targets. The i7's was stood down before it ever ran: the same recipe on the
   i7 sorts miles.asc into a national pool whose 40 lowest-mileage cars are all uncertified
   2026 delivery-mileage inventory, so no certified car falls inside the window (see the note
-  on that trim in `targets.json`). The iX is tracked for comparison only; comparison models from Hyundai,
-  Kia, Audi and Lucid run every third day. `buyer.shopping` names the targets that lead the
-  report in full; everything else gets one line.
+  on that trim in `targets.json`). The iX is tracked for comparison only.
+
+  **Outside BMW it is one EV per brand, model year 2024 and newer.** The 2024+ rule is one
+  line in `defaults` and no target restates it. Every brand selling a 2024-or-newer battery
+  EV in the US carries its best-selling nameplate — Tesla the Model Y, Ford the Mach-E,
+  Chevrolet the Equinox EV, Rivian the R1S, Cadillac the Lyriq, and so on down to the brands
+  whose whole US electric range is one car. Three are chosen rather than ranked, because the
+  buyer asked for them: Hyundai's Ioniq 9 (not the better-selling Ioniq 5), Kia's EV9 and
+  Audi's A6 e-tron. `buyer.shopping` names the targets that lead the report in full;
+  everything else gets one line.
+
+  **Two limits of that rule, written down because neither is visible from the output.**
+  First, the listings API has no fuel or powertrain parameter — the query is make plus
+  model — so "every EV" has to be enumerated brand by brand, and a battery car sharing a
+  nameplate with a combustion one cannot be isolated at all. Where that happens the
+  EV-only string is what goes in even when it costs the more popular model: Porsche is
+  the Taycan and not the Macan Electric, because `vehicle.model=Macan` returns petrol
+  Macans the query cannot exclude. The failure mode of a too-specific string is an empty
+  target, which the page says plainly; the failure mode of a too-loose one is petrol cars
+  in an EV screener, and *nothing used to catch it*. The query cannot ask, but the
+  **response answers**: every listing carries `vehicle.fuel` (with `vehicle.type` and
+  `vehicle.engine` agreeing), the record had been reading past it since the first commit,
+  and a listing the feed calls petrol, diesel or hybrid is now refused on the way in and
+  counted in the run log's drop table. Said and not said are different: a feed that fills
+  none of the three is not evidence of petrol, and refusing on silence would empty a whole
+  target the day one stopped populating it — a total outage dressed as a quiet market. The
+  same trap is live for Dodge (`Charger` is also a petrol six), MINI (`Countryman`),
+  Ford (some feeds file the Mach-E under `Mustang`) and Genesis (`GV70`), and it is why
+  the Acura ZDX row depends on the year filter: Acura sold a completely different,
+  petrol ZDX from 2010 to 2013.
+
+  Second, **"most popular" systematically picks the cheapest nameplate at a premium
+  brand**, which is backwards for a buyer shopping an i5 against an i7. Mercedes's
+  best-seller is the EQB at around $35,000 used, not the EQE SUV; Volvo's is the EX30,
+  not the EX90; Genesis's is the GV60, not the Electrified GV70; Tesla's is the Model Y,
+  not the Model S. Five of the rows are therefore market coverage rather than
+  cross-shops, and nothing in the config expresses that difference.
+
+  An earlier draft of this paragraph said a completeness row "wins any cheapest-first
+  ranking", and that is wrong about the mechanism — worth correcting rather than
+  deleting, because the wrong mechanism suggests the wrong fix. Nothing on the front
+  page is ranked by price. The picks are ranked by how far under **its own model's**
+  typical price a car sits, cohorts never cross models, `picks.per_model` caps each
+  model at two, and `picks.reserve_shopping` holds the first two drivable seats for the
+  models actually being shopped — a rule `choose_picks_reserving` exists for and whose
+  docstring records the exact failure it was written against. On today's sheet the
+  drivable picks really are an i5, an i7, an iX and an Ioniq 9.
+
+  What is true, and is the defect, is that **price class is nowhere in the ranking**.
+  A $27,025 Kia EV9 at 35% under a typical EV9 outranks a $64,729 i7 at 4% under a
+  typical i7, because a margin is a ratio and a ratio does not know what a car costs.
+  The drivable list is half-protected by the reserve; the shipped list has no reserve at
+  all. With seven models that was a curiosity. With thirty-six it means a buyer looking
+  at $50,000-$90,000 cars can open the page to four picks they would never buy. The
+  budget filter is the lever that exists; a notion of class is the one that does not,
+  and it is on the roadmap rather than quietly patched.
+
+  **Thirty of the thirty-six have never been fetched, and their model strings are
+  unverified guesses.** A string that names something the API does not know bills a call
+  every cadence and comes back empty — and an empty answer writes no row, so the model
+  looks exactly like one whose turn has not come round. Both surfaces tell them apart
+  now: a model no query has reached says "not fetched yet" and names its first run, one
+  whose query ran and found nothing says "asked <date>, nothing found", and the run log
+  names every target that spent a call for zero records. That is the count that says a
+  model string is wrong, and it had no name before — `silent_targets` cannot catch it,
+  because a call *was* billed.
 
   The list is meant to move with the decision. When it narrowed to the i5 against the i7, the
   i4 stood down — at full depth on a daily cadence it was ten calls a day, a third of the whole
@@ -77,18 +142,84 @@ Two things are configured, separately:
 ## Design decisions
 
 **It runs on about 30 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
-each. So each target is fetched twice — once filtered to the buyer's states plus `search_states`
-(the API takes a comma list, so eight states cost one call) and once nationally — and each target
-has a *depth* (the two being shopped get both sorts at two pages **plus a newest-first page**, so a
-fresh listing is seen the day it appears instead of whenever it ranks among the cheapest; the rest
-get the cheapest 20) and a *cadence*: BMW siblings run every other day, rival brands every third
-day, spread evenly across the cycle in watchlist order. A hard `budget_per_day` makes the script
-refuse to run if any day in the next two weeks would exceed it, and it prints the plan before it
-starts.
+each. So a target is fetched twice — once filtered to the buyer's states plus `search_states`
+(the API takes a comma list, so eight states cost one call) and once nationally — unless it is
+`national_only`, which now means the nationwide certified watch and nothing else. Each target has a *depth* (the
+two being shopped get both sorts at two pages **plus a newest-first page**, so a fresh listing is
+seen the day it appears instead of whenever it ranks among the cheapest; the rest get the cheapest
+20) and a *cadence*, per target rather than per brand: the two shopped trims run daily, the i5's
+other three (the certified watch among them) every other day, the i7's other trims and the iX every
+third day, the four models already carrying a record every fourth day, and one EV from each of the
+other 13 brands every fifteenth day. Spread evenly across the cycle in watchlist order. A hard
+`budget_per_day` makes the script refuse to run if any day of the cadence cycle would exceed it — a
+fortnight at least, and longer when the cadences repeat over more than that, which they now do: the
+cycle is 60 days — and it prints the plan before it starts.
+
+That plan is an **upper bound**, and the difference is the headroom every "can we afford one more
+model?" needs. The fetch loop stops paging the moment a query comes back short and skips that
+scope's newest probe, so the two shopped trims are budgeted ten calls each and spend six: about
+eight calls a day, ~240 a month, reserved and never spent. `data/spend.json` records it per day as
+`banked`, apart from `unrun` — calls a target was due and failed to spend, which is a broken target
+and not headroom.
+
+**Why every model asks its own states, and what that cost.** Half a target's calls go to asking
+the buyer's four states, plus the four watched from beyond them, the question the national query
+just asked — and whether that is worth paying for is an empirical question
+`data/source_overlap.json` has been answering since the audit that added it. It has now answered it. Over the 28 observations recorded between 2026-09-02 and
+2026-09-06 the States query found 310 cars and 232 of them were invisible to the national one,
+because the twenty cheapest in the country and the twenty cheapest within driving range are almost
+disjoint sets.
+
+The split that governs it is not which brand a model belongs to but **how big a catch its national
+query is allowed**. Of what the States query brings back, a `depth: full` target — about a hundred
+cars nationally — loses 21% by dropping its States half, which is the redundancy `sources_for()`
+describes and it is real there. A `depth: light` target fetches twenty, the whole country, cheapest
+first, and loses **88%**. The denominator is the States catch, not the model's whole day: the
+national query keeps what it found either way. About 84% of that States-only catch was in the four
+drivable states; the rest was in the four watched from beyond them, and is priced with shipping like
+anything else.
+
+**That split is measured on the light targets the log could see, and applied to the 28 by depth.**
+It has to be: `source_overlap()` compares two sources and skips a target that only has one, so a
+`national_only` target can never contribute an observation — not one of the 28 is in the window, and
+between them they hold 0 of the record's 4,997 rows. What carries the inference is the mechanism
+rather than the sample: the 28 are all `depth: light`, so their national query returns the twenty
+cheapest of that model *in America*, which is the same query shape that lost 88% everywhere it could
+be measured. The first fetch of each is what will confirm or refute it, and the log will say so
+without being asked.
+
+They ask both queries now, and it is paid for out of cadence rather than budget: every tenth day
+became every fifteenth, which buys the second source at 905 calls a month against 1,000 and a worst
+day of 38 against 40. Fifteen rather than thirteen or fourteen because it keeps the cadence cycle at
+60 days, where those push it to 156 and 84. The cost is real and it is freshness — twice a month
+instead of three times, so a car listed and sold inside a fortnight can pass unseen. That is the
+trade, and it is the right way round: a car you cannot drive to is not a car you were going to buy.
+
+`bmw-i5-cpo` keeps `national_only` and is not part of this. A nationwide certified watch is national
+by definition, not to save a call — and at `depth: full` it is the case where the States half really
+is close to redundant. Standing a model down again is a two-field edit — `national_only: true` and a
+slower cadence — and the overlap log is what should decide it. For that one target the log cannot
+help: a `national_only` target has no second source to compare, so the flag makes its own premise
+untestable, which is worth knowing before it is trusted anywhere else.
+
+Those figures are a measurement, not a constant. The log they come from is appended to, committed
+every day, and pruned to the newest 120 days, so the window they were read off is frozen in
+`tests/fixtures/source_overlap_window.json` — with each row's depth as it was **when the row was
+fetched**, which is not the depth its target carries today. One test holds every frozen row against
+the live log for as long as the live log still reaches back that far, so the evidence cannot be
+invented; another recomputes each percentage from the fixture and asserts it inside its own sentence,
+because an earlier version searched for the bare digits anywhere in this file and the two figures
+could be *swapped* — README stating the exact inverse of the finding — with the whole suite green;
+and a third asks the *current* log whether a light target still loses far more than a full one, which
+is the finding rather than the number and is the one that should fail if the market changes its
+mind.
 
 **It is honest about what it cannot see.** Because each query returns only the cheapest N, a car
 can vanish from the data by being priced *above* the day's cut-off rather than by selling. Those are
-labelled "priced above today's cut-off" on the dashboard and left out of the report's "gone" list.
+labelled "beyond that day's fetch cut-off" on the dashboard and left out of the report's "gone"
+list. Cheapest N on the axis that query SORTED by: the ordinary targets sort by price, so the
+cut-off is a price, and the nationwide certified watches sort by mileage, so theirs is a mileage —
+a car can fall out of one of those by being driven further, not by asking more.
 
 **Scope by state, not coordinates.** The first version placed listings into city radii by their
 coordinates and returned one or two local cars a day while the same cars appeared nationally with
@@ -137,14 +268,21 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 
 ## What you get each day
 
-- `REPORT.md` — grouped by model then trim: price changes, vehicles gone since the last snapshot,
+- `REPORT.md` — grouped by model then trim, each trim section holding what that query returned at
+  that query's price (a car two of a model's queries both matched — the certified watch matches
+  cars the ordinary trim targets match too — is in both sections, and the model's own line says
+  how many): price changes, vehicles gone since the last snapshot,
   every drivable listing grouped by state, and the five lowest-asking
   cars beyond the buyer's states, each with its shipping estimate. It reads the same data the
   dashboard does and is held to the same rule: a figure carries the denominator that makes it
   true, or it is not printed. Where the two surfaces state the same fact they state it in the
-  same words.
+  same words. Every sentence that dates a change names the day it is dating — the day that
+  model was last fetched, never the day the file was built — so a rebuild, a dispatch or a
+  night whose queries all failed cannot publish an older fetch's cuts as today's.
 - The dashboard — "the watchlist" opens on **the decision**: one tile per model named in
-  `buyer.shopping`, each holding the cheapest car of its watched trims all in — asking plus
+  `buyer.shopping` (and, when that list is empty, one sentence saying so and how to get a
+  decision — the card no longer removes itself without a word from a reader who has not
+  chosen yet), each holding the cheapest car of its watched trims all in — asking plus
   shipping plus tax and paperwork, because a California car and an Ohio car are not comparable on
   the sticker — with the payment at that car's own rate, the cheapest one you could drive to
   instead, how far it sits from typical for its own trim and year (in both directions), a count of
@@ -165,14 +303,14 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   actually have it. Below
   that: **your shortlist**, a table of the cars you starred yourself, side by side (four states per
   star — none, shortlisted, called, ruled out — kept in the browser, because a config edit needs a
-  commit and a decision does not); spicy picks, brand-coloured trend lines, a **model index** table, a **market map** — on the front page
+  commit and a decision does not); spicy picks, trend lines, a **model index** table, a **market map** — on the front page
   and every model page: each car at its own coordinates, filled when drivable, hollow when it pays
   shipping, spicy picks ringed and shortlisted
   cars drawn in the accent, photos on hover (on a phone, tap previews and a second tap opens),
   and a view that zooms to whatever the Where filter selects (plus pinch or Ctrl-scroll zoom and
   drag pan) — and one
   **market-over-time chart** —
-  colour is the brand, the dash is the model, the shopped models are drawn heavier, an
+  colour and weight are on the models you are comparing and every other line is context grey (five chart colours cannot carry thirty-four brands), the dash is the model within its brand, an
   interactive legend hides, shows and highlights any line, and 30d / 90d / All chips set a
   remembered time window with the price scale fitted to it. A **budget** — all in, or a month —
   narrows every one of them and is remembered between visits; when it empties one of the models you
@@ -194,6 +332,9 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   most recent first. A VIN field (and `?vin=`) opens one car by its full VIN or its last six
   characters — the model page with the car at the top and its row landed on; a tail that fits two
   cars says so and opens nothing, and a VIN nobody has seen goes through the dead-link notice.
+  If a filter you left on hides that car's row, the card says so and offers to clear the one that
+  did it, rather than claiming a row the list does not hold — and opening the car clears it for
+  you, because a link that names a car is a request to see that car.
 - `data/snapshots.csv` — every listing seen, every day, with coordinates and distance from home. The `via` column records which queries returned each row (`National:miles.asc|States:price.asc`), because a target fetching two sorts has two windows and without it a car pushed out of one cannot be told from a car that left the market. Blank on every row written before the column existed — that provenance is genuinely unrecoverable, which is why exit prices are currently withheld for multi-sort targets.
 
 ## Run it yourself
@@ -211,14 +352,69 @@ Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, ser
 Three checks run on every push, and all three run locally:
 
 ```
-python -m unittest discover -s tests -t .                     # the tracker, and what the dashboard may assume of its data
-node tools/consumer_lint_ci.mjs <design-system> docs/*.html    # the pages against the exact sc.css they pin
+python -m unittest discover -s tests -t .                     # the tracker, what the dashboard may assume of its data, and that
+                                                              # REPORT.md and docs/data.json are what this code builds from the CSV
+node tools/consumer_lint_ci.mjs <ds> docs/index.html docs/how.html tools/og_card.html
 node tools/dashboard_smoke.mjs <design-system>                 # the dashboard, opened in a real browser and asked if it works
 ```
+
+The linter takes the source of the og:image with the two pages, because it is a design-system
+consumer like they are and raw colour must not slip in through a file nobody checks — that is the
+list `check.yml` passes, and `docs/*.html` was a shorter one.
 
 The last one needs `playwright` and its Chromium (`npm i --no-save playwright && npx playwright install
 chromium`); without them it says so and passes, since a machine with no browser is not a broken
 dashboard. It reaches nothing off the machine — the design-system checkout answers every CDN request.
+It also asserts its own size: the number of checks it declares is a constant in the file, compared
+against the number it recorded, because this suite has three times been assembled green while
+quietly covering less. A skipped check still counts — it is a check that named itself and found no
+subject — and while that assertion was made only when nothing skipped, the committed sheet produced
+one skip on every run and the backstop never fired.
+
+**The sheet has a transfer budget, and the watchlist is going to spend it.** The browser suite fails
+the build when `docs/index.html` passes 200 KB gzipped or `docs/data.json` passes 250 KB — the page
+fetches the sheet on load, so its size is a fact about how the site feels, not a housekeeping number.
+`tools/measure_sheet.py` answers what it will weigh, by BUILDING the file rather than multiplying:
+it clones real rows onto every target that has never fetched, at the cap a `depth: light` target
+actually reaches, and runs them through `src`'s own writer, because `indent=1` is most of the raw
+size and a compact estimate is not the file a browser fetches. Two estimates of the sibling ledger
+once disagreed by a factor of two and only building it settled which was right.
+
+What it measures today, on the committed record:
+
+| the sheet | models | cars | gzipped | of budget |
+|---|---|---|---|---|
+| as committed | 8 | 408 | 102 KB | 41% |
+| every target fetching | 20 | 847 | 161 KB | 64% |
+| …three fetches deep on each | 20 | 847 | 171 KB | 69% |
+| …seven fetches deep on each | 20 | 847 | 186 KB | 75% |
+
+At thirty-six models that last row read **110%** — the build going red on its own record, in about a
+quarter. That is what the trim was for, and it is why the number is re-measured on every config
+change rather than argued: there is no field to cut instead. Measured by deleting each in turn,
+`series` is 13% of the file and `url` 9%, both load-bearing — the series is what the sparkline draws
+and what the cut detector reads, and the url is how a reader opens the listing — and everything else
+is under 3%. The sheet was never carrying fat; it was carrying too many models.
+
+**Sixteen models are stood down for it**, and the reason sits beside each `active` flag in
+`targets.json` rather than in a commit message. Four are priced far outside anything this buyer is
+shopping (Rolls-Royce Spectre, Lotus Eletre, Maserati Grecale Folgore, GMC Hummer EV); one is not a
+car anyone chooses between (Ram ProMaster EV); two are orphaned or barely present in the US (Fisker,
+whose maker is bankrupt, and VinFast); five are the thinnest used markets on the list (Jaguar I-PACE,
+out of production; Fiat 500e; Genesis GV60; Jeep Wagoneer S; MINI Countryman Electric); one had its
+US launch slip until there is nothing to find (Volvo EX30); and one is another car under a second
+badge — the Subaru Solterra is the Toyota bZ4X, same platform, same plant, and the bZ4X is watched.
+
+Two are off for a different reason, and the flags say so: the **Tesla Model Y** and the
+**Polestar 3** are not cars this buyer is choosing between. The Model Y in particular is the
+highest-volume used EV in the country and would fill its window every time — it is the one entry on
+that list whose absence is a preference rather than an argument about supply, and a reader who found
+it missing would otherwise reasonably assume the tool had a gap.
+
+**None of the market reasoning is measured.** The record holds no rows for any of them, because a
+model that has never fetched has nothing to be counted, so it is a judgement about the US market
+written down as one — and every one is a single flag from coming back. The calls it frees are
+deliberately not spent: a faster cadence would only reach those depths sooner.
 
 ## Configuration
 
@@ -229,13 +425,13 @@ dashboard. It reaches nothing off the machine — the design-system checkout ans
 | `anchor` | `[lat, lon]` of a **public** point distances measure from — your city centre, not your house. Committed on purpose: published distances from a private point can be trilaterated back to it. Legacy: leave it out and set the `BUYER_HOME_ZIP` secret instead, accepting that exposure. |
 | `states` | Two-letter codes. Listings in these states are drivable: no shipping. |
 | `search_states` | Extra states included in the state-filtered API query — nearby markets worth watching from beyond (for Chicago: MI, IA, MO, KY). A comma list is one call, so they cost nothing. |
-| `ship_bands`, `ship_road_factor` | Shipping estimate for everything else. Straight-line distance is first inflated to a road distance by `ship_road_factor` (1.18 — roads are not great circles), then priced through `ship_bands` **marginally, like tax brackets**: each band's `per_mile` applies only to the miles inside it, and the open band (`"to": null`) carries the rest. Marginal is a correctness requirement, not a preference — a band that *replaced* the rate instead of stacking made the estimate non-monotone, charging $574 at 423 miles and $425 at 424. |
+| `ship_bands`, `ship_road_factor` | Shipping estimate for everything else. Straight-line distance is first inflated to a road distance by `ship_road_factor` (1.18 — roads are not great circles), then priced through `ship_bands` **marginally, like tax brackets**: each band's `per_mile` applies only to the miles inside it, and the open band (`"to": null`) carries the rest. Marginal is a correctness requirement, not a preference — a band that *replaced* the rate instead of stacking made the estimate non-monotone, charging $599 at 423 miles and $350 at 424 on the bands shipped today. |
 | `ship_min` | Floor under the banded estimate. No hauler quotes below this whatever the distance. |
 | `ship_per_mile` | Legacy flat rate, used only when `ship_bands` is empty: `max(ship_min, straight_line_distance × ship_per_mile)`. Note it does **not** apply `ship_road_factor` — a bands-less config behaves exactly as it did before bands existed, byte for byte, and that is deliberate. Leave the bands set and this is never read. |
 | `ship_cost` | Flat shipping, used when distance is unknown or neither bands nor `ship_per_mile` are set. |
 | `ship_quotes`, `ship_calibrated` | Real hauler quotes (`{"miles": …, "price": …, "route": …}` — the key is `price`, and `miles` is the miles the BROKER quoted, not the great-circle figure) the run scores the bands against, and the date a human last did that. A quote missing either number is announced on the run log and skipped rather than silently ignored, and the run exports what it found — `{n, mean_error, worst, calibrated}` under `buyer.ship_calibration`, or `null` while no quotes exist. **Every shipping number on the page is an estimate until this is populated** — nothing fetches a quote, so the bands are a guess with a shape, not a price. |
-| `cents_per_mile`, `mileage_baseline` | Optional mileage adjustment, **off by default (`0`)**. Turning it on prices miles into the "asking + shipping" figure, which can then fall below asking — miles are shown instead. |
-| `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full; every other model is a one-line comparison. |
+| `cents_per_mile`, `mileage_baseline` | **Read by nothing, and kept only so an old config still loads.** They used to fold a mileage allowance into the "asking + shipping" figure, which reached one surface: the report printed a sum that did not add up while the dashboard, which drops that value on purpose, showed asking + shipping for the same car. Miles are shown next to every price and never priced into one. The allowance that ranks the picks is `picks.cents_per_mile` below. |
+| `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full and fill the decision card; every other model is a one-line comparison. **Empty means nothing is being shopped** — every model is a comparison line, and the decision card says so rather than disappearing. It used to mean the opposite: an empty list gave EVERY model a full section, which headed thirty-six models "Shopping: X" about cars nobody had named and ran the report to 1,373 lines with six of them carrying cars. That was a fair default at seven models and a false claim at thirty-six. |
 | `shortlist` | The specific cars being decided on, by VIN: `["WBY33FK09RCR29277", {"vin": "…", "note": "called dealer 8/25"}]`. They open the report and pin to the dashboard's front page with price, movement and your note — and say loudly when one is cut, or gone. |
 | `picks` | How the spicy picks are chosen: `count` (per list), `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own cohort (trim and model year with six or more eligible cars, else the year, else the model) — never a separate drivable-only median — then split into two lists: drivable, and worth the ship. Only cars genuinely under typical qualify: below the 95% interval of the cohort's median, so a car inside that median's own sampling error is never called under typical, and a cohort of six to eight cars — whose interval is the whole sample — can call no car under at all. The cohort must also be comparable: every car in it wears the scored car's trim, or the page says too few comparable listings to say and prints no percentage anywhere, the best-value order included. Shown at asking price. |
 
@@ -243,9 +439,9 @@ dashboard. It reaches nothing off the machine — the design-system checkout ans
 
 | Key | Meaning |
 |---|---|
-| `budget_per_month`, `budget_per_day` | The API plan (checked on the average over the next two weeks) and a cap on any single day; the script refuses to run if either would be exceeded. |
+| `budget_per_month`, `budget_per_day` | The API plan (checked on the average over a whole cadence cycle, a fortnight at least) and a cap on any single day; the script refuses to run if either would be exceeded. |
 | `defaults` | Fallbacks for the per-target parameters below. |
-| `legacy_ids` | Old target ids → new ids, so history carries over when the config is restructured. |
+| `legacy_ids` | Old target ids → new ids, so history carries over when the config is restructured — and a **null** value for the opposite case: the rows are known about and deliberately left orphaned. A test fails on any target id in `data/snapshots.csv` that no current target claims, that belongs to no model marked inactive, and that this block does not mention, so the choice has to be made rather than forgotten. It was forgotten once: the Lucid Air's two trim targets merging into one trimless `lucid-air`, and `chevrolet-equinox-ev-rs` becoming `chevrolet-equinox-ev`, left both models reading "not fetched yet" on every surface while the CSV held 257 and 63 rows for them. Chevrolet is mapped — 0 of its rows are pre-2024 and its old window was a subset of the new one. Lucid is not: 53 of its 68 live rows are model year 2022 or 2023, which a 2024+ watchlist can never return, so mapping them would publish 53 cars as current inventory that no query on this sheet could produce. |
 | `watchlist.<brand>` | `label`, `make` (as the API spells it), `active`, parameter overrides, and `models`. |
 | `…models.<model>` | `label`, `model` (API spelling — a comma list is OR, handy for case variants), `years`, `note`, `notes` (hand-written `good` / `bad` / `watch` lists shown on the model page), `active`, parameter overrides, and optional `trims`. A model without `trims` is one target across all its trims. |
 | `…trims.<trim>` | `label`, `trim_query` (sent as `vehicle.trim`, comma list is OR), `trim_match` (client-side check against the trim fields), `trim_exclude` (drop if this appears — "grand" keeps Grand Touring out of Touring), `note`, `active`, parameter overrides. |
@@ -256,14 +452,33 @@ Parameters resolve trim ← model ← brand ← defaults:
 |---|---|
 | `min_price` | listings below this are ignored — monthly payments or typos, not cars |
 | `depth` | `light` (1 call per source) or `full` (`sorts` × `pages` calls per source) |
-| `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked with its own day — "as of" in the report, "data through" on the dashboard |
+| `cadence` | fetch every N days (default 1). Targets are spread across the cycle; on off days the report and dashboard show the last fetch, marked with its own day — "as of" in the report, "data through" on the dashboard — and with how many days ago that was, since the day alone made a reader subtract from a schedule the record was not keeping. Once the gap reaches the cadence itself — one due day passed without a refresh — both surfaces say so in place of the schedule rather than beside it |
 | `sorts`, `pages` | what `full` depth fetches (defaults: `price.asc` + `miles.asc`, 2 pages) |
 | `newest` | extra newest-first (`createdAt.desc`) pages per source, so brand-new listings are caught the day they list. On for the shopped targets; new cars lead their report section as **New today**. Skipped automatically when a query already returned its whole scope. |
 | `years` | model years; sent as a range and also filtered client-side |
 
+**Two columns the record keeps and nothing reads yet.** `seats` and `drivetrain` are how a
+person goes from every EV on sale to the six worth looking at — "three rows", "all-wheel
+drive" — and neither was recoverable from anything else the CSV held: seats appears nowhere,
+and drivetrain only inside the trim string, and only for the brands whose trim encodes it (an
+i5 eDrive40 against an xDrive40, but a Model Y Long Range against a Model Y Long Range AWD,
+and nothing at all on most of the rest). They are recorded before they are read on purpose:
+the filters they are for are worth building once the record shows the feed *fills* them, and
+this repo has one sample listing to judge that from. The run log prints the coverage every
+night — "seats on 312 of 323 (97%)" — and one real night decides whether those filters get
+built or the columns come back out. `drivetrain` is folded to AWD / RWD / FWD, because that
+is the question a buyer asks and because 4WD and AWD are the same answer to it on a car with
+no transfer case; an unrecognised string is dropped rather than passed through, so the column
+holds a vocabulary and not whatever a dealer typed.
+
 A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as
 another key under `watchlist`; the dashboard grows a brand tab. Check the printed call plan after
-any change — it shows today, the worst day in the next two weeks, and the monthly average.
+any change — it shows today, the worst day of the cycle it covers, and the monthly average. The
+window is the least common multiple of the cadences, floored at a fortnight. That stopped being
+hypothetical when the watchlist widened: cadences of 1, 2, 3, 4 and 10 repeat over 60 days, so a
+flat fourteen would see less than a quarter of the cycle and the guard's answer would depend on
+the day it ran — CI approving a config that `main()` starts refusing weeks later, on the day the
+window finally meets the peak.
 
 ## Roadmap
 
@@ -272,6 +487,11 @@ any change — it shows today, the worst day in the next two weeks, and the mont
 - ~~Distance-based "drivable" instead of state lines.~~ Tried, then removed on purpose: states are the buyer's own answer to "will I go get it?", and a straight-line radius makes road claims it cannot keep.
 - A second buyer profile — the config is already shaped for it.
 - Drill below state: county or metro.
+- **Say which rows are cross-shops and which are market coverage.** One EV per brand puts
+  a $27,000 Kia EV9 and a $75,000 Rivian R1S in one pick list ranked by margin, and a
+  margin is a ratio that does not know what a car costs. A per-model flag — or a band
+  taken from the budget the reader already sets — read by the picks and the best-value
+  order, is the fix; the counts, the map and the market chart should keep every row.
 
 ## Author
 

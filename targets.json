@@ -62,15 +62,25 @@
     }
   },
 
+  "// years": "One EV per brand, model year 2024 and newer. The rule lives HERE and nowhere else: years resolves trim <- model <- brand <- defaults like every other parameter, and it used to be written out once per model, which is four places for one decision to rot. The range runs to 2027 because \"2024 and above\" has no upper bound and 2027 cars list in 2026 — every range this replaced stopped at 2026 and would have excluded them in silence.",
   "defaults": {
     "min_price": 8000,
     "depth": "light",
     "cadence": 1,
+    "years": ["2024", "2025", "2026", "2027"],
     "sorts": ["price.asc", "miles.asc"],
     "pages": 2
   },
 
-  "legacy_ids": { "i5-edrive40": "bmw-i5-edrive40" },
+  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 88%. All 28 of the LONG-TAIL TARGETS are light -- a different 28 from the 28 observations above, which is why this says which --  so their National query returns the twenty cheapest of that model IN AMERICA. The split is measured on the light targets the log could see and applied to these by depth: source_overlap() needs two sources to compare, so a national_only target cannot contribute an observation and not one of these is in the window. Paid for out of cadence, not budget: 10 -> 15 days buys the second source at 905 calls/month against 1000 and a worst day of 38 against 40, and 15 keeps plan_horizon() at 60 days where 13 and 14 push it to 156 and 84. The cost is real and is freshness: twice a month instead of three times. bmw-i5-cpo keeps national_only and is not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call.",
+  "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is.",
+  "legacy_ids": {
+    "i5-edrive40": "bmw-i5-edrive40",
+    "chevrolet-equinox-ev-rs": "chevrolet-equinox-ev",
+    "lucid-air-touring": null,
+    "lucid-air-grand-touring": null,
+    "bmw-i7": null
+  },
 
   "watchlist": {
     "bmw": {
@@ -80,7 +90,6 @@
         "i5": {
           "label": "BMW i5",
           "model": "i5",
-          "years": ["2024", "2025"],
           "min_price": 20000,
           "notes": {
             "good": ["CPO promo: 2.99% APR financing on certified i5s — at today's used prices that rate changes the payment maths", "Quiet, refined and built like a 5-Series; the eDrive40 is EPA-rated around 295 miles", "Heavy lease-return supply keeps used prices well under new", "iDrive 8.5 is quick, and most cars carry Driving Assistance packages"],
@@ -89,7 +98,7 @@
           },
           "trims": {
             "cpo":      { "label": "CPO under 30k mi", "trim_query": "eDrive40,xDrive40", "trim_match": "drive40",
-                          "years": ["2024", "2025"], "cadence": 2,
+                          "cadence": 2,
                           "depth": "full", "sorts": ["miles.asc"], "pages": 2,
                           "max_miles": 30000, "cpo_only": true, "national_only": true,
                           "note": "The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country — the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it — the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call." },
@@ -102,7 +111,6 @@
         "i7": {
           "label": "BMW i7",
           "model": "i7",
-          "years": ["2023", "2024", "2025", "2026"],
           "min_price": 35000,
           "notes": {
             "good": ["Depreciation is the whole story: well over $100k new, and used ones now sit far below that — the cheapest a nearly-new 7-Series has ever been", "One of the quietest cars made, and the rear seat is the point — Executive Lounge cars recline the right rear seat and add the 31-inch Theatre Screen", "eDrive50 is the rear-drive single-motor car, xDrive60 the dual-motor one; both are rated around 300 miles depending on wheels", "Same 400-volt platform and service network as the i5, so nothing about owning it is exotic"],
@@ -111,7 +119,7 @@
           },
           "trims": {
             "cpo":      { "label": "CPO under 30k mi", "trim_query": "eDrive50,xDrive60", "trim_match": "drive", "trim_exclude": "m70",
-                          "years": ["2023", "2024", "2025", "2026"], "cadence": 2,
+                          "cadence": 2,
                           "depth": "full", "sorts": ["miles.asc"], "pages": 2,
                           "max_miles": 30000, "cpo_only": true, "national_only": true, "active": false,
                           "note": "Stood down BEFORE IT EVER RAN, on a prediction rather than a measurement — which is the honest way to say this and the first version of this note did not. It was added at 02:38 on 2026-09-01 with offset 1 on a cadence of 2, so its first due day was 2026-09-02: it never fetched once and never billed a call. The 30 calls a month it would have cost is a plan figure, not a spend. What is measured is the mechanism: the query takes the 40 lowest-mileage i7s in the country on miles.asc and then filters to certified under 30,000 miles, and in the i7 rows actually observed, ranks 1-42 are 2026 cars at 1-14 miles — new inventory, none certified — so the first certified i7 sits below the window. The i5 version of the same recipe returns cars, and its one structural difference is years [2024, 2025], no current model year. Dropping 2026 here may well fix it, and that is worth two calls to find out; it is not a target that cannot work, it is a target not worth 30 calls a month on this shopping list while the ordinary edrive50 query already holds certified sub-30k i7s. One flag brings it back." },
@@ -124,7 +132,6 @@
         "ix": {
           "label": "BMW iX",
           "model": "iX",
-          "years": ["2022", "2023", "2024", "2025", "2026"],
           "min_price": 25000,
           "cadence": 3,
           "notes": {
@@ -134,7 +141,7 @@
           },
           "trims": {
             "cpo":    { "label": "CPO under 30k mi", "trim_query": "xDrive50,xDrive45,xDrive60", "trim_match": "xdrive",
-                        "years": ["2024", "2025", "2026"], "cadence": 2,
+                        "cadence": 2,
                         "depth": "full", "sorts": ["miles.asc"], "pages": 2,
                         "max_miles": 30000, "cpo_only": true, "national_only": true, "active": false,
                         "note": "Stood down when the decision became the i5 against the i7. A nationwide certified sweep is what you run on a car you are buying — it is the most expensive thing on the watchlist per model, and the 2.49% rate only matters to someone signing for one. One flag brings it back." },
@@ -145,18 +152,18 @@
         "i4": {
           "label": "BMW i4",
           "model": "i4",
-          "years": ["2022", "2023", "2024", "2025"],
           "cadence": 2,
           "active": false,
+          "// active": "stood down when the list narrowed to the i5 against the i7: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the two shopped pages now show directly.",
           "notes": {
             "good": ["Drives like a 4-Series; the eDrive40 does about 300 miles", "One of the better reliability records among EVs, and cheap used", "Hatchback practicality with a proper trunk opening"],
             "bad": ["2022 and early 2023 cars had infotainment and charging glitches, mostly cured by updates", "Low roof: rear headroom is tight", "eDrive35 has the smaller battery — roughly 260 miles, and slower charging"],
             "watch": ["Ask for proof that open recalls and software campaigns are done", "Check the 12V battery — a weak one causes odd faults", "Verify heated seats and steering wheel; not every car has them"]
           },
           "trims": {
-            "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "years": ["2023", "2024", "2025"], "active": false },
+            "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "active": false },
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "depth": "full", "pages": 2, "newest": 1, "cadence": 1, "note": "Stood down with the rest of the i4: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the i5 and i7 pages now show directly." },
-            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "years": ["2024", "2025"], "active": false },
+            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "active": false },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }
         }
@@ -166,12 +173,12 @@
     "hyundai": {
       "label": "Hyundai",
       "make": "Hyundai",
-      "cadence": 3,
       "models": {
         "ioniq5": {
           "label": "Hyundai Ioniq 5",
           "model": "Ioniq 5,IONIQ 5",
-          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "active": false,
+          "// active": "Hyundai's place on the watchlist is the Ioniq 9; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["800-volt platform: 10 to 80% in about 18 minutes on a fast charger", "Flat floor and a huge cabin for the footprint", "Strong value used; the N is a genuine performance car"],
             "bad": ["The ICCU (charging control unit) has failed widely across 2022–2024 cars and can leave the car dead", "No rear wiper until the 2025 refresh; soft ride and road noise", "Dealer EV service quality varies a lot"],
@@ -181,8 +188,7 @@
         "ioniq9": {
           "label": "Hyundai Ioniq 9",
           "model": "Ioniq 9,IONIQ 9",
-          "years": ["2026"],
-          "active": false,
+          "cadence": 4,
           "notes": {
             "good": ["Three rows, a 110 kWh battery and around 335 miles rear-drive", "800-volt charging and a NACS port from day one", "Almost every used one is a near-new car"],
             "bad": ["Brand new: thin used supply and prices close to new", "First model year — expect software updates", "Very large and heavy for city parking"],
@@ -195,13 +201,12 @@
     "kia": {
       "label": "Kia",
       "make": "Kia",
-      "cadence": 3,
       "models": {
         "ev6": {
           "label": "Kia EV6",
           "model": "EV6",
           "active": false,
-          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "// active": "Kia's place on the watchlist is the EV9; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["Same 800-volt platform as the Ioniq 5 — 18-minute fast charging", "Sportier setup and sharper looks; GT-Line is the sweet spot", "Deep depreciation makes clean examples a bargain"],
             "bad": ["Shares the Ioniq 5's ICCU problem", "Firmer ride and poor rear visibility", "Cargo space is modest for the size"],
@@ -211,7 +216,7 @@
         "ev9": {
           "label": "Kia EV9",
           "model": "EV9",
-          "years": ["2024", "2025", "2026"],
+          "cadence": 4,
           "notes": {
             "good": ["A proper three-row EV at a sane price, with 800-volt charging", "Around 280–300 miles; Land and GT-Line interiors are plush", "Heavy rebates on new ones have pushed used prices down"],
             "bad": ["Heavy, so tires go fast and efficiency is middling", "Early builds had trim and rattle complaints", "Same platform ICCU risk as the EV6 and Ioniq 5"],
@@ -224,12 +229,11 @@
     "audi": {
       "label": "Audi",
       "make": "Audi",
-      "cadence": 3,
       "models": {
         "a6-etron": {
           "label": "Audi A6 e-tron",
           "model": "A6 e-tron,A6 E-Tron,e-tron A6",
-          "years": ["2025", "2026"],
+          "cadence": 4,
           "notes": {
             "good": ["800-volt PPE platform shared with the Q6: 270 kW charging, and the Sportback can exceed 350 miles", "A proper luxury sedan interior in a market full of crossovers", "Early lease returns are starting to land well under sticker"],
             "bad": ["Brand new: used supply is thin and prices still sit close to new", "First model year — expect software updates and early-build niggles", "The sloping roof costs rear headroom, and there is no Apple CarPlay projection on early software"],
@@ -240,7 +244,7 @@
           "label": "Audi Q4 e-tron",
           "model": "Q4 e-tron,Q4 E-Tron,e-tron Q4",
           "active": false,
-          "years": ["2022", "2023", "2024", "2025", "2026"],
+          "// active": "Audi's place on the watchlist is the A6 e-tron; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["Quiet, comfortable and upscale inside for the money", "Steep depreciation — often the cheapest premium-badge EV", "Solid VW-group hardware underneath"],
             "bad": ["Slow DC charging (roughly 125–170 kW) and a 400-volt system", "Infotainment can be sluggish and buggy on early cars", "2022–2023 range is only around 240 miles"],
@@ -250,8 +254,8 @@
         "q6-etron": {
           "label": "Audi Q6 e-tron",
           "model": "Q6 e-tron,Q6 E-Tron,e-tron Q6",
-          "years": ["2025", "2026"],
           "active": false,
+          "// active": "Audi's place on the watchlist is the A6 e-tron; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["New 800-volt platform shared with the Porsche Macan EV: fast charging and 300+ miles", "Excellent interior and driving refinement"],
             "bad": ["New model: used supply is thin and prices sit close to new", "First-year software complaints are common"],
@@ -264,22 +268,49 @@
     "lucid": {
       "label": "Lucid",
       "make": "Lucid",
-      "cadence": 3,
       "models": {
         "air": {
-          "label": "Lucid Air",
-          "model": "Air",
-          "years": ["2022", "2023", "2024", "2025", "2026"],
-          "min_price": 30000,
-          "notes": {
-            "good": ["Class-leading efficiency and range — a Grand Touring can exceed 500 miles", "Among the fastest-charging cars sold", "Used prices collapsed: six-figure cars now sell for $40k"],
-            "bad": ["A young company: service centers are sparse and parts can take time", "2022 cars had software and build-quality issues", "Resale is unpredictable"],
-            "watch": ["Check the distance to the nearest Lucid service center before anything else", "Confirm every software campaign and recall on the VIN", "Verify the warranty transfers, and test the door handles, glass roof and charge port"]
+         "label": "Lucid Air",
+         "model": "Air",
+         "min_price": 30000,
+         "cadence": 15,
+         "notes": {
+          "good": [
+           "Class-leading efficiency and range — a Grand Touring can exceed 500 miles",
+           "Among the fastest-charging cars sold",
+           "Used prices collapsed: six-figure cars now sell for $40k"
+          ],
+          "bad": [
+           "A young company: service centers are sparse and parts can take time",
+           "2022 cars had software and build-quality issues",
+           "Resale is unpredictable"
+          ],
+          "watch": [
+           "Check the distance to the nearest Lucid service center before anything else",
+           "Confirm every software campaign and recall on the VIN",
+           "Verify the warranty transfers, and test the door handles, glass roof and charge port"
+          ]
+         },
+         "// cadence": "was 4, the tier for models that already carry a record. Its record is 257 rows of which most are model years this 2024+ watchlist can no longer return, so it was on the fast tier on the strength of history the config cannot reproduce. It sits with the rest of the tail now.",
+         "// trims": "One trimless watch fetched the twenty cheapest Airs and, on a model whose used prices collapsed, that is twenty Pures and no sight of a Grand Touring. Each trim gets its own cheapest-N window. The touring and grand-touring keys rebuild ids the record already holds -- legacy_ids orphaned those rows rather than remapping them -- so their old rows re-attach here, and watchlist_moved() decides each one on its own model year rather than the whole block on a rule of thumb.",
+         "trims": {
+          "pure": {
+           "label": "Pure",
+           "trim_query": "Pure",
+           "trim_match": "pure"
           },
-          "trims": {
-            "touring":       { "label": "Touring",       "trim_query": "Touring",       "trim_match": "touring", "trim_exclude": "grand" },
-            "grand-touring": { "label": "Grand Touring", "trim_query": "Grand Touring", "trim_match": "grand touring" }
+          "touring": {
+           "label": "Touring",
+           "trim_query": "Touring",
+           "trim_match": "touring",
+           "trim_exclude": "grand touring"
+          },
+          "grand-touring": {
+           "label": "Grand Touring",
+           "trim_query": "Grand Touring",
+           "trim_match": "grand touring"
           }
+         }
         }
       }
     },
@@ -287,25 +318,22 @@
     "chevrolet": {
       "label": "Chevrolet",
       "make": "Chevrolet",
-      "cadence": 3,
       "models": {
         "equinox-ev": {
           "label": "Chevrolet Equinox EV",
           "model": "Equinox EV",
-          "active": false,
-          "years": ["2024", "2025", "2026"],
+          "cadence": 4,
           "notes": {
             "good": ["Around 319 miles front-drive, roomy, and cheap used", "Super Cruise is available on the RS", "Simple, honest EV on GM's Ultium platform"],
             "bad": ["No Apple CarPlay or Android Auto — Google built-in only", "DC charging around 150 kW", "Early software glitches and plain interior plastics"],
             "watch": ["Check GM's software recall campaigns are done", "Super Cruise may need a subscription after the trial", "Confirm front-drive vs all-wheel-drive on the specific car"]
-          },
-          "trims": { "rs": { "label": "RS", "trim_query": "RS,2RS,3RS", "trim_match": "rs" } }
+          }
         },
         "blazer-ev": {
           "label": "Chevrolet Blazer EV",
           "model": "Blazer EV",
-          "years": ["2024", "2025", "2026"],
           "active": false,
+          "// active": "Chevrolet's place on the watchlist is the Equinox EV; one nameplate per brand outside BMW.",
           "notes": {
             "good": ["Sharp looks and a comfortable, quiet cabin", "RS trims run roughly 280–320 miles depending on drivetrain", "Heavy discounts made used ones cheap"],
             "bad": ["The 2024 launch was stopped for software faults; fixed by updates, but ask", "No Apple CarPlay or Android Auto", "Middling efficiency"],
@@ -313,6 +341,258 @@
           },
           "trims": { "rs": { "label": "RS", "trim_query": "RS,2RS,3RS", "trim_match": "rs" } }
         }
+      }
+    },
+
+    "tesla": {
+      "label": "Tesla",
+      "make": "Tesla",
+      "cadence": 15,
+      "models": {
+        "model-y": { "label": "Tesla Model Y", "model": "Model Y", "active": false, "// active": "stood down by the buyer, and NOT for want of supply -- the Model Y is the highest-volume used EV in the country and would reliably fill its own window. It is off the list because it is not a car this buyer is choosing between, which is the only reason on this page that is not an argument about the market." }
+      }
+    },
+
+    "ford": {
+      "label": "Ford",
+      "make": "Ford",
+      "cadence": 15,
+      "models": {
+        "mustang-mach-e": { "label": "Ford Mustang Mach-E", "model": "Mustang Mach-E,Mach-E,Mustang Mach E" }
+      }
+    },
+
+    "gmc": {
+      "label": "GMC",
+      "make": "GMC",
+      "cadence": 15,
+      "models": {
+        "hummer-ev": { "label": "GMC Hummer EV", "model": "Hummer EV,Hummer EV Pickup,Hummer EV SUV", "active": false, "// active": "~$100k and a few thousand a year; the used market is thin at a price this buyer is not shopping." }
+      }
+    },
+
+    "genesis": {
+      "label": "Genesis",
+      "make": "Genesis",
+      "cadence": 15,
+      "models": {
+        "gv60": { "label": "Genesis GV60", "model": "GV60", "active": false, "// active": "Genesis's lowest-volume EV, a couple of thousand a year." }
+      }
+    },
+
+    "nissan": {
+      "label": "Nissan",
+      "make": "Nissan",
+      "cadence": 15,
+      "models": {
+        "ariya": { "label": "Nissan Ariya", "model": "Ariya,ARIYA" }
+      }
+    },
+
+    "mercedes": {
+      "label": "Mercedes-Benz",
+      "make": "Mercedes-Benz",
+      "cadence": 15,
+      "models": {
+        "eqb": { "label": "Mercedes-Benz EQB", "model": "EQB,EQB 250+,EQB 300,EQB 350" }
+      }
+    },
+
+    "porsche": {
+      "label": "Porsche",
+      "make": "Porsche",
+      "cadence": 15,
+      "models": {
+        "taycan": { "label": "Porsche Taycan", "model": "Taycan" }
+      }
+    },
+
+    "volkswagen": {
+      "label": "Volkswagen",
+      "make": "Volkswagen",
+      "cadence": 15,
+      "models": {
+        "id4": { "label": "Volkswagen ID.4", "model": "ID.4,ID4,ID 4" }
+      }
+    },
+
+    "volvo": {
+      "label": "Volvo",
+      "make": "Volvo",
+      "cadence": 15,
+      "models": {
+        "ex30": { "label": "Volvo EX30", "model": "EX30", "active": false, "// active": "its US launch slipped repeatedly, so a 2024+ used EX30 is close to nonexistent here." }
+      }
+    },
+
+    "polestar": {
+      "label": "Polestar",
+      "make": "Polestar",
+      "cadence": 15,
+      "models": {
+        "polestar-3": { "label": "Polestar 3", "model": "3,Polestar 3", "active": false, "// active": "stood down by the buyer. It was also the thinnest of the mainstream tail: roughly a tenth the volume of the rest and the only one whose brand's US presence is genuinely unsettled." }
+      }
+    },
+
+    "mini": {
+      "label": "MINI",
+      "make": "MINI",
+      "cadence": 15,
+      "models": {
+        "countryman-electric": { "label": "MINI Countryman Electric", "model": "Countryman Electric,Countryman SE,Countryman SE ALL4", "active": false, "// active": "a 2025 US launch at low volume; there is almost no 2024-or-newer used supply to find." }
+      }
+    },
+
+    "cadillac": {
+      "label": "Cadillac",
+      "make": "Cadillac",
+      "cadence": 15,
+      "models": {
+        "lyriq": { "label": "Cadillac Lyriq", "model": "LYRIQ,Lyriq" }
+      }
+    },
+
+    "jeep": {
+      "label": "Jeep",
+      "make": "Jeep",
+      "cadence": 15,
+      "models": {
+        "wagoneer-s": { "label": "Jeep Wagoneer S", "model": "Wagoneer S", "active": false, "// active": "launched very late in 2024 at low volume and around $60k; the used market barely exists yet." }
+      }
+    },
+
+    "dodge": {
+      "label": "Dodge",
+      "make": "Dodge",
+      "cadence": 15,
+      "models": {
+        "charger-daytona": { "label": "Dodge Charger Daytona", "model": "Charger Daytona" }
+      }
+    },
+
+    "ram": {
+      "label": "Ram",
+      "make": "Ram",
+      "cadence": 15,
+      "models": {
+        "promaster-ev": { "label": "Ram ProMaster EV", "model": "ProMaster EV", "active": false, "// active": "a commercial cargo van, not a car anyone here is choosing between." }
+      }
+    },
+
+    "rivian": {
+      "label": "Rivian",
+      "make": "Rivian",
+      "cadence": 15,
+      "models": {
+        "r1s": { "label": "Rivian R1S", "model": "R1S" }
+      }
+    },
+
+    "vinfast": {
+      "label": "VinFast",
+      "make": "VinFast",
+      "cadence": 15,
+      "models": {
+        "vf8": { "label": "VinFast VF 8", "model": "VF 8,VF8", "active": false, "// active": "VinFast's US volume is a few thousand and its support presence is unsettled." }
+      }
+    },
+
+    "fisker": {
+      "label": "Fisker",
+      "make": "Fisker",
+      "cadence": 15,
+      "models": {
+        "ocean": { "label": "Fisker Ocean", "model": "Ocean", "active": false, "// active": "Fisker is bankrupt (June 2024). No production, no warranty, no app support -- an orphaned car, whatever the price." }
+      }
+    },
+
+    "toyota": {
+      "label": "Toyota",
+      "make": "Toyota",
+      "cadence": 15,
+      "models": {
+        "bz4x": { "label": "Toyota bZ4X", "model": "bZ4X,bZ,BZ4X" }
+      }
+    },
+
+    "honda": {
+      "label": "Honda",
+      "make": "Honda",
+      "cadence": 15,
+      "models": {
+        "prologue": { "label": "Honda Prologue", "model": "Prologue" }
+      }
+    },
+
+    "acura": {
+      "label": "Acura",
+      "make": "Acura",
+      "cadence": 15,
+      "models": {
+        "zdx": { "label": "Acura ZDX", "model": "ZDX" }
+      }
+    },
+
+    "lexus": {
+      "label": "Lexus",
+      "make": "Lexus",
+      "cadence": 15,
+      "models": {
+        "rz": { "label": "Lexus RZ", "model": "RZ,RZ 300e,RZ 450e" }
+      }
+    },
+
+    "subaru": {
+      "label": "Subaru",
+      "make": "Subaru",
+      "cadence": 15,
+      "models": {
+        "solterra": { "label": "Subaru Solterra", "model": "Solterra", "active": false, "// active": "the Toyota bZ4X under a different badge -- same e-TNGA platform, same plant, near-identical car -- and the bZ4X is watched. Two watches, one decision." }
+      }
+    },
+
+    "maserati": {
+      "label": "Maserati",
+      "make": "Maserati",
+      "cadence": 15,
+      "models": {
+        "grecale-folgore": { "label": "Maserati Grecale Folgore", "model": "Grecale Folgore", "active": false, "// active": "the electric Folgore trim is a fraction of a marque that already sells few." }
+      }
+    },
+
+    "lotus": {
+      "label": "Lotus",
+      "make": "Lotus",
+      "cadence": 15,
+      "models": {
+        "eletre": { "label": "Lotus Eletre", "model": "Eletre", "active": false, "// active": "~$230k new and barely sold in the US. Same reason as the Spectre." }
+      }
+    },
+
+    "rolls-royce": {
+      "label": "Rolls-Royce",
+      "make": "Rolls-Royce",
+      "cadence": 15,
+      "models": {
+        "spectre": { "label": "Rolls-Royce Spectre", "model": "Spectre", "active": false, "// active": "~$420k new; sells in the hundreds a year. Not a car in this buyer's range." }
+      }
+    },
+
+    "fiat": {
+      "label": "Fiat",
+      "make": "Fiat",
+      "cadence": 15,
+      "models": {
+        "500e": { "label": "Fiat 500e", "model": "500e,500E", "active": false, "// active": "relaunched in the US in 2024 at very low volume; a city car a long way from the rest of this list." }
+      }
+    },
+
+    "jaguar": {
+      "label": "Jaguar",
+      "make": "Jaguar",
+      "cadence": 15,
+      "models": {
+        "i-pace": { "label": "Jaguar I-PACE", "model": "I-PACE,I-Pace,IPACE", "active": false, "// active": "out of production and ageing; the used market is thin and shrinking." }
       }
     }
   }

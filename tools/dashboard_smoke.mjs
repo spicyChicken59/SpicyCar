@@ -216,6 +216,31 @@ async function step(label, body) {
 // ?brand=…&m=… asserts today's config beside the page's behaviour and goes red
 // on a night that only changed the watchlist.
 const SHEET = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+
+// How the page spells an age, taken FROM the page rather than retyped. There
+// are already two implementations of these four lines — Tracking.py's
+// days_ago() and index.html's daysAgo — and the Python suite pins them to each
+// other by running this same extracted function through node. A third copy
+// typed here would be the only one nothing holds to the others, and it is the
+// one that decides whether this file's checks pass.
+const daysAgo = (() => {
+  const m = readFileSync(join(ROOT, 'index.html'), 'utf8')
+    .match(/const daysAgo = (\(n\) => [^;]+);/);
+  if (!m) throw new Error('the page no longer defines daysAgo — the age checks have lost their subject');
+  return (0, eval)(m[1]);
+})();
+// …and the schedule half, the same way. The check for an overdue model used
+// to assume the `cadence > 1` wording, so a shopped DAILY model one day
+// behind — which fetch_overdue calls overdue by its own max(1, c) — rendered
+// correctly and turned this suite red. Reading the page's own function means
+// the expectation follows whatever the page says, and the Python suite is
+// what holds that to the report's wording.
+const schedulePhrase = (() => {
+  const m = readFileSync(join(ROOT, 'index.html'), 'utf8')
+    .match(/const schedulePhrase = (\([^)]*\) => \{[\s\S]*?\n  \});/);
+  if (!m) throw new Error('the page no longer defines schedulePhrase — the age checks have lost their subject');
+  return (0, eval)(m[1]);
+})();
 const WATCHED = Object.entries(SHEET.brands || {}).flatMap(([bk, b]) =>
   Object.entries((b || {}).models || {}).map(([mk, m]) => ({
     bk, mk, id: `${bk} ${mk}`, slug: `${bk}-${mk}`, q: `?brand=${bk}&m=${mk}`, label: (m || {}).label || mk,
@@ -249,8 +274,8 @@ await step('the watchlist', async () => {
   ok('four tiles', (await page.locator('#kpis .sc-tile').count()) === 4);
   // Two of these six are claims about a watchlist with more than one model on
   // it — the index draws a row EACH, and the model chips are a group only where
-  // there is something to tell apart (index.html hides #f-model-field below two
-  // models, :3818) — and two are claims about a watchlist with a car on it. The
+  // there is something to tell apart (buildFilters() hides #f-model-field below
+  // two models) — and two are claims about a watchlist with a car on it. The
   // rest hold on any sheet. Below either line the check has nothing to look at,
   // which is a thinner watchlist and not a broken page.
   const several = WATCHED.length > 1;
@@ -294,8 +319,8 @@ await step('a model page', async () => {
 
 // --- comparing trims -------------------------------------------------------
 // This presses the SECOND chip and then the THIRD, so it wants a model the
-// sheet gives at least three trims — and index.html renders no chip at all
-// below two (:3833), which is how `#f-trim button` .nth(1) used to end the
+// sheet gives at least three trims — and buildFilters() renders no trim chip
+// at all below two, which is how `#f-trim button` .nth(1) used to end the
 // whole run on the morning a model dropped to one. The first such model, so a
 // reordered watchlist does not move the subject.
 const trio = WATCHED.find((w) => w.trims.length >= 3);
@@ -327,8 +352,8 @@ await step('comparing trims', async () => {
 });
 
 // --- comparing models ------------------------------------------------------
-// The other crash site, and the same shape: index.html hides #f-model-field
-// below two models (:3818), so on a single-model watchlist the chip is in the
+// The other crash site, and the same shape: buildFilters() hides
+// #f-model-field below two models, so on a single-model watchlist the chip is in the
 // DOM but never visible and `.first().click()` sat there for 30s and then took
 // the process down with it.
 await step('comparing models', async () => {
@@ -403,8 +428,15 @@ const realBrand = Object.keys(brands).find((b) => Object.keys(brands[b].models |
 const ghost = realBrand && ['constructor', '__proto__'].find(
   (k) => !Object.prototype.hasOwnProperty.call(brands[realBrand].models, k));
 const protoUrls = ['?brand=__proto__', '?brand=constructor', '?model=constructor', '?m=constructor'];
+// The ghost URL carries TWO checks like every other one, so its absence has to
+// skip two — the tally below is exact only if every branch declares the same
+// number of checks whichever way it goes. Skipping one where the other branch
+// plans two is how a data-dependent total creeps in, and a total that moves
+// with the market is a total no constant can be compared against.
+const GHOST = ['a tracked brand plus a prototype-key model lands on the watchlist',
+               'and says the link missed and stops re-sharing itself'];
 if (ghost) protoUrls.push(`?brand=${encodeURIComponent(realBrand)}&m=${ghost}`);
-else skip('a tracked brand plus a prototype-key model lands on the watchlist',
+else for (const n of GHOST) skip(n,
   realBrand ? `${realBrand} really has a model called constructor and one called __proto__`
             : 'data.json has no brand with models — nothing to ask for');
 plan(...protoUrls.flatMap((q) => [`${q} lands on the watchlist, not on a car`,
@@ -589,13 +621,54 @@ ok(FRESH, Object.values(newByModel).every((v) => v.fresh < v.rows), JSON.stringi
 // pressed. One selection, so one step: the second reads the chip the first
 // pressed.
 await step('the filter line and the chip beside it', async () => {
-plan('the count measures against the whole watchlist', "a pressed chip's count is still readable");
+plan('the count measures against the whole watchlist',
+     'and it still reads it once the watchlist passes a thousand cars',
+     "a pressed chip's count is still readable");
 const q = '?models=bmw-i5,kia-ev9';
 if (!inSheet(q)) return skipRest(`${q} names a car the watchlist no longer holds`);
 await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
 await open(q);
 const count = await page.textContent('#filter-count');
-ok('the count measures against the whole watchlist', / of \d+ cars/.test(count) && /\+/.test(count), count);
+// The total is written with num(), which is toLocaleString — so it grows a
+// comma at a thousand cars and `\d+` stops matching. The watchlist holds 444
+// today and about 1,148 once all thirty-six models carry cars, so this check
+// was a dated time bomb: CI would go red on an unreviewed bot commit, for a
+// separator. Four other reads of this same element in this file already allow
+// it; this was the one that did not. Read the number and compare it to the
+// sheet, so the check is about the VALUE and not about the shape of it.
+const totalCars = Object.values(SHEET.brands || {})
+  .flatMap((b) => Object.values(b.models || {}))
+  .reduce((n, m) => n + (m.listings || []).length, 0);
+// ONE parser, used by both checks below. The first draft gave each its own
+// copy, and mutating the first left the second passing — two copies of a rule
+// is two places for it to be wrong, and the mutant found it immediately.
+const totalIn = (txt) => Number(((txt.match(/ of ([\d,]+) cars/) || [])[1] || '').replace(/,/g, ''));
+const seenTotal = totalIn(count);
+ok('the count measures against the whole watchlist',
+   seenTotal === totalCars && /\+/.test(count),
+   `${count} · sheet holds ${totalCars}`);
+// Served, because 444 cars cannot exercise the separator and the projection
+// says the full watchlist is about 1,148. Every listing of one model is
+// cloned until the sheet crosses a thousand, with fresh VINs so the page's
+// own de-duplication does not undo it.
+await ctx.route('**/data.json', async (route) => {
+  const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+  const m = Object.values(sheet.brands).flatMap((b) => Object.values(b.models))
+    .sort((a, b2) => (b2.listings || []).length - (a.listings || []).length)[0];
+  const seed = [...(m.listings || [])];
+  let i = 0;
+  while (Object.values(sheet.brands).flatMap((b) => Object.values(b.models))
+    .reduce((n, mm) => n + (mm.listings || []).length, 0) <= 1100)
+    m.listings.push({ ...seed[i % seed.length], vin: `CLONE${String(i++).padStart(12, '0')}` });
+  return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+});
+let big;
+try { await open(q); big = await page.textContent('#filter-count'); }
+finally { await ctx.unroute('**/data.json'); }
+const bigTotal = totalIn(big);
+ok('and it still reads it once the watchlist passes a thousand cars',
+   bigTotal > 1000 && /,/.test(big),
+   `"${big.trim()}" · parsed ${bigTotal}`);
 
 const chipCR = await page.evaluate(() => {
   const n = document.querySelector('#f-model button[aria-pressed="true"] .chip-n');
@@ -663,8 +736,12 @@ const watched = Object.entries(site.brands || {}).flatMap(([bk, b]) =>
   Object.entries(b.models || {}).map(([mk, m]) => ({ bk, mk, nt: Object.keys(m.trims || {}).length })));
 const subject = watched.length > 1 ? watched.find((m) => m.nt > 1) : null;
 const chipStates = [['the watchlist', null]];      // whatever the check above left — chips pressed and not
+// Two themes per place, so a missing model page is two skips, not one — see
+// GHOST above for why the count has to be the same either way.
 if (subject) chipStates.push(['a model page', `?brand=${subject.bk}&m=${subject.mk}`]);
-else skip('every chip count is readable on a model page', 'no watched model has two trims today');
+else for (const theme of ['dark', 'light'])
+  skip(`every chip count is readable on a model page, in ${theme}`,
+       'no watched model has two trims today');
 plan(...chipStates.flatMap(([where]) => ['dark', 'light']
   .map((theme) => `every chip count is readable on ${where}, in ${theme}`)));
 for (const [where, query] of chipStates) {
@@ -693,11 +770,11 @@ await step('what a note may say', async () => {
 // the page prints from a note may carry a dated commitment, because a date in
 // the dek rots silently on a page that is published every day.
 //
-// Asserted over the DATA, because every note reaches a dek (index.html:2392)
-// and a chip title (:3586), and a rule enforced on one URL is the gap that let
+// Asserted over the DATA, because every note reaches both a dek and a chip
+// title, and a rule enforced on one URL is the gap that let
 // rather than named here — naming bmw-i5-edrive40 would test the config, and
 // would pass vacuously the day that trim is renamed or the i5 drops to one
-// trim (chips render only when tIds.length > 1, :3580).
+// trim (buildFilters() renders trim chips only when tIds.length > 1).
 plan('no note on the watchlist carries a dated commitment', 'a described trim reaches the dek',
      'and the chip it sits beside says the same', 'and neither reads as a deadline');
 const DATED = /\b(decide|decision|deadline)\s+by\b|\bby\s+(mid|early|late)[- ]?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
@@ -728,6 +805,342 @@ if (!subject) {
   ok('and neither reads as a deadline', !DATED.test(dek) && !DATED.test(chip || ''), dek);
 }
 });
+// --- the one-sentence purpose line counts what it names ----------------------
+// `rows` in overviewTitles() is the MODEL list — the meta row one line below
+// counts the same array as "N models" — and the sentence called them cars.
+// "7 electric cars" sat over a sheet holding 502 of them for as long as the
+// watchlist was small enough for nobody to look; one EV per brand made it
+// "35 electric cars" over 444. Pinned against both populations, because a
+// check that only knew the model count would pass on either noun.
+await step('the watchlist dek counts what it names', async () => {
+plan('the watchlist dek counts models, not cars',
+     'and the meta row beside it counts the same models');
+const sheet = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const models = Object.values(sheet.brands || {}).flatMap((b) => Object.keys(b.models || {})).length;
+const cars = Object.values(sheet.brands || {}).flatMap((b) => Object.values(b.models || {}))
+  .reduce((n, m) => n + (m.listings || []).length, 0);
+if (!models || models === cars) return skipRest(`the sheet holds ${models} models and ${cars} cars — nothing to tell apart`);
+await open('');
+const dek = (await page.textContent('#dek')).replace(/\s+/g, ' ').trim();
+ok('the watchlist dek counts models, not cars',
+   new RegExp(`^${models} electric models\\b`).test(dek) && !/electric cars/.test(dek),
+   `${models} models, ${cars} cars on the sheet — the page says "${dek.slice(0, 90)}"`);
+const meta = (await page.textContent('#meta') || '').replace(/\s+/g, ' ');
+const shop = Object.values(sheet.brands || {}).flatMap((b) => Object.values(b.models || {}))
+  .filter((m) => m.shopping).length;
+ok('and the meta row beside it counts the same models',
+   meta.includes(`${shop} shopping · ${models - shop} comparison`),
+   `"${meta.slice(0, 120)}" · ${shop} of ${models}`);
+});
+
+// --- naming nothing is a state, not an absence -------------------------------
+// `buyer.shopping` names the models the decision card lays out. Empty is what
+// a person browsing thirty-six models has before they have chosen anything —
+// and the front page answered it by removing its most important block without
+// a word. It is a different state from "the reader's own chips left nothing
+// shopped in view", which is deliberate and stays silent, so both are served
+// here and the checks are what tell them apart.
+await step('naming nothing is a state, not an absence', async () => {
+plan('with no models named the decision card says so instead of vanishing',
+     'and it lays out no cars, because there are none to lay out',
+     'while the reader\'s own chips emptying it stays silent, as before',
+     'and the meta row never counts the same models twice');
+const serveUnshopped = async () => {
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    sheet.buyer.shopping = [];
+    for (const b of Object.values(sheet.brands || {}))
+      for (const m of Object.values(b.models || {})) {
+        m.shopping = false;
+        for (const t of Object.values(m.trims || {})) t.shopping = false;
+        for (const x of (m.listings || [])) delete x.shopping;
+      }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+};
+const readHero = () => page.evaluate(() => ({
+  hidden: document.getElementById('hero-card').hidden,
+  hint: (document.getElementById('hero-hint').textContent || '').replace(/\s+/g, ' ').trim(),
+  cars: document.getElementById('hero-cars').children.length,
+  gapHidden: document.getElementById('hero-gap').hidden,
+  meta: (document.getElementById('meta').innerText || '').replace(/\s+/g, ' ').trim(),
+}));
+await serveUnshopped();
+let none;
+try { await open(''); none = await readHero(); } finally { await ctx.unroute('**/data.json'); }
+ok('with no models named the decision card says so instead of vanishing',
+   !none.hidden && /No models are named/.test(none.hint) && /model chips|buyer\.shopping/.test(none.hint),
+   `hidden=${none.hidden} · "${none.hint.slice(0, 150)}"`);
+ok('and it lays out no cars, because there are none to lay out',
+   none.cars === 0 && none.gapHidden === true,
+   `${none.cars} tiles, gap hidden=${none.gapHidden}`);
+
+// The control: models ARE named, and the reader presses a chip for one that is
+// not among them. Same empty hero, different cause, and the page has always
+// been right to stay quiet — the reader knows what they just pressed.
+const shopped = new Set((SHEET.buyer || {}).shopping || []);
+const other = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] }))
+  .find((o) => !Object.keys(o.m.trims || {}).some((t) => shopped.has(t)));
+if (!shopped.size || !other) skip('while the reader\'s own chips emptying it stays silent, as before',
+                                  'this sheet names no shopped models, or every model is shopped');
+else {
+  await open(`?models=${other.w.bk}-${other.w.mk}`);
+  const chip = await readHero();
+  ok('while the reader\'s own chips emptying it stays silent, as before',
+     chip.hidden === true && !/No models are named/.test(chip.hint),
+     `pressing ${other.w.bk}/${other.w.mk}: hidden=${chip.hidden} · "${chip.hint.slice(0, 90)}"`);
+}
+
+// "1 of 36 models · 1 models" — the count twice, and un-pluralised. Always
+// reachable; the ordinary case now that thirty-four of the thirty-six models
+// are not shopped, so almost any chip a reader presses lands on it.
+// The state that PRODUCES it is a chip on a model nobody is shopping — with
+// nShop 0 the last clause falls through to its own count beside the
+// selection's. A first version of this check pressed WATCHED[0], which is a
+// shopped model, so it never visited the bug at all and stayed green with the
+// duplicate restored: a check that cannot fail, caught by mutating the fix.
+const metaQueries = ['', `?models=${WATCHED[0].bk}-${WATCHED[0].mk}`];
+if (other) metaQueries.push(`?models=${other.w.bk}-${other.w.mk}`);
+if (WATCHED[1]) metaQueries.push(`?models=${WATCHED[0].bk}-${WATCHED[0].mk},${WATCHED[1].bk}-${WATCHED[1].mk}`);
+const metas = [none.meta];
+for (const q of metaQueries) { await open(q); metas.push((await readHero()).meta); }
+const dup = metas.find((m) => /\b1 models\b/.test(m) || /of \d+ models · \d+ models/.test(m));
+ok('and the meta row never counts the same models twice', !dup,
+   dup ? `"${dup}"` : metas.map((m) => '"' + m.replace(/^Data through [^·]+· /, '') + '"').join(' · '));
+});
+
+// --- a query that ran and found nothing is not a query that never ran --------
+// A query that comes back empty writes no row, so `as_of` stays null and the
+// model meta read "Not fetched yet · first run <ten days out>" for ever, since
+// next_due always rolls forward. Thirty of the thirty-six models have never
+// run and their model strings are unverified guesses, so the state this is
+// about — a string that names something the API does not know, billing a call
+// every cadence — is the likeliest thing to happen next on this watchlist.
+await step('a query that found nothing is not a query that never ran', async () => {
+plan('a model no query has reached says it has not been fetched',
+     'and one whose query ran and found nothing says THAT instead');
+const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const victim = (() => {
+  for (const [bk, b] of Object.entries(site.brands || {}))
+    for (const [mk, m] of Object.entries(b.models || {}))
+      if (!(m.listings || []).length && !m.as_of && !m.last_asked) return { bk, mk, m };
+  return null;
+})();
+if (!victim) return skipRest('every model on this sheet has been fetched');
+const meta = () => page.evaluate(() => (document.getElementById('meta').innerText || '').replace(/\s+/g, ' ').trim());
+await open(`?brand=${victim.bk}&m=${victim.mk}`);
+const never = await meta();
+ok('a model no query has reached says it has not been fetched',
+   /Not fetched yet/.test(never) && /first run/.test(never), `"${never}"`);
+// Served: the same model, with the day its query ASKED. Same empty listings,
+// same null as_of — one field different, and the sentence has to change.
+await ctx.route('**/data.json', async (route) => {
+  const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+  sheet.brands[victim.bk].models[victim.mk].last_asked = '2026-09-01';
+  return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+});
+let asked;
+try { await open(`?brand=${victim.bk}&m=${victim.mk}`); asked = await meta(); }
+finally { await ctx.unroute('**/data.json'); }
+ok('and one whose query ran and found nothing says THAT instead',
+   !/Not fetched yet/.test(asked) && /nothing found/i.test(asked) && /Sep 1, 2026|September 1, 2026/.test(asked)
+     // …and no other clause of the same line may still say it has not run.
+     // Both were true at once on the first pass: "Asked Tue, September 1,
+     // 2026, nothing found · Fetched every 4 days · first fetch pending for
+     // this view".
+     && !/first fetch pending/.test(asked),
+   `"${asked}"`);
+});
+
+// --- the brand row is navigation, not the page ------------------------------
+// It was six pills and is thirty-five. At 390x844 it stood 382px tall — 45% of
+// the first screen — and pushed "The decision", the card this product exists
+// for, to y=782 of 844: its heading on screen and not one number in it. The
+// oracle is what a reader can SEE, not the row's height: a height is a fact
+// about the market (more brands, taller row) and the decision card's first
+// figure being on the first screen is the claim.
+await step('the brand row is navigation, not the page', async () => {
+plan('a phone reaches the leading card without scrolling',
+     'and the row costs a constant, whatever the watchlist holds',
+     'and every brand is still reachable, pressed one scrolled into view');
+await page.setViewportSize({ width: 390, height: 844 });
+await open('');
+// The subject used to be the DECISION card, because it led the page. It does
+// not any more — the Signal Matrix does, on purpose — so naming a card here
+// would assert a layout decision rather than the rule. The rule is that
+// NAVIGATION does not eat the first screen, and the oracle is whichever
+// content card comes first: its first figure has to be on it.
+const seen = await page.evaluate(() => {
+  const t = document.getElementById('tabs-brand');
+  if (!t || t.hidden) return null;
+  // Not the COVER. It sits above everything and is always on the first
+  // screen, so leading with it makes this unfailable — the first draft did
+  // exactly that and reported the dek as the figure it had found. The
+  // subject is the first card BELOW the cover, which is what the brand row
+  // pushes down.
+  const cover = document.querySelector('.sc-cover, #car-heading');
+  const coverBottom = cover ? cover.getBoundingClientRect().bottom : 0;
+  const cards = [...document.querySelectorAll('main section, main > .sc-card, #signal-card, #hero-card')]
+    .filter((c) => !c.hidden && c.getBoundingClientRect().height > 0
+                   && !c.contains(cover) && c !== cover
+                   && c.getBoundingClientRect().top >= coverBottom - 1)
+    .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+  const lead = cards[0];
+  if (!lead) return null;
+  const fig = [...lead.querySelectorAll('*')]
+    .find((n) => !n.children.length && /[\d]/.test(n.textContent || '')
+                 && n.getBoundingClientRect().height > 0);
+  return { tabs: Math.round(t.getBoundingClientRect().height),
+           tabsN: t.children.length,
+           lead: lead.id || lead.className.split(' ')[0],
+           firstFigure: fig ? Math.round(fig.getBoundingClientRect().bottom) : null,
+           figText: fig ? (fig.textContent || '').trim().slice(0, 30) : null,
+           vh: innerHeight };
+});
+if (!seen) return skipRest('this sheet has no brand row or no content card');
+ok('a phone reaches the leading card without scrolling',
+   seen.firstFigure !== null && seen.firstFigure <= seen.vh,
+   `${seen.tabsN} brand tabs in ${seen.tabs}px; #${seen.lead} leads and its first figure `
+   + `(${seen.figText}) ends at y=${seen.firstFigure} of ${seen.vh}`);
+// The cap used to be three wrapped rows, which fixed the symptom and left the
+// height a function of the market — nineteen brands filled all three, and the
+// twentieth would have started scrolling a row nobody can see is scrollable.
+// One line, scrolled sideways, is a constant: this asserts the cost does not
+// grow with the watchlist, which is the thing that went wrong at six brands
+// becoming thirty-five.
+ok('and the row costs a constant, whatever the watchlist holds',
+   seen.tabs <= 56,
+   `${seen.tabsN} brand tabs stand ${seen.tabs}px tall; one row is about 39`);
+// …and the cap must not hide a brand from the reader who asked for it.
+// THREE brands, and the middle one is the load-bearing case: at the end of
+// the row every arithmetic lands on the same place, because the scroll is
+// clamped to its maximum either way. The first draft checked only the last
+// brand and stayed green with the buggy offsetTop version restored — the
+// version that really did leave the pressed tab out of view, which is how
+// this scroll was found in the first place.
+const brands = Object.keys(SHEET.brands || {});
+const probe = [...new Set([brands[Math.floor(brands.length / 2)],
+                           brands[brands.length - 1], brands[0]])].filter(Boolean);
+const out = [];
+for (const bk of probe) {
+  const mk = Object.keys(SHEET.brands[bk].models || {})[0];
+  await open(`?brand=${bk}&m=${mk}`);
+  out.push(await page.evaluate(() => {
+    const t = document.getElementById('tabs-brand');
+    const on = t.querySelector('[aria-pressed="true"]');
+    if (!on) return null;
+    const hb = t.getBoundingClientRect(), ob = on.getBoundingClientRect();
+    return { label: on.textContent, inside: ob.top >= hb.top - 2 && ob.bottom <= hb.bottom + 2,
+             scrolls: t.scrollHeight > t.clientHeight + 1, top: Math.round(t.scrollTop) };
+  }));
+}
+ok('and every brand is still reachable, pressed one scrolled into view',
+   out.length === probe.length && out.every((p) => p && p.inside),
+   out.map((p, i) => p ? `"${p.label}" at ${p.top}px ${p.inside ? 'in view' : 'OUT OF VIEW'}`
+                       : `${probe[i]}: no pressed tab`).join(' · '));
+await page.setViewportSize({ width: 1280, height: 1000 });
+});
+
+// --- five chart colours cannot carry thirty-four brands ----------------------
+// brandTone() hands a categorical slot to the first five brands in watchlist
+// order and `chart-other` to the rest — which is not what `other` is for: the
+// sheet folds a SIXTH category into it, singular, not twenty-nine separate
+// ones. Measured on a full-size record, 29 of 36 lines came out byte-identical
+// under a hint that said "colored by brand". Nothing in this file read a
+// stroke, so the whole channel was unasserted.
+await step('the chart draws out what the reader is comparing', async () => {
+plan('the lines a reader is not comparing share one context tone',
+     'and the ones they are get a slot each, and their name at the end',
+     'the legend lists what is drawn and nothing else',
+     'and no sentence on the page says colour is the brand',
+     'and pressing two models nobody is shopping draws THOSE out');
+// Per series, not aggregated: a model with a single day draws as circles and
+// no path at all, so counting paths and comparing the total to the number of
+// series is off by one and says nothing about which line wears which tone.
+const styles = () => page.evaluate(() => {
+  // The LINE's stroke, and only that: the end-point marker is a filled dot
+  // with a white halo stroke, so reading every element's stroke reports
+  // rgb(255,255,255) on every series and a single-day series reports nothing
+  // else at all. `.sc-chart__series` is the path.
+  const tones = {};
+  for (const n of document.querySelectorAll('#chart path.sc-chart__series[data-sid]'))
+    (tones[n.getAttribute('data-sid')] = tones[n.getAttribute('data-sid')] || new Set())
+      .add(getComputedStyle(n).stroke);
+  const by = {};
+  for (const n of document.querySelectorAll('#chart .sc-chart__series')) {
+    const cs = getComputedStyle(n); const k = `${cs.stroke}|${cs.strokeDasharray}`;
+    by[k] = (by[k] || 0) + 1;
+  }
+  return { by, tones: Object.fromEntries(Object.entries(tones).map(([k, v]) => [k, [...v]])),
+           n: document.querySelectorAll('#chart .sc-chart__series').length,
+           context: getComputedStyle(document.documentElement).getPropertyValue('--sc-chart-context').trim(),
+           labels: [...document.querySelectorAll('#chart text')].map((t) => t.textContent)
+             .filter((t) => /[A-Za-z]/.test(t) && !/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/.test(t)),
+           chips: [...document.querySelectorAll('#legend .sc-legend__chip')].map((c) => c.textContent.trim()),
+           drawn: [...new Set([...document.querySelectorAll('#chart [data-sid]')].map((n) => n.getAttribute('data-sid')))],
+           hint: (document.getElementById('chart-hint') || {}).textContent || '' };
+});
+await open('');
+const o = await styles();
+if (!o.n) return skipRest('no model on this sheet has price history to draw');
+// The shopped models are BMW's, so every non-BMW line must share one tone.
+const shoppedBrands = new Set(Object.entries(SHEET.brands)
+  .filter(([, b]) => Object.values(b.models || {}).some((m) => m.shopping)).map(([bk]) => bk));
+const otherDrawn = o.drawn.filter((id) => !shoppedBrands.has(id.split('/')[0]));
+// Each series against the context colour the sheet itself defines, so a
+// palette change cannot quietly satisfy this.
+const ctx = o.context.toLowerCase();
+const asRgb = (hex) => { const h = hex.replace('#', '');
+  return `rgb(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)})`; };
+const want = ctx.startsWith('#') ? asRgb(ctx) : ctx;
+// A series with no path drew a single point and has no line tone to judge.
+const lined = (id) => (o.tones[id] || []).length > 0;
+const offFocus = otherDrawn.filter((id) => lined(id) && o.tones[id].some((t) => t !== want));
+const onFocus = o.drawn.filter((id) => shoppedBrands.has(id.split('/')[0])
+  && lined(id) && o.tones[id].some((t) => t === want));
+ok('the lines a reader is not comparing share one context tone',
+   offFocus.length === 0 && onFocus.length === 0,
+   `context ${want} · ${otherDrawn.filter(lined).length} lined series outside the shopped brands`
+   + (offFocus.length ? ` · NOT context: ${offFocus.join(', ')}` : '')
+   + (onFocus.length ? ` · shopped but grey: ${onFocus.join(', ')}` : '')
+   + ` · ${JSON.stringify(o.tones)}`);
+ok('and the ones they are get a slot each, and their name at the end',
+   [...shoppedBrands].every((bk) => o.labels.some((l) => o.drawn.some((id) => id.startsWith(bk + '/'))
+     && l.includes(SHEET.brands[bk].label || bk))),
+   `end labels ${JSON.stringify(o.labels)} · shopped ${[...shoppedBrands].join(',')}`);
+ok('the legend lists what is drawn and nothing else',
+   o.chips.length === o.drawn.length,
+   `${o.chips.length} chips over ${o.drawn.length} drawn series (was 36 chips over 7)`);
+const prose = [o.hint, await page.textContent('#map-hint').catch(() => '')].join(' ');
+ok('and no sentence on the page says colour is the brand',
+   !/colou?red by brand|colou?r is the brand/i.test(prose)
+     // …and the sentence that replaced it counts BRANDS, which is the
+     // population the hue channel would have to carry. It said "36 models"
+     // beside the right number, which is this repo's oldest defect shape.
+     && new RegExp(`cannot carry ${Object.keys(SHEET.brands || {}).length} brands`).test(prose),
+   `"${prose.replace(/\s+/g, ' ').slice(0, 200)}"`);
+
+// A SECOND state, because with nothing pressed the focus set IS the shopped
+// brands and `labeled: focus.has(bk)` cannot be told from `labeled:
+// m.shopping` — which is a mutant that survived on the first pass. Pressing
+// two models nobody is shopping is the state that separates them.
+const unshopped = Object.entries(SHEET.brands)
+  .filter(([, b]) => Object.values(b.models || {}).every((m) => !m.shopping))
+  .flatMap(([bk, b]) => Object.entries(b.models || {}).map(([mk, m]) => ({ bk, mk, m })))
+  .filter(({ m }) => (m.daily || []).length >= 2).slice(0, 2);
+if (unshopped.length < 2) skip('and pressing two models nobody is shopping draws THOSE out',
+                               'fewer than two unshopped models have history to draw');
+else {
+  await open('?models=' + unshopped.map(({ bk, mk }) => `${bk}-${mk}`).join(','));
+  const p2 = await styles();
+  const wanted = unshopped.map(({ bk, mk }) => `${bk}/${mk}`);
+  const named = wanted.every(({ }, i) => p2.labels.some((l) => l.includes(unshopped[i].m.label)));
+  const coloured = wanted.every((id) => (p2.tones[id] || []).every((t) => t !== want));
+  ok('and pressing two models nobody is shopping draws THOSE out', named && coloured,
+     `${wanted.join(', ')} · end labels ${JSON.stringify(p2.labels)} · tones ${JSON.stringify(p2.tones)}`);
+}
+});
+
 // ---- ns/NS-09 ----
 await step('the filter count announces itself', async () => {
 // Pressing a chip rewrote the tiles, the map, the chart and the table and
@@ -880,7 +1293,15 @@ plan('a zero-car trim says why the page is empty',
      'a stale link onto an empty trim is not a dead end either',
      'the empty-filters notice counts what its own link restores');
 const DATA = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
-const perTrim = (m) => (m.listings || []).reduce((c, x) => (c[x.trim_id] = (c[x.trim_id] || 0) + 1, c), {});
+// The page's own membership rule: a car two queries both returned is one row
+// with the cheaper copy's trim_id and the other under `also`, and it is in both
+// trims. Counting only trim_id here would pick a "victim" trim that the page
+// still shows cars for, and the emptying below would leave two behind.
+const inTrimOf = (x, id) => x.trim_id === id || ((x.also || []).some((a) => a.trim_id === id));
+const perTrim = (m) => (m.listings || []).reduce((c, x) => {
+  for (const id of new Set([x.trim_id, ...(x.also || []).map((a) => a.trim_id)])) c[id] = (c[id] || 0) + 1;
+  return c;
+}, {});
 // A model with no listings at all is the pre-existing `!total` path, not this
 function emptyTrim() {
   for (const [bk, b] of Object.entries(DATA.brands || {}))
@@ -915,7 +1336,7 @@ async function synthesizeEmptyTrim() {
         const r = await route.fetch();
         const sheet = JSON.parse(await r.text());
         const mm = ((sheet.brands || {})[bk] || {}).models[mk];
-        mm.listings = (mm.listings || []).filter((x) => x.trim_id !== victim);
+        mm.listings = (mm.listings || []).filter((x) => !inTrimOf(x, victim));
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
       });
       stubbedEmpty = true;
@@ -1206,7 +1627,9 @@ await step('a phone in landscape', async () => {
 // the viewport, on a panel that scrolls — and those three do not move when the
 // market does.
 plan('a phone in landscape still sees the results under the filter bar',
-     'and can still reach every filter in it', 'and the cap lifts again on a tall screen');
+     'and can still reach every filter in it',
+     'and the short-viewport cap is the tighter of the two',
+     'and the desktop panel is capped without being clipped');
 const subject = (() => {
   const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const all = [];
@@ -1221,7 +1644,8 @@ await page.setViewportSize({ width: 844, height: 390 });
 if (!subject) {
   skip('a phone in landscape still sees the results under the filter bar', 'data.json names no model to open');
   skip('and can still reach every filter in it', 'data.json names no model to open');
-  skip('and the cap lifts again on a tall screen', 'data.json names no model to open');
+  skip('and the short-viewport cap is the tighter of the two', 'data.json names no model to open');
+  skip('and the desktop panel is capped without being clipped', 'data.json names no model to open');
 } else {
   await open(subject.q);
   await page.evaluate(() => window.scrollTo(0, 4000));
@@ -1245,14 +1669,31 @@ if (!subject) {
       c.scrollTop = c.scrollHeight;
       return c.scrollTop > 0;
     }))), `overflow-y:${land.overflowY}, ${land.clipped}px past the cap`);
-  // …and it is keyed to the SHORT viewport, not applied everywhere. This one
-  // is a guard, not a reproduction: it holds on the unfixed page too, and its
-  // job is to catch a later edit that drops the media query and caps the bar
-  // on the desktop the sticky panel was designed for.
+  // This used to read "and the cap lifts again on a tall screen", asserting
+  // max-height:none at 390x844 — which was true while the panel fitted there.
+  // One EV per brand put 35 model chips in it and the panel measured 1848px on
+  // that 844px screen: a sticky element taller than its viewport, whose lower
+  // two-thirds no scroll offset can reach. The cap is unconditional now, so
+  // the two things still worth guarding are that the media query is not dead
+  // weight (the short viewport must be capped TIGHTER, since it can spare
+  // less) and that the desktop the sticky panel was designed for is capped
+  // without being clipped — which is what the old assertion was really
+  // protecting, and it is now checked where a desktop actually is.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(250);
-  const tall = await page.evaluate(() => getComputedStyle(document.getElementById('filters-card')).maxHeight);
-  ok('and the cap lifts again on a tall screen', tall === 'none', `max-height ${tall} at 390x844`);
+  const tall = await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('filters-card')).maxHeight));
+  ok('and the short-viewport cap is the tighter of the two',
+     tall > 0 && land.capPx > 0 && land.capPx / land.vh < tall / 844,
+     `${Math.round(land.capPx)}px of 390 in landscape, ${Math.round(tall)}px of 844 in portrait`);
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.waitForTimeout(250);
+  const desk = await page.evaluate(() => {
+    const c = document.getElementById('filters-card');
+    return { clipped: c.scrollHeight - c.clientHeight, h: c.scrollHeight,
+             cap: parseFloat(getComputedStyle(c).maxHeight) };
+  });
+  ok('and the desktop panel is capped without being clipped', desk.clipped <= 1,
+     `panel ${desk.h}px under a ${Math.round(desk.cap)}px cap at 1280x1000, ${desk.clipped}px clipped`);
 }
 });
 
@@ -2448,10 +2889,18 @@ await step('the market sentence describes the trim in view', async () => {
     const tracked = rows.filter((x) => (x.days_tracked || 0) >= 2), swings = tracked.filter(swing), counted = tracked.filter((x) => !swing(x)), cut = counted.filter((x) => x.cuts);
     const drops = [];
     for (const x of rows) { if (swing(x)) continue; const s = x.series || []; for (let i = 1; i < s.length; i++) if (s[i][1] != null && s[i - 1][1] != null && s[i][1] < s[i - 1][1]) drops.push(s[i - 1][1] - s[i][1]); }
+    // `departures` before the listing-date filter, because the median's n is
+    // not the number of departures and both surfaces printed it as one. The
+    // still-listed clause is the page's own stillListed(): a VIN that left one
+    // watch and is listed under another trim did not leave the market.
+    const stillL = (g) => !!(g && g.still_listed && (g.still_listed.trim || g.still_listed.trim_id));
     const spans = [], seen = new Set();
+    let departures = 0;
     for (const g of gone) {
-      if (g.likely !== 'delisted' || g.exact !== true || !g.listed_since) continue;
+      if (g.likely !== 'delisted' || g.exact !== true || stillL(g)) continue;
       const k = String(g.vin || '').toUpperCase(); if (seen.has(k)) continue; seen.add(k);
+      departures++;
+      if (!g.listed_since) continue;
       spans.push(Math.max(0, Math.round((Date.parse(String(g.last_seen).slice(0, 10) + 'T00:00:00Z') - Date.parse(String(g.listed_since).slice(0, 10) + 'T00:00:00Z')) / 86400000)));
     }
     const out = [];
@@ -2469,7 +2918,7 @@ await step('the market sentence describes the trim in view', async () => {
       out.push(`${netDown.length} of ${counted.length} ask less than when first seen` + (medNet ? `, median $${medNet.toLocaleString('en-US')} less` : '') + (restored.length ? ` · ${restored.length} cut and put back` : ''));
       out.push(`${counted.length ? Math.round(cut.length / counted.length * 100) : 0}% of ${counted.length} cut while tracked` + (drops.length ? `, median $${Math.trunc(med(drops)).toLocaleString('en-US')} of ${drops.length} cut${drops.length === 1 ? '' : 's'}` : '') + (swings.length ? ` · ${swings.length} seen at two prices, not counted` : ''));
     }
-    if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} gone)`);
+    if (spans.length >= 12) out.push(`listings ran at least ~${Math.trunc(med(spans))}d (${spans.length} of ${departures} dated)`);
     return { out, spans: spans.length };
   };
   const dedupe = (rows) => { const seen = new Set(); return rows.filter((g) => { const k = String(g.vin || '').toUpperCase(); if (seen.has(k)) return false; seen.add(k); return true; }); };
@@ -2482,6 +2931,14 @@ await step('the market sentence describes the trim in view', async () => {
         if (!rows.length) continue;
         const mine = bitsOf(rows, dedupe((m.gone || []).filter((g) => g.trim_id === tid)));
         if (mine.out.join(' · ') === whole.out.join(' · ')) continue;
+        // …and it must be able to SPEAK. The served check below asserts that
+        // two floors stay shut while the cut clause still prints, so a trim
+        // whose own sentence has no cut clause proves nothing there — it is
+        // silent for a reason the check is not about. bitsOf() needs five
+        // tracked cars for that clause, and when one EV per brand made
+        // bmw-i5-cpo (four listings) the first differing trim on the sheet,
+        // the check failed on a page that was behaving correctly.
+        if (!mine.out.some((t) => /cut while tracked/.test(t))) continue;
         // prefer the case the bug was found on: a trim with too few departures
         // of its own under a model whose sentence carries the days-to-go clause
         const borrowed = whole.out.some((t) => /listings ran/.test(t)) && mine.spans < 12;
@@ -2771,28 +3228,40 @@ await step('one car, one number', async () => {
       await ctx.unroute('**/data.json');
     }
   }
-  // Sightings over their span, car by car: the row's star button carries the
-  // VIN, so each label is checked against the car's own series — "6 of 12"
-  // has to be six sightings across twelve days, not a doubled count.
+  // Sightings over the FETCHES they span, car by car: the row's star button
+  // carries the VIN, so each label is checked against the car's own series.
+  // The denominator is how many times the car's target was fetched while the
+  // car was listed, not how many days passed — at the ten-day cadence
+  // twenty-eight models now run on, a car with a perfect record read "seen 4
+  // of 31 days" and a buyer reads that as a car that keeps disappearing.
+  const fetchDaysOf = (tid) => {
+    for (const b of Object.values(SHEET.brands || {}))
+      for (const m of Object.values(b.models || {}))
+        if ((m.fetch_days || {})[tid]) return m.fetch_days[tid];
+    return [];
+  };
   const seenOf = (x) => {
     const n = x.days_tracked || 0;
     if (!n) return null;
+    if (n === 1) return 'seen once';
     const s = x.series || [];
-    const span = s.length > 1 ? Math.round((Date.parse(s[s.length - 1][0] + 'T00:00:00Z') - Date.parse(s[0][0] + 'T00:00:00Z')) / 86400000) + 1 : 1;
-    return n === 1 ? 'seen once' : `seen ${n} of ${Math.max(span, n)} days`;
+    if (s.length < 2) return `seen ${n} times`;
+    const first = String(s[0][0]).slice(0, 10), last = String(s[s.length - 1][0]).slice(0, 10);
+    const looks = fetchDaysOf(x.trim_id).filter((d) => d >= first && d <= last).length;
+    return looks >= n ? `seen ${n} of ${looks} fetches` : `seen ${n} times`;
   };
   const byVin = new Map((mm.listings || []).map((x) => [x.vin, x]));
   await open(carried.q);
   const rows = await page.$$eval('#list-table tbody tr', (trs) => trs.map((tr) => {
     const b = tr.querySelector('[data-fkey^="star:"]');
-    const m = tr.innerText.match(/seen (?:once|\d+ of \d+ days)|tracked \d+d/);
+    const m = tr.innerText.match(/seen (?:once|\d+ times|\d+ of \d+ fetches)|tracked \d+d/);
     return { vin: b ? b.getAttribute('data-fkey').slice(5) : '', label: m ? m[0] : '' };
   }));
   const wrongRows = rows.filter((r) => byVin.has(r.vin) && (byVin.get(r.vin).days_tracked > 1) && r.label !== seenOf(byVin.get(r.vin)));
   await page.setViewportSize({ width: 390, height: 844 });
   await open(carried.q);
   const phoneText = await page.locator('#list-card').innerText();
-  const phoneLabels = [...phoneText.matchAll(/seen (?:once|\d+ of \d+ days)/g)].map((m) => m[0]);
+  const phoneLabels = [...phoneText.matchAll(/seen (?:once|\d+ times|\d+ of \d+ fetches)/g)].map((m) => m[0]);
   const expected = new Set((mm.listings || []).map(seenOf).filter(Boolean));
   await page.setViewportSize({ width: 1280, height: 1000 });
   ok('a car\'s sightings are counted, not aged',
@@ -3648,7 +4117,8 @@ await step('since your visit', async () => {
        'a reload on the same data day repeats it rather than losing it',
        'a first visit says nothing',
        'and a remembered day before the record',
-       'and a slot a dead link already claims');
+       'and a slot a dead link already claims',
+       'a car the watchlist dropped is not the market losing it');
   const buyer = SHEET.buyer || {}, f = buyer.fees || null, P0 = buyer.picks || {};
   const want = new Set(buyer.shopping || []);
   if (!want.size) return skipRest('this sheet names no shopped trims');
@@ -3698,12 +4168,17 @@ await step('since your visit', async () => {
       const less = live.filter((x) => { const then = priceOn(x); return then != null && x.price != null && x.price < then; }).length;
       const liveVins = new Set((o.m.listings || []).map((x) => x.vin));
       const gone = (o.m.gone || []).filter((g) => tids.has(g.trim_id) && g.last_seen >= since && !liveVins.has(g.vin));
-      const exact = gone.filter((g) => g.exact && g.likely === 'delisted').length, unseen = gone.length - exact;
+      // Same split as the page: a watchlist edit is not the market moving,
+      // and `unseen` is a remainder that would otherwise absorb it.
+      const moved = gone.filter((g) => g.likely === 'out of scope').length;
+      const real = gone.filter((g) => g.likely !== 'out of scope');
+      const exact = real.filter((g) => g.exact && g.likely === 'delisted').length, unseen = real.length - exact;
       const ledger = ledgerOf(o.m);
       const then = ledger && ledger.filter((d) => d.day <= since).pop(), now = ledger && ledger[ledger.length - 1];
       const floor = then && now ? (then.v === now.v ? `floor unchanged at ${money(now.v)}` : `floor ${money(then.v)} → ${money(now.v)}`) : '';
-      const left = !gone.length ? 'none gone' : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen` : exact ? `${exact} gone` : `${unseen} stopped being seen, none confirmed gone`;
-      bits.push(`${o.label} — ${[floor, `${fresh} new`, `${less} ask less than then`, left].filter(Boolean).join(', ')}`);
+      const left = !real.length ? 'none gone' : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen` : exact ? `${exact} gone` : `${unseen} stopped being seen, none confirmed gone`;
+      const dropped = moved ? `${moved} dropped from the watchlist` : '';
+      bits.push(`${o.label} — ${[floor, `${fresh} new`, `${less} ask less than then`, left, dropped].filter(Boolean).join(', ')}`);
     }
     return bits.length ? `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.` : '';
   };
@@ -3747,6 +4222,37 @@ await step('since your visit', async () => {
   const r5 = await read();
   ok('and a slot a dead link already claims', !r5.hidden && !r5.text && /not tracked|no longer|not on/i.test(r5.other),
      r5.text ? `the sentence won over the notice: "${r5.text.slice(0, 60)}"` : `notice: "${r5.other}"`);
+  // Served, both ways round: this sentence's "stopped being seen" count is a
+  // REMAINDER, so a car the watchlist dropped would have been reported as the
+  // market losing it — the same collapse the departures card had, one screen
+  // up. One row, labelled twice, is what tells the two apart; asserting only
+  // the 'out of scope' side would pass on a page that printed the watchlist
+  // clause for every absence.
+  const target = models.map((o) => ({ o, g: (o.m.gone || []).find((g) => want.has(g.trim_id) && g.last_seen >= since
+      && !(o.m.listings || []).some((x) => x.vin === g.vin)) })).find((x) => x.g);
+  if (!target) skip('a car the watchlist dropped is not the market losing it', 'no shopped model has a departure inside the window');
+  else {
+    const say = async (word) => {
+      await ctx.route('**/data.json', async (route) => {
+        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        const mm = sheet.brands[target.o.bk].models[target.o.mk];
+        const row = mm.gone.find((g) => g.vin === target.g.vin);
+        row.likely = word; if (word === 'delisted') row.exact = true;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+      });
+      try { await plant({ through: since, since: null }); await open(''); return (await read()).text; }
+      finally { await ctx.unroute('**/data.json'); }
+    };
+    const asGone = await say('delisted');
+    const asMoved = await say('out of scope');
+    const nOf = (txt, re) => { const m = txt.match(re); return m ? Number(m[1]) : null; };
+    const goneBefore = nOf(asGone, new RegExp(target.o.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^;]*?(\\d+) gone'));
+    const goneAfter = nOf(asMoved, new RegExp(target.o.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^;]*?(\\d+) gone'));
+    ok('a car the watchlist dropped is not the market losing it',
+       !/dropped from the watchlist/.test(asGone) && /1 dropped from the watchlist/.test(asMoved)
+         && goneBefore !== null && goneAfter === goneBefore - 1,
+       `as delisted: "${asGone.slice(0, 150)}" · as out of scope: "${asMoved.slice(0, 170)}"`);
+  }
   await plant(null);
 });
 
@@ -4017,10 +4523,16 @@ await step('a departure from one query is not a departure from the market', asyn
     const nDel = gone.filter((g) => g.likely === 'delisted' && !still(g)).length;
     const nStill = gone.filter(still).length;
     const nOow = gone.filter((g) => !still(g) && g.likely === 'out of window').length;
-    const nNc = gone.length - nDel - nStill - nOow;
+    // 'out of scope' is the fourth word — the watchlist moved, not the car.
+    // Counted here rather than folded into the remainder for the same reason
+    // the page counts it: a remainder silently renames every word it does
+    // not know.
+    const nOos = gone.filter((g) => !still(g) && g.likely === 'out of scope').length;
+    const nNc = gone.length - nDel - nStill - nOow - nOos;
     return [`${nDel} confirmed departure${nDel === 1 ? '' : 's'} (the listing ended — not necessarily a sale)`,
             nStill ? `${nStill} left a watch while the ${nStill === 1 ? 'car is' : 'cars are'} still listed above` : null,
             nOow ? `${nOow} probably still for sale, just outside the fetch window` : null,
+            nOos ? `${nOos} dropped by a watchlist change, not by leaving the market` : null,
             nNc ? `${nNc} not checked on the day ${nNc === 1 ? 'it' : 'they'} vanished` : null].filter(Boolean).join(' · ');
   };
   const goneCount = (m) => { const daily = m.daily || []; if (daily.length < 2) return 0; const prev = daily[daily.length - 2].date;
@@ -4082,6 +4594,72 @@ await step('a departure from one query is not a departure from the market', asyn
       } finally { await ctx.unroute('**/data.json'); }
     }
   }
+});
+
+// --- a watchlist edit is not a market event ----------------------------------
+// Narrowing `years` makes every stored car outside the new range stop coming
+// back, and delisted() used to read that as a query having looked and not
+// found the car: on this repo's own record, restricting to 2024+ retires 84
+// cars across three BMW watches and would have published every one of them as
+// "GONE — the listing ended". Tracking.py calls that "out of scope"; this is
+// the half that says the PAGE knows the word. It matters here specifically
+// because nNc was a remainder — `gone.length - nDel - nStill - nOow` — so any
+// word this file did not name was silently renamed "not checked on the day
+// they vanished", which is false about a car no fetch will ask for again.
+await step('a watchlist edit reads as a watchlist edit, not a departure', async () => {
+  plan('the gone card counts a car the watchlist dropped as its own thing',
+       'and the row says the model years moved, not that a fetch is owed',
+       'and the same row under a word the page does know reads differently');
+  const still = (g) => (g.still_listed && (g.still_listed.trim || g.still_listed.trim_id) ? g.still_listed : null);
+  const host = WATCHED.map((w) => ({ w, m: SHEET.brands[w.bk].models[w.mk] }))
+    .find((o) => (o.m.gone || []).some((g) => !still(g) && g.likely !== 'out of scope'));
+  if (!host) {
+    for (const n of ['the gone card counts a car the watchlist dropped as its own thing',
+                     'and the row says the model years moved, not that a fetch is owed',
+                     'and the same row under a word the page does know reads differently'])
+      skip(n, 'no watched model carries a departure to re-label');
+    return;
+  }
+  const victim = (host.m.gone || []).find((g) => !still(g) && g.likely !== 'out of scope');
+  const readGone = async () => page.evaluate(() => ({
+    hint: ((document.getElementById('gone-hint') || {}).textContent || '').replace(/\s+/g, ' ').trim(),
+    rows: [...document.querySelectorAll('#gone-table tbody tr')].map((r) => r.textContent.replace(/\s+/g, ' ').trim()),
+  }));
+  const serveWith = async (word) => {
+    const planted = JSON.parse(JSON.stringify(host.m));
+    planted.gone.find((g) => g.vin === victim.vin).likely = word;
+    await ctx.route('**/data.json', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      sheet.brands[host.w.bk].models[host.w.mk] = planted;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open(host.w.q);
+      if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await page.waitForTimeout(300); }
+      return await readGone();
+    } finally { await ctx.unroute('**/data.json'); }
+  };
+  const moved = await serveWith('out of scope');
+  ok('the gone card counts a car the watchlist dropped as its own thing',
+     /\b1 dropped by a watchlist change, not by leaving the market\b/.test(moved.hint)
+       && !/1 not checked on the day it vanished/.test(moved.hint),
+     `"${moved.hint.slice(-190)}"`);
+  const movedRow = moved.rows.find((t) => t.includes(String(victim.vin)));
+  ok('and the row says the model years moved, not that a fetch is owed',
+     !!movedRow && movedRow.includes('outside the model years now watched')
+       && !/not checked that day|GONE|the listing ended/.test(movedRow),
+     movedRow ? `"${movedRow.slice(-150)}"` : `no row for ${String(victim.vin).slice(-6)} among ${moved.rows.length}`);
+  // The control. Without it both assertions above pass on a page that prints
+  // the watchlist sentence for EVERY absence — which is the same defect
+  // pointing the other way, and the reason the counts are counted rather
+  // than subtracted.
+  const nc = await serveWith('not checked');
+  const ncRow = nc.rows.find((t) => t.includes(String(victim.vin)));
+  ok('and the same row under a word the page does know reads differently',
+     !/dropped by a watchlist change/.test(nc.hint) && /not checked on the day/.test(nc.hint)
+       && !!ncRow && ncRow.includes('not checked that day')
+       && !ncRow.includes('outside the model years now watched'),
+     `"${nc.hint.slice(-160)}" · row ${ncRow ? `"${ncRow.slice(-110)}"` : 'missing'}`);
 });
 
 // --- a cohort of mixed trims prices the mix, not the car ---------------------
@@ -4188,7 +4766,9 @@ await step('a cohort of mixed trims prices the mix, not the car', async () => {
 // case is planted, not found: the served sheet ages the leading model's as_of
 // by two days, so the check holds on a morning when every model was fetched.
 await step('a headline figure carries its own date', async () => {
-  plan('a tile led by a model fetched on an older day says so', 'and a tile led by a model fetched today does not');
+  plan('a tile led by a model fetched on an older day says so',
+       'and one further behind than its cadence allows gives the count',
+       'and a tile led by a model fetched today does not');
   if (WATCHED.length < 1 || !carried) return skipRest('no model on the watchlist holds a car today');
   const through = SHEET.data_through;
   const lead = () => page.locator('#kpis .sc-tile').first().locator('.sc-tile__sub').first().textContent();
@@ -4198,27 +4778,67 @@ await step('a headline figure carries its own date', async () => {
   const leadLabel = ((await lead()) || '').split(' · ')[0].trim();
   const leader = WATCHED.find((w) => w.label === leadLabel);
   if (!leader) return skipRest(`the drivable tile leads with "${leadLabel}", which no watched model is called`);
-  await ctx.route('**/data.json', async (route) => {
+  // The plant writes every field the tile reads, not just the one it is
+  // about. as_of alone leaves age_days and overdue holding the REAL model's
+  // values, so the served sheet contradicts itself and the page is asked to
+  // describe a state no writer produces — the same incomplete-plant shape the
+  // floor-departure check was fixed for. age_days is the gap Tracking.py's
+  // fetch_age computes; overdue is its fetch_overdue, which is exact at the
+  // cadence with no tolerance.
+  const ageTo = (sheet, day) => {
+    const m = sheet.brands[leader.bk].models[leader.mk];
+    m.as_of = day;
+    m.age_days = Math.max(0, Math.round((Date.parse(sheet.data_through) - Date.parse(day)) / 86400000));
+    m.overdue = m.age_days >= Math.max(1, m.cadence || 1);
+    return m;
+  };
+  const serve = (day) => ctx.route('**/data.json', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
-    sheet.brands[leader.bk].models[leader.mk].as_of = aged;
+    ageTo(sheet, day);
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
+  // Two days is a gap most cadences account for — but not a DAILY one, where
+  // fetch_overdue is true at a gap of 1, so the tile correctly adds the count
+  // and this check, anchored on "no count" with a trailing $, went red on a
+  // page that was right. Which model leads the tile is whatever the market
+  // makes cheapest, so that was a latent CI failure waiting on a shopped model
+  // to lead. The expectation follows the cadence the way the page does.
+  const leadCadence = ((SHEET.brands[leader.bk] || {}).models[leader.mk] || {}).cadence || 1;
+  const gap = Date.parse(through + 'T00:00:00Z') - Date.parse(aged + 'T00:00:00Z');
+  const agedOverdue = Math.round(gap / 86400000) >= Math.max(1, leadCadence);
+  const stamp = agedOverdue ? `· as of [A-Z][a-z]{2} \\d+, \\d+ days? ago$` : `· as of [A-Z][a-z]{2} \\d+$`;
+  await serve(aged);
   try {
     await open('');
     const t1 = (await lead()) || '';
-    ok('a tile led by a model fetched on an older day says so', new RegExp(`· as of [A-Z][a-z]{2} \\d+$`).test(t1.trim()) && t1.includes(leadLabel),
-       `${leader.label} aged to ${aged} under data through ${through}: "${t1.trim()}"`);
+    ok('a tile led by a model fetched on an older day says so', new RegExp(stamp).test(t1.trim()) && t1.includes(leadLabel),
+       `${leader.label} aged to ${aged} (2d on a ${leadCadence}-day cadence — ${agedOverdue ? 'overdue, so the count belongs' : 'inside its cadence, so the date alone'}) under data through ${through}: "${t1.trim()}"`);
+  } finally {
+    await ctx.unroute('**/data.json');
+  }
+  // Two days behind is a gap most cadences account for, so the tile above
+  // gives a date and no count. Past the cadence it gives both, because that
+  // is the case where the date alone reads as recent: these tiles quote a
+  // price as the day's answer, and the count is what says how old the answer
+  // is. Planted well past any cadence on the watchlist so the branch is
+  // reached whatever the leading model runs at.
+  const far = Math.max(2, ...WATCHED.map((w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {}).cadence || 1)) + 3;
+  const farDay = new Date(Date.parse(through + 'T00:00:00Z') - far * 86400000).toISOString().slice(0, 10);
+  await serve(farDay);
+  try {
+    await open('');
+    const t3 = (await lead()) || '';
+    const lc = ((SHEET.brands[leader.bk] || {}).models[leader.mk] || {}).cadence;
+    ok('and one further behind than its cadence allows gives the count',
+       new RegExp(`· as of [A-Z][a-z]{2} \\d+, ${far} days ago$`).test(t3.trim()) && t3.includes(leadLabel),
+       `${leader.label} aged to ${farDay} — ${far} days on a ${lc}-day cadence, under data through ${through}: "${t3.trim()}"`);
   } finally {
     await ctx.unroute('**/data.json');
   }
   // …and the same model served as fetched on the masthead's own day gets no
   // stamp — planted as well, because on the day this was written it really
   // had been fetched two days before.
-  await ctx.route('**/data.json', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
-    sheet.brands[leader.bk].models[leader.mk].as_of = through;
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
-  });
+  await serve(through);
   try {
     await open('');
     const t2 = (await lead()) || '';
@@ -4394,6 +5014,13 @@ await step('the chick keeps watch in the large frame only', async () => {
   plan('small empty frames say "no photo"', 'and large empty frames hold the mark');
   await page.setViewportSize({ width: 1280, height: 1000 });
   await open(carried.q);
+  // Main's fix, and it explains an intermittent this branch could not
+  // reproduce: a full run failed once on "0 of 0 small frames" and passed
+  // alone and on three full runs after. The branch's answer was to wait on
+  // the condition instead of a timer, which cannot help — if the image was
+  // never FETCHED there is no fallback to wait for. The taller cover this
+  // merge brings is what pushed the small frames outside Chromium's lazy
+  // fetch distance. Scrolling one into view is the fix; waiting was a lead.
   // Dealer images are lazy. A taller cover can leave every small table photo
   // outside Chromium's fetch distance; sleeping does not make those requests
   // happen. Bring a real small frame into view, then wait for its pixel to
@@ -4678,15 +5305,126 @@ await step('a car is called what it is', async () => {
 // was written against were in exactly that state.
 //
 // Data-driven both ways: the subject is any car the sheet says was first seen
-// before the newest snapshot, and the check also holds the tile's count to the
-// chips underneath it, which is the thing a reader can verify by counting.
+// before its model's last fetch, and the check also holds the tile's count to
+// the chips underneath it, which is the thing a reader can verify by counting.
+//
+// The day is the MODEL's own last fetch, not the record's newest snapshot.
+// Against the record's, every model on a slower cadence counted 0 new by
+// construction — the iX, the EV9 and the A6 e-tron on the sheet this was
+// rewritten against, each showing "0 new" beside a gone count measured against
+// its own last fetch. Two clocks in one tile. The third check below is the one
+// that fails if the anchor goes back.
+// --- how old the cars on this card are --------------------------------------
+// Both surfaces printed the SCHEDULE beside an absolute date and left the
+// subtraction to the reader: "Data through Tue, August 25, 2026 · Fetched
+// every 4 days" over cars twelve days old, three due days past that cadence.
+// The number a reader would compute from what was on screen was wrong by a
+// factor of three, on the page whose job is saying what a price is worth.
+//
+// Data-driven: the subject is whichever model the sheet says is behind, and
+// the words are the sheet's own age field rather than a date this file
+// re-derives — deriving it here would let the page and the check drift
+// together, which is the shape that hid this for a month.
+await step('the card says how old its cars are', async () => {
+  plan('a model behind the record says how many days behind',
+       'and says so when the cadence cannot account for it',
+       'and a model fetched on the record\'s newest day claims no age',
+       'and the model index says the same thing about the same model');
+  const modelOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {});
+  const withCars = WATCHED.filter((w) => modelOf(w).as_of);
+  const aged = withCars.filter((w) => modelOf(w).age_days > 0);
+  const fresh = withCars.filter((w) => modelOf(w).age_days === 0);
+  const said = async (w) => {
+    await open(w.q);
+    return page.locator('#meta').evaluate((n) => n.innerText.replace(/\s+/g, ' ').trim());
+  };
+  if (!aged.length) skipRest('every model carrying cars was fetched on the record\'s newest day');
+  else {
+    const rows = [];
+    for (const w of aged) rows.push({ w, m: modelOf(w), text: await said(w) });
+    const silent = rows.filter((r) => !r.text.includes(daysAgo(r.m.age_days)));
+    ok('a model behind the record says how many days behind', silent.length === 0,
+       rows.map((r) => `${r.w.id} is ${r.m.age_days}d behind · card reads "${r.text.slice(0, 90)}"`).join(' | '));
+
+    const over = rows.filter((r) => r.m.overdue);
+    if (!over.length) skip('and says so when the cadence cannot account for it',
+                           'no model on the sheet is further behind than its own cadence allows');
+    else {
+      // The expected words come from the page's own rule, not from a branch
+      // guessed here: a daily model says "Past its daily cadence" and has no
+      // "Fetched every 1 days" to be missing.
+      const cap = (w) => w[0].toUpperCase() + w.slice(1);
+      const quiet = over.filter((r) => {
+        const want = cap(schedulePhrase(r.m.cadence, true));
+        const keptPromise = schedulePhrase(r.m.cadence, false);
+        return !r.text.includes(want)
+            || (keptPromise && r.text.includes(`Fetched ${keptPromise}`));
+      });
+      ok('and says so when the cadence cannot account for it', quiet.length === 0,
+         over.map((r) => `${r.w.id}: ${r.m.age_days}d on a ${r.m.cadence}-day cadence, wants "${cap(schedulePhrase(r.m.cadence, true))}" · "${r.text.slice(0, 110)}"`).join(' | '));
+    }
+  }
+  // The other side: an age clause on a model fetched today would be noise on
+  // every card the page draws, which is how a warning stops being read.
+  if (!fresh.length) skip('and a model fetched on the record\'s newest day claims no age',
+                          'no model on the sheet was fetched on its newest day');
+  else {
+    const rows = [];
+    for (const w of fresh) rows.push({ w, text: await said(w) });
+    const noisy = rows.filter((r) => /days? ago|Past its/.test(r.text));
+    ok('and a model fetched on the record\'s newest day claims no age', noisy.length === 0,
+       rows.map((r) => `${r.w.id} · "${r.text.slice(0, 80)}"`).join(' | '));
+  }
+
+  // The fourth surface, and the one that was left behind. The round that
+  // taught the card and the two price tiles to say the age did not touch the
+  // model index, so ONE PAGE said both things about one model: the tile read
+  // "Chevrolet Equinox EV · as of Aug 27, 10 days ago" and the index row three
+  // inches below read "Aug 27 · every 4 days" — the exact sentence that round
+  // existed to delete, on the surface a reader scans all thirty-six models in.
+  // Checked here as agreement between two surfaces of the same page rather
+  // than against a string this file composes: what matters is that they cannot
+  // say different things, and asserting a literal here would just be a fifth
+  // place for the wording to live.
+  if (!aged.length) skip('and the model index says the same thing about the same model',
+                         'every model carrying cars was fetched on the record\'s newest day');
+  else {
+    await open('');
+    const idx = await page.evaluate(() => {
+      const out = {};
+      document.querySelectorAll('table tbody tr').forEach((tr) => {
+        const t = tr.querySelector('.sc-media__title');
+        if (!t) return;
+        out[t.textContent.trim()] = [...tr.querySelectorAll('td')]
+          .map((td) => td.innerText.replace(/\s+/g, ' ').trim())
+          .find((x) => /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b|first run/.test(x)) || '';
+      });
+      return out;
+    });
+    const bad = aged.filter((w) => {
+      const row = idx[modelOf(w).label];
+      if (row === undefined) return false;               // not on the index under that name
+      const m = modelOf(w);
+      return !row.includes(daysAgo(m.age_days))
+          || !row.includes(schedulePhrase(m.cadence, !!m.overdue))
+          || (m.overdue && schedulePhrase(m.cadence, false) && row.includes(schedulePhrase(m.cadence, false)));
+    });
+    ok('and the model index says the same thing about the same model', bad.length === 0,
+       aged.map((w) => `${modelOf(w).label}: ${modelOf(w).age_days}d${modelOf(w).overdue ? ', overdue' : ''} · index row "${idx[modelOf(w).label] ?? '(not on the index)'}"`).join(' | '));
+  }
+});
+
 await step('a car is new only on the day it arrives', async () => {
-  plan('a car first seen before today does not wear the new chip',
-       'and the tile counts what the table shows');
-  const dt = SHEET.data_through;
-  const listingsOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {}).listings || [];
+  plan('a car first seen before its model was last fetched does not wear the new chip',
+       'and the tile counts what the table shows',
+       'a model behind the newest snapshot still counts its own arrivals',
+       'and a model on its first fetch reports no movement at all',
+       'and the watchlist tile is the sum of the models it pools');
+  const modelOf = (w) => ((SHEET.brands[w.bk] || {}).models[w.mk] || {});
+  const asOf = (w) => modelOf(w).as_of || SHEET.data_through;
+  const listingsOf = (w) => modelOf(w).listings || [];
   const staleIn = (w) => listingsOf(w).filter(
-    (x) => x.days_tracked === 1 && String(x.first_seen || '').slice(0, 10) !== dt);
+    (x) => x.days_tracked === 1 && String(x.first_seen || '').slice(0, 10) !== asOf(w));
   // The model that HAS the subject, not the biggest one: a once-seen car whose
   // first sighting predates the newest snapshot is what wore the chip wrongly,
   // and the largest model is not reliably the one carrying any today.
@@ -4695,6 +5433,7 @@ await step('a car is new only on the day it arrives', async () => {
   if (!home || !home.cars) return skipRest('no model on the watchlist holds cars today');
   const held = listingsOf(home);
   const stale = staleIn(home);
+  const dt = asOf(home);
   const today = held.filter((x) => String(x.first_seen || '').slice(0, 10) === dt);
   await open(home.q);
   const more = page.locator('[data-fkey="more:list"]');
@@ -4703,11 +5442,11 @@ await step('a car is new only on the day it arrives', async () => {
   const chipped = await page.locator('#list-table tbody tr').evaluateAll((rows) => rows
     .filter((r) => [...r.querySelectorAll('.sc-chip')].some((c) => c.textContent.trim() === 'new'))
     .map((r) => { const c = r.querySelector('.sc-media__code'); return c ? c.textContent.trim() : ''; }));
-  if (!stale.length) skip('a car first seen before today does not wear the new chip',
+  if (!stale.length) skip('a car first seen before its model was last fetched does not wear the new chip',
                           `every once-seen car on ${home.id} really was first seen on ${dt}`);
   else {
     const wrong = stale.filter((x) => chipped.includes(x.vin));
-    ok('a car first seen before today does not wear the new chip', wrong.length === 0,
+    ok('a car first seen before its model was last fetched does not wear the new chip', wrong.length === 0,
        `${stale.length} cars on ${home.id} were seen once, before ${dt} · ${wrong.length} still wear it`
        + (wrong.length ? ` (e.g. ${wrong[0].vin}, first seen ${wrong[0].first_seen})` : ''));
   }
@@ -4721,6 +5460,124 @@ await step('a car is new only on the day it arrives', async () => {
   else ok('and the tile counts what the table shows',
           said === chipped.length && said === today.length,
           `tile says ${said} · ${chipped.length} chips in the table · ${today.length} cars in the sheet first seen ${dt}`);
+
+  // The anchor itself. A model whose own last fetch is behind the record's
+  // newest snapshot is the only place the two candidate rules differ, so it is
+  // the only place that can pin which one is in force: its arrivals are the
+  // ones of ITS day. Anchored on the record's newest day this tile reads 0 for
+  // such a model however many cars arrived at its last fetch.
+  //
+  // A model on its FIRST fetch is not a subject here, and excluding it is the
+  // page's own rule rather than a convenience: with one day in its series
+  // there is no previous snapshot of its own to move against, so the tile
+  // reads "movement shows from day 2" and every one of its cars is a car the
+  // tracker has just met, not a car that arrived. The record this was written
+  // against holds exactly that case — hyundai/ioniq9, one fetch on 2026-08-25,
+  // 37 cars all first seen that day — and reading it as "37 new" would be the
+  // count claiming a comparison that never happened. Checked against the page
+  // before it was written down: 0 rows wear the chip there, which is the same
+  // answer the tile gives.
+  //
+  // Every straggler is checked, not `behind[0]`: which model comes first is an
+  // accident of the watchlist's order, and a check that reads one of three
+  // subjects is a check that a cadence change can silently point somewhere
+  // else.
+  const daysOf = (w) => ((modelOf(w).daily) || []).length;
+  const behind = WATCHED.filter((w) => asOf(w) !== SHEET.data_through && daysOf(w) >= 2
+    && listingsOf(w).some((x) => String(x.first_seen || '').slice(0, 10) === asOf(w)));
+  if (!behind.length) return skip('a model behind the newest snapshot still counts its own arrivals',
+                                  'no model on the watchlist is behind the newest snapshot with a previous fetch of its own and a car that arrived at its last one');
+  const read = [];
+  for (const lag of behind) {
+    const want = listingsOf(lag).filter((x) => String(x.first_seen || '').slice(0, 10) === asOf(lag)).length;
+    await open(lag.q);
+    const lagTile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))
+      ).find((t) => /new/.test(t)) || '';
+    const got = Number((lagTile.match(/(\d+)\s*new/) || [])[1]);
+    read.push({ lag, want, got });
+  }
+  const off = read.filter((r) => r.got !== r.want);
+  ok('a model behind the newest snapshot still counts its own arrivals', off.length === 0,
+     read.map((r) => `${r.lag.id} last fetched ${asOf(r.lag)} (record runs to ${SHEET.data_through})`
+       + ` · ${r.want} arrived at its own last fetch · tile says ${Number.isFinite(r.got) ? r.got : 'nothing'}`
+     ).join(' | '));
+
+  // The other side of that exclusion, and it has to be asserted or the
+  // exclusion above is a hole rather than a rule: a model on its first fetch
+  // must report NO movement, not zero movement. "0 new · 0 gone" is a
+  // comparison the record cannot have made, and on a thirty-six model
+  // watchlist coming online a few at a time this is the state most of the
+  // page is in — twenty-nine models have never fetched and one has fetched
+  // once, against seven with a series to compare. It was pinned nowhere until
+  // the check above started depending on it.
+  const first = WATCHED.filter((w) => w.cars && daysOf(w) === 1);
+  if (!first.length) skip('and a model on its first fetch reports no movement at all',
+                          'every model holding cars has fetched more than once');
+  else {
+    const seen = [];
+    for (const w of first) {
+      await open(w.q);
+      const more2 = page.locator('[data-fkey="more:list"]');
+      if (await more2.count() && await more2.isVisible()) { await more2.click(); await page.waitForTimeout(400); }
+      const tile2 = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent.replace(/\s+/g, ' ').trim()))
+        ).find((t) => /previous snapshot/i.test(t)) || '';
+      const chips2 = await page.locator('#list-table tbody tr').evaluateAll((rows) => rows
+        .filter((r) => [...r.querySelectorAll('.sc-chip')].some((c) => c.textContent.trim() === 'new')).length);
+      seen.push({ w, tile: tile2, chips: chips2, counted: /\d+\s*new/.test(tile2) });
+    }
+    const wrong = seen.filter((x) => x.counted || x.chips);
+    ok('and a model on its first fetch reports no movement at all', wrong.length === 0,
+       seen.map((x) => `${x.w.id} (${x.w.cars} cars, one fetch on ${asOf(x.w)}) · tile "${x.tile.slice(-40)}" · ${x.chips} rows wear the chip`).join(' | '));
+  }
+
+  // The front page pools all of it into one number, and until this check the
+  // pooled one was the only movement figure on the site nothing opened. It is
+  // where a lost per-model gate actually shows: `anyPrev` is a `some`, so one
+  // model with a series is enough to print the SUM — and a model on its first
+  // fetch would then contribute its whole inventory as arrivals. Measured, not
+  // argued: ungating movementFor's `fresh` turns "32 new" into "69 new" here
+  // and puts Hyundai Ioniq 9 at the head of "most", while every model page
+  // stays correct, because the model tile is gated a second time on its own
+  // record. Two gates, one mechanism; this is the surface that reads the
+  // weaker one. It matters more each week — twenty-nine of the thirty-six
+  // models have never fetched, and each one arrives as a first-fetch model on
+  // its own day.
+  //
+  // Summed from the model tiles rather than from the sheet, because that is
+  // the arithmetic a reader can do: the front page's number should be the
+  // numbers on the pages it links to.
+  const parts = [];
+  for (const w of WATCHED.filter((x) => x.cars)) {
+    await open(w.q);
+    const t = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((x) => x.textContent.replace(/\s+/g, ' ').trim()))
+      ).find((x) => /previous snapshot/i.test(x)) || '';
+    const n = (t.match(/(\d+)\s*new/) || [])[1];
+    parts.push({ id: w.id, n: n == null ? null : Number(n) });
+  }
+  await open('');
+  const roof = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((x) => x.textContent.replace(/\s+/g, ' ').trim()))
+    ).find((x) => /previous snapshot/i.test(x)) || '';
+  const pooled = Number((roof.match(/(\d+)\s*new/) || [])[1]);
+  const summed = parts.reduce((a, x) => a + (x.n || 0), 0);
+  const silent = parts.filter((x) => x.n == null);
+  // The skip is conditioned on the MODEL PAGES, never on the pooled tile: a
+  // tile that has stopped naming a count is the failure this check exists for,
+  // and skipping on its silence is how it would report safety instead. Turning
+  // the tile's `some` into an `every` does exactly that — one model without a
+  // series silences the whole front page while six models still have one — and
+  // an earlier draft of this check skipped over it, printing "no model on it
+  // has a previous fetch" about a record where six models did.
+  const voiced = parts.filter((x) => x.n != null);
+  if (!voiced.length) skip('and the watchlist tile is the sum of the models it pools',
+                           'no model page names a count of new cars, so there is nothing for the watchlist to pool');
+  else ok('and the watchlist tile is the sum of the models it pools',
+          Number.isFinite(pooled) && pooled === summed,
+          (Number.isFinite(pooled)
+            ? `the watchlist says ${pooled} new`
+            : `the watchlist names no count at all, over ${voiced.length} model page(s) that do`)
+          + ` · the model pages sum to ${summed}`
+          + ` (${voiced.map((x) => `${x.id} ${x.n}`).join(', ')})`
+          + (silent.length ? ` · ${silent.map((x) => x.id).join(', ')} report no movement and so add nothing` : ''));
 });
 // --- the window the chart draws is the window it names ----------------------
 // The range chips are drawn after the rows, so on the first paint of a visit
@@ -5155,7 +6012,9 @@ await step('a split adds up to the total it named', async () => {
 // is caught by the sentence disagreeing rather than by anyone remembering.
 await step('the record and the page tell one story about one model', async () => {
   plan('the typical-days clause is the same on both surfaces',
-       'and so is the clause that counts cars asking less than they did');
+       'and so is the clause that counts cars asking less than they did',
+       'and so does the count of cars that arrived',
+       'and so does the margin it prints on a car');
   const REPORT = join(ROOT, '..', 'REPORT.md');
   if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
   const md = readFileSync(REPORT, 'utf8');
@@ -5176,8 +6035,18 @@ await step('the record and the page tell one story about one model', async () =>
     // The second clause of the same sentence, which took its numerator over
     // the cars that are not sawtooth and its denominator over all of them.
     const held = (t) => ((t.match(/\d+ of \d+ ask less than when first seen/) || [''])[0]).trim();
+    // …and the arrival count, which each surface reached by its own clock:
+    // the record compared first_seen to the wall clock and the page to the
+    // record's newest day, under a comment in the page saying it mirrored the
+    // record. On the committed sheet rebuilt one day later the page said seven
+    // and nine and the record said "0 new" for both, out of one file.
+    const brief = (sect.match(/^- \d+ on the market .*$/m) || [''])[0];
+    const arrivals = (t) => ((t.match(/(\d+) new/) || [])[1] || '');
+    const tiles = await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent));
+    const tileNew = ((tiles.find((t) => /new/.test(t)) || '').match(/(\d+)\s*new/) || [])[1] || '';
     rows.push({ id: w.id, md: clause(line), page: clause(hint),
-                mdHeld: held(line), pageHeld: held(hint) });
+                mdHeld: held(line), pageHeld: held(hint),
+                mdNew: arrivals(brief), pageNew: tileNew });
   }
   if (!rows.length) return skipRest('no shopped model has a market line in the record');
   const off = rows.filter((r) => r.md !== r.page);
@@ -5187,6 +6056,436 @@ await step('the record and the page tell one story about one model', async () =>
   ok('and so is the clause that counts cars asking less than they did',
      offHeld.length === 0 && rows.some((r) => r.mdHeld),
      rows.map((r) => `${r.id}: ${r.mdHeld === r.pageHeld ? `both "${r.mdHeld}"` : `record "${r.mdHeld}" vs page "${r.pageHeld}"`}`).join(' · '));
+  // …and the margin itself, per car. Python rounds half to EVEN and Math.round
+  // rounds half UP, so a margin landing on an exact half-percent was published
+  // as two numbers for one car — "4% under typical" in the record and "5%" on
+  // the page — with nothing to say which was the tool's answer. Read per VIN
+  // off both surfaces, so any divergence shows, not only the boundary one.
+  const pctOf = (t) => {
+    const out = new Map();
+    for (const m of t.matchAll(/(\d+)% under typical[\s\S]{0,400}?\b([A-HJ-NPR-Z0-9]{17})\b/g))
+      if (!out.has(m[2])) out.set(m[2], m[1]);
+    return out;
+  };
+  const mdPct = pctOf(md);
+  const pagePct = new Map();
+  for (const w of WATCHED) {
+    const label = (SHEET.brands[w.bk].models[w.mk] || {}).label;
+    if (!label || md.indexOf(`## Shopping: ${label}\n`) < 0) continue;
+    await open(w.q);
+    const more = page.locator('[data-fkey="more:list"]');
+    if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+    for (const t of await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((r) => r.innerText))) {
+      const vin = (t.match(/\b[A-HJ-NPR-Z0-9]{17}\b/) || [])[0];
+      const pc = (t.match(/(\d+)% under typical/) || [])[1];
+      if (vin && pc) pagePct.set(vin, pc);
+    }
+  }
+  const shared = [...mdPct.keys()].filter((v) => pagePct.has(v));
+  const offPct = shared.filter((v) => mdPct.get(v) !== pagePct.get(v));
+  if (!shared.length) skip('and so does the margin it prints on a car',
+                           'no car carries a printed margin on both surfaces today');
+  else ok('and so does the margin it prints on a car', offPct.length === 0,
+          offPct.length
+            ? offPct.slice(0, 3).map((v) => `${v}: record ${mdPct.get(v)}% vs page ${pagePct.get(v)}%`).join(' | ')
+            : `${shared.length} cars carry a margin on both, every one the same number`
+              + ` (e.g. ${shared[0]} at ${mdPct.get(shared[0])}%)`);
+  const offNew = rows.filter((r) => r.mdNew !== r.pageNew);
+  ok('and so does the count of cars that arrived',
+     offNew.length === 0 && rows.some((r) => r.mdNew !== ''),
+     rows.map((r) => `${r.id}: ${r.mdNew === r.pageNew ? `both ${r.mdNew || '—'} new` : `record ${r.mdNew || '—'} vs page ${r.pageNew || '—'}`}`).join(' · '));
+});
+
+// ---- a sentence does not outrun the view it was built from -----------------
+// renderKpis() was taught to say "(filtered)" so "a floor under a filter is
+// never quoted as the nation's", and how.html repeats it. Two sentences built
+// from the same filtered rows were not: the next-callout — the page's last word
+// and its only accent action — stated "The cheapest BMW i7 you can drive to
+// today: $189,960" with year=2026 pressed, one line under a tile correctly
+// reading "Lowest drivable (filtered) $189,960", where the answer without the
+// filter is $48,909; and the comparison's "Lowest asking anywhere", under a
+// title reading "The cheapest one on the market, wherever it is", showed
+// $60,396 for that same i7 with the OH chip on.
+await step('a sentence does not outrun the view it was built from', async () => {
+  plan('the next card names the filter it was built under',
+       'and says nothing of the sort when there is none',
+       'the comparison stops saying anywhere when it is not anywhere');
+  const sub = WATCHED.find((w) => {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    const years = new Set((m.listings || []).filter((x) => x.local && x.price).map((x) => String(x.year)));
+    return years.size > 1;
+  });
+  if (!sub) return skipRest('no watched model has drivable cars from more than one model year');
+  await open(sub.q);
+  const clean = (await page.textContent('#next-figure')) || '';
+  ok('and says nothing of the sort when there is none', !/filtered/.test(clean) && /\$/.test(clean),
+     `unfiltered the card reads ${JSON.stringify(clean.trim().slice(0, 90))}`);
+  const m = SHEET.brands[sub.bk].models[sub.mk];
+  const years = [...new Set((m.listings || []).filter((x) => x.local && x.price).map((x) => String(x.year)))].sort();
+  await page.selectOption('#f-year', years[years.length - 1]);
+  await page.waitForTimeout(500);
+  const narrowed = (await page.textContent('#next-figure')) || '';
+  const tile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))).find((t) => /drivable/i.test(t)) || '';
+  ok('the next card names the filter it was built under',
+     /\(filtered/.test(narrowed) && /filtered/.test(tile),
+     `with ${years[years.length - 1]} pressed the tile says ${JSON.stringify(tile.slice(0, 40))}`
+     + ` and the card says ${JSON.stringify(narrowed.trim().slice(0, 110))}`);
+  // …and the comparison row whose label is a claim about the whole market.
+  const two = WATCHED.slice(0, 2);
+  const wheres = ((SHEET.buyer || {}).states || []);
+  if (two.length < 2 || !wheres.length)
+    return skip('the comparison stops saying anywhere when it is not anywhere',
+                'this sheet has fewer than two models or no buyer states to filter on');
+  await open(`?models=${two.map((w) => `${w.bk}-${w.mk}`).join(',')}`);
+  const before = (await page.textContent('#compare-table')) || '';
+  const chips = page.locator('#f-where button');
+  const names = await chips.evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
+  const i = names.findIndex((t) => t.startsWith(wheres[0]));
+  if (i < 0) return skip('the comparison stops saying anywhere when it is not anywhere',
+                         `no where chip for ${wheres[0]}`);
+  await chips.nth(i).click(); await page.waitForTimeout(600);
+  const after = (await page.textContent('#compare-table')) || '';
+  ok('the comparison stops saying anywhere when it is not anywhere',
+     /Lowest asking anywhere/.test(before) && !/Lowest asking anywhere/.test(after)
+     && /Lowest asking \(filtered\)/.test(after),
+     `unfiltered the row is labelled `
+     + JSON.stringify(((before.match(/Lowest asking[^$]*/) || [''])[0]).trim().slice(0, 40))
+     + `; with ${wheres[0]} pressed it is `
+     + JSON.stringify(((after.match(/Lowest asking[^$]*/) || [''])[0]).trim().slice(0, 40)));
+});
+
+// ---- the car in hand is a car the reader can find --------------------------
+// The VIN field is for a buyer standing at a dealer with seventeen characters
+// off a windshield. The card's sentence was unconditional — "Its row is in the
+// list below" — while the list is filtered(), and S.where is the one filter this
+// page remembers between visits, so a plain reload with no query at all reaches
+// it: a Florida car named over two Ohio rows. Its offered recovery, "the star
+// keeps it", is a button on the card, and the card is what disappeared.
+await step('the car in hand is a car the reader can find', async () => {
+  plan('the card does not claim a row the filters have removed',
+       'and its way out really brings the row back',
+       'and "Open this car" lands on the car rather than the top of the page');
+  const sub = WATCHED.find((w) => {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    return (m.listings || []).some((x) => x.price && x.state
+      && !((SHEET.buyer || {}).states || []).includes(x.state));
+  });
+  const states = ((SHEET.buyer || {}).states || []);
+  if (!sub || !states.length) return skipRest('no watched model holds a car outside the buyer states');
+  const m = SHEET.brands[sub.bk].models[sub.mk];
+  const far = (m.listings || []).find((x) => x.price && x.state && !states.includes(x.state));
+  const keep = states[0];
+  const prefs = JSON.stringify({ where: [keep], range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' });
+  await open(sub.q);
+  await page.evaluate((p) => localStorage.setItem('spicycar.prefs', p), prefs);
+  await open(`?brand=${sub.bk}&m=${sub.mk}&vin=${far.vin}`);
+  const inList = () => page.locator('#list-table tbody tr').evaluateAll((trs, v) => trs.some((t) => t.innerText.includes(v)), far.vin);
+  const said = (await page.textContent('#notice')) || '';
+  ok('the card does not claim a row the filters have removed',
+     !(await inList()) && !/row is in the list below/.test(said) && /not in the list below/.test(said),
+     `${far.vin} is in ${far.city}, ${far.state} and the list is filtered to ${keep};`
+     + ` the card says ${JSON.stringify(said.replace(/\s+/g, ' ').slice(-95))}`);
+  if (!(await page.locator('[data-fkey="notice:vin-clear"]').count()))
+    skip('and its way out really brings the row back', 'the card offered no way out to press');
+  else {
+    await page.click('[data-fkey="notice:vin-clear"]');
+    await page.waitForTimeout(600);
+    const back = (await page.textContent('#notice')) || '';
+    ok('and its way out really brings the row back',
+       (await inList()) && /row is in the list below/.test(back),
+       `after pressing it the count reads ${JSON.stringify(((await page.textContent('#filter-count')) || '').trim())}`
+       + ` and the card says ${JSON.stringify(back.replace(/\s+/g, ' ').slice(-70))}`);
+  }
+  // The card's own link, from the same remembered filter: it cleared the trim
+  // and the year and not the shared filters, so it scrolled to the top of a
+  // page that did not hold the car, taking the card that named it along.
+  await open(sub.q);
+  await page.evaluate((p) => localStorage.setItem('spicycar.prefs', p), prefs);
+  await open(`?brand=${sub.bk}&m=${sub.mk}&vin=${far.vin}`);
+  const opener = page.locator('#notice [data-fkey$=":open"]').first();
+  if (!(await opener.count())) return skip('and "Open this car" lands on the car rather than the top of the page',
+                                           'the card has no open link on this sheet');
+  await opener.click();
+  await page.waitForTimeout(800);
+  const y = await page.evaluate(() => Math.round(window.scrollY));
+  ok('and "Open this car" lands on the car rather than the top of the page',
+     (await inList()) && y > 0,
+     `the row is ${(await inList()) ? 'on screen' : 'still filtered out'} and the page sits at y=${y}`);
+  // This step is the only one that writes a where-chip into localStorage and
+  // then leaves the page on a model, so it puts the profile back itself:
+  // recover() runs only after a step that THREW, and a filter left behind here
+  // reads as a failure three steps later, in checks that never touched it.
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+});
+
+// ---- the way out of an empty page is a way out -----------------------------
+// "All 134 cars are filtered out … Clear the filters" over a link that cleared
+// seven filters and not the budget — so in the one state a budget can create,
+// the page's only offered recovery changed nothing: the same count, the same
+// notice, the budget still in localStorage. filterBits() lists the budget and
+// the count line names it ("0 of 134 cars · under $20,000 all in"), so it is a
+// filter by every other rule this page follows.
+await step('the way out of an empty page is a way out', async () => {
+  plan('a budget nothing fits empties the page and says so',
+       'and clearing the filters really clears it');
+  const sub = WATCHED.find((w) => ((SHEET.brands[w.bk].models[w.mk] || {}).listings || []).length > 3);
+  if (!sub) return skipRest('no watched model holds enough cars to empty');
+  await open(sub.q);
+  await page.evaluate(() => localStorage.setItem('spicycar.prefs', JSON.stringify(
+    { where: [], range: '90', term: null, down: 0, stars: {}, budget: 1000, budgetKind: 'otd' })));
+  await open(sub.q);
+  const count = () => page.textContent('#filter-count').then((t) => (t || '').replace(/\s+/g, ' ').trim());
+  const said = (await page.textContent('#notice')) || '';
+  const before = await count();
+  ok('a budget nothing fits empties the page and says so',
+     /showing 0 of/.test(before) && /filtered out/.test(said),
+     `the count reads ${JSON.stringify(before)} and the notice ${JSON.stringify(said.replace(/\s+/g, ' ').slice(0, 90))}`);
+  if (!(await page.locator('[data-fkey="notice:clear"]').count())) {
+    await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+    return skip('and clearing the filters really clears it', 'the notice offered no way out to press');
+  }
+  await page.click('[data-fkey="notice:clear"]');
+  await page.waitForTimeout(600);
+  const after = await count();
+  const left = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').budget) || 0; } catch { return 0; } });
+  ok('and clearing the filters really clears it',
+     !/showing 0 of/.test(after) && left === 0,
+     `the count now reads ${JSON.stringify(after)} and the remembered budget is ${left}`);
+  await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
+});
+
+// ---- a figure names the population it is over ------------------------------
+// Two sentences counted one thing and named another. The scatter said "148
+// priced cars" on a page whose market tile says 151 cars are priced — its own
+// 49 + 99 add to 148 because three i7s publish no mileage and cannot be
+// plotted, which is a fact about the PLOT and not about pricing. And the promo
+// footnote said "13 of the 31 certified cars … BMW FS certified 2.99%" on the
+// watchlist, where 31 is 23 i5s at 2.99% plus 8 iXs at 2.49%: two offers pooled
+// under the name of one, and the iX cars are not certified for it at all.
+await step('a figure names the population it is over', async () => {
+  plan('the scatter counts what it can plot, and says so',
+       'the promo footnote counts the promo it names');
+  const sub = WATCHED.find((w) => {
+    const L = (SHEET.brands[w.bk].models[w.mk] || {}).listings || [];
+    return L.some((x) => x.price && x.miles == null) && L.some((x) => x.price && x.miles != null);
+  });
+  if (!sub) skip('the scatter counts what it can plot, and says so',
+                 'no watched model mixes cars with and without a mileage, so the plot and the priced set are the same population');
+  else {
+    await open(sub.q);
+    const L = (SHEET.brands[sub.bk].models[sub.mk] || {}).listings || [];
+    const priced = L.filter((x) => x.price != null).length;
+    const plottable = L.filter((x) => x.price != null && x.miles != null).length;
+    const hint = ((await page.textContent('#scatter-hint')) || '').replace(/\s+/g, ' ');
+    const said = Number((hint.match(/^(\d+)/) || [])[1]);
+    ok('the scatter counts what it can plot, and says so',
+       said === plottable && plottable !== priced && !/priced cars/.test(hint),
+       `${sub.id}: ${priced} cars carry a price and ${plottable} carry a price and a mileage;`
+       + ` the hint opens "${hint.slice(0, 70)}"`);
+  }
+  // …and the footnote, whose denominator must be the offer in its own heading.
+  const promos = (((SHEET.buyer || {}).finance || {}).promos || []).filter((p) => p.active && p.apr != null);
+  if (promos.length < 2) return skip('the promo footnote counts the promo it names',
+                                     'this buyer has fewer than two live promos, so nothing can be pooled');
+  await open('');
+  const all = ((await page.textContent('#promo-foot')) || '').replace(/\s+/g, ' ');
+  const head = ((await page.textContent('#promo-card')) || '').replace(/\s+/g, ' ');
+  const named = promos.find((p) => head.includes(p.label));
+  if (!named || !/of the \d+ certified/.test(all))
+    return skip('the promo footnote counts the promo it names',
+                `the watchlist card names ${named ? named.label : 'no promo'} and its footnote says ${JSON.stringify(all.slice(0, 60))}`);
+  // Which cars a promo reaches is computed in the browser (annotateFinance),
+  // so the sheet cannot answer it — but the page of the model that promo
+  // belongs to can, and that view holds exactly the promo's own cars. The
+  // watchlist pools every model in view, so the two disagreed: 13 of 31 there
+  // against 11 of 23 here, for one offer.
+  const home = WATCHED.find((w) => `${w.bk}/${w.mk}` === named.model)
+    || WATCHED.find((w) => named.model && String(named.model).includes(w.mk));
+  if (!home) return skip('the promo footnote counts the promo it names',
+                         `no watched model matches ${named.label}'s own model key ${named.model}`);
+  await open(home.q);
+  const one = ((await page.textContent('#promo-foot')) || '').replace(/\s+/g, ' ');
+  const nums = (t) => (t.match(/(\d+) of the (\d+) certified/) || []).slice(1, 3).join('/');
+  ok('the promo footnote counts the promo it names',
+     nums(all) !== '' && nums(all) === nums(one),
+     `${named.label}: the watchlist says ${nums(all) || '(nothing)'} and its own`
+     + ` model page says ${nums(one) || '(nothing)'}`);
+});
+
+// ---- the history the record publishes is the history the page draws -------
+// flags() builds the "_1-owner · no accidents · ex-lease_" line under every car
+// in REPORT.md and the `flags` array on every row of docs/data.json; the page
+// re-derives the same words twice, in flagsCell() and flagsNote(). Three
+// implementations of one rule, and until the unit tests beside them existed
+// every branch of the owner and accident halves could be inverted with this
+// suite green. Owners and accidents only: those are the words the two surfaces
+// spell identically. The certification chip deliberately differs ("cpo" here,
+// "CPO (seller not named BMW)" in the record, which says whose certification it
+// is), and the usage words ride the same cell but are already pinned in Python.
+await step('the history the record publishes is the history the page draws', async () => {
+  plan('every row draws the owner and accident words the sheet gives it');
+  const subject = WATCHED.find((w) => ((SHEET.brands[w.bk].models[w.mk] || {}).listings || [])
+    .some((x) => (x.flags || []).some((f) => /owner|accident/.test(f))));
+  if (!subject) return skipRest('no row on this sheet carries an owner or accident word');
+  await open(subject.q);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  const drawn = await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((tr) => {
+    const code = tr.querySelector('.sc-media__code');
+    const cell = tr.querySelector('.flags');
+    return { vin: code ? code.textContent.trim() : '', text: cell ? cell.innerText : '' };
+  }));
+  const want = new Map(((SHEET.brands[subject.bk].models[subject.mk] || {}).listings || [])
+    .map((x) => [x.vin, (x.flags || []).filter((f) => /owner|accident/.test(f))]));
+  const bad = [];
+  let checked = 0;
+  for (const row of drawn) {
+    if (!want.has(row.vin)) continue;
+    checked++;
+    const said = want.get(row.vin);
+    const missing = said.filter((f) => !row.text.includes(f));
+    // …and the inverse, which is the half that catches a swap: the page must
+    // not draw a history word the record does not give this car.
+    const invented = (row.text.match(/\b(?:1-owner|\d+ owners|no accidents|\d+ accidents?)\b/g) || [])
+      .filter((f) => !said.includes(f));
+    if (missing.length || invented.length)
+      bad.push(`${row.vin}: sheet says [${said.join(', ')}], cell reads "${row.text.replace(/\s+/g, ' ')}"`);
+  }
+  ok('every row draws the owner and accident words the sheet gives it',
+     bad.length === 0 && checked > 0,
+     bad.length ? bad.slice(0, 3).join(' | ')
+                : `${checked} rows on ${subject.id}, every one drawing exactly the sheet's owner and accident words`);
+});
+
+// ---- a trim chip counts what its query returned ---------------------------
+// A car two of a model's queries both returned is one row in the table, filed
+// under whichever copy was cheapest with ties broken by list order — so the
+// certified watch's own section reported the tie-break and not the watch. On
+// every one of the seven days it had run it said the wrong thing: "2 vehicles ·
+// lowest asking $64,491" on a day it returned four, the cheapest at $48,084,
+// and "none found" on four days it returned cars. The record's sections and the
+// page's chips are the same claim, so this reads the committed record's own
+// headings and presses the chips.
+await step('a trim chip counts what its query returned', async () => {
+  plan('every trim section in the record has a chip saying the same number',
+       'and pressing one shows that many rows',
+       'and at the price that query returned',
+       'and makes no value claim it measured on the other price',
+       'and comparing two trims leaves it at the table\'s own price');
+  const REPORT = join(ROOT, '..', 'REPORT.md');
+  if (!existsSync(REPORT)) return skipRest('no REPORT.md beside this checkout');
+  const md = readFileSync(REPORT, 'utf8');
+  const rows = [];
+  for (const w of WATCHED) {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    if (!m.label || Object.keys(m.trims || {}).length < 2) continue;
+    const at = md.indexOf(`## Shopping: ${m.label}\n`);
+    if (at < 0) continue;                       // only the shopped models get sections
+    const sect = md.slice(at, md.indexOf('\n## ', at + 4) + 1 || undefined);
+    await open(w.q);
+    const chips = await page.locator('#f-trim button').evaluateAll((bs) => bs.map((b) => ({
+      key: b.getAttribute('data-fkey'),
+      label: b.firstChild ? String(b.firstChild.textContent).trim() : '',
+      n: b.querySelector('.chip-n') ? Number(b.querySelector('.chip-n').textContent) : null })));
+    for (const [id, t] of Object.entries(m.trims || {})) {
+      const line = (sect.match(new RegExp('^### ' + t.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' — .*$', 'm')) || [''])[0];
+      if (!line) continue;
+      const said = /none found/.test(line) ? 0 : Number((line.match(/— (\d+) vehicles/) || [])[1]);
+      const chip = chips.find((c) => c.key === 'trim:' + id);
+      rows.push({ id, label: t.label, md: said, chip: chip ? chip.n : null, q: w.q });
+    }
+  }
+  if (!rows.length) return skipRest('no shopped model on this sheet has a trim breakdown in the record');
+  const off = rows.filter((r) => r.md !== r.chip);
+  ok('every trim section in the record has a chip saying the same number', off.length === 0,
+     rows.map((r) => `${r.label}: ${r.md === r.chip ? `both ${r.md}` : `record ${r.md} vs chip ${r.chip}`}`).join(' · '));
+  // …and the chip is not just a number: pressing it has to put that many rows
+  // on screen, or the count is a claim the table cannot back.
+  const subject = rows.find((r) => r.md > 0 && r.md < 40) || rows.find((r) => r.md > 0);
+  if (!subject) return skip('and pressing one shows that many rows', 'no trim on this sheet holds a car today');
+  await open(subject.q);
+  await page.click(`[data-fkey="trim:${subject.id}"]`);
+  await page.waitForTimeout(400);
+  const more = page.locator('[data-fkey="more:list"]');
+  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+  const shown = await page.locator('#list-table tbody tr').count();
+  ok('and pressing one shows that many rows', shown === subject.md,
+     `${subject.label}: the chip says ${subject.md}, the record says ${subject.md}, the table shows ${shown}`);
+
+  // …at the price THAT query returned. Membership alone would price a shared
+  // car by the table's rule — the cheapest copy — and of the nine VIN-days this
+  // record holds in two targets, four carry two prices and one is certified at
+  // $58,085 in the watch and NOT certified at $56,000 in its sibling. Both of
+  // today's shared cars happen to be listed at the same price by both queries,
+  // so no live sheet can tell the two rules apart: the divergence is planted.
+  // The subject is a car the page already calls a value, because one of the
+  // checks below is that the claim does NOT survive the swap — and the score is
+  // computed in the browser (annotateValue), so it is read off the page rather
+  // than out of the sheet, which carries no pick_* field at all.
+  let twin = null;
+  for (const w of WATCHED) {
+    const m = SHEET.brands[w.bk].models[w.mk] || {};
+    const ids = Object.keys(m.trims || {});
+    if (ids.length < 2 || !(m.listings || []).length) continue;
+    await open(w.q);
+    const texts = await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((r) => r.innerText));
+    for (const t of texts) {
+      if (!/under typical/.test(t)) continue;
+      const vin = (t.match(/\b[A-HJ-NPR-Z0-9]{17}\b/) || [])[0];
+      const x = vin && (m.listings || []).find((c) => c.vin === vin && c.price && c.trim_id);
+      const other = x && ids.find((id) => id !== x.trim_id);
+      if (other) { twin = { w, bk: w.bk, mk: w.mk, vin, own: x.price, other,
+                            dear: x.price + 9000, mine: x.trim_id }; break; }
+    }
+    if (twin) break;
+  }
+  const cash = (n) => '$' + Number(n).toLocaleString('en-US');
+  if (!twin) return skip('and at the price that query returned',
+                         'no model on this sheet has two trims and a priced car');
+  await ctx.route('**/data.json', async (route) => {
+    const r = await route.fetch();
+    const sheet = JSON.parse(await r.text());
+    const mm = sheet.brands[twin.bk].models[twin.mk];
+    const car = (mm.listings || []).find((c) => c.vin === twin.vin);
+    car.also = [{ trim_id: twin.other, trim_label: (mm.trims[twin.other] || {}).label || twin.other,
+                  price: twin.dear, cpo: true, url: car.url, dealer: car.dealer }];
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+  });
+  try {
+    await open(`?brand=${twin.bk}&m=${twin.mk}&trims=${twin.other}`);
+    const rowText = await page.locator('#list-table tbody tr').filter({ hasText: twin.vin }).first().innerText().catch(() => '');
+    ok('and at the price that query returned',
+       rowText.includes(cash(twin.dear)) && !rowText.includes(cash(twin.own)),
+       `${twin.vin} is ${cash(twin.own)} in its own query and ${cash(twin.dear)} in ${twin.other};`
+       + ` under that trim the row reads ${JSON.stringify(rowText.replace(/\s+/g, ' ').slice(0, 110))}`);
+    // The value score belongs to the price it was computed for. Carried over,
+    // the row would print a margin measured against the cheaper listing beside
+    // the dearer one's asking. The "before" is the same row under its OWN trim,
+    // where no swap happens — read from the page, because the score is computed
+    // in the browser and is in no sheet.
+    await open(`?brand=${twin.bk}&m=${twin.mk}&trims=${twin.mine}`);
+    const ownText = await page.locator('#list-table tbody tr').filter({ hasText: twin.vin }).first().innerText().catch(() => '');
+    if (!/under typical/.test(ownText))
+      skip('and makes no value claim it measured on the other price',
+           `the page gives ${twin.vin} no value note under its own trim, so there is none to lose`);
+    else ok('and makes no value claim it measured on the other price',
+            !/under typical/.test(rowText),
+            `under its own trim the row says ${JSON.stringify((ownText.match(/\d+% under typical/) || [''])[0])};`
+            + ` under ${twin.other} at ${cash(twin.dear)} it reads `
+            + JSON.stringify(rowText.replace(/\s+/g, ' ').slice(0, 90)));
+    // With two trims pressed the page is comparing them, and a car in both has
+    // no single answer to "at what price" — so it keeps its own, the table's.
+    // The OTHER trim goes first in the URL on purpose: a swap that reached this
+    // view would take the first selection, and with the car's own trim first it
+    // would be invisible — the check would pass on a page picking arbitrarily
+    // between two answers.
+    await open(`?brand=${twin.bk}&m=${twin.mk}&trims=${twin.other},${twin.mine}`);
+    const bothText = await page.locator('#list-table tbody tr').filter({ hasText: twin.vin }).first().innerText().catch(() => '');
+    ok('and comparing two trims leaves it at the table\'s own price',
+       bothText.includes(cash(twin.own)) && !bothText.includes(cash(twin.dear)),
+       `pressing ${twin.other} and ${twin.mine} together, the row reads `
+       + JSON.stringify(bothText.replace(/\s+/g, ' ').slice(0, 110)));
+  } finally { await ctx.unroute('**/data.json'); }
 });
 
 // ---- a car the sheet cannot place is not a car beyond your states ----------
@@ -5724,13 +7023,20 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // four more. A count is the only thing that catches that, and a count written down
 // in a markdown file catches nothing.
 // Skips are legitimate and vary with the data — a shrunken watchlist genuinely has
-// fewer subjects, and some checks collapse into a coarser skip. So the assertion is
-// made where it is exact: when nothing skipped, every check had a subject and the
-// total must be the declared one. That is the case CI runs.
+// fewer subjects — but a skip is a RECORDED check, so the total is the declared
+// one whether a check found a subject or not. The assertion used to be made only
+// `when nothing skipped`, and the committed sheet produces one skip on every run,
+// so on the configuration CI actually executes this guard has never once fired:
+// six checks were added across two commits and it said nothing. (The per-step
+// guard above, added for the same reason, says as much in its own comment and
+// then leaves this one disarmed.) What the condition really needed was for the
+// declared total not to move with the data, which is a property of the branches
+// and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 274;
-if (!ONLY && !skipped && results.length !== EXPECTED) {
-  console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length},`);
-  console.log('     with nothing skipped. A check was lost or added silently.');
+const EXPECTED = 322;
+if (!ONLY && results.length !== EXPECTED) {
+  console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
+    + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
+  console.log('     A check was lost or added silently.');
 }
-process.exit(failed || errors.length || (!ONLY && !skipped && results.length !== EXPECTED) ? 1 : 0);
+process.exit(failed || errors.length || (!ONLY && results.length !== EXPECTED) ? 1 : 0);

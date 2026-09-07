@@ -14,10 +14,14 @@ key is set here before the import.
 """
 
 import html as html_mod
+import io
 import json
+import math
 import os
 import re
+import shutil
 import struct
+import sys
 import unittest
 import unittest.mock
 import contextlib
@@ -235,15 +239,27 @@ class TestDrivable(unittest.TestCase):
 # --------------------------------------------------------------------------
 class TestMoney(unittest.TestCase):
     def test_asking_plus_shipping_is_never_below_asking(self):
-        for miles in (0, 5000, 20000, 60000, 150000):
-            for ship in (0, 350, 1200):
-                total = T.adjusted(40000, miles, ship)
-                self.assertGreaterEqual(
-                    total, 40000,
-                    f"asking 40000 + ship {ship} at {miles} mi came to {total}; the "
-                    f"mileage adjustment must stay off (buyer.cents_per_mile = 0)")
+        for ship in (0, 350, 1200):
+            total = T.adjusted(40000, ship)
+            self.assertGreaterEqual(
+                total, 40000,
+                f"asking 40000 + ship {ship} came to {total}")
 
-    def test_mileage_adjustment_is_off_by_default(self):
+    def test_no_mileage_allowance_can_reach_a_displayed_total(self):
+        """The knob that could reach one is gone, and this is what it cost:
+        with buyer.cents_per_mile on, fmt_row() printed "$36,479 · + $1,031
+        shipping = $42,048" while the dashboard, which drops the adjusted value
+        on purpose, showed $37,510 for the same VIN. The allowance that ranks
+        the picks lives under buyer.picks and never prints."""
+        import inspect
+        was = {"cents_per_mile": 0.30, "mileage_baseline": 20000}
+        with unittest.mock.patch.dict(T.BUYER, was, clear=False):
+            self.assertEqual(T.adjusted(40000, 1200), 41200,
+                             "a buyer-level mileage allowance must not reach it")
+        # Structurally, not by configuration: the function cannot take a
+        # mileage at all, so no config can put one into a printed total.
+        self.assertEqual(list(inspect.signature(T.adjusted).parameters), ["price", "ship"])
+        self.assertNotIn("cents_per_mile", inspect.getsource(T.adjusted).split('"""')[-1])
         self.assertEqual(T.to_float(T.BUYER.get("cents_per_mile")) or 0, 0,
                          "buyer.cents_per_mile must be 0 so displayed totals equal "
                          "asking + shipping")
@@ -352,13 +368,18 @@ class TestNormalize(unittest.TestCase):
                          "alone cannot keep it out — trim_exclude must")
 
     def test_trim_exclude_keeps_a_target_off_its_sibling(self):
-        """Two live targets are separated from a sibling by trim_exclude and
-        nothing else. bmw-ix-m matches '' — every iX — and relies on excluding
-        'xdrive'; lucid-air-touring matches 'touring', which the Grand Touring
-        also contains, and relies on excluding 'grand'. Lose the branch and
-        each target quietly absorbs the sibling's whole market under its own
-        name, its median and its picks included. The trim gates run before
-        year and price, so a record only has to carry the trim words."""
+        """bmw-ix-m matches '' — every iX — and relies on excluding 'xdrive'.
+        Lose the branch and it quietly absorbs the xDrive's whole market under
+        its own name, its median and its picks included. The trim gates run
+        before year and price, so a record only has to carry the trim words.
+
+        The Lucid Air used to be the second live example, matching 'touring'
+        against a Grand Touring it had to exclude. One EV per brand made the
+        Air one trimless target, so the pair went with it; the loop below is
+        over whatever the config still separates this way, so the next target
+        that needs an exclusion is covered the day it is added rather than
+        when somebody remembers this test.
+        """
         import copy
 
         def rec_with(trim):
@@ -366,17 +387,26 @@ class TestNormalize(unittest.TestCase):
             r["vehicle"]["trim"] = trim
             r["vehicle"]["series"] = trim
             return r
-        self.assertIsNone(T.normalize(rec_with("xDrive50"), target("bmw-ix-m"), self.dropped))
-        self.assertEqual(self.dropped["trim excluded"], 1, "an xDrive is not an M, whatever else it is")
-        self.assertIsNone(T.normalize(rec_with("Grand Touring"), target("lucid-air-touring"), self.dropped))
-        self.assertEqual(self.dropped["trim excluded"], 2, "'touring' is inside 'Grand Touring'; only the exclusion tells them apart")
-        # …and the same words pass the trim gates of the target they belong to,
-        # so the drop is the exclusion's doing and not a mismatch on the way in.
-        kept = Counter()
-        T.normalize(rec_with("xDrive50"), target("bmw-ix-xdrive"), kept)
-        T.normalize(rec_with("Grand Touring"), target("lucid-air-grand-touring"), kept)
-        self.assertEqual(kept["trim excluded"], 0)
-        self.assertEqual(kept["trim mismatch"], 0)
+        excluders = [t for t in T.TARGETS.values() if t.get("trim_exclude")]
+        self.assertTrue(excluders, "no live target relies on trim_exclude")
+        for n, t in enumerate(excluders, start=1):
+            word = t["trim_exclude"]
+            self.assertIsNone(T.normalize(rec_with(word), t, self.dropped), t["id"])
+            self.assertEqual(self.dropped["trim excluded"], n,
+                             f"{t['id']} must refuse a car whose trim reads "
+                             f"{word!r}, whatever else it is")
+            # …and the same word passes the trim gates of a sibling that does
+            # NOT exclude it, so the drop is the exclusion's doing and not a
+            # mismatch on the way in.
+            sibs = [o for o in T.TARGETS.values()
+                    if o["model_key"] == t["model_key"] and o["id"] != t["id"]
+                    and not o.get("trim_exclude")
+                    and o.get("trim_match", "") in word.lower()]
+            self.assertTrue(sibs, f"{t['id']} excludes {word!r} and no sibling claims it")
+            kept = Counter()
+            T.normalize(rec_with(word), sibs[0], kept)
+            self.assertEqual(kept["trim excluded"], 0, sibs[0]["id"])
+            self.assertEqual(kept["trim mismatch"], 0, sibs[0]["id"])
 
     def test_cpo_watch_drops_the_uncertified(self):
         # the clean fixture is cpo: false as shipped
@@ -604,6 +634,23 @@ class TestPicks(unittest.TestCase):
         self.assertEqual(clear[46000]["pick_stand"], "under")
         self.assertIn("2% under typical", T.fmt_pick(clear[46000]))
 
+    def test_and_the_same_floor_holds_on_the_over_side(self):
+        """The mirror, which nothing held: the over half of the same ternary
+        could be moved anywhere with the suite green. "over" is printed on the
+        shortlist row and the decision tile, and 0.2% over is the same number
+        with no content that 0.2% under is."""
+        tight = [listing(price=47000) for _ in range(8)]
+        edge = {p["price"]: p for p in T.score_picks(tight + [listing(price=47100)], "M")}
+        self.assertLess(edge[47100]["pick_pct"], 0,
+                        "the precondition: this car is dearer than the median, "
+                        "so it is the over branch that decides it")
+        self.assertLess(abs(edge[47100]["pick_pct"]), 0.005)
+        self.assertEqual(edge[47100]["pick_stand"], "typical",
+                         "above the high edge, and by less than half a percent")
+        clear = {p["price"]: p for p in T.score_picks(tight + [listing(price=49000)], "M")}
+        self.assertEqual(clear[49000]["pick_stand"], "over",
+                         "…and a real margin over it still stands over")
+
     def test_the_walk_skips_a_typical_car_rather_than_stopping_at_it(self):
         """Picks are walked in margin order. A car sitting ON a wide interval's
         low edge can carry a bigger margin than a car below a narrow one — two
@@ -649,11 +696,58 @@ class TestPicks(unittest.TestCase):
         T.SHORTLIST.update({"N" * 17: ""})
         try:
             live = {"N" * 17: (x, "BMW i5")}
-            self.assertNotIn("under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: inside})))
-            self.assertIn("3% under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: below})))
+            self.assertNotIn("under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: inside}, T.TODAY)))
+            self.assertIn("3% under typical", "\n".join(T.shortlist_section(live, {}, {"N" * 17: below}, T.TODAY)))
         finally:
             T.SHORTLIST.clear()
             T.SHORTLIST.update(old)
+
+    def test_the_shortlist_names_the_cohort_its_margin_was_measured_against(self):
+        """"25% under typical" is the same claim the picks block prints as
+        "25% under typical for a 2024 BMW i5 M60 ($14,926 less, from 24 such
+        cars)". The arrivals block was swept for exactly this — "the day's best
+        arrival names what it beat" — and the shortlist, which is the cars
+        actually being decided on and opens the report, was not. One phrase,
+        one function, three places."""
+        cars = [listing(price=p, vin=f"S{i:016d}", year=2024, trim="M60")
+                for i, p in enumerate((40000, 44000, 44500, 45000, 45500,
+                                       46000, 46500, 47000, 47500))]
+        scored = {p["vin"]: p for p in T.score_picks(cars, "BMW i5")}
+        pick = scored["S" + "0" * 15 + "0"]
+        self.assertEqual(pick["pick_stand"], "under", "the precondition: a real margin")
+        was = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({pick["vin"]: ""})
+        try:
+            line = "\n".join(T.shortlist_section({pick["vin"]: (cars[0], "BMW i5")},
+                                                 {}, scored, T.TODAY))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+        cohort = T.cohort_of(pick)
+        self.assertTrue(cohort, "the fixture gives this car a cohort to be measured against")
+        self.assertIn(f"under typical for a {cohort}", line,
+                      "the shortlist must name it, as the picks block does")
+        self.assertIn(T.from_n(pick).strip(), line,
+                      "…and how many cars are in it")
+        # The same words as the block twenty-five lines below it.
+        self.assertIn(f"under typical for a {cohort}", T.fmt_pick(pick))
+
+    def test_and_prints_no_cohort_where_there_is_none_to_print(self):
+        """cohort_of() falls back trim -> year -> model and stamps only what it
+        used; where it can say nothing the clause is dropped rather than
+        rendered with a hole in it."""
+        x = listing(price=44200, vin="H" * 17)
+        bare = {**x, "pick_pct": 0.06, "pick_under": 1300, "pick_stand": "under",
+                "pick_n": 0, "pick_basis": None, "pick_year": None, "pick_trim": None}
+        was = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"H" * 17: ""})
+        try:
+            line = "\n".join(T.shortlist_section({"H" * 17: (x, "BMW i5")}, {},
+                                                 {"H" * 17: bare}, T.TODAY))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+        self.assertIn("6% under typical", line)
+        self.assertNotIn("for a  ", line)
+        self.assertNotIn("such cars", line)
 
     def test_the_days_best_new_car_is_measured_against_its_interval(self):
         """End to end: nine eDrive40s, eight seen yesterday and one first seen
@@ -815,7 +909,7 @@ class TestASmallCutIsStillACut(unittest.TestCase):
                            "state": r["state"], "target": "t"} for r in tl}
         sec = []
         T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
-                      tl, rows, {}, [], "2026-09-03")
+                      tl, rows, {}, [], "2026-09-03", T.TODAY)
         lines = [l for l in sec if l.startswith("- $")]
         self.assertTrue(lines[0].startswith("- $51,500"), f"biggest first, got {lines[0]}")
         self.assertIn("$73,372", lines[1], "and the $1 move is kept, at the bottom")
@@ -1028,8 +1122,8 @@ class TestStillListedIsNotGone(unittest.TestCase):
         kept = {**base, "still_listed": {"trim_id": "t", "trim": "xDrive40", "price": 51476, "cpo": True}}
         t = {"id": "bmw-i5-cpo", "label": "CPO under 30k mi", "note": "", "years": [2025]}
         a, b = [], []
-        T.trim_detail(a, t, [], {}, {}, [lost], "2026-09-03")
-        T.trim_detail(b, t, [], {}, {}, [kept], "2026-09-03")
+        T.trim_detail(a, t, [], {}, {}, [lost], "2026-09-03", T.TODAY)
+        T.trim_detail(b, t, [], {}, {}, [kept], "2026-09-03", T.TODAY)
         self.assertIn("not certified", "\n".join(a))
         self.assertIn("still certified", "\n".join(b))
 
@@ -1045,7 +1139,7 @@ class TestStillListedIsNotGone(unittest.TestCase):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear(); T.SHORTLIST.update({"W" * 17: ""})
         try:
-            sec, subject = T.build_today({"cuts": [], "new": [], "gone": []})
+            sec, subject = T.build_today({"cuts": [], "new": [], "gone": []}, T.TODAY)
         finally:
             T.SHORTLIST.clear(); T.SHORTLIST.update(old)
         self.assertNotIn("Shortlist: GONE", "\n".join(sec))
@@ -1061,7 +1155,7 @@ class TestStillListedIsNotGone(unittest.TestCase):
         row["still_listed"] = {"trim_id": "bmw-i5-xdrive40", "trim": "xDrive40", "price": 51476}
         sec = []
         T.trim_detail(sec, {"id": "bmw-i5-cpo", "label": "CPO under 30k mi", "note": "", "years": [2025]},
-                      [], {}, T.build_history(rows), [row], d2)
+                      [], {}, T.build_history(rows), [row], d2, T.TODAY)
         text = "\n".join(sec)
         self.assertIn("Left this watch, the car still listed (1)", text)
         self.assertIn("the same VIN is listed as xDrive40 at $51,476, not certified", text)
@@ -1096,7 +1190,8 @@ class TestReachNotArrival(unittest.TestCase):
                  "listed_since": T.TODAY, "first_seen": T.TODAY, "days_listed": 0}
         sec, subject = T.build_today({"cuts": [], "gone": [],
                                       "new": [{"x": x_far, "label": "BMW i7", "pct": None, "shopping": True},
-                                              {"x": x_now, "label": "BMW i7", "pct": None, "shopping": True}]})
+                                              {"x": x_now, "label": "BMW i7", "pct": None, "shopping": True}]},
+                                     T.TODAY)
         text = "\n".join(sec)
         self.assertIn("2 new on the shopped models (1 listed 14+ days before the tracker saw it — reach, not arrival)", text)
         self.assertIn("2 new", subject)
@@ -1164,7 +1259,7 @@ class TestTwoPrices(unittest.TestCase):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear(); T.SHORTLIST.update({"WBY33FK05RCP99465": ""})
         try:
-            text = "\n".join(T.shortlist_section({"WBY33FK05RCP99465": (x, "BMW i5")}, {}, {}))
+            text = "\n".join(T.shortlist_section({"WBY33FK05RCP99465": (x, "BMW i5")}, {}, {}, T.TODAY))
         finally:
             T.SHORTLIST.clear(); T.SHORTLIST.update(old)
         self.assertIn("seen at $54,999 and $55,849", text)
@@ -1357,24 +1452,18 @@ class TestLandedAndAdjusted(unittest.TestCase):
     """
 
     def test_shipping_is_added(self):
-        self.assertEqual(T.adjusted(40000, 20000, 1200), 41200)
-        self.assertEqual(T.adjusted(40000, 20000, 0), 40000)
+        self.assertEqual(T.adjusted(40000, 1200), 41200)
+        self.assertEqual(T.adjusted(40000, 0), 40000)
 
     def test_no_price_is_no_answer(self):
-        self.assertIsNone(T.adjusted(None, 20000, 1200))
+        self.assertIsNone(T.adjusted(None, 1200))
 
-    def test_the_mileage_term_is_signed_the_way_the_docstring_says(self):
-        """Off in the shipped config, so this patches it on rather than
-        asserting a dead branch stays dead: above the baseline COSTS, below it
-        credits, and a car with no mileage is not guessed at."""
-        with unittest.mock.patch.dict(T.BUYER, {"cents_per_mile": 0.30,
-                                                "mileage_baseline": 20000}, clear=False):
-            self.assertEqual(T.adjusted(40000, 30000, 0), 43000,
-                             "10,000 miles over the baseline at 30c is $3,000 more")
-            self.assertEqual(T.adjusted(40000, 10000, 0), 37000,
-                             "and 10,000 under it is $3,000 less")
-            self.assertEqual(T.adjusted(40000, None, 500), 40500,
-                             "a car with no mileage gets shipping and no guess")
+    def test_the_landed_total_is_the_page_s_own_arithmetic(self):
+        """The page's landed(x) is price plus shipping; this is the record's,
+        and they are the same sum, which is what stops the two surfaces printing
+        two totals for one car."""
+        for price, ship in ((40000, 0), (36479, 1031), (99999, 350)):
+            self.assertEqual(T.adjusted(price, ship), price + ship)
 
     def test_landed_reads_the_rows_own_shipping(self):
         r = {k: "" for k in T.FIELDS}
@@ -1484,14 +1573,21 @@ class TestHistoryRoundTrip(unittest.TestCase):
 
 
 class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
-    """"## Today" describes the newest snapshot, not the wall clock.
+    """The leading section describes the newest snapshot, not the wall clock —
+    and says which day that was.
 
-    Its new/gone detectors were already data-relative; the CUT detector was
-    gated on TODAY. So a rebuild run on a day the tracker had not fetched —
+    Its gone detector was already data-relative; the CUT detector was gated on
+    TODAY. So a rebuild run on a day the tracker had not fetched —
     tools/rebuild_outputs.py, which is exactly what a dispatch runs — wrote a
     report whose Today section had lost every price-cut bullet while still
     printing "79 new · 31 gone" above it and per-model lines counting 42 price
     changes below. Three surfaces, one day, two different stories.
+
+    The cut detector moved to the data and the heading did not, so the same
+    rebuild then published yesterday's cuts under the word "today", four lines
+    above that model's own "Not fetched today — showing 2026-09-05". The
+    heading names the day whenever it is not today; on a live run it is, and
+    the section still reads "## Today".
     """
 
     @staticmethod
@@ -1509,14 +1605,393 @@ class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
                 self.row("K" * 17, before, 50000), self.row("K" * 17, yesterday, 50000)]
         today_rows = [r for r in rows if r["snapshot_date"] == yesterday]
         report, _, subject = T.build_outputs(today_rows, rows, T.build_history(rows))
-        self.assertIn("## Today", report,
-                      "the section is about the newest snapshot, whenever it was taken")
-        today = report.split("## Today")[1].split("\n## ")[0]
+        head = f"## The last fetch — {yesterday}"
+        self.assertIn(head, report,
+                      "the section is about the newest snapshot, whenever it was "
+                      "taken — and names the day when it was not today")
+        self.assertNotIn("## Today", report,
+                         "nothing here happened today; the model's own section "
+                         "one line below says so in those words")
+        today = report.split(head)[1].split("\n## ")[0]
         self.assertIn("▼", today,
                       "a $2,000 cut at the last fetch is a cut whether or not the "
                       "tracker has run again since")
         self.assertIn("cut", subject.lower(),
                       "and the subject line says so too")
+
+    def test_a_live_run_still_says_today(self):
+        """The other side of the same rule: when the newest snapshot IS today
+        the heading and every dated line read exactly as they always have."""
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        rows = [self.row("V" * 17, yesterday, 45000), self.row("V" * 17, T.TODAY, 43000),
+                self.row("W" * 17, yesterday, 46000), self.row("W" * 17, T.TODAY, 44000),
+                self.row("X" * 17, yesterday, 47000), self.row("X" * 17, T.TODAY, 45000),
+                self.row("Y" * 17, yesterday, 48000), self.row("Y" * 17, T.TODAY, 46000)]
+        today_rows = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today_rows, rows, T.build_history(rows))
+        self.assertIn("## Today", report)
+        self.assertNotIn("## The last fetch", report)
+        self.assertIn("1 more cut today", report,
+                      "the overflow line is dated by the same rule as the heading")
+
+    def test_a_model_not_in_the_newest_snapshot_contributes_nothing(self):
+        """The gate was the cadence SCHEDULE, so a model due today whose every
+        query failed kept passing it — and with its own as_of a day behind, the
+        cut detector matched on that older day and headlined yesterday's cuts
+        as today's, above its own section reading "Not fetched today"."""
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        before = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        i5 = [self.row("V" * 17, before, 45000), self.row("V" * 17, yesterday, 43000),
+              self.row("N" * 17, yesterday, 44000)]      # an arrival at ITS last fetch
+        i7 = []
+        for vin, p0, p1 in (("A" * 17, 90000, 90000), ("B" * 17, 91000, 91000)):
+            for day, price in ((before, p0), (yesterday, p1), (T.TODAY, p1)):
+                r = self.row(vin, day, price)
+                r.update({"target": "bmw-i7-edrive50", "trim": "eDrive50"})
+                i7.append(r)
+        rows = i5 + i7
+        today_rows = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        report, _, _ = T.build_outputs(today_rows, rows, T.build_history(rows))
+        head = report.split("\n## ")[1] if "\n## " in report else ""
+        self.assertNotIn("▼ $2,000", report.split("## Shopping")[0],
+                         "the i5's cut happened at ITS last fetch, which is not "
+                         "the day this record is newest at")
+        self.assertIn("_Not fetched today — showing " + yesterday + "._", report,
+                      "and the i5's own section says exactly that")
+        # …and the section still carries everything that fetch found. Gating
+        # this block on the model being IN the newest snapshot would empty it
+        # while the brief line above it counts one, and while the price-change
+        # and departure blocks below it go on describing the same fetch.
+        self.assertIn(f"**New on {yesterday} (1)**", report,
+                      "the i5's own section reports its own last fetch in full")
+
+
+class TestEveryDatedSentenceNamesItsOwnDay(unittest.TestCase):
+    """One record, built on a day it was not fetched, read four ways.
+
+    The report dated its changes by three different clocks: the cut bullets by
+    the model's own last fetch, "N new" and the NEW tag by the wall clock, the
+    shortlist's cut tag by the wall clock again — and the dashboard by the
+    record's newest day, under a comment in its own source claiming to mirror
+    the first. On the committed sheet rebuilt one day after its last fetch the
+    page called seven i5s and nine i7s new and the report said "0 new" for
+    both, out of one file.
+
+    Every sentence below is dated by the day its own subject was last seen, so
+    they can only be wrong together. On a live run that day is today and every
+    one of them reads exactly as it always has — which is what
+    TestTodaySectionIsRelativeToTheData.test_a_live_run_still_says_today pins.
+    """
+
+    @staticmethod
+    def row(vin, day, price, target="bmw-i5-edrive40", trim="eDrive40", **kw):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": target, "vin": vin, "snapshot_date": day,
+                  "price": price, "year": "2024", "trim": trim, "miles": 20000,
+                  "state": "IL", "city": "Chicago"})
+        r.update(kw)
+        return r
+
+    def setUp(self):
+        self.yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        before = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        self.cut_vin, self.new_vin = "V" * 17, "N" * 17
+        self.rows = [self.row(self.cut_vin, before, 45000),
+                     self.row(self.cut_vin, self.yesterday, 43000),
+                     self.row("K" * 17, before, 50000),
+                     self.row("K" * 17, self.yesterday, 50000),
+                     self.row(self.new_vin, self.yesterday, 44000)]
+        old = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({self.cut_vin: ""})
+        try:
+            self.report, self.site, _ = T.build_outputs(*self._record())
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(old)
+        self.i5 = self.site["brands"]["bmw"]["models"]["i5"]
+
+    def _record(self):
+        latest = [r for r in self.rows if r["snapshot_date"] == self.yesterday]
+        return latest, self.rows, T.build_history(self.rows)
+
+    def test_the_record_is_not_being_read_on_the_day_it_was_written(self):
+        """The precondition every assertion here rests on. Without it each one
+        passes on a record whose newest day IS today, where the wall clock and
+        the data agree and no anchor can be told from another."""
+        self.assertEqual(self.i5["as_of"], self.yesterday)
+        self.assertNotEqual(self.yesterday, T.TODAY)
+
+    def test_the_model_line_counts_the_arrivals_of_its_own_last_fetch(self):
+        line = next(l for l in self.report.splitlines() if " on the market · " in l)
+        self.assertIn("· 1 new ·", line,
+                      "one car arrived at this model's last fetch; dated by the "
+                      "wall clock instead, every model not fetched today counts "
+                      "0 new by construction")
+
+    def _tags(self, vin):
+        """The tag line the record prints under one car's row, or ""."""
+        block = self.report.split("**Illinois")[1]
+        rows = [r for r in block.split("\n- ") if vin in r]
+        if not rows:
+            self.fail(f"{vin} has no row in the record:\n{block[:800]}")
+        return next((l.strip() for l in rows[0].splitlines()
+                     if l.strip().startswith("_")), "")
+
+    def test_the_arrivals_block_is_there_and_names_its_day(self):
+        """It was gated on the cadence schedule as well as on having a previous
+        day, which was harmless while the arrivals were found by the wall clock
+        (an off-cadence model had none) and is not now: the block would vanish
+        from a section whose own line above it counts one."""
+        self.assertIn(f"**New on {self.yesterday} (1)** — first seen on "
+                      f"{self.yesterday},", self.report)
+        self.assertNotIn("**New today", self.report,
+                         "nothing arrived today; the section says which day it "
+                         "is describing, as its header three lines up does")
+
+    def test_a_shortlisted_departure_is_dated_by_its_own_models_fetch(self):
+        """The last dated sentence in the record: "missing today" is a claim
+        about a fetch that looked and did not find the car. Dated by the record
+        instead of by the model, it names a day on which nothing looked."""
+        d2 = date.fromordinal(T.TODAY_ORD - 2).isoformat()
+        d1 = self.yesterday
+        m60 = "bmw-i5-m60"                      # single-sort, so the window
+        self.assertTrue(T.window_reconstructable(T.TARGETS[m60]),
+                        "the premise: this target's window can be rebuilt from "
+                        "rows alone, which is what makes 'out of window' reachable "
+                        "with no live fetch signals")
+        rows = [self.row(f"W{i:02d}", d, 30000 + i * 500, target=m60, trim="M60")
+                for d in (d2, d1) for i in range(T.PER_PAGE)]
+        rows.append(self.row("H" * 17, d2, 41000, target=m60, trim="M60"))
+        for vin in ("A" * 17, "B" * 17):        # an i7 fetched today, so the
+            for d in (d2, d1, T.TODAY):         # record's newest day is today
+                rows.append(self.row(vin, d, 90000, target="bmw-i7-edrive50",
+                                     trim="eDrive50"))
+        latest = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        was, log = dict(T.SHORTLIST), T.FETCH_LOG
+        pw, ex, fs = dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"H" * 17: ""})
+        # No live signals and no committed fetch log: the window is rebuilt from
+        # the rows alone, which is the offline-rebuild case and the only one that
+        # reaches "out of window" without a fetch this run.
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+        try:
+            report, site, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+            T.FETCH_LOG = log
+            T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+            T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+            T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        self.assertEqual(site["brands"]["bmw"]["models"]["i5"]["as_of"], d1)
+        self.assertEqual(site["data_through"], T.TODAY,
+                         "the precondition: the record is newer than this "
+                         "model's last fetch, which is the only place the two "
+                         "candidate days differ")
+        line = next((l for l in report.splitlines() if "H" * 17 in l), "")
+        self.assertIn(f"missing on {d1} — beyond that fetch's cut-off", line,
+                      f"the i5 was last fetched {d1}; nothing looked for this "
+                      f"car on {T.TODAY} — the shortlist printed {line!r}")
+
+    def test_and_it_is_there_on_a_model_the_calendar_says_is_not_due(self):
+        """The case that tells the two gates apart. Every i5 trim runs daily,
+        so `due_on` is true for it on any day and the schedule gate cannot be
+        distinguished from the data one — until the trims are put on a cadence
+        that deterministically excludes today."""
+        i5 = [t for t in T.TARGETS.values() if t["model_key"] == "i5"]
+        was = [(t["cadence"], t["offset"]) for t in i5]
+        for t in i5:
+            t["cadence"], t["offset"] = 2, (1 - T.TODAY_ORD) % 2
+        try:
+            self.assertFalse(any(T.due_on(t, T.TODAY_ORD) for t in i5),
+                             "the precondition: the calendar says none of these "
+                             "trims runs today")
+            report, _, _ = T.build_outputs(*self._record())
+        finally:
+            for t, (c, o) in zip(i5, was):
+                t["cadence"], t["offset"] = c, o
+        self.assertIn(f"**New on {self.yesterday} (1)**", report,
+                      "the section describes this model's own last fetch, and "
+                      "the arrival at it is part of that fetch whatever the "
+                      "calendar says about today")
+
+    def test_and_that_arrival_wears_the_tag_in_the_rows_below(self):
+        self.assertIn("NEW", self._tags(self.new_vin),
+                      "the car that arrived at this model's last fetch is the "
+                      "one the rows mark")
+
+    def test_and_a_car_seen_on_both_days_does_not(self):
+        """The inverse, on the same record: the tag cannot simply be 'seen'."""
+        self.assertNotIn("NEW", self._tags("K" * 17))
+        self.assertFalse(T.is_new_on({"first_seen": "2026-01-01", "days_tracked": 1},
+                                     self.yesterday))
+
+    def test_the_shortlist_dates_its_cut_instead_of_calling_it_todays(self):
+        line = next((l for l in self.report.splitlines() if "CUT $" in l), "")
+        self.assertIn(f"▼ CUT $2,000 on {self.yesterday}", line,
+                      "the cut happened at the last fetch, which was not today "
+                      f"— the shortlist printed {line!r}")
+        self.assertNotIn("today", line)
+
+
+class TestATrimSectionIsAboutItsOwnQuery(unittest.TestCase):
+    """The table is one row per VEHICLE; a trim section is about LISTINGS.
+
+    The certified watch matches cars the ordinary trim targets match too, so a
+    car can be two records on one day — the record's own departure note says so
+    ("the same VIN is listed as xDrive40 at $51,476, not certified"). The
+    sections were split on the table's chosen copy, which is the cheapest with
+    ties broken by list order, so the watch reported whatever survived that:
+    on every one of the seven days it has run it said the wrong thing, and on
+    four of them "none found" while it was returning cars.
+
+    Membership alone would not have fixed it. Of the nine VIN-days this record
+    holds in two targets, four carry two different prices, and in one of those
+    the cheaper copy is NOT certified — so a section that borrowed the table's
+    price would publish an uncertified $56,000 listing as the cheapest
+    certified car.
+    """
+
+    @staticmethod
+    def row(target, vin, day, price, cpo="", trim="eDrive40", dealer="a dealer"):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": target, "vin": vin, "snapshot_date": day, "price": price,
+                  "year": "2025", "trim": trim, "miles": 9000, "state": "CA",
+                  "city": "Carlsbad", "cpo": cpo, "dealer": dealer})
+        return r
+
+    def setUp(self):
+        d = T.TODAY
+        self.both = "B" * 17          # in the watch AND in a sibling, two prices
+        self.tie = "T" * 17           # in both at the same price
+        rows = [
+            # the watch's own records
+            self.row("bmw-i5-cpo", self.both, d, 58085, cpo="1", trim="xDrive40"),
+            self.row("bmw-i5-cpo", self.tie, d, 48084, cpo="1"),
+            # the siblings', of the same two cars — cheaper, and one not certified
+            self.row("bmw-i5-xdrive40", self.both, d, 56000, trim="xDrive40"),
+            self.row("bmw-i5-edrive40", self.tie, d, 48084, cpo="1"),
+            # …and one car only the ordinary trim has
+            self.row("bmw-i5-edrive40", "O" * 17, d, 39000),
+        ]
+        self.report, self.site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        self.sections = {}
+        for block in self.report.split("\n### ")[1:]:
+            self.sections[block.split(" — ")[0]] = "### " + block
+
+    def test_the_watch_counts_what_it_returned_not_what_won_a_tie_break(self):
+        head = self.sections["CPO under 30k mi"].splitlines()[0]
+        self.assertIn("2 vehicles", head,
+                      "the watch returned two cars; the table filed one of them "
+                      "under a sibling because that copy was cheaper and the "
+                      "other on a tie")
+        self.assertIn("lowest asking $48,084", head)
+
+    def test_and_prints_each_car_at_the_price_its_own_query_returned(self):
+        cpo = self.sections["CPO under 30k mi"]
+        self.assertIn("$58,085", cpo,
+                      "the certified listing of this car, not its cheaper "
+                      "uncertified sibling record")
+        self.assertNotIn("$56,000", cpo)
+        x40 = self.sections["xDrive40"]
+        self.assertIn("$56,000", x40, "and the sibling section prints its own")
+        self.assertNotIn("$58,085", x40)
+
+    def test_and_the_certification_follows_the_listing_it_belongs_to(self):
+        row = next(b for b in self.sections["CPO under 30k mi"].split("\n- ")
+                   if self.both in b)
+        self.assertIn("CPO", row)
+        row2 = next(b for b in self.sections["xDrive40"].split("\n- ")
+                    if self.both in b)
+        self.assertNotIn("CPO", row2,
+                         "the sibling's record of this car is not certified, and "
+                         "the flag is a fact about the listing")
+
+    def test_the_model_line_says_how_many_cars_are_in_two_sections(self):
+        line = next(l for l in self.report.splitlines() if "vehicles across" in l)
+        self.assertIn("3 vehicles across 4 trims (2 listed under two of them)", line,
+                      "the table holds three cars and the sections below add up "
+                      "to five; the reader doing that subtraction is owed the "
+                      "reason")
+
+    def test_the_row_carries_the_other_query_s_listing_for_the_page(self):
+        """The dashboard has one row per vehicle and cannot reach the sibling
+        record without this, so its trim chip could only answer from the chosen
+        copy — it counted 2 where the watch returned 4, and a comment in the
+        page recorded that as a consequence of one row per VIN. It is not one."""
+        i5 = self.site["brands"]["bmw"]["models"]["i5"]["listings"]
+        both = next(x for x in i5 if x["vin"] == self.both)
+        self.assertEqual(both["trim_id"], "bmw-i5-xdrive40", "the cheapest copy")
+        self.assertEqual([(a["trim_id"], a["price"], a["cpo"]) for a in both["also"]],
+                         [("bmw-i5-cpo", 58085, True)],
+                         "and what the OTHER query returned it as, price and "
+                         "certification together — membership alone would put an "
+                         "uncertified $56,000 listing in the certified watch")
+        alone = next(x for x in i5 if x["vin"] == "O" * 17)
+        self.assertNotIn("also", alone,
+                         "absent for a car one query alone returned, which is "
+                         "almost all of them")
+
+    def test_a_departure_from_a_watch_is_printed_under_that_watch(self):
+        """The count and the rows behind it are one total split in two.
+        brief_lines() counts a model's departures across every trim; the rows
+        are printed only by trim_detail(), which build_outputs() skips entirely
+        for a trim with no display rows. Split on the table's chosen copy, the
+        certified watch could be empty on a day it had both cars and a
+        departure — so the record said "4 gone" and showed two, and the two it
+        swallowed were the watch's, on the most newsworthy day a watch can
+        have. The sections are built from each query's own rows now; this is
+        the arithmetic that says so."""
+        import re
+        from pathlib import Path
+        d1 = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        def r(target, vin, day, price, miles):
+            row = {k: "" for k in T.FIELDS}
+            row.update({"target": target, "vin": vin, "snapshot_date": day, "price": price,
+                        "year": "2025", "trim": "eDrive40", "miles": miles, "state": "CA",
+                        "city": "Irvine", "cpo": "1"})
+            return row
+        # The sibling's copy comes first, so the tie-break files the live car
+        # under it and the watch's own section is the empty one — which is the
+        # state the defect needed.
+        rows = [r("bmw-i5-edrive40", "A" * 17, d1, 48000, 9000),
+                r("bmw-i5-cpo", "A" * 17, d1, 48000, 9000),
+                r("bmw-i5-edrive40", "A" * 17, T.TODAY, 48000, 9000),
+                r("bmw-i5-cpo", "A" * 17, T.TODAY, 48000, 9000),
+                r("bmw-i5-cpo", "B" * 17, d1, 52000, 5000)]
+        today = [x for x in rows if x["snapshot_date"] == T.TODAY]
+        was, log = dict(T.SHORTLIST), T.FETCH_LOG
+        pw, ex, fs = dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES)
+        T.SHORTLIST.clear()
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+        try:
+            report, site, _ = T.build_outputs(today, rows, T.build_history(rows))
+        finally:
+            T.SHORTLIST.update(was); T.FETCH_LOG = log
+            T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+            T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+            T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        brief = next(l for l in report.splitlines() if " on the market · " in l)
+        said = int(re.search(r"· (\d+) gone", brief).group(1))
+        self.assertEqual(said, 1, f"the precondition: one real departure. {brief}")
+        printed = 0
+        for m in re.finditer(r"^\*\*Gone since [^*]*\*\*$", report, re.M):
+            block = report[m.end():]
+            block = block[:block.index("\n\n")] if "\n\n" in block else block
+            printed += len(re.findall(r"^- ", block, re.M))
+        self.assertEqual(printed, said,
+                         f"{said} gone in the model's own line and {printed} rows "
+                         f"under the sections that are supposed to hold them\n{report}")
+        self.assertIn("B" * 17, report,
+                      "and it is the watch's departure, under the watch")
+
+    def test_the_table_is_still_one_row_per_vehicle_at_the_cheapest_price(self):
+        i5 = self.site["brands"]["bmw"]["models"]["i5"]["listings"]
+        self.assertEqual(len(i5), 3)
+        both = next(x for x in i5 if x["vin"] == self.both)
+        self.assertEqual(both["price"], 56000,
+                         "the table's rule is unchanged: one row per vehicle, "
+                         "the cheapest copy")
 
 
 class TestWindowArithmetic(unittest.TestCase):
@@ -2082,6 +2557,798 @@ class TestDelisted(unittest.TestCase):
 # Market stats: the negotiation context — how long cars sit, how often and
 # how much they get cut, and each car's staleness within its own model.
 # --------------------------------------------------------------------------
+class TestNarrowingTheWatchlistIsNotAMarketEvent(unittest.TestCase):
+    """A car the config stopped asking for did not leave the market.
+
+    `years` is sent to the API and also filtered client-side, so narrowing it
+    makes every stored car outside the new range stop coming back — and every
+    test in delisted() then reads that absence as a query having looked and
+    not found the car. Measured on this repo's own record before the rule
+    existed: restricting the watchlist to 2024 and newer retires 35 of the 37
+    cars bmw-i7-xdrive60 was holding, 26 of bmw-ix-m's 36 and 23 of
+    bmw-ix-xdrive's 30, and all 84 would have been published as "GONE — the
+    listing ended", dated to the night of a config edit, counted by
+    sale_stats() as cars that left the market and priced by exit_stats().
+
+    The word is "out of scope" and it is decided before any window test,
+    because after the edit the queries were asking a different question.
+    """
+
+    def setUp(self):
+        self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
+        self._fs, self._log = set(T.FAILED_SCOPES), T.FETCH_LOG
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        T.FETCH_LOG = Path("data/__no_such_fetch_log__.json")
+        self.tid = "bmw-i5-edrive40"
+        self._years = list(T.TARGETS[self.tid]["years"])
+
+    def tearDown(self):
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(self._pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(self._ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(self._fs)
+        T.FETCH_LOG = self._log
+        T.TARGETS[self.tid]["years"] = self._years
+
+    def row(self, vin, day, year, price=45000, miles=10000):
+        r = {k: "" for k in T.FIELDS}
+        r.update({"target": self.tid, "vin": vin, "snapshot_date": day,
+                  "price": price, "year": str(year), "miles": miles,
+                  "state": "IL", "city": "Chicago"})
+        return r
+
+    def _verdict(self, year, years, price=45000, miles=10000):
+        """One car seen on an earlier day and not on the latest, judged by a
+        query that saw its whole scope — the strongest case there is for
+        calling an absence a departure."""
+        T.TARGETS[self.tid]["years"] = years
+        d1, d2 = "2026-08-01", T.TODAY
+        gone = self.row("G" * 17, d1, year, price, miles)
+        gone["listed_since"] = "2026-07-01"
+        rows = [gone,
+                self.row("K" * 17, d1, 2025), self.row("K" * 17, d2, 2025)]
+        today = [r for r in rows if r["snapshot_date"] == d2]
+        T.EXHAUSTED.add((self.tid, "States"))
+        T.EXHAUSTED.add((self.tid, "National"))
+        out = T.delisted({self.tid}, rows, today, T.build_history(rows))
+        return {g["vin"]: g for g in out}["G" * 17]
+
+    def test_a_model_year_the_watchlist_dropped_is_not_a_departure(self):
+        self.assertEqual(self._verdict(2023, ["2024", "2025", "2026"])["likely"],
+                         "out of scope",
+                         "a 2023 car on a watch that now asks for 2024+ did not "
+                         "leave the market — the query left it")
+
+    def test_the_same_car_inside_the_years_is_still_a_departure(self):
+        """The half that makes the test above load-bearing.
+
+        Without it, `likely = "out of scope"` unconditionally would pass — and
+        so would a rule that never fires, since both would be checked only on
+        the side they were written for. This is the same setup, one field
+        different, and it must reach the opposite word.
+        """
+        self.assertEqual(self._verdict(2024, ["2024", "2025", "2026"])["likely"],
+                         "delisted",
+                         "an exhaustive query looked for a 2024 car on a 2024+ "
+                         "watch and did not find it: that is a real departure")
+
+    def test_a_watch_naming_no_years_still_judges_every_car(self):
+        """`years: []` means "every year", and an empty list is falsy — so a
+        predicate written as `if year not in t["years"]` would call every car
+        on an unrestricted watch out of scope. Six of this repo's targets
+        inherit no years at all."""
+        self.assertEqual(self._verdict(2019, [])["likely"], "delisted")
+
+    def test_a_row_with_no_year_is_judged_by_the_window_not_by_the_config(self):
+        """A blank year cannot be shown to be outside anything. Guessing
+        "out of scope" there would hide a real departure behind a missing
+        field — the same silence-into-a-verdict move fetch_log_row() exists
+        to stop."""
+        T.TARGETS[self.tid]["years"] = ["2024", "2025", "2026"]
+        d1, d2 = "2026-08-01", T.TODAY
+        blank = self.row("G" * 17, d1, "")
+        rows = [blank, self.row("K" * 17, d1, 2025), self.row("K" * 17, d2, 2025)]
+        T.EXHAUSTED.add((self.tid, "States"))
+        T.EXHAUSTED.add((self.tid, "National"))
+        out = T.delisted({self.tid}, rows,
+                         [r for r in rows if r["snapshot_date"] == d2],
+                         T.build_history(rows))
+        self.assertEqual({g["vin"]: g for g in out}["G" * 17]["likely"], "delisted")
+
+    def test_the_narrowness_is_deliberate_price_and_mileage_are_not_this(self):
+        """min_price, max_miles and cpo_only are NOT watchlist moves.
+
+        A car's asking price, odometer and certification all change while it
+        sits, so a stored row outside those may be a car that genuinely left
+        the tracked market — which is exactly the reading delisted()'s own
+        docstring argues for the CPO watches, and it has to survive this. Only
+        the model year is fixed at the factory and stored verbatim, so only
+        the model year can prove the config moved rather than the car.
+        """
+        T.TARGETS[self.tid]["years"] = ["2024", "2025", "2026"]
+        floor = T.TARGETS[self.tid].get("min_price", 0)
+        self.assertEqual(
+            self._verdict(2024, ["2024", "2025", "2026"], price=max(1, floor - 1))["likely"],
+            "delisted",
+            "a car below today's min_price is still judged on the market, not "
+            "on the config")
+        self.assertEqual(
+            self._verdict(2024, ["2024", "2025", "2026"], miles=400000)["likely"],
+            "delisted",
+            "and so is one past any mileage cap")
+
+    def test_the_word_reaches_no_number_the_record_publishes(self):
+        """Every consumer of a departure requires the word "delisted", so a
+        new word is excluded from the sale spans, the exit prices, the cohort
+        test and the events feed by construction. This is what says so — and
+        the delisted control beside it is what stops it passing on an empty
+        list, which is how a rule that counted nothing at all would look.
+        """
+        moved = self._verdict(2023, ["2024", "2025", "2026"])
+        kept = self._verdict(2024, ["2024", "2025", "2026"])
+        self.assertEqual(T.sale_stats([moved]).get("n_departures", 0), 0)
+        self.assertEqual(T.sale_stats([kept]).get("n_departures", 0), 1,
+                         "the control: an identical row inside the years IS "
+                         "counted, so the assertion above is about the word "
+                         "and not about an empty list")
+        self.assertFalse([g for g in [moved] if g["likely"] == "delisted"])
+
+    def test_the_report_names_the_watchlist_rather_than_the_market(self):
+        """The shortlist line for such a car must not read "missing".
+
+        The verdict table is a dict with a fallback, so an unknown word does
+        not crash — it prints "missing <day>", which is a claim about the
+        market on a car the market never lost.
+        """
+        src = Path("Tracking.py").read_text()
+        i = src.index('"out of scope": ')
+        sentence = src[i:src.index("}.get(", i)]
+        self.assertIn("no longer watched", sentence)
+        self.assertNotIn("missing", sentence)
+
+
+class TestEveryVersionThePagesCiteIsTheOneTheyLoad(unittest.TestCase):
+    """The pin is data now, so the prose about it can be held to it.
+
+    `docs/design-system/provenance.json` names the exact commit and version of
+    the vendored sheet, and moving it is one file edit — which is precisely how
+    four comments in the two pages came to describe a sheet that was no longer
+    there. The pin went v2.4.0 -> v2.7.0 in one merge; `index.html` went on
+    saying "everything generic now lives in sc.css v2.4.0" and both pages went
+    on crediting "sc.css v2.4.0's own 44px block" for rules the loaded sheet
+    still does not carry.
+
+    This is the fourth number in this repo's prose to rot and the second to do
+    it while a mechanism existed that could have caught it. The rule is the
+    cheap one: any version a page NAMES must be the version it LOADS.
+
+    The forward-looking form is refused outright. "Promotion candidate for
+    design-system v2.5.x" is a citation that cannot be checked when written and
+    is silently wrong the moment v2.5.0 ships without the rule — which is what
+    happened. A promotion candidate is a claim about the pinned sheet, so it
+    says so and names no release.
+    """
+
+    PAGES = ("docs/index.html", "docs/how.html")
+
+    @staticmethod
+    def pinned():
+        return json.loads(Path("docs/design-system/provenance.json").read_text())
+
+    def test_the_snapshot_names_a_version_and_the_sheet_it_ships_is_that_one(self):
+        """The anchor everything below reads. A provenance file whose version
+        does not match the CSS beside it would make every check here agree with
+        a number that is not on the page."""
+        pin = self.pinned()
+        self.assertRegex(pin["version"], r"^\d+\.\d+\.\d+$")
+        css = Path("docs/design-system/sc.css").read_text(errors="replace")
+        self.assertIn(f"v{pin['version']}", css[:4000],
+                      "the vendored sc.css does not announce the version "
+                      "provenance.json claims for it")
+
+    def test_no_page_cites_a_design_system_version_it_does_not_load(self):
+        want = "v" + self.pinned()["version"]
+        pat = re.compile(r"(?:sc\.css|design[- ]system)\s+(v\d+\.\d+(?:\.\d+|\.x)?)")
+        found = []
+        for name in self.PAGES:
+            text = Path(name).read_text()
+            for m in pat.finditer(text):
+                line = text.count("\n", 0, m.start()) + 1
+                found.append((name, line, m.group(1),
+                              text[max(0, m.start() - 60):m.end() + 20].replace("\n", " ")))
+        self.assertTrue(found, "no page cites a version at all — this check has "
+                               "lost its subject and would pass over anything")
+        wrong = [f for f in found if f[2] != want]
+        self.assertEqual([], wrong,
+                         f"the pages load {want}; these name something else:\n"
+                         + "\n".join(f"  {n}:{ln} says {v} — …{ctx}…" for n, ln, v, ctx in wrong))
+
+    def test_no_page_names_a_release_it_is_waiting_for(self):
+        """A version that has not shipped cannot be checked against anything,
+        and reads as decided once it does. The pages had two of these, both
+        saying v2.5.x, both written under a v2.4.0 pin, and both still saying
+        it at v2.7.0."""
+        bad = []
+        for name in self.PAGES:
+            text = Path(name).read_text()
+            for m in re.finditer(r"[Pp]romotion candidates?[^*]{0,120}", text):
+                if re.search(r"v\d+\.\d+", m.group(0)):
+                    line = text.count("\n", 0, m.start()) + 1
+                    bad.append(f"  {name}:{line} — {m.group(0)[:100].strip()}")
+        self.assertEqual([], bad,
+                         "a promotion candidate is a claim about the pinned sheet, "
+                         "not a booking against a future release:\n" + "\n".join(bad))
+
+    def test_the_bridges_the_pages_keep_are_ones_the_pinned_sheet_does_not_carry(self):
+        """The substantive half, and the one a version number was standing in
+        for. A bridge whose selector upstream now covers is dead CSS the page
+        is still maintaining; the comment says "delete when the pinned sheet
+        carries it", so that condition is executed rather than remembered.
+
+        Both sides are parsed with brace matching, not line grepping: the
+        sheet's coarse blocks are three of about a thousand rules, and a
+        regex range that stops at the first `}` reports selectors from four
+        blocks further down as covered.
+        """
+        def coarse_selectors(css):
+            out = set()
+            for m in re.finditer(r"@media\s*\(([a-z-]*pointer:\s*coarse)\)\s*\{", css):
+                depth, end = 0, None
+                for j in range(m.end() - 1, len(css)):
+                    if css[j] == "{":
+                        depth += 1
+                    elif css[j] == "}":
+                        depth -= 1
+                        if depth == 0:
+                            end = j
+                            break
+                if end is None:
+                    continue
+                for rule in re.finditer(r"([^{}]+)\{[^{}]*\}", css[m.end():end]):
+                    for sel in rule.group(1).split(","):
+                        out.add(sel.strip())
+            return out
+
+        upstream = coarse_selectors(Path("docs/design-system/sc.css").read_text(errors="replace"))
+        self.assertTrue(upstream, "no coarse-pointer rule found in the pinned sheet — "
+                                  "the parser has lost its subject")
+        dead = []
+        for name in self.PAGES:
+            for sel in coarse_selectors(Path(name).read_text()):
+                # a page bridge is dead only if the SAME selector is upstream;
+                # ::before halos and :not() narrowings are this page's own shape
+                base = sel.split("::")[0].strip()
+                if base and base in upstream:
+                    dead.append(f"  {name} bridges {sel!r}, which the pinned sheet already carries")
+        self.assertEqual([], dead,
+                         "these bridges are dead CSS under the current pin and their "
+                         "own comments say to delete them:\n" + "\n".join(dead))
+
+
+class TestWhatTheReadmeSaysAboutRanking(unittest.TestCase):
+    """The prose about how the front page is ordered, held to the code.
+
+    An earlier draft of README said a cheap model "wins any cheapest-first
+    ranking". Nothing on the front page is ranked by price, so the sentence
+    named a mechanism that does not exist — and a wrong mechanism argues for
+    the wrong fix. These pin the three facts the corrected paragraph rests on,
+    because a paragraph about ordering is exactly the kind of prose that rots
+    when the ordering changes.
+    """
+
+    @staticmethod
+    def car(vin, pct, model, local=True, shopping=False):
+        return {"vin": vin, "pick_pct": pct, "pick_stand": "under",
+                "model_label": model, "local": local, "shopping": shopping}
+
+    def test_a_cohort_never_crosses_a_model(self):
+        """score_picks takes ONE model's listings and one label, so a $27,000
+        EV9 can never be measured against a $65,000 i7. The claim that the
+        margins are within-model is a fact about the signature."""
+        import inspect
+        sig = list(inspect.signature(T.score_picks).parameters)
+        self.assertEqual(sig, ["listings", "model_label"])
+        pool = [{"price": 40000 + 500 * i, "miles": 20000, "year": "2024",
+                 "trim": "eDrive40", "accidents": 0, "usage": "Personal Use"}
+                for i in range(12)]
+        scored = T.score_picks(pool, "BMW i5")
+        self.assertTrue(scored)
+        self.assertEqual({p["model_label"] for p in scored}, {"BMW i5"},
+                         "every score carries the one label it was given")
+
+    def test_the_drivable_list_reserves_seats_and_the_shipped_list_does_not(self):
+        """The asymmetry README names. `reserve_shopping` holds the first N
+        drivable seats for the models being shopped; the worth-the-ship list
+        is ranked by margin alone, so a cheap model can take all of it."""
+        scored = ([self.car(f"F{i}", 0.40 - i / 100, f"Cheap {i}", local=False)
+                   for i in range(6)]
+                  + [self.car(f"S{i}", 0.05 - i / 1000, f"Shopped {i}",
+                              local=False, shopping=True) for i in range(3)]
+                  + [self.car(f"L{i}", 0.40 - i / 100, f"Cheap {i}") for i in range(6)]
+                  + [self.car(f"P{i}", 0.05 - i / 1000, f"Shopped {i}",
+                              shopping=True) for i in range(3)])
+        local, far = T.split_picks(scored, 4, per_model=2, reserve=2)
+        self.assertEqual(sum(1 for p in local if p["shopping"]), 2,
+                         "two drivable seats are held for the shopped models")
+        self.assertEqual(sum(1 for p in far if p["shopping"]), 0,
+                         "and the shipped list holds none — the margins alone "
+                         "decide it, which is what README says")
+
+    def test_a_bigger_margin_on_a_cheaper_car_outranks_a_smaller_one(self):
+        """The defect itself, stated as a test rather than as an adjective: a
+        margin is a ratio and a ratio does not know what a car costs. If a
+        later change makes price class part of the order, this fails and the
+        README paragraph beside it has to be rewritten — which is the point."""
+        cheap = self.car("A", 0.35, "Kia EV9", local=False)
+        dear = self.car("B", 0.04, "BMW i7", local=False)
+        _, far = T.split_picks([dear, cheap], 2, per_model=2, reserve=2)
+        self.assertEqual([p["vin"] for p in far], ["A", "B"])
+
+    def test_the_readme_paragraph_names_the_rule_the_config_carries(self):
+        readme = " ".join(Path("README.md").read_text().split())
+        reserve = T.PICKS.get("reserve_shopping")
+        per_model = T.PICKS.get("per_model")
+        self.assertTrue(reserve and per_model, "the config carries both knobs")
+        self.assertIn("`picks.per_model` caps each model at two", readme)
+        self.assertEqual(per_model, 2, "…and two is what it is set to")
+        self.assertIn("holds the first two drivable seats", readme)
+        self.assertEqual(reserve, 2, "…and two is what it is set to")
+
+
+class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
+    """`tools/rebuild_outputs.py` is what a human runs after editing
+    targets.json, and it is the only place a config change is described
+    before the next fetch. Its summary used to end with
+
+        print("bmw models in site:", list(site["brands"]["bmw"]["models"]...))
+
+    which is a KeyError the moment BMW is not on the watchlist. The files are
+    written BEFORE that line, so standing BMW down produced a correct
+    REPORT.md, a correct docs/data.json, a traceback and exit 1 — a rebuild
+    that succeeded and reported failure. Driven here as a subprocess against a
+    real copy of the tree, because reading the source proves nothing about
+    what the interpreter does with it.
+    """
+
+    def _run(self, edit):
+        """A copy of the WORKING TREE, not of HEAD.
+
+        The first version of this archived HEAD, which means it tested the
+        last commit rather than the change under test — it reproduced the bug
+        beautifully and would have gone on passing after the fix, one commit
+        behind forever. That is this project's "a test that cannot fail" shape
+        wearing a subprocess.
+        """
+        import subprocess, shutil, tempfile, os, json as _json
+        root = Path(__file__).parent.parent
+        with tempfile.TemporaryDirectory() as td:
+            dst = Path(td) / "repo"
+            shutil.copytree(root, dst, ignore=shutil.ignore_patterns(
+                ".git", "__pycache__", "node_modules", "*.pyc"))
+            cfg = _json.loads((dst / "targets.json").read_text())
+            edit(cfg)
+            (dst / "targets.json").write_text(_json.dumps(cfg, indent=1))
+            env = {**os.environ, "AUTODEV_API_KEY": "offline"}
+            r = subprocess.run([sys.executable, "tools/rebuild_outputs.py"],
+                               cwd=dst, env=env, capture_output=True, text=True)
+            return r, (dst / "REPORT.md").read_text(), (dst / "docs" / "data.json").read_text()
+
+    def test_a_rebuild_with_the_shipped_config_succeeds_and_says_what_is_empty(self):
+        r, report, sheet = self._run(lambda cfg: None)
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        self.assertIn("no listings yet (first fetch)", r.stdout)
+        self.assertIn("call plan:", r.stdout)
+        self.assertTrue(report.startswith("# "))
+        self.assertIn('"brands"', sheet)
+
+    def test_standing_the_only_hard_coded_brand_down_is_not_a_failure(self):
+        def drop_bmw(cfg):
+            cfg["watchlist"]["bmw"]["active"] = False
+            # buyer.shopping names BMW targets that no longer exist; the tool
+            # must survive that too, since it is what a real edit looks like
+            cfg["buyer"]["shopping"] = []
+        r, report, sheet = self._run(drop_bmw)
+        self.assertEqual(r.returncode, 0,
+                         "the rebuild wrote both files and then died on a "
+                         "hard-coded brand key:\n" + r.stderr[-800:])
+        self.assertNotIn("Traceback", r.stderr)
+        self.assertNotIn("bmw", json.loads(sheet)["brands"])
+        self.assertTrue(report.startswith("# "))
+
+
+class TestNamingNothingMeansNothingIsBeingShopped(unittest.TestCase):
+    """An empty `buyer.shopping` used to mean every model was being shopped.
+
+    `shopping = any(...) or not SHOPPING` was a fair default for a
+    seven-model watchlist: with nobody named, give the reader full sections
+    rather than an empty report. On thirty-six models it is a false claim
+    about a person. Reproduced by emptying the list and rebuilding: every
+    model was headed "## Shopping: Lucid Air" about a car nobody named, the
+    report ran to 1,373 lines with only six models carrying cars — roughly
+    eight thousand once they all do — and the page's meta row read "36
+    shopping · 0 comparison" for a reader shopping nothing.
+
+    A buyer who has not chosen wants the market on one line per model, which
+    is what the compact section already is. 1,373 lines became 85.
+    """
+
+    def _build(self, shopping):
+        was = (list(T.SHOPPING), {tid: t["shopping"] for tid, t in T.TARGETS.items()})
+        T.SHOPPING[:] = list(shopping)
+        for tid, t in T.TARGETS.items():
+            t["shopping"] = tid in T.SHOPPING
+        try:
+            rows = T.load_history()
+            days = sorted({r["snapshot_date"] for r in rows})
+            latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+            return T.build_outputs(latest, rows, T.build_history(rows))
+        finally:
+            T.SHOPPING[:] = was[0]
+            for tid, t in T.TARGETS.items():
+                t["shopping"] = was[1][tid]
+
+    def test_nobody_named_means_nobody_shopped(self):
+        report, site, _ = self._build([])
+        flagged = [f"{bk}/{mk}" for bk, b in site["brands"].items()
+                   for mk, m in b["models"].items() if m["shopping"]]
+        self.assertEqual(flagged, [], "no model is being shopped")
+        self.assertNotIn("## Shopping:", report,
+                         "and none of them is headed as though it were")
+        self.assertEqual(site["buyer"]["shopping"], [])
+
+    def test_and_the_report_becomes_the_market_rather_than_a_car(self):
+        """The size is the point, not a detail: the compact section is what a
+        buyer who has not chosen actually wants, and the full sections are
+        what made the file unreadable."""
+        short, _, _ = self._build([])
+        long, _, _ = self._build(["bmw-i5-edrive40", "bmw-i7-edrive50"])
+        self.assertLess(len(short.splitlines()), len(long.splitlines()) // 2,
+                        "an unshopped report is a fraction of a shopped one")
+        self.assertIn("## Comparison", short)
+
+    def test_the_shipped_config_still_leads_with_the_cars_it_names(self):
+        """The control. Without it the assertions above pass on a build that
+        flags nothing as shopped under ANY config, which is the same defect
+        pointing the other way."""
+        report, site, _ = self._build(["bmw-i5-edrive40", "bmw-i7-edrive50"])
+        flagged = sorted(f"{bk}/{mk}" for bk, b in site["brands"].items()
+                         for mk, m in b["models"].items() if m["shopping"])
+        self.assertEqual(flagged, ["bmw/i5", "bmw/i7"])
+        self.assertIn("## Shopping: BMW i5", report)
+        self.assertNotIn("## Shopping: Lucid Air", report)
+
+
+class TestAnEvScreenerChecksThatACarIsAnEv(unittest.TestCase):
+    """The watchlist is thirty-six battery EVs and nothing checked for one.
+
+    The listings API has no fuel parameter — the query is make plus model — so
+    every row on a nameplate shared with a combustion car rests on one string
+    being exact. Porsche is the Taycan rather than the better-selling Macan
+    Electric for exactly that reason, and Dodge, MINI, Ford, Genesis and Acura
+    each ride on one string being right. A string wrong the OTHER way, one
+    that matches too much, puts petrol cars in an EV screener, priced and
+    ranked beside the rest, with nothing anywhere to say so.
+
+    The record carried the answer all along and threw it away: the sample
+    record's `vehicle.fuel` reads "Electric", with `vehicle.type` and
+    `vehicle.engine` agreeing.
+    """
+
+    def setUp(self):
+        self.dropped = Counter()
+        self.t = T.TARGETS["bmw-i5-m60"]     # the sample record is an M60
+
+    def rec(self, **over):
+        r = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                           if not k.startswith("_")})
+        for k, v in over.items():
+            if v is None:
+                r["vehicle"].pop(k, None)
+            else:
+                r["vehicle"][k] = v
+        return r
+
+    def test_a_petrol_car_on_a_shared_nameplate_is_refused(self):
+        for fuel in ("Gasoline", "Gas", "Diesel", "Flex Fuel"):
+            d = Counter()
+            self.assertIsNone(T.normalize(self.rec(fuel=fuel, type=fuel, engine="3.0L I6"), self.t, d),
+                              f"{fuel!r} is not a battery EV")
+            self.assertEqual(d["not a battery EV"], 1, fuel)
+
+    def test_a_plug_in_hybrid_is_refused_though_it_says_electric(self):
+        """"Plug-in Hybrid Electric" contains the word. Hybrid is checked
+        first, because a PHEV is not what any of these targets watches."""
+        d = Counter()
+        self.assertIsNone(T.normalize(self.rec(fuel="Plug-in Hybrid Electric"), self.t, d))
+        self.assertEqual(d["not a battery EV"], 1)
+
+    def test_the_electric_car_the_sample_record_is_still_gets_through(self):
+        """The control. Without it a guard that refused everything would pass
+        every assertion above.
+
+        And it is only a control if the fixture SAYS electric. It did not: the
+        `clean` record carried 9 of the 21 vehicle fields the API returns, with
+        no fuel among them, so this passed on a record that says nothing rather
+        than on one that says Electric — a control that could not tell the two
+        apart. The fixture mirrors the real record field for field now, and
+        test_the_clean_fixture_is_shaped_like_a_real_record keeps it that way.
+        """
+        self.assertIs(T.is_battery_electric(self.rec()), True,
+                      "the fixture has to SAY electric for this to control "
+                      "anything")
+        d = Counter()
+        self.assertIsNotNone(T.normalize(self.rec(), self.t, d),
+                             "the shipped sample record is an electric M60")
+        self.assertEqual(d["not a battery EV"], 0)
+
+    def test_the_clean_fixture_is_shaped_like_a_real_record(self):
+        """A fixture missing a field the API always sends is a fixture
+        describing a response the API does not produce, and every test built
+        on it is asking a question the real feed never asks. `clean` had
+        drifted to 9 of 21 vehicle fields; this is what stops it drifting
+        again, and it names data/sample_record.json — a genuine API response
+        the run itself wrote — as the standard."""
+        real = json.loads(Path("data/sample_record.json").read_text())
+        missing = sorted(set(real["vehicle"]) - set(FIXTURES["clean"]["vehicle"]))
+        self.assertEqual(missing, [],
+                         "the clean fixture is missing vehicle fields the API "
+                         f"really returns: {missing}")
+
+    def test_a_feed_that_says_nothing_is_not_evidence_of_petrol(self):
+        """None is not False. Refusing on an absent field would empty a whole
+        target the day a feed stopped populating it — a silent, total outage
+        dressed as a quiet market."""
+        self.assertIsNone(T.is_battery_electric(self.rec(fuel=None, type=None, engine=None)))
+        d = Counter()
+        self.assertIsNotNone(T.normalize(self.rec(fuel=None, type=None, engine=None), self.t, d))
+        self.assertEqual(d["not a battery EV"], 0)
+
+    def test_it_reads_whichever_of_the_three_fields_the_feed_filled(self):
+        self.assertIs(T.is_battery_electric(self.rec(fuel=None, type="Electric", engine=None)), True)
+        self.assertIs(T.is_battery_electric(self.rec(fuel=None, type=None, engine="Electric")), True)
+        self.assertIs(T.is_battery_electric(self.rec(fuel="Gasoline", type="Electric")), False,
+                      "the first field the feed filled is the one that answers")
+
+
+class TestTheTwoFactsThatNarrowAThirtySixModelMarket(unittest.TestCase):
+    """`seats` and `drivetrain` — kept, and honest about not being read yet.
+
+    "Three rows" and "all-wheel drive" are how a person goes from every EV on
+    sale to the six worth looking at, and neither was recoverable from
+    anything the record kept: seats appears nowhere else, and drivetrain only
+    inside the trim string, only for the brands whose trim encodes it — an i5
+    eDrive40 against an xDrive40, but a Model Y Long Range against a Model Y
+    Long Range AWD, and nothing at all on most of the rest.
+
+    They are recorded before they are read on purpose. The filters they are
+    for are worth building once the record shows the feed FILLS them, and this
+    repo has one sample listing to judge that from, which is not evidence. The
+    run log counts the coverage so one real night decides it.
+    """
+
+    def setUp(self):
+        self.dropped = Counter()
+        self.t = T.TARGETS["bmw-i5-m60"]
+
+    def rec(self, **over):
+        r = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                           if not k.startswith("_")})
+        for k, v in over.items():
+            if v is None:
+                r["vehicle"].pop(k, None)
+            else:
+                r["vehicle"][k] = v
+        return r
+
+    def test_both_are_kept_from_the_record_the_api_really_returns(self):
+        n = T.normalize(self.rec(), self.t, self.dropped)
+        self.assertEqual(n["seats"], 5)
+        self.assertEqual(n["drivetrain"], "AWD")
+
+    def test_the_drivetrain_column_holds_a_vocabulary_not_a_dealer_string(self):
+        """Folded to three words, because that is the question a buyer asks
+        and because 4WD and AWD are the same answer to it on a car with no
+        transfer case. An unrecognised string is dropped rather than passed
+        through, or the column is whatever a dealer typed."""
+        for raw, want in (("AWD", "AWD"), ("4WD", "AWD"), ("4x4", "AWD"),
+                          ("All Wheel Drive", "AWD"), ("all-wheel drive", "AWD"),
+                          ("RWD", "RWD"), ("Rear Wheel Drive", "RWD"),
+                          ("FWD", "FWD"), ("Front-Wheel Drive", "FWD"),
+                          ("Direct Drive", ""), ("", ""), ("wat", "")):
+            self.assertEqual(T.drivetrain_of(self.rec(drivetrain=raw)), want, raw)
+
+    def test_a_feed_that_says_nothing_leaves_them_blank_not_wrong(self):
+        n = T.normalize(self.rec(seats=None, drivetrain=None), self.t, self.dropped)
+        self.assertEqual(n["seats"], "")
+        self.assertEqual(n["drivetrain"], "")
+
+    def test_the_columns_are_in_the_file_and_old_rows_read_blank(self):
+        """load_history() normalises every row to FIELDS, so a column added
+        today is "" on every row written before it rather than a KeyError in
+        whatever reads it next."""
+        self.assertIn("seats", T.FIELDS)
+        self.assertIn("drivetrain", T.FIELDS)
+        rows = T.load_history()
+        self.assertTrue(rows)
+        self.assertTrue(all("seats" in r and "drivetrain" in r for r in rows))
+        self.assertEqual({r["drivetrain"] for r in rows}, {""},
+                         "every committed row predates the column")
+
+    def test_the_run_says_how_often_the_feed_filled_them(self):
+        """The coverage line is the whole justification for keeping a field
+        nothing reads. Without it the columns are a guess that never resolves.
+        """
+        rows = [{"seats": 5, "drivetrain": "AWD"}, {"seats": "", "drivetrain": "RWD"},
+                {"seats": 7, "drivetrain": ""}, {"seats": "", "drivetrain": ""}]
+        self.assertEqual(T.field_coverage(rows, ("seats", "drivetrain")),
+                         {"seats": 2, "drivetrain": 2})
+        self.assertEqual(T.field_coverage([], ("seats",)), {"seats": 0},
+                         "and it does not divide by an empty night")
+
+
+class TestAQueryThatRanAndFoundNothingSaysSo(unittest.TestCase):
+    """"Not fetched yet" is a claim about the QUERY, not about the cars.
+
+    A query that runs and comes back empty writes no row, so `as_of` stays
+    None — and every surface said "not fetched yet · first run <ten days from
+    now>", which is the opposite of what happened, for ever, because
+    next_due() always rolls forward. Thirty of the thirty-six models have
+    never run and their model strings are unverified guesses ("Countryman
+    Electric,Countryman SE,Countryman SE ALL4", "3,Polestar 3", "VF 8,VF8"):
+    a string naming something the API does not know bills a call every
+    cadence and is indistinguishable from a target that has not come round.
+
+    The record already knew. fetch_log_row() writes {raw: 0, exhausted: true,
+    failed: false} for exactly this, and nothing read it. `last_asked` is that
+    day, carried BESIDE as_of and not instead of it — as_of means "the day
+    this model's cars were last seen" and is_new_on(), the cut detector and
+    the page's data-through line all depend on that.
+    """
+
+    def entry(self, **over):
+        e = {"label": "Tesla Model Y", "listings": [], "as_of": None,
+             "last_asked": None, "next_due": "2026-09-11", "cadence": 10}
+        e.update(over)
+        return e
+
+    def test_a_model_no_query_has_reached_still_says_not_fetched_yet(self):
+        line = T.compact_line(self.entry(), "Tesla Model Y")
+        self.assertIn("not fetched yet", line)
+        self.assertIn("first run 2026-09-11", line)
+
+    def test_a_query_that_ran_and_found_nothing_says_that_instead(self):
+        line = T.compact_line(self.entry(last_asked="2026-09-01"), "Tesla Model Y")
+        self.assertNotIn("not fetched yet", line,
+                         "the query ran; saying it has not is false")
+        self.assertIn("nothing found", line)
+        self.assertIn("asked 2026-09-01", line,
+                      "…and when, or the reader cannot tell a string broken "
+                      "today from one broken a month ago")
+
+    def test_a_model_with_cars_is_untouched_by_either(self):
+        """The control: last_asked must not leak into the ordinary line."""
+        e = self.entry(as_of="2026-09-05", last_asked="2026-09-05",
+                       listings=[{"price": 40000, "local": True, "ship": 0,
+                                  "state": "IL", "city": "Chicago"}])
+        line = T.compact_line(e, "Tesla Model Y")
+        self.assertIn("1 cars", line)
+        self.assertNotIn("nothing found", line)
+        self.assertNotIn("asked", line)
+
+    def test_the_sheet_carries_the_day_the_targets_were_asked(self):
+        rows = T.load_history()
+        days = sorted({r["snapshot_date"] for r in rows})
+        latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+        _, site, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        entries = [m for b in site["brands"].values() for m in b["models"].values()]
+        self.assertTrue(all("last_asked" in m for m in entries),
+                        "every model block carries it, or the page's own "
+                        "predicate reads undefined")
+        asked = [m for m in entries if m["last_asked"]]
+        self.assertTrue(asked, "the committed fetch log names targets that ran")
+        for m in asked:
+            self.assertGreaterEqual(m["last_asked"], "2026-01-01")
+
+    def test_a_target_that_billed_a_call_for_nothing_is_reported(self):
+        """`silent_targets` cannot catch it — a call WAS billed, so the target
+        is not silent. It is the count that tells the owner a model string is
+        wrong, and it had no name."""
+        was = (dict(T.SPENT), dict(T.RAW_N))
+        T.SPENT.clear(); T.RAW_N.clear()
+        try:
+            due = [t for t in T.TARGETS.values() if T.due_on(t, T.TODAY_ORD)]
+            self.assertTrue(due)
+            broken, working = due[0], due[1]
+            T.SPENT[broken["id"]] = 1                       # billed
+            T.SPENT[working["id"]] = 2
+            T.RAW_N[(working["id"], "National")] = 20       # …and got rows
+            row = T.spend_report(T.planned_calls()[0])
+            self.assertIn(broken["id"], row["empty_targets"])
+            self.assertNotIn(working["id"], row["empty_targets"])
+            self.assertNotIn(broken["id"], row["silent_targets"],
+                             "it billed a call, so it is not silent — which is "
+                             "exactly why the existing field cannot catch it")
+        finally:
+            T.SPENT.clear(); T.SPENT.update(was[0])
+            T.RAW_N.clear(); T.RAW_N.update(was[1])
+
+
+class TestEveryTargetInTheRecordIsAccountedFor(unittest.TestCase):
+    """A target id in the CSV that no current target claims is either a
+    rename nobody carried over, or a deliberate orphan. It must be one of
+    them on purpose, and this is what says which.
+
+    The bug it exists for: when the Lucid Air's two trim targets merged into
+    one trimless `lucid-air` and `chevrolet-equinox-ev-rs` became
+    `chevrolet-equinox-ev`, `legacy_ids` was not touched. Both models then
+    read "not fetched yet" on every surface while the committed CSV held 257
+    Lucid rows over 4 fetch days and 63 Equinox rows over 2 — indistinguishable
+    from the twenty-eight brands that genuinely have never run. 463 green tests
+    said nothing, because nothing was checking.
+
+    The two are NOT the same case, and the difference is measured rather than
+    argued. Chevrolet is mapped: 0 of its 31 live rows are pre-2024, and its
+    old window (cheapest-20 of the model, then filtered to RS) was a SUBSET of
+    the new target's, so a cut-off reconstructed from its kept rows sits BELOW
+    the truth — conservative, and the opposite of the defect that made
+    delisted() manufacture departures. Lucid is not: 53 of its 68 live rows
+    are model year 2022 or 2023, which a 2024+ watchlist can never return
+    again, so remapping would publish 53 cars as current inventory that no
+    query on this sheet could produce. And merging two trim-sliced cheapest-20
+    windows gives max(window A, window B), which is WIDER than either — the
+    manufacturing case exactly.
+    """
+
+    def test_every_target_in_the_record_is_accounted_for(self):
+        import csv as _csv
+        cfg = json.loads(Path("targets.json").read_text())
+        legacy = cfg.get("legacy_ids", {})
+        inactive = set()
+        for bk, b in cfg["watchlist"].items():
+            for mk, m in b["models"].items():
+                dead = (not b.get("active", True)) or (not m.get("active", True))
+                trims = m.get("trims") or {None: {}}
+                for tk, tr in trims.items():
+                    tid = f"{bk}-{mk}" + (f"-{tk}" if tk else "")
+                    if dead or not tr.get("active", True):
+                        inactive.add(tid)
+        with open("data/snapshots.csv", newline="", encoding="utf-8-sig") as f:
+            seen = {r["target"] for r in _csv.DictReader(f)}
+        stray = sorted(t for t in seen
+                       if T.LEGACY_IDS.get(t, t) not in T.TARGETS
+                       and t not in inactive and t not in legacy)
+        self.assertEqual(stray, [], "\n".join([
+            "target ids in data/snapshots.csv that no current target claims,",
+            "that belong to no model marked inactive, and that legacy_ids does",
+            "not mention. Either map them, or list them in legacy_ids with a",
+            "null value to say the orphaning is deliberate:", *stray]))
+
+    def test_the_chevrolet_rename_carries_its_history_over(self):
+        rows = T.load_history()
+        self.assertTrue([r for r in rows if r["target"] == "chevrolet-equinox-ev"],
+                        "the RS rows are the Equinox EV's history")
+        self.assertFalse([r for r in rows if r["target"] == "chevrolet-equinox-ev-rs"],
+                         "…under the new id, not the old one")
+
+    def test_the_lucid_rows_are_deliberately_left_where_they_are(self):
+        """Pinned here rather than in a commit message, which is where this
+        decision lived and where nothing could check it."""
+        self.assertIn("lucid-air-touring", T.LEGACY_IDS)
+        self.assertIsNone(T.LEGACY_IDS["lucid-air-touring"])
+        rows = T.load_history()
+        kept = [r for r in rows if r["target"] == "lucid-air"]
+        self.assertFalse(kept, "the old rows must not surface under the new id")
+        orphan = [r for r in rows if r["target"].startswith("lucid-air-")]
+        self.assertTrue(orphan, "…and they must still be in the file, untouched")
+        # the measured reason, so a later session cannot 'fix' this by mapping
+        last = max(r["snapshot_date"] for r in orphan)
+        live = [r for r in orphan if r["snapshot_date"] == last]
+        pre = [r for r in live if r["year"] and int(r["year"]) < 2024]
+        self.assertGreater(len(pre) / len(live), 0.5,
+                           "most of these cars are outside the 2024+ rule the "
+                           "whole watchlist is built on, which is why mapping "
+                           "them would publish inventory no query can return")
+
+
 class TestDailySeries(unittest.TestCase):
     """A day row holds what the record knew on that day.
 
@@ -2147,7 +3414,7 @@ class TestDailySeries(unittest.TestCase):
 
 
 class TestNewToday(unittest.TestCase):
-    """"New today" means first seen on this snapshot.
+    """"New" means first seen on the snapshot the sentence is about.
 
     days_tracked is the length of a car's price series and a series only grows
     on days its target was fetched, so a car seen once on Monday still reads
@@ -2156,23 +3423,41 @@ class TestNewToday(unittest.TestCase):
     on 2026-09-01 were headlined as "first seen this run" on a quiet 09-04 —
     and the report's per-model "N new", the dashboard tile and the `new` chip
     all counted it again with them.
+
+    The day is a parameter, and was the wall clock: see
+    TestEveryDatedSentenceNamesItsOwnDay below for what that cost.
     """
 
-    def test_a_car_first_seen_today_is_new(self):
-        self.assertTrue(T.is_new_today({"first_seen": T.TODAY, "days_tracked": 1}))
+    def test_a_car_first_seen_on_that_day_is_new(self):
+        self.assertTrue(T.is_new_on({"first_seen": T.TODAY, "days_tracked": 1}, T.TODAY))
 
     def test_a_car_carried_forward_from_an_earlier_fetch_is_not(self):
         """The exact shape: seen once, days ago, its trim not fetched since."""
-        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 1}),
+        self.assertFalse(T.is_new_on({"first_seen": "2026-01-01", "days_tracked": 1}, T.TODAY),
                          "one sighting is not one DAY when the trim runs on a cadence")
 
     def test_a_car_seen_every_day_since_is_not_new_either(self):
-        self.assertFalse(T.is_new_today({"first_seen": "2026-01-01", "days_tracked": 40}))
+        self.assertFalse(T.is_new_on({"first_seen": "2026-01-01", "days_tracked": 40}, T.TODAY))
+
+    def test_the_day_is_the_one_the_caller_names_not_the_wall_clock(self):
+        """The whole change: the same car, two days, two answers — and the day
+        that decides is the one passed in. Anchored on TODAY this was False on
+        every build made after the fetch it describes."""
+        car = {"first_seen": "2026-09-05", "days_tracked": 1}
+        self.assertTrue(T.is_new_on(car, "2026-09-05"))
+        self.assertFalse(T.is_new_on(car, "2026-09-06"))
+        self.assertNotEqual(T.TODAY, "2026-09-05",
+                            "the point of the first assertion is that it does not "
+                            "depend on the day this test runs")
+
+    def test_a_day_the_record_does_not_have_makes_nothing_new(self):
+        """A model with no rows at all has no day; nothing is new on it."""
+        self.assertFalse(T.is_new_on({"first_seen": "2026-09-05", "days_tracked": 1}, None))
 
     def test_a_row_with_no_first_seen_falls_back(self):
         """An older sheet: better the old test than no answer at all."""
-        self.assertTrue(T.is_new_today({"days_tracked": 1}))
-        self.assertFalse(T.is_new_today({"days_tracked": 3}))
+        self.assertTrue(T.is_new_on({"days_tracked": 1}, T.TODAY))
+        self.assertFalse(T.is_new_on({"days_tracked": 3}, T.TODAY))
 
     def test_the_report_does_not_re_announce_an_old_car(self):
         """End to end, through the block that prints the headline."""
@@ -2230,7 +3515,8 @@ class TestOneCarTwoTargets(unittest.TestCase):
         self.assertEqual(e["series"][-1][1], 45000, "each day at the lowest of its copies")
         self.assertEqual(e["delta"], 45000 - 45998)
         self.assertEqual(e["cuts"], 1)
-        self.assertFalse(T.is_new_today(e), "a car listed for ten days is not new because a second query found it")
+        self.assertFalse(T.is_new_on(e, T.TODAY),
+                         "a car listed for ten days is not new because a second query found it")
 
 
 class TestCutsThatStuck(unittest.TestCase):
@@ -2265,25 +3551,109 @@ class TestCutsThatStuck(unittest.TestCase):
 
 class TestSeenLabel(unittest.TestCase):
     """"tracked 21d" read as three weeks; it was twenty-one sightings on a
-    target fetched every second day, six weeks on the market. The label now
-    says what the count counts, and over what span."""
+    target fetched every second day. The count was fixed then and the
+    DENOMINATOR was not: it stayed calendar days between the first and last
+    sighting, which is the same thing only at a daily cadence.
 
-    def test_sightings_over_the_span_they_cover(self):
+    Twenty-eight of the thirty-six models run every fifteenth day now. A car
+    present at every single fetch of one read "seen 3 of 31 days" beside
+    another car's "seen 31 of 31 days", so a buyer reads a perfect record as
+    a car that keeps disappearing — a relisted car, a flaky dealer, something
+    to ask about. And 3-of-31 against 2-of-31 is a distinction no reader
+    makes, so it could not tell perfect attendance from a real gap either.
+    """
+
+    def setUp(self):
+        self._was = dict(T.FETCH_DAYS)
+        T.FETCH_DAYS.clear()
+
+    def tearDown(self):
+        T.FETCH_DAYS.clear()
+        T.FETCH_DAYS.update(self._was)
+
+    def test_the_denominator_is_the_fetches_not_the_days(self):
+        T.FETCH_DAYS["slow"] = [f"2026-08-{d:02d}" for d in (1, 11, 21, 31)]
+        every = {"days_tracked": 4, "trim_id": "slow",
+                 "series": [[f"2026-08-{d:02d}", 40000] for d in (1, 11, 21, 31)]}
+        self.assertEqual(T.seen_label(every), "seen 4 of 4 fetches",
+                         "a car there every time the query ran has a perfect "
+                         "record, and used to read 'seen 3 of 31 days'")
+
+    def test_and_a_real_gap_is_visible_beside_it(self):
+        """The half that makes the one above load-bearing: perfect attendance
+        and a missed fetch must not render the same."""
+        T.FETCH_DAYS["slow"] = [f"2026-08-{d:02d}" for d in (1, 11, 21, 31)]
+        missed = {"days_tracked": 3, "trim_id": "slow",
+                  "series": [[f"2026-08-{d:02d}", 40000] for d in (1, 11, 31)]}
+        self.assertEqual(T.seen_label(missed), "seen 3 of 4 fetches")
+
+    def test_a_daily_target_reads_exactly_as_it_always_did(self):
+        T.FETCH_DAYS["fast"] = [f"2026-08-{d:02d}" for d in range(1, 12)]
         series = [[f"2026-08-{d:02d}", 40000] for d in (1, 3, 5, 7, 9, 11)]
-        self.assertEqual(T.seen_label({"days_tracked": 6, "series": series}), "seen 6 of 11 days")
+        self.assertEqual(T.seen_label({"days_tracked": 6, "trim_id": "fast",
+                                       "series": series}), "seen 6 of 11 fetches")
+
+    def test_only_the_fetches_inside_the_car_s_own_span_are_counted(self):
+        """The target has been fetched for months; this car was on the market
+        for four of them. Counting every fetch ever would make a car that
+        arrived yesterday read "seen 1 of 40 fetches" — the same slander the
+        calendar-day denominator committed, one level up."""
+        T.FETCH_DAYS["slow"] = ([f"2026-06-{d:02d}" for d in (1, 11, 21)]
+                                + [f"2026-08-{d:02d}" for d in (1, 11, 21, 31)]
+                                + [f"2026-10-{d:02d}" for d in (1, 11)])
+        car = {"days_tracked": 4, "trim_id": "slow",
+               "series": [[f"2026-08-{d:02d}", 40000] for d in (1, 11, 21, 31)]}
+        self.assertEqual(T.seen_label(car), "seen 4 of 4 fetches",
+                         "five fetches lie outside this car's span and belong "
+                         "to no claim about it")
+
+    def test_build_outputs_is_what_fills_the_denominator(self):
+        """FETCH_DAYS is a global, so a caller that never builds one gets the
+        fallback on every row — which is what the record looked like before
+        this, and reads as a bare count rather than as a wrong one. Driven
+        through the real build rather than filled by hand, because the hand-
+        filled tests above cannot tell a populated global from an empty one.
+        """
+        T.FETCH_DAYS.clear()
+        rows = T.load_history()
+        days = sorted({r["snapshot_date"] for r in rows})
+        latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+        report, _, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        self.assertTrue(T.FETCH_DAYS, "build_outputs() populates it")
+        self.assertIn("bmw-i5-edrive40", T.FETCH_DAYS)
+        self.assertRegex(report, r"seen \d+ of \d+ fetches",
+                         "and the record it builds says fetches")
+
+    def test_no_fetch_record_says_what_is_known_and_no_more(self):
+        """An older sheet, or a caller that never built one. Dividing by the
+        wrong denominator is worse than not dividing."""
+        self.assertEqual(T.seen_label({"days_tracked": 4, "trim_id": "nope",
+                                       "series": [["2026-08-01", 1], ["2026-08-31", 1]]}),
+                         "seen 4 times")
 
     def test_one_sighting_is_once_and_no_series_is_just_the_count(self):
         self.assertEqual(T.seen_label({"days_tracked": 1, "series": [["2026-08-01", 1]]}), "seen once")
-        self.assertEqual(T.seen_label({"days_tracked": 3}), "seen 3 days")
+        self.assertEqual(T.seen_label({"days_tracked": 3}), "seen 3 times")
 
     def test_the_report_row_carries_it(self):
+        T.FETCH_DAYS["bmw-i5-edrive40"] = [f"2026-07-{d:02d}" for d in range(1, 22)]
         r = {k: "" for k in T.FIELDS}
         r.update({"target": "bmw-i5-edrive40", "vin": "V", "year": "2024", "trim": "eDrive40",
                   "price": 45000, "miles": 20000, "state": "IL", "city": "Chicago", "snapshot_date": T.TODAY})
-        series = [[f"2026-07-{d:02d}", 45000] for d in range(1, 22)]     # 21 sightings on 21 days
-        line = T.fmt_row(r, {"series": series, "days_tracked": 21, "first_seen": series[0][0]})
-        self.assertIn("seen 21 of 21 days", line)
+        series = [[f"2026-07-{d:02d}", 45000] for d in range(1, 22)]     # 21 sightings, 21 fetches
+        line = T.fmt_row(r, {"series": series, "days_tracked": 21, "trim_id": "bmw-i5-edrive40",
+                             "first_seen": series[0][0]}, T.TODAY)
+        self.assertIn("seen 21 of 21 fetches", line)
         self.assertNotIn("tracked", line)
+
+    def test_the_committed_record_names_fetches_and_not_days(self):
+        """The rule reaches the file, not only the function: FETCH_DAYS is a
+        global that build_outputs() populates, so a caller that never built
+        one silently gets the fallback on every row."""
+        report = Path("REPORT.md").read_text()
+        self.assertNotIn(" days`", report.replace("seen ", "seen "))
+        self.assertNotRegex(report, r"seen \d+ of \d+ days")
+        self.assertRegex(report, r"seen \d+ of \d+ fetches")
 
 
 class TestPickUnderRoundsLikeThePage(unittest.TestCase):
@@ -2367,6 +3737,1924 @@ class TestDaysListedAnchor(unittest.TestCase):
             self.assertIsNone(T.days_listed(self.row("2026-08-15", "2026-08-09")))
         finally:
             T.INDEX_DATES.clear()
+
+
+# Every shape a hand-edited or half-written data/fetch_log.json can take at the
+# three levels delisted() and save_fetch_log() index into. Ten of them crashed
+# the run inside build_outputs(), which main() reaches only after the whole API
+# budget has been spent; one loaded clean and answered wrongly.
+MALFORMED_LOGS = [
+    ("the day is a list", lambda d, t, g: {d: []}),
+    ("…with something in it", lambda d, t, g: {d: ["x"]}),
+    ("the day is a string", lambda d, t, g: {d: "s"}),
+    ("the day is a number", lambda d, t, g: {d: 3}),
+    ("the day is true", lambda d, t, g: {d: True}),
+    ("the day is null", lambda d, t, g: {d: None}),
+    ("the target is a string", lambda d, t, g: {d: {t: "s"}}),
+    ("the target is a list", lambda d, t, g: {d: {t: ["x"]}}),
+    ("the target is a number", lambda d, t, g: {d: {t: 3}}),
+    ("the source is a string", lambda d, t, g: {d: {t: {"National": "s", "States": "s"}}}),
+    ("the source is a number", lambda d, t, g: {d: {t: {"National": 3, "States": 3}}}),
+    ("the source is a list", lambda d, t, g: {d: {t: {"National": [], "States": []}}}),
+    ("the window is a string", lambda d, t, g: {d: {t: {k: {**g, "window": "sixty"} for k in ("National", "States")}}}),
+    ("the window is a list", lambda d, t, g: {d: {t: {k: {**g, "window": [1]} for k in ("National", "States")}}}),
+    ("the window is true", lambda d, t, g: {d: {t: {k: {**g, "window": True} for k in ("National", "States")}}}),
+    ("the window is not finite", lambda d, t, g: {d: {t: {k: {**g, "window": float("inf")} for k in ("National", "States")}}}),
+    ("exhausted is a word", lambda d, t, g: {d: {t: {k: {**g, "exhausted": "yes"} for k in ("National", "States")}}}),
+    ("failed is a number", lambda d, t, g: {d: {t: {k: {**g, "failed": 1} for k in ("National", "States")}}}),
+    ("the whole file is a list", lambda d, t, g: []),
+    ("the whole file is a string", lambda d, t, g: "nope"),
+]
+
+
+class TestANumberThatIsNotOneIsNone(unittest.TestCase):
+    """to_int() is the file's universal "give me a number or None", and every
+    caller uses it as a function that never raises.
+
+    int(float(...)) raises OverflowError, which was not in the caught list, and
+    json.loads accepts `Infinity`, `-Infinity` and any literal above ~1e308 by
+    default — so one record whose price, miles, ownerCount, accidentCount or
+    baseMsrp came back non-finite took normalize() down INSIDE the fetch loop:
+    after the calls made so far were billed and before write_rows(),
+    save_fetch_log() or save_spend_history() had run, leaving the day with no
+    snapshot row, no spend record and no fetch log for calls that were paid for.
+    """
+
+    NOT_NUMBERS = [float("inf"), float("-inf"), float("nan"), 1e400, "1e400",
+                   "-1e400", "Infinity", "-Infinity", "NaN", "nan",
+                   "$1e400", "1,0e400"]
+
+    def test_a_non_finite_value_is_no_number_at_all(self):
+        for v in self.NOT_NUMBERS:
+            self.assertIsNone(T.to_int(v), f"to_int({v!r})")
+            self.assertIsNone(T.to_float(v), f"to_float({v!r})")
+
+    def test_and_the_numbers_it_always_read_still_read(self):
+        for v, want in (("42", 42), (7, 7), ("$60,999", 60999), ("40000.9", 40000),
+                        (0, 0), ("0", 0), (-3, -3)):
+            self.assertEqual(T.to_int(v), want, f"to_int({v!r})")
+        self.assertIsNone(T.to_int(None))
+        self.assertIsNone(T.to_int("n/a"))
+        self.assertEqual(T.int_or_blank(float("inf")), "")
+
+    def test_a_listing_priced_at_infinity_is_dropped_not_fatal(self):
+        """Through the real normalize(), which is where it landed."""
+        rec = json.loads(Path("data/sample_record.json").read_text())
+        t = T.TARGETS["bmw-i5-m60"]      # the sample record is an M60
+        base = T.normalize(json.loads(json.dumps(rec)), t, Counter())
+        self.assertTrue(base and base.get("price"), "the sample record is a car")
+        for path in (("retailListing", "price"), ("retailListing", "miles"),
+                     ("history", "ownerCount"), ("history", "accidentCount"),
+                     ("vehicle", "baseMsrp")):
+            bad = json.loads(json.dumps(rec))
+            node = bad
+            for k in path[:-1]:
+                node = node.setdefault(k, {})
+            node[path[-1]] = 1e400
+            try:
+                T.normalize(bad, t, Counter())
+            except Exception as e:                        # noqa: BLE001 — the point
+                self.fail(f"{'.'.join(path)} = 1e400 raised {type(e).__name__}: {e}")
+        # …and the coordinates, which took the other road out: to_float handed
+        # infinity to haversine(), whose asin() then raised "math domain error"
+        # in the same fetch loop. The coordinate is refused now, so the car
+        # falls back to its zip — which is what the geocoding rescue is for —
+        # and comes out with a real distance instead of a crash.
+        import math as _math
+        for i in (0, 1):
+            bad = json.loads(json.dumps(rec))
+            bad["location"] = list(bad["location"])
+            bad["location"][i] = 1e400
+            got = T.normalize(bad, t, Counter())
+            self.assertTrue(got, f"location[{i}] = 1e400 dropped the whole car")
+            d = got["distance"]
+            self.assertTrue(d in ("", None) or (isinstance(d, (int, float)) and _math.isfinite(d)),
+                            f"location[{i}] = 1e400 produced a distance of {d!r}")
+
+
+class TestTheDaysToSaleClauseNamesItsOwnDenominator(unittest.TestCase):
+    """"listings ran at least ~6d (30 gone)" — where 38 cars had gone.
+
+    sale_stats() builds a span only for a departure that also carries a usable
+    listing date (missing dates, and dates find_index_dates() withheld, are
+    skipped), and returned that count as `n_sold`. market_line() printed it
+    under the word this report uses for departures. Three words to its left the
+    same sentence already says "(85 of 134 dated)" for exactly this reason.
+    """
+
+    @staticmethod
+    def gone(n, dated, day="2026-08-20"):
+        out = []
+        for i in range(n):
+            g = {"vin": f"V{i:016d}", "likely": "delisted", "exact": True,
+                 "last_seen": "2026-09-05", "last_price": 40000 + i,
+                 "series": [], "trim_id": "bmw-i5-m60"}
+            if i < dated:
+                g["listed_since"] = day
+            out.append(g)
+        return out
+
+    def test_the_count_is_the_spans_over_the_departures(self):
+        st = T.sale_stats(self.gone(38, 30))
+        self.assertEqual((st["n_sold"], st["n_departures"]), (30, 38))
+        line = T.market_line({**st, "n": 100, "dated": 0})
+        self.assertIn("(30 of 38 dated)", line)
+        self.assertNotIn("(30 gone)", line,
+                         "the median's n is not the number of cars that left")
+
+    def test_a_record_where_every_departure_is_dated_says_so_plainly(self):
+        st = T.sale_stats(self.gone(20, 20))
+        self.assertIn("(20 of 20 dated)", T.market_line({**st, "n": 100, "dated": 0}))
+
+    def test_a_departure_that_is_not_evidence_is_in_neither(self):
+        """The count sits inside the same gate the spans do, so a car that
+        merely fell out of a window does not swell the denominator either."""
+        rows = self.gone(14, 14) + [{"vin": "W" * 17, "likely": "out of window",
+                                     "exact": True, "last_seen": "2026-09-05",
+                                     "last_price": 1, "listed_since": "2026-08-01",
+                                     "series": [], "trim_id": "bmw-i5-m60"}]
+        st = T.sale_stats(rows)
+        self.assertEqual((st["n_sold"], st["n_departures"]), (14, 14))
+
+
+class TestTheWindowAxisIsTheOneTheRunOpened(unittest.TestCase):
+    """window_dim() read the sorts a config LISTS, not the ones a run fetches.
+
+    Eleven of the fourteen targets name both price.asc and miles.asc and are
+    `light` depth, which opens only the first — the same config-versus-fetch gap
+    departures_are_separable() and window_reconstructable() already close by
+    asking sorts_pages(). It gave the right answer only because price.asc
+    happens to be written first everywhere.
+    """
+
+    @staticmethod
+    def target(**kw):
+        t = {"id": "t", "sorts": ["price.asc", "miles.asc"], "pages": 2,
+             "depth": "light"}
+        t.update(kw)
+        return t
+
+    def test_a_light_target_is_judged_on_the_sort_it_actually_opens(self):
+        self.assertEqual(T.window_dim(self.target(sorts=["miles.asc", "price.asc"])),
+                         "miles",
+                         "light depth opens the first sort only, and that one is "
+                         "bounded in miles")
+        self.assertEqual(T.window_dim(self.target(sorts=["price.asc", "miles.asc"])),
+                         "price")
+
+    def test_a_full_target_is_judged_on_all_of_them(self):
+        self.assertEqual(T.window_dim(self.target(depth="full",
+                                                  sorts=["miles.asc", "price.asc"])),
+                         "price", "a full target really opens both")
+        self.assertEqual(T.window_dim(self.target(depth="full", sorts=["miles.asc"])),
+                         "miles")
+
+    def test_the_shipped_watchlist_is_unchanged_by_the_fix(self):
+        """It was right on every target, and by accident: price.asc is written
+        first in each of the eleven. This is the check that says the fix moved
+        nothing today."""
+        for t in T.TARGETS.values():
+            want = "price" if "price.asc" in T.sorts_pages(t)[0] else "miles"
+            self.assertEqual(T.window_dim(t), want, t["id"])
+        self.assertEqual(T.window_dim(T.TARGETS["bmw-i5-cpo"]), "miles",
+                         "the certified watch sorts by mileage and always did")
+
+
+class TestThePlanCoversAWholeCycle(unittest.TestCase):
+    """The budget guard looked fourteen days ahead at a schedule that repeats
+    on the LCM of the cadences.
+
+    Today's 1/2/3 have an LCM of 6, so fourteen happens to cover it. Add a
+    cadence of 4 and 5 — ordinary values for a documented knob — and the cycle
+    is 60 days: the guard would see a strict subset of it, its answer would
+    depend on the day it ran, and check.yml's promise that "a config edit that
+    would overspend the free API plan fails here, not on the invoice" would be
+    false. Worse than the missed overspend is the other direction: main() runs
+    the same check, so as the window slid forward it would meet the day CI never
+    looked at and the scheduled run would start exiting 1 with "Plan too big",
+    days after CI approved the config.
+    """
+
+    def test_the_horizon_covers_the_cadence_cycle(self):
+        import math as _math
+        cycle = 1
+        for t in T.TARGETS.values():
+            cycle = _math.lcm(cycle, max(1, int(t["cadence"])))
+        self.assertGreaterEqual(T.plan_horizon(), cycle,
+                                f"the cadences repeat every {cycle} days")
+
+    def test_and_never_less_than_the_fortnight_the_prose_promises(self):
+        self.assertGreaterEqual(T.plan_horizon(), 14)
+
+    def test_a_cadence_the_fortnight_would_miss_widens_it(self):
+        """No longer hypothetical: the shipped watchlist is the case.
+
+        This used to mutate one target to cadence 5 and check the horizon
+        moved to 30, with a docstring saying today's config could not reach
+        it. One EV per brand put the reference watches on cadence 10 beside
+        the shopped trims' 1/2/3 and the kept models' 4, so the cycle is 60
+        days and a flat fortnight would see less than a quarter of it — which
+        is exactly the failure this widening exists to prevent, since main()
+        runs the same guard and would start refusing a config CI approved,
+        weeks later, on the day the window finally met the peak.
+        """
+        self.assertEqual(T.plan_horizon(), 60,
+                         "1/2/3/4/10 is an LCM of 60")
+        # …and the fortnight is still the floor when the cycle is short.
+        was = {tid: t["cadence"] for tid, t in T.TARGETS.items()}
+        try:
+            for i, t in enumerate(T.TARGETS.values()):
+                t["cadence"] = 1 + (i % 2)
+            self.assertEqual(T.plan_horizon(), 14,
+                             "1 and 2 repeat every other day; the floor is "
+                             "what applies, because one cycle of an all-daily "
+                             "watchlist is one day and the printed plan is a "
+                             "forecast a human reads")
+        finally:
+            for tid, c in was.items():
+                T.TARGETS[tid]["cadence"] = c
+        self.assertEqual(T.plan_horizon(), 60, "and the shipped config is back")
+
+    def test_the_worst_day_is_the_worst_of_that_horizon(self):
+        """Not of an arbitrary fortnight: the number main() refuses to run on."""
+        _, worst, _ = T.planned_calls()
+        days = [sum(T.calls_for(t) for t in T.TARGETS.values()
+                    if T.due_on(t, T.TODAY_ORD + k)) for k in range(T.plan_horizon())]
+        self.assertEqual(worst, max(days))
+        self.assertLessEqual(worst, T.BUDGET, "and the shipped config fits under the cap")
+
+
+class TestTheCutOffProseNamesBothAxes(unittest.TestCase):
+    """README: "a car can vanish from the data by being priced *above* the
+    day's cut-off … labelled 'priced above today's cut-off' on the dashboard".
+
+    Both halves were wrong for the nationwide certified watches, which sort by
+    mileage: window_dim() says so, the committed feed holds such a row, and the
+    label the two surfaces actually render says "fetch cut-off", not "priced
+    above". how.html spells the two-axis rule out in full, so README was the one
+    surface carrying half of it.
+    """
+
+    def test_the_axis_is_not_always_a_price(self):
+        dims = {t["id"]: T.window_dim(t) for t in T.TARGETS.values()}
+        self.assertIn("miles", dims.values(),
+                      "the watchlist should still carry a miles-sorted watch "
+                      "for this to be about")
+        self.assertIn("price", dims.values())
+
+    def test_and_the_readme_says_so(self):
+        readme = Path("README.md").read_text()
+        self.assertNotIn("priced above today's cut-off", readme,
+                         "that label is on neither surface")
+        self.assertIn("beyond that day's fetch cut-off", readme,
+                      "the label the dashboard really renders")
+        self.assertIn("sorted by", readme.lower())
+        self.assertIn("mileage", readme.split("beyond that day's fetch cut-off")[1][:600],
+                      "…and that one of the two axes is a mileage")
+
+    def test_the_label_readme_quotes_is_the_one_the_page_renders(self):
+        # The page holds it inside a single-quoted JS string, so the apostrophe
+        # is backslash-escaped in the source and not on the screen.
+        page = Path("docs/index.html").read_text().replace("\\'", "'")
+        self.assertIn("beyond that day's fetch cut-off", page,
+                      "README quotes the page; the page has to say it")
+        self.assertIn("beyond that day's fetch cut-off (price or miles)",
+                      Path("Tracking.py").read_text(),
+                      "…and the record says which axis it was")
+
+
+# The slowest tier — one EV from each brand outside BMW and the five with a
+# record — is DERIVED, not typed. It was 10 and is 15, and every place that
+# named the number also named the ordinal word for it, so a literal here would
+# be the same rot in a new file. `max` is sound because the prose's own claim is
+# that this tier is the slowest one, and
+# test_the_config_has_no_tier_the_prose_does_not_name fails if a cadence the
+# prose does not name appears above or below it.
+TAIL_CADENCE = max(t["cadence"] for t in T.TARGETS.values())
+# The word the sentences use. A number with no word raises rather than
+# defaulting, because a silent wrong word is exactly what this derivation is
+# for — "every 15th day" is not what either surface says.
+_ORDINAL_WORD = {2: "other", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth",
+                 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth",
+                 12: "twelfth", 14: "fourteenth", 15: "fifteenth",
+                 16: "sixteenth", 18: "eighteenth", 20: "twentieth",
+                 21: "twenty-first", 28: "twenty-eighth", 30: "thirtieth"}
+TAIL_CADENCE_WORD = _ORDINAL_WORD[TAIL_CADENCE]
+
+
+class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
+    """Both surfaces printed a schedule beside an absolute date.
+
+    "**Hyundai Ioniq 9** … _(every 4 days · as of 2026-08-25)_" in the report,
+    "Data through Tue, August 25, 2026 · Fetched every 4 days" on the page —
+    over cars twelve days old, three due days past that cadence. A reader does
+    the only arithmetic offered and concludes the prices are four days old.
+    That is the surface whose entire job is saying what a price is worth, and
+    it matters more from this round on: the long tail runs fortnightly now, so
+    a model being a week and a half behind is the ordinary case rather than a
+    fault.
+
+    The age is one rule in Tracking.py and both surfaces render it, because a
+    number formatted twice is how this project has grown two vocabularies for
+    one mechanism before.
+    """
+
+    def test_the_age_is_measured_against_the_record_not_the_clock(self):
+        """An offline rebuild a week later must not age every model by a week.
+        `TODAY` is the day the file was BUILT; the anchor is the newest day
+        anywhere in the record, which is what the masthead shows and what a
+        reader subtracts from."""
+        self.assertEqual(12, T.fetch_age("2026-08-25", "2026-09-06"))
+        self.assertEqual(0, T.fetch_age("2026-09-06", "2026-09-06"))
+        # the record moving is what changes the answer; the wall clock is not
+        # consulted at all, which this asserts by passing a record day that is
+        # nowhere near TODAY and getting the arithmetic of the two arguments
+        self.assertEqual(365, T.fetch_age("2025-01-01", "2026-01-01"))
+
+    def test_an_age_it_cannot_compute_is_none_and_never_zero(self):
+        """A confident 0 on an unreadable date is the worst answer available:
+        it reads as "fetched today"."""
+        for as_of, day in ((None, "2026-09-06"), ("2026-08-25", None),
+                           ("", "2026-09-06"), ("not-a-date", "2026-09-06"),
+                           ("2026-13-45", "2026-09-06"), (["2026-08-25"], "2026-09-06")):
+            self.assertIsNone(T.fetch_age(as_of, day), f"{as_of!r} vs {day!r}")
+        # …and a record day BEHIND the model's own is clamped rather than
+        # reported as a negative age, which no surface has words for
+        self.assertEqual(0, T.fetch_age("2026-09-06", "2026-08-25"))
+
+    def test_overdue_is_exact_at_the_cadence_and_not_a_tolerance(self):
+        """A target on cadence N is due every Nth day, so the widest gap the
+        schedule can account for is N-1 — the day before it next comes round.
+        N is one due day missed. Both sides of every boundary, because a
+        tolerance quietly added here would make the clause stop appearing on
+        the model it was written for."""
+        for cad in (2, 3, 4, 15):
+            self.assertFalse(T.fetch_overdue(cad - 1, cad), f"cadence {cad}: N-1 is the widest honest gap")
+            self.assertTrue(T.fetch_overdue(cad, cad), f"cadence {cad}: N is one due day missed")
+        # daily is any gap at all
+        self.assertFalse(T.fetch_overdue(0, 1))
+        self.assertTrue(T.fetch_overdue(1, 1))
+        # a cadence of 0 or a nonsense one cannot make every model overdue
+        self.assertFalse(T.fetch_overdue(0, 0))
+        self.assertFalse(T.fetch_overdue(None, 4))
+        self.assertFalse(T.fetch_overdue(9, "every four days"))
+
+    def test_the_model_entry_carries_both_so_neither_surface_recomputes(self):
+        site = json.loads(Path("docs/data.json").read_text())
+        day = site["data_through"]
+        checked = 0
+        for b in site["brands"].values():
+            for m in b["models"].values():
+                if not m.get("as_of"):
+                    continue
+                checked += 1
+                self.assertEqual(T.fetch_age(m["as_of"], day), m.get("age_days"),
+                                 f'{m["label"]}: age_days disagrees with the rule')
+                self.assertEqual(T.fetch_overdue(m.get("age_days"), m["cadence"]),
+                                 m.get("overdue"),
+                                 f'{m["label"]}: overdue disagrees with the rule')
+        self.assertGreater(checked, 0, "no model on the sheet has an as_of to check")
+
+    def _entry(self, **over):
+        """A model entry shaped the way build_outputs() writes one, for
+        compact_line() to render. Only the keys that function reads."""
+        e = {"listings": [], "as_of": "2026-08-25", "last_asked": None,
+             "cadence": 4, "age_days": 12, "overdue": True,
+             "next_due": "2026-09-09", "gone": [], "shopping": False}
+        e.update(over)
+        return e
+
+    def test_the_report_builds_the_age_into_the_line_it_prints(self):
+        """compact_line() EXECUTED, not a committed artifact read back.
+
+        This test used to load REPORT.md and docs/data.json and compare them to
+        each other. Nothing in compact_line() ran, so every mutation of the
+        tail it is named for left it green — dropping the age clause, dropping
+        the overdue clause, printing the schedule beside its own contradiction.
+        The rule was really held by the rebuild-and-diff test, which is a
+        different test with a different name, and this one reported a safety it
+        was not providing. That is the third shape this project's notes
+        describe, and the cheapest to write.
+        """
+        over = T.compact_line(self._entry(), "Test Model")
+        self.assertIn("as of 2026-08-25, 12 days ago", over,
+                      f"the line gives a date and no age: {over}")
+        self.assertIn("past its 4-day cadence", over, over)
+        self.assertNotIn("every 4 days", over,
+                         "the line states the cadence as a promise and as a "
+                         f"promise not kept, in one bracket: {over}")
+
+        keeping = T.compact_line(self._entry(age_days=2, overdue=False,
+                                             as_of="2026-09-04"), "Test Model")
+        self.assertIn("every 4 days", keeping, keeping)
+        self.assertIn("as of 2026-09-04, 2 days ago", keeping, keeping)
+        self.assertNotIn("cadence", keeping,
+                         f"a model keeping its schedule has nothing to say about it: {keeping}")
+
+        # A daily model that has fallen behind. This branch said "no fetch
+        # since" — a claim about whether a run HAPPENED, which fetch_overdue's
+        # contract forbids any surface from making, and a phrase the browser
+        # checks did not look for, so the page rendered correctly and the suite
+        # went red.
+        daily = T.compact_line(self._entry(cadence=1, age_days=1,
+                                           as_of="2026-09-05"), "Test Model")
+        self.assertIn("past its daily cadence", daily, daily)
+        self.assertNotIn("no fetch", daily.lower(),
+                         "the line claims a fetch did not happen, which the record "
+                         f"cannot know: {daily}")
+
+    def test_the_committed_report_agrees_with_the_committed_sheet(self):
+        """The artifact comparison the test above used to be, kept for what it
+        is: a check that the two files on disk tell one story, not a check of
+        the rule that built them."""
+        site = json.loads(Path("docs/data.json").read_text())
+        report = Path("REPORT.md").read_text()
+        aged = [m for b in site["brands"].values() for m in b["models"].values()
+                if m.get("age_days") and m.get("listings")]
+        if not aged:
+            self.skipTest("every model carrying cars was fetched on the record's newest day")
+        for m in aged:
+            line = next((l for l in report.splitlines()
+                         if l.startswith(f'- **{m["label"]}**')), None)
+            if line is None:
+                continue
+            self.assertIn(T.days_ago(m["age_days"]), line,
+                          f'{m["label"]}: the report gives a date and no age')
+            if m.get("overdue"):
+                self.assertIn(T.schedule_phrase(m["cadence"], True), line,
+                              f'{m["label"]}: {m["age_days"]} days on a '
+                              f'{m["cadence"]}-day cadence, said flatly')
+
+    def test_the_page_and_the_report_share_one_schedule_phrase(self):
+        """The other half of the formatter pair, executed the same way.
+
+        Four surfaces render this now — the report's line, the page's model
+        card, its two price tiles and its model index — and the round that
+        added the first three left the index on the old spelling, so one page
+        said "as of Aug 27, 10 days ago" in a tile and "Aug 27 · every 4 days"
+        in the row below it. One rule each side, and this holds them equal.
+        """
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the page's formatter through")
+        import subprocess
+        page = Path("docs/index.html").read_text()
+        m = re.search(r"const schedulePhrase = (\([^)]*\) => \{.*?\n  \});", page, re.S)
+        self.assertIsNotNone(m, "the page no longer defines schedulePhrase — this "
+                                "check has lost its subject")
+        cases = [(1, False), (1, True), (2, False), (2, True), (4, True),
+                 (4, False), (15, True), (15, False)]
+        script = (f"const schedulePhrase = {m.group(1)};\n"
+                  f"console.log(JSON.stringify({json.dumps(cases)}"
+                  ".map(([c, o]) => schedulePhrase(c, o))));")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual([T.schedule_phrase(c, o) for c, o in cases],
+                         json.loads(out.stdout),
+                         "the page and the report spell the schedule differently")
+
+    def test_the_page_spells_an_age_the_same_way_the_report_does(self):
+        """The page's own formatter, executed, against Python's. Not a
+        comparison of two source files: `days_ago` and `daysAgo` are four lines
+        each and the interesting cases are 0 and 1, which reading them
+        confidently gets right and which have been got wrong here before.
+        """
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the page's formatter through")
+        import subprocess
+        page = Path("docs/index.html").read_text()
+        m = re.search(r"const daysAgo = (\(n\) => [^;]+);", page)
+        self.assertIsNotNone(m, "the page no longer defines daysAgo — this "
+                                "check has lost its subject")
+        script = (f"const daysAgo = {m.group(1)};\n"
+                  "console.log(JSON.stringify([0,1,2,3,12,15,100].map(daysAgo)));")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True)
+        self.assertEqual(0, out.returncode, out.stderr)
+        # 0 is the one the page never renders (the clause is gated on a truthy
+        # age) and Python returns "" for; every other value must agree exactly.
+        got = json.loads(out.stdout)[1:]
+        want = [T.days_ago(n) for n in (1, 2, 3, 12, 15, 100)]
+        self.assertEqual(want, got,
+                         "the page and the report spell the same age differently")
+
+
+class TestTheOverlapLogRecordsOnlyQueriesThatFinished(unittest.TestCase):
+    """The log the States-query decision rests on must not archive a half-fetch.
+
+    When a page fails after its retry the fetch loop keeps what it has and
+    records the scope in FAILED_SCOPES. source_overlap() compared the two sets
+    anyway, so a National query that lost half its pages was written down as
+    evidence that the States query had bought the cars it never reached — the
+    shape of a real finding, and entirely the failure. Reproduced through the
+    real function before it was fixed: 7 States, 4 National, one failed scope,
+    archived as states_only 3.
+    """
+
+    def setUp(self):
+        self._vins = dict(T.SOURCE_VINS)
+        self._failed = set(T.FAILED_SCOPES)
+        T.SOURCE_VINS.clear(); T.FAILED_SCOPES.clear()
+
+    def tearDown(self):
+        T.SOURCE_VINS.clear(); T.SOURCE_VINS.update(self._vins)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(self._failed)
+
+    TID = "bmw-i7-edrive50"
+
+    def _serve(self, states, national):
+        T.SOURCE_VINS[(self.TID, "States")] = {f"S{i}" for i in range(states)}
+        T.SOURCE_VINS[(self.TID, "National")] = {f"S{i}" for i in range(national)}
+
+    def test_a_run_where_both_scopes_finished_is_recorded(self):
+        """The precondition: without it every assertion below passes on a
+        function that records nothing at all."""
+        self._serve(7, 4)
+        o = T.source_overlap({})
+        self.assertIn(self.TID, o, "a clean run must still be measured")
+        self.assertEqual(3, o[self.TID]["states_only"])
+
+    def test_a_scope_that_died_is_not_a_scope_that_looked(self):
+        for scope in ("National", "States"):
+            with self.subTest(scope=scope):
+                T.FAILED_SCOPES.clear()
+                self._serve(7, 4)
+                T.FAILED_SCOPES.add((self.TID, scope))
+                self.assertNotIn(self.TID, T.source_overlap({}),
+                                 f"a failed {scope} fetch was archived as a measurement; "
+                                 "the pages that never arrived read as cars the other "
+                                 "source bought")
+
+    def test_another_targets_failure_does_not_suppress_this_one(self):
+        """Keyed on the target AND the scope, so one broken query does not
+        empty the day's audit."""
+        self._serve(7, 4)
+        T.FAILED_SCOPES.add(("some-other-target", "National"))
+        self.assertIn(self.TID, T.source_overlap({}))
+
+
+class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
+    """A row the watchlist has moved out from under is not current inventory.
+
+    `watchlist_moved()` was only ever asked about a row that VANISHED. A row
+    still sitting in the latest snapshot went onto the page as a live listing
+    whatever its model year — so narrowing a target's `years` left its old cars
+    there, priced, counted, and folded into the floor.
+
+    Found by doing it: splitting the Lucid Air back into trims rebuilt two
+    target ids the record already held, and 53 of the 68 listings that came
+    back were model year 2022 and 2023 — cars no query on this sheet can return
+    again. The departure path had always known that; the live path had never
+    been asked.
+    """
+
+    def _rows(self, tid, years, day="2026-09-06"):
+        base = {k: "" for k in T.FIELDS}
+        out = []
+        for i, y in enumerate(years):
+            r = dict(base)
+            r.update({"snapshot_date": day, "target": tid, "year": str(y),
+                      "vin": f"V{i:016d}"[:17], "price": "45000", "miles": "12000"})
+            out.append(r)
+        return out
+
+    def test_a_row_outside_its_targets_years_is_not_a_live_listing(self):
+        tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
+        rows = self._rows(tid, [2022, 2023, 2024, 2025])
+        kept = T.current_rows(rows, {tid})
+        self.assertEqual(["2024", "2025"], sorted(r["year"] for r in kept),
+                         "a model year this watchlist can no longer return was "
+                         "published as a car on the market")
+
+    def test_a_row_inside_them_still_is(self):
+        """The precondition. Without it the rule above is satisfied by a
+        function that returns nothing."""
+        tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
+        rows = self._rows(tid, [2024, 2024, 2025])
+        self.assertEqual(3, len(T.current_rows(rows, {tid})))
+
+    def test_only_the_latest_day_survives_either_way(self):
+        """The function's original job, which the scope rule must not break."""
+        tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
+        rows = self._rows(tid, [2024, 2025], day="2026-09-01") + \
+               self._rows(tid, [2024], day="2026-09-06")
+        kept = T.current_rows(rows, {tid})
+        self.assertEqual(["2026-09-06"], sorted({r["snapshot_date"] for r in kept}))
+
+    def test_a_target_the_config_no_longer_knows_keeps_its_rows(self):
+        """An id with no target cannot be scope-checked against anything, and
+        dropping its rows would silently delete history rather than scope it."""
+        rows = self._rows("some-retired-target", [2019, 2024])
+        kept = T.current_rows(rows, {"some-retired-target"})
+        self.assertEqual(2, len(kept),
+                         "rows whose target has left the config were dropped; "
+                         "there is nothing to judge them against")
+
+    def test_the_published_sheet_holds_no_car_its_own_watchlist_excludes(self):
+        """The end-to-end statement, over the committed record."""
+        site = json.loads(Path("docs/data.json").read_text())
+        bad = []
+        for bk, b in site["brands"].items():
+            for mk, m in b["models"].items():
+                years = set(m.get("years") or [])
+                if not years:
+                    continue
+                for x in (m.get("listings") or []):
+                    if str(x.get("year")) and str(x.get("year")) not in years:
+                        bad.append(f'{bk}/{mk} {x.get("year")} {x.get("vin")}')
+        self.assertEqual([], bad[:10],
+                         f"{len(bad)} live listings the watchlist cannot return: {bad[:5]}")
+
+
+class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
+    """The sheet's size is a published number and the file grows every day.
+
+    The browser suite fails the build past 250 KB gzipped, and README now
+    quotes what the sheet weighs today and what it will weigh once every target
+    is fetching. The first of those moves with every snapshot the daily job
+    commits, so it is held to the file rather than to a memory of it — this is
+    the fifth number in this repo's prose to be worth pinning, and the previous
+    four all rotted.
+
+    The projections are NOT pinned here: they take a synthetic full watchlist
+    and would turn CI red on a day the market moved, which is a test whose
+    answer depends on the day it runs. `tools/measure_sheet.py` recomputes them
+    in under three seconds and README says to run it.
+    """
+
+    BUDGET_KB = 250
+
+    @staticmethod
+    def _row():
+        """The table's first row, as the sheet on disk makes it."""
+        import gzip
+        site = json.loads(Path("docs/data.json").read_text())
+        blob = json.dumps(site, indent=1).encode()
+        cars = sum(len(m.get("listings") or [])
+                   for b in site["brands"].values() for m in b["models"].values())
+        live = sum(1 for b in site["brands"].values() for m in b["models"].values()
+                   if m.get("listings"))
+        gz = len(gzip.compress(blob, 9))
+        return (f"| as committed | {live} | {cars:,} | {round(gz / 1024)} KB | "
+                f"{round(gz / (250 * 1024) * 100)}% |")
+
+    def test_the_committed_row_is_the_sheet_on_disk(self):
+        readme = " ".join(Path("README.md").read_text().split())
+        self.assertIn("| the sheet | models | cars | gzipped | of budget |", readme,
+                      "README no longer carries the sheet-size table")
+        self.assertIn(self._row(), readme,
+                      "README's first row is not the sheet that is committed beside it; "
+                      f"it should read {self._row()!r}")
+
+    def test_the_measuring_tool_derives_its_cap_from_the_page_size(self):
+        """LIGHT_CARS is what a light target actually reaches, and it has to
+        follow PER_PAGE rather than be typed: a page-size change would leave
+        the projection describing a fetch the code no longer makes."""
+        src = Path("tools/measure_sheet.py").read_text()
+        self.assertIn("LIGHT_CARS = 2 * T.PER_PAGE", src,
+                      "the tool's per-model cap is no longer derived from PER_PAGE")
+
+    def test_the_budget_the_tool_checks_is_the_one_the_browser_suite_fails_on(self):
+        """Two files, one threshold. The smoke script fails the build at it and
+        the tool reports against it; if they drift, the tool reports comfort
+        the build does not share."""
+        smoke = Path("tools/dashboard_smoke.mjs").read_text()
+        self.assertIn(f"'data.json': {self.BUDGET_KB} * 1024", smoke)
+        self.assertIn(f"cap = {self.BUDGET_KB} * 1024", Path("tools/measure_sheet.py").read_text())
+
+
+class TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives(unittest.TestCase):
+    """The round's own arithmetic, in the two places it is argued.
+
+    docs/how.html's copies of the plan figures are derived from
+    planned_calls() and pinned. README's decision paragraph and targets.json's
+    "// national_only" comment carry the same numbers — 973 a month, a worst
+    day of 38 against 40, and the horizons that ruled out 13 and 14 — and were
+    held by nothing. Rewriting the config comment to "700 calls/month", "a
+    worst day of 12 against 40" and "plan_horizon() at 7 days" left the whole
+    suite green, which is the state a comment is in when it is the only record
+    of why a decision was made.
+
+    The horizons are recomputed rather than trusted: 13 and 14 are named as
+    rejected BECAUSE of what they do to the cycle, so the sentence is only true
+    while that is still what they do.
+    """
+
+    @staticmethod
+    def _horizon_at(cad):
+        """plan_horizon() if the long tail ran at `cad`, by its own rule."""
+        cycle = 1
+        for t in T.TARGETS.values():
+            c = cad if t["cadence"] == TAIL_CADENCE else t["cadence"]
+            cycle = math.lcm(cycle, max(1, int(c)))
+        return max(14, cycle)
+
+    def test_both_surfaces_quote_the_plan_this_config_produces(self):
+        today, worst, avg = T.planned_calls()
+        month = round(avg * 30.5)
+        readme = " ".join(Path("README.md").read_text().split())
+        cfg = json.loads(Path("targets.json").read_text())
+        comment = cfg["// national_only"]
+        for where, text in (("README", readme), ("targets.json's comment", comment)):
+            self.assertIn(str(month), text, f"{where} does not name the monthly plan ({month})")
+            self.assertIn(str(worst), text, f"{where} does not name the worst day ({worst})")
+            self.assertIn(str(T.BUDGET), text, f"{where} does not name the daily cap ({T.BUDGET})")
+            self.assertIn(str(T.MONTHLY), text.replace(",", ""),
+                          f"{where} does not name the monthly cap ({T.MONTHLY})")
+
+    def test_the_horizons_that_ruled_out_thirteen_and_fourteen_still_do(self):
+        """Both surfaces say fifteen was chosen because it keeps the cycle at
+        60 where 13 and 14 push it to 156 and 84. Those three numbers are a
+        function of every other cadence on the watchlist, so adding one model
+        at a new cadence can make the sentence false without touching it."""
+        readme = " ".join(Path("README.md").read_text().split())
+        comment = json.loads(Path("targets.json").read_text())["// national_only"]
+        here = T.plan_horizon()
+        self.assertEqual(here, self._horizon_at(TAIL_CADENCE),
+                         "the recomputation disagrees with plan_horizon() at the "
+                         "cadence actually configured — the helper is wrong, not the prose")
+        for text, where in ((readme, "README"), (comment, "targets.json's comment")):
+            self.assertIn(str(here), text, f"{where} does not name the cycle it keeps ({here})")
+            for cad in (13, 14):
+                self.assertIn(str(self._horizon_at(cad)), text,
+                              f"{where} says {cad} was rejected but does not name what it "
+                              f"costs ({self._horizon_at(cad)} days)")
+
+    def test_the_tier_the_prose_argues_from_is_the_one_the_config_runs(self):
+        """"every tenth day became every fifteenth" is a claim about a real
+        move, and the second half of it has to be where the config is. Only
+        that half: the first names where the tier came FROM, which is history
+        and does not move with the config."""
+        readme = " ".join(Path("README.md").read_text().split())
+        self.assertIn(f"became every {TAIL_CADENCE_WORD}", readme,
+                      f"README says the tier moved somewhere other than {TAIL_CADENCE}")
+
+
+class TestNoCommentCitesALineNumber(unittest.TestCase):
+    """Cite the function, not `file.py:NN`.
+
+    This repo's rule, and nothing enforced it. Six citations named lines of
+    docs/index.html — :3818 twice, :3833, :3586, :3580 and :2392 — and every
+    one of them pointed at unrelated code: :3818 was meant to be
+    buildFilters()'s `#f-model-field` hide rule and lands on a chip-building
+    ternary, :3833 was the seen-label comment and lands on a design note. Four
+    were already wrong before the round that moved them further, which is the
+    shape exactly: a line number is a citation that rots on somebody else's
+    commit, silently, and reads as precision.
+
+    Line numbers inside a STRING are left alone — an error message quoting a
+    traceback is not a citation — so this looks only at comments.
+    """
+
+    ROOTS = ("Tracking.py", "tools", "tests", "docs/index.html", "docs/how.html")
+    # A source filename followed by a colon and a line, and the bare
+    # parenthesised colon-line form the smoke script used. Written as a pattern
+    # rather than shown by example, because an example of a citation IS one —
+    # the first draft of this comment carried two and the check found them,
+    # which is the check working and the comment being wrong.
+    CITE = re.compile(r"(?:[A-Za-z_][\w.-]*\.(?:py|mjs|js|html|json|md)\s*:\s*\d{2,})"
+                      r"|(?:\(\s*:\d{3,}\s*\))")
+
+    def _files(self):
+        out = []
+        for r in self.ROOTS:
+            p = Path(r)
+            if p.is_file():
+                out.append(p)
+            elif p.is_dir():
+                out += [f for f in p.rglob("*")
+                        if f.suffix in (".py", ".mjs", ".js", ".html")
+                        and "node_modules" not in f.parts]
+        return out
+
+    @staticmethod
+    def _comments(text, suffix):
+        """Comment text only, so a line number inside a string is not a hit."""
+        out = []
+        for i, line in enumerate(text.split("\n"), 1):
+            if suffix == ".py":
+                # after the last quote on the line, a # is a comment; inside a
+                # docstring every line counts, which is where the prose lives
+                at = line.find("#")
+                if at >= 0 and line.count('"', 0, at) % 2 == 0 and line.count("'", 0, at) % 2 == 0:
+                    out.append((i, line[at:]))
+            else:
+                at = line.find("//")
+                if at >= 0 and line.count("'", 0, at) % 2 == 0 and line.count('"', 0, at) % 2 == 0:
+                    out.append((i, line[at:]))
+                at2 = line.find("/*")
+                if at2 >= 0:
+                    out.append((i, line[at2:]))
+        return out
+
+    def test_no_comment_names_a_line_of_another_file(self):
+        hits = []
+        for f in self._files():
+            text = f.read_text(errors="replace")
+            for n, body in self._comments(text, f.suffix):
+                m = self.CITE.search(body)
+                if m:
+                    hits.append(f"  {f}:{n} cites {m.group(0)!r} — {body.strip()[:70]}")
+        self.assertEqual([], hits,
+                         "cite the function, not the line: a line number is a citation "
+                         "that rots on somebody else's commit and reads as precision.\n"
+                         + "\n".join(hits))
+
+    def test_the_docstrings_carry_prose_this_would_search(self):
+        """The precondition. If the walker stopped finding comments at all —
+        a suffix filter that matches nothing, a comment parser that returns
+        empty — the check above would pass over an empty set and report a rule
+        it was no longer applying."""
+        seen = sum(len(self._comments(f.read_text(errors="replace"), f.suffix))
+                   for f in self._files())
+        self.assertGreater(seen, 500,
+                           f"only {seen} comment lines found across {len(self._files())} "
+                           "files — the walker has lost its subject")
+
+
+class TestTheWorkedExampleFollowsTheCadenceItIsDrawnFrom(unittest.TestCase):
+    """Three files carry the same worked example for seen_label's old form, and
+    its numbers are a function of the long tail's cadence.
+
+    "Twenty-eight of the thirty-six models run every tenth day now. A car
+    present at every single fetch of one of them read 'seen 4 of 31 days'" —
+    four, because a 31-day span holds four fetch days at cadence 10. The tier
+    moved to 15 and all three copies went on saying ten and four, in the
+    present tense, in the sentence that is the whole justification for the
+    label's shape. The prose that was pinned (README, how.html) moved; the
+    prose that was not did not.
+
+    Pinned here against the config the same way the surface counts are, so the
+    next cadence change fails rather than rots. The span is left as prose — it
+    is an illustration, not a measurement — but the fetch count inside it has
+    to be the one that cadence produces.
+    """
+
+    SPAN = 31
+    FILES = ("Tracking.py", "docs/index.html", "tests/test_tracking.py")
+
+    def test_every_copy_names_the_tier_the_config_actually_runs(self):
+        want = f"run every {TAIL_CADENCE_WORD} day now"
+        for name in self.FILES:
+            text = Path(name).read_text()
+            if "run every" not in text:
+                continue
+            self.assertIn(want, text,
+                          f"{name} names a cadence tier the config does not run "
+                          f"(the tier is {TAIL_CADENCE})")
+
+    def test_the_fetch_count_in_the_example_is_the_one_that_cadence_gives(self):
+        """A 31-day span holds ceil(31 / cadence) fetch days for a model on that
+        cadence — 4 at ten, 3 at fifteen. The example's "seen N of 31 days" has
+        to be that N, and the gap it is contrasted with has to be N-1, or the
+        sentence stops making the point it is there to make."""
+        n = -(-self.SPAN // TAIL_CADENCE)
+        self.assertGreaterEqual(n, 2, "the example needs a gap to contrast with")
+        for name in self.FILES:
+            text = Path(name).read_text()
+            if f"of {self.SPAN} days" not in text and f"of {self.SPAN})" not in text:
+                continue
+            self.assertIn(f"seen {n} of {self.SPAN} days", text,
+                          f"{name}: at cadence {TAIL_CADENCE} a {self.SPAN}-day span "
+                          f"holds {n} fetches, and the example says otherwise")
+            self.assertNotIn(f"{n + 1}-of-{self.SPAN}", text,
+                             f"{name}: the contrast pair is still the old cadence's")
+
+
+class TestTheStatesQueryPaidForItself(unittest.TestCase):
+    """The measurement README's decision rests on, held three ways.
+
+    The 28 national-only targets were standing on `sources_for()`'s premise —
+    that a second query into the buyer's own states re-fetches a subset of the
+    national answer. `data/source_overlap.json` exists to test that premise and
+    had never been read. It is false for exactly the targets it was applied to:
+    the redundancy is real at `depth: full`, where the national query fetches
+    about a hundred cars, and it collapses at `depth: light`, where it fetches
+    twenty — the cheapest twenty in America, of which almost none are drivable.
+
+    Pinning it needs care the obvious way does not survive. The log is appended
+    to and `git add data`-ed by the daily job, so a test comparing the prose to
+    the LIVE log turns CI red on the next tracker run — the fourth number in
+    this repo's prose to rot would have been replaced by one that rots nightly.
+    So the window the prose cites is frozen as a fixture, and the three checks
+    below divide the work: the fixture cannot be invented, the prose cannot
+    drift from the fixture, and the FINDING — not the number — is what is asked
+    of the live log.
+    """
+
+    WINDOW = Path("tests/fixtures/source_overlap_window.json")
+
+    @classmethod
+    def frozen(cls):
+        return json.loads(cls.WINDOW.read_text())
+
+    @staticmethod
+    def share(rows):
+        """States cars found, and the share of them the national query missed."""
+        st = sum(r["states"] for r in rows)
+        return st, sum(r["states_only"] for r in rows), (sum(r["states_only"] for r in rows) / st if st else None)
+
+    def test_every_frozen_observation_is_one_the_log_really_recorded(self):
+        """The fixture is evidence, so it has to BE evidence.
+
+        Each row is checked against the live log by its own day and target. The
+        first version of this reasoned "the log only grows, so a frozen row
+        that has gone missing means the fixture was edited to fit a sentence" —
+        and that is false twice: `save_overlap_history()` prunes to the newest
+        `keep` days and overwrites the current day rather than appending. Driven
+        forward a day at a time, the window's first day falls out of the live
+        log 120 runs after it was recorded, at which point this test would have
+        gone red every day thereafter and blamed the fixture for the retention
+        policy. A day the log no longer reaches is not checkable; a day it holds
+        must match exactly. The precondition below is what stops "not checkable"
+        from quietly becoming "nothing checked".
+        """
+        live = json.loads(Path("data/source_overlap.json").read_text())
+        obs = self.frozen()["observations"]
+        self.assertEqual(28, len(obs), "the prose names 28 observations")
+        oldest = min(live) if live else None
+        checkable = [r for r in obs if oldest and r["day"] >= oldest]
+        self.assertTrue(checkable,
+                        "the live log no longer reaches any day the fixture froze, so "
+                        "nothing here is checked — re-cut the fixture against a window "
+                        f"the log still holds (log starts {oldest})")
+        missing, differs = [], []
+        for r in checkable:
+            got = live.get(r["day"], {}).get(r["target"])
+            if got is None:
+                missing.append(f'{r["day"]} {r["target"]}'); continue
+            want = [r["states"], r["national"], r["both"], r["states_only"]]
+            if list(got[:4]) != want:
+                differs.append(f'{r["day"]} {r["target"]}: log {list(got[:4])} vs frozen {want}')
+        self.assertEqual([], missing, f"frozen rows the live log does not hold: {missing}")
+        self.assertEqual([], differs, f"frozen rows the live log contradicts: {differs}")
+
+    def test_every_frozen_row_carries_the_depth_it_was_fetched_at(self):
+        """`depth` is the analytic variable the whole decision turns on, and
+        nothing checked it: the previous guard compared only the four counts,
+        so the fixture's depths could be inverted and README's two percentages
+        would follow, publishing the exact opposite of the finding with the
+        suite green.
+
+        Checked against the config for every target the watchlist still holds.
+        The rest — targets since merged or stood down — are held to a named
+        list rather than to nothing, because "the config no longer knows" is
+        exactly the gap the first cut of this fixture fell into: it gave those
+        five rows a null depth, dropped them out of both groups, and understated
+        the light share by three points.
+        """
+        RETIRED = {"lucid-air-touring": "light", "lucid-air-grand-touring": "light",
+                   "hyundai-ioniq5": "light"}
+        wrong, unattributed = [], []
+        for r in self.frozen()["observations"]:
+            t = T.TARGETS.get(r["target"])
+            want = t.get("depth") if t else RETIRED.get(r["target"])
+            if want is None:
+                unattributed.append(r["target"]); continue
+            if r["depth"] != want:
+                wrong.append(f'{r["day"]} {r["target"]}: frozen {r["depth"]!r}, really {want!r}')
+        self.assertEqual([], wrong, f"the fixture misattributes evidence: {wrong}")
+        self.assertEqual([], sorted(set(unattributed)),
+                         "these rows are on targets the config no longer knows and are not "
+                         "in the retired list either, so their depth is a guess: "
+                         f"{sorted(set(unattributed))}")
+
+    def test_the_percentages_the_readme_quotes_are_the_ones_the_window_yields(self):
+        """Each figure inside its own sentence, not loose in the file.
+
+        This asserted `assertIn(f"{round(share*100)}%", readme)` — a bare "NN%"
+        anywhere in a four-hundred-line README, which already contains 99%, 97%,
+        95%, 88%, 35%, 21% and 4% in sentences about other things. Exchanging
+        README's two figures so it read "a `depth: full` target … loses 88%" and
+        "a `depth: light` target … loses 21%" — the exact inversion of the
+        finding that justifies moving 28 targets off national_only — left all
+        482 tests green. Reproduced before it was fixed.
+        """
+        obs = self.frozen()["observations"]
+        readme = " ".join(Path("README.md").read_text().split())
+        window = self.frozen()["window"]
+        self.assertEqual([min(r["day"] for r in obs), max(r["day"] for r in obs)], window,
+                         "the fixture's window does not span its own observations")
+        self.assertIn(f"between {window[0]} and {window[1]}", readme,
+                      "the prose must name the window it read")
+        st, only, _ = self.share(obs)
+        self.assertIn(f"the {len(obs)} observations recorded", readme,
+                      "the headline count is quoted and must be the fixture's")
+        self.assertIn(f"States query found {st} cars and {only} of them were invisible", readme)
+        # each share attached to the depth it describes, as one contiguous run
+        shares = {}
+        for depth in ("full", "light"):
+            rows = [r for r in obs if r["depth"] == depth]
+            self.assertTrue(rows, f"no {depth} observation in the window")
+            shares[depth] = self.share(rows)[2]
+        self.assertIn(f"a `depth: full` target — about a hundred cars nationally — "
+                      f"loses {round(shares['full'] * 100)}% by dropping its States half",
+                      readme, f"the full share is {shares['full']:.0%}")
+        self.assertIn(f"A `depth: light` target fetches twenty, the whole country, cheapest "
+                      f"first, and loses **{round(shares['light'] * 100)}%**",
+                      readme, f"the light share is {shares['light']:.0%}")
+        # …and the DIRECTION, so an inversion fails even if both digits are real
+        self.assertGreater(shares["light"], shares["full"],
+                           "the fixture no longer shows what the paragraph claims")
+
+    def test_the_finding_still_holds_on_the_log_as_it_stands_today(self):
+        """The one that is allowed to fail. Everything above pins a sentence to
+        a frozen window; this asks the CURRENT log the question the decision
+        turns on, and it is deliberately about the gap rather than either
+        number, because the numbers move every night and the gap is the reason
+        28 targets changed shape.
+
+        A depth that has left the watchlist is skipped rather than guessed: a
+        row whose target no longer exists cannot be attributed to a group.
+        """
+        live = json.loads(Path("data/source_overlap.json").read_text())
+        rows = {"full": [], "light": []}
+        for day, tgts in live.items():
+            for tid, v in tgts.items():
+                t = T.TARGETS.get(tid)
+                if not t or t.get("depth") not in rows:
+                    continue
+                st, nat, both, only = v[:4]
+                rows[t["depth"]].append({"states": st, "states_only": only})
+        for d in rows:
+            if not rows[d]:
+                self.skipTest(f"the live log holds no {d} observation to compare")
+        _, _, full = self.share(rows["full"])
+        _, _, light = self.share(rows["light"])
+        self.assertGreater(light, full + 0.25,
+                           "the whole reason 28 targets ask their own states is that a "
+                           f"light target loses far more by not asking: light {light:.0%} "
+                           f"vs full {full:.0%} on today's log. If that gap has closed, the "
+                           "cadence those targets pay for it in is being spent for nothing "
+                           "and README's paragraph is out of date.")
+
+
+NUMBER_WORD = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
+               7: "seven", 8: "eight", 9: "nine", 10: "ten"}
+
+
+class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
+    """"BMW siblings run every other day, rival brands every third day", on a
+    watchlist where four of the six non-shopped BMW targets are on cadence 3.
+
+    The tier the prose described was by BRAND and the config is by TARGET, so
+    the sentence was false for the i7's own trims and for the whole iX. Both
+    surfaces carried it, and the call figures quoted beside it — 29 a day, 884
+    a month, worst day 32 of 40 — are the config's, not the sentence's.
+    """
+
+    def _by_cadence(self):
+        out = {}
+        for t in T.TARGETS.values():
+            out.setdefault(t["cadence"], []).append(t["id"])
+        return out
+
+    def test_no_surface_claims_a_cadence_tier_by_brand(self):
+        for name in ("README.md", "docs/how.html"):
+            text = Path(name).read_text()
+            self.assertNotIn("BMW siblings run every other day", text, name)
+            self.assertNotIn("BMW siblings are fetched every other day", text, name)
+
+    def test_the_daily_targets_are_shopped_trims_and_there_are_two(self):
+        daily = sorted(self._by_cadence().get(1, []))
+        self.assertEqual(len(daily), 2, f"the prose says two run daily: {daily}")
+        self.assertTrue(set(daily) <= set(T.SHOPPING),
+                        f"…and that they are shopped ones: {daily}")
+
+    def test_every_other_day_is_the_i5s_other_trims_and_nothing_else(self):
+        every_other = sorted(self._by_cadence().get(2, []))
+        self.assertEqual(len(every_other), 3,
+                         f"the prose says the i5's other three: {every_other}")
+        self.assertTrue(all(t.startswith("bmw-i5-") for t in every_other),
+                        f"…and that all three are the i5's: {every_other}")
+        self.assertIn("bmw-i5-cpo", every_other,
+                      "the prose names the certified watch as one of them")
+
+    def test_the_third_day_tier_is_the_i7s_other_trims_and_the_ix(self):
+        """It used to hold every rival too. One EV per brand moved the rivals
+        onto their own tiers, so the sentence naming them here had to move
+        with them — this is the half that fails if only one of the two does."""
+        rest = sorted(self._by_cadence().get(3, []))
+        self.assertTrue(rest and all(t.startswith("bmw-i7-") or t.startswith("bmw-ix")
+                                     for t in rest),
+                        f"the prose says the i7's other trims and the iX: {rest}")
+
+    def test_the_fourth_day_tier_is_the_models_that_already_have_a_record(self):
+        """Derived from the prose rather than a literal five. The Lucid Air was
+        on this tier and left it: its record is 257 rows of which most are model
+        years the 2024+ watchlist can no longer return, so it was here on the
+        strength of history the config cannot reproduce."""
+        kept = sorted(self._by_cadence().get(4, []))
+        readme = " ".join(Path("README.md").read_text().split())
+        self.assertIn(f"the {NUMBER_WORD[len(kept)]} models already carrying a record", readme,
+                      f"the tier holds {len(kept)} and README says otherwise: {kept}")
+        self.assertFalse([t for t in kept if t.startswith("bmw-")],
+                         f"…and that none of them is a BMW: {kept}")
+        self.assertFalse([t for t in kept if T.TARGETS[t].get("national_only")],
+                         f"…and that they are the ones that kept both queries: {kept}")
+
+    def test_the_slowest_tier_is_one_ev_a_brand_asking_both_queries(self):
+        """Derived, not counted. This asserted `== 27` and went red the moment
+        a brand was added — which is the guard working, and also a literal
+        doing a rule's job. The rule is: every brand outside BMW that is not
+        one of the five with a record, one target each.
+
+        It said "national query only" for as long as the tier was national_only,
+        and that half is now inverted rather than dropped: the overlap log
+        settled the question these targets were standing on the wrong side of,
+        so the tier asks BOTH queries and the assertion is that none of them is
+        national_only. Inverted rather than deleted because it is the same rule
+        the prose states, and a rule that stops being asserted the moment it
+        changes is the assertion this file exists to avoid.
+        """
+        ref = sorted(self._by_cadence().get(TAIL_CADENCE, []))
+        kept = {T.TARGETS[t]["brand"] for t in self._by_cadence().get(4, [])}
+        self.assertEqual({T.TARGETS[t]["brand"] for t in ref},
+                         {t["brand"] for t in T.TARGETS.values()} - kept - {"bmw"})
+        self.assertFalse([t for t in ref if T.TARGETS[t].get("national_only")],
+                         "the prose says every one of them asks its own states too")
+        self.assertEqual(len({T.TARGETS[t]["brand"] for t in ref}),
+                         len({T.TARGETS[t]["model_key"] for t in ref}),
+                         "…one nameplate from each — a brand may carry trims of it, "
+                         "the way the Lucid Air does, but not a second model")
+
+    def test_the_config_has_no_tier_the_prose_does_not_name(self):
+        named = {1, 2, 3, 4, TAIL_CADENCE}
+        others = {c for c in self._by_cadence() if c not in named}
+        self.assertFalse(others, f"both surfaces name {sorted(named)}, "
+                                 f"the config also has {sorted(others)}")
+
+    def test_the_call_figures_both_surfaces_quote(self):
+        today, worst, avg = T.planned_calls()
+        for name, needed in (("README.md", [f"about {round(avg)} API calls a day"]),
+                             ("docs/how.html", [f"about {round(avg)} calls a day",
+                                                f"roughly {round(avg * 30.5)} a month",
+                                                f"worst day in the {T.plan_horizon()}-day cycle at {worst}",
+                                                f"hard cap of {T.BUDGET}"])):
+            text = Path(name).read_text()
+            for want in needed:
+                self.assertIn(want, text, f"{name}: {want}")
+
+    def test_the_brand_counts_both_surfaces_quote(self):
+        """Four numbers in prose that move with the watchlist.
+
+        README's opening names the brands beside BMW; both surfaces name the
+        tenth-day tier. Nothing pinned either, and a brand added or dropped
+        makes them false in a sentence nobody re-reads.
+        """
+        brands = {t["brand"] for t in T.TARGETS.values()}
+        others = len(brands - {"bmw"})
+        # BRANDS, because that is the noun the sentence uses. It counted
+        # targets, which was the same number only while every tail model was
+        # trimless; the Lucid Air carries three trims now and would have made
+        # the prose claim seventeen brands where there are fifteen.
+        tail = len({t["brand"] for t in T.TARGETS.values() if t["cadence"] == TAIL_CADENCE})
+        word = TAIL_CADENCE_WORD
+        readme = " ".join(Path("README.md").read_text().split())
+        how = " ".join(Path("docs/how.html").read_text().split())
+        self.assertIn(f"each of the other {others} brands", readme)
+        self.assertIn(f"other {tail} brands every {word} day", readme)
+        self.assertIn(f"other {tail} brands every {word} day", how)
+        # The `5` here was a literal for the fourth-day tier and went stale the
+        # moment the Lucid Air left it. Derived from the config, so the
+        # invariant survives a tier changing size: outside BMW there are
+        # exactly two tiers, the ones with a record and the rest, and every
+        # brand is in one of them.
+        recorded = len({t["brand"] for t in T.TARGETS.values() if t["cadence"] == 4})
+        self.assertEqual(others, tail + recorded,
+                         f"outside BMW there are two tiers — {recorded} brands with a "
+                         f"record and {tail} in the tail — and they should account for "
+                         f"all {others}; if they do not, the sentences above describe a "
+                         "watchlist that no longer exists")
+
+    def test_the_cycle_length_both_surfaces_quote(self):
+        """README says the cycle is 60 days in prose and how.html names it in
+        the worst-day clause. Neither was pinned while the cadences were 1/2/3
+        and the horizon was the fortnight floor, so the day a cadence widened
+        it both sentences went quietly false."""
+        flat = " ".join(Path("README.md").read_text().split())
+        self.assertIn(f"the cycle is {T.plan_horizon()} days", flat)
+
+
+class TestTheComparisonPreambleDescribesTheQueriesItRan(unittest.TestCase):
+    """"the 20 lowest asking … per model", over models the same block lists at
+    66 and 68.
+
+    The scan is per TARGET. Every comparison model on this watchlist carries two
+    trim targets, each fetching one page of PER_PAGE from each of two sources,
+    so the cap is 40 a target and 80 a model — and the union of two trim-sliced
+    queries is not "the 20 lowest asking" of the model at all.
+    """
+
+    def test_the_counts_it_prints_can_run_past_the_number_it_names(self):
+        """The preamble is checked against the arithmetic of the plan, not
+        against today's market: a model with two trims can hold twice the cap
+        of one, and the sentence has to allow for it."""
+        multi = [mk for mk in {t["model_key"] for t in T.TARGETS.values()}
+                 if len([t for t in T.TARGETS.values()
+                         if t["model_key"] == mk and not t["shopping"]]) > 1]
+        self.assertTrue(multi, "the watchlist should still have a two-trim "
+                               "comparison model for this to be about")
+        report = Path("REPORT.md").read_text()
+        if "## Comparison" not in report:
+            self.skipTest("the committed record has no comparison block")
+        pre = report.split("## Comparison")[1].split("\n\n")[1]
+        self.assertIn(f"the {T.PER_PAGE} lowest asking", pre)
+        self.assertIn("per TRIM queried", pre,
+                      "the cap is per target, and a model can carry several")
+        for line in report.split("## Comparison")[1].splitlines():
+            m = re.match(r"- \*\*(.+?)\*\* — (\d+) cars", line)
+            if m and int(m.group(2)) > 2 * T.PER_PAGE:
+                self.assertIn("run past 20", pre,
+                              f"{m.group(1)} holds {m.group(2)} cars under a "
+                              f"sentence naming {T.PER_PAGE}")
+
+
+class TestTheNonMonotoneIllustrationIsAboutTheseBands(unittest.TestCase):
+    """The figures README and band_cost() use to argue for marginal banding.
+
+    Both said "$574 at 423 miles and $425 at 424". Those come from the ORIGINAL
+    bands 1.15/0.85/0.68/0.58 and were carried forward verbatim when the bands
+    were re-cut to 1.20/0.70/0.45/0.30 — which is the rot ship_for()'s own
+    docstring records happening to it once already: "Every figure in it was
+    false by the time it was committed". The sweep that class calls for was not
+    run over these two.
+
+    Derived here from the live config rather than typed, so the next re-cut
+    either moves the prose or turns this red.
+    """
+
+    def _replace_model(self, road):
+        """The rejected model: one band's rate applied to the whole distance."""
+        for edge, rate in T.SHIP_BANDS:
+            if edge is None or road <= edge:
+                return round(road * rate)
+        return round(road * T.SHIP_BANDS[-1][1])
+
+    def test_the_two_numbers_both_places_quote(self):
+        lo = self._replace_model(423 * T.SHIP_ROAD_FACTOR)
+        hi = self._replace_model(424 * T.SHIP_ROAD_FACTOR)
+        self.assertGreater(lo, hi, "the illustration is a car one mile further "
+                                   "away costing less")
+        want = f"${lo} at 423 miles and ${hi} at 424"
+        readme = Path("README.md").read_text()
+        self.assertIn(want, readme, f"README quotes something else: {want!r}")
+        # One line, because a docstring wraps and the sentence is the claim.
+        doc = " ".join(T.band_cost.__doc__.split())
+        self.assertIn(f"at 423 straight-line miles it charged ${lo} and at 424 "
+                      f"it charged ${hi}", doc)
+        self.assertIn(f"was ${lo - hi} cheaper to bring home", doc)
+
+    def test_and_the_property_they_are_defending_holds(self):
+        """The point of the illustration, checked rather than illustrated."""
+        prev = -1
+        for d in range(0, 6001, 7):
+            cost = T.band_cost(d * T.SHIP_ROAD_FACTOR)
+            self.assertGreaterEqual(cost, prev, f"{d} miles cost less than {d - 7}")
+            prev = cost
+
+
+class TestAMistypedBandIsNamedNotFatal(unittest.TestCase):
+    """_ship_bands()'s whole docstring is about surviving a hand-edited config,
+    and it checks `per_mile` and `to` one level in — while a band that is not an
+    object at all raised AttributeError from a module-level constant, before
+    anything ran. The sibling key does exactly this check and says why:
+    ship_calibration() calls a quote with the wrong key "indistinguishable from
+    no quote at all"."""
+
+    def test_an_entry_that_is_not_a_band_is_named_and_dropped(self):
+        for bad in ("1000:0.7", 7, ["to", 500], None, True):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                got = T._ship_bands([{"to": 500, "per_mile": 1.2}, bad,
+                                     {"to": None, "per_mile": 0.3}])
+            self.assertEqual(got, [(500.0, 1.2), (None, 0.3)], f"with {bad!r} in the list")
+            self.assertIn("not a band", out.getvalue(), f"with {bad!r} in the list")
+
+    def test_a_ship_bands_that_is_not_a_list_is_named_and_ignored(self):
+        for bad in ("1.20/0.70", {"to": 500, "per_mile": 1.2}, 3):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(T._ship_bands(bad), [], f"{bad!r}")
+            self.assertIn("not a list", out.getvalue(), f"{bad!r}")
+
+    def test_and_a_config_with_none_of_that_is_unchanged(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(T._ship_bands([{"to": 500, "per_mile": 1.2},
+                                            {"to": None, "per_mile": 0.3}]),
+                             [(500.0, 1.2), (None, 0.3)])
+            self.assertEqual(T._ship_bands(None), [])
+        self.assertEqual(T.SHIP_BANDS, T._ship_bands(T.BUYER.get("ship_bands")),
+                         "and the shipped config still reads as it did")
+
+
+class TestAMalformedFetchLogDoesNotKillTheRun(unittest.TestCase):
+    """The one file the run writes for itself and a human may edit.
+
+    load_fetch_log() checked `isinstance(log, dict)` and nothing below it, while
+    delisted() goes three levels deeper — `(log.get(day) or {}).get(tid)`,
+    `[logged.get(k) for k in keys]`, `f["window"] > price` — and
+    save_fetch_log() does the same. Every crash lands inside build_outputs(),
+    which main() reaches only after the entire API budget has been billed: the
+    day would leave no snapshot row and no report for calls that were paid for.
+
+    One shape is worse than a crash and is why the window is checked by TYPE:
+    `"window": true` passed every guard, because isinstance(True, int) is True
+    in Python, and a $59,000 car compared against 1 was published as a departure
+    the record then declines to price — quietly, on a file nobody re-reads.
+    """
+
+    TID = "bmw-i5-m60"
+    GOOD = {"window": 60000, "dim": "price", "exhausted": False, "failed": False, "raw": 40}
+
+    def setUp(self):
+        import tempfile
+        self._keep = (dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES), T.FETCH_LOG)
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        self._td = tempfile.TemporaryDirectory()
+        T.FETCH_LOG = Path(self._td.name) / "fetch_log.json"
+        d1 = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": self.TID, "vin": vin, "snapshot_date": day, "price": price,
+                      "year": "2025", "trim": "M60", "miles": 9000, "state": "IL", "city": "Chicago"})
+            return r
+        self.rows = [row("V" * 17, d1, 59000), row("K" * 17, d1, 40000),
+                     row("K" * 17, T.TODAY, 40000)]
+        self.today = [r for r in self.rows if r["snapshot_date"] == T.TODAY]
+        self.hist = T.build_history(self.rows)
+        self.d1 = d1
+
+    def tearDown(self):
+        pw, ex, fs, log = self._keep
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        T.FETCH_LOG = log
+        self._td.cleanup()
+
+    def _verdict(self, shape):
+        T.FETCH_LOG.write_text(json.dumps(shape))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            gone = T.delisted({self.TID}, self.rows, self.today, self.hist)
+        return {g["vin"]: (g["likely"], g.get("exact")) for g in gone}, out.getvalue()
+
+    def test_the_good_log_is_the_control(self):
+        got, said = self._verdict({T.TODAY: {self.TID: {"National": self.GOOD,
+                                                        "States": self.GOOD}}})
+        self.assertEqual(got["V" * 17], ("delisted", True),
+                         "a window that reached past the car, and it was not there")
+        self.assertNotIn("malformed", said, "nothing to drop in a clean log")
+
+    def test_none_of_them_crashes_and_every_one_says_so(self):
+        bad = []
+        for name, make in MALFORMED_LOGS:
+            shape = make(T.TODAY, self.TID, self.GOOD)
+            try:
+                got, said = self._verdict(shape)
+            except Exception as e:                        # noqa: BLE001 — the point
+                bad.append(f"{name}: {type(e).__name__}: {e}")
+                continue
+            if got["V" * 17] == ("delisted", True):
+                bad.append(f"{name}: still published a confirmed departure")
+        self.assertEqual(bad, [],
+                         "a log the run cannot read must not decide a departure, "
+                         "and must not take the run down after the calls are paid")
+
+    def test_a_boolean_window_is_not_a_window_of_one(self):
+        """isinstance(True, int) — the trap this file's sister project hit at a
+        different level. Read off the loaded log, because the verdict it
+        produces happens to match the fallback's on this fixture and would pin
+        nothing."""
+        T.FETCH_LOG.write_text(json.dumps(
+            {T.TODAY: {self.TID: {"National": {**self.GOOD, "window": True}}}}))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(T.load_fetch_log(), {})
+
+    def test_a_good_entry_beside_a_bad_one_survives(self):
+        """Dropping the file wholesale would throw away the days that are fine,
+        and every one of those is a day whose departures can still be judged
+        exactly."""
+        T.FETCH_LOG.write_text(json.dumps({
+            self.d1: {self.TID: {"National": "rubbish"}},
+            T.TODAY: {self.TID: {"National": self.GOOD, "States": self.GOOD}}}))
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            log = T.load_fetch_log()
+        self.assertEqual(list(log), [T.TODAY])
+        self.assertEqual(log[T.TODAY][self.TID]["National"], self.GOOD)
+        self.assertIn("dropped 1 malformed entry", out.getvalue())
+
+
+class TestTheWeeklyLoopKnowsWhenItDidNotLook(unittest.TestCase):
+    """The one automation whose stated job is "the remembering".
+
+    Its lint step pipes the linter through `tee`, and this file — unlike
+    check.yml, which runs the identical line — set no `pipefail`, so a crash
+    returned 0. `set -e` does not abort on a failure inside a `||` list either,
+    so both clones could fail and the script carried on. `continue-on-error`
+    would have swallowed the step's status regardless. What reached the digest
+    was an empty /tmp/report.txt and an unset `open_candidates`, and
+    `Number('') === 0` — so a run that looked at nothing read as a run that
+    found nothing, and the digest commented "every candidate has a recorded
+    verdict and the pin is current. Closing." and closed the tracking issue.
+
+    Both halves are executed here rather than read: the shell against a stub
+    git and node, the digest script against a stub `github`.
+    """
+
+    @staticmethod
+    def _block(name, key):
+        text = (Path(__file__).parent.parent / ".github/workflows/loop.yml").read_text()
+        head = text.index(f"- name: {name}\n")
+        at = text.index(f"{key}: |\n", head) + len(f"{key}: |\n")
+        lines = text[at:].split("\n")
+        indent = len(lines[0]) - len(lines[0].lstrip(" "))
+        body = []
+        for ln in lines:
+            if ln.strip() == "":
+                body.append("")
+                continue
+            if len(ln) - len(ln.lstrip(" ")) < indent:
+                break
+            body.append(ln[indent:])
+        return "\n".join(body).rstrip() + "\n"
+
+    # The pin used to be grepped out of docs/index.html; it is now whatever
+    # tools/design_snapshot.mjs prints, so `node` is called TWICE in this block
+    # for two unrelated jobs. A stub that fails both cannot tell the three
+    # failure modes apart — and did not: with one blanket-failing `node`, the
+    # linter-crash test below was green because the SNAPSHOT step died, which
+    # is a different rule rejecting than the one its name promises. The stub
+    # dispatches on the argument, so each test fails on its own mechanism.
+    PIN_STUB = "0123456789abcdef0123456789abcdef01234567"
+    NODE_STUB = ('#!/bin/sh\n'
+                 'case "$*" in\n'
+                 '  *design_snapshot*) echo ' + PIN_STUB + '; exit 0 ;;\n'
+                 'esac\n'
+                 'echo "cannot find module" >&2\n'
+                 'exit 1\n')
+
+    def _run_lint_step(self, tmp, git, node):
+        """Execute loop.yml's own lint step against stub binaries.
+
+        Every git stub is prefixed with a line recording what it was asked
+        for, into the step's own working directory. That log is the only
+        thing that can tell "the linter died" apart from "the step never got
+        that far" — the stdout cannot, because a snapshot step and a linter
+        step both die through the same `node`.
+        """
+        import subprocess
+        (tmp / "bin").mkdir()
+        for name, script in (("git", git.replace("#!/bin/sh\n", '#!/bin/sh\necho "$*" >> git-calls\n', 1)),
+                             ("node", node)):
+            f = tmp / "bin" / name
+            f.write_text(script)
+            f.chmod(0o755)
+        return subprocess.run(
+            ["bash", "-e", "-c",
+             self._block("Run the consumer policy against the pinned sheet", "run")],
+            cwd=tmp, capture_output=True, text=True,
+            env={**os.environ, "PATH": f"{tmp / 'bin'}:{os.environ['PATH']}",
+                 "GITHUB_STEP_SUMMARY": str(tmp / "sum")})
+
+    @staticmethod
+    def _git_calls(tmp):
+        f = tmp / "git-calls"
+        return f.read_text() if f.exists() else ""
+
+    def test_a_clone_that_fails_takes_the_step_down_with_it(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            r = self._run_lint_step(
+                tmp, '#!/bin/sh\nif [ "$1" = "clone" ]; then exit 128; fi\nexit 0\n',
+                self.NODE_STUB)
+            self.assertNotEqual(r.returncode, 0,
+                                "a step that could not fetch the sheet it lints must "
+                                f"not report success:\n{r.stdout}\n{r.stderr}")
+            self.assertIn(f"could not fetch design-system@{self.PIN_STUB}",
+                          r.stdout + r.stderr,
+                          "…and it must say which thing it could not get")
+
+    def test_a_snapshot_that_will_not_verify_takes_the_step_down_first(self):
+        """The third failure mode, and the one the local snapshot introduced.
+
+        The pin is no longer a string grepped out of a page: it is the output
+        of a tool that verifies every digest in docs/design-system first. If
+        that tool refuses, there is no ref to clone and nothing to lint — so
+        the step must stop THERE, before a clone reports success against an
+        empty `$PIN` and the linter runs against whatever it dragged down.
+        `set -e` aborts an assignment whose command substitution failed; that
+        is executed here rather than assumed, because it is the whole guard.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            r = self._run_lint_step(
+                tmp, '#!/bin/sh\nmkdir -p /tmp/ds-unused\nexit 0\n',
+                '#!/bin/sh\ncase "$*" in\n'
+                '  *design_snapshot*) echo "Design asset changed outside the atomic'
+                ' snapshot: sc.css" >&2; exit 1 ;;\nesac\nexit 0\n')
+            self.assertNotEqual(r.returncode, 0,
+                                "a snapshot that will not verify has no ref to lint "
+                                f"against; the step must stop:\n{r.stdout}\n{r.stderr}")
+            self.assertNotIn("could not fetch design-system@", r.stdout + r.stderr,
+                             "…and it must stop at the snapshot, not carry an empty "
+                             "pin as far as the clone")
+            self.assertEqual("", self._git_calls(tmp),
+                             "…and git must not have been asked for anything at all: "
+                             "a clone against an empty ref is how a wrong sheet gets "
+                             "linted as if it were the right one")
+
+    def test_a_linter_that_crashes_takes_the_step_down_too(self):
+        """The other half, and the one only `pipefail` catches: the checkout
+        arrives and the linter itself dies. `tee` returns 0 over it, which is
+        why check.yml sets pipefail on the identical line and this file did
+        not."""
+        import tempfile, shutil as _sh
+        ds = Path("/tmp/ds")
+        had = ds.exists()
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            try:
+                r = self._run_lint_step(
+                    tmp, "#!/bin/sh\nmkdir -p /tmp/ds && : > /tmp/ds/sc.css\nexit 0\n",
+                    self.NODE_STUB)
+                calls = self._git_calls(tmp)
+            finally:
+                if not had:
+                    _sh.rmtree(ds, ignore_errors=True)
+        self.assertNotEqual(r.returncode, 0,
+                            "the checkout was there and the linter died; `tee` "
+                            f"returns 0 over that unless pipefail is set:\n{r.stdout}\n{r.stderr}")
+        # The discriminator is not the stub's message — a blanket-failing `node`
+        # prints the same words from the snapshot step, and `set -e` aborts the
+        # assignment before the clone, so stdout looks identical. What differs
+        # is that the clone RAN: reaching the linter means the pin resolved and
+        # /tmp/ds/sc.css was there, so the death below it can only be the
+        # linter's. Measured from the git log, not read off the output.
+        self.assertIn(self.PIN_STUB, calls,
+                      "…and it must be the LINTER that died, not the snapshot step "
+                      "above it: nothing ever asked git for the verified pin, so "
+                      f"this would pass on a rule it does not name:\n{calls!r}")
+        self.assertNotIn("could not fetch design-system@", r.stdout + r.stderr,
+                         f"the clone guard fired, so the linter was never reached:"
+                         f"\n{r.stdout}\n{r.stderr}")
+        self.assertIn("cannot find module", r.stdout + r.stderr,
+                      f"the linter's own failure never reached the log:\n{r.stderr}")
+
+    def _digest(self, outcome, candidates, report, has_issue):
+        import subprocess, tempfile, json as _json
+        if not shutil.which("node"):
+            self.skipTest("no node on this machine to run the digest script through")
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            (tmp / "digest.js").write_text(self._block("Open or update the digest issue", "script"))
+            (tmp / "report.txt").write_text(report)
+            (tmp / "run.mjs").write_text(RUN_DIGEST_HARNESS.replace("REPORT_PATH", str(tmp / "report.txt")))
+            r = subprocess.run(["node", str(tmp / "run.mjs"), str(tmp / "digest.js")],
+                               capture_output=True, text=True,
+                               env={**os.environ, "LINT_OUTCOME": outcome,
+                                    "OPEN_CANDIDATES": candidates,
+                                    "HAS_ISSUE": "1" if has_issue else ""})
+            self.assertEqual(r.returncode, 0, r.stderr)
+            return _json.loads(r.stdout)
+
+    def test_a_run_that_could_not_check_says_so_and_closes_nothing(self):
+        acts = self._digest("failure", "", "", has_issue=True)
+        self.assertNotIn("closed", [a[1] for a in acts],
+                         f"it must not close the tracking issue: {acts}")
+        self.assertTrue(any("could not run" in str(a) for a in acts),
+                        f"…and it must say why: {acts}")
+
+    def test_a_success_with_nothing_to_show_is_not_a_clean_run_either(self):
+        """A step can exit 0 and produce no report — a linter that dies after
+        its own exit code is set, a redirect that goes nowhere. There is no
+        report to read "nothing open" out of, so there is no all-clear to
+        give."""
+        acts = self._digest("success", "0", "", has_issue=True)
+        self.assertNotIn("closed", [a[1] for a in acts], f"{acts}")
+
+    def test_a_run_that_checked_and_found_nothing_still_closes(self):
+        """The other side: the all-clear is right when it was earned."""
+        acts = self._digest("success", "0", "ok    pin v2.4.0 is the newest\nconsumer-lint policy: clean\n",
+                            has_issue=True)
+        self.assertIn("closed", [a[1] for a in acts], f"{acts}")
+
+    def test_and_an_open_candidate_still_opens_the_issue(self):
+        acts = self._digest("success", "2", "note  index.html — 2 candidate(s)\n", has_issue=False)
+        self.assertEqual([a[0] for a in acts][:1], ["create"], f"{acts}")
+
+
+RUN_DIGEST_HARNESS = """
+import * as realfs from 'node:fs';
+const body = realfs.readFileSync(process.argv[2], 'utf8');
+const acts = [];
+const github = { rest: { issues: {
+  createLabel: async () => ({}),
+  listForRepo: async () => ({ data: process.env.HAS_ISSUE ? [{ number: 7 }] : [] }),
+  createComment: async (a) => acts.push(['comment', String(a.body).split('\\n')[1]]),
+  update: async (a) => acts.push(['update', a.state || ('body: ' + String(a.body).split('\\n')[1])]),
+  create: async (a) => (acts.push(['create', a.title]), { data: { number: 9 } }),
+} } };
+const context = { repo: { owner: 'o', repo: 'r' } };
+const core = { info: (m) => acts.push(['info', m]) };
+const fs = { readFileSync: (p, e) => realfs.readFileSync(p === '/tmp/report.txt' ? 'REPORT_PATH' : p, e),
+             existsSync: (p) => realfs.existsSync(p === '/tmp/report.txt' ? 'REPORT_PATH' : p) };
+const require = (m) => (m === 'fs' ? fs : null);
+const fn = new Function('github', 'context', 'core', 'require', 'process',
+  '"use strict"; return (async () => {' + body + '})();');
+await fn(github, context, core, require, process);
+console.log(JSON.stringify(acts));
+"""
+
+
+class TestASecondRunOfTheDayLeavesOneAnswer(unittest.TestCase):
+    """The fetch log is the only record of what was ASKED, and the CSV keeps
+    only what the last run KEPT.
+
+    save_fetch_log() merged a second run of the same day by taking the widest
+    window either reached, reasoning that "the union is what the day actually
+    saw" — while main() rebuilds the CSV as every row that is not today's plus
+    this run's, so the first run's rows are gone. The log then claimed a reach
+    the surviving rows cannot support, and delisted() turned "pushed out of the
+    window" into a confirmed departure on every later read: tomorrow's run,
+    tools/rebuild_outputs.py, the workflow's own exit-3 rebuild. That verdict
+    carries exact=True, which departure_is_evidence() admits into the published
+    exit prices and the "N gone" headline.
+
+    ALLOW_REFETCH is not a corner: it is a tick-box on the workflow's manual
+    dispatch, put there for exactly this case.
+    """
+
+    TID = "bmw-i5-xdrive40"
+
+    def setUp(self):
+        import tempfile
+        self._keep = (dict(T.PRICE_WINDOW), set(T.EXHAUSTED), set(T.FAILED_SCOPES),
+                      dict(T.RAW_N), T.FETCH_LOG)
+        self._td = tempfile.TemporaryDirectory()
+        T.FETCH_LOG = Path(self._td.name) / "fetch_log.json"
+
+    def tearDown(self):
+        pw, ex, fs, raw, log = self._keep
+        T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(pw)
+        T.EXHAUSTED.clear(); T.EXHAUSTED.update(ex)
+        T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(fs)
+        T.RAW_N.clear(); T.RAW_N.update(raw)
+        T.FETCH_LOG = log
+        self._td.cleanup()
+
+    def _run(self, window, raw=40, exhausted=False, failed=False):
+        """One run of the day, through the real fetch_log_row()/save_fetch_log()."""
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear(); T.RAW_N.clear()
+        for src in ("States", "National"):
+            key = (self.TID, src)
+            T.PRICE_WINDOW[key] = window
+            T.RAW_N[key] = raw
+            if exhausted: T.EXHAUSTED.add(key)
+            if failed: T.FAILED_SCOPES.add(key)
+
+    def _rows(self):
+        d1 = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        def row(vin, day, price):
+            r = {k: "" for k in T.FIELDS}
+            r.update({"target": self.TID, "vin": vin, "snapshot_date": day,
+                      "price": price, "year": "2025", "trim": "xDrive40",
+                      "miles": 9000, "state": "IL", "city": "Chicago"})
+            return r
+        # The dear car was seen by the FIRST run and its row is gone: the CSV
+        # holds only what the second run kept, which is the cheap one.
+        return [row("V" * 17, d1, 59000), row("K" * 17, d1, 40000),
+                row("K" * 17, T.TODAY, 40000)]
+
+    def _verdicts(self, rows, live):
+        if not live:
+            T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear(); T.RAW_N.clear()
+        today = [r for r in rows if r["snapshot_date"] == T.TODAY]
+        return {g["vin"]: (g["likely"], g.get("exact"))
+                for g in T.delisted({self.TID}, rows, today, T.build_history(rows))}
+
+    def test_the_rebuild_publishes_what_the_run_published(self):
+        rows = self._rows()
+        self._run(60000); T.save_fetch_log(T.fetch_log_row())     # run 1 reached the car
+        self._run(50000)                                          # run 2 did not
+        live = self._verdicts(rows, live=True)
+        T.save_fetch_log(T.fetch_log_row())
+        rebuilt = self._verdicts(rows, live=False)
+        self.assertEqual(live["V" * 17], ("out of window", True),
+                         "the precondition: the run that wrote the rows knows "
+                         "this car sat above its own cut-off")
+        self.assertEqual(rebuilt, live,
+                         "and every later read of the same file says the same "
+                         "thing — a departure the run called uncertain was "
+                         "published as confirmed, with an exit price")
+
+    def test_the_reach_is_the_last_runs_and_the_spend_is_the_days(self):
+        self._run(60000, raw=40); T.save_fetch_log(T.fetch_log_row())
+        self._run(50000, raw=40); T.save_fetch_log(T.fetch_log_row())
+        day = json.loads(T.FETCH_LOG.read_text())[T.TODAY][self.TID]
+        self.assertEqual({k: v["window"] for k, v in day.items()},
+                         {"States": 50000, "National": 50000},
+                         "the window describes the rows that survived")
+        self.assertEqual({k: v["raw"] for k, v in day.items()},
+                         {"States": 80, "National": 80},
+                         "…and the raw count is what the day really spent, which "
+                         "no row has to survive for")
+
+    def test_an_exhausted_first_run_does_not_vouch_for_a_narrower_second(self):
+        """The same defect on the other field: "this query saw the whole
+        market" made every absence a confirmed departure."""
+        self._run(60000, exhausted=True); T.save_fetch_log(T.fetch_log_row())
+        self._run(50000, exhausted=False); T.save_fetch_log(T.fetch_log_row())
+        day = json.loads(T.FETCH_LOG.read_text())[T.TODAY][self.TID]
+        self.assertEqual([v["exhausted"] for v in day.values()], [False, False])
+
+    def test_a_target_the_second_run_never_asked_keeps_no_entry(self):
+        """Its rows went with the day, so an entry for it is a reach with
+        nothing behind it — the same defect, reached another way. Silence puts
+        delisted() back on what the rows can prove."""
+        self._run(60000); T.save_fetch_log(T.fetch_log_row())
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear(); T.RAW_N.clear()
+        key = ("bmw-i5-m60", "National")
+        T.PRICE_WINDOW[key] = 70000; T.RAW_N[key] = 20
+        T.save_fetch_log(T.fetch_log_row())
+        day = json.loads(T.FETCH_LOG.read_text())[T.TODAY]
+        self.assertEqual(sorted(day), ["bmw-i5-m60"],
+                         f"the second run asked only the M60; the log holds {sorted(day)}")
+
+
+class TestTheCommittedRecordIsThisCodesOwn(unittest.TestCase):
+    """REPORT.md and docs/data.json are the two artefacts everything else reads.
+
+    The browser suite compares the committed record against the rendered page
+    clause by clause — the typical-days sentence, the cut counts, the arrivals,
+    the trim headings, the margin on each car — and every one of those checks is
+    only as good as the record being the one this code produces. A change to
+    Tracking.py alone does not regenerate it, so a drift introduced there is
+    invisible in CI: the page moves and the file it is compared against does
+    not, and the pair agrees on the old answer.
+
+    The rebuild is pinned to the day the record says it was BUILT, which is its
+    own first line — that is the only input to build_outputs() that is not in
+    the repository, and pinning it is what makes the comparison exact rather
+    than approximate. On a live run that day is the data day; on a rebuild it is
+    the day the rebuild ran, and either way the file names it.
+    """
+
+    def test_rebuilding_the_record_on_the_day_it_names_reproduces_it(self):
+        import json as _json
+        report = Path("REPORT.md")
+        if not report.exists() or not T.SNAPSHOTS.exists():
+            self.skipTest("no committed record beside this checkout")
+        head = report.read_text().splitlines()[0]
+        m = re.match(r"# \S+ — (\d{4}-\d{2}-\d{2})$", head)
+        self.assertTrue(m, f"the record's first line names the day it was built: {head!r}")
+        day = m.group(1)
+        keep = (T.TODAY, T.TODAY_ORD, dict(T.PRICE_WINDOW), set(T.EXHAUSTED),
+                set(T.FAILED_SCOPES))
+        T.TODAY, T.TODAY_ORD = day, date.fromisoformat(day).toordinal()
+        # A rebuild holds no live fetch state; the committed fetch log is what
+        # it reads, exactly as tools/rebuild_outputs.py does.
+        T.PRICE_WINDOW.clear(); T.EXHAUSTED.clear(); T.FAILED_SCOPES.clear()
+        try:
+            rows = T.load_history()
+            days = sorted({r["snapshot_date"] for r in rows})
+            latest = [r for r in rows if r["snapshot_date"] == days[-1]]
+            built, site, _ = T.build_outputs(latest, rows, T.build_history(rows))
+        finally:
+            (T.TODAY, T.TODAY_ORD) = keep[0], keep[1]
+            T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(keep[2])
+            T.EXHAUSTED.clear(); T.EXHAUSTED.update(keep[3])
+            T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(keep[4])
+        if built != report.read_text():
+            import difflib
+            diff = list(difflib.unified_diff(report.read_text().splitlines(),
+                                             built.splitlines(),
+                                             "committed", "rebuilt", n=1, lineterm=""))
+            self.fail("REPORT.md is not what this code builds from the committed "
+                      "snapshot on " + day + " — regenerate it "
+                      "(AUTODEV_API_KEY=offline python3 tools/rebuild_outputs.py):\n"
+                      + "\n".join(diff[:40]))
+        # Through the writer, not through a loaded object: a tuple and a list
+        # are the same JSON and a different Python value, and it is the FILE the
+        # dashboard fetches.
+        self.assertEqual(_json.dumps(site, indent=1),
+                         (T.DOCS / "data.json").read_text(),
+                         "…and docs/data.json with it, which is the file the "
+                         "dashboard and every browser check read")
+
+
+class TestAPercentReadsTheSameOnBothSurfaces(unittest.TestCase):
+    """Python rounds half to EVEN; JavaScript's Math.round rounds half UP.
+
+    Every percentage the record prints is recomputed on the page, so a margin
+    landing on an exact half-percent was published as two different numbers for
+    the same car on the same day. The field one place to the left already
+    carries this fix and names it — "floor(x + .5), not round(): … the page
+    recomputes this figure — two picks read '$1,936 less' here and '$1,937
+    less' there" — and the percentage in the same f-string was not swept.
+
+    The right-hand column is what `node -e "Math.round(v * 100)"` really prints,
+    measured rather than derived, so this test is not the fix restated: the last
+    assertion shows Python's own format disagrees with it on five of the seven.
+    """
+
+    # value: what the dashboard renders for it
+    JS = {0.005: "1%", 0.015: "2%", 0.025: "3%", 0.045: "5%",
+          0.105: "11%", 0.125: "13%", 0.135: "14%"}
+
+    def test_the_record_rounds_the_way_the_page_does(self):
+        for v, want in self.JS.items():
+            self.assertEqual(T.pct(v), want, f"{v!r} should read {want}")
+
+    def test_and_the_old_rule_really_did_disagree(self):
+        """Without this the table above could be Python's own answer written
+        down, and the test would pass on the defect it is named for."""
+        differ = [v for v, want in self.JS.items() if f"{v:.0%}" != want]
+        self.assertEqual(len(differ), 5,
+                         f"only {differ} differ between the two rules")
+
+    def test_the_stand_floor_no_longer_prints_a_claim_with_no_content(self):
+        """score_picks() admits a stand at a margin of exactly half a percent,
+        its docstring calling that "the smallest margin that rounds to a digit,
+        ON BOTH SIDES OF THE SHEET". The record printed that car as "0% under
+        typical" — the empty claim the floor exists to forbid — while the page
+        called it 1%."""
+        self.assertEqual(T.pct(0.005), "1%")
+
+    def test_every_share_the_record_prints_goes_through_it(self):
+        """Not only the picks: the cut share and the staleness share are
+        recomputed on the page too, with Math.round."""
+        import re
+        src = Path("Tracking.py").read_text()
+        left = re.findall(r"\{[^{}]*:\.0%\}", src)
+        self.assertEqual(left, [],
+                         f"these still round the other way: {left}")
+
+
+class TestFlagsSayTheCarsHistory(unittest.TestCase):
+    """Owners and accidents, which no test in this repo could fail on.
+
+    flags() builds the `_1-owner · no accidents · ex-lease_` line under every
+    car in REPORT.md and the `flags` array on every row of docs/data.json. The
+    only class named for it fixed `owners: 1, accidents: 0` in its row factory
+    and asserted nothing but the usage words, so both branches of each could be
+    inverted with the whole suite and the whole browser run green — publishing
+    300 rows reading "1-owner" over cars with two owners, and 293 reading "no
+    accidents" over 74 that had one. Two of the four things a used-car buyer
+    checks before calling a dealer, and this is the only place either is said.
+    """
+
+    @staticmethod
+    def row(**kw):
+        r = {"usage": "Personal Use", "owners": None, "accidents": None}
+        r.update(kw)
+        return r
+
+    def test_one_owner_and_only_one(self):
+        self.assertIn("1-owner", T.flags(self.row(owners=1)))
+        self.assertNotIn("1-owner", T.flags(self.row(owners=2)))
+        self.assertNotIn("1-owner", T.flags(self.row(owners=0)))
+        self.assertNotIn("1-owner", T.flags(self.row(owners=None)))
+
+    def test_more_than_one_owner_is_counted(self):
+        self.assertIn("2 owners", T.flags(self.row(owners=2)))
+        self.assertIn("5 owners", T.flags(self.row(owners=5)))
+
+    def test_no_owner_line_at_all_when_the_sheet_does_not_say(self):
+        """0 is what the API sends for "not reported", and the page reads it
+        the same way — a fact the record must not invent."""
+        for v in (None, 0, "", "n/a"):
+            got = T.flags(self.row(owners=v))
+            self.assertFalse([w for w in got if "owner" in w],
+                             f"owners={v!r} produced {got}")
+
+    def test_no_accidents_means_zero_and_nothing_else(self):
+        self.assertIn("no accidents", T.flags(self.row(accidents=0)))
+        self.assertNotIn("no accidents", T.flags(self.row(accidents=1)))
+        self.assertNotIn("no accidents", T.flags(self.row(accidents=3)))
+
+    def test_an_accident_is_counted_and_pluralised(self):
+        self.assertIn("1 accident", T.flags(self.row(accidents=1)))
+        self.assertNotIn("1 accidents", T.flags(self.row(accidents=1)))
+        self.assertIn("3 accidents", T.flags(self.row(accidents=3)))
+
+    def test_an_unknown_accident_history_says_nothing_either_way(self):
+        """The complement is what the rule cannot support: a car the sheet
+        carries no accident count for is neither clean nor crashed."""
+        for v in (None, "", "n/a"):
+            got = T.flags(self.row(accidents=v))
+            self.assertFalse([w for w in got if "accident" in w],
+                             f"accidents={v!r} produced {got}")
+
+    def test_the_order_is_the_one_the_page_draws(self):
+        """Two surfaces that order the same facts differently read as
+        disagreeing — flagsCell() puts certification first, then usage, then
+        owners, then accidents, then the lease."""
+        self.assertEqual(
+            T.flags({"usage": "Lease", "owners": 2, "accidents": 1, "cpo": "1"}),
+            ["CPO", "2 owners", "1 accident", "ex-lease"])
+        self.assertEqual(
+            T.flags({"usage": "Rental Use", "owners": 1, "accidents": 0, "cpo": ""}),
+            ["rental", "1-owner", "no accidents"],
+            "and the usage word sits between the certification and the owners")
 
 
 class TestFlagsNameARental(unittest.TestCase):
@@ -2474,7 +5762,7 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
         return e
 
     def headline(self, *events):
-        sec, _ = T.build_today({"cuts": [], "new": list(events), "gone": []})
+        sec, _ = T.build_today({"cuts": [], "new": list(events), "gone": []}, T.TODAY)
         return next(l for l in sec if "new on the shopped models" in l)
 
     def test_the_headline_names_the_cohort_the_mileage_and_the_kind_of_car(self):
@@ -2684,11 +5972,11 @@ class TestCutTag(unittest.TestCase):
         r.update({"target": "bmw-i5-edrive40", "vin": "V" * 17, "price": 39998,
                   "year": "2024", "miles": 20000, "state": "IL", "city": "Chicago"})
         back_up = T.fmt_row(r, {"cuts": 1, "delta": 0, "days_tracked": 5,
-                                "series": [["2026-08-01", 39998]]})
+                                "series": [["2026-08-01", 39998]]}, T.TODAY)
         self.assertIn("cut 1x, then back up", back_up)
         self.assertNotIn("down 1x", back_up)
         above = T.fmt_row(r, {"cuts": 2, "delta": 849, "days_tracked": 7,
-                              "series": [["2026-08-01", 42995]]})
+                              "series": [["2026-08-01", 42995]]}, T.TODAY)
         self.assertIn("above first seen", above)
 
 
@@ -3043,7 +6331,7 @@ class TestToday(unittest.TestCase):
                       "city": "Plano", "state": "TX"}}
 
     def test_quiet_day_has_an_honest_subject_and_no_section(self):
-        sec, subject = T.build_today({"cuts": [], "new": [], "gone": []})
+        sec, subject = T.build_today({"cuts": [], "new": [], "gone": []}, T.TODAY)
         self.assertEqual(sec, [])
         self.assertIn("quiet day", subject)
 
@@ -3052,7 +6340,7 @@ class TestToday(unittest.TestCase):
             "cuts": [self.cut(400, 45000, local=True),
                      self.cut(1200, 46000, local=False, shopping=False,
                               vin="V2", label="Kia EV6")],
-            "new": [], "gone": []})
+            "new": [], "gone": []}, T.TODAY)
         self.assertIn("▼$400 cut on drivable BMW i5 eDrive40", subject,
                       "a shopping-model drivable cut outranks a bigger rival cut")
         self.assertIn("## Today", sec[0])
@@ -3066,7 +6354,7 @@ class TestToday(unittest.TestCase):
                 "cuts": [self.cut(2500, 40000)],
                 "new": [],
                 "gone": [{"vin": "V9", "label": "BMW i7", "last_seen": "2026-08-25",
-                          "last_price": 62000, "shopping": True}]})
+                          "last_price": 62000, "shopping": True}]}, T.TODAY)
             self.assertTrue(subject.startswith(f"{T.APP} — shortlist car GONE"))
             self.assertIn("**Shortlist: GONE**", "\n".join(sec))
         finally:
@@ -3080,7 +6368,7 @@ class TestToday(unittest.TestCase):
                            "state": "TX", "local": False},
                      "label": "BMW i5", "pct": 0.06, "shopping": True}],
             "gone": [{"vin": "G1", "label": "BMW i5", "last_seen": "2026-08-25",
-                      "last_price": 47000, "shopping": True}]})
+                      "last_price": 47000, "shopping": True}]}, T.TODAY)
         self.assertIn("1 new", subject)
         self.assertIn("1 gone", subject)
         self.assertIn("best 6% under typical", "\n".join(sec))
@@ -3096,6 +6384,28 @@ class TestShortlist(unittest.TestCase):
         self.assertEqual(list(sl), ["WBY123", "WBA999"])
         self.assertEqual(sl["WBA999"], "called dealer")
 
+    def test_a_departure_is_missing_at_a_fetch_not_missing_today(self):
+        """"missing today" is a claim about a fetch, and the fetch is the car's
+        own model's — which on a three-day cadence is not today even on a live
+        run, and on any build without a fetch is not today for anything."""
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        row = {"vin": "GONE2", "likely": "out of window", "last_seen": "2026-08-25",
+               "last_price": 47000, "trim_label": "eDrive40", "city": "", "state": "",
+               "url": ""}
+        was = dict(T.SHORTLIST)
+        T.SHORTLIST.clear(); T.SHORTLIST.update({"GONE2": ""})
+        try:
+            stale = "\n".join(T.shortlist_section({}, {"GONE2": (row, yesterday)},
+                                                  {}, yesterday))
+            live = "\n".join(T.shortlist_section({}, {"GONE2": (row, T.TODAY)},
+                                                 {}, T.TODAY))
+        finally:
+            T.SHORTLIST.clear(); T.SHORTLIST.update(was)
+        self.assertIn(f"missing on {yesterday} — beyond that fetch's cut-off", stale)
+        self.assertNotIn("today", stale)
+        self.assertIn("missing today — beyond that fetch's cut-off", live,
+                      "and on the day it really was fetched, the word is today")
+
     def test_section_reports_live_gone_and_unseen(self):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear()
@@ -3107,11 +6417,13 @@ class TestShortlist(unittest.TestCase):
                                "cuts": 0, "delta": 0, "days_listed": 12,
                                "flags": [], "url": "https://x.example/1"},
                               "BMW i5")}
-            gone = {"GONE1": {"vin": "GONE1", "likely": "delisted",
-                              "last_seen": "2026-08-25", "last_price": 47000,
-                              "trim_label": "eDrive40", "city": "", "state": "",
-                              "url": ""}}
-            sec = "\n".join(T.shortlist_section(live, gone, {}))
+            # (row, the day its model was last fetched): "missing today" is a
+            # claim about a fetch, and the fetch is that model's own.
+            gone = {"GONE1": ({"vin": "GONE1", "likely": "delisted",
+                               "last_seen": "2026-08-25", "last_price": 47000,
+                               "trim_label": "eDrive40", "city": "", "state": "",
+                               "url": ""}, T.TODAY)}
+            sec = "\n".join(T.shortlist_section(live, gone, {}, T.TODAY))
             self.assertIn("$42,000", sec)
             self.assertIn("my favourite", sec)
             # not "sold or pulled": a listing ends four ways and three of them
@@ -3128,7 +6440,7 @@ class TestShortlist(unittest.TestCase):
         old = dict(T.SHORTLIST)
         T.SHORTLIST.clear()
         try:
-            self.assertEqual(T.shortlist_section({}, {}, {}), [])
+            self.assertEqual(T.shortlist_section({}, {}, {}, T.TODAY), [])
         finally:
             T.SHORTLIST.update(old)
 
@@ -3137,15 +6449,68 @@ class TestShortlist(unittest.TestCase):
 # Config resolution and small parsers.
 # --------------------------------------------------------------------------
 class TestConfig(unittest.TestCase):
-    def test_trim_inherits_from_model_brand_and_defaults(self):
-        t = target("bmw-i5-m60")
-        self.assertEqual(t["min_price"], 30000)          # trim override
-        self.assertEqual(t["years"], ["2024", "2025"])   # from the model
-        self.assertEqual(t["make"], "BMW")               # from the brand
+    def test_a_parameter_resolves_through_all_four_layers(self):
+        """trim ← model ← brand ← defaults, one live example of each.
+
+        This used to read the years off the model, which is where the 2024+
+        rule used to be written four times over. It is one line in `defaults`
+        now, so the defaults layer is what the years demonstrate and the model
+        layer needed an example that survives — the i5's own price floor,
+        inherited by the trim that does not override it.
+        """
+        self.assertEqual(target("bmw-i5-m60")["min_price"], 30000,
+                         "the trim's own override")
+        self.assertEqual(target("bmw-i5-xdrive40")["min_price"], 20000,
+                         "…and its sibling takes the model's")
+        # The brand layer used to be demonstrated with national_only, which no
+        # brand carries any more, and then with tesla-model-y, which is stood
+        # down. Naming a model here is what keeps breaking it: the watchlist is
+        # a thing the buyer edits. FOUND rather than named — any active target
+        # whose cadence comes from its brand and is restated by neither the
+        # model nor the trim — so the example survives the next trim.
+        cfg = json.loads(Path("targets.json").read_text())
+        dflt = cfg["defaults"].get("cadence", 1)
+        example = None
+        for t in T.TARGETS.values():
+            b = cfg["watchlist"][t["brand"]]
+            m = b["models"][t["model_key"]]
+            trims = m.get("trims") or {}
+            tr = trims.get(t["trim_key"], {}) if t["trim_key"] != "all" else {}
+            if (b.get("cadence") not in (None, dflt) and m.get("cadence") is None
+                    and tr.get("cadence") is None):
+                example = (t, b["cadence"]); break
+        self.assertIsNotNone(example, "no target inherits its cadence from its brand — "
+                                      "the brand layer has no live example to demonstrate")
+        t, brand_cadence = example
+        self.assertEqual(t["cadence"], brand_cadence,
+                         f"{t['id']} should take its brand's cadence, over the defaults' {dflt}")
+        self.assertNotEqual(brand_cadence, dflt,
+                            "…and the brand's value must actually differ from the default, "
+                            "or this demonstrates nothing")
+        self.assertEqual(target("bmw-i5-m60")["years"],
+                         ["2024", "2025", "2026", "2027"],
+                         "and the 2024+ rule from defaults, which no target "
+                         "restates")
+        self.assertEqual(target("bmw-i5-m60")["make"], "BMW")
 
     def test_a_model_without_trims_is_one_target(self):
-        self.assertIn("hyundai-ioniq5", T.TARGETS)
-        self.assertEqual(T.TARGETS["hyundai-ioniq5"]["trim_key"], "all")
+        """Read off the config rather than naming one model: most of this
+        watchlist is trimless now, and the one this test used to name
+        (hyundai-ioniq5) was stood down when the Ioniq 9 took Hyundai's
+        place."""
+        cfg = json.loads(Path("targets.json").read_text())["watchlist"]
+        trimless = [(bk, mk) for bk, b in cfg.items() if b.get("active", True)
+                    for mk, m in b["models"].items()
+                    if m.get("active", True) and not m.get("trims")]
+        # This was `> 20`, a floor typed when the tail was thirty-odd. The rule
+        # it sits in is that a model with no trims resolves to exactly one
+        # target, which is checked below and does not depend on how many there
+        # are; the floor only says the watchlist has not been emptied.
+        self.assertTrue(trimless, "the watchlist has no trimless model left to check")
+        for bk, mk in trimless:
+            tid = f"{bk}-{mk}"
+            self.assertIn(tid, T.TARGETS)
+            self.assertEqual(T.TARGETS[tid]["trim_key"], "all", tid)
 
     def test_shopping_is_the_i5_and_the_i7(self):
         # The decision is between the i5 and the i7 now. The iX came off the
@@ -3242,13 +6607,61 @@ class TestConfig(unittest.TestCase):
             (Path(__file__).parent.parent / "data/snapshots.csv").open(newline=""))}
         self.assertNotIn("bmw-i7-cpo", seen)
 
-    def test_the_watchlist_reduction(self):
-        # Removed to pay for the CPO watches; the A6 e-tron replaces them.
+    def test_one_ev_per_brand_outside_bmw(self):
+        """The rule that replaced the old reduction.
+
+        The EV6 and the Q4 e-tron came off to pay for the CPO watches; they
+        stay off for a different reason now — their brands are represented by
+        the EV9 and the A6 e-tron, and the watchlist carries one nameplate per
+        brand outside BMW, whose trims are the thing being shopped. The
+        Equinox EV came back as Chevrolet's, which is why the old assertion
+        that no target contains "equinox" could not survive.
+        """
         for tid in T.TARGETS:
             self.assertNotIn("ev6", tid)
             self.assertNotIn("q4-etron", tid)
-            self.assertNotIn("equinox", tid)
         self.assertIn("audi-a6-etron", T.TARGETS)
+        self.assertIn("chevrolet-equinox-ev", T.TARGETS)
+        # One NAMEPLATE per brand, not one target. It was one target, which was
+        # the same thing only while every non-BMW model was trimless — and the
+        # Lucid Air stopped being: one trimless watch fetched the twenty
+        # cheapest Airs, which on a model whose prices collapsed is twenty
+        # Pures and no Grand Touring in sight, so it carries Pure / Touring /
+        # Grand Touring the way the i5 carries its own. Counting targets would
+        # have made that read as a second Lucid.
+        per_brand = Counter(t["model_key"] for t in T.TARGETS.values()
+                            if t["brand"] != "bmw")
+        by_brand = Counter()
+        for t in T.TARGETS.values():
+            if t["brand"] != "bmw":
+                by_brand[t["brand"]] = len({x["model_key"] for x in T.TARGETS.values()
+                                            if x["brand"] == t["brand"]})
+        extra = {b: n for b, n in by_brand.items() if n > 1}
+        self.assertFalse(extra, f"one nameplate per brand outside BMW: {extra}")
+        # This was `> 25` — a floor typed when the watchlist held 33 non-BMW
+        # brands, which says nothing about the RULE and fails the day someone
+        # deliberately trims the list. Re-typing it as 23 would just move the
+        # rot. What is worth guarding is that a brand leaves ON PURPOSE: the
+        # config's own `active` flag stands a model down and keeps its research
+        # notes, and a stood-down model must say why beside the flag, so a
+        # watchlist that has quietly shrunk is not mistakable for one that was
+        # cut.
+        cfg = json.loads(Path("targets.json").read_text())["watchlist"]
+        silent = []
+        for bk, b in cfg.items():
+            if bk.startswith("//") or not isinstance(b, dict):
+                continue
+            for mk, m in (b.get("models") or {}).items():
+                if mk.startswith("//") or not isinstance(m, dict):
+                    continue
+                if m.get("active", True) is False and not m.get("// active"):
+                    silent.append(f"{bk}/{mk}")
+        self.assertEqual([], silent,
+                         "these models are stood down with no reason beside the flag; "
+                         "a watchlist that shrank by accident reads exactly like one "
+                         f"that was trimmed: {silent}")
+        self.assertGreaterEqual(len(per_brand), 1,
+                                "…and at least one brand outside BMW is still watched")
 
     def test_site_dates_the_data_not_the_build(self):
         """generated is the day the file was BUILT (an offline rebuild stamps
@@ -3692,19 +7105,23 @@ class TestFinance(unittest.TestCase):
 class TestSourceOverlap(unittest.TestCase):
     """What the States query buys that National does not already bring.
 
-    Half of most targets' calls go to asking the buyer's eight states the same
-    question the national query just asked, and the obvious saving — make the
-    benchmark models national_only — is worth about 120 calls a month, the
-    States half of the eleven non-shopping targets at today's cadences. Whether
-    it is FREE is a different question: National sorted by price returns the
-    twenty cheapest in the country, which on a model whose cheap end sits in
-    California can be twenty cars none of them drivable, while the States query
-    is the only thing surfacing the Ohio one.
+    Half of most targets' calls go to asking the buyer's four states — plus the
+    four watched from beyond them, one comma list, one call — the same question
+    the national query just asked. This docstring used to argue the saving from
+    flipping the benchmark models to `national_only`, and to say the flag would
+    be flipped "when this audit has watched `states_only` sit at zero for a
+    while". The audit ran and the answer went the other way: `states_only` did
+    not sit at zero, it sat at 88% of the States catch on every shallow target,
+    and twenty-eight targets came OFF the flag rather than going onto it. One
+    is left, and it is national by definition rather than to save a call.
 
-    So the flag is not flipped on an argument. It is flipped when this audit
-    has watched `states_only` sit at zero for a while. These tests hold the
-    measurement itself honest, because a saving justified by a broken
-    instrument is the most expensive kind.
+    So the paragraph is inverted but its point stands, and it is the reason
+    these tests exist: the flag is not set or cleared on an argument, it is
+    decided by this measurement — which makes a broken instrument the most
+    expensive thing in the file. A National query that died mid-fetch used to
+    be archived as a complete comparison, which is the shape of a real finding
+    and entirely the failure; TestTheOverlapLogRecordsOnlyQueriesThatFinished
+    holds that half.
     """
 
     def setUp(self):
@@ -4116,7 +7533,7 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
                   "state": "IL", "year": "2024", "trim": "eDrive40"})
         return r
 
-    def _drive(self, history, batches, allow_refetch=False):
+    def _drive(self, history, batches, allow_refetch=False, wrote=None):
         """Run the real main() with the API and every write stubbed out.
 
         write_rows is where the fetch loop's work lands, so capturing there and
@@ -4154,12 +7571,19 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
             unittest.mock.patch.object(T, "load_history", lambda: list(history)),
             unittest.mock.patch.object(T, "send_email", lambda *a, **k: None),
             unittest.mock.patch.object(T, "save_zip_cache", lambda *a, **k: None),
-            unittest.mock.patch.object(T, "save_spend_history", lambda row, **k: {}),
-            unittest.mock.patch.object(T, "save_overlap_history", lambda *a, **k: {}),
+            # `wrote` is a list a caller can pass to learn WHICH of these ran
+            # before main() returned — the writers are stubbed so nothing lands
+            # in the working tree, and whether they were reached is the fact one
+            # test below is about.
+            unittest.mock.patch.object(T, "save_spend_history",
+                                       lambda row, **k: ((wrote is not None and wrote.append("data/spend.json")), {})[1]),
+            unittest.mock.patch.object(T, "save_overlap_history",
+                                       lambda *a, **k: ((wrote is not None and wrote.append("data/source_overlap.json")), {})[1]),
             # …and the fetch log, or driving main() writes a data/fetch_log.json
             # of stub numbers into the working tree — which daily.yml would then
             # `git add data` and commit as a real day's record
-            unittest.mock.patch.object(T, "save_fetch_log", lambda *a, **k: {}),
+            unittest.mock.patch.object(T, "save_fetch_log",
+                                       lambda *a, **k: ((wrote is not None and wrote.append("data/fetch_log.json")), {})[1]),
             unittest.mock.patch.dict(os.environ, env, clear=True),
         ]
         for p_ in patches:
@@ -4178,6 +7602,28 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         finally:
             for p_ in reversed(patches):
                 p_.stop()
+
+    def test_a_night_that_fetched_nothing_says_what_it_wrote(self):
+        """The exit message is the last line in the Actions log and the whole
+        body of the run-FAILED email, and it said "leaving data, report and site
+        untouched" — after save_overlap_history(), save_fetch_log() and
+        save_spend_history() had all run. daily.yml commits data/ on this path,
+        deliberately and with a comment saying so, so the record gained a spend
+        row and a full set of per-scope fetch facts under a sentence saying
+        nothing moved. The report and the site really are untouched; the fix is
+        the sentence, not the writes."""
+        wrote = []
+        yesterday = date.fromordinal(T.TODAY_ORD - 1).isoformat()
+        _, captured, out = self._drive([self._hist_row(yesterday)],
+                                       lambda *a: [], wrote=wrote)
+        self.assertNotIn("rows", captured, "nothing was fetched, so nothing is written")
+        self.assertIn("data/spend.json", wrote)
+        self.assertIn("data/fetch_log.json", wrote)
+        msg = str(out.code)
+        self.assertNotIn("leaving data", msg,
+                         f"data/ moved on this path — {sorted(set(wrote))}: {msg}")
+        self.assertIn("the report and the site are untouched", msg)
+        self.assertIn("fetch log and spend row are written", msg)
 
     # ---- the guard ----------------------------------------------------------
     def test_an_already_fetched_day_spends_nothing(self):
@@ -5142,7 +8588,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                 # which is exactly what shipped: 10 on a model where four had
                 # moved, 15 on one where eight had.
                 self._car("D" * 17, [54999, 55849, 54999, 55849, 55849])]
-        out = T.brief_lines({"daily": [], "gone": []}, cars, "2026-09-04")
+        out = T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, "2026-09-04")
         line = next(l for l in out if "price change" in l)
         self.assertIn("2 price changes", line,
                       "the cut and the raise count; the sawtooth does not")
@@ -5154,7 +8600,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         """Saying "0 more seen at two prices" on a clean pool is noise, and a
         clause that always fires stops being read."""
         cars = [self._car("A" * 17, [50000, 49000])]
-        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, "2026-09-04")
+        line = next(l for l in T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, "2026-09-04")
                     if "price change" in l)
         self.assertIn("1 price change ·", line)
         self.assertNotIn("not counted", line)
@@ -5166,7 +8612,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                 self._car("C" * 17, [54999, 55849, 54999, 55849])]
         sec = []
         T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
-                      cars, self._rows(cars), {}, [], "2026-09-04")
+                      cars, self._rows(cars), {}, [], "2026-09-04", T.TODAY)
         i = sec.index("**Price changes**")
         block = "\n".join(sec[i:sec.index("", i)])
         self.assertIn("A" * 17, block, "the real cut is listed")
@@ -5175,6 +8621,30 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                          "fortnight is not a price change today")
 
     # -- the overflow line counts what it holds -----------------------------
+
+    def test_the_bullets_and_the_overflow_add_up_to_the_cuts_there_were(self):
+        """One total split in two, and only the sentence was pinned. The number
+        of bullets printed and the number the line overflows FROM are two
+        separate 3s in build_today(); the three that compute the sentence are
+        each held by a test and the one that decides how many bullets go on
+        screen by none. Four bullets over "…and 2 more" is 6 claimed against 5.
+        Read off the rendered section rather than from the constant, so the
+        check is the reader's own arithmetic."""
+        import re
+        for n in (1, 3, 4, 7):
+            cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
+                           "state": "IL", "local": False},
+                     "label": "T", "amount": 500 + i, "shopping": 1} for i in range(n)]
+            sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
+            text = "\n".join(sec)
+            bullets = len(re.findall(r"^- ▼ \$[\d,]+ cut · ", text, re.M))
+            more = re.search(r"…and (\d+) more cuts? today", text)
+            rest = int(more.group(1)) if more else 0
+            self.assertEqual(bullets + rest, n,
+                             f"{n} cuts: {bullets} bullets over "
+                             f"{'a line saying ' + str(rest) if more else 'no overflow line'}"
+                             f"\n{text}")
+            self.assertLessEqual(bullets, 3, "and the section never grows past three")
 
     def test_the_overflow_line_counts_cuts_because_cuts_are_what_it_holds(self):
         """events["cuts"] takes only downward steps. The line under it said
@@ -5186,7 +8656,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
                        "state": "IL", "local": False},
                  "label": "T", "amount": 500 + i, "shopping": 1} for i in range(5)]
-        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
         text = "\n".join(sec)
         self.assertIn("2 more cuts today", text)
         self.assertNotIn("more price change", text)
@@ -5195,7 +8665,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
                        "state": "IL", "local": False},
                  "label": "T", "amount": 500 + i, "shopping": 1} for i in range(4)]
-        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
         self.assertIn("1 more cut today", "\n".join(sec))
 
     def test_the_overflow_line_promises_only_the_sections_that_exist(self):
@@ -5208,7 +8678,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                        "state": "IL", "local": False},
                  "label": "T", "amount": 900 - i, "shopping": 1 if i < 4 else 0}
                 for i in range(7)]
-        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []})
+        sec, _ = T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)
         text = "\n".join(sec)
         self.assertIn("4 more cuts today, 1 of them listed in the sections below", text,
                       "three of the four biggest are shown, so one shopped cut "
@@ -5220,7 +8690,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cuts = [{"x": {"vin": f"{i}" * 17, "price": 50000, "city": "Chicago",
                        "state": "IL", "local": False},
                  "label": "T", "amount": 500 + i, "shopping": 1} for i in range(5)]
-        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []})[0])
+        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)[0])
         self.assertIn("2 more cuts today, listed in the sections below", text)
         self.assertNotIn("of them", text)
 
@@ -5232,7 +8702,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                        "state": "IL", "local": False},
                  "label": "T", "amount": 900 - i, "shopping": 1 if i < 3 else 0}
                 for i in range(6)]
-        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []})[0])
+        text = "\n".join(T.build_today({"cuts": cuts, "new": [], "gone": []}, T.TODAY)[0])
         self.assertIn("3 more cuts today on models the sections below do not cover", text)
 
     # -- the stale tag names what it compared against -----------------------
@@ -5254,7 +8724,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         row = {**{k: "" for k in T.FIELDS}, "vin": "D" * 17, "price": 50000,
                "miles": 20000, "year": "2024", "trim": "T", "city": "Chicago",
                "state": "IL", "target": "t"}
-        out = T.fmt_row(row, {}, cars[3])
+        out = T.fmt_row(row, {}, T.TODAY, cars[3])
         # "the model's", because market_stats runs once per model over every
         # listing on it while the page's market sentence is recomputed for the
         # rows in view. On a trim view the two sat one line apart saying 92 and
@@ -5269,7 +8739,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         row = {**{k: "" for k in T.FIELDS}, "vin": "D" * 17, "price": 50000,
                "miles": 20000, "year": "2024", "trim": "T", "city": "Chicago",
                "state": "IL", "target": "t"}
-        self.assertIn("80% of the model", T.fmt_row(row, {}, entry))
+        self.assertIn("80% of the model", T.fmt_row(row, {}, T.TODAY, entry))
 
     # -- the typical-days clause borrows the page's floor and denominator ---
 
@@ -5363,7 +8833,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cars = [self._car("A" * 17, [50000], local=True, state="IL"),
                 self._car("B" * 17, [50000], local=False, state="CA"),
                 self._car("C" * 17, [50000], local=False, state="")]
-        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, None)
+        line = next(l for l in T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, None)
                     if "on the market" in l)
         self.assertIn("3 on the market · 1 drivable · 1 with no state", line,
                       "one is drivable, one is beyond, and the third is in "
@@ -5374,7 +8844,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         that always fires is a count nobody reads."""
         cars = [self._car("A" * 17, [50000], local=True, state="IL"),
                 self._car("B" * 17, [50000], local=False, state="CA")]
-        line = next(l for l in T.brief_lines({"daily": [], "gone": []}, cars, None)
+        line = next(l for l in T.brief_lines({"daily": [], "gone": [], "as_of": T.TODAY}, cars, None)
                     if "on the market" in l)
         self.assertEqual(line, "- 2 on the market · 1 drivable")
 
@@ -5398,19 +8868,39 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
     def test_the_state_footer_puts_an_unplaced_car_in_neither_column(self):
         """The tiles and the brief line stopped counting a car with no state as
         "beyond". This footer is the same claim about the same cars one section
-        further down, and went on doing it."""
+        further down, and went on doing it.
+
+        The "no state" half used to be asserted flat, on the strength of the
+        pool holding such a car the day it was written — so it was green by
+        accident and went red the morning every car came back with a state.
+        Both directions now, off the record: a pool with an unplaced car must
+        name it, and a pool without one must not invent the column. The sum is
+        the invariant that holds either way.
+        """
         rows = T.load_history()
         latest = max(r["snapshot_date"] for r in rows)
-        report = T.build_outputs([r for r in rows if r["snapshot_date"] == latest],
-                                 rows, T.build_history(rows))[0]
+        report, site, _ = T.build_outputs([r for r in rows if r["snapshot_date"] == latest],
+                                          rows, T.build_history(rows))
         foot = next(l for l in report.splitlines()
                     if "vehicles across" in l and "beyond" in l)
         n = int(foot.split("vehicles across")[0].strip("_ "))
         parts = dict(p.rsplit(" ", 1) for p in foot.strip("_").split(" · ")[1:])
         self.assertEqual(sum(int(v) for v in parts.values()), n,
                          f"the columns must add to the model's own count: {foot}")
-        self.assertIn("no state", foot,
-                      "and today's i5 pool holds one such car, so it is named")
+        # which model the footer is about, found by its own count rather than named
+        pools = [m for b in site["brands"].values() for m in b["models"].values()
+                 if len(m.get("listings") or []) == n]
+        self.assertTrue(pools, f"no model on the sheet holds the {n} cars this footer counts")
+        unplaced = min(sum(1 for x in (m.get("listings") or []) if not x.get("state"))
+                       for m in pools)
+        if unplaced:
+            self.assertIn(f"no state {unplaced}", foot,
+                          f"{unplaced} cars in this pool carry no state and the footer "
+                          f"does not name them: {foot}")
+        else:
+            self.assertNotIn("no state", foot,
+                             f"every car in this pool has a state and the footer "
+                             f"invents a column: {foot}")
 
     # -- the record's vocabulary, checked on the record it prints ----------
 
@@ -5452,7 +8942,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         cars = [self._car(f"{i:017d}", [50000 + i * 100]) for i in range(3)]
         sec = []
         T.trim_detail(sec, {"id": "t", "label": "T", "note": "", "years": [2024]},
-                      cars, self._rows(cars), {}, [], "2026-09-04")
+                      cars, self._rows(cars), {}, [], "2026-09-04", T.TODAY)
         text = "\n".join(sec)
         self.assertIn("**Lowest asking beyond your states (shipping estimated)**", text)
         self.assertNotIn("Cheapest beyond", text)
