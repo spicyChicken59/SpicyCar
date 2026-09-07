@@ -47350,62 +47350,6 @@
     }
    }
   },
-  "tesla": {
-   "label": "Tesla",
-   "models": {
-    "model-y": {
-     "label": "Tesla Model Y",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-15",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "tesla-model-y": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "tesla-model-y": []
-     },
-     "fetch_days": {
-      "tesla-model-y": []
-     },
-     "gone": []
-    }
-   }
-  },
   "ford": {
    "label": "Ford",
    "models": {
@@ -47427,7 +47371,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-14",
+     "next_due": "2026-09-15",
      "params": {
       "min_price": 8000
      },
@@ -47483,7 +47427,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-13",
+     "next_due": "2026-09-14",
      "params": {
       "min_price": 8000
      },
@@ -47539,7 +47483,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-12",
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 8000
      },
@@ -47595,7 +47539,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-11",
+     "next_due": "2026-09-12",
      "params": {
       "min_price": 8000
      },
@@ -47651,7 +47595,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-10",
+     "next_due": "2026-09-11",
      "params": {
       "min_price": 8000
      },
@@ -47686,62 +47630,6 @@
     }
    }
   },
-  "polestar": {
-   "label": "Polestar",
-   "models": {
-    "polestar-3": {
-     "label": "Polestar 3",
-     "note": "",
-     "notes": {},
-     "years": [
-      "2024",
-      "2025",
-      "2026",
-      "2027"
-     ],
-     "shopping": false,
-     "cadence": 15,
-     "as_of": null,
-     "age_days": null,
-     "overdue": false,
-     "last_asked": null,
-     "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-09",
-     "params": {
-      "min_price": 8000
-     },
-     "trims": {
-      "polestar-polestar-3": {
-       "label": "all trims",
-       "note": "",
-       "depth": "light",
-       "cadence": 15,
-       "shopping": false,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 8000,
-       "max_miles": null,
-       "cpo_only": false,
-       "market_total": null
-      }
-     },
-     "listings": [],
-     "daily": [],
-     "daily_by_trim": {
-      "polestar-polestar-3": []
-     },
-     "fetch_days": {
-      "polestar-polestar-3": []
-     },
-     "gone": []
-    }
-   }
-  },
   "cadillac": {
    "label": "Cadillac",
    "models": {
@@ -47763,7 +47651,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-08",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 8000
      },
@@ -47818,8 +47706,8 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-07",
+     "due_today": false,
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -47875,7 +47763,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-21",
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -47930,8 +47818,8 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-20",
+     "due_today": true,
+     "next_due": "2026-09-07",
      "params": {
       "min_price": 8000
      },
@@ -47987,7 +47875,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-19",
+     "next_due": "2026-09-21",
      "params": {
       "min_price": 8000
      },
@@ -48043,7 +47931,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-18",
+     "next_due": "2026-09-20",
      "params": {
       "min_price": 8000
      },
@@ -48099,7 +47987,7 @@
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-17",
+     "next_due": "2026-09-19",
      "params": {
       "min_price": 8000
      },

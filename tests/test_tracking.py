@@ -6463,16 +6463,30 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(target("bmw-i5-xdrive40")["min_price"], 20000,
                          "…and its sibling takes the model's")
         # The brand layer used to be demonstrated with national_only, which no
-        # brand carries any more — the long tail asks both queries now, and the
-        # one target still holding the flag holds it on a TRIM, which is the
-        # layer above. Cadence is the live brand-layer override: defaults say
-        # 1, the brand says 15, and the trimless model under it restates
-        # neither.
-        self.assertEqual(target("tesla-model-y")["cadence"], 15,
-                         "the brand's, over the defaults' 1")
-        self.assertEqual(json.loads(Path("targets.json").read_text())
-                         ["watchlist"]["tesla"]["models"]["model-y"].get("cadence"),
-                         None, "…and the model does not restate it")
+        # brand carries any more, and then with tesla-model-y, which is stood
+        # down. Naming a model here is what keeps breaking it: the watchlist is
+        # a thing the buyer edits. FOUND rather than named — any active target
+        # whose cadence comes from its brand and is restated by neither the
+        # model nor the trim — so the example survives the next trim.
+        cfg = json.loads(Path("targets.json").read_text())
+        dflt = cfg["defaults"].get("cadence", 1)
+        example = None
+        for t in T.TARGETS.values():
+            b = cfg["watchlist"][t["brand"]]
+            m = b["models"][t["model_key"]]
+            trims = m.get("trims") or {}
+            tr = trims.get(t["trim_key"], {}) if t["trim_key"] != "all" else {}
+            if (b.get("cadence") not in (None, dflt) and m.get("cadence") is None
+                    and tr.get("cadence") is None):
+                example = (t, b["cadence"]); break
+        self.assertIsNotNone(example, "no target inherits its cadence from its brand — "
+                                      "the brand layer has no live example to demonstrate")
+        t, brand_cadence = example
+        self.assertEqual(t["cadence"], brand_cadence,
+                         f"{t['id']} should take its brand's cadence, over the defaults' {dflt}")
+        self.assertNotEqual(brand_cadence, dflt,
+                            "…and the brand's value must actually differ from the default, "
+                            "or this demonstrates nothing")
         self.assertEqual(target("bmw-i5-m60")["years"],
                          ["2024", "2025", "2026", "2027"],
                          "and the 2024+ rule from defaults, which no target "
