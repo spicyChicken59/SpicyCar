@@ -518,6 +518,16 @@ demonstrates the reusable matrix-first pattern using only existing system classe
 The dashboard smoke suite includes phone/tablet/desktop, light/dark, keyboard,
 unknown-data, photo-source, reduced-motion, forced-color and print checks for it.
 
+The **Places & cars** view brings SpicyHome's split map/card layout and editorial
+headings to the same vehicle rows and sort order. Price pills group nearby cars;
+select a pin to read its listings, or use **Show on map** from a card. Coordinates
+are approximate listing locations, often city or ZIP centroids, and unlocated
+cars remain in the list. The original keyboard-operable **Market atlas** is a
+second view. Both views use existing data; no provider key or tracking call is
+added. OpenStreetMap tiles are attributed and optional: map failures leave the
+cards and listing tables usable. `tools/discovery_smoke.mjs` covers sorting,
+filters, shortlist state, map/card focus, phone popups, and offline fallback.
+
 The authored pages are `docs/index.html` and `docs/how.html`. The daily tracker writes
 `docs/data.json` and `REPORT.md`; it does not regenerate the HTML, so the visual design
 survives every daily update without touching the tracker or its data.

@@ -35,7 +35,7 @@
 <link rel="apple-touch-icon" href="design-system/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- The one file this page cannot render without is asked for first, before
      the stylesheet and the three scripts below are even parsed: issued from
      the bottom of the inline script it waited for the whole document — a
@@ -520,6 +520,10 @@
   }
 </style>
 <link rel="stylesheet" href="market-studio.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="car-discovery.css">
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="car-discovery.js"></script>
 </head>
 <body class="market-studio">
 <a class="sc-skip" href="#main">Skip to content</a>
@@ -713,14 +717,22 @@
     <div class="sc-card__head">
       <div>
         <div class="sc-eyebrow sc-eyebrow--muted">market geography</div>
-        <h2>The market on the map</h2>
-        <p class="sc-hint" id="map-hint"></p>
+        <h2>A car worth going for.</h2>
+        <p class="sc-hint" id="car-map-hint"></p>
       </div>
     </div>
+    <div class="car-map-switch" role="group" aria-label="Map view">
+      <button type="button" id="car-street-switch" aria-pressed="true" aria-controls="car-discovery">Places &amp; cars</button>
+      <button type="button" id="car-atlas-switch" aria-pressed="false" aria-controls="car-atlas">Market atlas</button>
+    </div>
+    <div id="car-discovery"></div>
+    <div id="car-atlas" hidden>
+    <p class="sc-hint" id="map-hint"></p>
     <div class="sc-legend" id="map-legend" aria-hidden="true"></div>
     <div class="sc-map" id="map" role="group" tabindex="0" aria-label="Map of the cars for sale. Use left and right arrow keys to step through cars west to east, Enter to open, Escape to clear."></div>
     <p class="sc-sr-only" id="map-say" role="status" aria-live="polite"></p>
     <div class="sc-sr-only" id="map-twin"></div>
+    </div>
     <div class="sc-chart-caption">
       <span>SpicyCar · the market record</span>
       <span class="sc-signature sc-signature--small">
@@ -1611,7 +1623,7 @@
     // VIN order, so dot z-order and the collocation spirals never depend on the
     // table's sort — a scoped update and a full render draw the identical map
     cars.sort((a, b) => ((a.x.vin || '') < (b.x.vin || '') ? -1 : 1));
-    if (!cars.length) { card.hidden = true; MAP_CTL = { key, empty: true }; return; }
+    if (!cars.length) { card.hidden = !DISCOVERY_COUNT; $('map').textContent = 'No verified coordinates in this view. Every car is still in Places & cars.'; MAP_CTL = { key, empty: true }; return; }
     // Reserve the card NOW, not when the topojson lands: the cars are already
     // known, and #map:empty (see the stylesheet) holds the svg's final height,
     // so the async fetch can't shift the sections below the card. A cached
@@ -1619,11 +1631,11 @@
     // hint only ever shows while the network is genuinely in flight.
     // updateMapVisibility still owns hiding the card when a filter empties it.
     card.hidden = false;
-    if (!MAP_STATES) $('map-hint').textContent = 'Loading the map…';
+    if (!MAP_STATES) $('map-hint').textContent = DISCOVERY_COUNT + ' cars in the current view. Asking prices as listed; shipping is shown separately.';
     const token = ++MAP_RENDER;
     fetchMap().then((states) => {
       if (token !== MAP_RENDER) return;
-      if (!states) { card.hidden = true; MAP_CTL = { key, empty: true }; return; }
+      if (!states) { card.hidden = !DISCOVERY_COUNT; $('map').textContent = 'The atlas could not load. Places & cars and the listing tables are still available.'; MAP_CTL = { key, empty: true }; return; }
       if (MAP_CTL && MAP_CTL.VIEW) MAP_CTL.VIEW.destroy();   // cancel any in-flight animation on the old svg
       const buyer = S.site.buyer || {};
       // Any device with a coarse pointer gets invisible hit halos over the
@@ -1946,7 +1958,38 @@
   // The scoped path: which of the built dots show, which wear rings, and the
   // counts and legend that describe them. Runs on every filter change; falls
   // through to buildMap only when the map is OF something else now.
+  let DISCOVERY_COUNT = 0;
+  const DISCOVERY = window.CarDiscovery ? window.CarDiscovery.create({
+    root: $('car-discovery'),
+    openCar: (vin) => { const c = findVin(vin); if (c) goTo(c.bk, c.mk, c.x.vin); },
+    starCar: (vin) => { const c = findVin(vin); return c ? starButton(c.x) : null; },
+  }) : null;
+  for (const [id, street] of [['car-street-switch', true], ['car-atlas-switch', false]]) {
+    $(id).onclick = () => {
+      $('car-discovery').hidden = !street;
+      $('car-atlas').hidden = street;
+      $('car-street-switch').setAttribute('aria-pressed', String(street));
+      $('car-atlas-switch').setAttribute('aria-pressed', String(!street));
+      if (street && DISCOVERY) DISCOVERY.resize();
+      if (!street) sizeMapHalos(true);
+    };
+  }
+  if (!DISCOVERY) { $('car-street-switch').hidden = true; $('car-atlas-switch').click(); }
   function updateMapVisibility() {
+    // The same rows and order as the listings; map exploration is presentation
+    // state only and never changes the buyer's filters or scoring rules.
+    const rows = S.brand === 'all' ? pooledRows() : filtered();
+    DISCOVERY_COUNT = rows.length;
+    $('map-card').hidden = !DISCOVERY_COUNT;
+    if (DISCOVERY) DISCOVERY.update(rows.map((x) => {
+      const found = findVin(String(x.vin || '').toUpperCase());
+      return { vin: x.vin, title: [x.year, found && found.m.label, carTrimText(x)].filter(Boolean).join(' '),
+        price: x.price, priceLabel: money(x.price), milesLabel: x.miles == null ? 'Mileage unreported' : num(x.miles) + ' mi',
+        location: placeTxt(x), dealer: x.dealer || 'Dealer unreported', lat: x.lat, lng: x.lon,
+        shipping: shipNote(x), image: safeUrl(x.image),
+        flags: (x.flags || []).join(' · ') };
+    }), mapKey() + '|' + [...S.where].sort().join(',') + '|' + [...S.models].sort().join(','));
+    $('car-map-hint').textContent = DISCOVERY_COUNT + ' cars in the current view. Asking prices as listed; shipping is shown separately.';
     if (!MAP_CTL || MAP_CTL.key !== mapKey()) { buildMap(); return; }
     if (MAP_CTL.empty) return;
     const ctl = MAP_CTL, mode = ctl.mode;
@@ -6914,7 +6957,7 @@
       // brands['all'] and throw before it ever reached the rows.
       // A re-sort reaches filterCount through nothing else, and it is the only
       // thing on the page that can say the order changed.
-      case 'sort': renderList(overview ? pooledRows() : filtered()); filterCount(); break;
+      case 'sort': renderList(overview ? pooledRows() : filtered()); filterCount(); updateMapVisibility(); break;
       case 'showList': renderList(overview ? pooledRows() : filtered()); break;
       case 'showGone': renderGone(); break;
       // The chart and nothing else: S.hidden is its legend's own state now, so

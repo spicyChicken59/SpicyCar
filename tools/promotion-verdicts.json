@@ -44,6 +44,38 @@
       "verdict": "not promoted",
       "why": "This is the heading inside SpicyCar's own 'spicy picks' idea — the one block the rebuild deliberately kept local. Its name carries page identity even though its declarations do not.",
       "reopen_when": "Never, while picks remain this app's own concept."
+    },
+    "car-place-discovery": {
+      "selectors": [
+        ".market-studio .car-map-switch button, .market-studio .car-discovery-more",
+        ".market-studio .car-place-panel",
+        ".market-studio .car-place-heading",
+        ".market-studio .car-text-button",
+        ".market-studio .car-place-map",
+        ".market-studio .car-map-status, .market-studio .car-map-foot",
+        ".market-studio .car-place-count",
+        ".market-studio .car-place-card",
+        ".market-studio .car-place-card.is-selected",
+        ".market-studio .car-place-photo",
+        ".market-studio .car-photo-placeholder",
+        ".market-studio .car-place-location",
+        ".market-studio .car-place-price",
+        ".market-studio .car-place-shipping",
+        ".market-studio .car-place-dealer, .market-studio .car-place-flags",
+        ".market-studio .car-place-actions",
+        ".market-studio .car-map-price",
+        ".market-studio .car-map-price.is-selected",
+        ".market-studio .car-place-map .leaflet-popup-content-wrapper, .market-studio .car-place-map .leaflet-popup-tip",
+        ".market-studio .car-location-popup",
+        ".market-studio .car-popup-car",
+        ".market-studio .car-map-unavailable",
+        ".market-studio .car-place-map .leaflet-control-attribution",
+        ".market-studio .car-place-map a.leaflet-popup-close-button"
+      ],
+      "page": "index.html",
+      "verdict": "not promoted",
+      "why": "Home-inspired geographic browsing is composed here with vehicle price, shipping, dealer, and shortlist evidence. Leaflet popup overrides belong to this integration, and the shared snapshot stays immutable.",
+      "reopen_when": "A shared map-card contract is designed for Home and Car with compatible evidence and interaction requirements."
     }
   }
 }

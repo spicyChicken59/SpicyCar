@@ -82,7 +82,15 @@ for (const p of pages) {
   // implementation as if it were a consumer override.
   const localStyles = [...html.matchAll(/<link\b[^>]*href="([^"?#]+\.css)"[^>]*>/g)]
     .map((m) => m[1]).filter((href) => !href.startsWith('design-system/') && !/^(?:[a-z]+:|\/)/i.test(href));
-  const styles = localStyles.map((href) => {
+  // Leaflet's unmodified third-party stylesheet is not a SpicyChicken consumer.
+  // Verify its pinned bytes before excluding it from app-token linting.
+  const styles = localStyles.filter((href) => {
+    if (href !== 'vendor/leaflet/leaflet.css') return true;
+    const css = readFileSync(resolve(dirname(p), href));
+    if (createHash('sha256').update(css).digest('hex') !== 'a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6')
+      throw new Error('Vendored Leaflet CSS differs from its reviewed 1.9.4 distribution.');
+    return false;
+  }).map((href) => {
     const path = resolve(dirname(p), href);
     if (!path.startsWith(resolve(dirname(p)) + '/')) throw new Error('Local stylesheet outside the page folder: ' + href);
     return '<style>' + readFileSync(path, 'utf8') + '</style>';
