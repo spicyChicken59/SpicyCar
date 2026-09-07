@@ -185,7 +185,7 @@
        "label": "xDrive40",
        "note": "",
        "depth": "light",
-       "cadence": 2,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -209,7 +209,7 @@
        "label": "M60",
        "note": "",
        "depth": "light",
-       "cadence": 2,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -15326,7 +15326,7 @@
        "label": "xDrive60",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -15350,7 +15350,7 @@
        "label": "M70",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -31184,14 +31184,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 3,
+     "cadence": 6,
      "as_of": "2026-09-06",
      "age_days": 1,
      "overdue": false,
      "last_asked": "2026-09-06",
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-09",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 25000
      },
@@ -31200,7 +31200,7 @@
        "label": "xDrive (45 / 50 / 60)",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -31217,7 +31217,7 @@
        "label": "M (M60 / M70)",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -36147,7 +36147,7 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-08-25",
      "age_days": 13,
      "overdue": true,
@@ -36163,7 +36163,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -37831,7 +37831,7 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-09-07",
      "age_days": 0,
      "overdue": false,
@@ -37847,7 +37847,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -40820,14 +40820,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-09-06",
      "age_days": 1,
      "overdue": false,
      "last_asked": "2026-09-06",
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-07",
+     "due_today": false,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -40836,7 +40836,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -42472,14 +42472,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-05",
      "age_days": 2,
      "overdue": false,
      "last_asked": "2026-09-05",
      "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-16",
+     "due_today": true,
+     "next_due": "2026-09-07",
      "params": {
       "min_price": 30000
      },
@@ -42488,7 +42488,7 @@
        "label": "Pure",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -42505,7 +42505,7 @@
        "label": "Touring",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -42522,7 +42522,7 @@
        "label": "Grand Touring",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -47311,14 +47311,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-08-27",
      "age_days": 11,
      "overdue": true,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-10",
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -47327,7 +47327,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49130,14 +49130,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-15",
+     "next_due": "2026-09-11",
      "params": {
       "min_price": 8000
      },
@@ -49146,7 +49146,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49186,14 +49186,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-14",
+     "next_due": "2026-09-11",
      "params": {
       "min_price": 8000
      },
@@ -49202,7 +49202,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49242,14 +49242,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-13",
+     "next_due": "2026-09-12",
      "params": {
       "min_price": 8000
      },
@@ -49258,7 +49258,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49298,14 +49298,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-12",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 8000
      },
@@ -49314,7 +49314,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49354,14 +49354,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-11",
+     "due_today": true,
+     "next_due": "2026-09-07",
      "params": {
       "min_price": 8000
      },
@@ -49370,7 +49370,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49410,14 +49410,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-10",
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -49426,7 +49426,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49466,14 +49466,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-09",
+     "next_due": "2026-09-12",
      "params": {
       "min_price": 8000
      },
@@ -49482,7 +49482,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49522,14 +49522,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-08",
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -49538,7 +49538,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49578,14 +49578,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-07",
+     "due_today": false,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -49594,7 +49594,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49634,14 +49634,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-21",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 8000
      },
@@ -49650,7 +49650,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49690,14 +49690,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-20",
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -49706,7 +49706,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -49746,14 +49746,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": null,
      "age_days": null,
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-19",
+     "due_today": true,
+     "next_due": "2026-09-07",
      "params": {
       "min_price": 8000
      },
@@ -49762,7 +49762,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",

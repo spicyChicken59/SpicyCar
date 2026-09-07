@@ -153,19 +153,29 @@ Two things are configured, separately:
 
 ## Design decisions
 
-**It runs on about 31 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
+**It runs on about 30 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
 each. So a target is fetched twice — once filtered to the buyer's states plus `search_states`
 (the API takes a comma list, so eight states cost one call) and once nationally — unless it is
 `national_only`, which now means the nationwide certified watches and nothing else. Each target has a *depth* (the
 cars being shopped get both sorts at two pages **plus a newest-first page**, so a fresh listing is
 seen the day it appears instead of whenever it ranks among the cheapest; the rest get the cheapest
-20) and a *cadence*, per target rather than per brand: the two shopped trims run daily, the i5's
-other two trims and the two certified watches every other day, the i7's other trims and the iX every
-third day, the four models already carrying a record every fourth day, and one EV from each of the
-other 13 brands every fifteenth day. Spread evenly across the cycle in watchlist order. A hard
+20) and a *cadence* — which is **derived, not typed**. The cars in `buyer.shopping` run daily and
+their certified watches every other day; every other target on the watchlist shares one comparison
+cadence, the fastest whole number of days that keeps the plan inside `budget_headroom` of both
+budgets. Today that is every sixth day, for all 25 of them. **Nothing in the watchlist names a
+cadence**, so shopping a cheaper car speeds the comparisons up on its own: two BMW trims at 22 calls
+a day put them on 6 days, one Kia EV9 at 11 puts them on 3. The ladder this replaced ran
+1 / 2 / 3 / 4 / 15 days and was reverse-engineered around one make — 13 of 29 targets took 87% of the
+month while fifteen models were fetched twice a month, which was never a judgement about those cars,
+only the shape of what was left after the shopped ones had taken their share. Each target's day of
+the cycle is then chosen to **level the calls** rather than to deal targets out in turn: most
+expensive model first, onto whichever day of its own cycle is cheapest so far. That took the busiest
+day from 38 of 40 to 32 and the quietest from 24 to 30 — measured over the whole cycle, both ways. A
+hard
 `budget_per_day` makes the script refuse to run if any day of the cadence cycle would exceed it — a
-fortnight at least, and longer when the cadences repeat over more than that, which they now do: the
-cycle is 60 days — and it prints the plan before it starts.
+fortnight at least, rounded up to a **whole number of cycles** so the average it quotes is the real
+one rather than one that counts the cycle's first days twice: the cycle is 18 days here, three
+turns of the six-day one the cadences repeat on — and it prints the plan before it starts.
 
 That plan is an **upper bound**, and the difference is the headroom every "can we afford one more
 model?" needs. The fetch loop stops paging the moment a query comes back short and skips that
@@ -200,12 +210,14 @@ cheapest of that model *in America*, which is the same query shape that lost 88%
 be measured. The first fetch of each is what will confirm or refute it, and the log will say so
 without being asked.
 
-They ask both queries now, and it is paid for out of cadence rather than budget: every tenth day
-became every fifteenth, which buys the second source at 935 calls a month against 1,000 and a worst
-day of 38 against 40. Fifteen rather than thirteen or fourteen because it keeps the cadence cycle at
-60 days, where those push it to 156 and 84. The cost is real and it is freshness — twice a month
-instead of three times, so a car listed and sold inside a fortnight can pass unseen. That is the
-trade, and it is the right way round: a car you cannot drive to is not a car you were going to buy.
+They ask both queries now, and that used to be paid for out of freshness: every tenth day became
+every fifteenth, which bought the second source at the cost of seeing these models twice a month
+instead of three times. **Deriving the cadence paid for it out of the ladder instead, and the trade
+is off.** The tail runs every sixth day now — five fetches a month, with both queries — because the
+same arithmetic that fixed the tail at fifteen was leaving the busiest day at 38 of 40 and the
+quietest at 24, and a plan that is level has room the lumpy one did not. The figures are 925 a month
+against 1,000 and a worst day of 32 against 40, measured over the whole cycle. Nothing here is a
+judgement about these cars any more: they are simply what is not being shopped.
 
 The certified watches keep `national_only` and are not part of this — however many of them there are,
 since one is derived per shopped model. A nationwide certified watch is national

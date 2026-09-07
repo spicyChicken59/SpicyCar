@@ -14,10 +14,13 @@ Most targets are fetched twice on their day: once filtered to the buyer's
 states plus search_states (one call, the API takes a comma list) and once
 nationally. A `national_only` target — the nationwide certified watches —
 asks the country once and skips the States half, which is what makes a
-coast-to-coast watch affordable. A target's cadence (1 = daily, 2 = every other day, ...)
-spreads the comparison brands across days so the whole watchlist fits the
-API plan; buyer.shopping names the targets that lead the report in full,
-while the rest get one line each. A listing is
+coast-to-coast watch affordable. A target's cadence (1 = daily, 2 = every
+other day, ...) is DERIVED and not typed: the cars in buyer.shopping run at
+buyer.shopping_fetch's rate, and everything else shares the fastest one that
+keeps the whole watchlist inside the API plan (fit_cadence). The day of the
+cycle each target lands on is chosen to level the calls rather than to deal
+targets out in turn (assign_offsets). buyer.shopping names the targets that
+lead the report in full, while the rest get one line each. A listing is
 "drivable" — no shipping — when its own state field is one of the buyer's
 states, and nothing else: no coordinates involved, so listings the API
 could not geocode still land in the right bucket, and the buyer decides
@@ -75,6 +78,10 @@ SHOPPING = [str(s) for s in BUYER.get("shopping", [])]   # target ids being shop
 # buyer.shopping, after its own trim layer, so being shopped can speed a
 # target up rather than only agreeing with what it already said.
 SHOPPING_FETCH = dict(BUYER.get("shopping_fetch") or {})
+# …and its opposite number: the layer every target NOT being shopped gets.
+# `"cadence": "auto"` there is what stops the fetch schedule being a ladder
+# somebody reverse-engineered around one car. See fit_cadence().
+COMPARISON_FETCH = dict(BUYER.get("comparison_fetch") or {})
 # cpo_watch is the nationwide certified sweep, derived once per shopped MODEL
 # from one recipe instead of written out per car. See cpo_target().
 CPO_WATCH = dict(BUYER.get("cpo_watch") or {})
@@ -107,6 +114,23 @@ DEFAULTS = CFG.get("defaults", {})
 LEGACY_IDS = CFG.get("legacy_ids", {})
 BUDGET = CFG.get("budget_per_day", 40)          # cap on any single day
 MONTHLY = CFG.get("budget_per_month", 1000)     # the API plan; checked on the average
+# What a DERIVED cadence aims at, as a fraction of each of those. Deliberately
+# under the caps rather than at them: the caps are guards that fail the run, and
+# a derivation that targets a guard makes the guard the design point — one model
+# added and the thing that was meant to catch a mistake is catching arithmetic
+# working as intended. The slack is also what a re-run or a manual trigger
+# spends. Only fit_cadence() reads these; a typed cadence is not held to them.
+HEADROOM = CFG.get("budget_headroom") or {}
+HEADROOM_DAY = float(HEADROOM.get("day", 0.9))
+HEADROOM_MONTH = float(HEADROOM.get("month", 0.95))
+# The slowest a derived cadence may get before the budget guards are simply let
+# to fail. A watchlist that does not fit at one fetch a quarter does not fit.
+MAX_AUTO_CADENCE = 90
+AUTO = "auto"                                   # the cadence marker, kept as itself
+# What fit_cadence() settled on, once build_targets() has run: the number of
+# days every comparison target runs at, or None when no cadence fit and the
+# comparisons are already as slow as MAX_AUTO_CADENCE allows.
+COMPARISON_CADENCE = None
 PER_PAGE = 20                       # the free plan clamps limit to 20
 PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years",
               "newest", "max_miles", "cpo_only", "national_only"]
@@ -189,13 +213,139 @@ SORT_PHRASE = {"miles.asc": "lowest-mileage", "miles.desc": "highest-mileage",
                "price.asc": "cheapest", "price.desc": "priciest"}
 
 
-def _finish(t, m_offset, seen):
-    """The tail every target shares: the shapes a missing key falls back to,
-    the two integers that must be integers, and the day of the cycle.
+# Each source is a dict of extra query params. The States source asks the
+# API for the buyer's states and search_states directly (comma = OR), one
+# call per sort/page.
+SOURCES = ([("States", {"retailListing.state": ",".join(SEARCH_STATES)})]
+           if SEARCH_STATES else []) + [("National", None)]
+
+
+def sources_for(t):
+    """A national_only target asks the country one question and skips the
+    States query.
+
+    This used to say the States query "would only re-fetch a subset of the same
+    national answer". `data/source_overlap.json` exists to test that and now
+    has: it is true only where the national catch is large relative to the
+    local market. Across the frozen window a `depth: full` target lost 21% of
+    its States catch by going national_only and a `depth: light` one lost 88%,
+    which is why 28 targets stopped being national_only and this docstring
+    stopped saying "subset" as though it were a fact about all of them.
+
+    The targets left carrying the flag are the nationwide certified watches —
+    one derived per shopped model, so how many there are follows
+    buyer.shopping and is not a fact about this file. They are national BY
+    DEFINITION rather than to save a call, and the flag makes their own
+    premise untestable, since source_overlap() needs two sources to compare
+    and these have one. That is worth saying rather than leaving as an
+    assumption the log looks like it has checked."""
+    if t.get("national_only"):
+        return [("National", None)]
+    return SOURCES
+
+
+def calls_for(t):
+    sorts, pages = sorts_pages(t)
+    return len(sources_for(t)) * (len(sorts) * pages + t["newest"])
+
+
+def due_on(t, ordinal):
+    """Cadence 1 runs every day. Cadence N runs every Nth day; models with
+    the same cadence take successive offsets in watchlist order, so the load
+    is spread evenly and each model keeps the same days of the cycle."""
+    c = t["cadence"]
+    return c <= 1 or (ordinal + t["offset"]) % c == 0
+
+
+def a_or_an(n):
+    """The article English puts in front of a spoken number.
+
+    "a 18-day cycle" is what a typed article gives you the day the horizon
+    stops being 60 and starts being derived — 8, 11 and 18 all sound like
+    vowels and 80-89 does too, while 1, 12 and 100 do not. Small, and printed
+    on the one line an operator reads before every run."""
+    n = abs(int(n))
+    return "an" if n in (8, 11, 18) or 80 <= n <= 89 else "a"
+
+
+# The longest cadence cycle this tool will plan over. Every derived config is
+# far under it — one comparison cadence plus the shopped ones is lcm(1, 2, c) —
+# so this only ever meets a watchlist that TYPES its cadences, and the
+# instinctive way to type them is the one that breaks it: "spread them out"
+# reads as coprime, and 7/11/13/17/19/23 beside the existing 1/2/6 is a cycle
+# of 44,618,574 days. plan_horizon() enumerates the cycle and assign_offsets()
+# allocates a list over it, so the run hung for good before its first API call,
+# with no message. A year is longer than any schedule a person is really
+# planning and short enough to enumerate; past it the answer is that the
+# cadences are wrong, and this says so instead of hanging.
+MAX_CYCLE_DAYS = 366
+
+
+def cadence_cycle(targets):
+    """How many days before the fetch schedule repeats — refused when the
+    answer is one nobody can plan over."""
+    cycle = 1
+    for t in targets.values():
+        cycle = math.lcm(cycle, max(1, int(t["cadence"])))
+        if cycle > MAX_CYCLE_DAYS:
+            cads = sorted({max(1, int(x["cadence"])) for x in targets.values()})
+            sys.exit(
+                f"targets.json: the cadences {cads} repeat only every "
+                f"{math.lcm(*cads):,} days, past the {MAX_CYCLE_DAYS} this tool "
+                f"will plan over. The budget guard has to see a whole cycle or "
+                f"CI and the scheduled run disagree about the worst day. Use "
+                f"cadences that share factors (2/4/8, or 3/6/12), or leave them "
+                f"out and let buyer.comparison_fetch derive one.")
+    return cycle
+
+
+def plan_horizon(targets=None):
+    """How many days a plan has to cover to have seen every day of it.
+
+    due_on() is periodic with the LEAST COMMON MULTIPLE of the cadences, and
+    the window was a flat fourteen days. Today's 1/2/3 have an LCM of 6, so
+    fourteen happens to cover it — add a cadence of 4 and 5, both ordinary
+    values for a documented knob, and the LCM is 60: the guard would then see a
+    strict subset of the cycle and its answer would depend on the day it ran.
+    check.yml's own header says "a config edit that would overspend the free API
+    plan fails here, not on the invoice", and worse than the missed overspend is
+    the other direction — main() runs the same check, so as the window slides it
+    eventually meets the day CI never looked at and the scheduled run starts
+    exiting 1 with "Plan too big", days after CI approved the config.
+
+    Still at least a fortnight, because the printed line is a forecast a human
+    reads and one cycle of an all-daily watchlist is one day — but rounded UP
+    to a whole number of cycles, so the average is the real one. A fortnight of
+    a six-day cycle is two whole cycles and two days over, and those two days
+    are the cycle's first two: with a peak on day 0 the mean came out 30.43
+    against a true 30.33, an overestimate that grows as the cycle and the
+    window fall further out of step.
+
+    Takes the watchlist rather than reading the module's, because fit_cadence()
+    has to ask this of a set of targets that is not TARGETS yet. Defaults to
+    TARGETS, so every existing caller is byte-identical."""
+    cycle = cadence_cycle(TARGETS if targets is None else targets)
+    return cycle * max(1, -(-14 // cycle))
+
+
+def planned_calls(targets=None):
+    """(calls today, worst day of the cycle, daily average over it)."""
+    ts = TARGETS if targets is None else targets
+    days = [sum(calls_for(t) for t in ts.values()
+                if due_on(t, TODAY_ORD + k)) for k in range(plan_horizon(ts))]
+    return days[0], max(days), sum(days) / len(days)
+
+
+def _shape(t):
+    """The tail every target shares: the shapes a missing key falls back to and
+    the two integers that must be integers.
 
     One copy, because the derived certified watch is a target like any other
     and a second copy of this is a second set of defaults free to drift from
-    the first."""
+    the first. It does NOT assign the fetch day: a target asking for the
+    derived cadence does not know its own yet, and the day has to be chosen
+    against every other target's, which is a fact about the whole watchlist and
+    not about this row. See fit_cadence() and assign_offsets()."""
     t.setdefault("years", [])
     t.setdefault("sorts", ["price.asc"])
     t.setdefault("pages", 1)
@@ -204,16 +354,152 @@ def _finish(t, m_offset, seen):
         t["newest"] = max(0, int(t.get("newest") or 0))
     except (TypeError, ValueError):
         t["newest"] = 0
-    try:
-        t["cadence"] = max(1, int(t.get("cadence") or 1))
-    except (TypeError, ValueError):
-        t["cadence"] = 1
-    cad = t["cadence"]
-    if cad not in m_offset:
-        m_offset[cad] = seen[cad] % cad
-        seen[cad] += 1
-    t["offset"] = m_offset[cad]
+    c = t.get("cadence")
+    if isinstance(c, str) and c.strip().lower() == AUTO:
+        t["cadence"] = AUTO
+    else:
+        try:
+            t["cadence"] = max(1, int(c or 1))
+        except (TypeError, ValueError):
+            t["cadence"] = 1
     return t
+
+
+# How much of each parameter is "more". Being shopped is a decision to look
+# harder at a car, so the shopped layer takes the better of the two values
+# rather than simply replacing them — otherwise naming the car you are buying
+# can make the tool look at it LESS, which is what README, targets.json's own
+# note and the guarding test's name all say it cannot. Reproduced before this
+# existed: a trim configured depth full / 3 pages / 3 newest went from 18 calls
+# a fetch to 10 the moment it was named in buyer.shopping.
+DEPTHS = {"light": 0, "full": 1}
+MORE_IS_MORE = ("pages", "newest")     # take the larger
+LESS_IS_MORE = ("cadence",)            # take the smaller: 1 is daily
+
+
+def _upgrade(t, layer):
+    """Apply `layer` to `t` so it can only look harder, never less hard.
+
+    Everything the layer names that is not an amount — the sorts it asks for,
+    a mileage cap, a flag — is a plain override, because there is no "more" to
+    take on a list or a boolean and the buyer's recipe is the one that should
+    win."""
+    for k in PARAM_KEYS:
+        if k not in layer:
+            continue
+        if k == "depth":
+            t[k] = max((t.get(k), layer[k]), key=lambda d: DEPTHS.get(d, 0))
+        elif k in MORE_IS_MORE:
+            t[k] = max(to_int(t.get(k)) or 0, to_int(layer[k]) or 0)
+        elif k in LESS_IS_MORE and to_int(t.get(k)):
+            t[k] = min(to_int(t[k]), to_int(layer[k]) or 1)
+        else:
+            t[k] = layer[k]
+    return t
+
+
+def assign_offsets(targets):
+    """Which day of the cycle each target is fetched on, chosen so the days
+    cost the same.
+
+    The old rule handed out successive offsets per cadence — one counter for
+    the 2s, one for the 3s — which spreads targets and not CALLS. On the
+    watchlist it was written for, that put 38 calls on one day of a 60-day
+    cycle and 24 on another, against a cap of 40: the busiest day sat at 95% of
+    a hard limit while the quietest wasted a third of it. Cost is what the cap
+    is denominated in, so cost is what is levelled here — most expensive group
+    placed first, each onto the residue whose peak is currently lowest.
+
+    Anchored to ABSOLUTE ordinals, never to today: due_on() fires when
+    (ordinal + offset) % c == 0, so a target occupies the residue class
+    ordinal == -offset (mod c), and the same watchlist yields the same days
+    whatever day it is built on. A model's targets that share a cadence share a
+    day, which is the rule that keeps one model to one page per fetch — placed
+    as a group, at the group's own total cost.
+
+    Greedy and not optimal. Levelling a set of periodic loads is bin-packing
+    and this is the classic first-fit-decreasing on it; the number that matters
+    is measured rather than claimed, and a test asserts the spread it achieves
+    on this watchlist rather than the algorithm's name.
+    """
+    cycle = cadence_cycle(targets)
+    load = [0] * cycle
+    taken = Counter()      # groups already placed, per (cadence, day of it)
+    groups = {}
+    for t in targets.values():
+        groups.setdefault((t["brand"], t["model_key"], t["cadence"]), []).append(t)
+    # Most expensive GROUP first — a model's trims are placed together, so what
+    # has to fit is their total and not any one of them. Sorting on a member's
+    # cost put a four-call model among the twos and gave it whatever day was
+    # left. Stable, and the second key is the group's own name, so equal-cost
+    # groups resolve the same way on every machine and the offsets a config
+    # produces are reproducible.
+    order = sorted(groups.items(), key=lambda kv: (-sum(calls_for(g) for g in kv[1]), kv[0]))
+    for (_, _, c), grp in order:
+        cost = sum(calls_for(g) for g in grp)
+        days = lambda o: [d for d in range(cycle) if c <= 1 or d % c == (-o) % c]
+        # Peak first, because the daily cap is what a run dies on. Then, only
+        # to break a tie, how many groups of this same cadence are already on
+        # that day: a day carrying every target of one rate loses all of them
+        # together when that run fails, and spreading them costs nothing when
+        # the peak does not care. It is a TIEBREAK and not a rule — where the
+        # peak decides, the peak wins, which is why the two certified watches
+        # share a day on this watchlist rather than pushing the busiest day
+        # from 32 to 34. Then the day's total, then the lowest offset, so equal
+        # choices resolve the same way every time.
+        best = min(range(max(1, c)),
+                   key=lambda o: (max(load[d] for d in days(o)),
+                                  taken[(c, (-o) % max(1, c))],
+                                  sum(load[d] for d in days(o)), o))
+        taken[(c, (-best) % max(1, c))] += 1
+        for d in days(best):
+            load[d] += cost
+        for g in grp:
+            g["offset"] = best
+    return targets
+
+
+def fit_cadence(targets):
+    """The one cadence every target that asks for it shares: the fastest whole
+    number of days that keeps the plan inside HEADROOM of both budgets.
+
+    This exists because the alternative is a ladder, and a ladder is always
+    somebody's car. The one it replaced ran 1 / 2 / 3 / 4 / 15 and was
+    reverse-engineered around a single make: 13 of 29 targets took 87% of the
+    month, the other 17 brands shared what was left, and fifteen models were
+    fetched twice a month. None of that was a judgement about those cars — it
+    was the shape of the plan after the shopped ones had taken their share.
+
+    So the share is what is computed. The shopped targets cost what
+    buyer.shopping_fetch says, whatever car they are; everything else divides
+    the rest evenly and gets the fastest cadence that fits. Shop a cheaper car
+    and the comparisons speed up on their own, which is the whole point: the
+    buyer edits one list.
+
+    Returns the cadence chosen. Targets are mutated in place, offsets included,
+    because the fit is decided ON the offsets — a cadence only fits if some
+    arrangement of the days fits.
+    """
+    asking = [t for t in targets.values() if t["cadence"] == AUTO]
+    if not asking:
+        assign_offsets(targets)
+        return None
+    day_cap = BUDGET * HEADROOM_DAY
+    month_cap = MONTHLY * HEADROOM_MONTH
+    for c in range(1, MAX_AUTO_CADENCE + 1):
+        for t in asking:
+            t["cadence"] = c
+        assign_offsets(targets)
+        _, worst, avg = planned_calls(targets)
+        if worst <= day_cap and avg * 30.5 <= month_cap:
+            return c
+    # Nothing fits. Leave the slowest tried in place rather than inventing a
+    # number, and record that the comparisons are already as slow as they go —
+    # the budget guard's remedies are "raise a cadence" and "drop to light
+    # depth", and neither is something a person can edit any more, so without
+    # this it would tell a buyer who named a third car to do two things the
+    # derivation had already done.
+    return None
 
 
 def cpo_label(max_miles):
@@ -247,7 +533,23 @@ def cpo_note(t):
             f"has to ask for one, and none of them names itself.")
 
 
-def cpo_target(bkey, b, mkey, m, made, m_offset, seen):
+def _refuse_reserved_id(tid, where):
+    """No hand-written target may claim an id a derived watch would.
+
+    The guard used to be on the TRIM KEY, which covers `i5/cpo` and misses
+    `ev9-cpo` as a MODEL — that one minted the same id, `kia-ev9-cpo`, and one
+    of the two silently won: the buyer's nationwide certified sweep vanished
+    with no message. Checking the id itself covers both, and any third way of
+    spelling it that a later config finds."""
+    if tid.endswith(f"-{CPO_KEY}"):
+        sys.exit(f"targets.json: {where} makes the target id {tid!r}, and "
+                 f"anything ending '-{CPO_KEY}' is reserved — the certified "
+                 f"watch is derived from buyer.cpo_watch for every car in "
+                 f"buyer.shopping and would claim that id too, with no way to "
+                 f"tell which of the two you meant.")
+
+
+def cpo_target(bkey, b, mkey, m, made):
     """The nationwide certified sweep for a model the buyer is shopping.
 
     buyer.cpo_watch holds the recipe once and every shopped model gets one
@@ -293,7 +595,7 @@ def cpo_target(bkey, b, mkey, m, made, m_offset, seen):
         # came from need to be able to tell, and the sheet carries it.
         "derived": CPO_KEY,
     })
-    _finish(t, m_offset, seen)
+    _shape(t)
     t["shopping"] = True
     t["label"] = narrow.get("label") or cpo_label(t.get("max_miles"))
     note = cpo_note(t)
@@ -310,7 +612,6 @@ def cpo_target(bkey, b, mkey, m, made, m_offset, seen):
 # --------------------------------------------------------------------------
 def build_targets():
     targets = {}
-    seen = Counter()      # per cadence, to spread targets evenly across the cycle
     for bkey, b in WATCHLIST.items():
         if not b.get("active", True):
             continue
@@ -327,26 +628,37 @@ def build_targets():
             # visible — its two cadence-3 trims inherited the CPO watch's
             # offset, landed on the Ioniq 5's and Lucid's day, and pushed the
             # worst day from 34 to 36 of 40 while the month went DOWN.
-            m_offset = {}
             made = []
             for tkey, tr in trims.items():
                 if not tr.get("active", True):
                     continue
-                if tkey == CPO_KEY:
-                    sys.exit(f"targets.json: {bkey}/{mkey} writes a trim keyed "
-                             f"'{CPO_KEY}'. That name is reserved — the certified "
-                             f"watch is derived from buyer.cpo_watch for every car "
-                             f"in buyer.shopping, and both would claim the id "
-                             f"{bkey}-{mkey}-{CPO_KEY}.")
+                _refuse_reserved_id(f"{bkey}-{mkey}" + (f"-{tkey}" if tkey else ""),
+                                    f"{bkey}/{mkey}"
+                                    + (f"/{tkey}" if tkey else ""))
                 t = {}
                 # The fifth layer is the decision rather than the car: a target
                 # named in buyer.shopping is fetched the way the buyer fetches
                 # a car they are buying, whatever car that turns out to be.
                 shopped = f"{bkey}-{mkey}" + (f"-{tkey}" if tkey else "") in SHOPPING
-                for layer in (DEFAULTS, b, m, tr) + ((SHOPPING_FETCH,) if shopped else ()):
+                # The two role layers sit at opposite ends, because they are
+                # not the same kind of thing. comparison_fetch is the FALLBACK
+                # for a car nobody is buying, so it goes first and any brand,
+                # model or trim that states its own value keeps it — which is
+                # what makes "auto" safe to put in it. shopping_fetch is what
+                # being bought BUYS, so it goes last and overrides how the
+                # watchlist happened to describe the car: a comparison trim on
+                # a slow cadence must not stay slow the day it becomes the
+                # decision. Reproduced before the order was split: with both at
+                # the end, a trim asking for cadence 9 was rebuilt at the
+                # derived comparison cadence and its typed value did nothing.
+                base = ((DEFAULTS, b, m, tr) if shopped
+                        else (COMPARISON_FETCH, DEFAULTS, b, m, tr))
+                for layer in base:
                     for k in PARAM_KEYS:
                         if k in layer:
                             t[k] = layer[k]
+                if shopped:
+                    _upgrade(t, SHOPPING_FETCH)
                 t.update({
                     "id": f"{bkey}-{mkey}" + (f"-{tkey}" if tkey else ""),
                     "brand": bkey, "brand_label": b.get("label", bkey),
@@ -362,16 +674,23 @@ def build_targets():
                     "trim_match": tr.get("trim_match", ""),
                     "trim_exclude": tr.get("trim_exclude", ""),
                 })
-                _finish(t, m_offset, seen)
+                _shape(t)
                 t["shopping"] = t["id"] in SHOPPING
                 targets[t["id"]] = t
                 made.append(t)
-            # Built after the trims, from the same per-model offset table, so
-            # the watch shares a fetch day with the trims that run at its rate
-            # rather than claiming one of its own.
-            watch = cpo_target(bkey, b, mkey, m, made, m_offset, seen)
+            # Built after the trims, because whether the model is shopped is
+            # only known once they are. It takes its fetch day from
+            # assign_offsets() like every other target.
+            watch = cpo_target(bkey, b, mkey, m, made)
             if watch is not None:
                 targets[watch["id"]] = watch
+    # Cadence, then days. Both are facts about the whole watchlist against the
+    # budget rather than about any one row, so neither can be settled inside
+    # the loop above: the comparison cadence depends on what the shopped
+    # targets cost, and a fetch day is only well chosen against every other
+    # target's. fit_cadence() assigns the offsets it decided on.
+    global COMPARISON_CADENCE
+    COMPARISON_CADENCE = fit_cadence(targets)
     return targets
 
 
@@ -388,84 +707,11 @@ def shopping_ids():
     return [tid for tid, t in TARGETS.items() if t["shopping"]]
 
 
-# Each source is a dict of extra query params. The States source asks the
-# API for the buyer's states and search_states directly (comma = OR), one
-# call per sort/page.
-SOURCES = ([("States", {"retailListing.state": ",".join(SEARCH_STATES)})]
-           if SEARCH_STATES else []) + [("National", None)]
-
-
-def sources_for(t):
-    """A national_only target asks the country one question and skips the
-    States query.
-
-    This used to say the States query "would only re-fetch a subset of the same
-    national answer". `data/source_overlap.json` exists to test that and now
-    has: it is true only where the national catch is large relative to the
-    local market. Across the frozen window a `depth: full` target lost 21% of
-    its States catch by going national_only and a `depth: light` one lost 88%,
-    which is why 28 targets stopped being national_only and this docstring
-    stopped saying "subset" as though it were a fact about all of them.
-
-    The targets left carrying the flag are the nationwide certified watches —
-    one derived per shopped model, so how many there are follows
-    buyer.shopping and is not a fact about this file. They are national BY
-    DEFINITION rather than to save a call, and the flag makes their own
-    premise untestable, since source_overlap() needs two sources to compare
-    and these have one. That is worth saying rather than leaving as an
-    assumption the log looks like it has checked."""
-    if t.get("national_only"):
-        return [("National", None)]
-    return SOURCES
-
-
-def calls_for(t):
-    sorts, pages = sorts_pages(t)
-    return len(sources_for(t)) * (len(sorts) * pages + t["newest"])
-
-
-def due_on(t, ordinal):
-    """Cadence 1 runs every day. Cadence N runs every Nth day; models with
-    the same cadence take successive offsets in watchlist order, so the load
-    is spread evenly and each model keeps the same days of the cycle."""
-    c = t["cadence"]
-    return c <= 1 or (ordinal + t["offset"]) % c == 0
-
-
 def next_due(t):
     for k in range(t["cadence"]):
         if due_on(t, TODAY_ORD + k):
             return date.fromordinal(TODAY_ORD + k).isoformat()
     return TODAY
-
-
-def plan_horizon():
-    """How many days a plan has to cover to have seen every day of it.
-
-    due_on() is periodic with the LEAST COMMON MULTIPLE of the cadences, and
-    the window was a flat fourteen days. Today's 1/2/3 have an LCM of 6, so
-    fourteen happens to cover it — add a cadence of 4 and 5, both ordinary
-    values for a documented knob, and the LCM is 60: the guard would then see a
-    strict subset of the cycle and its answer would depend on the day it ran.
-    check.yml's own header says "a config edit that would overspend the free API
-    plan fails here, not on the invoice", and worse than the missed overspend is
-    the other direction — main() runs the same check, so as the window slides it
-    eventually meets the day CI never looked at and the scheduled run starts
-    exiting 1 with "Plan too big", days after CI approved the config.
-
-    Still at least a fortnight, because the printed line is a forecast a human
-    reads and one cycle of an all-daily watchlist is one day."""
-    cycle = 1
-    for t in TARGETS.values():
-        cycle = math.lcm(cycle, max(1, int(t["cadence"])))
-    return max(14, cycle)
-
-
-def planned_calls():
-    """(calls today, worst day of the cycle, daily average over it)."""
-    days = [sum(calls_for(t) for t in TARGETS.values()
-                if due_on(t, TODAY_ORD + k)) for k in range(plan_horizon())]
-    return days[0], max(days), sum(days) / len(days)
 
 
 # --------------------------------------------------------------------------
@@ -3278,15 +3524,15 @@ FETCH_DAYS = {}     # target id -> the days that target has rows for. Populated
 
 
 def seen_label(s):
-    """'seen 3 of 3 fetches', never 'seen 3 of 31 days'.
+    """'seen 6 of 6 fetches', never 'seen 6 of 31 days'.
 
     The label answers one question — has this car been consistently on the
     market? — and the denominator has to be the number of times anyone LOOKED.
     It was calendar days between the first and last sighting, which is the
     same thing only at a daily cadence.
 
-    Twenty-eight of the thirty-six models run every fifteenth day now. A car
-    present at every single fetch of one of them read "seen 3 of 31 days"
+    Twenty-five of the twenty-nine targets run every sixth day now. A car
+    present at every single fetch of one of them read "seen 6 of 31 days"
     beside another car's "seen 31 of 31 days", and a buyer reasonably
     concludes the first keeps disappearing — a relisted car, a flaky dealer,
     something to ask about. It had a perfect record. Worse, at that cadence
@@ -4587,10 +4833,25 @@ def main():
           f"{avg:.1f}/day ≈ {monthly:,.0f}/month "
           f"(plan {MONTHLY:,})")
     if worst > BUDGET or monthly > MONTHLY:
+        # Which remedies are real depends on whether the cadence is still the
+        # tool's to give. When the comparisons are already at MAX_AUTO_CADENCE
+        # and it still does not fit, telling the buyer to "give more targets a
+        # cadence of 2 or more" names the one thing they cannot do — the
+        # derivation has done it — and the thing they CAN do is shop fewer
+        # cars, which costs shopping_fetch's depth every day.
+        shopped = [t["id"] for t in TARGETS.values() if t["shopping"]]
+        cost = sum(calls_for(t) / t["cadence"] for t in TARGETS.values() if t["shopping"])
+        remedy = (f"The {len(shopped)} targets in buyer.shopping cost {cost:.0f} "
+                  f"calls a day on their own and the comparisons are already at "
+                  f"the slowest cadence this tool will derive "
+                  f"({MAX_AUTO_CADENCE} days): shop fewer cars, cut "
+                  f"buyer.shopping_fetch, or raise the budgets."
+                  if COMPARISON_CADENCE is None else
+                  f"The comparisons are on {COMPARISON_CADENCE}-day cadence, "
+                  f"derived. Type a slower cadence on a model, set trims to "
+                  f"depth 'light', shop fewer cars, or raise the budgets.")
         sys.exit(f"Plan too big: worst day {worst} vs budget_per_day={BUDGET}, "
-                 f"≈{monthly:,.0f}/month vs budget_per_month={MONTHLY:,}. Give "
-                 f"more targets a cadence of 2 or more, set trims to depth "
-                 f"'light', or raise the budgets.")
+                 f"≈{monthly:,.0f}/month vs budget_per_month={MONTHLY:,}. {remedy}")
 
     # A day already fetched must not be fetched again. The cron fires once
     # (0 11 * * *); every extra run is a workflow_dispatch, and each one

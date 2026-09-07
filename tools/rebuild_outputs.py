@@ -52,4 +52,6 @@ if empty:
               f"   every {m.get('cadence')} day(s)")
 today, worst, avg = T.planned_calls()
 print(f"call plan: {today} today, worst day {worst} of {T.BUDGET},"
-      f" ~{avg * 30.5:.0f}/month of {T.MONTHLY} over a {T.plan_horizon()}-day cycle")
+      f" ~{avg * 30.5:.0f}/month of {T.MONTHLY} over"
+      # The horizon is derived now, so the article cannot be typed either.
+      f" {T.a_or_an(T.plan_horizon())} {T.plan_horizon()}-day cycle")

@@ -2,6 +2,9 @@
   "budget_per_day": 40,
   "budget_per_month": 1000,
 
+  "// budget_headroom": "What a DERIVED cadence aims at, as a fraction of budget_per_day and budget_per_month. Deliberately under the caps rather than at them: the caps are guards that fail the run, and a derivation that targets a guard makes the guard the design point -- one model added and the thing meant to catch a mistake is catching arithmetic working as intended. The slack is also what a re-run or a manual trigger spends. Only fit_cadence() reads this; a cadence typed on a brand, model or trim is not held to it. At 0.9 / 0.95 the comparisons land on 6 days here (925/month, worst day 32); at 1.0 / 1.0 they would land on 5, at 976/month and 97.6% of the plan, which is the state test_headroom_is_reported_honestly already calls having no room for a re-run.",
+  "budget_headroom": { "day": 0.9, "month": 0.95 },
+
   "buyer": {
     "id": "chicago",
     "label": "Chicago",
@@ -13,6 +16,9 @@
 
     "// shopping_fetch": "How hard a car in `shopping` is looked at. Applied over the target's own settings, so being shopped can only add depth. These four values were typed onto two BMW trims by hand until they moved here: with them on the car rather than on the decision, pointing `shopping` at any other car left it on a light one-page query on its comparison cadence while the BMWs kept full depth and a daily fetch — measured by rebuilding with shopping = [\"kia-ev9\"] and reading the targets back.",
     "shopping_fetch": { "depth": "full", "pages": 2, "newest": 1, "cadence": 1 },
+
+    "// comparison_fetch": "Its opposite number: the layer every target NOT in `shopping` gets. `\"cadence\": \"auto\"` is the fetch schedule refusing to be a ladder. The one it replaced ran 1 / 2 / 3 / 4 / 15 days and was reverse-engineered around one make -- 13 of 29 targets took 87% of the month, the other 17 brands shared the rest, and fifteen models were fetched twice a month. That was never a judgement about those cars; it was the shape of the plan after the shopped ones had taken their share. So the share is computed instead: the shopped targets cost what shopping_fetch says, and everything else takes the fastest whole-day cadence that keeps the plan inside budget_headroom of both budgets. Shop a cheaper car and the comparisons speed up on their own -- measured: two BMW trims at 22 calls a day put the comparisons on 6 days, one Kia EV9 at 11 puts them on 3. A model or trim that types its own `cadence` keeps it and is not held to the headroom.",
+    "comparison_fetch": { "cadence": "auto" },
 
     "// cpo_watch": "The nationwide certified sweep, derived once per shopped MODEL. Certified cars are the ones a manufacturer promo applies to, so this asks the whole country for the lowest-mileage certified examples of whatever is being shopped and filters to the mileage cap after — the cpo and mileage query params are unverified on this API, so the filtering happens in normalize(). Three of these were hand-written trims on the i5, i7 and iX, which meant a buyer shopping anything else got no certified watch at all. Set enabled false to switch every one of them off; a model narrows its own query or stands its own watch down with a `cpo` block beside its `trims`. Cost is len(sorts) x pages calls per fetch day, national only, so one sort over two pages every second day is 30 calls a month per shopped model.",
     "cpo_watch": { "enabled": true, "depth": "full", "sorts": ["miles.asc"], "pages": 2, "cadence": 2, "max_miles": 30000, "cpo_only": true, "national_only": true },
@@ -74,13 +80,12 @@
   "defaults": {
     "min_price": 8000,
     "depth": "light",
-    "cadence": 1,
     "years": ["2024", "2025", "2026", "2027"],
     "sorts": ["price.asc", "miles.asc"],
     "pages": 2
   },
 
-  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 88%. All 28 of the LONG-TAIL TARGETS are light -- a different 28 from the 28 observations above, which is why this says which --  so their National query returns the twenty cheapest of that model IN AMERICA. The split is measured on the light targets the log could see and applied to these by depth: source_overlap() needs two sources to compare, so a national_only target cannot contribute an observation and not one of these is in the window. Paid for out of cadence, not budget: 10 -> 15 days buys the second source at 935 calls/month against 1000 and a worst day of 38 against 40, and 15 keeps plan_horizon() at 60 days where 13 and 14 push it to 156 and 84. The cost is real and is freshness: twice a month instead of three times. The certified watches keep national_only and are not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call. How many of them there are follows buyer.shopping rather than this file, since one is derived per shopped model.",
+  "// national_only": "The long tail asks the country AND the buyer's states, both. It asked only the country until the overlap log had enough days to settle it, and the answer was not the one sources_for()'s comment assumes: over 28 recorded observations the States query found 310 cars and 232 of them were invisible to National. Split by the only thing that governs it -- how big a catch the National query is allowed -- a depth=full target (~100 cars nationally) loses 21% by going national_only, and a depth=light one (20 cars, the whole country, cheapest first) loses 88%. All 28 of the LONG-TAIL TARGETS are light -- a different 28 from the 28 observations above, which is why this says which --  so their National query returns the twenty cheapest of that model IN AMERICA. The split is measured on the light targets the log could see and applied to these by depth: source_overlap() needs two sources to compare, so a national_only target cannot contribute an observation and not one of these is in the window. This used to be paid for out of freshness -- 10 -> 15 days bought the second source at the cost of seeing these models twice a month instead of three times -- and deriving the cadence paid for it out of the ladder instead. They run at the derived comparison cadence now, every sixth day on this config, five fetches a month with both queries, at 925 calls/month against 1000 and a worst day of 32 against 40. No number in this paragraph is typed anywhere any more; see buyer.comparison_fetch. The certified watches keep national_only and are not part of this -- a nationwide certified watch is national BY DEFINITION, not to save a call. How many of them there are follows buyer.shopping rather than this file, since one is derived per shopped model.",
   "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is. bmw-ix-cpo is one row from 2026-08-31, from the hand-written iX certified trim that existed before the watch was derived from buyer.shopping. There is no target to map it to unless the iX is shopped, and mapping it conditionally on that would make a row appear and disappear with the buyer's mind, so it stays orphaned; naming the iX in buyer.shopping rebuilds bmw-ix-cpo under the same id and the row joins it.",
   "legacy_ids": {
     "i5-edrive40": "bmw-i5-edrive40",
@@ -111,8 +116,8 @@
           "trims": {
             "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40",
                           "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50." },
-            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "cadence": 2 },
-            "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000, "cadence": 2 }
+            "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40" },
+            "m60":      { "label": "M60",      "trim_query": "M60",      "trim_match": "m60", "min_price": 30000 }
           }
         },
         "i7": {
@@ -131,15 +136,14 @@
           "trims": {
             "edrive50": { "label": "eDrive50", "trim_query": "eDrive50", "trim_match": "edrive50",
                           "note": "The other half of the decision, beside the i5 eDrive40." },
-            "xdrive60": { "label": "xDrive60", "trim_query": "xDrive60", "trim_match": "xdrive60", "cadence": 3 },
-            "m70":      { "label": "M70",      "trim_query": "M70",      "trim_match": "m70", "min_price": 60000, "cadence": 3 }
+            "xdrive60": { "label": "xDrive60", "trim_query": "xDrive60", "trim_match": "xdrive60" },
+            "m70":      { "label": "M70",      "trim_query": "M70",      "trim_match": "m70", "min_price": 60000 }
           }
         },
         "ix": {
           "label": "BMW iX",
           "model": "iX",
           "min_price": 25000,
-          "cadence": 3,
           "notes": {
             "good": ["CPO promo: 2.49% APR financing on certified iXs — the best rate in the whole promo, on the deepest-depreciating car in it", "One of the quietest, most comfortable EVs made; the xDrive50 does 300+ miles and is efficient for its size", "Depreciation has been brutal — $90k cars now sit in the $40k–60k range", "Cavernous cabin with a flat floor; the 2026 refresh (xDrive45, xDrive60, M70) added range"],
             "bad": ["Divisive looks, and the big grille is a plastic sensor panel that is expensive if damaged", "21–22 in tires and a heavy car: consumables cost real money", "2022 cars had high-voltage battery and software recalls; charging peaks near 195 kW"],
@@ -155,7 +159,6 @@
         "i4": {
           "label": "BMW i4",
           "model": "i4",
-          "cadence": 2,
           "active": false,
           "// active": "stood down when the list narrowed to the i5 against the i7: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the two shopped pages now show directly.",
           "notes": {
@@ -191,7 +194,6 @@
         "ioniq9": {
           "label": "Hyundai Ioniq 9",
           "model": "Ioniq 9,IONIQ 9",
-          "cadence": 4,
           "notes": {
             "good": ["Three rows, a 110 kWh battery and around 335 miles rear-drive", "800-volt charging and a NACS port from day one", "Almost every used one is a near-new car"],
             "bad": ["Brand new: thin used supply and prices close to new", "First model year — expect software updates", "Very large and heavy for city parking"],
@@ -219,7 +221,6 @@
         "ev9": {
           "label": "Kia EV9",
           "model": "EV9",
-          "cadence": 4,
           "notes": {
             "good": ["A proper three-row EV at a sane price, with 800-volt charging", "Around 280–300 miles; Land and GT-Line interiors are plush", "Heavy rebates on new ones have pushed used prices down"],
             "bad": ["Heavy, so tires go fast and efficiency is middling", "Early builds had trim and rattle complaints", "Same platform ICCU risk as the EV6 and Ioniq 5"],
@@ -236,7 +237,6 @@
         "a6-etron": {
           "label": "Audi A6 e-tron",
           "model": "A6 e-tron,A6 E-Tron,e-tron A6",
-          "cadence": 4,
           "notes": {
             "good": ["800-volt PPE platform shared with the Q6: 270 kW charging, and the Sportback can exceed 350 miles", "A proper luxury sedan interior in a market full of crossovers", "Early lease returns are starting to land well under sticker"],
             "bad": ["Brand new: used supply is thin and prices still sit close to new", "First model year — expect software updates and early-build niggles", "The sloping roof costs rear headroom, and there is no Apple CarPlay projection on early software"],
@@ -276,7 +276,6 @@
          "label": "Lucid Air",
          "model": "Air",
          "min_price": 30000,
-         "cadence": 15,
          "notes": {
           "good": [
            "Class-leading efficiency and range — a Grand Touring can exceed 500 miles",
@@ -325,7 +324,6 @@
         "equinox-ev": {
           "label": "Chevrolet Equinox EV",
           "model": "Equinox EV",
-          "cadence": 4,
           "notes": {
             "good": ["Around 319 miles front-drive, roomy, and cheap used", "Super Cruise is available on the RS", "Simple, honest EV on GM's Ultium platform"],
             "bad": ["No Apple CarPlay or Android Auto — Google built-in only", "DC charging around 150 kW", "Early software glitches and plain interior plastics"],
@@ -350,7 +348,6 @@
     "tesla": {
       "label": "Tesla",
       "make": "Tesla",
-      "cadence": 15,
       "models": {
         "model-y": { "label": "Tesla Model Y", "model": "Model Y", "active": false, "// active": "stood down by the buyer, and NOT for want of supply -- the Model Y is the highest-volume used EV in the country and would reliably fill its own window. It is off the list because it is not a car this buyer is choosing between, which is the only reason on this page that is not an argument about the market." }
       }
@@ -359,7 +356,6 @@
     "ford": {
       "label": "Ford",
       "make": "Ford",
-      "cadence": 15,
       "models": {
         "mustang-mach-e": { "label": "Ford Mustang Mach-E", "model": "Mustang Mach-E,Mach-E,Mustang Mach E" }
       }
@@ -368,7 +364,6 @@
     "gmc": {
       "label": "GMC",
       "make": "GMC",
-      "cadence": 15,
       "models": {
         "hummer-ev": { "label": "GMC Hummer EV", "model": "Hummer EV,Hummer EV Pickup,Hummer EV SUV", "active": false, "// active": "~$100k and a few thousand a year; the used market is thin at a price this buyer is not shopping." }
       }
@@ -377,7 +372,6 @@
     "genesis": {
       "label": "Genesis",
       "make": "Genesis",
-      "cadence": 15,
       "models": {
         "gv60": { "label": "Genesis GV60", "model": "GV60", "active": false, "// active": "Genesis's lowest-volume EV, a couple of thousand a year." }
       }
@@ -386,7 +380,6 @@
     "nissan": {
       "label": "Nissan",
       "make": "Nissan",
-      "cadence": 15,
       "models": {
         "ariya": { "label": "Nissan Ariya", "model": "Ariya,ARIYA" }
       }
@@ -395,7 +388,6 @@
     "mercedes": {
       "label": "Mercedes-Benz",
       "make": "Mercedes-Benz",
-      "cadence": 15,
       "models": {
         "eqb": { "label": "Mercedes-Benz EQB", "model": "EQB,EQB 250+,EQB 300,EQB 350" }
       }
@@ -404,7 +396,6 @@
     "porsche": {
       "label": "Porsche",
       "make": "Porsche",
-      "cadence": 15,
       "models": {
         "taycan": { "label": "Porsche Taycan", "model": "Taycan" }
       }
@@ -413,7 +404,6 @@
     "volkswagen": {
       "label": "Volkswagen",
       "make": "Volkswagen",
-      "cadence": 15,
       "models": {
         "id4": { "label": "Volkswagen ID.4", "model": "ID.4,ID4,ID 4" }
       }
@@ -422,7 +412,6 @@
     "volvo": {
       "label": "Volvo",
       "make": "Volvo",
-      "cadence": 15,
       "models": {
         "ex30": { "label": "Volvo EX30", "model": "EX30", "active": false, "// active": "its US launch slipped repeatedly, so a 2024+ used EX30 is close to nonexistent here." }
       }
@@ -431,7 +420,6 @@
     "polestar": {
       "label": "Polestar",
       "make": "Polestar",
-      "cadence": 15,
       "models": {
         "polestar-3": { "label": "Polestar 3", "model": "3,Polestar 3", "active": false, "// active": "stood down by the buyer. It was also the thinnest of the mainstream tail: roughly a tenth the volume of the rest and the only one whose brand's US presence is genuinely unsettled." }
       }
@@ -440,7 +428,6 @@
     "mini": {
       "label": "MINI",
       "make": "MINI",
-      "cadence": 15,
       "models": {
         "countryman-electric": { "label": "MINI Countryman Electric", "model": "Countryman Electric,Countryman SE,Countryman SE ALL4", "active": false, "// active": "a 2025 US launch at low volume; there is almost no 2024-or-newer used supply to find." }
       }
@@ -449,7 +436,6 @@
     "cadillac": {
       "label": "Cadillac",
       "make": "Cadillac",
-      "cadence": 15,
       "models": {
         "lyriq": { "label": "Cadillac Lyriq", "model": "LYRIQ,Lyriq" }
       }
@@ -458,7 +444,6 @@
     "jeep": {
       "label": "Jeep",
       "make": "Jeep",
-      "cadence": 15,
       "models": {
         "wagoneer-s": { "label": "Jeep Wagoneer S", "model": "Wagoneer S", "active": false, "// active": "launched very late in 2024 at low volume and around $60k; the used market barely exists yet." }
       }
@@ -467,7 +452,6 @@
     "dodge": {
       "label": "Dodge",
       "make": "Dodge",
-      "cadence": 15,
       "models": {
         "charger-daytona": { "label": "Dodge Charger Daytona", "model": "Charger Daytona" }
       }
@@ -476,7 +460,6 @@
     "ram": {
       "label": "Ram",
       "make": "Ram",
-      "cadence": 15,
       "models": {
         "promaster-ev": { "label": "Ram ProMaster EV", "model": "ProMaster EV", "active": false, "// active": "a commercial cargo van, not a car anyone here is choosing between." }
       }
@@ -485,7 +468,6 @@
     "rivian": {
       "label": "Rivian",
       "make": "Rivian",
-      "cadence": 15,
       "models": {
         "r1s": { "label": "Rivian R1S", "model": "R1S" }
       }
@@ -494,7 +476,6 @@
     "vinfast": {
       "label": "VinFast",
       "make": "VinFast",
-      "cadence": 15,
       "models": {
         "vf8": { "label": "VinFast VF 8", "model": "VF 8,VF8", "active": false, "// active": "VinFast's US volume is a few thousand and its support presence is unsettled." }
       }
@@ -503,7 +484,6 @@
     "fisker": {
       "label": "Fisker",
       "make": "Fisker",
-      "cadence": 15,
       "models": {
         "ocean": { "label": "Fisker Ocean", "model": "Ocean", "active": false, "// active": "Fisker is bankrupt (June 2024). No production, no warranty, no app support -- an orphaned car, whatever the price." }
       }
@@ -512,7 +492,6 @@
     "toyota": {
       "label": "Toyota",
       "make": "Toyota",
-      "cadence": 15,
       "models": {
         "bz4x": { "label": "Toyota bZ4X", "model": "bZ4X,bZ,BZ4X" }
       }
@@ -521,7 +500,6 @@
     "honda": {
       "label": "Honda",
       "make": "Honda",
-      "cadence": 15,
       "models": {
         "prologue": { "label": "Honda Prologue", "model": "Prologue" }
       }
@@ -530,7 +508,6 @@
     "acura": {
       "label": "Acura",
       "make": "Acura",
-      "cadence": 15,
       "models": {
         "zdx": { "label": "Acura ZDX", "model": "ZDX" }
       }
@@ -539,7 +516,6 @@
     "lexus": {
       "label": "Lexus",
       "make": "Lexus",
-      "cadence": 15,
       "models": {
         "rz": { "label": "Lexus RZ", "model": "RZ,RZ 300e,RZ 450e" }
       }
@@ -548,7 +524,6 @@
     "subaru": {
       "label": "Subaru",
       "make": "Subaru",
-      "cadence": 15,
       "models": {
         "solterra": { "label": "Subaru Solterra", "model": "Solterra", "active": false, "// active": "the Toyota bZ4X under a different badge -- same e-TNGA platform, same plant, near-identical car -- and the bZ4X is watched. Two watches, one decision." }
       }
@@ -557,7 +532,6 @@
     "maserati": {
       "label": "Maserati",
       "make": "Maserati",
-      "cadence": 15,
       "models": {
         "grecale-folgore": { "label": "Maserati Grecale Folgore", "model": "Grecale Folgore", "active": false, "// active": "the electric Folgore trim is a fraction of a marque that already sells few." }
       }
@@ -566,7 +540,6 @@
     "lotus": {
       "label": "Lotus",
       "make": "Lotus",
-      "cadence": 15,
       "models": {
         "eletre": { "label": "Lotus Eletre", "model": "Eletre", "active": false, "// active": "~$230k new and barely sold in the US. Same reason as the Spectre." }
       }
@@ -575,7 +548,6 @@
     "rolls-royce": {
       "label": "Rolls-Royce",
       "make": "Rolls-Royce",
-      "cadence": 15,
       "models": {
         "spectre": { "label": "Rolls-Royce Spectre", "model": "Spectre", "active": false, "// active": "~$420k new; sells in the hundreds a year. Not a car in this buyer's range." }
       }
@@ -584,7 +556,6 @@
     "fiat": {
       "label": "Fiat",
       "make": "Fiat",
-      "cadence": 15,
       "models": {
         "500e": { "label": "Fiat 500e", "model": "500e,500E", "active": false, "// active": "relaunched in the US in 2024 at very low volume; a city car a long way from the rest of this list." }
       }
@@ -593,7 +564,6 @@
     "jaguar": {
       "label": "Jaguar",
       "make": "Jaguar",
-      "cadence": 15,
       "models": {
         "i-pace": { "label": "Jaguar I-PACE", "model": "I-PACE,I-Pace,IPACE", "active": false, "// active": "out of production and ageing; the used market is thin and shrinking." }
       }

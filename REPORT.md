@@ -468,24 +468,24 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 
 _By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per TRIM queried — a model with two trims on the watchlist is the union of two such queries, which is why these counts run past 20. Every car is on the dashboard._
 
-- **BMW iX** — 23 cars · 14 drivable · lowest asking $30,488 (Valley Stream, NY) + $849 shipping · drivable from $38,249 (Angola, IN) · median asking $51,921 _(every 3 days · as of 2026-09-06, 1 day ago)_
-- **Hyundai Ioniq 9** — 37 cars · 20 drivable · lowest asking $46,249 (Carson City, NV) + $1,327 shipping · drivable from $47,428 (Norwalk, OH) · median asking $48,989 _(as of 2026-08-25, 13 days ago · past its 4-day cadence)_
-- **Kia EV9** — 34 cars · 18 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $33,857 _(every 4 days)_
-- **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,735 _(every 4 days · as of 2026-09-06, 1 day ago)_
-- **Lucid Air** — 15 cars · 9 drivable · lowest asking $37,942 (Springfield, NJ) + $828 shipping · drivable from $42,097 (Streetsboro, OH) · median asking $42,900 _(every 15 days · as of 2026-09-05, 2 days ago)_
-- **Chevrolet Equinox EV** — 31 cars · 12 drivable · lowest asking $19,600 (Wake Forest, NC) + $766 shipping · drivable from $24,385 (Greenwood, IN) · median asking $25,648 _(as of 2026-08-27, 11 days ago · past its 4-day cadence)_
-- **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-15 _(every 15 days)_
-- **Nissan Ariya** — not fetched yet · first run 2026-09-14 _(every 15 days)_
-- **Mercedes-Benz EQB** — not fetched yet · first run 2026-09-13 _(every 15 days)_
-- **Porsche Taycan** — not fetched yet · first run 2026-09-12 _(every 15 days)_
-- **Volkswagen ID.4** — not fetched yet · first run 2026-09-11 _(every 15 days)_
-- **Cadillac Lyriq** — not fetched yet · first run 2026-09-10 _(every 15 days)_
-- **Dodge Charger Daytona** — not fetched yet · first run 2026-09-09 _(every 15 days)_
-- **Rivian R1S** — not fetched yet · first run 2026-09-08 _(every 15 days)_
-- **Toyota bZ4X** — not fetched yet · first run 2026-09-07 _(every 15 days)_
-- **Honda Prologue** — not fetched yet · first run 2026-09-21 _(every 15 days)_
-- **Acura ZDX** — not fetched yet · first run 2026-09-20 _(every 15 days)_
-- **Lexus RZ** — not fetched yet · first run 2026-09-19 _(every 15 days)_
+- **BMW iX** — 23 cars · 14 drivable · lowest asking $30,488 (Valley Stream, NY) + $849 shipping · drivable from $38,249 (Angola, IN) · median asking $51,921 _(every 6 days · as of 2026-09-06, 1 day ago)_
+- **Hyundai Ioniq 9** — 37 cars · 20 drivable · lowest asking $46,249 (Carson City, NV) + $1,327 shipping · drivable from $47,428 (Norwalk, OH) · median asking $48,989 _(as of 2026-08-25, 13 days ago · past its 6-day cadence)_
+- **Kia EV9** — 34 cars · 18 drivable · lowest asking $23,988 (West Palm Beach, FL) + $1,097 shipping · drivable from $29,981 (Waukegan, IL) · median asking $33,857 _(every 6 days)_
+- **Audi A6 e-tron** — 22 cars · 4 drivable · lowest asking $35,077 (Costa Mesa, CA) + $1,336 shipping · drivable from $43,870 (Hoffman Estates, IL) · median asking $44,735 _(every 6 days · as of 2026-09-06, 1 day ago)_
+- **Lucid Air** — 15 cars · 9 drivable · lowest asking $37,942 (Springfield, NJ) + $828 shipping · drivable from $42,097 (Streetsboro, OH) · median asking $42,900 _(every 6 days · as of 2026-09-05, 2 days ago)_
+- **Chevrolet Equinox EV** — 31 cars · 12 drivable · lowest asking $19,600 (Wake Forest, NC) + $766 shipping · drivable from $24,385 (Greenwood, IN) · median asking $25,648 _(as of 2026-08-27, 11 days ago · past its 6-day cadence)_
+- **Ford Mustang Mach-E** — not fetched yet · first run 2026-09-11 _(every 6 days)_
+- **Nissan Ariya** — not fetched yet · first run 2026-09-11 _(every 6 days)_
+- **Mercedes-Benz EQB** — not fetched yet · first run 2026-09-12 _(every 6 days)_
+- **Porsche Taycan** — not fetched yet · first run 2026-09-10 _(every 6 days)_
+- **Volkswagen ID.4** — not fetched yet · first run 2026-09-07 _(every 6 days)_
+- **Cadillac Lyriq** — not fetched yet · first run 2026-09-09 _(every 6 days)_
+- **Dodge Charger Daytona** — not fetched yet · first run 2026-09-12 _(every 6 days)_
+- **Rivian R1S** — not fetched yet · first run 2026-09-09 _(every 6 days)_
+- **Toyota bZ4X** — not fetched yet · first run 2026-09-08 _(every 6 days)_
+- **Honda Prologue** — not fetched yet · first run 2026-09-10 _(every 6 days)_
+- **Acura ZDX** — not fetched yet · first run 2026-09-09 _(every 6 days)_
+- **Lexus RZ** — not fetched yet · first run 2026-09-07 _(every 6 days)_
 
 ---
 _1293 vehicle histories across 16 days · outputs rebuilt from the snapshot on disk — no calls made._
