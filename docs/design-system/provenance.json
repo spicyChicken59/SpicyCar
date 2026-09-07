@@ -1,9 +1,9 @@
 {
   "repository": "spicyChicken59/design-system",
-  "commit": "cec1ff7da7ae76b285107bb81e124834fef6505b",
+  "commit": "08cd626f658706e422e51cf23979fdceccc7a8f4",
   "version": "2.10.0",
   "files": {
-    "sc.css": "225516aa6e81d9f8ed31604437ebc8c44d5ddfacf7f6b0b5273332f19ace6a20",
+    "sc.css": "34e5d9c1aa7be808b69eb8c029ad9593bdbe9640763bde516e5de626fe9de6fc",
     "sc-theme.js": "7e87030e52272d07683a2fb1f3389ccbd4f6d5ce3cc290cfb30f339968f0ce0a",
     "sc-charts.js": "817866c6b98bf96c4ce154771fba2b9d03e0518cb210b1d7d1fc4237a14e33ae",
     "sc-map.js": "50ef8185f89682c51546483fa71fce995e5de871f3e22bb245a068ccf3450eee",

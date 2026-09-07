@@ -138,9 +138,10 @@
   border-radius: var(--sc-r-sm);
 }
 
-/* Photo dossiers keep the existing evidence and disclosure structure.
- * A float lets the exact headline remain a normal, selectable text block,
- * without making a second version of the data for small screens.
+/* Photo-led dossier: the exact listing image gets a reserved stage, followed
+ * by its existing selectable price and evidence. The framing has no data
+ * meaning. It neither crops the image nor overlays the photo with facts.
+ * Adapted from the shared .sc-dossier--studio composition.
  */
 .market-studio #hero-card {
   padding: var(--sc-s3);
@@ -160,54 +161,83 @@
   padding: var(--sc-s3);
   border: 1px solid var(--sc-border);
   border-radius: var(--sc-r-sm);
-  background: var(--sc-bg);
+  background: var(--sc-surface);
   box-shadow: none;
 }
 
 .market-candidate__media {
   position: relative;
-  float: right;
-  width: 42%;
-  max-width: 216px;
-  margin: 0 0 var(--sc-s2) var(--sc-s2);
+  float: none;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 var(--sc-s3);
   overflow: hidden;
-  border: 1px solid var(--sc-border);
+  border: 1px solid var(--sc-ink-line-strong);
   border-radius: var(--sc-r-sm);
-  background: var(--sc-raised);
-  aspect-ratio: 8 / 5;
+  background: var(--sc-ink);
+  aspect-ratio: 2.3;
+  min-height: 168px;
 }
 
 .market-candidate__media > .sc-frame {
   width: 100%;
-  height: 100%;
+  height: calc(100% - 28px);
   min-height: 0;
+  padding: var(--sc-s1) 22px;
   border: 0;
   border-radius: 0;
+  background: var(--sc-ink);
 }
 
 .market-candidate__media .sc-frame__img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+}
+
+/* Four corner brackets live inside the empty frame margin. Decorative only:
+ * no scan, pulse, target, confidence or availability signal is implied. */
+.market-candidate__media::before,
+.market-candidate__media::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: var(--sc-s1);
+  bottom: calc(28px + var(--sc-s1));
+  width: 12px;
+  border-block: 1px solid var(--sc-on-ink-2);
+  pointer-events: none;
+}
+
+.market-candidate__media::before {
+  left: var(--sc-s1);
+  border-left: 1px solid var(--sc-on-ink-2);
+}
+
+.market-candidate__media::after {
+  right: var(--sc-s1);
+  border-right: 1px solid var(--sc-on-ink-2);
 }
 
 .market-candidate__media .sc-frame--empty {
   display: flex;
   flex-direction: column;
   gap: var(--sc-s0);
-  padding: var(--sc-s0);
+  height: 100%;
+  padding: var(--sc-s2);
+  background: var(--sc-raised);
 }
 
 .market-candidate__media .sc-frame--empty .sc-frame__mark {
-  width: 32px;
+  width: 42px;
   height: auto;
-  max-height: 40px;
+  max-height: 50px;
 }
 
 .market-candidate__media .sc-frame--empty::after {
   content: 'photo unavailable';
   color: var(--sc-text-2);
-  font: 500 9px/1.3 var(--sc-font-mono);
+  font: 500 11px/1.5 var(--sc-font-mono);
   text-align: center;
 }
 
@@ -215,14 +245,18 @@
   position: absolute;
   inset: auto 0 0;
   display: block;
-  padding: var(--sc-s0) var(--sc-s1);
+  min-height: 28px;
+  padding: 6px var(--sc-s2);
+  border-top: 1px solid var(--sc-ink-line-strong);
   background: var(--sc-ink);
   color: var(--sc-on-ink);
-  font: 500 9px/1.5 var(--sc-font-mono);
-  letter-spacing: .04em;
+  font: 500 10px/1.5 var(--sc-font-mono);
+  letter-spacing: .08em;
 }
 
-.market-candidate__media:has(.sc-frame--empty) .market-candidate__index {
+.market-candidate__media:has(.sc-frame--empty) .market-candidate__index,
+.market-candidate__media:has(.sc-frame--empty)::before,
+.market-candidate__media:has(.sc-frame--empty)::after {
   display: none;
 }
 
@@ -234,7 +268,7 @@
 
 .market-studio #hero-cars .market-candidate > .sc-tile__value {
   margin: var(--sc-s1) 0;
-  font-size: clamp(32px, 3.5vw, 46px);
+  font-size: clamp(36px, 3.5vw, 48px);
   line-height: 1.1;
 }
 
@@ -246,6 +280,74 @@
   clear: both;
   padding-top: var(--sc-s1);
   border-top: 1px solid var(--sc-border);
+}
+
+/* Shared instrument-strip hooks. These independent market facts are not
+ * stages of a funnel: the optional shared route connector is not enabled.
+ * Local compatibility rules use the same hooks because the existing page
+ * deliberately gives its #kpis selectors more specificity than sc.css. */
+.market-studio #kpis {
+  --sc-stat-surface: var(--sc-ink);
+  --sc-stat-line: var(--sc-ink-line-strong);
+  --sc-stat-ink: var(--sc-on-ink);
+  --sc-stat-muted: var(--sc-on-ink-2);
+  --sc-stat-pad: var(--sc-s3);
+  --sc-stat-size: clamp(30px, 4vw, 46px);
+  --sc-stat-radius: var(--sc-r-sm);
+  --sc-stat-accent: var(--sc-on-ink-accent, var(--sc-on-ink));
+  --sc-good: var(--sc-on-ink-good, var(--sc-on-ink));
+  --sc-warn: var(--sc-on-ink-warn, var(--sc-on-ink));
+  background: var(--sc-stat-surface);
+  border-color: var(--sc-stat-line);
+  border-radius: var(--sc-stat-radius);
+}
+
+.market-studio #kpis > .sc-tile {
+  padding: var(--sc-stat-pad);
+  border-color: var(--sc-stat-line);
+  color: var(--sc-stat-ink);
+}
+
+.market-studio #kpis > .sc-tile + .sc-tile {
+  border-left-color: var(--sc-stat-line);
+}
+
+.market-studio #kpis .sc-tile__label,
+.market-studio #kpis .sc-tile__sub,
+.market-studio #kpis .sc-delta--flat {
+  color: var(--sc-stat-muted);
+}
+
+.market-studio #kpis .sc-tile__value {
+  color: var(--sc-stat-ink);
+  font-size: var(--sc-stat-size);
+  font-family: var(--sc-font-body);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.045em;
+}
+
+.market-studio #kpis .sc-tile__value--sm {
+  font-size: clamp(24px, 3vw, 32px);
+}
+
+.market-studio #kpis .sc-tile__label {
+  font: 500 11px/1.6 var(--sc-font-mono);
+  letter-spacing: .04em;
+}
+
+.market-studio #kpis .sc-spark {
+  --sc-tone: var(--sc-stat-ink);
+}
+
+/* Contextual links keep readable ink on the fixed dark panel. Signed
+ * movement retains its existing status hues via the shared on-ink aliases. */
+.market-studio #kpis a {
+  color: var(--sc-stat-ink);
+}
+
+.market-studio #kpis a:focus-visible {
+  outline: 2px solid var(--sc-stat-accent);
+  outline-offset: 3px;
 }
 
 /* The matrix is visible on arrival, not a reward for finding a control.
@@ -464,10 +566,6 @@
     padding: 12px var(--sc-s2);
   }
 
-  .market-candidate__media {
-    width: 36%;
-    margin-left: var(--sc-s1);
-  }
 }
 
 @media (max-width: 600px) {
@@ -575,24 +673,37 @@
   }
 
   .market-candidate__media {
-    width: 84px;
-    max-width: 30%;
+    float: right;
+    width: 44%;
+    max-width: 140px;
+    min-height: 112px;
     margin: 0 0 var(--sc-s1) var(--sc-s1);
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1.2;
   }
+
+  .market-candidate__media > .sc-frame {
+    height: calc(100% - 24px);
+    padding: var(--sc-s0) var(--sc-s1);
+  }
+
+  .market-candidate__media .sc-frame--empty {
+    height: 100%;
+  }
+
+  .market-candidate__media::before,
+  .market-candidate__media::after {
+    top: var(--sc-s0);
+    bottom: calc(24px + var(--sc-s0));
+    width: 5px;
+  }
+
+  .market-candidate__media::before { left: 3px; }
+  .market-candidate__media::after { right: 3px; }
 
   .market-candidate__index {
-    padding: 2px var(--sc-s0);
-    font-size: 8px;
-  }
-
-  .market-candidate__media .sc-frame--empty .sc-frame__mark {
-    width: 20px;
-    max-height: 24px;
-  }
-
-  .market-candidate__media .sc-frame--empty::after {
-    font-size: 8px;
+    min-height: 24px;
+    padding: var(--sc-s0) var(--sc-s1);
+    font-size: 9px;
   }
 
   .market-studio #hero-cars .market-candidate > .sc-tile__label {
@@ -651,12 +762,15 @@
     font-size: 24px;
   }
 
-}
-
-@media (max-width: 359px) {
-  .market-candidate__media .sc-frame--empty .sc-frame__mark {
-    display: none;
+  .market-studio #kpis {
+    --sc-stat-pad: var(--sc-s2);
+    --sc-stat-size: 30px;
   }
+
+  .market-studio #kpis > .sc-tile:nth-child(n+3) {
+    border-top-color: var(--sc-stat-line);
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -691,9 +805,33 @@
   .market-cover__index a:focus-visible {
     outline-color: Highlight;
   }
+
+  .market-studio #kpis {
+    --sc-stat-surface: Canvas;
+    --sc-stat-line: CanvasText;
+    --sc-stat-ink: CanvasText;
+    --sc-stat-muted: CanvasText;
+    --sc-stat-accent: Highlight;
+    --sc-good: CanvasText;
+    --sc-warn: CanvasText;
+  }
+
+  .market-candidate__media::before,
+  .market-candidate__media::after {
+    display: none;
+  }
 }
 
 @media print {
+  .market-studio #kpis {
+    --sc-stat-surface: var(--sc-white);
+    --sc-stat-line: var(--sc-ink);
+    --sc-stat-ink: var(--sc-ink);
+    --sc-stat-muted: var(--sc-ink);
+    --sc-good: var(--sc-ink);
+    --sc-warn: var(--sc-ink);
+  }
+
   .market-cover__index,
   .market-studio #car-heading .sc-cover__art,
   .market-candidate__media,

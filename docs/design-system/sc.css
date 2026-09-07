@@ -135,6 +135,9 @@
   --sc-ink:           var(--sc-cobalt-950);   /* masthead, footer, covers — dark in both modes */
   --sc-on-ink:        #F4F7FB;
   --sc-on-ink-2:      var(--sc-cobalt-300);
+  --sc-on-ink-accent: var(--sc-spice-400); /* fixed ink surfaces, independent of page theme */
+  --sc-on-ink-good:   #4EA954;
+  --sc-on-ink-warn:   #D59800;
   --sc-on-ink-3:      rgba(255,255,255,.62);  /* footer text — 7.1:1 on ink */
   /* Ink is fixed in both modes, so its hairlines and fills are declared once here. */
   --sc-ink-line:        rgba(255,255,255,.06);
@@ -894,15 +897,37 @@ img.sc-mark--lg { height: 48px; }
 
 /* One shared surface for related metrics. The lead is typographic, never
    green/red numeric text. Each number keeps its unit and source context. */
-.sc-stat-strip { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); margin: 0; border: 1px solid var(--sc-border); border-radius: var(--sc-r-lg); background: var(--sc-surface); overflow: hidden; }
+/* Hooks let an existing product adopt this surface from its design adapter.
+   Every fallback preserves the unmodified metric strip. */
+.sc-stat-strip { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); margin: 0; border: 1px solid var(--sc-stat-line, var(--sc-border)); border-radius: var(--sc-stat-radius, var(--sc-r-lg)); background: var(--sc-stat-surface, var(--sc-surface)); overflow: hidden; }
 .sc-stat-strip--2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
 .sc-stat-strip--4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
-.sc-stat { min-width: 0; padding: var(--sc-s3); }
-.sc-stat + .sc-stat { border-left: 1px solid var(--sc-border); }
-.sc-stat--lead { background: var(--sc-brand-fill); }
-.sc-stat__label { font: 500 11px/1.5 var(--sc-font-mono); color: var(--sc-text-2); text-transform: lowercase; }
-.sc-stat__value { margin: var(--sc-s2) 0 var(--sc-s1); font: 700 var(--sc-stat-value)/1.1 var(--sc-font-body); letter-spacing: -.045em; color: var(--sc-heading); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.sc-stat__note { margin: 0; font-size: var(--sc-text-sm); color: var(--sc-text-2); }
+.sc-stat { position: relative; min-width: 0; padding: var(--sc-stat-pad, var(--sc-s3)); padding-bottom: calc(var(--sc-stat-pad, var(--sc-s3)) + var(--sc-stat-route-space, 0px)); }
+.sc-stat + .sc-stat { border-left: 1px solid var(--sc-stat-line, var(--sc-border)); }
+.sc-stat--lead { background: var(--sc-stat-lead-surface, var(--sc-brand-fill)); }
+.sc-stat__label { font: 500 11px/1.5 var(--sc-font-mono); color: var(--sc-stat-muted, var(--sc-text-2)); text-transform: lowercase; }
+.sc-stat__value { margin: var(--sc-s2) 0 var(--sc-s1); font: 700 var(--sc-stat-size, var(--sc-stat-value))/1.1 var(--sc-font-body); letter-spacing: -.045em; color: var(--sc-stat-ink, var(--sc-heading)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sc-stat__note { margin: 0; font-size: var(--sc-text-sm); color: var(--sc-stat-muted, var(--sc-text-2)); }
+/* Instrument trim is a frame, never a meter. Exact text carries every value. */
+.sc-stat-strip--instrument {
+  --sc-stat-surface: var(--sc-ink);
+  --sc-stat-line: var(--sc-ink-line-strong);
+  --sc-stat-ink: var(--sc-on-ink);
+  --sc-stat-muted: var(--sc-on-ink-2);
+  --sc-stat-lead-surface: var(--sc-brand-wine);
+  --sc-stat-pad: var(--sc-s3);
+  --sc-stat-size: clamp(30px, 4vw, 46px);
+  --sc-stat-radius: var(--sc-r-sm);
+  --sc-stat-accent: var(--sc-on-ink-accent);
+  --sc-focus: var(--sc-spice-400);
+  border-block-start: 2px solid var(--sc-stat-accent);
+}
+/* Route links encode source order only. Each station keeps the same size,
+   including zeroes. No progress, magnitude or successful completion is implied. */
+.sc-stat-strip--route { --sc-stat-route: ''; --sc-stat-route-space: 16px; }
+.sc-stat::before { z-index: 1; content: var(--sc-stat-route, none); position: absolute; pointer-events: none; inset-inline-start: var(--sc-stat-pad, var(--sc-s3)); inset-inline-end: calc(-1 * var(--sc-stat-pad, var(--sc-s3))); bottom: var(--sc-stat-pad, var(--sc-s3)); border-top: 1px solid var(--sc-stat-line, var(--sc-border-strong)); }
+.sc-stat::after { z-index: 2; content: var(--sc-stat-route, none); position: absolute; pointer-events: none; inset-inline-start: var(--sc-stat-pad, var(--sc-s3)); bottom: calc(var(--sc-stat-pad, var(--sc-s3)) - 3px); width: 7px; height: 7px; border: 1px solid var(--sc-stat-accent, var(--sc-brand-line)); border-radius: 50%; background: var(--sc-stat-surface, var(--sc-surface)); }
+.sc-stat:last-child::before { content: none; }
 
 /* SpicyStock's portable fact-row design, promoted without its scoring logic. */
 .sc-facts { display: flex; flex-wrap: wrap; gap: var(--sc-s2) var(--sc-s4); margin: var(--sc-s3) 0 0; padding-top: var(--sc-s2); border-top: 1px solid var(--sc-border); }
@@ -978,14 +1003,20 @@ img.sc-mark--lg { height: 48px; }
   .sc-cover--compact .sc-cover__art { gap: var(--sc-s2); }
   .sc-stat-strip--4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .sc-stat-strip--4 > .sc-stat:nth-child(3) { border-left: 0; }
-  .sc-stat-strip--4 > .sc-stat:nth-child(n+3) { border-top: 1px solid var(--sc-border); }
+  .sc-stat-strip--4 > .sc-stat:nth-child(n+3) { border-top: 1px solid var(--sc-stat-line, var(--sc-border)); }
+  .sc-stat-strip--4 > .sc-stat:nth-child(2n)::before { content: none; }
   .sc-chapter { flex-wrap: wrap; }
   .sc-chapter__meta { flex-basis: 100%; }
   .sc-report { margin: var(--sc-s3) auto; }
 }
 @media (max-width: 480px) {
   .sc-stat-strip { grid-template-columns: minmax(0,1fr); }
-  .sc-stat-strip > .sc-stat + .sc-stat { border-left: 0; border-top: 1px solid var(--sc-border); }
+  .sc-stat-strip > .sc-stat + .sc-stat { border-left: 0; border-top: 1px solid var(--sc-stat-line, var(--sc-border)); }
+  .sc-stat-strip > .sc-stat::before { z-index: 1; content: none; }
+  .sc-stat-strip--instrument.sc-stat-strip--4 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .sc-stat-strip--instrument.sc-stat-strip--4 > .sc-stat:nth-child(2n) { border-left: 1px solid var(--sc-stat-line); }
+  .sc-stat-strip--instrument.sc-stat-strip--4 > .sc-stat:nth-child(2) { border-top: 0; }
+  .sc-stat-strip--instrument.sc-stat-strip--4 > .sc-stat:nth-child(2n+1)::before { content: var(--sc-stat-route, none); }
   .sc-signal-matrix { min-width: 600px; }
   .sc-signal-matrix tbody :is(th,td) { min-width: 92px; }
   .sc-signal-matrix tbody th { min-width: 136px; }
@@ -1384,6 +1415,36 @@ img.sc-mark--lg { height: 48px; }
 .sc-dossier__evidence { padding-block: var(--sc-s2); border-block: 1px solid var(--sc-border); color: var(--sc-text); font-size: var(--sc-text-sm); line-height: 1.65; }
 .sc-dossier__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sc-s1) var(--sc-s2); margin-top: auto; padding-top: var(--sc-s2); }
 .sc-dossier__actions :is(a, button) { min-height: 44px; display: inline-flex; align-items: center; }
+/* Studio dossier: the supplied image is a full-width object view. A plain
+   figure/figcaption keeps provenance out of the pixels and the price below it. */
+.sc-dossier--studio { --sc-dossier-media-ratio: 16 / 10; --sc-dossier-media-fit: contain; border-radius: var(--sc-r-sm); }
+.sc-dossier--studio .sc-photo-card__media { aspect-ratio: var(--sc-dossier-media-ratio); max-height: 360px; margin: var(--sc-s1); background: var(--sc-raised); }
+.sc-dossier--studio .sc-photo-card__media::before, .sc-dossier--studio .sc-photo-card__media::after { content: ''; position: absolute; z-index: 1; width: 20px; height: 20px; pointer-events: none; border-color: var(--sc-border-strong); border-style: solid; }
+.sc-dossier--studio .sc-photo-card__media::before { inset: var(--sc-s1) auto auto var(--sc-s1); border-width: 1px 0 0 1px; }
+.sc-dossier--studio .sc-photo-card__media::after { inset: auto var(--sc-s1) var(--sc-s1) auto; border-width: 0 1px 1px 0; }
+.sc-dossier--studio .sc-frame { border: 0; }
+.sc-dossier--studio .sc-frame__img { object-fit: var(--sc-dossier-media-fit); transform: none; }
+.sc-dossier--studio.sc-photo-card:hover .sc-frame__img.is-loaded { transform: none; }
+.sc-dossier--studio .sc-photo-card__media:has(.sc-frame--empty) { aspect-ratio: auto; height: 144px; }
+.sc-dossier--studio .sc-photo-card__media:has(.sc-frame--empty)::before, .sc-dossier--studio .sc-photo-card__media:has(.sc-frame--empty)::after { content: none; }
+.sc-dossier--studio .sc-frame--empty .sc-adaptive-mark { width: 48px; }
+.sc-dossier--studio .sc-frame--empty .sc-adaptive-mark > img { width: 100%; height: auto; }
+.sc-dossier__folio { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--sc-s0) var(--sc-s2); margin: 0; padding: var(--sc-s1) var(--sc-s3); border-block: 1px solid var(--sc-border); color: var(--sc-text-2); font: 500 10px/1.6 var(--sc-font-mono); }
+.sc-dossier--studio > figure { margin: 0; }
+.sc-dossier--studio .sc-dossier__body { flex: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .sc-dossier--studio .sc-frame__img { animation: none; transition: none; transform: none; }
+}
+@media (forced-colors: active) {
+  .sc-stat-strip--instrument { --sc-stat-surface: Canvas; --sc-stat-line: CanvasText; --sc-stat-ink: CanvasText; --sc-stat-muted: CanvasText; --sc-stat-lead-surface: Canvas; --sc-stat-accent: CanvasText; }
+  .sc-stat::before, .sc-stat::after { display: none; }
+  .sc-dossier--studio .sc-photo-card__media::before, .sc-dossier--studio .sc-photo-card__media::after { display: none; }
+}
+@media print {
+  .sc-stat-strip--instrument { --sc-stat-surface: transparent; --sc-stat-line: var(--sc-paper-line); --sc-stat-ink: var(--sc-on-paper); --sc-stat-muted: var(--sc-on-paper-2); --sc-stat-lead-surface: transparent; --sc-stat-accent: transparent; --sc-stat-route-space: 0px; box-shadow: none; }
+  .sc-stat::before, .sc-stat::after { display: none; }
+  .sc-dossier--studio .sc-photo-card__media::before, .sc-dossier--studio .sc-photo-card__media::after { display: none; }
+}
 .sc-empty--inline { display: flex; align-items: center; justify-content: flex-start; gap: var(--sc-s3); min-height: 0; text-align: left; padding: var(--sc-s3); }
 .sc-empty--inline > .sc-adaptive-mark { flex: 0 0 36px; width: 36px; }
 .sc-empty--inline > .sc-adaptive-mark img { width: 100%; height: auto; }
