@@ -20,6 +20,14 @@ Its CSS adapter consumes the shared design system's `--sc-stat-*` hooks and fixe
 semantic aliases. Both themes retain readable figures, status text and keyboard
 focus. Print returns the metrics to a paper surface and omits photographs.
 
+Public-page review showed that the actual candidate photographs are near 4:3
+(1024×768 and 953×768). The larger-screen stage therefore uses a 16:10 frame,
+giving those complete photographs more room than the initial shallow frame.
+The phone frame and decision-height budget remain unchanged. The geometry test
+now uses the narrower 953×768 aspect ratio and checks that its visible image width
+occupies at least 65% of the desktop stage, preventing an oversized frame around
+a thumbnail.
+
 ## Public page before this pass
 
 ![The publicly deployed decision cards before this pass, with the two candidates' actual listing photographs shown as smaller thumbnails](fieldwork-before-live.jpg)
