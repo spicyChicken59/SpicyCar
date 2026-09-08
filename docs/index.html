@@ -991,7 +991,7 @@
     const {x,m,gone}=found;
     return {vin:x.vin, title:[x.year,m.label,carTrimText(x)].filter(Boolean).join(' '), gone,
       price:x.price, image:safeUrl(x.image), url:safeUrl(x.url), location:placeTxt(x), dealer:x.dealer||'Dealer unreported',
-      otd:otd(x), payment:gone?null:payFor(x), terms:`${x.apr ?? 'unreported'}% APR${x.apr_promo?' eligible offer':''} · ${termFor(x)} months · ${money(S.down)} down`,
+      otd:otd(x), payment:gone?null:payFor(x), terms:`${x.apr ?? 'unreported'}% APR${x.apr_promo?' conditional offer':''} · ${termFor(x)} months · ${money(S.down)} down${x.apr_promo?' · confirm lender/dealer eligibility':''}`,
       milesLabel:x.miles==null?'Mileage unreported':num(x.miles)+' mi', shipping:shipNote(x), flags:(x.flags||[]).join(' · '),
       status:starOf(x), firstSeen:x.first_seen, through:gone?(x.last_seen||(x.series||[]).at(-1)?.[0]||'Unreported'):asOfOf(x), series:x.series||[]};
   }
@@ -1630,7 +1630,7 @@
       const found = findVin(String(x.vin || '').toUpperCase());
       return { vin: x.vin, title: [x.year, found && found.m.label, carTrimText(x)].filter(Boolean).join(' '),
         price: x.price, priceLabel: money(x.price), paymentLabel: perMo(payFor(x)), monthly:S.lens==='monthly' && !!financeCfg() && S.workspace!=='report',
-        paymentNote: `${x.apr ?? 'unreported'}% APR · ${termFor(x)}mo · ${money(S.down)} down; tax/fees estimated`,
+        paymentNote: `${x.apr ?? 'unreported'}% APR · ${termFor(x)}mo · ${money(S.down)} down; tax/fees estimated${x.apr_promo?'; confirm offer eligibility':''}`,
         radar: twoPrices(x) ? 'Two recorded prices' : lastStep(x)<0 ? money(-lastStep(x))+' lower vs previous fetch' : isNew(x) ? 'New at last fetch' : '', milesLabel: x.miles == null ? 'Mileage unreported' : num(x.miles) + ' mi',
         location: placeTxt(x), dealer: x.dealer || 'Dealer unreported', lat: x.lat, lng: x.lon,
         local: !!x.local, picked: MAP_SUMMARY.picked.has(x.vin), saved: ['short','called'].includes(starOf(x)),

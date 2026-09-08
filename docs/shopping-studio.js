@@ -24,7 +24,7 @@
     paymentBar.append(label('Max / month', ceiling), terms, button('Edit financing', 'studio-text-button', () => { api.finance(); }));
     const host = document.getElementById('car-discovery'); host.prepend(toolbar, paymentBar);
     const garage = button('Garage', 'shop-nav-button shop-garage', openGarage); garage.setAttribute('aria-haspopup', 'dialog');
-    document.querySelector('.shop-navigation').append(garage);
+    const navigation=document.querySelector('.shop-navigation'); navigation.insertBefore(garage,navigation.querySelector('[data-shop-view="compare"]'));
     const dialog = el('dialog', 'studio-dialog'); dialog.setAttribute('aria-labelledby', 'studio-title');
     const head = el('div', 'studio-dialog-head'); const title = el('h2', '', 'Your garage'); title.id = 'studio-title'; title.tabIndex = -1;
     const back = button('← Garage', 'studio-text-button', openGarage); back.hidden = true;
