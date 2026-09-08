@@ -14,7 +14,7 @@
   const located = (c) => typeof c.lat === 'number' && Number.isFinite(c.lat) && Math.abs(c.lat) <= 90
     && typeof c.lng === 'number' && Number.isFinite(c.lng) && Math.abs(c.lng) <= 180 && (c.lat !== 0 || c.lng !== 0);
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function create({ root, openCar, starCar }) {
+  function create({ root, openCar, starCar, quickCar, resetFilters }) {
     let cars = [], map = null, layer = null, selected = null, limit = 8, scope = null, mounted = false, tileFailure = '', activePopup = null, pinKey = '';
     let areaBounds = null, groupVins = null, display = 'cars', mapSized = false;
     const inView = () => cars.filter((c) => (!areaBounds || (located(c) && areaBounds.contains([c.lat,c.lng]))) && (!groupVins || groupVins.has(c.vin)));
@@ -208,10 +208,12 @@
         }
         const body = node('div', 'car-place-body');
         body.append(node('p', 'car-place-location', c.location), node('h3', null, c.title));
-        const price = node('p', 'car-place-price', c.priceLabel); price.append(node('span', null, ' asking'));
+        const price = node('p', 'car-place-price', c.monthly ? c.paymentLabel : c.priceLabel); price.append(node('span', null, c.monthly ? ' estimated' : ' asking'));
+        if(c.monthly)body.append(node('p','car-payment-note',c.priceLabel+' asking · '+c.paymentNote));
         body.append(price, node('p', 'car-place-shipping', c.shipping));
         const facts = node('div', 'car-place-facts');
         facts.append(node('span', null, c.milesLabel));
+        if(c.radar)facts.append(node('span','car-radar-tag',c.radar));
         if (c.saved) facts.append(node('span', 'car-saved-label', 'Saved'));
         else if (c.picked) facts.append(node('span', 'car-value-label', 'Spicy pick'));
         if (!located(c)) facts.append(node('span', null, 'Location unverified'));
@@ -220,6 +222,7 @@
         const actions = node('div', 'car-place-actions');
         const action = (label, name, fn) => { const b = button(label, 'car-text-button', fn); b.dataset.focusVin = c.vin; b.dataset.focusAction = name; return b; };
         if (c.url) { const link = node('a', 'car-text-button', 'View listing ↗'); link.href = c.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; actions.append(link); }
+        if(quickCar)actions.append(action('Quick look', 'look', () => quickCar(c.vin)));
         actions.append(action('Car details', 'view', () => openCar(c.vin)));
         if (map && located(c)) actions.append(action('Show on map', 'map', () => showOnMap(c)));
         // Reuse the dashboard's shortlist / called / ruled-out control and
@@ -230,6 +233,7 @@
       more.hidden = limit >= visible.length;
       more.textContent = 'Show ' + Math.min(8, visible.length - limit) + ' more cars';
       if (!visible.length) cards.append(node('p', 'car-map-unavailable', areaBounds ? 'No cars in this area. Move the map and search again, or show all matching cars.' : 'No cars match these filters. Change the filters above to bring them back.'));
+      if (!visible.length && resetFilters) cards.append(button('Reset search filters', 'studio-button', () => { areaBounds=null;groupVins=null;limit=8;resetFilters(); }));
       if (focusVin && focusAction) {
         const restore = [...cards.querySelectorAll('[data-focus-vin]')].find((b) => b.dataset.focusVin === focusVin && b.dataset.focusAction === focusAction);
         if (restore) restore.focus({ preventScroll: true });
