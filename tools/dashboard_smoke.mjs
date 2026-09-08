@@ -812,6 +812,11 @@ if (!subject) {
 // watchlist was small enough for nobody to look; one EV per brand made it
 // "35 electric cars" over 444. Pinned against both populations, because a
 // check that only knew the model count would pass on either noun.
+//
+// The adjective went with the watchlist: the sentence said "electric models"
+// about whatever the buyer had chosen, and the buyer chooses the cars. What it
+// COUNTS is what this check is about, so the noun is pinned and the word in
+// front of it is not.
 await step('the watchlist dek counts what it names', async () => {
 plan('the watchlist dek counts models, not cars',
      'and the meta row beside it counts the same models');
@@ -823,7 +828,7 @@ if (!models || models === cars) return skipRest(`the sheet holds ${models} model
 await open('');
 const dek = (await page.textContent('#dek')).replace(/\s+/g, ' ').trim();
 ok('the watchlist dek counts models, not cars',
-   new RegExp(`^${models} electric models\\b`).test(dek) && !/electric cars/.test(dek),
+   new RegExp(`^${models} models\\b`).test(dek) && !/\\bcars\\b/.test(dek),
    `${models} models, ${cars} cars on the sheet — the page says "${dek.slice(0, 90)}"`);
 const meta = (await page.textContent('#meta') || '').replace(/\s+/g, ' ');
 const shop = Object.values(sheet.brands || {}).flatMap((b) => Object.values(b.models || {}))
