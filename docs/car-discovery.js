@@ -12,20 +12,28 @@
     const b = node('button', cls, label); b.type = 'button'; b.onclick = click; return b;
   };
   const located = (c) => typeof c.lat === 'number' && Number.isFinite(c.lat) && Math.abs(c.lat) <= 90
-    && typeof c.lng === 'number' && Number.isFinite(c.lng) && Math.abs(c.lng) <= 180;
+    && typeof c.lng === 'number' && Number.isFinite(c.lng) && Math.abs(c.lng) <= 180 && (c.lat !== 0 || c.lng !== 0);
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function create({ root, openCar, starCar }) {
-    let cars = [], map = null, layer = null, selected = null, limit = 8, scope = null, mounted = false, tileFailure = '', activePopup = null;
+    let cars = [], map = null, layer = null, selected = null, limit = 8, scope = null, mounted = false, tileFailure = '', activePopup = null, pinKey = '';
+    const touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    let moving = !touch;
     const markers = new Map();
     const layout = node('div', 'car-discovery-layout');
     const panel = node('aside', 'car-place-panel'); panel.setAttribute('aria-label', 'Vehicle locations');
     const heading = node('div', 'car-place-heading');
     const fitButton = button('Fit all cars', 'car-text-button', () => fit());
-    heading.append(node('h3', null, 'Find your corner of the market.'), fitButton);
-    const surface = node('div', 'car-place-map'); surface.id = 'car-place-map'; surface.setAttribute('aria-label', 'Approximate vehicle locations');
+    const moveButton = button('Move map', 'car-text-button car-move-map', () => { moving = !moving; syncTouch(); });
+    moveButton.hidden = !touch;
+    heading.append(node('h3', null, 'Explore the cars'), moveButton, fitButton);
+    const surface = node('div', 'car-place-map'); surface.id = 'car-place-map'; surface.tabIndex = 0; surface.setAttribute('aria-label', 'Approximate vehicle locations');
     const status = node('p', 'car-map-status'); status.setAttribute('role', 'status');
-    const foot = node('p', 'car-map-foot', 'Approximate listing locations, often a city or ZIP centroid. Confirm the dealer address before traveling. Area pins group nearby cars; zoom in to separate them.');
-    panel.append(heading, surface, status, foot);
+    const legend = node('div', 'car-map-legend');
+    for (const [cls, text] of [['is-local', 'Drivable'], ['is-shipping', 'Shipping added'], ['is-pick', 'Spicy pick / saved']]) { const item = node('span'); item.append(node('i', 'car-map-dot ' + cls), document.createTextNode(text)); legend.append(item); }
+    const foot = node('p', 'car-map-foot', 'Approximate city or ZIP locations. Dots group overlapping cars; zoom in or tap to see them. Confirm the dealer address before traveling.');
+    const gesture = node('p', 'car-map-gesture', touch ? 'Swipe to scroll the page. Pinch or use + / − to zoom. Tap Move map to drag.' : 'Drag to explore. Use + / − or pinch to zoom.');
+    const say = node('p', 'sc-sr-only'); say.id = 'map-say'; say.setAttribute('role', 'status');
+    panel.append(heading, surface, gesture, legend, status, foot, say);
     const column = node('div', 'car-place-results');
     const count = node('p', 'car-place-count');
     const cards = node('div', 'car-place-cards');
@@ -41,7 +49,7 @@
         surface.append(node('p', 'car-map-unavailable', 'Map unavailable. Every car is available beside it and in the listings below.'));
         return;
       }
-      map = L.map(surface, { scrollWheelZoom: false, zoomControl: true, maxZoom: 13, minZoom: 0,
+      map = L.map(surface, { scrollWheelZoom: false, zoomSnap: 0.25, dragging: moving, touchZoom: true, zoomControl: true, maxZoom: 16, minZoom: 2,
         fadeAnimation: !reduced(), zoomAnimation: !reduced(), markerZoomAnimation: !reduced() }).setView([39.5, -98], 4);
       const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -49,7 +57,7 @@
       let tileErrors = 0;
       tiles.on('tileerror', () => {
         tileErrors++;
-        tileFailure = ' Some map tiles could not load. All cars remain in the list; the Market atlas offers another view.';
+        tileFailure = ' Some map tiles could not load. The dots and all cars in the list are still available.';
         locationStatus();
       });
       tiles.on('loading', () => { tileErrors = 0; });
@@ -57,11 +65,21 @@
       layer = L.layerGroup().addTo(map);
       // Group buckets use projected coordinates, so panning cannot change them.
       // Rebuilding on popup auto-pan would remove the popup just opened.
-      map.on('zoomend', drawPins);
+      map.on('zoomend', () => { pinKey = ''; drawPins(); });
+      syncTouch();
+      surface.addEventListener('focusout', (e) => { if (touch && !panel.contains(e.relatedTarget)) { moving = false; syncTouch(); } });
       const sizePopup = () => { if (activePopup) { activePopup.options.maxWidth = Math.max(120, Math.min(310, surface.clientWidth - 60)); activePopup.update(); } };
       map.on('popupopen', (e) => { activePopup = e.popup; sizePopup(); });
       map.on('popupclose', () => { activePopup = null; });
       new ResizeObserver(() => { if (!root.hidden && map) { map.invalidateSize({ pan: false }); sizePopup(); } }).observe(surface);
+    }
+    function syncTouch() {
+      if (!map) return;
+      if (moving) map.dragging.enable(); else map.dragging.disable();
+      surface.classList.toggle('is-page-scroll', !moving);
+      moveButton.textContent = moving ? 'Done moving' : 'Move map';
+      moveButton.setAttribute('aria-pressed', String(moving));
+      gesture.textContent = touch && moving ? 'Drag to move the map. Tap Done moving to scroll the page again.' : touch ? 'Swipe to scroll the page. Pinch or use + / − to zoom. Tap Move map to drag.' : 'Drag to explore. Use + / − or pinch to zoom.';
     }
     function locationStatus() {
       const n = cars.filter(located).length;
@@ -70,16 +88,16 @@
     function fit() {
       if (!map) return;
       const places = cars.filter(located).map((c) => [c.lat, c.lng]);
-      if (places.length) map.fitBounds(places, { padding: [76, 40], maxZoom: 10, animate: false });
+      if (places.length) map.fitBounds(places, { padding: [24, 24], maxZoom: 10, animate: false });
     }
     function highlight(vin, scroll) {
       selected = vin;
       const index = cars.findIndex((c) => c.vin === vin);
       if (index >= limit) limit = Math.ceil((index + 1) / 8) * 8;
       renderCards();
-      for (const pill of surface.querySelectorAll('.car-map-price')) pill.classList.remove('is-selected');
+      for (const pill of surface.querySelectorAll('.car-map-dot')) pill.classList.remove('is-selected');
       const marker = markers.get(vin);
-      if (marker && marker.getElement()) marker.getElement().querySelector('.car-map-price').classList.add('is-selected');
+      if (marker && marker.getElement()) marker.getElement().querySelector('.car-map-dot').classList.add('is-selected');
       if (scroll) {
         const card = [...cards.children].find((n) => n.dataset.carVin === vin);
         if (card) { card.focus({ preventScroll: true }); card.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'instant' : 'smooth' }); }
@@ -96,27 +114,38 @@
     }
     function drawPins() {
       if (!map || !layer) return;
+      const nextKey = JSON.stringify(cars.filter(located).map((c) => [c.vin, c.lat, c.lng, c.price, c.local, c.picked, c.saved, c.tone, c.title, c.location]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
+      if (pinKey === nextKey) return;
+      pinKey = nextKey;
       layer.clearLayers(); markers.clear();
       const groups = [];
-      for (const c of cars.filter(located)) {
+      for (const c of cars.filter(located).slice().sort((a, b) => String(a.vin).localeCompare(String(b.vin)))) {
         const pt = map.project([c.lat, c.lng]);
-        // Keep complete price pills apart, including neighboring grid cells.
-        // Representatives stay at actual source coordinates; we never jitter
-        // a pin into an invented dealer location.
-        const group = groups.find((g) => Math.abs(g.point.x - pt.x) < 140 && Math.abs(g.point.y - pt.y) < 48);
+        // Compact dots preserve the market's shape. Overlaps remain at an
+        // actual listing coordinate; the popup lists every grouped VIN.
+        const group = groups.find((g) => g.cars[0].local === c.local && Math.hypot(g.point.x - pt.x, g.point.y - pt.y) < 12);
         if (group) group.cars.push(c);
         else groups.push({ point: pt, cars: [c] });
       }
       for (const { cars: group } of groups) {
         const first = group[0], priced = group.filter((c) => typeof c.price === 'number' && Number.isFinite(c.price));
         const cheapest = priced.reduce((a, b) => !a || b.price < a.price ? b : a, null);
-        const label = group.length > 1 ? group.length + ' · ' + (cheapest ? cheapest.priceLabel + '+' : 'Price unreported') : first.priceLabel;
-        const pill = node('div', 'car-map-price' + (group.some((c) => c.vin === selected) ? ' is-selected' : ''), label);
+        const pill = node('div', 'car-map-dot' + (group.every((c) => c.local) ? ' is-local' : ' is-shipping')
+          + (group.some((c) => c.picked || c.saved) ? ' is-pick' : '')
+          + (group.some((c) => c.vin === selected) ? ' is-selected' : '')
+          + (group.length > 1 ? ' is-group' : ''), '');
+        pill.style.setProperty('--car-dot-tone', group.length === 1 ? first.tone : 'var(--sc-chart-context)');
         const marker = L.marker([first.lat, first.lng], {
-          icon: L.divIcon({ className: 'car-price-marker', html: pill, iconSize: [110, 34], iconAnchor: [55, 17] }),
+          icon: L.divIcon({ className: 'car-dot-marker', html: pill, iconSize: [32, 32], iconAnchor: [16, 16] }),
           keyboard: true, title: group.length > 1 ? group.length + ' cars in this map area, from ' + (cheapest ? cheapest.priceLabel : 'an unreported price') : first.title + ', ' + first.priceLabel + ', ' + first.location,
           alt: group.length > 1 ? group.length + ' cars in this map area' : first.title
         }).addTo(layer).bindPopup(() => popup(group), { maxWidth: Math.max(120, Math.min(310, surface.clientWidth - 60)) });
+        const markerElement = marker.getElement();
+        if (markerElement) {
+          markerElement.setAttribute('aria-label', marker.options.title);
+          markerElement.dataset.carCount = group.length;
+          markerElement.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') say.textContent = marker.options.title; });
+        }
         for (const c of group) markers.set(c.vin, marker);
         marker.on('click', () => { if (group.length === 1) highlight(first.vin, false); });
       }
@@ -126,7 +155,7 @@
       map.stop();
       selected = c.vin; renderCards();
       map.setView([c.lat, c.lng], 11, { animate: false });
-      drawPins();
+      pinKey = ''; drawPins();
       const marker = markers.get(c.vin); if (marker) marker.openPopup();
       surface.scrollIntoView({ block: 'center', behavior: reduced() ? 'instant' : 'smooth' });
       surface.focus({ preventScroll: true });
@@ -176,7 +205,7 @@
         cars = next;
         if (scope !== nextScope) { limit = 8; selected = null; }
         ensureMap(); fitButton.disabled = !map || !cars.some(located); renderCards(); locationStatus();
-        if (map) { map.closePopup(); if (scope !== nextScope) fit(); drawPins(); }
+        if (map) { if (scope !== nextScope) { map.closePopup(); fit(); pinKey = ''; } drawPins(); }
         scope = nextScope;
       },
       resize() { if (map) map.invalidateSize({ pan: false }); },

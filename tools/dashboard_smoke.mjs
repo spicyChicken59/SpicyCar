@@ -166,7 +166,7 @@ const skipRest = (why) => { for (const n of unsaid()) skip(n, why); };
 // phone-sized viewport, or a written profile behind it, and none of those are
 // the next step's fault.
 async function recover() {
-  try { await ctx.unroute('**/data.json'); } catch { /* none installed */ }
+  try { await ctx.unroute('**/data.json*'); } catch { /* none installed */ }
   try { await page.setViewportSize({ width: 1280, height: 1000 }); } catch { /* page is gone */ }
   try { await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } }); }
   catch { /* nothing loaded */ }
@@ -284,7 +284,7 @@ await step('the watchlist', async () => {
   else skip('a row per model', thin);
   if (WATCHED.some((w) => w.cars)) {
     ok('the chart draws', (await page.locator('#chart svg').count()) > 0);
-    ok('the map draws', (await page.locator('#map svg').count()) > 0);
+    ok('the map draws', (await page.locator('.car-dot-marker').count()) > 0);
   } else {
     skip('the chart draws', 'no model on the watchlist holds a car today');
     skip('the map draws', 'no model on the watchlist holds a car today');
@@ -579,7 +579,7 @@ await step('the compare card counts its dated cars', async () => {
   const victim = full[0], mate = pair.find((o) => o !== victim) || full[1];
   if (!mate) skip('and a column served with five dated cars prints none', 'no second model to compare against');
   else {
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       let kept = 0;
       for (const x of sheet.brands[victim.w.bk].models[victim.w.mk].listings) if (x.days_listed != null) { if (kept < 5) kept++; else x.days_listed = null; }
@@ -590,7 +590,7 @@ await step('the compare card counts its dated cars', async () => {
       const c = cellFor(await readRow(), victim.w);
       ok('and a column served with five dated cars prints none', !!c && c.figure === '—' && c.note === `5 of ${victim.days.n} dated — too few for a median`,
          c ? `${victim.w.label} with five dates: "${c.figure}" / "${c.note}"` : `${victim.w.label}: no cell`);
-    } finally { await ctx.unroute('**/data.json'); }
+    } finally { await ctx.unroute('**/data.json*'); }
   }
 });
 
@@ -651,7 +651,7 @@ ok('the count measures against the whole watchlist',
 // says the full watchlist is about 1,148. Every listing of one model is
 // cloned until the sheet crosses a thousand, with fresh VINs so the page's
 // own de-duplication does not undo it.
-await ctx.route('**/data.json', async (route) => {
+await ctx.route('**/data.json*', async (route) => {
   const r = await route.fetch(); const sheet = JSON.parse(await r.text());
   const m = Object.values(sheet.brands).flatMap((b) => Object.values(b.models))
     .sort((a, b2) => (b2.listings || []).length - (a.listings || []).length)[0];
@@ -664,7 +664,7 @@ await ctx.route('**/data.json', async (route) => {
 });
 let big;
 try { await open(q); big = await page.textContent('#filter-count'); }
-finally { await ctx.unroute('**/data.json'); }
+finally { await ctx.unroute('**/data.json*'); }
 const bigTotal = totalIn(big);
 ok('and it still reads it once the watchlist passes a thousand cars',
    bigTotal > 1000 && /,/.test(big),
@@ -846,7 +846,7 @@ plan('with no models named the decision card says so instead of vanishing',
      'while the reader\'s own chips emptying it stays silent, as before',
      'and the meta row never counts the same models twice');
 const serveUnshopped = async () => {
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     sheet.buyer.shopping = [];
     for (const b of Object.values(sheet.brands || {}))
@@ -867,7 +867,7 @@ const readHero = () => page.evaluate(() => ({
 }));
 await serveUnshopped();
 let none;
-try { await open(''); none = await readHero(); } finally { await ctx.unroute('**/data.json'); }
+try { await open(''); none = await readHero(); } finally { await ctx.unroute('**/data.json*'); }
 ok('with no models named the decision card says so instead of vanishing',
    !none.hidden && /No models are named/.test(none.hint) && /model chips|buyer\.shopping/.test(none.hint),
    `hidden=${none.hidden} · "${none.hint.slice(0, 150)}"`);
@@ -934,14 +934,14 @@ ok('a model no query has reached says it has not been fetched',
    /Not fetched yet/.test(never) && /first run/.test(never), `"${never}"`);
 // Served: the same model, with the day its query ASKED. Same empty listings,
 // same null as_of — one field different, and the sentence has to change.
-await ctx.route('**/data.json', async (route) => {
+await ctx.route('**/data.json*', async (route) => {
   const r = await route.fetch(); const sheet = JSON.parse(await r.text());
   sheet.brands[victim.bk].models[victim.mk].last_asked = '2026-09-01';
   return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
 });
 let asked;
 try { await open(`?brand=${victim.bk}&m=${victim.mk}`); asked = await meta(); }
-finally { await ctx.unroute('**/data.json'); }
+finally { await ctx.unroute('**/data.json*'); }
 ok('and one whose query ran and found nothing says THAT instead',
    !/Not fetched yet/.test(asked) && /nothing found/i.test(asked) && /Sep 1, 2026|September 1, 2026/.test(asked)
      // …and no other clause of the same line may still say it has not run.
@@ -1332,7 +1332,7 @@ async function synthesizeEmptyTrim() {
       // page takes the different `!total` path and this proves nothing.
       const victim = ids.find((tid) => c[tid] && (m.listings || []).length > c[tid]);
       if (!victim) continue;
-      await ctx.route('**/data.json', async (route) => {
+      await ctx.route('**/data.json*', async (route) => {
         const r = await route.fetch();
         const sheet = JSON.parse(await r.text());
         const mm = ((sheet.brands || {})[bk] || {}).models[mk];
@@ -1435,7 +1435,7 @@ function narrowedTrim() {
 // stub took away — it selects from the real sheet on disk and would then drive
 // a page serving the stubbed one, and read "no cars in this trim" where it
 // expects "all N are filtered out".
-if (stubbedEmpty) { await ctx.unroute('**/data.json'); stubbedEmpty = false; }
+if (stubbedEmpty) { await ctx.unroute('**/data.json*'); stubbedEmpty = false; }
 const nt = narrowedTrim();
 if (!nt) skip('the empty-filters notice counts what its own link restores', 'no trim in this snapshot is empty in a buyer state');
 else {
@@ -1475,7 +1475,7 @@ plan('a legend chip still hides its own line', 'but it takes no dot off the map'
 await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
 await open('');
 const mapState = () => page.evaluate(() => ({
-  dots: document.querySelectorAll('#map .sc-dot:not(.is-off)').length,
+  dots: [...document.querySelectorAll('.car-dot-marker')].reduce((sum, n) => sum + Number(n.dataset.carCount), 0),
   hint: document.getElementById('map-hint').textContent.split(',')[0],
   count: document.getElementById('filter-count').textContent,
   lines: document.querySelectorAll('#chart [data-sid]').length,
@@ -1586,7 +1586,7 @@ plan('the footer waits below the fold while the data loads');
 await page.setViewportSize({ width: 390, height: 844 });
 let releaseData;
 const dataHeld = new Promise((r) => { releaseData = r; });
-await ctx.route('**/data.json', async (r) => { await dataHeld; r.continue(); });
+await ctx.route('**/data.json*', async (r) => { await dataHeld; r.continue(); });
 await page.goto(BASE + '/index.html', { waitUntil: 'load' });
 const shell = await page.evaluate(() => ({
   h1: (document.getElementById('h1').textContent || '').trim(),
@@ -1601,7 +1601,7 @@ await page.waitForFunction(() => {
   const h = document.getElementById('h1');
   return h && h.textContent.trim() && h.textContent !== 'Loading snapshot…';
 }, null, { timeout: 20000 }).catch(() => {});
-await ctx.unroute('**/data.json');
+await ctx.unroute('**/data.json*');
 });
 // ---- ns/NS-10 ----
 await step('a phone in landscape', async () => {
@@ -1726,7 +1726,7 @@ const mastName = 'the masthead holds its height when the data line lands';
 plan(mastName);
 let releaseMast;
 const mastHeld = new Promise((r) => { releaseMast = r; });
-await ctx.route('**/data.json', async (r) => { await mastHeld; r.continue(); });
+await ctx.route('**/data.json*', async (r) => { await mastHeld; r.continue(); });
 await page.setViewportSize({ width: 320, height: 568 });
 await page.goto(BASE + '/index.html', { waitUntil: 'load' });
 const mastShell = await page.evaluate(() => {
@@ -1754,7 +1754,7 @@ const mastLive = await page.evaluate(() => {
            h1: (document.getElementById('h1').textContent || '').trim(),
            mastH: +document.querySelector('header.sc-masthead').getBoundingClientRect().height.toFixed(2) };
 });
-await ctx.unroute('**/data.json');
+await ctx.unroute('**/data.json*');
 if (mastLive.h1 === 'Snapshot unavailable' || mastLive.text === mastShell.text)
   skip(mastName, `#mast-right never swapped — it still reads "${mastLive.text}"`);
 else
@@ -2054,7 +2054,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
   // Only buyer.fees is cut. Whether this sheet HAS a finance block decides what
   // the payment option proves below, so it is read before the cut, not assumed.
   const hasFinance = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).finance);
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
     const sheet = JSON.parse(await r.text());
     if (sheet.buyer) delete sheet.buyer.fees;
@@ -2076,7 +2076,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
        `otd hidden=${state.hidden} · landed still offered=${state.landedShown}`
        + ` · payment ${hasFinance ? `still offered=${state.payShown}` : 'not applicable, this sheet has no finance block'}`);
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
   }
   // And the other direction, which is the half that keeps the guard honest.
   // Testing only the absent case passes an unconditional `hidden = true`: the
@@ -2250,7 +2250,7 @@ await step('an estimate says so where it is read', async () => {
      hint.slice(-190));
 
   // …and with the two dates filled in, the hedge is gone.
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
     const sheet = JSON.parse(await r.text());
     if (sheet.buyer) {
@@ -2274,7 +2274,7 @@ await step('an estimate says so where it is read', async () => {
          && !/not verified|unverified/i.test(after.hint),
        after.hint.slice(-170));
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
   }
 });
 
@@ -2406,7 +2406,7 @@ await step('the promo strip prices one real offer', async () => {
           `${unnamed.unnamed} of ${unnamed.flagged} certified cars — foot says "${shown.foot.slice(0, 110)}…"`);
 
   // …and it is a promo card, not furniture: with every promo expired it goes.
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
     const sheet = JSON.parse(await r.text());
     for (const q of (((sheet.buyer || {}).finance || {}).promos || [])) { q.active = false; q.days_left = -1; }
@@ -2416,7 +2416,7 @@ await step('the promo strip prices one real offer', async () => {
     await open('');
     ok('and the strip disappears when no promo is live',
        await page.locator('#promo-card').isHidden(), 'every promo expired');
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
 });
 
 // ---- a percentage says what it is a percentage OF ---------------------------
@@ -2603,7 +2603,7 @@ await step('the budget', async () => {
     for (const x of raw.brands[home.bk].models[home.mk].listings) {
       if (x.vin === guinea.vin) { delete x.price; delete x.last_price; }
     }
-    await ctx.route('**/data.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
+    await ctx.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
     try {
       // Counted, not looked for in the table: a car with no price never
       // reaches a row (the list is built from priced cars), but it is very
@@ -2628,7 +2628,7 @@ await step('the budget', async () => {
          `${guinea.vin} blanked · ${loose} cars counted with no budget (${held.length} on this model),`
          + ` ${tight} under ${budget} all in · ${want.size} would fit if it still had its price`);
     } finally {
-      await ctx.unroute('**/data.json');
+      await ctx.unroute('**/data.json*');
     }
   }
 
@@ -2966,7 +2966,7 @@ await step('the market sentence describes the trim in view', async () => {
   // print neither the typical-days figure nor the days-to-go one, while still
   // printing the cut clause, so that silence is the gates and not an empty
   // sentence.
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
     const sheet = JSON.parse(await r.text());
     const mm = sheet.brands[subject.bk].models[subject.mk];
@@ -2984,7 +2984,7 @@ await step('the market sentence describes the trim in view', async () => {
        !/typical car/.test(planted) && !/listings ran/.test(planted) && /cut while tracked/.test(planted),
        `${subject.tid} with 5 dated cars and 12 unconfirmed departures: the page says "${planted || '(no market sentence)'}"`);
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
   }
   // The split inside the typical-days figure has its own floor: twelve dated
   // cars on EACH side. Served: twenty dated cars of which three are dealer
@@ -2999,7 +2999,7 @@ await step('the market sentence describes the trim in view', async () => {
     if (stock ? ++stockKept > 3 : ++usedKept > 17) x.days_listed = null;
   }
   const want2 = bitsOf(plant2.listings.filter((x) => x.trim_id === subject.tid), dedupe((plant2.gone || []).filter((g) => g.trim_id === subject.tid))).out.join(' · ');
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     sheet.brands[subject.bk].models[subject.mk] = plant2;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3010,7 +3010,7 @@ await step('the market sentence describes the trim in view', async () => {
     ok('and the typical-days split keeps its own twelve-car floor', said2 === want2 && /typical car/.test(want2) && !/dealer stock/.test(want2),
        `${subject.tid} with ${stockKept > 3 ? 3 : stockKept} dated stock cars and ${usedKept > 17 ? 17 : usedKept} dated used: page "${said2}" · rules "${want2}"`);
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
   }
 });
 
@@ -3070,7 +3070,7 @@ await step('seen at two prices is not cut', async () => {
   const px = planted.listings.find((x) => x.vin === car.vin);
   px.series = px.series.map((pt, i) => [pt[0], i === 1 ? pair[1] : pair[0]]);
   px.cuts = 1; px.delta = 0; px.price = pair[0];
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     sheet.brands[found.w.bk].models[found.w.mk] = planted;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3081,7 +3081,7 @@ await step('seen at two prices is not cut', async () => {
     const rowText2 = await page.evaluate((vin) => { const b = document.querySelector(`#list-table [data-fkey="star:${vin}"]`); const tr = b && b.closest('tr'); return tr ? tr.textContent.replace(/\s+/g, ' ') : ''; }, car.vin);
     ok('and a single blip up and back is still a cut that did not stick', /cut, then back up/.test(rowText2) && !rowText2.includes('seen at'),
        `${car.vin.slice(-6)} with one sighting of ${money(pair[1])}: ${/cut, then back up/.test(rowText2) ? 'reads "cut, then back up"' : rowText2.includes('seen at') ? 'still reads "seen at"' : `reads "${rowText2.slice(0, 80)}"`}`);
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
   // Served: twenty tracked cars that were not sawtooths rewritten into
   // sawtooths, so the set-aside count is large and a share read over every
   // tracked car cannot round to the share read over the cars that were
@@ -3092,7 +3092,7 @@ await step('seen at two prices is not cut', async () => {
   const tracked2 = planted2.listings.filter((x) => (x.days_tracked || 0) >= 2), swings2 = tracked2.filter(swingOf), counted2 = tracked2.filter((x) => !swingOf(x)), cut2 = counted2.filter((x) => x.cuts);
   const wantShare = `${counted2.length ? Math.round(cut2.length / counted2.length * 100) : 0}% of ${counted2.length} cut while tracked`;
   const naive = `${Math.round(cut2.length / tracked2.length * 100)}%`;
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     sheet.brands[found.w.bk].models[found.w.mk] = planted2;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3103,7 +3103,7 @@ await step('seen at two prices is not cut', async () => {
     const said = (line.match(/\d+% of \d+ cut while tracked[^·]*·? ?(?:\d+ seen at two prices, not counted)?/) || [''])[0].replace(/\s+/g, ' ').trim();
     ok('and the cut share is read over the cars that were counted', said.startsWith(wantShare) && said.includes(`${swings2.length} seen at two prices, not counted`),
        `${rewrite.length} cars rewritten (${swings2.length} sawtooths of ${tracked2.length} tracked): page "${said || '(no cut clause)'}" · sheet "${wantShare} · ${swings2.length} seen at two prices, not counted" (${naive} if read over every tracked car)`);
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
 });
 
 // --- dealer stock is a market of its own ------------------------------------
@@ -3194,7 +3194,7 @@ await step('one car, one number', async () => {
   else {
     const cheapest = Math.min(...prices);
     let plantedMedian = null;
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch();
       const sheet = JSON.parse(await r.text());
       const m = sheet.brands[carried.bk].models[carried.mk];
@@ -3225,7 +3225,7 @@ await step('one car, one number', async () => {
       ok('every year in the select has a car in view', opts.length > 0 && opts.every((y) => years.has(y)) && !opts.includes('2019'),
          `watched 2019 with no car; select offers ${JSON.stringify(opts)}; cars carry ${JSON.stringify([...years].sort())}`);
     } finally {
-      await ctx.unroute('**/data.json');
+      await ctx.unroute('**/data.json*');
     }
   }
   // Sightings over the FETCHES they span, car by car: the row's star button
@@ -3469,7 +3469,7 @@ await step('the decision, day by day', async () => {
     const serve = async (edit, label, detail, expectLine) => {
       const planted = JSON.parse(JSON.stringify(subjectD.m)); edit(planted);
       const wantL = (ledgerOf(planted) && driveLineOf(ledgerOf(planted))) || '';
-      await ctx.route('**/data.json', async (route) => {
+      await ctx.route('**/data.json*', async (route) => {
         const r = await route.fetch(); const sheet = JSON.parse(await r.text());
         sheet.brands[subjectD.bk].models[subjectD.mk] = planted;
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3479,7 +3479,7 @@ await step('the decision, day by day', async () => {
         const t = (await readDrive()).find((t) => t.label === subjectD.label) || {};
         if (expectLine) ok(label, !!wantL && t.line === wantL && expectLine(wantL), `${detail}: tile "${t.line || '(nothing)'}" · harness "${wantL || '(nothing)'}"`);
         else ok(label, !wantL && !t.line, `${detail}: tile ${t.line ? `still says "${t.line}"` : 'says nothing'}; harness ${wantL ? `would say "${wantL}"` : 'says nothing'}`);
-      } finally { await ctx.unroute('**/data.json'); }
+      } finally { await ctx.unroute('**/data.json*'); }
     };
     await serve((pm) => { for (const id of Object.keys(pm.fetch_days || {})) if (want.has(id)) pm.fetch_days[id] = pm.fetch_days[id].slice(-6); },
                 'and six fetch days are too few to say it', `${subjectD.label} with six fetch days`);
@@ -3529,7 +3529,7 @@ await step('the decision, day by day', async () => {
     const one = planted.listings.find((x) => x.trim_id === tid && rules(x) && (x.series || []).length);
     if (one) one.series = [[early, one.series[0][1]], ...one.series];
     const wantLedger = ledgerOf(planted);
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3542,7 +3542,7 @@ await step('the decision, day by day', async () => {
          wantLedger ? (t.spark && (t.cap || '').startsWith(want2)) : !(t.spark || t.cap),
          `${subject.label} without ${gone} on ${tid} and with one car seen ${early}: tile says "${t.cap || '(nothing)'}"; the rules say "${want2 || '(nothing)'}"`);
     } finally {
-      await ctx.unroute('**/data.json');
+      await ctx.unroute('**/data.json*');
     }
   }
 });
@@ -3675,7 +3675,7 @@ await step('what the premium buys', async () => {
       planted.listings.find((c) => c.vin === atTotal.vin).price = pAt;
       planted.listings.find((c) => c.vin === driven.vin).price = y.price + 1000;
       const want2 = buysLine(planted.listings);
-      await ctx.route('**/data.json', async (route) => {
+      await ctx.route('**/data.json*', async (route) => {
         const r = await route.fetch(); const sheet = JSON.parse(await r.text());
         sheet.brands[cheaperModel.bk].models[cheaperModel.mk] = planted;
         const dearer = models.find((o) => o.label === B);
@@ -3692,13 +3692,13 @@ await step('what the premium buys', async () => {
         ok('and a car priced at the dearer total is not bought, a drivable car priced over it is not counted, and two terms print no payment',
            !!h2.heads && said2 === want2 && !ask2 && new Set(terms.filter(Boolean)).size === 2,
            `${atTotal.vin.slice(-6)} at $${n(pAt)} (= ${B}'s $${n(dearTotal)}), ${driven.vin.slice(-6)} at $${n(y.price + 1000)}, terms ${JSON.stringify(terms)}: page "${said2 || '(no clause)'}"${ask2 ? ' + a payment line' : ''} · sheet "${want2}"`);
-      } finally { await ctx.unroute('**/data.json'); }
+      } finally { await ctx.unroute('**/data.json*'); }
     }
   }
   // Served: the same two cars with their columns rewritten. Prices are
   // untouched, so both stay the floor and the sentence's subjects.
   const dearer = models.find((o) => o.label === B), cheaper = models.find((o) => o.label === A);
-  const serve = (edit) => ctx.route('**/data.json', async (route) => {
+  const serve = (edit) => ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     const mx = sheet.brands[cheaper.bk].models[cheaper.mk], my = sheet.brands[dearer.bk].models[dearer.mk];
     edit(mx.listings.find((c) => c.vin === x.vin), my.listings.find((c) => c.vin === y.vin));
@@ -3711,7 +3711,7 @@ await step('what the premium buys', async () => {
     const t = await readHero();
     const wantT = buysOf(turned.x, turned.y, B);
     ok('and every clause turns with the sheet', !!t.heads && t.heads[1] === B && t.said === wantT, `page: "${t.said || '(no clause)'}" · expected: "${wantT}"`);
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
   const bare = { x: { year: 2025, miles: 5000, owners: 1, cpo: false, days_listed: 10 }, y: { year: 2025, miles: 13000, owners: 0, cpo: false, days_listed: null } };
   await serve((cx, cy) => { Object.assign(cx, bare.x); Object.assign(cy, bare.y); });
   try {
@@ -3719,7 +3719,7 @@ await step('what the premium buys', async () => {
     const t = await readHero();
     const wantB = `For that, ${B} is the same model year with 8,000 more miles; neither certified. `;
     ok('and a field the sheet lacks is silence, not a zero', !!t.heads && t.heads[1] === B && t.said === wantB, `page: "${t.said || '(no clause)'}" · expected: "${wantB}"`);
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
 });
 
 // --- under typical only outside its own interval -----------------------------
@@ -3837,7 +3837,7 @@ await step('under typical only outside its own interval', async () => {
     const planted = JSON.parse(JSON.stringify(model0));
     planted.listings.find((c) => c.vin === vin).price = price;
     const after = scoreModel(planted).get(vin);
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3848,7 +3848,7 @@ await step('under typical only outside its own interval', async () => {
       const picked = await page.locator(`#takeaway [data-fkey^="pick:${vin}:"]`).count();   // the card's links are pick:VIN:media and pick:VIN:open
       ok('a car moved to its cohort\'s median loses the note and the pick', after && after.stand === 'typical' && !!row && !row.note && picked === 0,
          `${vin.slice(-6)} at ${dollars(price)} (was ${dollars(x.price)}, ${(sc.pct * 100).toFixed(1)}% under): harness says ${after ? after.stand : 'unscored'}; row ${row ? (row.note ? `still says "${row.note}"` : 'says nothing') : 'missing'}; pick cards ${picked}`);
-    } finally { await ctx.unroute('**/data.json'); }
+    } finally { await ctx.unroute('**/data.json*'); }
   }
   // Served: the smallest trim-and-year cohort of six or more cut to five by
   // dropping its dearest cars, leaving the year with six or more.
@@ -3905,7 +3905,7 @@ await step('under typical only outside its own interval', async () => {
     // or the "and now it does not" half proves nothing.
     let noteBefore = '';
     if (witness) {
-      await ctx.route('**/data.json', async (route) => {
+      await ctx.route('**/data.json*', async (route) => {
         const r = await route.fetch(); const sheet = JSON.parse(await r.text());
         sheet.brands[subject.bk].models[subject.mk] = whole;
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3913,12 +3913,12 @@ await step('under typical only outside its own interval', async () => {
       try {
         await open(subject.q); await sortByValue(); await showAll();
         noteBefore = ((await readRows()).find((r) => r.vin === witness) || {}).note || '';
-      } finally { await ctx.unroute('**/data.json'); }
+      } finally { await ctx.unroute('**/data.json*'); }
     }
     const yearsLeft = new Map();
     for (const x of planted.listings.filter(eligible)) yearsLeft.set(yearOf(x), (yearsLeft.get(yearOf(x)) || 0) + 1);
     const wantChips = [...yearsLeft.entries()].filter(([, n]) => n >= 6).map(([y]) => y).sort();
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3941,7 +3941,7 @@ await step('under typical only outside its own interval', async () => {
            : witnessRow.note ? `${witness.slice(-6)} still says "${witnessRow.note}" on a ${w1.basis} cohort of ${w1.n}`
            : !noteBefore ? `${witness.slice(-6)} carried no note even with its ${w0.n}-car trim cohort whole`
            : `${key} cut from ${xs.length} to 5: ${trimNoted.length} survivor(s) still judged against the trim; ${witness.slice(-6)} read "${noteBefore}" with its own trim's ${w0.n} whole and now falls to a ${w1.basis} cohort of ${w1.n} (${w1.mixed ? 'mixed trims' : w1.stand}) and says nothing; ${spare ? `${spare} cut to four and its line gone, ` : ''}year lines ${JSON.stringify(chips)}`);
-    } finally { await ctx.unroute('**/data.json'); }
+    } finally { await ctx.unroute('**/data.json*'); }
   }
   // Served, on the front page: the first shopped tile's floor car with its
   // trim-and-year cohort cut to eight — the largest cohort whose interval is
@@ -3976,7 +3976,7 @@ await step('under typical only outside its own interval', async () => {
     const short = `${hx.year} ${String(hx.trim).split(/\s+/).filter((w) => w && !labelWords.has(w.toLowerCase())).join(' ')} ${heroModel.label}`.replace(/\s+/g, ' ').trim();
     const wantDelta = `about typical for a ${short}, n=8`;
     const clearStars = () => page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[heroModel.bk].models[heroModel.mk] = plantedH;
       sheet.buyer = { ...(sheet.buyer || {}), shortlist: [{ vin: hx.vin, note: '' }] };   // the config shortlist, whose front-page card wears the chip
@@ -4006,7 +4006,7 @@ await step('under typical only outside its own interval', async () => {
          !!scH && scH.stand === 'typical' && scH.pct >= 0.15 && t2.flat === true && t2.delta === wantDelta && picked === 0
            && !!cell && cell.figure === 'about typical' && cell.notes.some((n) => /\bn=8\b/.test(n)) && card.found && card.chip === '',
          `${hx.vin.slice(-6)} with ${kin.length} → 8 in ${short}: harness ${scH ? `${scH.stand}, ${(scH.pct * 100).toFixed(0)}% under the median` : 'unscored'} · tile "${t2.delta}" (flat ${t2.flat}) · pick cards ${picked} · shortlist row ${cell ? `"${cell.figure}" ${JSON.stringify(cell.notes)}` : 'missing'} · card ${card.found ? (card.chip ? `chip "${card.chip}"` : 'no chip') : 'missing'}`);
-    } finally { await ctx.unroute('**/data.json'); await clearStars(); }
+    } finally { await ctx.unroute('**/data.json*'); await clearStars(); }
   }
   // Served: the subject's largest trim cohort rewritten so every car's VALUE
   // is the same to the dollar and one car's is $100 less. That car is below
@@ -4022,7 +4022,7 @@ await step('under typical only outside its own interval', async () => {
     for (const c of planted.listings) if (xs.some((x) => x.vin === c.vin)) c.price = Math.round((c.vin === targetVin ? V - 100 : V) - (c.local ? 0 : (c.ship || 0)) - (c.miles - P.base) * P.cpm);
     const scT = scoreModel(planted).get(targetVin);
     const clearStars2 = () => page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4039,7 +4039,7 @@ await step('under typical only outside its own interval', async () => {
       }, targetVin);
       ok('and a margin that rounds to nothing is not a stand', !!scT && scT.v < scT.lo && scT.pct > 0 && scT.pct < 0.005 && scT.stand === 'typical' && cell === 'about typical',
          `${keyT} rewritten to one value, ${targetVin.slice(-6)} $100 under it: harness ${scT ? `${scT.stand}, ${(scT.pct * 100).toFixed(2)}% under, ${scT.v < scT.lo ? 'below' : 'not below'} the edge` : 'unscored'} · shortlist row "${cell || '(missing)'}"`);
-    } finally { await ctx.unroute('**/data.json'); await clearStars2(); }
+    } finally { await ctx.unroute('**/data.json*'); await clearStars2(); }
   }
   // The compare card's "Best value vs typical" row, two trims of the subject
   // side by side: each column prints its first car that stands under, by
@@ -4086,7 +4086,7 @@ await step('under typical only outside its own interval', async () => {
     const sc2 = scoreModel(planted);
     const edge = keep9.slice(0, 2).map((x) => sc2.get(x.vin));
     const unders = [...sc2.entries()].filter(([, s]) => s.stand === 'under').sort((a, b) => b[1].pct - a[1].pct);
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4099,7 +4099,7 @@ await step('under typical only outside its own interval', async () => {
       ok('and the pick walk skips a typical car with a big margin rather than stopping at it',
          edge.every((s) => s && s.stand === 'typical' && s.pct > 0.5) && !!bestUnder && (unders[0][1].pct < edge[0].pct) && picked.includes(bestUnder) && !edgeVins.some((v) => picked.includes(v)),
          `${keyT} cut to nine, ${edgeVins.map((v) => v.slice(-6)).join('/')} on the edge at ${edge[0] ? (edge[0].pct * 100).toFixed(0) : '?'}% (${edge.map((s) => (s ? s.stand : 'unscored')).join('/')}); best under ${bestUnder ? bestUnder.slice(-6) : 'none'} at ${unders[0] ? (unders[0][1].pct * 100).toFixed(0) : '?'}% · pick cards ${JSON.stringify(picked.map((v) => v.slice(-6)))}`);
-    } finally { await ctx.unroute('**/data.json'); }
+    } finally { await ctx.unroute('**/data.json*'); }
   }
 });
 
@@ -4209,13 +4209,13 @@ await step('since your visit', async () => {
   await plant({ through: early, since: null }); await open('');
   const r4 = await read();
   await plant({ through: since, since: null });
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     sheet.departures_from = through;   // departures counted only from today: the remembered day is before that
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
   let r4b;
-  try { await open(''); r4b = await read(); } finally { await ctx.unroute('**/data.json'); }
+  try { await open(''); r4b = await read(); } finally { await ctx.unroute('**/data.json*'); }
   ok('and a remembered day before the record', r4.hidden && !r4.text && r4b.hidden && !r4b.text,
      `${early}: ${r4.hidden ? 'slot hidden' : `"${r4.text || r4.other}"`} · departures counted from ${through} with ${since} remembered: ${r4b.hidden ? 'slot hidden' : `"${r4b.text || r4b.other}"`}`);
   await plant({ through: since, since: null }); await open('?brand=no-such-brand');
@@ -4233,7 +4233,7 @@ await step('since your visit', async () => {
   if (!target) skip('a car the watchlist dropped is not the market losing it', 'no shopped model has a departure inside the window');
   else {
     const say = async (word) => {
-      await ctx.route('**/data.json', async (route) => {
+      await ctx.route('**/data.json*', async (route) => {
         const r = await route.fetch(); const sheet = JSON.parse(await r.text());
         const mm = sheet.brands[target.o.bk].models[target.o.mk];
         const row = mm.gone.find((g) => g.vin === target.g.vin);
@@ -4241,7 +4241,7 @@ await step('since your visit', async () => {
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
       });
       try { await plant({ through: since, since: null }); await open(''); return (await read()).text; }
-      finally { await ctx.unroute('**/data.json'); }
+      finally { await ctx.unroute('**/data.json*'); }
     };
     const asGone = await say('delisted');
     const asMoved = await say('out of scope');
@@ -4317,7 +4317,7 @@ await step('a VIN in hand', async () => {
   // …served when the sheet has none: another live car's VIN is rewritten to
   // end in this car's six, so the tail fits exactly two.
   const twin = amb ? null : all.find((o) => !o.gone && o.x.vin && String(o.x.vin).toUpperCase() !== vin && (o.bk !== live.bk || o.mk !== live.mk));
-  if (!amb && twin) await ctx.route('**/data.json', async (route) => {
+  if (!amb && twin) await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     const row = sheet.brands[twin.bk].models[twin.mk].listings.find((x) => x.vin === twin.x.vin);
     row.vin = row.vin.slice(0, 11) + six;
@@ -4331,7 +4331,7 @@ await step('a VIN in hand', async () => {
       const r3 = await read();
       ok('a tail that fits two cars says how many and opens nothing', !r3.card && r3.h1 === 'The watchlist' && new RegExp(`${fits} cars on the sheet end in`).test(r3.notice) && !r3.url.includes('vin='),
          `${tail} fits ${fits}${amb ? '' : ' (one served)'}: h1 "${r3.h1}" · notice "${r3.notice.slice(0, 90)}" · url "${r3.url}"`);
-    } finally { if (!amb && twin) await ctx.unroute('**/data.json'); }
+    } finally { if (!amb && twin) await ctx.unroute('**/data.json*'); }
   }
   await open('?vin=__proto__');
   const r4 = await read();
@@ -4421,7 +4421,7 @@ await step('arrivals, not reach', async () => {
   const serve = async (edit, label, detail) => {
     const planted = JSON.parse(JSON.stringify(subject.m)); edit(planted);
     const c = counts(planted);
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[subject.w.bk].models[subject.w.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4430,7 +4430,7 @@ await step('arrivals, not reach', async () => {
       await open(subject.w.q);
       const t = await tileTxt();
       ok(label, c.reach === 0 && t.includes(`${c.fresh} new`) && !/listed 14\+ days/.test(t), `${detail}: tile "${(t.match(/\d+ new[^·]*/) || [t.slice(0, 80)])[0].trim()}" · sheet ${c.fresh} new, ${c.reach} reach`);
-    } finally { await ctx.unroute('**/data.json'); }
+    } finally { await ctx.unroute('**/data.json*'); }
   };
   const thirteen = new Date(Date.parse(dt + 'T00:00:00Z') - 13 * 86400000).toISOString().slice(0, 10);
   await serve((pm) => { for (const x of pm.listings) if (isNewOn(x)) { x.listed_since = dt; x.days_listed = 0; } }, 'and a sheet whose new cars were all listed today gets no clause', `${subject.w.label} with every new car listed ${dt}`);
@@ -4579,7 +4579,7 @@ await step('a departure from one query is not a departure from the market', asyn
       const before = goneCount(planted);
       planted.gone.find((g) => g.vin === victim.vin).still_listed = { trim_id: 'planted-trim', trim: 'eDrive40', price: 12345, cpo: false };
       const after = goneCount(planted);
-      await ctx.route('**/data.json', async (route) => {
+      await ctx.route('**/data.json*', async (route) => {
         const r2 = await route.fetch(); const sheet = JSON.parse(await r2.text());
         sheet.brands[anyModel.w.bk].models[anyModel.w.mk] = planted;
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4591,7 +4591,7 @@ await step('a departure from one query is not a departure from the market', asyn
         ok('and a served departure that is still listed leaves that count and changes its words',
            after === before - 1 && new RegExp(`${after} gone`).test(r2.tile) && !!row && row.includes('the same VIN is listed as eDrive40 at $12,345, not certified') && r2.hint.includes('left a watch while'),
            `${String(victim.vin).slice(-6)} given a forwarding address: count ${before} → ${after}, tile "${(r2.tile.match(/\d+ gone/) || ['(none)'])[0]}", row ${row ? `"${row.slice(-110)}"` : 'missing'}`);
-      } finally { await ctx.unroute('**/data.json'); }
+      } finally { await ctx.unroute('**/data.json*'); }
     }
   }
 });
@@ -4628,7 +4628,7 @@ await step('a watchlist edit reads as a watchlist edit, not a departure', async 
   const serveWith = async (word) => {
     const planted = JSON.parse(JSON.stringify(host.m));
     planted.gone.find((g) => g.vin === victim.vin).likely = word;
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[host.w.bk].models[host.w.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4637,7 +4637,7 @@ await step('a watchlist edit reads as a watchlist edit, not a departure', async 
       await open(host.w.q);
       if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await page.waitForTimeout(300); }
       return await readGone();
-    } finally { await ctx.unroute('**/data.json'); }
+    } finally { await ctx.unroute('**/data.json*'); }
   };
   const moved = await serveWith('out of scope');
   ok('the gone card counts a car the watchlist dropped as its own thing',
@@ -4744,7 +4744,7 @@ await step('a cohort of mixed trims prices the mix, not the car', async () => {
   const planted = JSON.parse(JSON.stringify(subject.m));
   for (const x of planted.listings) x.trim = 'OneTrim';
   const wantSpeak = (planted.listings || []).filter(eligible).length >= 9;
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r2 = await route.fetch(); const sheet = JSON.parse(await r2.text());
     sheet.brands[subject.w.bk].models[subject.w.mk] = planted;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4755,7 +4755,7 @@ await step('a cohort of mixed trims prices the mix, not the car', async () => {
     const noted = r3.rows.filter((x) => x.note).length;
     ok('and a served pool of one trim still speaks', wantSpeak ? noted > 0 : noted === 0,
        `${subject.w.label} with every car one trim: ${noted} of ${r3.rows.length} rows carry a percentage${noted ? ` (e.g. "${(r3.rows.find((x) => x.note) || {}).note}")` : ''}`);
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
 });
 
 // --- a headline figure carries its own date --------------------------------
@@ -4792,7 +4792,7 @@ await step('a headline figure carries its own date', async () => {
     m.overdue = m.age_days >= Math.max(1, m.cadence || 1);
     return m;
   };
-  const serve = (day) => ctx.route('**/data.json', async (route) => {
+  const serve = (day) => ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch(); const sheet = JSON.parse(await r.text());
     ageTo(sheet, day);
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4814,7 +4814,7 @@ await step('a headline figure carries its own date', async () => {
     ok('a tile led by a model fetched on an older day says so', new RegExp(stamp).test(t1.trim()) && t1.includes(leadLabel),
        `${leader.label} aged to ${aged} (2d on a ${leadCadence}-day cadence — ${agedOverdue ? 'overdue, so the count belongs' : 'inside its cadence, so the date alone'}) under data through ${through}: "${t1.trim()}"`);
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
   }
   // Two days behind is a gap most cadences account for, so the tile above
   // gives a date and no count. Past the cadence it gives both, because that
@@ -4833,7 +4833,7 @@ await step('a headline figure carries its own date', async () => {
        new RegExp(`· as of [A-Z][a-z]{2} \\d+, ${far} days ago$`).test(t3.trim()) && t3.includes(leadLabel),
        `${leader.label} aged to ${farDay} — ${far} days on a ${lc}-day cadence, under data through ${through}: "${t3.trim()}"`);
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
   }
   // …and the same model served as fetched on the masthead's own day gets no
   // stamp — planted as well, because on the day this was written it really
@@ -4844,7 +4844,7 @@ await step('a headline figure carries its own date', async () => {
     const t2 = (await lead()) || '';
     ok('and a tile led by a model fetched today does not', t2.includes(leadLabel) && !/· as of /.test(t2), `${leader.label} as of ${through}: "${t2.trim()}"`);
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
   }
 });
 
@@ -4923,7 +4923,7 @@ await step('the floor delta names its cause', async () => {
     planted.gone = (planted.gone || []).concat([{ ...floor, last_price: floor.price, last_seen: prev.date, likely: 'delisted', exact }]);
     const wantWhy = `the ${money(floor.price)} car ${exact ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
     const name = exact ? 'and a confirmed departure of the floor car is named as one' : 'and an unconfirmed one is not';
-    await ctx.route('**/data.json', async (route) => {
+    await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[carried.bk].models[carried.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4934,7 +4934,7 @@ await step('the floor delta names its cause', async () => {
       ok(name, t.why === wantWhy && /▲/.test(t.delta),
          `${carried.label} with its ${money(floor.price)} floor car retired (exact ${exact}): "${t.delta} — ${t.why}" · expected "${wantWhy}"`);
     } finally {
-      await ctx.unroute('**/data.json');
+      await ctx.unroute('**/data.json*');
     }
   }
 });
@@ -5606,7 +5606,7 @@ await step('the chart draws the window its chips name', async () => {
       planted++;
     }
   if (!planted) return skipRest('no model in this sheet carries a day series to plant one in');
-  await ctx.route('**/data.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
+  await ctx.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
   try {
     // A profile remembering the wider window, written before the page loads.
     await page.goto(BASE + '/index.html', { waitUntil: 'load' });
@@ -5626,7 +5626,7 @@ await step('the chart draws the window its chips name', async () => {
        `chip reads "${chip}" over ${dates.length} day rows (${dates[dates.length - 1]} … ${dates[0]})`
        + (outside.length ? ` · ${outside.length} of them outside it, oldest ${outside[outside.length - 1]}` : ''));
   } finally {
-    await ctx.unroute('**/data.json');
+    await ctx.unroute('**/data.json*');
     await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
   }
 });
@@ -5646,26 +5646,25 @@ await step('the chart draws the window its chips name', async () => {
 // And whatever the browser did scroll to landed under that bar, which is
 // sticky: scroll-padding-top now reads the bar's own measured height.
 await step('what a keyboard gets', async () => {
-  plan('the map says which car its arrow keys are on',
+  plan('the map announces the car opened with the keyboard',
        'and a mouse moving over the same dots stays silent',
        'a jump link leaves focus in the card it jumped to',
        'and nothing it jumps to lands under the sticky filter bar');
   await open('');
-  const mapDots = await page.locator('#map .sc-dot').count();
-  if (!mapDots) skip('the map says which car its arrow keys are on', 'the map drew no dots today'),
+  const mapDots = await page.locator('.car-dot-marker').count();
+  if (!mapDots) skip('the map announces the car opened with the keyboard', 'the map drew no dots today'),
                 skip('and a mouse moving over the same dots stays silent', 'the map drew no dots today');
   else {
-    await page.locator('#car-atlas-switch').click();
-    await page.locator('#map').focus();
-    await page.keyboard.press('ArrowRight');
+    await page.locator('.car-dot-marker').first().focus();
+    await page.keyboard.press('Enter');
     await page.waitForTimeout(250);
     const said = (await page.textContent('#map-say') || '').trim();
-    ok('the map says which car its arrow keys are on',
+    ok('the map announces the car opened with the keyboard',
        said.length > 0 && /\$[\d,]+/.test(said),
        said ? `"${said.slice(0, 90)}"` : 'the status node stayed empty');
     // …and the pointer must not write it. A mouse over a different dot leaves
     // the announcement exactly where the keyboard left it.
-    const dots = page.locator('#map .sc-dot');
+    const dots = page.locator('.car-dot-marker');
     const n = await dots.count();
     await dots.nth(Math.min(n - 1, 5)).dispatchEvent('pointerenter', { pointerType: 'mouse', clientX: 10, clientY: 10 });
     await page.waitForTimeout(200);
@@ -6443,7 +6442,7 @@ await step('a trim chip counts what its query returned', async () => {
   const cash = (n) => '$' + Number(n).toLocaleString('en-US');
   if (!twin) return skip('and at the price that query returned',
                          'no model on this sheet has two trims and a priced car');
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
     const sheet = JSON.parse(await r.text());
     const mm = sheet.brands[twin.bk].models[twin.mk];
@@ -6486,7 +6485,7 @@ await step('a trim chip counts what its query returned', async () => {
        bothText.includes(cash(twin.own)) && !bothText.includes(cash(twin.dear)),
        `pressing ${twin.other} and ${twin.mine} together, the row reads `
        + JSON.stringify(bothText.replace(/\s+/g, ' ').slice(0, 110)));
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
 });
 
 // ---- a car the sheet cannot place is not a car beyond your states ----------
@@ -6511,7 +6510,7 @@ await step('a car the sheet cannot place is not beyond your states', async () =>
   // model makes whichever car the tile picks an unplaced one.
   const shopped = WATCHED.find((w) => (SHEET.brands[w.bk].models[w.mk] || {}).shopping);
   if (!shopped) return skipRest('no model on this sheet is being shopped');
-  await ctx.route('**/data.json', async (route) => {
+  await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
     const sheet = JSON.parse(await r.text());
     for (const x of (sheet.brands[shopped.bk].models[shopped.mk].listings || [])) { x.state = ''; x.local = false; }
@@ -6526,7 +6525,7 @@ await step('a car the sheet cannot place is not beyond your states', async () =>
     await open(shopped.q);
     chipTitle = await page.locator('#list-table tbody .sc-chip--case').first()
       .evaluate((n) => n.getAttribute('title') || '').catch(() => '');
-  } finally { await ctx.unroute('**/data.json'); }
+  } finally { await ctx.unroute('**/data.json*'); }
   ok('the decision tile says the state is missing, not that the car is elsewhere',
      !!tileTxt && /state not given/.test(tileTxt) && !/beyond your states/.test(tileTxt),
      `tile line reads "${tileTxt.slice(0, 140)}"`);
@@ -6765,9 +6764,9 @@ await step('market studio uncertainty fixtures', async () => {
     const sheet = structuredClone(SHEET);
     sheet.buyer.picks = { ...sheet.buyer.picks, exclude_accidents: false, exclude_rental: false };
     mutate(sheet);
-    await ctx.route('**/data.json', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) }));
+    await ctx.route('**/data.json*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) }));
     try { await open(''); await check(await studioRows()); }
-    finally { await ctx.unroute('**/data.json'); }
+    finally { await ctx.unroute('**/data.json*'); }
   };
   const allCars = (sheet, fn) => {
     for (const brand of Object.values(sheet.brands || {})) for (const model of Object.values(brand.models || {})) {

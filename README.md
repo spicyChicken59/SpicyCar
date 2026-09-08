@@ -346,6 +346,14 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 3. Edit `targets.json`: your `buyer`, your `watchlist`. The Action runs at 11:00 UTC and can be
    started by hand from the Actions tab.
 
+To populate newly added models immediately after a regular daily run, dispatch
+**SpicyCar daily** with **fill_missing** checked. It requests only targets without
+complete first-fetch coverage, preserves that day's existing cars, and stops at
+the remaining daily/monthly allowance, counting retries. Successful empty markets
+are reported and do not get billed again by this option. Ordinary runs continue
+to use the configured cadence. The dashboard's **Refresh** button checks for the
+latest published snapshot; it does not make paid provider requests.
+
 Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, serve the folder
 (`python -m http.server` inside `docs/`) — it fetches `data.json`, which browsers block on `file://`.
 
@@ -384,7 +392,7 @@ What it measures today, on the committed record:
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 8 | 408 | 102 KB | 41% |
+| as committed | 9 | 466 | 110 KB | 44% |
 | every target fetching | 20 | 847 | 161 KB | 64% |
 | …three fetches deep on each | 20 | 847 | 171 KB | 69% |
 | …seven fetches deep on each | 20 | 847 | 186 KB | 75% |

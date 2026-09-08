@@ -1948,6 +1948,7 @@ def picks_rule():
 # Fetch
 # --------------------------------------------------------------------------
 CALLS = 0
+REQUEST_ALLOWANCE = None  # Optional bootstrap cap, including retries.
 SPENT = {}             # target id -> calls this target actually spent today. The plan is
                        # an upper bound, not a bill: a query that comes back short stops
                        # its own pagination and skips its newest probe, so a thin market
@@ -2186,7 +2187,7 @@ def report_source_overlap(overlap):
 SPEND_LOG = Path("data/spend.json")
 
 
-def spend_report(planned_today):
+def spend_report(planned_today, targets=None):
     """Planned against actual, and what the difference is worth.
 
     `planned_calls()` returns an upper bound: every due target billed for every
@@ -2199,7 +2200,7 @@ def spend_report(planned_today):
     exits. So this returns today's row, and the log below keeps it.
     """
     actual = sum(SPENT.values())
-    due = [t for t in TARGETS.values() if due_on(t, TODAY_ORD)]
+    due = list(targets) if targets is not None else [t for t in TARGETS.values() if due_on(t, TODAY_ORD)]
     by_target = {}
     for t in due:
         tid = t["id"]
@@ -2280,7 +2281,7 @@ def report_spend(row, hist):
             print(f"    ~{MONTHLY - projected:.0f} unspent at this rate")
 
 
-def save_spend_history(row, path=SPEND_LOG, keep=400):
+def save_spend_history(row, path=SPEND_LOG, keep=400, add_plan=False):
     """One row per day, newest kept. Small on purpose: this file exists to be
     read by a decision, not to be a second ledger.
 
@@ -2309,8 +2310,8 @@ def save_spend_history(row, path=SPEND_LOG, keep=400):
         # than the day ever had, on the day it was overspent.
         for k in ("actual", "unrun", "failed"):
             row[k] = (to_int(prior.get(k)) or 0) + (to_int(row.get(k)) or 0)
-        row["planned"] = max(to_int(prior.get("planned")) or 0,
-                             to_int(row.get("planned")) or 0)
+        plans = [to_int(prior.get("planned")) or 0, to_int(row.get("planned")) or 0]
+        row["planned"] = sum(plans) if add_plan else max(plans)
         # Headroom is a derived quantity; recompute it from the day's totals
         # rather than adding two runs' independently-computed versions.
         row["banked"] = row["planned"] - row["actual"] - row["unrun"]
@@ -2386,7 +2387,7 @@ def fetch_log_row():
     return row
 
 
-def save_fetch_log(row, path=None, keep=400):
+def save_fetch_log(row, path=None, keep=400, merge_targets=False):
     """Today's fetch facts. A second run of the same day REPLACES them, except
     the raw counts, which sum.
 
@@ -2431,7 +2432,8 @@ def save_fetch_log(row, path=None, keep=400):
     if not isinstance(hist, dict):
         hist = {}
     was = hist.get(TODAY) if isinstance(hist.get(TODAY), dict) else {}
-    day = {}
+    # A targeted bootstrap retains untouched targets and their same-day rows.
+    day = {tid: facts for tid, facts in was.items() if tid not in row} if merge_targets else {}
     for tid, sources in row.items():
         for src, fact in sources.items():
             prior = (was.get(tid) or {}).get(src)
@@ -2516,7 +2518,7 @@ def load_fetch_log(path=None):
 OVERLAP_LOG = Path("data/source_overlap.json")
 
 
-def save_overlap_history(overlap, path=OVERLAP_LOG, keep=120):
+def save_overlap_history(overlap, path=OVERLAP_LOG, keep=120, merge_targets=False):
     """Append today's audit to a small dated log, newest days kept.
 
     Only the four numbers that answer the question are stored — a full record
@@ -2533,8 +2535,9 @@ def save_overlap_history(overlap, path=OVERLAP_LOG, keep=120):
         hist = {}
     if not isinstance(hist, dict):
         hist = {}
-    hist[TODAY] = {tid: [o["states"], o["national"], o["both"], o["states_only"]]
-                   for tid, o in sorted(overlap.items())}
+    prior = hist.get(TODAY, {}) if merge_targets else {}
+    hist[TODAY] = {**prior, **{tid: [o["states"], o["national"], o["both"], o["states_only"]]
+                   for tid, o in sorted(overlap.items())}}
     for day in sorted(hist)[:-keep]:
         del hist[day]
     try:
@@ -2590,6 +2593,10 @@ def fetch(source_name, source, sort, page, t):
     if source:
         params.update(source)
     for attempt in (1, 2):
+        if REQUEST_ALLOWANCE is not None and CALLS >= REQUEST_ALLOWANCE:
+            print(f"  ! {t['id']} {source_name}: deferred at the API budget limit")
+            FAILED_SCOPES.add((t["id"], source_name))
+            return None
         CALLS += 1
         # Counted per target as well as globally, and counted HERE so a retry
         # counts twice — because it costs twice. A ledger that recorded intent
@@ -4415,6 +4422,56 @@ def send_email(report, subject=None):
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
+def update_sheet_size(site, path=Path("README.md")):
+    """Keep the documented payload measurement in sync with every snapshot."""
+    import gzip, re
+    models = [m for b in site["brands"].values() for m in b["models"].values()]
+    cars = sum(len(m.get("listings") or []) for m in models)
+    live = sum(bool(m.get("listings")) for m in models)
+    size = len(gzip.compress(json.dumps(site, indent=1).encode(), 9))
+    row = f"| as committed | {live} | {cars:,} | {round(size / 1024)} KB | {round(size / (250 * 1024) * 100)}% |"
+    if path.exists():
+        path.write_text(re.sub(r"^\| as committed \|.*$", lambda _: row, path.read_text(), flags=re.M))
+
+
+def missing_targets(history, fetch_history):
+    """Seed targets lacking a completed first observation; empty markets count."""
+    seen = {r["target"] for r in history}
+    selected = []
+    for tid, t in TARGETS.items():
+        attempts = [day[tid] for day in fetch_history.values()
+                    if isinstance(day, dict) and isinstance(day.get(tid), dict)]
+        expected = [name for name, _ in sources_for(t)]
+        complete = any(all(isinstance(facts.get(name), dict)
+                           and facts[name].get("failed") is False
+                           for name in expected) for facts in attempts)
+        if not complete and (attempts or tid not in seen):
+            selected.append(t)
+    return selected
+
+
+def merge_bootstrap_rows(history, new_rows, facts):
+    """Replace complete target observations; keep partial evidence on failures."""
+    complete = {tid for tid, t in TARGETS.items() if tid in facts
+                and all(name in facts[tid] and not facts[tid][name].get("failed")
+                        for name, _ in sources_for(t))}
+    kept = [r for r in history if r["snapshot_date"] != TODAY or r["target"] not in complete]
+    return list({(r["snapshot_date"], r["target"], r["vin"]): r for r in kept + new_rows}.values())
+
+
+def bootstrap_allowance(ledger):
+    """Fit startup queries into the existing daily/monthly plan, with retries."""
+    import calendar
+    month = TODAY[:7]
+    day_spent = to_int((ledger.get(TODAY) or {}).get("actual")) or 0
+    month_spent = sum(to_int(r.get("actual")) or 0 for d, r in ledger.items()
+                      if d.startswith(month))
+    end = date.fromisoformat(TODAY).replace(day=calendar.monthrange(int(TODAY[:4]), int(TODAY[5:7]))[1]).toordinal()
+    reserve = sum(calls_for(t) for ordinal in range(TODAY_ORD + 1, end + 1)
+                  for t in TARGETS.values() if due_on(t, ordinal))
+    return max(0, min(BUDGET - day_spent, MONTHLY - month_spent - reserve))
+
+
 def main():
     today_calls, worst, avg = planned_calls()
     monthly = avg * 30.5
@@ -4444,8 +4501,27 @@ def main():
     # which a source failed after retry. A run that died mid-fetch never
     # gets here — rows are written only after the whole fetch loop, so it
     # left nothing and the next attempt is not a re-fetch at all.
-    already = {r["snapshot_date"] for r in load_history()}
-    if TODAY in already and not os.environ.get("ALLOW_REFETCH"):
+    global REQUEST_ALLOWANCE
+    REQUEST_ALLOWANCE = None
+    bootstrap = os.environ.get("FILL_MISSING") == "1"
+    history_before = load_history()
+    selection = None
+    if bootstrap:
+        ledger = json.loads(SPEND_LOG.read_text()) if SPEND_LOG.exists() else {}
+        if not isinstance(ledger, dict) or any(not isinstance(r, dict) or to_int(r.get("actual")) is None for r in ledger.values()):
+            sys.exit("Cannot verify API spend; repair the ledger before a targeted refresh.")
+        fetch_history = load_fetch_log()
+        selection = missing_targets(history_before, fetch_history)
+        if not any(r["snapshot_date"] == TODAY for r in history_before):
+            sys.exit("Run the regular daily tracker first, then fill missing models. This keeps the daily shopping-model checks intact.")
+        REQUEST_ALLOWANCE = bootstrap_allowance(ledger)
+        print(f"First-fetch refresh: {len(selection)} targets without complete coverage; {REQUEST_ALLOWANCE} calls available within existing caps.")
+        if not selection or not REQUEST_ALLOWANCE:
+            print("No first-fetch work fits now. Rebuilding existing outputs without API calls.")
+            sys.exit(ALREADY_FETCHED)
+        today_calls = sum(calls_for(t) for t in selection)
+    already = {r["snapshot_date"] for r in history_before}
+    if TODAY in already and not os.environ.get("ALLOW_REFETCH") and not bootstrap:
         due_today = [t["id"] for t in TARGETS.values() if due_on(t, TODAY_ORD)]
         # Exit 3, not 1, and it is not a failure. A re-run is almost always
         # somebody wanting FRESH OUTPUTS after a config or code change, which
@@ -4470,8 +4546,14 @@ def main():
     rows = {}
     dropped = Counter()
     via = defaultdict(set)      # (target id, vin) -> the queries that returned it
+    selected_ids = {t["id"] for t in selection} if bootstrap else None
     for tid, t in TARGETS.items():
-        if not due_on(t, TODAY_ORD):
+        if bootstrap and tid not in selected_ids:
+            continue
+        if bootstrap and calls_for(t) > REQUEST_ALLOWANCE - CALLS:
+            print(f"{tid}: deferred; not enough budget for its complete first fetch")
+            continue
+        if not bootstrap and not due_on(t, TODAY_ORD):
             print(f"{tid}: not today (every {t['cadence']} days, next {next_due(t)})")
             continue
         raw_n = 0
@@ -4555,17 +4637,18 @@ def main():
                 "high — see normalize())")
     OVERLAP.update(source_overlap(rows))
     report_source_overlap(OVERLAP)
-    save_overlap_history(OVERLAP)
+    save_overlap_history(OVERLAP, merge_targets=True) if bootstrap else save_overlap_history(OVERLAP)
     # Written BEFORE the outputs are built, because build_outputs() -> delisted()
     # reads it back: today's departures are then judged by the same recorded
     # facts a rebuild will use tomorrow, so the two can never disagree.
-    save_fetch_log(fetch_log_row())
+    save_fetch_log(fetch_log_row(), merge_targets=True) if bootstrap else save_fetch_log(fetch_log_row())
     if FAILED_SCOPES:
         print(f"  ! {len(FAILED_SCOPES)} quer{'y' if len(FAILED_SCOPES) == 1 else 'ies'} failed "
               f"after retry — every car only they could see is 'not checked', not gone: "
               + ", ".join(f"{tid} {src}" for tid, src in sorted(FAILED_SCOPES)))
-    spend = spend_report(today_calls)
-    report_spend(spend, save_spend_history(spend))
+    spend = spend_report(today_calls, selection) if bootstrap else spend_report(today_calls)
+    spend_history = save_spend_history(spend, add_plan=True) if bootstrap else save_spend_history(spend)
+    report_spend(spend, spend_history)
     print(f"Geocoding: {GEOCODED} rescued from zip, {UNPLACED} unplaceable, "
           f"{ZIP_LOOKUPS} zip lookups ({len(ZIP_CACHE)} cached)")
     save_zip_cache()
@@ -4577,7 +4660,7 @@ def main():
     for (tid, vin), r in rows.items():
         r["via"] = "|".join(sorted(via.get((tid, vin), ())))
     today_rows = list(rows.values())
-    if not today_rows:
+    if not today_rows and not bootstrap:
         # What is really true of this path. It said "leaving data, report and
         # site untouched", and by here save_overlap_history(), save_fetch_log(),
         # save_spend_history() and save_zip_cache() have all run — so data/
@@ -4591,8 +4674,13 @@ def main():
         send_email(msg, subject=f"{APP} — run FAILED {TODAY}")
         sys.exit(msg)
 
-    history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY]
-    all_rows = history_rows + today_rows
+    attempted_ids = set(fetch_log_row()) if bootstrap else None
+    if bootstrap:
+        all_rows = merge_bootstrap_rows(load_history(), today_rows, fetch_log_row())
+    else:
+        history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY]
+        all_rows = history_rows + today_rows
+    today_rows = [r for r in all_rows if r["snapshot_date"] == TODAY]
     write_rows(all_rows)
 
     hist = build_history(all_rows)
@@ -4600,9 +4688,23 @@ def main():
 
     Path("REPORT.md").write_text(report)
     (DOCS / "data.json").write_text(json.dumps(site, indent=1))
+    update_sheet_size(site)
     print("\n" + report)
     print(f"\nSubject: {subject}")
-    send_email(report, subject=subject)
+    if not bootstrap:
+        send_email(report, subject=subject)
+    if bootstrap:
+        remaining = missing_targets(all_rows, load_fetch_log())
+        summary = (f"First-fetch refresh: {len(attempted_ids)} targets attempted, "
+                   f"{sum(SPENT.values())} API calls; {len(remaining)} targets still need complete coverage.")
+        print(summary)
+        if os.environ.get("GITHUB_STEP_SUMMARY"):
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+                out.write("\n### First-fetch refresh\n\n" + summary + "\n")
+                for t in selection:
+                    facts = fetch_log_row().get(t["id"], {})
+                    status = "deferred" if not facts else "incomplete" if any(f.get("failed") for f in facts.values()) else "received listings" if any(r["target"] == t["id"] for r in today_rows) else "no matching listings returned"
+                    out.write(f"- {t['id']}: {status}\n")
 
 
 if __name__ == "__main__":
