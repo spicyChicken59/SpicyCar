@@ -3290,8 +3290,16 @@ class TestTheTwoFactsThatNarrowAThirtySixModelMarket(unittest.TestCase):
         rows = T.load_history()
         self.assertTrue(rows)
         self.assertTrue(all("seats" in r and "drivetrain" in r for r in rows))
-        self.assertEqual({r["drivetrain"] for r in rows}, {""},
-                         "every committed row predates the column")
+        # This asserted the column was EMPTY on every row — true while no real
+        # night had run, and the first one filled it (drivetrain on 95% of the
+        # night's 258 rows, seats on 82%). What it was really guarding is that
+        # a row written before the column reads blank rather than raising, and
+        # that a value present is one of the three words the folding produces
+        # and not whatever a dealer typed.
+        self.assertLessEqual({r["drivetrain"] for r in rows}, {"", "AWD", "RWD", "FWD"},
+                             "drivetrain holds a vocabulary, not free text")
+        self.assertTrue(all(str(r["seats"] or "").isdigit() or not r["seats"]
+                            for r in rows), "seats is a count or blank")
 
     def test_the_run_says_how_often_the_feed_filled_them(self):
         """The coverage line is the whole justification for keeping a field
@@ -7600,73 +7608,83 @@ class TestConfig(unittest.TestCase):
                              f"should spread over {min(len(watches), cad)} days: "
                              f"{dict(per_day)}")
 
-    def test_the_i7_watch_reaches_a_certified_i7_only_without_the_new_year(self):
-        """The i7's certified watch was stood down because it could not work;
-        it runs now, and this is the measurement that says why it can.
+    def test_a_certified_watch_reaches_a_certified_car_only_above_the_floor(self):
+        """A certified watch sorts by MILEAGE, and delivery stock sits at the
+        bottom of that order — so the window can fill with cars that have not
+        been owned yet and the watch returns nothing.
 
-        The watch takes the N lowest-mileage i7s nationally on miles.asc and
-        then filters to certified under 30,000 miles, so it returns nothing
-        unless a certified car ranks inside that window. Sorting the i7 rows
-        this repo has actually recorded by mileage and asking where the first
-        certified one sits: rank 52-80 on every day the record holds with the
-        current model year in the query, and rank 6-18 with it out. So the
-        year list is what makes the watch work, and dropping it back in turns
-        a target that costs 30 calls a month into one that returns nothing.
+        Not hypothetical. On 2026-09-08, the first real night this repo
+        recorded, all forty cars inside the i5 watch's window were
+        current-model-year and the fortieth had 5 miles on it; the first
+        certified i5 was 45th and the watch returned 0 rows, on a day it had
+        returned cars on every day before. The i7 had been walled off the same
+        way since its first record — ranks 50-80, every day — and carried a
+        year narrowing for it, which was the right observation and the wrong
+        knob: the cause is delivery stock, not the model year.
 
-        The old version of this test asserted the watch was OFF, and its
-        guidance said the i5 watch works "precisely because its years stop at
-        2025". That was false — the i5 watch asks for the same four years as
-        everything else and its first certified car ranks 3-26 on the same
-        days. Both halves are measured below rather than asserted from prose.
-        """
-        watch = target("bmw-i7-cpo")
-        _, pages = T.sorts_pages(watch)
-        window = len(T.sorts_pages(watch)[0]) * pages * T.PER_PAGE
-        # The years the QUERY asks for, not the wall clock: read off the
-        # clock, this test starts failing on 1 January of the year after the
-        # defaults' list ends — a date-dependent test, which this project
-        # calls the worst kind there is.
-        this_year = max(str(y) for y in T.DEFAULTS["years"])
-        self.assertNotIn(this_year, [str(y) for y in watch["years"]],
-                         f"the i7 watch cannot reach a certified i7 with "
-                         f"{this_year} in its years: new inventory at single-"
-                         f"digit mileage fills the whole {window}-record window")
-        self.assertIn(this_year, [str(y) for y in target("bmw-i5-cpo")["years"]],
-                      "and the i5 needs no such narrowing — this is the i7's "
-                      "own fact, not the watch's")
+        Measured over every day the record holds, for both models and on both
+        rules, which is what says the floor is the one that generalises."""
+        floor = T.to_int(T.CPO_WATCH.get("min_miles"))
+        self.assertTrue(floor, "the recipe carries a mileage floor")
+        for tid in (t for t, v in T.TARGETS.items() if v.get("derived") == T.CPO_KEY):
+            self.assertEqual(T.TARGETS[tid]["min_miles"], floor,
+                             f"{tid} does not carry it")
+            _, pages = T.sorts_pages(T.TARGETS[tid])
+            window = len(T.sorts_pages(T.TARGETS[tid])[0]) * pages * T.PER_PAGE
 
-        def first_certified_rank(prefix, years):
+        def first_certified(prefix, min_miles):
             """Per recorded day: where the lowest-mileage certified car sits
-            among that day's rows for the model, deduplicated by VIN because
-            several targets return the same car."""
+            among that day's rows for the model, over the floor, deduplicated
+            by VIN because several targets return the same car."""
             per_day = defaultdict(dict)
             for r in self._snapshot_rows():
                 if not r["target"].startswith(prefix):
                     continue
-                if years is not None and r["year"] not in years:
-                    continue
-                if not (r["miles"] or "").strip():
+                if not (r["miles"] or "").strip() or int(r["miles"]) < min_miles:
                     continue
                 per_day[r["snapshot_date"]][r["vin"]] = r
             out = {}
             for day, vins in per_day.items():
                 ordered = sorted(vins.values(), key=lambda r: int(r["miles"]))
-                out[day] = next((i + 1 for i, r in enumerate(ordered)
-                                 if r["cpo"] == "1"), None)
-            return {d: v for d, v in out.items() if v is not None}
-
-        asked = [str(y) for y in watch["years"]]
-        wide = first_certified_rank("bmw-i7", None)
-        narrow = first_certified_rank("bmw-i7", asked)
-        self.assertTrue(wide and narrow, "the record has to hold i7 days to read")
-        self.assertTrue(all(v > window for v in wide.values()),
-                        f"with every year in, the first certified i7 must sit "
-                        f"outside the {window}-record window: {sorted(wide.values())}")
-        self.assertTrue(all(v <= window for v in narrow.values()),
-                        f"and inside it on {asked}: {sorted(narrow.values())}")
-        i5 = first_certified_rank("bmw-i5", None)
-        self.assertTrue(i5 and all(v <= window for v in i5.values()),
-                        f"the i5 control, unnarrowed: {sorted(i5.values())}")
+                k = next((i + 1 for i, r in enumerate(ordered) if r["cpo"] == "1"), None)
+                if k is not None:
+                    out[day] = k
+            return out
+        for prefix in ("bmw-i5", "bmw-i7"):
+            without = first_certified(prefix, 0)
+            withit = first_certified(prefix, floor)
+            self.assertTrue(without and withit, prefix)
+            self.assertTrue(all(v <= window for v in withit.values()),
+                            f"{prefix} over the floor: {sorted(withit.values())} "
+                            f"must fit the {window}-record window")
+        # …and the floor is what changed it: without it, at least one model is
+        # walled off on at least one day. Without this the test passes on a
+        # record where the floor does nothing.
+        missed = {p: sorted(v for v in first_certified(p, 0).values() if v > window)
+                  for p in ("bmw-i5", "bmw-i7")}
+        self.assertTrue(any(missed.values()),
+                        f"no day in the record needs the floor: {missed}")
+        # What it costs, measured rather than waved at. Across the whole
+        # record — 147 certified VINs over twelve models — exactly one sits
+        # under the floor: an 8-mile iX, which is a new car wearing the badge
+        # and is the thing the floor is for. Every other model's lowest
+        # certified car is 228 miles or more, and for the two models whose
+        # watches actually run it is 2,305 and 4,101.
+        by_model = defaultdict(set)
+        for r in self._snapshot_rows():
+            if r["cpo"] == "1" and (r["miles"] or "").strip():
+                key = (T.TARGETS.get(r["target"]) or {}).get("model_key") \
+                    or r["target"].rsplit("-", 1)[0]
+                by_model[key].add((r["vin"], int(r["miles"])))
+        under = {m: sorted(x for _, x in v if x < floor) for m, v in by_model.items()}
+        self.assertLessEqual(sum(len(v) for v in under.values()), 1,
+                             f"the floor excludes more than the one known "
+                             f"mislabelled car: { {k: v for k, v in under.items() if v} }")
+        for prefix in ("i5", "i7"):
+            hit = [m for m in by_model if m == prefix]
+            self.assertTrue(hit, prefix)
+            self.assertFalse(under[hit[0]],
+                             f"the floor costs the {prefix} watch a certified car")
 
     def _snapshot_rows(self):
         import csv as _csv

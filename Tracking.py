@@ -133,7 +133,8 @@ AUTO = "auto"                                   # the cadence marker, kept as it
 COMPARISON_CADENCE = None
 PER_PAGE = 20                       # the free plan clamps limit to 20
 PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years",
-              "newest", "max_miles", "cpo_only", "national_only", "fuel"]
+              "newest", "max_miles", "min_miles", "cpo_only", "national_only",
+              "fuel"]
 # What `fuel` may say. "electric" is what this tool has always enforced and
 # what defaults carries, so the shipped behaviour is unchanged and now
 # visible; "any" turns the check off for a buyer whose car is not one. The
@@ -610,8 +611,10 @@ def cpo_note(t):
     label = t["model_label"]
     sorts, pages = sorts_pages(t)
     window = len(sorts) * pages * PER_PAGE
-    cap = to_int(t.get("max_miles"))
-    under = f" under {cap:,} miles" if cap else ""
+    cap, floor = to_int(t.get("max_miles")), to_int(t.get("min_miles"))
+    under = (f" between {floor:,} and {cap:,} miles" if cap and floor else
+             f" under {cap:,} miles" if cap else
+             f" over {floor:,} miles" if floor else "")
     where = "in the country" if t.get("national_only") else "in the states searched"
     lead = SORT_PHRASE.get(sorts[0]) if len(sorts) == 1 else None
     head = (f"the {window} {lead} {label}s {where}" if lead else
@@ -3291,6 +3294,13 @@ def normalize(rec, t, dropped):
     if mm is not None and (miles is None or miles >= mm):
         # unknown mileage cannot prove "under the cap", so it is out too
         dropped["at/over max_miles"] += 1
+        return None
+    lo = to_int(t.get("min_miles"))
+    if lo is not None and (miles is None or miles < lo):
+        # …and the floor, which is what keeps delivery stock out of a
+        # mileage-sorted window. Unknown mileage is out for the same reason as
+        # above: it cannot prove it is over the floor either.
+        dropped["under min_miles"] += 1
         return None
     # …and it has to be the fuel the target asks for. The query cannot ask —
     # the API has no fuel parameter — so this is the only place it can be.

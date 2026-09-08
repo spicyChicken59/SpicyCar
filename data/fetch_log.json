@@ -326,5 +326,71 @@
     "window": 40990
    }
   }
+ },
+ "2026-09-08": {
+  "bmw-i5-edrive40": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 100,
+    "window": 43987
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 5,
+    "window": 47359
+   }
+  },
+  "bmw-i7-edrive50": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 100,
+    "window": 72336
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "raw": 6,
+    "window": 120000
+   }
+  },
+  "kia-ev9": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 33096
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 40990
+   }
+  },
+  "rivian-r1s": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 60599
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "raw": 20,
+    "window": 68343
+   }
+  }
  }
 }

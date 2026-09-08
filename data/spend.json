@@ -124,5 +124,27 @@
   "silent_targets": [],
   "targets_due": 8,
   "unrun": 0
+ },
+ "2026-09-08": {
+  "actual": 16,
+  "banked": 8,
+  "empty_targets": [],
+  "exhausted": 2,
+  "failed": 0,
+  "off_plan": {
+   "bmw-i5-edrive40": [
+    10,
+    6
+   ],
+   "bmw-i7-edrive50": [
+    10,
+    6
+   ]
+  },
+  "planned": 24,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 4,
+  "unrun": 0
  }
 }

@@ -65,15 +65,21 @@ Two things are configured, separately:
   one being bought: **`buyer.shopping` does that, and everything a shopped car gets follows
   from being named there.** `buyer.shopping_fetch` is the depth (both sorts at two pages plus
   a newest-first page, fetched daily) and `buyer.cpo_watch` is the nationwide certified
-  sweep — lowest-mileage first, national query only, filtered to certified cars under the
-  mileage cap — derived once per shopped **model**, whatever model that is. A model may
-  narrow the sweep's query or stand it down with its own optional `cpo` block; a model that
-  says nothing gets a sweep of the whole model, which is what makes this work for a car
-  nobody has written a line about. The i5 narrows its sweep to the eDrive/xDrive trims (the
-  M cars are not this buyer's shopping pool) and the i7 leaves the current model year out of
-  its own, because sorting the i7 rows this repo has recorded by mileage puts the first
-  certified car at rank 52–80 with that year in and 6–18 with it out, against a 40-record
-  window — the i5 needs no such narrowing, at rank 3–26 on the same days. The iX is tracked
+  sweep — lowest-mileage first, national query only, filtered to certified cars between the
+  mileage floor and the cap — derived once per shopped **model**, whatever model that is. A
+  model may narrow the sweep's query or stand it down with its own optional `cpo` block; a
+  model that says nothing gets a sweep of the whole model, which is what makes this work for
+  a car nobody has written a line about. The i5 narrows its sweep to the eDrive/xDrive trims
+  (the M cars are not this buyer's shopping pool) and nothing else needs narrowing, because
+  **the floor is on the recipe.** It is there for a mechanism, not a car: a certified watch
+  sorts by mileage and delivery stock sits at the bottom of that order, so the window fills
+  with cars nobody has owned yet. On 2026-09-08, the first real night this repo recorded, all
+  forty cars inside the i5 watch's window were current-model-year and the fortieth had 5
+  miles on it — the first certified i5 was 45th, and the watch returned nothing on a day it
+  had returned cars on every day before. A 100-mile floor puts the first certified car inside
+  the window on every day the record holds, for the i5 (ranks 2–26 over 17 days) and the i7
+  (7–30 over 12, where it was 50–80 on every one), and costs one car in 147: an 8-mile iX,
+  which is a new car wearing the badge. The iX is tracked
   for comparison only. Naming it in `buyer.shopping` is all it takes to give it the same
   treatment — and it has a price: a shopped car costs `shopping_fetch`'s depth on its fetch
   days plus a certified watch of its own, about 11 calls a day here, and the plan has ~2 a
@@ -427,7 +433,7 @@ What it measures today, on the committed record:
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 8 | 408 | 102 KB | 41% |
+| as committed | 9 | 466 | 110 KB | 44% |
 | every target fetching | 20 | 847 | 161 KB | 64% |
 | …three fetches deep on each | 20 | 847 | 171 KB | 69% |
 | …seven fetches deep on each | 20 | 847 | 186 KB | 75% |

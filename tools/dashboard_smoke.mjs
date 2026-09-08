@@ -3230,7 +3230,12 @@ await step('one car, one number', async () => {
       const delta = ((await page.locator('#kpis .sc-tile').first().locator('.sc-delta').first().textContent().catch(() => '')) || '').trim();
       ok('a flat delta names the day it is level with',
          /^= vs [A-Z][a-z]{2} \d/.test(delta) && !/previous day/.test(delta), `tile 1 says "${delta || '(no delta)'}"`);
-      const tileMed = digits(((await page.locator('#kpis .sc-tile').nth(2).textContent()).match(/median \$([\d,]+)/) || [])[1]);
+      // innerText, not textContent: textContent concatenates the tile's nodes
+      // with nothing between them, so "$44,989" ran straight into the next
+      // note's "42" and this read the median as 4,498,942. A reader sees
+      // innerText; textContent inside this page is source — the same lesson
+      // this file already records for the quiet-market check.
+      const tileMed = digits(((await page.locator('#kpis .sc-tile').nth(2).innerText()).match(/median \$([\d,]+)/) || [])[1]);
       const rowMed = digits(await page.locator('#chart-table tbody tr').first().locator('td').last().textContent().catch(() => ''));
       ok('the tile median and the chart table\'s newest median agree', tileMed && tileMed === rowMed && tileMed === String(plantedMedian),
          `planted a median of ${plantedMedian}.5: tile says ${tileMed || '(none)'}, the newest table row says ${rowMed || '(none)'}`);
