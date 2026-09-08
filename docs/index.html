@@ -2160,13 +2160,10 @@
     // now: the nationwide CPO watch and the ordinary eDrive40 target match the
     // same certified cars, and the per-trim day rows prove it — the i5's four
     // trims add to 137 vehicles on 2026-08-30 over a model row of 136. This
-    // map is what keeps the pooled trim scope honest about it.
-    const uniq = new Map();
-    for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter((x) => passesShared(x))) {
-      const k = String(x.vin || '').toUpperCase();
-      if (!k) continue;
-      if (!uniq.has(k)) uniq.set(k, x);   // the live listing comes first and wins
-    }
+    // selection happens separately on each day: a live CPO listing cannot
+    // erase an earlier sighting under eDrive40 before the CPO watch began.
+    const candidates = byTrim((m.listings || []).concat(m.gone || []))
+      .filter((x) => x.vin && passesShared(x));
     // A day holds what the record KNEW on it, not what was fetched on it.
     // Trims run on their own cadences, so counting sightings alone made a
     // model's day rows halve on every off day — the i5 went 127, 119, 71, 130,
@@ -2222,7 +2219,7 @@
     // falls back to the flag it already has.
     const localOn = localOnDay;
     const by = new Map();
-    for (const x of uniq.values()) {
+    for (const x of candidates) {
       const seen = new Map();
       for (const pt of (x.series || [])) if (pt[1]) seen.set(pt[0], pt[1]);
       if (!seen.size) continue;
@@ -2233,9 +2230,10 @@
         const f = fetchDays[x.trim_id] && fetchDays[x.trim_id].length ? latestFetch(x.trim_id, day) : day;
         if (!f || !seen.has(f)) continue;
         let e = by.get(day);
-        if (!e) by.set(day, e = { prices: [], local: 0 });
-        e.prices.push(seen.get(f));
-        if (localOn(x, day)) e.local++;
+        if (!e) by.set(day, e = new Map());
+        const vin = String(x.vin).toUpperCase(), price = seen.get(f), prior = e.get(vin);
+        // Match pick_display_rows: the cheapest eligible observation wins.
+        if (!prior || price < prior.price) e.set(vin, { price, local: localOn(x, day) });
       }
     }
     // Stop where the departure record stops. Past that line the file has only
@@ -2245,9 +2243,9 @@
     // is here so that the day it starts mattering, it already works.
     const from = (S.site || {}).departures_from || '';
     return [...by.keys()].sort().filter((date) => date >= from).map((date) => {
-      const e = by.get(date), p = e.prices.sort((a, b) => a - b);
+      const cars = [...by.get(date).values()], p = cars.map((x) => x.price).sort((a, b) => a - b);
       // trunc, not round: the builder writes int(median(...)) in Python
-      return { date, n: p.length, n_local: e.local, min_price: p[0], median_price: Math.trunc(median(p)) };
+      return { date, n: p.length, n_local: cars.filter((x) => x.local).length, min_price: p[0], median_price: Math.trunc(median(p)) };
     });
   }
   // At module scope because the floor ledger asks the same question of the

@@ -55,6 +55,10 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+        with:
+          # A queued run must see the snapshot and spend committed by the
+          # previous serialized run, rather than its older triggering SHA.
+          ref: main
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"

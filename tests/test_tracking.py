@@ -7760,9 +7760,23 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         self.assertTrue(seen, "an unfetched day must reach the API")
 
     def test_the_hatch_lets_a_genuine_re_run_through(self):
-        seen, _, _ = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
-                                 allow_refetch=True)
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=T.BUDGET):
+            seen, _, _ = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
+                                     allow_refetch=True)
         self.assertTrue(seen, "ALLOW_REFETCH must reach the API")
+
+    def test_refetch_keeps_models_seeded_outside_todays_schedule(self):
+        seeded = self._hist_row(T.TODAY)
+        seeded["target"] = next(t["id"] for t in T.TARGETS.values() if not T.due_on(t, T.TODAY_ORD))
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=T.BUDGET):
+            _, captured, _ = self._drive([seeded], self._via_batches(), allow_refetch=True)
+        self.assertIn(seeded, captured.get("rows", []))
+
+    def test_refetch_cannot_spend_an_exhausted_day(self):
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=0):
+            seen, _, out = self._drive([self._hist_row(T.TODAY)], lambda *a: [], allow_refetch=True)
+        self.assertFalse(seen)
+        self.assertEqual(out.code, T.ALREADY_FETCHED)
 
     def test_an_empty_hatch_is_not_a_hatch(self):
         """daily.yml passes ALLOW_REFETCH as `inputs.allow_refetch && '1' || ''`,

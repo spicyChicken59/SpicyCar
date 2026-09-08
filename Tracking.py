@@ -2414,11 +2414,12 @@ def save_fetch_log(row, path=None, keep=400, merge_targets=False):
     a National query that made two 40-record calls really did cost 80 records,
     and no row has to survive for that to be true.
 
-    A target the last run did not ask keeps no entry at all, for the same
+    By default, a target the last run did not ask keeps no entry at all, for the same
     reason: its rows were replaced by a day that did not include it, and a log
     entry without rows behind it is the defect above with a different trigger.
     Where the log is silent, delisted() falls back to what the rows can prove
-    and says "not checked" for the rest."""
+    and says "not checked" for the rest. Targeted and same-day refreshes pass
+    merge_targets=True because they retain the unattempted targets' rows."""
     if not row:
         return {}
     # Resolved at CALL time, not bound as a default: a default argument freezes
@@ -4543,6 +4544,16 @@ def main():
               f"      ALLOW_REFETCH=1 python3 Tracking.py")
         sys.exit(ALREADY_FETCHED)
 
+    refetch = TODAY in already and not bootstrap
+    if refetch:
+        ledger = json.loads(SPEND_LOG.read_text()) if SPEND_LOG.exists() else {}
+        if not isinstance(ledger, dict) or any(not isinstance(r, dict) or to_int(r.get("actual")) is None for r in ledger.values()):
+            sys.exit("Cannot verify API spend; repair the ledger before a same-day refresh.")
+        REQUEST_ALLOWANCE = bootstrap_allowance(ledger)
+        if REQUEST_ALLOWANCE < today_calls:
+            print("A complete same-day refresh does not fit the remaining API budget. Keeping today's cars and rebuilding outputs without API calls.")
+            sys.exit(ALREADY_FETCHED)
+
     rows = {}
     dropped = Counter()
     via = defaultdict(set)      # (target id, vin) -> the queries that returned it
@@ -4637,11 +4648,11 @@ def main():
                 "high — see normalize())")
     OVERLAP.update(source_overlap(rows))
     report_source_overlap(OVERLAP)
-    save_overlap_history(OVERLAP, merge_targets=True) if bootstrap else save_overlap_history(OVERLAP)
+    save_overlap_history(OVERLAP, merge_targets=True) if bootstrap or refetch else save_overlap_history(OVERLAP)
     # Written BEFORE the outputs are built, because build_outputs() -> delisted()
     # reads it back: today's departures are then judged by the same recorded
     # facts a rebuild will use tomorrow, so the two can never disagree.
-    save_fetch_log(fetch_log_row(), merge_targets=True) if bootstrap else save_fetch_log(fetch_log_row())
+    save_fetch_log(fetch_log_row(), merge_targets=True) if bootstrap or refetch else save_fetch_log(fetch_log_row())
     if FAILED_SCOPES:
         print(f"  ! {len(FAILED_SCOPES)} quer{'y' if len(FAILED_SCOPES) == 1 else 'ies'} failed "
               f"after retry — every car only they could see is 'not checked', not gone: "
@@ -4678,7 +4689,9 @@ def main():
     if bootstrap:
         all_rows = merge_bootstrap_rows(load_history(), today_rows, fetch_log_row())
     else:
-        history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY]
+        attempted = set(fetch_log_row())
+        history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY
+                        or (refetch and r["target"] not in attempted)]
         all_rows = history_rows + today_rows
     today_rows = [r for r in all_rows if r["snapshot_date"] == TODAY]
     write_rows(all_rows)

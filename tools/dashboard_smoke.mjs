@@ -3216,7 +3216,7 @@ await step('one car, one number', async () => {
       const delta = ((await page.locator('#kpis .sc-tile').first().locator('.sc-delta').first().textContent().catch(() => '')) || '').trim();
       ok('a flat delta names the day it is level with',
          /^= vs [A-Z][a-z]{2} \d/.test(delta) && !/previous day/.test(delta), `tile 1 says "${delta || '(no delta)'}"`);
-      const tileMed = digits(((await page.locator('#kpis .sc-tile').nth(2).textContent()).match(/median \$([\d,]+)/) || [])[1]);
+      const tileMed = digits(((await page.locator('#kpis .sc-tile').nth(2).locator('.sc-tile__sub').first().textContent()).match(/median \$([\d,]+)/) || [])[1]);
       const rowMed = digits(await page.locator('#chart-table tbody tr').first().locator('td').last().textContent().catch(() => ''));
       ok('the tile median and the chart table\'s newest median agree', tileMed && tileMed === rowMed && tileMed === String(plantedMedian),
          `planted a median of ${plantedMedian}.5: tile says ${tileMed || '(none)'}, the newest table row says ${rowMed || '(none)'}`);
