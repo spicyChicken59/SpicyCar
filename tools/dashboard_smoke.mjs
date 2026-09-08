@@ -457,7 +457,7 @@ for (const q of protoUrls) {
   ok(`${q} lands on the watchlist, not on a car`,
     state.h1 === 'The watchlist' && rows === baseRows, `${state.h1}, ${rows} rows`);
   ok(`${q} says the link missed and stops re-sharing itself`,
-    /not tracked|no longer tracked/.test(state.notice) && state.search === '',
+    /not tracked|no longer tracked/.test(state.notice) && state.search === '?view=report',
     `search=${JSON.stringify(state.search)} notice=${JSON.stringify(state.notice.replace(/\s+/g, ' ').slice(0, 40))}`);
 }
 });
@@ -869,7 +869,7 @@ await serveUnshopped();
 let none;
 try { await open(''); none = await readHero(); } finally { await ctx.unroute('**/data.json*'); }
 ok('with no models named the decision card says so instead of vanishing',
-   !none.hidden && /No models are named/.test(none.hint) && /model chips|buyer\.shopping/.test(none.hint),
+   !none.hidden && /Choose the models/.test(none.hint) && /Choose cars/.test(none.hint),
    `hidden=${none.hidden} · "${none.hint.slice(0, 150)}"`);
 ok('and it lays out no cars, because there are none to lay out',
    none.cars === 0 && none.gapHidden === true,
@@ -887,7 +887,7 @@ else {
   await open(`?models=${other.w.bk}-${other.w.mk}`);
   const chip = await readHero();
   ok('while the reader\'s own chips emptying it stays silent, as before',
-     chip.hidden === true && !/No models are named/.test(chip.hint),
+     chip.hidden === true && !/Choose the models/.test(chip.hint),
      `pressing ${other.w.bk}/${other.w.mk}: hidden=${chip.hidden} · "${chip.hint.slice(0, 90)}"`);
 }
 
@@ -952,56 +952,24 @@ ok('and one whose query ran and found nothing says THAT instead',
    `"${asked}"`);
 });
 
-// --- the brand row is navigation, not the page ------------------------------
-// It was six pills and is thirty-five. At 390x844 it stood 382px tall — 45% of
-// the first screen — and pushed "The decision", the card this product exists
-// for, to y=782 of 844: its heading on screen and not one number in it. The
-// oracle is what a reader can SEE, not the row's height: a height is a fact
-// about the market (more brands, taller row) and the decision card's first
-// figure being on the first screen is the claim.
-await step('the brand row is navigation, not the page', async () => {
-plan('a phone reaches the leading card without scrolling',
+// --- useful phone browsing, with report navigation still reachable ---------
+await step('phone browsing and report navigation', async () => {
+plan('a phone reaches car listings without scrolling',
      'and the row costs a constant, whatever the watchlist holds',
      'and every brand is still reachable, pressed one scrolled into view');
 await page.setViewportSize({ width: 390, height: 844 });
+await page.goto(BASE + '/index.html');
+await page.locator('.car-place-card').first().waitFor();
+const firstCar = await page.locator('.car-place-card').first().boundingBox();
+ok('a phone reaches car listings without scrolling',
+   firstCar && firstCar.y >= 0 && firstCar.y + Math.min(100, firstCar.height) <= 844,
+   JSON.stringify(firstCar));
+// Full report keeps the legacy brand navigation. Its charts follow the
+// shopping controls; Explore is now responsible for the useful first screen.
 await open('');
-// The subject used to be the DECISION card, because it led the page. It does
-// not any more — the Signal Matrix does, on purpose — so naming a card here
-// would assert a layout decision rather than the rule. The rule is that
-// NAVIGATION does not eat the first screen, and the oracle is whichever
-// content card comes first: its first figure has to be on it.
-const seen = await page.evaluate(() => {
-  const t = document.getElementById('tabs-brand');
-  if (!t || t.hidden) return null;
-  // Not the COVER. It sits above everything and is always on the first
-  // screen, so leading with it makes this unfailable — the first draft did
-  // exactly that and reported the dek as the figure it had found. The
-  // subject is the first card BELOW the cover, which is what the brand row
-  // pushes down.
-  const cover = document.querySelector('.sc-cover, #car-heading');
-  const coverBottom = cover ? cover.getBoundingClientRect().bottom : 0;
-  const cards = [...document.querySelectorAll('main section, main > .sc-card, #signal-card, #hero-card')]
-    .filter((c) => !c.hidden && c.getBoundingClientRect().height > 0
-                   && !c.contains(cover) && c !== cover
-                   && c.getBoundingClientRect().top >= coverBottom - 1)
-    .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-  const lead = cards[0];
-  if (!lead) return null;
-  const fig = [...lead.querySelectorAll('*')]
-    .find((n) => !n.children.length && /[\d]/.test(n.textContent || '')
-                 && n.getBoundingClientRect().height > 0);
-  return { tabs: Math.round(t.getBoundingClientRect().height),
-           tabsN: t.children.length,
-           lead: lead.id || lead.className.split(' ')[0],
-           firstFigure: fig ? Math.round(fig.getBoundingClientRect().bottom) : null,
-           figText: fig ? (fig.textContent || '').trim().slice(0, 30) : null,
-           vh: innerHeight };
-});
-if (!seen) return skipRest('this sheet has no brand row or no content card');
-ok('a phone reaches the leading card without scrolling',
-   seen.firstFigure !== null && seen.firstFigure <= seen.vh,
-   `${seen.tabsN} brand tabs in ${seen.tabs}px; #${seen.lead} leads and its first figure `
-   + `(${seen.figText}) ends at y=${seen.firstFigure} of ${seen.vh}`);
+const seen = await page.locator('#tabs-brand').evaluate((t) => ({
+  tabs: Math.round(t.getBoundingClientRect().height), tabsN: t.children.length
+}));
 // The cap used to be three wrapped rows, which fixed the symptom and left the
 // height a function of the market — nineteen brands filled all three, and the
 // twentieth would have started scrolling a row nobody can see is scrollable.
@@ -4335,7 +4303,7 @@ await step('a VIN in hand', async () => {
   }
   await open('?vin=__proto__');
   const r4 = await read();
-  ok('a VIN nobody has seen goes through the dead-link notice and is not re-shared', !r4.card && r4.h1 === 'The watchlist' && /no car on the sheet has that VIN/i.test(r4.notice) && r4.url === '',
+  ok('a VIN nobody has seen goes through the dead-link notice and is not re-shared', !r4.card && r4.h1 === 'The watchlist' && /no car on the sheet has that VIN/i.test(r4.notice) && r4.url === '?view=report',
      `__proto__: h1 "${r4.h1}" · notice "${r4.notice.slice(0, 80)}" · url "${r4.url}"`);
   const departed = all.find((o) => o.gone && o.x.vin && !liveVins.has(String(o.x.vin).toUpperCase()) && o.x.last_price != null);
   if (!departed) skip('a departed car\'s VIN opens the card in its gone form', 'no departed car on the sheet is absent from the live rows');
@@ -4359,7 +4327,7 @@ await step('a VIN in hand', async () => {
   const five = tailOf(5);
   await open('?vin=' + five);
   const r7 = await read();
-  ok('five characters are refused even when they would fit one car', !r7.card && r7.h1 === 'The watchlist' && /six characters at least/.test(r7.notice) && r7.url === '',
+  ok('five characters are refused even when they would fit one car', !r7.card && r7.h1 === 'The watchlist' && /six characters at least/.test(r7.notice) && r7.url === '?view=report',
      `${five} fits ${count(five)}: h1 "${r7.h1}" · notice "${r7.notice.slice(0, 80)}"`);
   // leaving: a model chip on the front page, or here the model tab, opens
   // another model and the car in hand does not follow
@@ -5982,8 +5950,13 @@ await step('a split adds up to the total it named', async () => {
                                           'the watchlist holds fewer than two models today');
   await chips.nth(mine).click(); await page.waitForTimeout(250);
   await chips.nth(theirs).click(); await page.waitForTimeout(500);
-  const cell = (await page.locator('#compare-table td').evaluateAll(
-    (ns) => ns.map((n) => n.textContent.trim()))).find((t) => /drivable/.test(t)) || '';
+  const cell = await page.locator('#compare-table').evaluate((table, modelLabel) => {
+    const index = [...table.querySelectorAll('thead th')].findIndex((th) =>
+      (th.getAttribute('aria-label') || '') === modelLabel || (th.getAttribute('aria-label') || '').startsWith(modelLabel + ','));
+    if (index < 1) return '';
+    return [...table.querySelectorAll('tbody tr')].map((tr) =>
+      tr.children[index]?.textContent.trim() || '').find((text) => /drivable ·/.test(text)) || '';
+  }, label);
   if (!cell) return skip('and the compare table puts an unplaced car in neither column',
                          'the compare table is not on screen for this pair');
   // The cell stacks a figure over a sub-line, so its text runs the total
@@ -6868,16 +6841,17 @@ await step('market studio cover links follow scoped filters', async () => {
   } finally { await page.evaluate(() => localStorage.removeItem('spicycar.prefs')); }
 });
 
-await step('market studio responsive first screen', async () => {
+await step('report signals remain readable across screen sizes', async () => {
   const sizes = [[390, 844], [820, 1180], [1280, 1000]];
-  plan(...sizes.flatMap(([width]) => ['light', 'dark'].map((theme) => `the market studio fits ${width}px in ${theme} with a useful first screen and readable signals`)));
+  plan(...sizes.flatMap(([width]) => ['light', 'dark'].map((theme) => `the market studio fits ${width}px in ${theme} with readable report signals`)));
   for (const [width, height] of sizes) for (const theme of ['light', 'dark']) {
-    const name = `the market studio fits ${width}px in ${theme} with a useful first screen and readable signals`;
+    const name = `the market studio fits ${width}px in ${theme} with readable report signals`;
     await page.setViewportSize({ width, height });
     await open('');
     await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
     await page.waitForTimeout(400);
     if (!(await studioHero()).length) { skip(name, 'no shopping candidate exists on this sheet'); continue; }
+    await page.locator('#decision-matrix .sc-signal__label').first().scrollIntoViewIfNeeded();
     const geometry = await page.evaluate(() => {
       const first = document.querySelector('#decision-matrix .sc-signal__label');
       const rect = first?.getBoundingClientRect();
