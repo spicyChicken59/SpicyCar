@@ -346,8 +346,10 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 3. Edit `targets.json`: your `buyer`, your `watchlist`. The Action runs at 11:00 UTC and can be
    started by hand from the Actions tab.
 
-To populate newly added models immediately after a regular daily run, dispatch
-**SpicyCar daily** with **fill_missing** checked. It requests only targets without
+New models receive their first check after a regular daily run, using the remaining
+allowance. Changes to the watchlist also start this workflow automatically. To run
+just that first-fetch pass after a regular daily run, dispatch **SpicyCar daily**
+with **fill_missing** checked. It requests only targets without
 complete first-fetch coverage, preserves that day's existing cars, and stops at
 the remaining daily/monthly allowance, counting retries. Successful empty markets
 are reported and do not get billed again by this option. Ordinary runs continue

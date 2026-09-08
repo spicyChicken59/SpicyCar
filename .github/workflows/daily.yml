@@ -1,6 +1,11 @@
 name: SpicyCar daily
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - targets.json
+      - .github/workflows/daily.yml
   schedule:
     - cron: "0 11 * * *"
   # Dispatch is for a run that DIED PARTWAY and left the day incomplete —
@@ -79,6 +84,22 @@ jobs:
           elif [ "$rc" != "0" ]; then
             exit $rc
           fi
+      - name: Fill new watchlist models within remaining budget
+        if: ${{ !inputs.fill_missing }}
+        env:
+          AUTODEV_API_KEY: ${{ secrets.AUTODEV_API_KEY }}
+          BUYER_HOME_ZIP: ${{ secrets.BUYER_HOME_ZIP }}
+          FILL_MISSING: '1'
+        run: |
+          set +e
+          python Tracking.py
+          rc=$?
+          set -e
+          if [ "$rc" = "3" ]; then
+            echo "::notice::First-fetch coverage is complete or the remaining API allowance is reserved. No extra calls made."
+          elif [ "$rc" != "0" ]; then
+            exit $rc
+          fi
       - name: Commit the record, whatever happened to the outputs
         # data/ is the part that cannot be re-made. snapshots.csv holds rows
         # the listings API will never serve again, and spend.json is the only
@@ -103,7 +124,7 @@ jobs:
         # carrying docs/ and REPORT.md — for a day that had lost nothing. The
         # step below already commits data/ with the outputs on success; this
         # one exists for the path where that step never runs.
-        if: always() && steps.tracker.conclusion != 'success'
+        if: always() && (steps.tracker.conclusion != 'success' || failure())
         run: |
           git config user.name  "tracker"
           git config user.email "actions@github.com"
