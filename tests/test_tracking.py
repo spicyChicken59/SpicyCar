@@ -3170,8 +3170,17 @@ class TestTheTwoFactsThatNarrowAThirtySixModelMarket(unittest.TestCase):
         rows = T.load_history()
         self.assertTrue(rows)
         self.assertTrue(all("seats" in r and "drivetrain" in r for r in rows))
-        self.assertEqual({r["drivetrain"] for r in rows}, {""},
-                         "every committed row predates the column")
+        self.assertTrue({r["drivetrain"] for r in rows} <= {"", "AWD", "RWD", "FWD"})
+        # Exercise the old schema explicitly; new daily snapshots contain drivetrain.
+        import tempfile
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            legacy = Path(folder) / "snapshots.csv"
+            legacy.write_text("snapshot_date,target,vin\n2026-09-01,bmw-i5-edrive40,LEGACY\n")
+            with patch.object(T, "SNAPSHOTS", legacy):
+                restored = T.load_history()
+            self.assertEqual(restored[0]["seats"], "")
+            self.assertEqual(restored[0]["drivetrain"], "")
 
     def test_the_run_says_how_often_the_feed_filled_them(self):
         """The coverage line is the whole justification for keeping a field
@@ -5523,7 +5532,11 @@ class TestTheCommittedRecordIsThisCodesOwn(unittest.TestCase):
             T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(keep[2])
             T.EXHAUSTED.clear(); T.EXHAUSTED.update(keep[3])
             T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(keep[4])
-        if built != report.read_text():
+        # Only the process footer differs: a live fetch states its request
+        # count and an offline rebuild accurately states it made no calls.
+        def stable_report(text):
+            return re.sub(r" · (?:\d+ API calls? today|outputs rebuilt from the snapshot on disk — no calls made)\._$", "._", text)
+        if stable_report(built) != stable_report(report.read_text()):
             import difflib
             diff = list(difflib.unified_diff(report.read_text().splitlines(),
                                              built.splitlines(),
@@ -7747,9 +7760,36 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         self.assertTrue(seen, "an unfetched day must reach the API")
 
     def test_the_hatch_lets_a_genuine_re_run_through(self):
-        seen, _, _ = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
-                                 allow_refetch=True)
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=T.BUDGET):
+            seen, _, _ = self._drive([self._hist_row(T.TODAY)], lambda *a: [],
+                                     allow_refetch=True)
         self.assertTrue(seen, "ALLOW_REFETCH must reach the API")
+
+    def test_refetch_keeps_models_seeded_outside_todays_schedule(self):
+        seeded = self._hist_row(T.TODAY)
+        seeded["target"] = next(t["id"] for t in T.TARGETS.values() if not T.due_on(t, T.TODAY_ORD))
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=T.BUDGET):
+            _, captured, _ = self._drive([seeded], self._via_batches(), allow_refetch=True)
+        self.assertIn(seeded, captured.get("rows", []))
+
+    def test_refetch_cannot_spend_an_exhausted_day(self):
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=0):
+            seen, _, out = self._drive([self._hist_row(T.TODAY)], lambda *a: [], allow_refetch=True)
+        self.assertFalse(seen)
+        self.assertEqual(out.code, T.ALREADY_FETCHED)
+
+    def test_refetch_keeps_prior_rows_for_a_budget_deferred_target(self):
+        prior = self._hist_row(T.TODAY)
+        prior["target"] = "bmw-i7-edrive50"
+        batches = self._via_batches()
+        def capped(t, source_name, sort, page):
+            if t["id"] == prior["target"]:
+                T.FAILED_SCOPES.add((t["id"], source_name))
+                return None
+            return batches(t, source_name, sort, page)
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=T.BUDGET):
+            _, captured, _ = self._drive([prior], capped, allow_refetch=True)
+        self.assertIn(prior, captured.get("rows", []))
 
     def test_an_empty_hatch_is_not_a_hatch(self):
         """daily.yml passes ALLOW_REFETCH as `inputs.allow_refetch && '1' || ''`,
@@ -8496,7 +8536,7 @@ class TestTheSnapshotPushSurvivesAnOwnerRebuild(unittest.TestCase):
             bare, seed, owner, runner = tmp / "remote.git", tmp / "seed", tmp / "owner", tmp / "runner"
             self._git(tmp, "init", "--bare", "-b", "main", str(bare))
             self._git(tmp, "init", "-b", "main", str(seed))
-            for rel, text in {"REPORT.md": "seed report\n", "docs/data.json": "{\"seed\": 1}\n",
+            for rel, text in {"README.md": "seed readme\n", "REPORT.md": "seed report\n", "docs/data.json": "{\"seed\": 1}\n",
                               "data/snapshots.csv": "a,b\n1,2\n", "targets.json": "{\"picks\": 4}\n"}.items():
                 (seed / rel).parent.mkdir(parents=True, exist_ok=True); (seed / rel).write_text(text)
             self._git(seed, "add", "."); self._git(seed, "commit", "-qm", "seed")

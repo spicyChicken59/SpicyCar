@@ -497,4 +497,4 @@ _By asking price, with a shipping estimate per car, on a slower cadence: the 20 
 - **Lexus RZ** — not fetched yet · first run 2026-09-19 _(every 15 days)_
 
 ---
-_1382 vehicle histories across 17 days · 16 API calls today._
+_1382 vehicle histories across 17 days · outputs rebuilt from the snapshot on disk — no calls made._
