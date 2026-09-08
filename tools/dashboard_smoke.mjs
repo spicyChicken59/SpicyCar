@@ -247,7 +247,7 @@ const WATCHED = Object.entries(SHEET.brands || {}).flatMap(([bk, b]) =>
     trims: Object.keys((m || {}).trims || {}), cars: ((m || {}).listings || []).length })));
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
 async function open(query) {
-  await page.goto(BASE + '/index.html' + query, { waitUntil: 'load' });
+  await page.goto(BASE + '/index.html?view=report' + (query ? '&' + query.replace(/^\?/, '') : ''), { waitUntil: 'load' });
   await page.waitForFunction(() => {
     const h = document.getElementById('h1');
     return h && h.textContent.trim() && h.textContent !== 'Snapshot unavailable';
@@ -1587,7 +1587,7 @@ await page.setViewportSize({ width: 390, height: 844 });
 let releaseData;
 const dataHeld = new Promise((r) => { releaseData = r; });
 await ctx.route('**/data.json*', async (r) => { await dataHeld; r.continue(); });
-await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+await page.goto(BASE + '/index.html?view=report', { waitUntil: 'load' });
 const shell = await page.evaluate(() => ({
   h1: (document.getElementById('h1').textContent || '').trim(),
   footTop: Math.round(document.querySelector('footer.sc-foot').getBoundingClientRect().top),
@@ -1728,7 +1728,7 @@ let releaseMast;
 const mastHeld = new Promise((r) => { releaseMast = r; });
 await ctx.route('**/data.json*', async (r) => { await mastHeld; r.continue(); });
 await page.setViewportSize({ width: 320, height: 568 });
-await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+await page.goto(BASE + '/index.html?view=report', { waitUntil: 'load' });
 const mastShell = await page.evaluate(() => {
   const el = document.getElementById('mast-right');
   return { text: (el.textContent || '').trim(),
@@ -5609,7 +5609,7 @@ await step('the chart draws the window its chips name', async () => {
   await ctx.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(raw) }));
   try {
     // A profile remembering the wider window, written before the page loads.
-    await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+    await page.goto(BASE + '/index.html?view=report', { waitUntil: 'load' });
     await page.evaluate(() => {
       try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [], range: '90' })); } catch { /* private mode */ }
     });
@@ -5754,7 +5754,7 @@ await step('when the design system does not load', async () => {
   await ctx.route('**/design-system/**', (r) =>
     r.fulfill({ status: 503, contentType: 'text/plain', body: 'no' }));
   try {
-    await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+    await page.goto(BASE + '/index.html?view=report', { waitUntil: 'load' });
     await page.waitForTimeout(800);
     const notice = await page.locator('#notice').evaluate((n) => ({
       hidden: n.hidden, text: (n.textContent || '').replace(/\s+/g, ' ').trim(),

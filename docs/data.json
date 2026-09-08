@@ -56908,7 +56908,7 @@
       {
        "vin": "WP0AA2Y15SSA08910",
        "year": 2025,
-       "trim": 4,
+       "trim": "4",
        "trim_id": "porsche-taycan",
        "trim_label": "all trims",
        "state": "AL",
@@ -57520,7 +57520,7 @@
       {
        "vin": "WP0AA2Y14SSA12804",
        "year": 2025,
-       "trim": 4,
+       "trim": "4",
        "trim_id": "porsche-taycan",
        "trim_label": "all trims",
        "state": "IL",
@@ -57608,7 +57608,7 @@
       {
        "vin": "WP0AA2Y18SSA13342",
        "year": 2025,
-       "trim": 4,
+       "trim": "4",
        "trim_id": "porsche-taycan",
        "trim_label": "all trims",
        "state": "IL",
@@ -57786,7 +57786,7 @@
       {
        "vin": "WP0AA2Y10SSA12833",
        "year": 2025,
-       "trim": 4,
+       "trim": "4",
        "trim_id": "porsche-taycan",
        "trim_label": "all trims",
        "state": "WI",
@@ -58053,7 +58053,7 @@
       {
        "vin": "WP0AA2Y14TSA08320",
        "year": 2026,
-       "trim": 4,
+       "trim": "4",
        "trim_id": "porsche-taycan",
        "trim_label": "all trims",
        "state": "IL",
