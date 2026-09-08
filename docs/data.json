@@ -34,9 +34,10 @@
   ],
   "scope_label": "IL/OH/IN/WI",
   "shopping": [
-   "bmw-i5-cpo",
    "bmw-i5-edrive40",
-   "bmw-i7-edrive50"
+   "bmw-i5-cpo",
+   "bmw-i7-edrive50",
+   "bmw-i7-cpo"
   ],
   "picks": {
    "count": 4,
@@ -163,23 +164,6 @@
       "min_price": 20000
      },
      "trims": {
-      "bmw-i5-cpo": {
-       "label": "CPO under 30k mi",
-       "note": "The certified eDrive40s and xDrive40s under 30,000 miles that fall inside the forty lowest-mileage i5s in the country \u2014 the query is miles.asc over two pages, then filtered, so it is the low-mileage end of that market rather than all of it \u2014 the 2.99% APR CPO promo is the reason to watch these. M60s excluded on purpose: they are not the shopping pool, and the narrower query buys deeper coverage per call.",
-       "depth": "full",
-       "cadence": 2,
-       "shopping": true,
-       "years": [
-        "2024",
-        "2025",
-        "2026",
-        "2027"
-       ],
-       "min_price": 20000,
-       "max_miles": 30000,
-       "cpo_only": true,
-       "market_total": null
-      },
       "bmw-i5-edrive40": {
        "label": "eDrive40",
        "note": "The rear-drive i5, one half of the decision beside the i7 eDrive50.",
@@ -195,13 +179,18 @@
        "min_price": 20000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc",
+        "miles.asc"
+       ],
        "market_total": null
       },
       "bmw-i5-xdrive40": {
        "label": "xDrive40",
        "note": "",
        "depth": "light",
-       "cadence": 2,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -212,6 +201,10 @@
        "min_price": 20000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 9,
        "exit_price": 55215,
@@ -225,7 +218,7 @@
        "label": "M60",
        "note": "",
        "depth": "light",
-       "cadence": 2,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -236,6 +229,10 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 11,
        "exit_price": 60955,
@@ -244,6 +241,27 @@
        "exit_watched": 10,
        "exit_cut_seen": 4,
        "exit_days": 17
+      },
+      "bmw-i5-cpo": {
+       "label": "CPO under 30k mi",
+       "note": "Certified BMW i5s between 100 and 30,000 miles that fall inside the 40 lowest-mileage BMW i5s in the country \u2014 the query is miles.asc over 2 pages, then filtered, so it is that end of the market rather than all of it. Derived from buyer.cpo_watch for every car named in buyer.shopping: no model has to ask for one, and none of them names itself. The 2.99% APR certified promo is the reason to watch these.",
+       "depth": "full",
+       "cadence": 2,
+       "shopping": true,
+       "years": [
+        "2024",
+        "2025",
+        "2026",
+        "2027"
+       ],
+       "min_price": 20000,
+       "max_miles": 30000,
+       "cpo_only": true,
+       "national_only": true,
+       "sorts": [
+        "miles.asc"
+       ],
+       "market_total": null
       }
      },
      "listings": [
@@ -10787,78 +10805,6 @@
       }
      ],
      "daily_by_trim": {
-      "bmw-i5-cpo": [
-       {
-        "date": "2026-08-30",
-        "n": 1,
-        "n_local": 0,
-        "min_price": 51588,
-        "median_price": 51588
-       },
-       {
-        "date": "2026-08-31",
-        "n": 1,
-        "n_local": 0,
-        "min_price": 51588,
-        "median_price": 51588
-       },
-       {
-        "date": "2026-09-01",
-        "n": 6,
-        "n_local": 0,
-        "min_price": 45998,
-        "median_price": 55280
-       },
-       {
-        "date": "2026-09-02",
-        "n": 6,
-        "n_local": 0,
-        "min_price": 45998,
-        "median_price": 55280
-       },
-       {
-        "date": "2026-09-03",
-        "n": 2,
-        "n_local": 0,
-        "min_price": 54476,
-        "median_price": 56280
-       },
-       {
-        "date": "2026-09-04",
-        "n": 2,
-        "n_local": 0,
-        "min_price": 54476,
-        "median_price": 56280
-       },
-       {
-        "date": "2026-09-05",
-        "n": 4,
-        "n_local": 0,
-        "min_price": 48084,
-        "median_price": 57922
-       },
-       {
-        "date": "2026-09-06",
-        "n": 4,
-        "n_local": 0,
-        "min_price": 48084,
-        "median_price": 57922
-       },
-       {
-        "date": "2026-09-07",
-        "n": 7,
-        "n_local": 0,
-        "min_price": 48084,
-        "median_price": 54999
-       },
-       {
-        "date": "2026-09-08",
-        "n": 7,
-        "n_local": 0,
-        "min_price": 48084,
-        "median_price": 54999
-       }
-      ],
       "bmw-i5-edrive40": [
        {
         "date": "2026-08-23",
@@ -11221,16 +11167,81 @@
         "min_price": 46995,
         "median_price": 56970
        }
+      ],
+      "bmw-i5-cpo": [
+       {
+        "date": "2026-08-30",
+        "n": 1,
+        "n_local": 0,
+        "min_price": 51588,
+        "median_price": 51588
+       },
+       {
+        "date": "2026-08-31",
+        "n": 1,
+        "n_local": 0,
+        "min_price": 51588,
+        "median_price": 51588
+       },
+       {
+        "date": "2026-09-01",
+        "n": 6,
+        "n_local": 0,
+        "min_price": 45998,
+        "median_price": 55280
+       },
+       {
+        "date": "2026-09-02",
+        "n": 6,
+        "n_local": 0,
+        "min_price": 45998,
+        "median_price": 55280
+       },
+       {
+        "date": "2026-09-03",
+        "n": 2,
+        "n_local": 0,
+        "min_price": 54476,
+        "median_price": 56280
+       },
+       {
+        "date": "2026-09-04",
+        "n": 2,
+        "n_local": 0,
+        "min_price": 54476,
+        "median_price": 56280
+       },
+       {
+        "date": "2026-09-05",
+        "n": 4,
+        "n_local": 0,
+        "min_price": 48084,
+        "median_price": 57922
+       },
+       {
+        "date": "2026-09-06",
+        "n": 4,
+        "n_local": 0,
+        "min_price": 48084,
+        "median_price": 57922
+       },
+       {
+        "date": "2026-09-07",
+        "n": 7,
+        "n_local": 0,
+        "min_price": 48084,
+        "median_price": 54999
+       },
+       {
+        "date": "2026-09-08",
+        "n": 7,
+        "n_local": 0,
+        "min_price": 48084,
+        "median_price": 54999
+       }
       ]
      },
      "fetch_days": {
-      "bmw-i5-cpo": [
-       "2026-08-30",
-       "2026-09-01",
-       "2026-09-03",
-       "2026-09-05",
-       "2026-09-07"
-      ],
       "bmw-i5-edrive40": [
        "2026-08-23",
        "2026-08-24",
@@ -11266,6 +11277,13 @@
        "2026-08-24",
        "2026-08-26",
        "2026-08-28",
+       "2026-08-30",
+       "2026-09-01",
+       "2026-09-03",
+       "2026-09-05",
+       "2026-09-07"
+      ],
+      "bmw-i5-cpo": [
        "2026-08-30",
        "2026-09-01",
        "2026-09-03",
@@ -17537,13 +17555,18 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc",
+        "miles.asc"
+       ],
        "market_total": null
       },
       "bmw-i7-xdrive60": {
        "label": "xDrive60",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -17554,6 +17577,10 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 8,
        "exit_price": 115495,
@@ -17567,7 +17594,7 @@
        "label": "M70",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -17578,6 +17605,31 @@
        "min_price": 60000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
+       "market_total": null
+      },
+      "bmw-i7-cpo": {
+       "label": "CPO under 30k mi",
+       "note": "Certified BMW i7s between 100 and 30,000 miles that fall inside the 40 lowest-mileage BMW i7s in the country \u2014 the query is miles.asc over 2 pages, then filtered, so it is that end of the market rather than all of it. Derived from buyer.cpo_watch for every car named in buyer.shopping: no model has to ask for one, and none of them names itself.",
+       "depth": "full",
+       "cadence": 2,
+       "shopping": true,
+       "years": [
+        "2024",
+        "2025",
+        "2026",
+        "2027"
+       ],
+       "min_price": 35000,
+       "max_miles": 30000,
+       "cpo_only": true,
+       "national_only": true,
+       "sorts": [
+        "miles.asc"
+       ],
        "market_total": null
       }
      },
@@ -25888,7 +25940,8 @@
         "min_price": 66196,
         "median_price": 139349
        }
-      ]
+      ],
+      "bmw-i7-cpo": []
      },
      "fetch_days": {
       "bmw-i7-edrive50": [
@@ -25925,7 +25978,8 @@
        "2026-09-01",
        "2026-09-04",
        "2026-09-07"
-      ]
+      ],
+      "bmw-i7-cpo": []
      },
      "gone": [
       {
@@ -33832,14 +33886,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 3,
+     "cadence": 6,
      "as_of": "2026-09-06",
      "age_days": 2,
      "overdue": false,
      "last_asked": "2026-09-06",
      "fetched_today": false,
      "due_today": false,
-     "next_due": "2026-09-09",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 25000
      },
@@ -33848,7 +33902,7 @@
        "label": "xDrive (45 / 50 / 60)",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -33859,13 +33913,17 @@
        "min_price": 25000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       },
       "bmw-ix-m": {
        "label": "M (M60 / M70)",
        "note": "",
        "depth": "light",
-       "cadence": 3,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -33876,6 +33934,10 @@
        "min_price": 35000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -38795,7 +38857,7 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-08-25",
      "age_days": 14,
      "overdue": true,
@@ -38811,7 +38873,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -38822,6 +38884,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -40479,7 +40545,7 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
@@ -40495,7 +40561,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -40506,6 +40572,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 12,
        "exit_price": 35616,
@@ -43606,14 +43676,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-09-06",
      "age_days": 2,
      "overdue": false,
      "last_asked": "2026-09-06",
      "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-11",
+     "due_today": true,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -43622,7 +43692,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -43633,6 +43703,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null,
        "exit_n": 10,
        "exit_price": 44477,
@@ -45258,14 +45332,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-16",
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 30000
      },
@@ -45274,7 +45348,7 @@
        "label": "Pure",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -45285,13 +45359,17 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       },
       "lucid-air-touring": {
        "label": "Touring",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -45302,13 +45380,17 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       },
       "lucid-air-grand-touring": {
        "label": "Grand Touring",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -45319,6 +45401,10 @@
        "min_price": 30000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -51051,14 +51137,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 4,
+     "cadence": 6,
      "as_of": "2026-08-27",
      "age_days": 12,
      "overdue": true,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": false,
-     "next_due": "2026-09-10",
+     "due_today": true,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -51067,7 +51153,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 4,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -51078,6 +51164,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -52870,14 +52960,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-15",
+     "next_due": "2026-09-11",
      "params": {
       "min_price": 8000
      },
@@ -52886,7 +52976,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -52897,6 +52987,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -53711,14 +53805,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-14",
+     "next_due": "2026-09-11",
      "params": {
       "min_price": 8000
      },
@@ -53727,7 +53821,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -53738,6 +53832,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -55071,14 +55169,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-13",
+     "next_due": "2026-09-12",
      "params": {
       "min_price": 8000
      },
@@ -55087,7 +55185,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -55098,6 +55196,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -56353,14 +56455,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-12",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 8000
      },
@@ -56369,7 +56471,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -56380,6 +56482,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -58204,14 +58310,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-11",
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 8000
      },
@@ -58220,7 +58326,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -58231,6 +58337,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -59825,14 +59935,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-10",
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -59841,7 +59951,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -59852,6 +59962,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -60665,14 +60779,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-09",
+     "next_due": "2026-09-12",
      "params": {
       "min_price": 8000
      },
@@ -60681,7 +60795,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -60692,6 +60806,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -62070,14 +62188,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
-     "due_today": true,
-     "next_due": "2026-09-08",
+     "due_today": false,
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -62086,7 +62204,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -62097,6 +62215,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -63777,14 +63899,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
-     "due_today": false,
-     "next_due": "2026-09-22",
+     "due_today": true,
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
      },
@@ -63793,7 +63915,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -63804,6 +63926,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -65483,14 +65609,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-21",
+     "next_due": "2026-09-10",
      "params": {
       "min_price": 8000
      },
@@ -65499,7 +65625,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -65510,6 +65636,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -66807,14 +66937,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-20",
+     "next_due": "2026-09-09",
      "params": {
       "min_price": 8000
      },
@@ -66823,7 +66953,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -66834,6 +66964,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },
@@ -68504,14 +68638,14 @@
       "2027"
      ],
      "shopping": false,
-     "cadence": 15,
+     "cadence": 6,
      "as_of": "2026-09-08",
      "age_days": 0,
      "overdue": false,
      "last_asked": "2026-09-08",
      "fetched_today": true,
      "due_today": false,
-     "next_due": "2026-09-19",
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 8000
      },
@@ -68520,7 +68654,7 @@
        "label": "all trims",
        "note": "",
        "depth": "light",
-       "cadence": 15,
+       "cadence": 6,
        "shopping": false,
        "years": [
         "2024",
@@ -68531,6 +68665,10 @@
        "min_price": 8000,
        "max_miles": null,
        "cpo_only": false,
+       "national_only": false,
+       "sorts": [
+        "price.asc"
+       ],
        "market_total": null
       }
      },

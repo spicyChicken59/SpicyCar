@@ -14,10 +14,12 @@
 
 [![SpicyCar daily](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml)
 
-**A used-car purchase analyzer.** Every day it snapshots the BMW i5 and i7 being shopped —
-including a nationwide watch on every certified (CPO) i5 under 30,000 miles, where the
-promo rate on certified EVs (2.99% on the i5) makes the financing the story — with their
-siblings behind them and, on a slower cadence, one battery EV from each of the other 17
+**A used-car purchase analyzer.** Every day it snapshots the cars named in `buyer.shopping` —
+the BMW i5 and i7 today — including a nationwide watch on every certified (CPO) example of
+each of them under 30,000 miles, where the promo rate on certified EVs (2.99% on the i5)
+makes the financing the story. **Which cars those are is the one thing you configure:** the
+depth, the daily cadence and the certified watch are derived from that list, so pointing it
+at a Kia EV9 moves all three onto the EV9. With their siblings behind them and, on a slower cadence, one battery EV from each of the other 17
 brands selling a 2024-or-newer one in the US. Each car is priced as what it would actually cost
 to land in a specific buyer's driveway, and the result is published as a dashboard, with a
 committed Markdown report beside it as the day's record. (An email path exists and is switched
@@ -59,13 +61,45 @@ Two things are configured, separately:
   and how they value miles and shipping. One buyer today; the first real use is a buyer near
   Chicago deciding between the i5 and the i7 — drawn by a CPO financing promo (2.99% APR on
   certified EVs). The shape is built for more.
-- **watchlist** — what to track: brands → models → trims. The shopped i5 carries a
-  nationwide CPO watch (every certified eDrive/xDrive under 30,000 miles — the M trims are
-  not the shopping pool — fetched lowest-mileage first, national query only) beside its
-  ordinary trim targets. The i7's was stood down before it ever ran: the same recipe on the
-  i7 sorts miles.asc into a national pool whose 40 lowest-mileage cars are all uncertified
-  2026 delivery-mileage inventory, so no certified car falls inside the window (see the note
-  on that trim in `targets.json`). The iX is tracked for comparison only.
+- **watchlist** — what to track: brands → models → trims. Nothing in it names a car as the
+  one being bought: **`buyer.shopping` does that, and everything a shopped car gets follows
+  from being named there.** `buyer.shopping_fetch` is the depth (both sorts at two pages plus
+  a newest-first page, fetched daily) and `buyer.cpo_watch` is the nationwide certified
+  sweep — lowest-mileage first, national query only, filtered to certified cars between the
+  mileage floor and the cap — derived once per shopped **model**, whatever model that is. A
+  model may narrow the sweep's query or stand it down with its own optional `cpo` block; a
+  model that says nothing gets a sweep of the whole model, which is what makes this work for
+  a car nobody has written a line about. The i5 narrows its sweep to the eDrive/xDrive trims
+  (the M cars are not this buyer's shopping pool) and nothing else needs narrowing, because
+  **the floor is on the recipe.** It is there for a mechanism, not a car: a certified watch
+  sorts by mileage and delivery stock sits at the bottom of that order, so the window fills
+  with cars nobody has owned yet. On 2026-09-08, the first real night this repo recorded, all
+  forty cars inside the i5 watch's window were current-model-year and the fortieth had 5
+  miles on it — the first certified i5 was 45th, and the watch returned nothing on a day it
+  had returned cars on every day before. A 100-mile floor puts the first certified car inside
+  the window on every day the record holds, for the i5 (ranks 2–26 over 17 days) and the i7
+  (7–30 over 12, where it was 50–80 on every one), and costs one car in 147: an 8-mile iX,
+  which is a new car wearing the badge. The iX is tracked
+  for comparison only. Naming it in `buyer.shopping` is all it takes to give it the same
+  treatment — and it has a price: a shopped car costs `shopping_fetch`'s depth on its fetch
+  days plus a certified watch of its own, about 11 calls a day here, and the plan has ~2 a
+  day of headroom. So swapping a car for another is free and **adding a third needs the
+  budgets raised or `shopping_fetch` cut** — measured: three shopped cars is 1,023 calls a
+  month against a plan of 1,000, and the run refuses to start and says so.
+
+  ### Changing which car you are shopping
+
+  1. Edit `buyer.shopping`. An id that matches no target stops the run and names the near
+     misses, rather than leaving you shopping nothing with every surface looking healthy.
+  2. `AUTODEV_API_KEY=offline python3 tools/rebuild_outputs.py` — the printed call plan is
+     the check: it says today, the worst day of the cycle and the month.
+  3. Run the tests. **Some will be red on purpose:** this README, `docs/how.html` and
+     `targets.json`'s comments quote figures derived from the config — the cadence, the call
+     plan, the counts — and the guards that hold them exist so a config change cannot leave
+     the prose lying. Each failure names the sentence and the number it should say, and they
+     are the only ones that move: swapping the BMW i5 and i7 for a Kia EV9 used to turn 62
+     tests red and now turns none red but those, because the rule-tests build their own buyer
+     rather than reading yours.
 
   **Outside BMW it is one EV per brand, model year 2024 and newer.** The 2024+ rule is one
   line in `defaults` and no target restates it. Every brand selling a 2024-or-newer battery
@@ -135,25 +169,37 @@ Two things are configured, separately:
   The list is meant to move with the decision. When it narrowed to the i5 against the i7, the
   i4 stood down — at full depth on a daily cadence it was ten calls a day, a third of the whole
   plan, to benchmark a drivetrain the two shopped pages now show directly — and the iX kept its
-  ordinary trims on the slow cadence but gave up its nationwide certified sweep, which is the
-  most expensive thing a model can carry and only earns its place on a car you are buying.
-  Both are one `active` flag from coming back.
+  ordinary trims on the slow cadence but no longer sweeps the country for a certified one,
+  which is the most expensive thing a model can carry and only earns its place on a car you
+  are buying. The i4 is one `active` flag from coming back; the iX's sweep is not a flag at
+  all any more — it is derived, so it returns the day the iX is named in `buyer.shopping`
+  and not before.
 
 ## Design decisions
 
 **It runs on about 30 API calls a day.** The free plan allows 1,000 calls a month at 20 listings
 each. So a target is fetched twice — once filtered to the buyer's states plus `search_states`
 (the API takes a comma list, so eight states cost one call) and once nationally — unless it is
-`national_only`, which now means the nationwide certified watch and nothing else. Each target has a *depth* (the
-two being shopped get both sorts at two pages **plus a newest-first page**, so a fresh listing is
+`national_only`, which now means the nationwide certified watches and nothing else. Each target has a *depth* (the
+cars being shopped get both sorts at two pages **plus a newest-first page**, so a fresh listing is
 seen the day it appears instead of whenever it ranks among the cheapest; the rest get the cheapest
-20) and a *cadence*, per target rather than per brand: the two shopped trims run daily, the i5's
-other three (the certified watch among them) every other day, the i7's other trims and the iX every
-third day, the four models already carrying a record every fourth day, and one EV from each of the
-other 13 brands every fifteenth day. Spread evenly across the cycle in watchlist order. A hard
+20) and a *cadence* — which is **derived, not typed**. The cars in `buyer.shopping` run daily and
+their certified watches every other day; every other target on the watchlist shares one comparison
+cadence, the fastest whole number of days that keeps the plan inside `budget_headroom` of both
+budgets. Today that is every sixth day, for all 25 of them. **Nothing in the watchlist names a
+cadence**, so shopping a cheaper car speeds the comparisons up on its own: two BMW trims at 22 calls
+a day put them on 6 days, one Kia EV9 at 11 puts them on 3. The ladder this replaced ran
+1 / 2 / 3 / 4 / 15 days and was reverse-engineered around one make — 13 of 29 targets took 87% of the
+month while fifteen models were fetched twice a month, which was never a judgement about those cars,
+only the shape of what was left after the shopped ones had taken their share. Each target's day of
+the cycle is then chosen to **level the calls** rather than to deal targets out in turn: most
+expensive model first, onto whichever day of its own cycle is cheapest so far. That took the busiest
+day from 38 of 40 to 32 and the quietest from 24 to 30 — measured over the whole cycle, both ways. A
+hard
 `budget_per_day` makes the script refuse to run if any day of the cadence cycle would exceed it — a
-fortnight at least, and longer when the cadences repeat over more than that, which they now do: the
-cycle is 60 days — and it prints the plan before it starts.
+fortnight at least, rounded up to a **whole number of cycles** so the average it quotes is the real
+one rather than one that counts the cycle's first days twice: the cycle is 18 days here, three
+turns of the six-day one the cadences repeat on — and it prints the plan before it starts.
 
 That plan is an **upper bound**, and the difference is the headroom every "can we afford one more
 model?" needs. The fetch loop stops paging the moment a query comes back short and skips that
@@ -188,17 +234,20 @@ cheapest of that model *in America*, which is the same query shape that lost 88%
 be measured. The first fetch of each is what will confirm or refute it, and the log will say so
 without being asked.
 
-They ask both queries now, and it is paid for out of cadence rather than budget: every tenth day
-became every fifteenth, which buys the second source at 905 calls a month against 1,000 and a worst
-day of 38 against 40. Fifteen rather than thirteen or fourteen because it keeps the cadence cycle at
-60 days, where those push it to 156 and 84. The cost is real and it is freshness — twice a month
-instead of three times, so a car listed and sold inside a fortnight can pass unseen. That is the
-trade, and it is the right way round: a car you cannot drive to is not a car you were going to buy.
+They ask both queries now, and that used to be paid for out of freshness: every tenth day became
+every fifteenth, which bought the second source at the cost of seeing these models twice a month
+instead of three times. **Deriving the cadence paid for it out of the ladder instead, and the trade
+is off.** The tail runs every sixth day now — five fetches a month, with both queries — because the
+same arithmetic that fixed the tail at fifteen was leaving the busiest day at 38 of 40 and the
+quietest at 24, and a plan that is level has room the lumpy one did not. The figures are 925 a month
+against 1,000 and a worst day of 32 against 40, measured over the whole cycle. Nothing here is a
+judgement about these cars any more: they are simply what is not being shopped.
 
-`bmw-i5-cpo` keeps `national_only` and is not part of this. A nationwide certified watch is national
+The certified watches keep `national_only` and are not part of this — however many of them there are,
+since one is derived per shopped model. A nationwide certified watch is national
 by definition, not to save a call — and at `depth: full` it is the case where the States half really
 is close to redundant. Standing a model down again is a two-field edit — `national_only: true` and a
-slower cadence — and the overlap log is what should decide it. For that one target the log cannot
+slower cadence — and the overlap log is what should decide it. For those targets the log cannot
 help: a `national_only` target has no second source to compare, so the flag makes its own premise
 untestable, which is worth knowing before it is trusted anywhere else.
 
@@ -346,16 +395,6 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
 3. Edit `targets.json`: your `buyer`, your `watchlist`. The Action runs at 11:00 UTC and can be
    started by hand from the Actions tab.
 
-New models receive their first check after a regular daily run, using the remaining
-allowance. Changes to the watchlist also start this workflow automatically. To run
-just that first-fetch pass after a regular daily run, dispatch **SpicyCar daily**
-with **fill_missing** checked. It requests only targets without
-complete first-fetch coverage, preserves that day's existing cars, and stops at
-the remaining daily/monthly allowance, counting retries. Successful empty markets
-are reported and do not get billed again by this option. Ordinary runs continue
-to use the configured cadence. The dashboard's **Refresh** button checks for the
-latest published snapshot; it does not make paid provider requests.
-
 Locally: `AUTODEV_API_KEY=… python Tracking.py`. To preview the dashboard, serve the folder
 (`python -m http.server` inside `docs/`) — it fetches `data.json`, which browsers block on `file://`.
 
@@ -441,7 +480,9 @@ deliberately not spent: a faster cadence would only reach those depths sooner.
 | `ship_cost` | Flat shipping, used when distance is unknown or neither bands nor `ship_per_mile` are set. |
 | `ship_quotes`, `ship_calibrated` | Real hauler quotes (`{"miles": …, "price": …, "route": …}` — the key is `price`, and `miles` is the miles the BROKER quoted, not the great-circle figure) the run scores the bands against, and the date a human last did that. A quote missing either number is announced on the run log and skipped rather than silently ignored, and the run exports what it found — `{n, mean_error, worst, calibrated}` under `buyer.ship_calibration`, or `null` while no quotes exist. **Every shipping number on the page is an estimate until this is populated** — nothing fetches a quote, so the bands are a guess with a shape, not a price. |
 | `cents_per_mile`, `mileage_baseline` | **Read by nothing, and kept only so an old config still loads.** They used to fold a mileage allowance into the "asking + shipping" figure, which reached one surface: the report printed a sum that did not add up while the dashboard, which drops that value on purpose, showed asking + shipping for the same car. Miles are shown next to every price and never priced into one. The allowance that ranks the picks is `picks.cents_per_mile` below. |
-| `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). They lead the report in full and fill the decision card; every other model is a one-line comparison. **Empty means nothing is being shopped** — every model is a comparison line, and the decision card says so rather than disappearing. It used to mean the opposite: an empty list gave EVERY model a full section, which headed thirty-six models "Shopping: X" about cars nobody had named and ran the report to 1,373 lines with six of them carrying cars. That was a fair default at seven models and a false claim at thirty-six. |
+| `shopping` | Target ids being shopped (e.g. `bmw-i5-edrive40`). **This is the one list that says what the tool is for.** They lead the report in full and fill the decision card; every other model is a one-line comparison. They are also the only thing that earns a target `shopping_fetch`'s depth and a `cpo_watch` of its own, so changing this list changes what the API plan is spent on — nothing in the watchlist names a car as special. Name the CAR, not its certified watch: the watch is derived and carries the id `brand-model-cpo`. **Empty means nothing is being shopped** — every model is a comparison line, and the decision card says so rather than disappearing. It used to mean the opposite: an empty list gave EVERY model a full section, which headed thirty-six models "Shopping: X" about cars nobody had named and ran the report to 1,373 lines with six of them carrying cars. That was a fair default at seven models and a false claim at thirty-six. |
+| `shopping_fetch` | How hard a car in `shopping` is looked at, as any of the per-target parameters (`depth`, `pages`, `newest`, `cadence`, …). Applied over the target's own settings, so being shopped can only add depth. Today: both sorts at two pages plus a newest-first page, fetched daily. These four values were typed onto two BMW trims until they moved here, which meant the depth followed the car rather than the decision — pointing `shopping` at any other car left it on a light one-page query on its comparison cadence while the BMWs kept full depth and a daily fetch, and the call plan came out identical either way. |
+| `cpo_watch` | The nationwide certified sweep, derived once per shopped **model** and given the id `brand-model-cpo`. Same per-target parameters plus `enabled`. Certified cars are the ones a manufacturer promo applies to, so it asks the whole country for the lowest-mileage certified examples of whatever is being shopped, then filters to `max_miles` after — the `cpo` and mileage query params are unverified on this API, so the filtering happens in `normalize()`. `enabled: false` switches every one of them off. Cost is `len(sorts) × pages` calls per fetch day, national only: one sort over two pages every second day is 30 calls a month per shopped model. |
 | `shortlist` | The specific cars being decided on, by VIN: `["WBY33FK09RCR29277", {"vin": "…", "note": "called dealer 8/25"}]`. They open the report and pin to the dashboard's front page with price, movement and your note — and say loudly when one is cut, or gone. |
 | `picks` | How the spicy picks are chosen: `count` (per list), `per_model` (cap on the front page), `max_miles`, `cents_per_mile` + `mileage_baseline` (the allowance used only to rank), `exclude_accidents`, `exclude_rental`. Picks are scored against the typical value of their own cohort (trim and model year with six or more eligible cars, else the year, else the model) — never a separate drivable-only median — then split into two lists: drivable, and worth the ship. Only cars genuinely under typical qualify: below the 95% interval of the cohort's median, so a car inside that median's own sampling error is never called under typical, and a cohort of six to eight cars — whose interval is the whole sample — can call no car under at all. The cohort must also be comparable: every car in it wears the scored car's trim, or the page says too few comparable listings to say and prints no percentage anywhere, the best-value order included. Shown at asking price. |
 
@@ -453,7 +494,8 @@ deliberately not spent: a faster cadence would only reach those depths sooner.
 | `defaults` | Fallbacks for the per-target parameters below. |
 | `legacy_ids` | Old target ids → new ids, so history carries over when the config is restructured — and a **null** value for the opposite case: the rows are known about and deliberately left orphaned. A test fails on any target id in `data/snapshots.csv` that no current target claims, that belongs to no model marked inactive, and that this block does not mention, so the choice has to be made rather than forgotten. It was forgotten once: the Lucid Air's two trim targets merging into one trimless `lucid-air`, and `chevrolet-equinox-ev-rs` becoming `chevrolet-equinox-ev`, left both models reading "not fetched yet" on every surface while the CSV held 257 and 63 rows for them. Chevrolet is mapped — 0 of its rows are pre-2024 and its old window was a subset of the new one. Lucid is not: 53 of its 68 live rows are model year 2022 or 2023, which a 2024+ watchlist can never return, so mapping them would publish 53 cars as current inventory that no query on this sheet could produce. |
 | `watchlist.<brand>` | `label`, `make` (as the API spells it), `active`, parameter overrides, and `models`. |
-| `…models.<model>` | `label`, `model` (API spelling — a comma list is OR, handy for case variants), `years`, `note`, `notes` (hand-written `good` / `bad` / `watch` lists shown on the model page), `active`, parameter overrides, and optional `trims`. A model without `trims` is one target across all its trims. |
+| `…models.<model>` | `label`, `model` (API spelling — a comma list is OR, handy for case variants), `years`, `note`, `notes` (hand-written `good` / `bad` / `watch` lists shown on the model page), `active`, parameter overrides, an optional `cpo` block, and optional `trims`. A model without `trims` is one target across all its trims. |
+| `…models.<model>.cpo` | Optional, and only read when the model is being shopped: it narrows the certified watch `buyer.cpo_watch` derives for it. Takes the same `trim_query` / `trim_match` / `trim_exclude` / `label` / `note` a trim takes, plus parameter overrides and `active: false` to stand this model's watch down with a reason. A model that says nothing gets a sweep of the whole model, which is what makes the watch work for a car nobody has written a line about. `cpo` is a **reserved trim key** for the same reason — a trim of that name would collide with the derived id, and the run refuses to start rather than let one of the two silently win. |
 | `…trims.<trim>` | `label`, `trim_query` (sent as `vehicle.trim`, comma list is OR), `trim_match` (client-side check against the trim fields), `trim_exclude` (drop if this appears — "grand" keeps Grand Touring out of Touring), `note`, `active`, parameter overrides. |
 
 Parameters resolve trim ← model ← brand ← defaults:
