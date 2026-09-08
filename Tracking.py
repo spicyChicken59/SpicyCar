@@ -85,6 +85,8 @@ COMPARISON_FETCH = dict(BUYER.get("comparison_fetch") or {})
 # cpo_watch is the nationwide certified sweep, derived once per shopped MODEL
 # from one recipe instead of written out per car. See cpo_target().
 CPO_WATCH = dict(BUYER.get("cpo_watch") or {})
+FAIR = dict(CFG.get("collection") or {})
+REQUEST_JOURNAL = None
 # The derived watch's trim key, and therefore reserved in the watchlist: a
 # hand-written trim of the same name would collide with the derived id and
 # one of the two would silently win.
@@ -253,7 +255,9 @@ def sources_for(t):
 
 def calls_for(t):
     sorts, pages = sorts_pages(t)
-    return len(sources_for(t)) * (len(sorts) * pages + t["newest"])
+    return len(sources_for(t)) * len(sorts) * pages + sum(
+        t["newest"] for name, _ in sources_for(t)
+        if not t.get("newest_national_only") or name == "National")
 
 
 def due_on(t, ordinal):
@@ -776,13 +780,13 @@ def build_targets():
                 # decision. Reproduced before the order was split: with both at
                 # the end, a trim asking for cadence 9 was rebuilt at the
                 # derived comparison cadence and its typed value did nothing.
-                base = ((DEFAULTS, b, m, tr) if shopped
+                base = ((DEFAULTS, b, m, tr) if shopped or FAIR.get("enabled")
                         else (COMPARISON_FETCH, DEFAULTS, b, m, tr))
                 for layer in base:
                     for k in PARAM_KEYS:
                         if k in layer:
                             t[k] = layer[k]
-                if shopped:
+                if shopped and not FAIR.get("enabled"):
                     _upgrade(t, SHOPPING_FETCH)
                 t.update({
                     "id": f"{bkey}-{mkey}" + (f"-{tkey}" if tkey else ""),
@@ -806,8 +810,8 @@ def build_targets():
             # Built after the trims, because whether the model is shopped is
             # only known once they are. It takes its fetch day from
             # assign_offsets() like every other target.
-            watch = cpo_target(bkey, b, mkey, m, made)
-            if watch is not None:
+            watch = None if FAIR.get("enabled") else cpo_target(bkey, b, mkey, m, made)
+            if watch is not None and not FAIR.get("enabled"):
                 targets[watch["id"]] = watch
     # Cadence, then days. Both are facts about the whole watchlist against the
     # budget rather than about any one row, so neither can be settled inside
@@ -816,6 +820,14 @@ def build_targets():
     # target's. fit_cadence() assigns the offsets it decided on.
     _refuse_unshoppable(targets)
     global COMPARISON_CADENCE
+    if FAIR.get("enabled"):
+        from fair_collection import baseline
+        for t in targets.values():
+            t.update(depth="light", sorts=["price.asc"], pages=1, newest=1,
+                     newest_national_only=True)
+        COMPARISON_CADENCE = baseline(targets, calls_for, BUDGET * HEADROOM_DAY,
+                                      MONTHLY - int(FAIR.get("reserve", 50)))
+        return targets
     COMPARISON_CADENCE = fit_cadence(targets)
     return targets
 
@@ -2938,6 +2950,7 @@ def fetch_log_row():
                 "exhausted": key in EXHAUSTED,
                 "failed": key in FAILED_SCOPES,
                 "raw": RAW_N.get(key, 0),
+                **({"total": TOTALS[key]} if key in TOTALS else {}),
             }
     return row
 
@@ -3103,12 +3116,14 @@ def save_overlap_history(overlap, path=OVERLAP_LOG, keep=120, merge_targets=Fals
         print(f"  ! could not write {path}: {e}")
 
 
-def envelope_total(payload):
+def envelope_total(payload, strict=False):
     """The total-result count from a listings response envelope, or None.
     The key is probed, not assumed — API envelopes rename these freely."""
     if not isinstance(payload, dict):
         return None
     for k in ("total", "totalCount", "count", "hitsCount", "totalResults"):
+        if strict and k in ("count", "hitsCount"):
+            continue  # may mean this page's count, not the whole market
         n = to_int(payload.get(k))
         if n is not None:
             return n
@@ -3116,6 +3131,8 @@ def envelope_total(payload):
         sub = payload.get(parent)
         if isinstance(sub, dict):
             for k in ("total", "totalCount", "totalItems", "count", "totalResults"):
+                if strict and k == "count":
+                    continue
                 n = to_int(sub.get(k))
                 if n is not None:
                     return n
@@ -3153,6 +3170,9 @@ def fetch(source_name, source, sort, page, t):
             print(f"  ! {t['id']} {source_name}: deferred at the API budget limit")
             FAILED_SCOPES.add((t["id"], source_name))
             return None
+        if REQUEST_JOURNAL is not None and not REQUEST_JOURNAL.charge():
+            FAILED_SCOPES.add((t["id"], source_name))
+            return None
         CALLS += 1
         # Counted per target as well as globally, and counted HERE so a retry
         # counts twice — because it costs twice. A ledger that recorded intent
@@ -3182,7 +3202,7 @@ def fetch(source_name, source, sort, page, t):
                 # failures are retried and then recorded as unknown.
                 batch = payload.get("data") if isinstance(payload, dict) else None
                 if isinstance(batch, list):
-                    tot = envelope_total(payload)
+                    tot = envelope_total(payload, strict=bool(FAIR.get("enabled")))
                     if tot is not None:
                         key = (t["id"], source_name)
                         TOTALS[key] = max(TOTALS.get(key, 0), tot)
@@ -4293,8 +4313,15 @@ def current_rows(all_rows, tids):
         if r["target"] in tids:
             by_target[r["target"]].append(r)
     out = []
+    complete_days = {}
+    if FAIR.get("enabled"):
+        for d, per in load_fetch_log().items():
+            for tid, sources in per.items():
+                if sources and all(f.get("observation_complete") for f in sources.values()):
+                    complete_days[tid] = max(d, complete_days.get(tid, ""))
     for tid, rs in by_target.items():
         last = max(r["snapshot_date"] for r in rs)
+        last = max(last, complete_days.get(tid, ""))
         t = TARGETS.get(tid)
         for r in rs:
             if r["snapshot_date"] != last:
@@ -4655,7 +4682,7 @@ def build_outputs(today_rows, all_rows, hist):
                 "notes": m0["model_notes"],
                 "years": sorted({str(y) for t in trims for y in t["years"]}),
                 "shopping": shopping,
-                "cadence": min(t["cadence"] for t in trims),
+                "cadence": min(t.get("model_cadence", t["cadence"]) for t in trims),
                 "as_of": as_of,
                 # How old these cars are, and whether the cadence beside them
                 # can account for it. Computed HERE so the report and the page
@@ -4668,7 +4695,7 @@ def build_outputs(today_rows, all_rows, hist):
                 # tail runs fortnightly.
                 "age_days": fetch_age(as_of, record_day),
                 "overdue": fetch_overdue(fetch_age(as_of, record_day),
-                                         min(t["cadence"] for t in trims)),
+                                         min(t.get("model_cadence", t["cadence"]) for t in trims)),
                 # …and the day this model's queries were last ASKED, which is
                 # a different fact and the one "not fetched yet" is really
                 # about. A query that runs and finds nothing writes no row, so
@@ -4718,7 +4745,10 @@ def build_outputs(today_rows, all_rows, hist):
                                     # the search states.
                                     "national_only": bool(t.get("national_only")),
                                     "sorts": list(sorts_pages(t)[0]),
-                                    "market_total": TOTALS.get((t["id"], "National")),
+                                    "market_total": TOTALS.get((t["id"], "National"), next(
+                                        (per[t["id"]]["National"]["total"] for d, per in sorted(asked_log.items(), reverse=True)
+                                         if "total" in per.get(t["id"], {}).get("National", {})
+                                         and not per[t["id"]]["National"].get("failed")), None)),
                                     # Per TRIM, not per model: a median mixing an
                                     # eDrive50 with an M70 describes no car that
                                     # exists. The trim is the cohort a reader is
@@ -4994,6 +5024,11 @@ def build_outputs(today_rows, all_rows, hist):
     report += ["---",
                f"_{len(hist)} vehicle histories across {len(days)} "
                f"day{'s' if len(days) != 1 else ''} · {spent}._"]
+    if FAIR.get("enabled"):
+        from fair_collection import report as collection_report, RequestBudget, read_json
+        budget = RequestBudget(TODAY, SPEND_LOG, DATA / "requests.json", BUDGET, MONTHLY)
+        site["collection"] = collection_report(TARGETS, read_json(DATA / "collection.json"), TODAY, budget, calls_for)
+        site["collection"]["reserve"] = int(FAIR.get("reserve", 50))
     return "\n".join(report), site, subject
 
 
@@ -5075,6 +5110,9 @@ def bootstrap_allowance(ledger):
 
 
 def main():
+    if FAIR.get("enabled"):
+        from fair_collection import run
+        return run(sys.modules[__name__])
     today_calls, worst, avg = planned_calls()
     monthly = avg * 30.5
     print(f"{len(TARGETS)} targets · API calls today {today_calls} · worst day "

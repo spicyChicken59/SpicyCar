@@ -1,0 +1,9 @@
+.collection-health { margin: 2rem 0; padding: 1rem; border: 1px solid var(--sc-border); border-radius: .75rem; }
+.collection-health summary { cursor: pointer; font-weight: 700; padding: .5rem 0; }
+.collection-health p { max-width: 85ch; line-height: 1.6; }
+.collection-table { overflow-x: auto; max-width: 100%; }
+.collection-table table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.collection-table caption { text-align: left; padding: .75rem 0; }
+.collection-table th, .collection-table td { text-align: left; padding: .75rem; border-bottom: 1px solid var(--sc-border); white-space: nowrap; }
+.collection-health :focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 3px; }
+@media (max-width: 600px) { .collection-health { padding: .75rem; } }
