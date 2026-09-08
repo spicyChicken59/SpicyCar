@@ -69586,6 +69586,7 @@
   "strategy": "fair-model-turns",
   "as_of": "2026-09-08",
   "reserve": 50,
+  "exploration_share": 0.5,
   "daily_cap": 40,
   "monthly_cap": 1000,
   "month_spent": 166,
@@ -69599,6 +69600,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69610,6 +69614,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69621,6 +69628,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69632,6 +69642,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69643,6 +69656,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69654,6 +69670,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69665,6 +69684,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69676,6 +69698,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69687,6 +69712,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69698,6 +69726,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69709,6 +69740,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69720,6 +69754,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69731,6 +69768,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69742,6 +69782,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69753,6 +69796,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69764,6 +69810,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69775,6 +69824,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69786,6 +69838,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69797,6 +69852,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    },
    {
@@ -69808,6 +69866,9 @@
     "market_as_of": null,
     "calls_7d": 0,
     "useful_7d": 0,
+    "exploration_calls_7d": 0,
+    "exploration_useful_7d": 0,
+    "deepest_page_7d": null,
     "baseline_calls_per_day": 1.5
    }
   ]

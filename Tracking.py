@@ -2626,6 +2626,7 @@ TOTALS = {}            # (target id, source) -> the API's own total result count
                        # when the response envelope carries one — the honest
                        # denominator behind "N tracked"
 ENVELOPE_WARNED = False
+NEXT_CURSORS = {}      # (request target, source) -> opaque next cursor, never a URL
 OVERLAP = {}           # target id -> today's States-vs-National audit, persisted so the
                        # decision it informs can be made on a week of runs instead of
                        # one: Actions logs expire, and a single day where the States
@@ -3158,6 +3159,11 @@ def fetch(source_name, source, sort, page, t):
         "limit": PER_PAGE,
         "page": page,
     }
+    if FAIR.get("enabled"):
+        params["includes"] = "total"
+    if t.get("_cursor"):
+        params.pop("page")
+        params["cursor"] = t["_cursor"]
     yp = year_param(t["years"])
     if yp:
         params["vehicle.year"] = yp
@@ -3202,6 +3208,15 @@ def fetch(source_name, source, sort, page, t):
                 # failures are retried and then recorded as unknown.
                 batch = payload.get("data") if isinstance(payload, dict) else None
                 if isinstance(batch, list):
+                    # Keep only the opaque cursor; never follow a response URL
+                    # with our Authorization header to another host.
+                    from urllib.parse import urlsplit, parse_qs
+                    link = (payload.get("links") or {}).get("next") if isinstance(payload.get("links"), dict) else None
+                    try:
+                        cursor = parse_qs(urlsplit(link).query).get("cursor", [None])[0] if isinstance(link, str) else None
+                    except ValueError:
+                        cursor = None
+                    NEXT_CURSORS[(t["id"], source_name)] = cursor
                     tot = envelope_total(payload, strict=bool(FAIR.get("enabled")))
                     if tot is not None:
                         key = (t["id"], source_name)
