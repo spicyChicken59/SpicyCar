@@ -34,8 +34,9 @@ try {
   assert.deepEqual(await order(), (await rows()).slice(0, 8));
   assert.equal(await page.locator('#car-atlas, #car-atlas-switch').count(), 0, 'only one map');
   const shown = await page.locator('.car-dot-marker').evaluateAll((ms) => ms.reduce((sum, m) => sum + Number(m.dataset.carCount), 0));
-  const withCoordinates = (await rows()).length;
-  assert.ok(shown > 0 && shown <= withCoordinates, 'clusters account for represented cars');
+  const withCoordinates = data.brands[watched.bk].models[watched.mk].listings
+    .filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lon)).length;
+  assert.equal(shown, withCoordinates, 'clusters account for all cars with coordinates, including later table pages');
   console.log('ok one dot map, eight cards, and listing order');
   await page.locator('#f-sort').selectOption('price');
   assert.deepEqual(await order(), (await rows()).slice(0, 8));

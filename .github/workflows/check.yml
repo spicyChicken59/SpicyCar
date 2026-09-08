@@ -87,15 +87,17 @@ jobs:
           git clone --depth 1 --branch "$PIN" https://github.com/spicyChicken59/design-system /tmp/design-system \
             || { git clone https://github.com/spicyChicken59/design-system /tmp/design-system \
                  && git -C /tmp/design-system checkout "$PIN"; }
-      - name: Open the dashboard and ask whether it works
+      - name: Install the browser
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
+      - name: Verify geographic browsing and graceful fallback
+        run: node tools/discovery_smoke.mjs
+      - name: Open the dashboard and ask whether it works
+        run: |
           set -o pipefail
           node tools/dashboard_smoke.mjs /tmp/design-system --shots /tmp/shots | tee /tmp/smoke.txt
           { echo '### dashboard'; echo '```'; cat /tmp/smoke.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-      - name: Verify geographic browsing and graceful fallback
-        run: node tools/discovery_smoke.mjs
       # what the checks were looking at, when one of them disagrees
       - uses: actions/upload-artifact@v4
         if: always()
