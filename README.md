@@ -168,6 +168,17 @@ and recent bonus spend reduces repeat preference for the same model. Results ret
 market-count query are ingested too. A total is an API query estimate before local filtering;
 tracked listing counts are samples and are never presented as the whole market.
 
+**Spare calls reach beyond the first page.** At least half of the available extra-call
+allowance is reserved for deeper cheapest-first pages before market-count queries and extra
+whole-target turns, when eligible results remain. Only a target successfully observed in the
+same run can be explored. National and regional page positions rotate separately and persist
+between runs, continuing beyond page 50; exhausted results or changed queries reset the position.
+Unused exploration capacity returns to the shared allowance, and one- or two-call leftovers
+can buy further pages. Future baseline turns and the 50-call recovery reserve remain protected.
+Deeper cars retain dated snapshots and history; a later first-page refresh does not carry them
+forward as newly seen. Skipping intervening pages cannot prove that an absent car left the market,
+and a failed extra query cannot invalidate a successful baseline observation.
+
 **Actual requests control the bill.** Every HTTP attempt, including retries, is charged to an
 atomic journal before it is sent. The daily tracker reads both that journal and the spend ledger,
 respects the actual calendar month, and keeps 50 monthly calls for recovery. Early-stop savings
@@ -177,8 +188,9 @@ recovery remains subject to the hard caps.
 
 `data/spend.json` retains planned versus actual spend. `data/requests.json` preserves request
 charges if the tracker crashes, and `data/collection.json` records query yield and model totals.
-The site exports the collection plan with model intervals, market estimates and useful VINs per
-call. A scheduled target that never ran is a coverage gap, not a successful saving.
+The site exports the collection plan with model intervals, market estimates, useful VINs per
+call, and seven-day exploration calls, useful cars and deepest page reached. A scheduled target
+that never ran is a coverage gap, not a successful saving.
 
 **Why every model asks its own states.** One baseline call goes to asking
 the buyer's four states, plus the four watched from beyond them, the question the national query

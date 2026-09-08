@@ -187,6 +187,7 @@ def bonus_order(targets, state, day, completed, latest):
 
 def report(targets, state, day, budget, calls_for):
     result = {"strategy": "fair-model-turns", "as_of": day, "reserve": 50,
+              "exploration_share": .5,
               "daily_cap": budget.day_cap, "monthly_cap": budget.month_cap,
               "month_spent": budget.month_spent, "models": []}
     for key, ts in groups(targets).items():
@@ -194,13 +195,90 @@ def report(targets, state, day, budget, calls_for):
         observations = [r for d, rows in state.get("days", {}).items()
                         if 0 <= (date.fromisoformat(day) - date.fromisoformat(d)).days < 7
                         for r in rows.values() if r.get("model") == key]
+        deep = [q for r in observations for q in r.get("queries", []) if q.get("exploration")]
         result["models"].append({"id": key, "label": ts[0]["brand_label"] + " " + ts[0]["model_label"],
             "model_cadence": ts[0]["model_cadence"], "trim_cadence": ts[0]["cadence"],
             "market_total": m["total"] if m else None, "market_as_of": m["as_of"] if m else None,
             "calls_7d": sum(r.get("calls", 0) for r in observations),
             "useful_7d": sum(r.get("useful", 0) for r in observations),
+            "exploration_calls_7d": sum(q.get("calls", 0) for q in deep),
+            "exploration_useful_7d": sum(q.get("new", 0) + q.get("changed", 0) for q in deep),
+            "deepest_page_7d": max((q["page"] for q in deep if not q.get("failed")), default=None),
             "baseline_calls_per_day": sum(calls_for(t) / t["cadence"] for t in ts)})
     return result
+
+
+def exploration_identity(t, name, source):
+    return {**signature(t), "trim": t.get("trim_query", ""), "source": name,
+            "region": source, "sort": "price.asc"}
+
+
+def exploration_candidates(targets, state, day, observations, sources_for, per_page, attempted):
+    """Eligible same-run scopes, ranked by least recent exploration then yield.
+
+    Breadth first across models, then progress further where allowance remains.
+    Each page is attempted once per run; cursors belong to their exact query.
+    """
+    possible = []
+    for tid, obs in observations.items():
+        if not obs.get("complete") or tid not in targets:
+            continue
+        t = targets[tid]
+        for name, source in sources_for(t):
+            key = tid + "|" + name
+            first = [q for q in obs.get("queries", []) if q.get("source") == name
+                     and q.get("page") == 1 and not q.get("census") and not q.get("exploration")]
+            # A short first page under any sort covers that entire raw scope.
+            if not first or any(q.get("failed") or q.get("raw", 0) < per_page for q in first):
+                continue
+            total = next((q["total"] for q in reversed(first) if valid_total(q.get("total"))), None)
+            if total is not None and total <= per_page:
+                continue
+            identity = exploration_identity(t, name, source)
+            saved = state.get("exploration", {}).get(key, {})
+            if saved.get("query") != identity:
+                saved = {}
+            page = saved.get("next_page", 2)
+            if type(page) is not int or page < 2:
+                page = 2
+            cursor = saved.get("cursor")
+            if ((total is not None and page > math.ceil(total / per_page))
+                    or (page > 50 and not cursor)):
+                page, cursor = 2, None
+            if (key, page) in attempted:
+                continue
+            possible.append({"key": key, "target": t, "source_name": name, "source": source,
+                             "page": page, "cursor": cursor, "query": identity,
+                             "last_attempt": saved.get("last_attempt", "")})
+    # Reuse bounded weekly model weights while allowing per-request fair debt
+    # to include this run's exploration. Older unserved scopes always get a turn.
+    view = {**state, "days": {**state.get("days", {}), day: observations}}
+    bonus_order(targets, view, day, set(), {})
+    weights = view.get("weights", {}).get("values", {})
+    recent = [r for d, rows in view["days"].items()
+              if 0 <= (date.fromisoformat(day) - date.fromisoformat(d)).days < 7
+              for r in rows.values()]
+    def rank(c):
+        mk = model_key(c["target"])
+        spent = sum(r.get("bonus_calls", r.get("calls", 0) if r.get("bonus") else 0)
+                    for r in recent if r.get("model") == mk)
+        return (c["last_attempt"], -weights.get(mk, 1) / (1 + spent), c["key"])
+    return sorted(possible, key=rank)
+
+
+def advance_exploration(state, candidate, day, q, next_cursor, per_page):
+    """Commit progress only after a successful page; wrap a completed sweep."""
+    record = {"query": candidate["query"], "last_attempt": day,
+              "next_page": candidate["page"], "cursor": candidate["cursor"]}
+    if q["failed"] and candidate["cursor"]:
+        record.update(next_page=2, cursor=None)  # expired/invalid opaque cursors recover
+    if not q["failed"]:
+        page = candidate["page"]
+        total = q.get("total")
+        ended = q["raw"] < per_page or (valid_total(total) and page * per_page >= total)
+        record.update(next_page=2 if ended or (page >= 50 and not next_cursor) else page + 1,
+                      cursor=None if ended else next_cursor, last_success=day)
+    state.setdefault("exploration", {})[candidate["key"]] = record
 
 
 def run(T):
@@ -214,6 +292,7 @@ def run(T):
     state.setdefault("days", {})
     state.setdefault("markets", {})
     state.setdefault("weights", {})
+    state.setdefault("exploration", {})
     history = T.load_history()
     facts = T.load_fetch_log()
     budget = RequestBudget(T.TODAY, T.SPEND_LOG, T.DATA / "requests.json", T.BUDGET, T.MONTHLY)
@@ -254,24 +333,26 @@ def run(T):
     future = sum(T.calls_for(t) for ordinal in range(T.TODAY_ORD + 1, end + 1)
                  for t in T.TARGETS.values() if T.due_on(t, ordinal))
 
-    def query(t, source_name, source, sort, page=1, census=False):
+    def query(t, source_name, source, sort, page=1, census=False, exploration=False, cursor=None):
         tid, key = t["id"], model_key(t)
-        request_target = {**t, "id": "census:" + key, "trim_query": ""} if census else t
+        request_target = ({**t, "id": "census:" + key, "trim_query": ""} if census else
+                          {**t, "id": "explore:" + tid + ":" + source_name, "_cursor": cursor} if exploration else t)
         before = T.CALLS
         batch = T.fetch(source_name, source, sort, page, request_target)
         q = {"source": source_name, "sort": sort, "page": page, "census": census,
+             "exploration": exploration,
              "calls": T.CALLS - before, "raw": len(batch) if batch is not None else 0,
              "kept": 0, "new": 0, "changed": 0, "failed": batch is None}
         observations[tid]["queries"].append(q)
         if batch is None:
-            if not census:
+            if not census and not exploration:
                 T.FAILED_SCOPES.add((tid, source_name))
-            return
+            return q
         total = T.TOTALS.get((request_target["id"], source_name))
         q["total"] = total
         if source_name == "National" and not request_target.get("trim_query") and valid_total(total):
             state["markets"][key] = {"total": total, "as_of": T.TODAY, "query": signature(t)}
-        if not census:
+        if not census and not exploration:
             T.RAW_N[(tid, source_name)] += len(batch)
             T.SOURCE_VINS.setdefault((tid, source_name), set())
             if len(batch) < T.PER_PAGE:
@@ -283,11 +364,11 @@ def run(T):
                 continue
             vin = n["vin"]
             accepted.add(vin)
-            if not census:
+            if not census and not exploration:
                 T.SOURCE_VINS[(tid, source_name)].add(vin)
                 if sort == "price.asc":
                     T.PRICE_WINDOW[(tid, source_name)] = max(T.PRICE_WINDOW.get((tid, source_name), 0), n["price"])
-            via[(tid, vin)].add(f"{source_name}:{sort}")
+            via[(tid, vin)].add(f"{source_name}:{sort}" + (f":page={page}" if exploration else ""))
             cur = rows.get((tid, vin))
             if cur is None or n["price"] < T.to_int(cur["price"]):
                 rows[(tid, vin)] = n
@@ -302,6 +383,7 @@ def run(T):
                     observations[tid].setdefault("useful_vins", []).append(vin)
         q["kept"] = len(accepted)
         q["rejected"] = len(batch) - len(accepted)
+        return q
 
     def observe(t, bonus=False):
         tid = t["id"]
@@ -313,7 +395,7 @@ def run(T):
             query(t, "National", None, T.NEWEST_SORT)
         completed.add(tid)
         obs = observations[tid]
-        obs.update(calls=T.CALLS - start,
+        obs.update(calls=T.CALLS - start, bonus_calls=T.CALLS - start if bonus else 0,
                    useful=sum(q["new"] + q["changed"] for q in obs["queries"]),
                    complete=not any(q["failed"] for q in obs["queries"]))
         T.KEPT_N[tid] = sum(k[0] == tid for k in rows)
@@ -326,6 +408,34 @@ def run(T):
     baseline_actual = T.CALLS
     reserve = int(T.FAIR.get("reserve", 50))
     extra = lambda: budget.bonus_remaining(future, reserve, planned, baseline_actual)
+    attempted_deep = set()
+
+    def explore(allowance):
+        """Single-page requests can use an otherwise stranded final call."""
+        start = T.CALLS
+        while extra() > 0 and T.CALLS - start < allowance:
+            choices = exploration_candidates(T.TARGETS, state, T.TODAY, observations,
+                                             T.sources_for, T.PER_PAGE, attempted_deep)
+            if not choices:
+                break
+            c = choices[0]
+            attempted_deep.add((c["key"], c["page"]))
+            t = c["target"]
+            before = T.CALLS
+            # Retries share both the exploration allocation and the spare cap.
+            T.REQUEST_ALLOWANCE = T.CALLS + min(extra(), allowance - (T.CALLS - start))
+            q = query(t, c["source_name"], c["source"], "price.asc", c["page"],
+                      exploration=True, cursor=c["cursor"])
+            obs = observations[t["id"]]
+            obs["calls"] += T.CALLS - before
+            obs["bonus_calls"] += T.CALLS - before
+            obs["useful"] = sum(x["new"] + x["changed"] for x in obs["queries"])
+            T.KEPT_N[t["id"]] = sum(k[0] == t["id"] for k in rows)
+            next_cursor = T.NEXT_CURSORS.get(("explore:" + t["id"] + ":" + c["source_name"], c["source_name"]))
+            advance_exploration(state, c, T.TODAY, q, next_cursor, T.PER_PAGE)
+
+    # Reserve depth first, so census requests cannot consume its allocation.
+    explore(math.ceil(extra() * .5))
     # Broad counts for trim-split models must be measured separately. Summing
     # overlapping trim/CPO totals fabricates a market size. At most one dated
     # census per model per week; retained matching rows join this observation.
@@ -340,6 +450,7 @@ def run(T):
             query(t, "National", None, "price.asc", census=True)
             obs = observations[t["id"]]
             obs["calls"] += T.CALLS - before
+            obs["bonus_calls"] += T.CALLS - before
             obs["useful"] = sum(q["new"] + q["changed"] for q in obs["queries"])
     # Re-rank after each completed extra turn using this run's observations.
     while extra() >= 3:
@@ -352,6 +463,9 @@ def run(T):
             break
         T.REQUEST_ALLOWANCE = T.CALLS + extra()
         observe(t, bonus=True)
+
+    # Release unused census/whole-turn capacity to depth, including 1–2 calls.
+    explore(extra())
 
     if not observations:
         print("No complete observation fits the remaining budget.")
@@ -382,7 +496,7 @@ def run(T):
         merged[tid] = {**obs, "calls": prior.get("calls", 0) + obs["calls"],
                        "useful": prior.get("useful", 0) + (obs["useful"] if obs["complete"] else 0),
                        "bonus_calls": prior.get("bonus_calls", prior.get("calls", 0) if prior.get("bonus") else 0)
-                           + (obs["calls"] if obs["bonus"] else 0),
+                           + obs["bonus_calls"],
                        "complete": obs["complete"] or prior.get("complete", False),
                        "queries": prior.get("queries", []) + obs["queries"],
                        "useful_vins": sorted(set(prior.get("useful_vins", [])) | set(obs.get("useful_vins", [])))}
@@ -391,7 +505,9 @@ def run(T):
     atomic_json(state_path, state)
     # Journal is authoritative, including a request from an earlier crashed run.
     ledger = read_json(T.SPEND_LOG)
-    row = T.spend_report(planned + sum(T.calls_for(T.TARGETS[tid]) for tid, o in observations.items() if o["bonus"]),
+    page_requests = sum(1 for o in observations.values() for q in o["queries"]
+                        if q.get("census") or q.get("exploration"))
+    row = T.spend_report(planned + page_requests + sum(T.calls_for(T.TARGETS[tid]) for tid, o in observations.items() if o["bonus"]),
                          targets=[T.TARGETS[tid] for tid in observations])
     row.update(actual=budget.day_spent, runs=(ledger.get(T.TODAY, {}).get("runs", 0) + 1))
     row["banked"] = row["planned"] - row["actual"] - row["unrun"]
