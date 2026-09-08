@@ -126,25 +126,16 @@
   "unrun": 0
  },
  "2026-09-08": {
-  "actual": 16,
+  "actual": 40,
   "banked": 8,
   "empty_targets": [],
-  "exhausted": 2,
+  "exhausted": 4,
   "failed": 0,
-  "off_plan": {
-   "bmw-i5-edrive40": [
-    10,
-    6
-   ],
-   "bmw-i7-edrive50": [
-    10,
-    6
-   ]
-  },
-  "planned": 24,
-  "runs": 1,
+  "off_plan": {},
+  "planned": 48,
+  "runs": 2,
   "silent_targets": [],
-  "targets_due": 4,
+  "targets_due": 12,
   "unrun": 0
  }
 }
