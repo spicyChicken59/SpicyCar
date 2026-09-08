@@ -16,7 +16,7 @@ await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = 'http://127.0.0.1:' + server.address().port;
 const data = JSON.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
 const watched = Object.entries(data.brands).flatMap(([bk, b]) => Object.entries(b.models).map(([mk, m]) => ({ bk, mk, count: (m.listings || []).length }))).sort((a, b) => b.count - a.count)[0];
-const query = '?brand=' + watched.bk + '&m=' + watched.mk;
+const query = '?view=report&brand=' + watched.bk + '&m=' + watched.mk;
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 1000 }, reducedMotion: 'reduce', colorScheme: 'light' });
 // Keep the old atlas unavailable to prove the new map/list is independent.

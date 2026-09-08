@@ -3338,7 +3338,7 @@ def normalize(rec, t, dropped):
         "target": t["id"],
         "vin": vin,
         "year": year,
-        "trim": first(rec, ["vehicle.trim", "vehicle.style", "vehicle.series"]),
+        "trim": str(first(rec, ["vehicle.trim", "vehicle.style", "vehicle.series"])),
         "miles": miles if miles is not None else "",
         "price": price,
         "dealer": first(rec, ["retailListing.dealer",

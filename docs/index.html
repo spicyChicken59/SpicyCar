@@ -521,9 +521,11 @@
 </style>
 <link rel="stylesheet" href="market-studio.css">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-<link rel="stylesheet" href="car-discovery.css?v=20260908">
+<link rel="stylesheet" href="car-discovery.css?v=20260908-workspace">
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="car-discovery.js?v=20260908"></script>
+<script src="car-discovery.js?v=20260908-workspace"></script>
+<link rel="stylesheet" href="shopping-workspace.css?v=20260908-workspace">
+<script src="shopping-workspace.js?v=20260908-workspace"></script>
 </head>
 <body class="market-studio">
 <a class="sc-skip" href="#main">Skip to content</a>
@@ -547,6 +549,13 @@
 </header>
 
 <main class="sc-wrap sc-wrap--wide sc-stack sc-print-report" id="main">
+  <section id="shopping-workspace" aria-label="Your car search"></section>
+  <section id="finance-settings" class="shop-finance" aria-label="Your payment assumptions">
+    <div><h2>Your cost estimate</h2><p>Set your borrowing rate. Offers apply only to eligible cars in your selection; confirm terms with the lender.</p></div>
+    <label class="shop-rate">Your APR (%)<input class="sc-input" id="shop-apr" type="number" min="0" max="40" step="0.1" inputmode="decimal"></label>
+    <label class="sc-check"><input id="shop-offers" type="checkbox" checked>Include eligible offers</label>
+    <button class="shop-quiet" id="shop-cost-controls" type="button">Term, down payment &amp; budget</button>
+  </section>
   <div class="sc-print-head" aria-hidden="true"><span class="sc-signature sc-signature--small"><img src="design-system/assets/sc-mark-color-light.svg" alt="" width="342" height="405"><span class="sc-signature__name">SpicyCar</span></span><span>purchase intelligence / current watchlist</span></div>
   <div class="sc-print-foot" aria-hidden="true"><span>SpicyChicken / decision tools</span><span>Asking prices · shipping stated per car</span></div>
   <div class="sc-title" id="car-heading">
@@ -684,7 +693,7 @@
       </label>
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
-      <label class="sc-check" title="Certified pre-owned only — the cars the promo financing applies to"><input type="checkbox" id="f-cpo"> CPO only</label>
+      <label class="sc-check" title="Certified pre-owned listings only — verify certification with the dealer"><input type="checkbox" id="f-cpo"> CPO only</label>
       <label class="sc-check" title="Cars under 100 miles are dealer stock priced near sticker, not the used market. A car whose mileage was not published stays."><input type="checkbox" id="f-hidenew"> Hide delivery-mileage stock</label>
     </div>
   </section>
@@ -856,7 +865,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, workspace: new URLSearchParams(location.search).get('view') || 'explore' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -876,6 +885,10 @@
   function loadPrefs() {
     try {
       const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
+      S.shoppingModels = Array.isArray(p.shoppingModels) ? p.shoppingModels.filter((k) => typeof k === 'string') : null;
+      S.shopOnly = p.shopOnly === true;
+      S.apr = Number.isFinite(p.apr) && p.apr >= 0 && p.apr <= 40 ? p.apr : null;
+      S.offers = p.offers !== false;
       S.where = new Set(Array.isArray(p.where) ? p.where : []);
       S.range = ['30', '90', 'all'].includes(p.range) ? p.range : '90';
       // A term is only restored if the config still offers it: dropping 72 from
@@ -918,7 +931,45 @@
     } catch (e) { SEEN.since = null; /* private mode etc. */ }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
+  }
+  let WORKSPACE = null;
+  function applyShopping() {
+    if (!Array.isArray(S.shoppingModels)) return;
+    const wanted = new Set(S.shoppingModels), trims = [];
+    for (const {bk, mk, m} of allModels()) {
+      m.shopping = wanted.has(bk + '/' + mk);
+      for (const [id, t] of Object.entries(m.trims || {})) { t.shopping = m.shopping; if (m.shopping) trims.push(id); }
+    }
+    S.site.buyer.shopping = trims;
+  }
+  function browseModels(keys) {
+    S.brand = 'all'; S.model = null; S.trims.clear(); S.vinAsk = null; S.year = 'all';
+    S.models = new Set(keys || []); S.hidden.clear(); S.showAllList = false;
+    S.shopOnly = !!keys; savePrefs(); syncUrl(); rerender('nav');
+  }
+  function setWorkspaceView(view, redraw = true) {
+    S.workspace = ['explore', 'compare', 'research', 'report'].includes(view) ? view : 'explore';
+    document.body.dataset.workspace = S.workspace;
+    if (redraw && S.site) { syncUrl(true); render(); requestAnimationFrame(() => { DISCOVERY?.resize(); }); }
+  }
+  function syncWorkspace() {
+    if (!S.site || !window.ShoppingWorkspace) return;
+    if (!WORKSPACE) WORKSPACE = ShoppingWorkspace.create({
+      models: () => allModels().map(({bk,mk,m}) => ({key: bk + '/' + mk, label: m.label, cars: (m.listings || []).length,
+        shopping: !!m.shopping, price: (m.listings || []).some(hasPrice) ? money(Math.min(...m.listings.filter(hasPrice).map((c) => c.price))) : null,
+        image: safeUrl((m.listings || []).find((c) => c.image)?.image)})),
+      scope: () => S.brand === 'all' ? modelsInView().map(({bk,mk}) => bk + '/' + mk) : [S.brand + '/' + S.model],
+      count: () => (S.brand === 'all' ? pooledRows() : filtered()).length,
+      through: dataThrough,
+      currentView: () => S.workspace,
+      view: setWorkspaceView,
+      browse: browseModels,
+      shop: (keys) => { S.shoppingModels = keys; applyShopping(); savePrefs(); browseModels(keys); },
+    });
+    setWorkspaceView(S.workspace, false); WORKSPACE.update();
+    const fin = financeCfg(); $('finance-settings').hidden = !fin;
+    if (fin) { $('shop-apr').value = fin.fallback_apr ?? ''; $('shop-offers').checked = S.offers; }
   }
   // ---------- the comparison ----------
   // Which trims a model page is about, in the config's own order (a Set has
@@ -1549,9 +1600,9 @@
       return { vin: x.vin, title: [x.year, found && found.m.label, carTrimText(x)].filter(Boolean).join(' '),
         price: x.price, priceLabel: money(x.price), milesLabel: x.miles == null ? 'Mileage unreported' : num(x.miles) + ' mi',
         location: placeTxt(x), dealer: x.dealer || 'Dealer unreported', lat: x.lat, lng: x.lon,
-        local: !!x.local, picked: MAP_SUMMARY.picked.has(x.vin), saved: onShortlist(x),
+        local: !!x.local, picked: MAP_SUMMARY.picked.has(x.vin), saved: ['short','called'].includes(starOf(x)),
         tone: SC.toneRef(found ? carTone(x, found.bk, S.brand === 'all' ? null : found.m) : 'chart-context'),
-        shipping: shipNote(x), image: safeUrl(x.image), flags: (x.flags || []).join(' · ') };
+        url: safeUrl(x.url), shipping: shipNote(x), image: safeUrl(x.image), flags: (x.flags || []).join(' · ') };
     });
     if (DISCOVERY) DISCOVERY.update(places, [S.brand, S.model, [...S.where].sort().join(','), [...S.models].sort().join(',')].join('|'));
     else $('car-discovery').textContent = 'Map unavailable. All cars are in the listings below.';
@@ -2357,15 +2408,16 @@
   // fallback like anything else, which is the whole reason this ranking moves
   // cars around at all.
   function annotateFinance(site) {
-    const fin = (site.buyer || {}).finance;
-    if (!fin) return;
+    const base = (site.buyer || {}).finance;
+    if (!base) return;
+    const fin = { ...base, fallback_apr: S.apr ?? base.fallback_apr, promos: S.offers ? base.promos : [] };
     const live = (fin.promos || []).filter((p) => p.active && p.apr != null);
     for (const [bk, b] of Object.entries(site.brands || {})) {
       for (const [mk, m] of Object.entries(b.models || {})) {
         const key = bk + '/' + mk;
         const promo = live.find((p) => p.model === key);
         for (const x of [...(m.listings || []), ...(m.gone || [])]) {
-          const gets = promo && (!promo.cpo_only || x.cpo);
+          const gets = promo && (!promo.cpo_only || x.cpo) && (fin.fallback_apr == null || promo.apr < fin.fallback_apr);
           x.apr = gets ? promo.apr : fin.fallback_apr;
           x.apr_promo = !!gets;
           x.apr_label = gets ? promo.label : '';
@@ -2396,7 +2448,7 @@
       }
     }
   }
-  const financeCfg = () => ((S.site || {}).buyer || {}).finance || null;
+  const financeCfg = () => { const f = ((S.site || {}).buyer || {}).finance; return f ? {...f, fallback_apr: S.apr ?? f.fallback_apr, promos: S.offers ? f.promos : [], stale_days: S.apr == null ? f.stale_days : null} : null; };
   // Whether the seller's NAME carries the brand — the only thing the page can
   // check about who wrote the sale. See the flag above for why it is a flag.
   // Every run of non-alphanumerics is a separator on both sides, and the
@@ -2508,7 +2560,7 @@
   // the part that rots — how long since a human checked that ordinary rate. The
   // whole ranking pivots on it and nothing fetches it, so the page says its age
   // instead of presenting it as fact.
-  function financeNote() {
+  function financeNote(modelKeys = null) {
     const fin = financeCfg();
     if (!fin) return '';
     const bits = [];
@@ -2516,7 +2568,8 @@
     // promo with no apr is never given to anything, so naming it here — and,
     // since the cap clause was added, claiming it shortens a term — describes
     // an offer no row on the page is financed under.
-    const live = (fin.promos || []).filter((p) => p.active && p.apr != null);
+    const relevant = new Set(modelKeys || (S.brand === 'all' ? modelsInView().map(({bk,mk}) => bk + '/' + mk) : [S.brand + '/' + S.model]));
+    const live = (fin.promos || []).filter((p) => p.active && p.apr != null && relevant.has(p.model) && (fin.fallback_apr == null || p.apr < fin.fallback_apr));
     // A promo that caps the term shorter than the chosen one is quoted at its
     // cap, so the cell can read "60mo" under a note that says 72. Say the cap
     // here rather than letting the reader find the contradiction themselves.
@@ -2526,14 +2579,14 @@
         ? `, ${p.days_left} day${p.days_left === 1 ? '' : 's'} left` : ''}`
         + (p.max_term && want && p.max_term < want ? ` and is capped at ${p.max_term} months` : ''));
     }
-    for (const p of (fin.promos || []).filter((p) => !p.active && p.expires)) {
+    for (const p of (fin.promos || []).filter((p) => !p.active && p.expires && relevant.has(p.model))) {
       bits.push(`${p.label || p.model} expired ${fmtDate(p.expires)} — those cars now price at the ordinary rate`);
     }
     const stale = fin.stale_days;
     // …and the down payment, when there is one. The sentence claims to state
     // the assumptions, and a "$0/mo" cell under one that omits the $60,000
     // down that made it zero is a sentence contradicting its own table.
-    const rate = `Payments assume ${S.term || fin.default_term} months at ${fin.fallback_apr}%${S.down > 0 ? `, ${money(S.down)} down,` : ''} unless a promo applies`
+    const rate = `Payments assume ${S.term || fin.default_term} months at ${fin.fallback_apr}%${S.down > 0 ? `, ${money(S.down)} down,` : ''} ${S.offers && live.length ? 'unless an eligible offer applies' : ''}`
       + (stale != null && stale > 120 ? `; that rate was last checked ${stale} days ago and is probably stale` : '')
       + '.';
     return ' ' + rate + (bits.length ? ' ' + bits.join('. ') + '.' : '');
@@ -2899,6 +2952,7 @@
   // The address bar follows the view, so the back button and a shared link both work.
   function syncUrl(replace) {
     const q = new URLSearchParams();
+    if (S.workspace !== 'explore') q.set('view', S.workspace);
     if (S.brand !== 'all') {
       q.set('brand', S.brand);
       if (S.model) q.set('m', S.model);
@@ -2915,8 +2969,9 @@
   // remember what was asked (urlMiss — the first notice pass says so), and
   // clean the address bar so the dead link is not re-shared.
   let urlMiss = null;   // { asked, kind: 'car'|'brand'|'part' } — one-shot, consumed by renderEmptyNotice
-  function applyUrl() {
+  function applyUrl(restoreShopping = false) {
     const q = new URLSearchParams(location.search);
+    setWorkspaceView(q.get('view') || 'explore', false);
     const lc = (k) => { const v = q.get(k); return v ? v.toLowerCase() : v; };   // keys are lowercase slugs; casing alone must not fake a miss
     const list = (k) => (lc(k) || '').split(',').map((x) => x.trim()).filter(Boolean);
     const wantBrand = lc('brand'), wantModel = lc('model'), wantM = lc('m');
@@ -2984,6 +3039,10 @@
     // A model the link put in the comparison must be visible in it, whatever a
     // legend chip pressed earlier in this visit switched off.
     for (const k of S.models) S.hidden.delete(k);
+    if (restoreShopping && !['brand','m','model','models','vin'].some((k) => q.has(k)) && S.shopOnly && Array.isArray(S.shoppingModels)) {
+      const valid = new Set(allModels().map(({bk,mk}) => bk + '/' + mk));
+      S.models = new Set(S.shoppingModels.filter((k) => valid.has(k)));
+    }
     // Always canonicalize (replace, so history stays sane): a miss must not
     // leave the dead URL to be copied onward, and a hit must not keep stray
     // contradictions (?model=…&brand=tesla) or casing variants alive either.
@@ -3026,6 +3085,7 @@
   // Landing focuses the row, as land() focuses a title, so the keyboard and
   // the eyes arrive together and the focus ring says where.
   function landOnCar(vin) {
+    if (!['research','report'].includes(S.workspace)) { setWorkspaceView('research', false); syncUrl(true); syncWorkspace(); }
     const find = () => document.querySelector(`#list-card [data-fkey="star:${vin}"]`);
     let hit = find();
     if (!hit) {
@@ -3471,6 +3531,7 @@
       b.setAttribute('aria-pressed', fresh.getAttribute('aria-pressed'));
     }
     renderFinalists();
+    updateMapVisibility();
   }
   function starButton(x) {
     const st = starOf(x);
@@ -3500,7 +3561,7 @@
     // Emptied, not just hidden. A comparison of cars you have since ruled out
     // is not a thing to leave lying in the document waiting for a print
     // stylesheet, a find-in-page or the next reader of the DOM to surface it.
-    if (rows.length < 2) { card.hidden = true; $('finalists-table').textContent = ''; return; }
+    if (rows.length < 1) { card.hidden = S.workspace !== 'compare'; $('finalists-table').textContent = ''; $('finalists-hint').textContent = 'Save a car while exploring to keep it here. Save another to compare them side by side.'; return; }
     card.hidden = false;
     // The table holds what is still in play; two things it deliberately leaves
     // out have to be said out loud or the reader is quietly missing cars they
@@ -3513,12 +3574,12 @@
     const lostN = starred().filter((v) => !findVin(v)).length;
     const goneN = rows.filter((r) => r.gone).length;
     $('finalists-hint').textContent =
-      `${rows.length} cars you are deciding between, cheapest first — each priced on its own terms.`
+      `${rows.length === 1 ? 'Your saved car' : rows.length + ' cars you are deciding between, cheapest first'} — each priced on its own terms.`
       + (goneN ? ` ${goneN} of them ${goneN === 1 ? 'has' : 'have'} left the market and ${goneN === 1 ? 'is' : 'are'} kept here for the comparison.` : '')
       + (outN ? ` ${outN} more ruled out, still marked on ${outN === 1 ? 'its' : 'their'} own row.` : '')
       + (lostN ? ` ${lostN} the sheet no longer carries at all.` : '')
       + ' Press a car\'s button again to mark it called, then ruled out.'
-      + financeNote() + costBasisNote();
+      + financeNote(rows.map((r) => r.bk + '/' + r.mk)) + costBasisNote();
     const table = $('finalists-table'); table.textContent = '';
     table.appendChild(el('caption', { class: 'sc-sr-only' },
       `Your shortlist, side by side — one column per car, ${rows.length} of them`));
@@ -3935,10 +3996,7 @@
       if (named) { card.hidden = true; return; }
       card.hidden = false;
       $('hero-hint').removeAttribute('title');
-      $('hero-hint').textContent = 'No models are named as the ones you are shopping, '
-        + 'so there is no decision to lay out yet. Press two model chips to put any two '
-        + 'of them side by side, all in — or name their trims in buyer.shopping to pin '
-        + 'them here every day.';
+      $('hero-hint').textContent = 'Choose the models you are shopping using Choose cars. Your comparison will appear here.';
       return;
     }
     card.hidden = false;
@@ -5983,7 +6041,14 @@
   }
   function orderSections(view) {
     let prev = document.querySelector('main#main > .sc-title');
-    for (const id of SECTION_ORDER[view]) {
+    let sequence = SECTION_ORDER[view].flatMap((id) => id === 'promo-card' ? [id, 'finance-settings'] : [id]);
+    if (S.workspace !== 'report') {
+      prev = $('shopping-workspace');
+      sequence = ['filters-card', 'notice', 'map-card', 'finalists-card', 'finance-settings', 'compare-card', 'signal-card', 'hero-card', 'kpis', 'shortlist', 'takeaway', 'list-card', 'chart-card', 'scatter-card', 'notes-card', 'gone-card', 'overview-card', 'promo-card', 'next-callout', 'car-heading'];
+    } else if ($('car-heading').previousElementSibling !== $('shopping-workspace')) {
+      $('shopping-workspace').after($('car-heading'));
+    }
+    for (const id of sequence) {
       const n = $(id);
       if (!n || !prev) continue;
       if (n.previousElementSibling !== prev) prev.after(n);   // only move what is out of place
@@ -6002,7 +6067,7 @@
 
   function render() {
     PICKS_KEY = null;   // a full render never skips the picks — kills any overview↔model carry-over
-    if (S.brand === 'all') { renderOverview(); return; }
+    if (S.brand === 'all') { renderOverview(); syncWorkspace(); return; }
     $('overview-card').hidden = true;
     $('hero-card').hidden = true;    // overview-only: orderSections('model') never lists it, so nothing else would
     $('signal-card').hidden = true;
@@ -6012,7 +6077,7 @@
     updateRows(filtered());   // renders the chart too — it is filter-scoped
     renderGone();
     orderSections('model');
-    footLine();
+    footLine(); syncWorkspace();
   }
 
   // After show-all the list is ~80% of a 'rows' update — heavy enough to hold
@@ -6114,7 +6179,7 @@
   // model-chip path, because pressing a chip is exactly when this changes and
   // that path must not rebuild the bar.
   function syncSortField() {
-    $('f-sort').parentElement.hidden = S.brand === 'all' && !comparingModels();
+    $('f-sort').parentElement.hidden = S.workspace === 'report' && S.brand === 'all' && !comparingModels();
     syncCostControls();
   }
   // The term and down controls exist only where a payment does: a config with
@@ -6142,7 +6207,7 @@
     const otdOpt = sortSel.querySelector('option[value="otd"]');
     if (otdOpt) { otdOpt.hidden = !feesCfg(); otdOpt.disabled = !feesCfg(); }
     if (!feesCfg() && S.sort === 'otd') { S.sort = 'landed'; sortSel.value = 'landed'; }
-    const on = !!fin && !sortSel.parentElement.hidden;
+    const on = !!fin;
     $('f-term-field').hidden = !on;
     $('f-down-field').hidden = !on;
     if (!fin) return;
@@ -6442,7 +6507,7 @@
       case 'nav': buildFilters(); render(); break;
       default: render(); break;
     }
-    syncCoverIndex();
+    syncCoverIndex(); syncWorkspace();
     restoreFocus(fk, scope === 'nav');
     if (anchorScope) {
       settling = true;
@@ -6688,7 +6753,7 @@
             S.brand = 'all'; S.model = null; S.trims.clear();
           }
           S.models = new Set([...S.models].filter((id) => { const [bk, mk] = id.split('/'); return !!site.brands[bk]?.models?.[mk]; }));
-          annotateValue(site); annotateFinance(site);
+          applyShopping(); annotateValue(site); annotateFinance(site);
           buildFilters(true); render(); feedSignature = signature;
         } catch (error) {
           Object.assign(S, previous); _fetchDays = null; buildFilters(true); render(); throw error;
@@ -6706,6 +6771,9 @@
 
   // ---------- boot ----------
   wireFilters();
+  $('shop-apr').addEventListener('change', (e) => { const v = e.target.value === '' ? null : Number(e.target.value); if (v !== null && (!Number.isFinite(v) || v < 0 || v > 40)) { e.target.value = financeCfg()?.fallback_apr ?? ''; return; } S.apr = v; savePrefs(); annotateFinance(S.site); buildFilters(true); render(); });
+  $('shop-offers').addEventListener('change', (e) => { S.offers = e.target.checked; savePrefs(); annotateFinance(S.site); buildFilters(true); render(); });
+  $('shop-cost-controls').onclick = () => { const card = $('filters-card'); card.classList.add('is-open'); $('filter-toggle').setAttribute('aria-expanded','true'); card.scrollIntoView({block:'start'}); $('f-term').focus(); };
   (window.__data || fetch('data.json?v=' + Date.now(), { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }))
     .then((raw) => {
@@ -6715,10 +6783,10 @@
       S.site = site;
       _fetchDays = null;   // the memo below belongs to the sheet, not the page
       annotateValue(site);
-      annotateFinance(site);
       loadPrefs();
+      applyShopping(); annotateFinance(site);
       noteVisit();
-      applyUrl();
+      applyUrl(true);
       window.addEventListener('popstate', () => { applyUrl(); rerender('nav'); });
       buildFilters();
       render();

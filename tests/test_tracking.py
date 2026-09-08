@@ -390,6 +390,18 @@ class TestMoney(unittest.TestCase):
 # normalize(): the field paths and filters that took several days to get right.
 # --------------------------------------------------------------------------
 class TestNormalize(unittest.TestCase):
+    def test_numeric_trim_is_text_before_csv_roundtrip(self):
+        import csv, io
+        rec = copy.deepcopy(FIXTURES["clean"])
+        rec["vehicle"]["trim"] = 4
+        normalized = T.normalize(rec, target("porsche-taycan"), Counter())
+        self.assertIsNotNone(normalized)
+        self.assertEqual(normalized["trim"], "4")
+        stream = io.StringIO()
+        writer = csv.DictWriter(stream, fieldnames=normalized.keys())
+        writer.writeheader(); writer.writerow(normalized); stream.seek(0)
+        self.assertEqual(next(csv.DictReader(stream))["trim"], normalized["trim"])
+
     def setUp(self):
         self.dropped = Counter()
         self._real_zip = T.zip_coords
@@ -3055,14 +3067,20 @@ class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
     def test_a_rebuild_with_the_shipped_config_succeeds_and_says_what_is_empty(self):
         r, report, sheet = self._run(lambda cfg: None)
         self.assertEqual(r.returncode, 0, r.stderr[-800:])
-        # Not "no listings yet" any more: every model on the watchlist has now
-        # fetched at least once, which is the state this line existed to
-        # describe the absence of. What the rebuild must still say is how the
-        # watchlist splits between the two.
-        self.assertRegex(r.stdout, r"\d+ carry listings, \d+ do not")
+        import json
+        models = [m for b in json.loads(sheet)["brands"].values() for m in b["models"].values()]
+        empty = sum(not m.get("listings") for m in models)
+        self.assertIn(f"{len(models)-empty} carry listings, {empty} do not", r.stdout)
         self.assertIn("call plan:", r.stdout)
         self.assertTrue(report.startswith("# "))
         self.assertIn('"brands"', sheet)
+
+    def test_a_new_unfetched_model_is_reported_explicitly(self):
+        r, _, sheet = self._run(lambda cfg: cfg["watchlist"]["ford"]["models"].update({
+            "never-fetched-test": {"label": "Unfetched EV", "model": "Unfetched EV"}}))
+        self.assertEqual(r.returncode, 0, r.stderr[-800:])
+        self.assertIn("no listings yet (first fetch)", r.stdout)
+        self.assertIn("never-fetched-test", sheet)
 
     def test_standing_the_only_hard_coded_brand_down_is_not_a_failure(self):
         def drop_bmw(cfg):
@@ -3467,15 +3485,16 @@ class TestEveryTargetInTheRecordIsAccountedFor(unittest.TestCase):
         rows = T.load_history()
         kept = [r for r in rows if r["target"] == "lucid-air"]
         self.assertFalse(kept, "the old rows must not surface under the new id")
-        orphan = [r for r in rows if r["target"].startswith("lucid-air-")]
+        old_ids = {tid for tid, mapped in T.LEGACY_IDS.items() if tid.startswith("lucid-air-") and mapped is None}
+        orphan = [r for r in rows if r["target"] in old_ids]
         self.assertTrue(orphan, "…and they must still be in the file, untouched")
         # The measured reason, so a later session cannot "fix" this by mapping.
         # Over the newest DAY it no longer holds: the Lucid Air was split back
         # into pure / touring / grand-touring, so `lucid-air-touring` is a live
         # id again and its recent rows are the split target's, 2024 and 2025.
-        # The orphaned history is what the argument is about, and it is still
-        # what it was — 190 of 278 rows are model year 2022 or 2023, which a
-        # 2024+ watchlist can never return.
+        # The retired target history is what the argument is about: most
+        # of its rows are model year 2022 or 2023, which a 2024+ watchlist
+        # can never return.
         pre = [r for r in orphan if r["year"] and int(r["year"]) < 2024]
         self.assertGreater(len(pre) / len(orphan), 0.5,
                            "most of these cars are outside the 2024+ rule the "
@@ -4444,7 +4463,7 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
                      "active": True, "label": "Kia certified 2.99%"}]}},
                 "brands": {"kia": {"label": "Kia", "models": {
                     "ev9": {"listings": cars}}}}}
-        script = (sn.group(0) + fn.group(0)
+        script = ("const S = {apr: null, offers: true};\n" + sn.group(0) + fn.group(0)
                   + f"const site = {json.dumps(site)};\nannotateFinance(site);\n"
                   "console.log(JSON.stringify(site.brands.kia.models.ev9.listings"
                   ".map((x) => [!!x.apr_seller_unnamed, x.apr_seller_brand])));")
