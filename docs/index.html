@@ -523,9 +523,11 @@
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="car-discovery.css?v=20260908-workspace">
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="car-discovery.js?v=20260908-workspace"></script>
+<script src="car-discovery.js?v=20260908-studio"></script>
 <link rel="stylesheet" href="shopping-workspace.css?v=20260908-workspace">
 <script src="shopping-workspace.js?v=20260908-workspace"></script>
+<link rel="stylesheet" href="shopping-studio.css?v=20260908-studio">
+<script src="shopping-studio.js?v=20260908-studio"></script>
 </head>
 <body class="market-studio">
 <a class="sc-skip" href="#main">Skip to content</a>
@@ -865,7 +867,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, workspace: new URLSearchParams(location.search).get('view') || 'explore' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, mission: 'all', lens: 'price', workspace: new URLSearchParams(location.search).get('view') || 'explore' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -889,6 +891,7 @@
       S.shopOnly = p.shopOnly === true;
       S.apr = Number.isFinite(p.apr) && p.apr >= 0 && p.apr <= 40 ? p.apr : null;
       S.offers = p.offers !== false;
+      S.lens = p.lens === 'monthly' ? 'monthly' : 'price';
       S.where = new Set(Array.isArray(p.where) ? p.where : []);
       S.range = ['30', '90', 'all'].includes(p.range) ? p.range : '90';
       // A term is only restored if the config still offers it: dropping 72 from
@@ -931,9 +934,9 @@
     } catch (e) { SEEN.since = null; /* private mode etc. */ }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ lens: S.lens, shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
   }
-  let WORKSPACE = null;
+  let WORKSPACE = null, STUDIO = null;
   function applyShopping() {
     if (!Array.isArray(S.shoppingModels)) return;
     const wanted = new Set(S.shoppingModels), trims = [];
@@ -967,9 +970,35 @@
       browse: browseModels,
       shop: (keys) => { S.shoppingModels = keys; applyShopping(); savePrefs(); browseModels(keys); },
     });
-    setWorkspaceView(S.workspace, false); WORKSPACE.update();
+    if (!STUDIO && window.ShoppingStudio) STUDIO = ShoppingStudio.create({
+      car: studioCar, savedVins: () => Object.keys(S.stars).filter((v) => STAR_STEPS.includes(S.stars[v]) && S.stars[v]),
+      status: (vin, value) => { if (value === undefined) return S.stars[vin] || ''; setStar({vin}, value); },
+      through: dataThrough,
+      state: () => ({mission:S.mission, lens:S.lens, hasFinance:!!financeCfg(), monthlyBudget:S.budgetKind==='mo'?S.budget:0,
+        terms:`${chosenTerm()} months · ${money(S.down)} down · base APR ${financeCfg()?.fallback_apr ?? 'unreported'}%${S.offers?' · eligible lower offers included':''}. Tax and fees estimated; shipping may be separate.`}),
+      mission: (value) => { S.mission = value; if(value==='drops') S.sort='cut'; else if(value==='fresh') S.sort='newest'; syncUrl(); buildFilters(true); render(); },
+      lens: (value) => { S.lens=value; if(value==='monthly')S.sort='payment'; else if(S.sort==='payment')S.sort='price'; savePrefs(); buildFilters(true); render(); },
+      budget: (value) => { S.budget=value; S.budgetKind='mo'; savePrefs(); buildFilters(true); render(); },
+      finance: () => { setWorkspaceView('compare'); $('finance-settings').scrollIntoView({block:'center'}); $('shop-apr').focus({preventScroll:true}); },
+      compare: () => { setWorkspaceView('compare'); $('finalists-card').scrollIntoView({block:'start'}); },
+    });
+    setWorkspaceView(S.workspace, false); WORKSPACE.update(); STUDIO?.update();
     const fin = financeCfg(); $('finance-settings').hidden = !fin;
     if (fin) { $('shop-apr').value = fin.fallback_apr ?? ''; $('shop-offers').checked = S.offers; }
+  }
+  function studioCar(vin) {
+    const found = findVin(String(vin).toUpperCase()); if (!found) return null;
+    const {x,m,gone}=found;
+    return {vin:x.vin, title:[x.year,m.label,carTrimText(x)].filter(Boolean).join(' '), gone,
+      price:x.price, image:safeUrl(x.image), url:safeUrl(x.url), location:placeTxt(x), dealer:x.dealer||'Dealer unreported',
+      otd:otd(x), payment:gone?null:payFor(x), terms:`${x.apr ?? 'unreported'}% APR${x.apr_promo?' conditional offer':''} · ${termFor(x)} months · ${money(S.down)} down${x.apr_promo?' · confirm lender/dealer eligibility':''}`,
+      milesLabel:x.miles==null?'Mileage unreported':num(x.miles)+' mi', shipping:shipNote(x), flags:(x.flags||[]).join(' · '),
+      status:starOf(x), firstSeen:x.first_seen, through:gone?(x.last_seen||(x.series||[]).at(-1)?.[0]||'Unreported'):asOfOf(x), series:x.series||[]};
+  }
+  function studioSaveButton(x) {
+    const saved=['short','called'].includes(starOf(x));
+    return el('button',{class:'car-text-button',type:'button','data-fkey':'star:'+x.vin,'aria-pressed':String(saved),
+      title:saved?'Remove from saved cars':'Save to your garage', onclick:()=>setStar(x,saved?'':'short')},saved?'Saved ✓':'Save car');
   }
   // ---------- the comparison ----------
   // Which trims a model page is about, in the config's own order (a Set has
@@ -1588,23 +1617,27 @@
   const DISCOVERY = window.CarDiscovery ? window.CarDiscovery.create({
     root: $('car-discovery'),
     openCar: (vin) => { const c = findVin(vin); if (c) goTo(c.bk, c.mk, c.x.vin); },
-    starCar: (vin) => { const c = findVin(vin); return c ? starButton(c.x) : null; },
+    quickCar: (vin) => STUDIO?.open(vin),
+    starCar: (vin) => { const c = findVin(vin); return c ? (S.workspace === 'report' ? starButton(c.x) : studioSaveButton(c.x)) : null; },
+    resetFilters: () => { S.mission='all'; S.budget=0; S.where.clear(); S.year='all'; S.miles=0; S.clean=false; S.rental=false; S.cpo=false; S.hideNew=false; savePrefs(); syncUrl(); buildFilters(true); render(); },
   }) : null;
   function updateMapVisibility() {
     const rows = S.brand === 'all' ? pooledRows() : filtered();
-    $('map-card').hidden = !rows.length;
+    $('map-card').hidden = !rows.length && S.workspace !== 'explore';
     const sets = pickSets(scopedScored(), pickCap());
     MAP_SUMMARY.picked = new Set([...sets.local, ...sets.far].map((p) => p.x.vin));
     const places = rows.map((x) => {
       const found = findVin(String(x.vin || '').toUpperCase());
       return { vin: x.vin, title: [x.year, found && found.m.label, carTrimText(x)].filter(Boolean).join(' '),
-        price: x.price, priceLabel: money(x.price), milesLabel: x.miles == null ? 'Mileage unreported' : num(x.miles) + ' mi',
+        price: x.price, priceLabel: money(x.price), paymentLabel: perMo(payFor(x)), monthly:S.lens==='monthly' && !!financeCfg() && S.workspace!=='report',
+        paymentNote: `${x.apr ?? 'unreported'}% APR · ${termFor(x)}mo · ${money(S.down)} down; tax/fees estimated${x.apr_promo?'; confirm offer eligibility':''}`,
+        radar: twoPrices(x) ? 'Two recorded prices' : lastStep(x)<0 ? money(-lastStep(x))+' lower vs previous fetch' : isNew(x) ? 'New at last fetch' : '', milesLabel: x.miles == null ? 'Mileage unreported' : num(x.miles) + ' mi',
         location: placeTxt(x), dealer: x.dealer || 'Dealer unreported', lat: x.lat, lng: x.lon,
         local: !!x.local, picked: MAP_SUMMARY.picked.has(x.vin), saved: ['short','called'].includes(starOf(x)),
         tone: SC.toneRef(found ? carTone(x, found.bk, S.brand === 'all' ? null : found.m) : 'chart-context'),
         url: safeUrl(x.url), shipping: shipNote(x), image: safeUrl(x.image), flags: (x.flags || []).join(' · ') };
     });
-    if (DISCOVERY) DISCOVERY.update(places, [S.brand, S.model, [...S.where].sort().join(','), [...S.models].sort().join(',')].join('|'));
+    if (DISCOVERY) DISCOVERY.update(places, [S.brand, S.model, S.mission, S.budgetKind, S.budget, [...S.where].sort().join(','), [...S.models].sort().join(',')].join('|'));
     else $('car-discovery').textContent = 'Map unavailable. All cars are in the listings below.';
     const located = places.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng) && Math.abs(c.lat) <= 90 && Math.abs(c.lng) <= 180 && (c.lat !== 0 || c.lng !== 0)).length;
     $('car-map-hint').textContent = rows.length + ' cars in the current view. Tap a dot to see the car and its asking price.';
@@ -2926,6 +2959,10 @@
   // the INDEX as the second argument, and index 1 would have quietly turned the
   // budget off for every car but the first.
   function passesShared(x, skipBudget) {
+    if (S.mission==='near' && !x.local) return false;
+    if (S.mission==='drops' && !(lastStep(x)<0 && !twoPrices(x))) return false;
+    if (S.mission==='fresh' && !isNew(x)) return false;
+    if (S.mission==='saved' && !['short','called'].includes(starOf(x))) return false;
     if (!skipBudget && !withinBudget(x)) return false;
     if (!matchWhere(x)) return false;
     if (S.year !== 'all' && String(x.year) !== S.year) return false;
@@ -2953,6 +2990,7 @@
   function syncUrl(replace) {
     const q = new URLSearchParams();
     if (S.workspace !== 'explore') q.set('view', S.workspace);
+    if (S.mission !== 'all') q.set('hunt', S.mission);
     if (S.brand !== 'all') {
       q.set('brand', S.brand);
       if (S.model) q.set('m', S.model);
@@ -2972,6 +3010,7 @@
   function applyUrl(restoreShopping = false) {
     const q = new URLSearchParams(location.search);
     setWorkspaceView(q.get('view') || 'explore', false);
+    S.mission = ['near','drops','fresh','saved'].includes(q.get('hunt')) ? q.get('hunt') : 'all';
     const lc = (k) => { const v = q.get(k); return v ? v.toLowerCase() : v; };   // keys are lowercase slugs; casing alone must not fake a miss
     const list = (k) => (lc(k) || '').split(',').map((x) => x.trim()).filter(Boolean);
     const wantBrand = lc('brand'), wantModel = lc('model'), wantM = lc('m');
@@ -3507,9 +3546,11 @@
   const starOf = (x) => S.stars[String(x.vin || '').toUpperCase()] || '';
   const starred = () => Object.entries(S.stars).filter(([, v]) => v && v !== 'out').map(([k]) => k);
   function cycleStar(x) {
+    setStar(x, STAR_STEPS[(STAR_STEPS.indexOf(starOf(x)) + 1) % STAR_STEPS.length]);
+  }
+  function setStar(x, next) {
     const vin = String(x.vin || '').toUpperCase();
-    if (!vin) return;
-    const next = STAR_STEPS[(STAR_STEPS.indexOf(starOf(x)) + 1) % STAR_STEPS.length];
+    if (!/^[A-Z0-9]{6,24}$/.test(vin) || !STAR_STEPS.includes(next)) return;
     if (next) S.stars[vin] = next; else delete S.stars[vin];
     savePrefs();
     // Exactly two things on this page read a star: the buttons that carry one,
@@ -3531,7 +3572,7 @@
       b.setAttribute('aria-pressed', fresh.getAttribute('aria-pressed'));
     }
     renderFinalists();
-    updateMapVisibility();
+    if (S.mission==='saved') { buildFilters(true); render(); } else { updateMapVisibility(); STUDIO?.update(); }
   }
   function starButton(x) {
     const st = starOf(x);
@@ -6356,6 +6397,7 @@
   // label itself filtered.
   function filterBits(overview, sharedOnly) {
     const bits = [];
+    if (S.mission !== 'all') bits.push(({near:'drivable cars',drops:'lower vs previous fetch',fresh:'new at each model’s last fetch',saved:'saved cars'})[S.mission]);
     if (S.where.size) bits.push([...S.where].map((k) => whereLabel(k)).join(' + '));
     if (S.models.size && overview && !sharedOnly) bits.push(modelsInView().map(({ m, mk }) => m.label || mk).join(' + '));
     if (S.trims.size && !overview && !sharedOnly) bits.push(selectedTrims(model()).map((id) => trimLabel(model(), id)).join(' + '));

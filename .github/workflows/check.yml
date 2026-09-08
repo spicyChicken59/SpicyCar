@@ -93,6 +93,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify geographic browsing and graceful fallback
         run: |
+          node tools/studio_smoke.mjs
           node tools/workspace_smoke.mjs
           node tools/discovery_smoke.mjs
       - name: Open the dashboard and ask whether it works
