@@ -88,7 +88,7 @@
     "fuel": "electric"
   },
 
-  "// national_only": "With fair collection enabled: 27 trim targets across 20 models, national cheapest + regional cheapest + national newest. Baseline 30 calls/day, about 915 per 30.5-day month (900–930 by calendar), worst day 30 of 40; 1000 monthly limit, 50 reserved. Regional coverage remains because it finds cars outside the national first page.",
+  "// national_only": "With fair collection enabled: 29 trim targets across 21 models, national cheapest + regional cheapest + national newest. Baseline 21 calls/day, about 640 per 30.5-day month (630–651 in 30–31 days), worst day 21 of 40; 1000 monthly limit, 50 reserved. Spare capacity funds deeper pages, market counts and extra turns. Regional coverage remains because it finds cars outside the national first page.",
   "// legacy_ids": "Old target ids -> new ones, so history carries over when the config is restructured. A NULL value means the opposite and is not an omission: the rows are known about and deliberately left orphaned. lucid-air-touring and -grand-touring merged into one trimless lucid-air, and 53 of the 68 rows they hold are model year 2022 or 2023 — measured, not assumed — which the 2024+ watchlist can never return again, so remapping them would publish 53 cars as current inventory that no query on this sheet could produce. chevrolet-equinox-ev-rs is the opposite case on every axis: 0 of its 31 rows are pre-2024 and its window was a SUBSET of the new target's, so its reconstructed cut-off is narrower than the truth rather than wider, which is conservative. It is mapped. bmw-i7 is one row from 2026-08-29, written when the i7 was briefly trimless, and it carries no trim at all — there is no trim target to map it to, so it stays where it is. bmw-ix-cpo is one row from 2026-08-31, from the hand-written iX certified trim that existed before the watch was derived from buyer.shopping. There is no target to map it to unless the iX is shopped, and mapping it conditionally on that would make a row appear and disappear with the buyer's mind, so it stays orphaned; naming the iX in buyer.shopping rebuilds bmw-ix-cpo under the same id and the row joins it.",
   "legacy_ids": {
     "i5-edrive40": "bmw-i5-edrive40",
@@ -160,8 +160,8 @@
         "i4": {
           "label": "BMW i4",
           "model": "i4",
-          "active": false,
-          "// active": "stood down when the list narrowed to the i5 against the i7: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the two shopped pages now show directly.",
+          "active": true,
+          "// active": "Restored to the watchlist with its previous eDrive40 and M50 trims. It shares the fair model rotation and spare-call allocation; model years inherit the 2024+ defaults.",
           "notes": {
             "good": ["Drives like a 4-Series; the eDrive40 does about 300 miles", "One of the better reliability records among EVs, and cheap used", "Hatchback practicality with a proper trunk opening"],
             "bad": ["2022 and early 2023 cars had infotainment and charging glitches, mostly cured by updates", "Low roof: rear headroom is tight", "eDrive35 has the smaller battery — roughly 260 miles, and slower charging"],
@@ -169,7 +169,7 @@
           },
           "trims": {
             "edrive35": { "label": "eDrive35", "trim_query": "eDrive35", "trim_match": "edrive35", "active": false },
-            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40", "note": "Stood down with the rest of the i4: at full depth on a daily cadence it was ten calls a day, a third of the whole plan, to benchmark a drivetrain the i5 and i7 pages now show directly." },
+            "edrive40": { "label": "eDrive40", "trim_query": "eDrive40", "trim_match": "edrive40" },
             "xdrive40": { "label": "xDrive40", "trim_query": "xDrive40", "trim_match": "xdrive40", "active": false },
             "m50":      { "label": "M50",      "trim_query": "M50",      "trim_match": "m50", "min_price": 25000 }
           }

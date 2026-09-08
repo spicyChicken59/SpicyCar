@@ -19,13 +19,13 @@ class FairPlan(unittest.TestCase):
             days = [sum(T.due_on(t, d) for t in ts) for d in range(0, 120)]
             self.assertEqual(set(days), {0, 1}, key)
             hits = [i for i, n in enumerate(days) if n]
-            self.assertEqual({b-a for a, b in zip(hits, hits[1:])}, {2})
-            self.assertAlmostEqual(sum(T.calls_for(t)/t["cadence"] for t in ts), 1.5)
+            self.assertEqual({b-a for a, b in zip(hits, hits[1:])}, {3})
+            self.assertAlmostEqual(sum(T.calls_for(t)/t["cadence"] for t in ts), 1.0)
             for t in ts:
                 self.assertEqual(sum(T.due_on(t, d) for d in range(t["cadence"])), 1)
 
     def test_every_31_day_window_fits_with_recovery_reserve(self):
-        for start in range(24):
+        for start in range(T.plan_horizon()):
             costs = [sum(T.calls_for(t) for t in T.TARGETS.values() if T.due_on(t, d))
                      for d in range(start, start+31)]
             self.assertLessEqual(max(costs), T.BUDGET)

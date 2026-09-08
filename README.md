@@ -14,7 +14,7 @@
 
 [![SpicyCar daily](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml/badge.svg)](https://github.com/spicyChicken59/SpicyCar/actions/workflows/daily.yml)
 
-**A used-car purchase analyzer.** It tracks 20 models with a guaranteed model turn every 2 days,
+**A used-car purchase analyzer.** It tracks 21 models with a guaranteed model turn every 3 days,
 rotating individual trims, and searches for both low prices and newly listed cars. Choose what you
 are shopping in the dashboard; every model keeps its share of the collection budget. The BMW i5,
 i7 and iX sit alongside one battery EV from each of the other 17 brands in this watchlist.
@@ -140,23 +140,24 @@ Two things are configured, separately:
   model string is wrong, and it had no name before — `silent_targets` cannot catch it,
   because a call *was* billed.
 
-  The list can change as the search changes. The i4 remains inactive; bringing it back means
-  setting its `active` flag and rechecking the fair plan. The iX receives the same model turns as
-  every other active model, regardless of whether it is on the shopping list.
+  The list can change as the search changes. The i4 is active again, covering 2024+ eDrive40
+  and M50 cars. The i4 and iX receive the same model turns as
+  every other active model, regardless of whether they are on the shopping list.
 
 ## Design decisions
 
-**It runs on about 30 API calls a day for guaranteed coverage.** The configured free plan is
+**It runs on about 21 API calls a day for guaranteed coverage.** The configured free plan is
 1,000 calls a month at 20 listings per call. Each model turn asks for the cheapest national page,
 the cheapest page within the search states, and a national newest-first page. A state comma list
 costs one call; the newest probe is national only. A national page that exhausts the market lets
 the collector skip redundant work.
 
-All 20 models get a turn every 2 days. Individual trims rotate through those turns, so a model
-with one, two or three trims refreshes each trim every 2, 4 or 6 days. The baseline range is
-30–30 calls per day: 900–930 calls in a 30- or 31-day month, or 915 using the legacy 30.5-day
-planning average. The baseline has a worst day of 30 against the hard daily cap of 40; the
-plan-check cycle is 24 days here, two turns of the 12-day trim schedule. Adding models can slow
+All 21 models get a turn every 3 days. Individual trims rotate through those turns, so a model
+with one, two or three trims refreshes each trim every 3, 6 or 9 days. The baseline range is
+21–21 calls per day: 630–651 calls in a 30- or 31-day month, or roughly 640 using the legacy 30.5-day
+planning average. The baseline has a worst day of 21 against the hard daily cap of 40; the
+plan-check cycle is 18 days here, one complete trim schedule. After the 50-call reserve,
+299–320 monthly calls remain for deeper pages, market counts and extra observations. Adding models can slow
 the common model turn to keep the full watchlist affordable. Choosing a different shopping car
 cannot change another model's guarantee.
 
@@ -406,7 +407,7 @@ What it measures today, on the committed record:
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 20 | 811 | 147 KB | 59% |
+| as committed | 21 | 862 | 165 KB | 66% |
 | every target fetching | 20 | 847 | 161 KB | 64% |
 | …three fetches deep on each | 20 | 847 | 171 KB | 69% |
 | …seven fetches deep on each | 20 | 847 | 186 KB | 75% |
