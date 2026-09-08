@@ -4686,12 +4686,10 @@ def main():
         sys.exit(msg)
 
     attempted_ids = set(fetch_log_row()) if bootstrap else None
-    if bootstrap:
+    if bootstrap or refetch:
         all_rows = merge_bootstrap_rows(load_history(), today_rows, fetch_log_row())
     else:
-        attempted = set(fetch_log_row())
-        history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY
-                        or (refetch and r["target"] not in attempted)]
+        history_rows = [r for r in load_history() if r["snapshot_date"] != TODAY]
         all_rows = history_rows + today_rows
     today_rows = [r for r in all_rows if r["snapshot_date"] == TODAY]
     write_rows(all_rows)

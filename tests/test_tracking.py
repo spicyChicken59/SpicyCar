@@ -7778,6 +7778,19 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         self.assertFalse(seen)
         self.assertEqual(out.code, T.ALREADY_FETCHED)
 
+    def test_refetch_keeps_prior_rows_for_a_budget_deferred_target(self):
+        prior = self._hist_row(T.TODAY)
+        prior["target"] = "bmw-i7-edrive50"
+        batches = self._via_batches()
+        def capped(t, source_name, sort, page):
+            if t["id"] == prior["target"]:
+                T.FAILED_SCOPES.add((t["id"], source_name))
+                return None
+            return batches(t, source_name, sort, page)
+        with unittest.mock.patch.object(T, "bootstrap_allowance", return_value=T.BUDGET):
+            _, captured, _ = self._drive([prior], capped, allow_refetch=True)
+        self.assertIn(prior, captured.get("rows", []))
+
     def test_an_empty_hatch_is_not_a_hatch(self):
         """daily.yml passes ALLOW_REFETCH as `inputs.allow_refetch && '1' || ''`,
         so on every scheduled run the variable is PRESENT and empty. If the
