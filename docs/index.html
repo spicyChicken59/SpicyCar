@@ -42,7 +42,7 @@
      measured 160ms of the time to content at 1.6 Mbps, and 380ms at 400 kbps.
      The no-op catch keeps a failing fetch from firing an unhandled rejection
      before the page's own handler below picks the same promise up. -->
-<script>window.__data = fetch('data.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); window.__data.catch(function () {});</script>
+<script>window.__data = fetch('data.json?v=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); window.__data.catch(function () {});</script>
 <link rel="stylesheet" href="design-system/sc.css">
 <script src="design-system/sc-theme.js"></script>
 <script src="design-system/sc-motion.js" defer></script>
@@ -521,9 +521,9 @@
 </style>
 <link rel="stylesheet" href="market-studio.css">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-<link rel="stylesheet" href="car-discovery.css">
+<link rel="stylesheet" href="car-discovery.css?v=20260908">
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="car-discovery.js"></script>
+<script src="car-discovery.js?v=20260908"></script>
 </head>
 <body class="market-studio">
 <a class="sc-skip" href="#main">Skip to content</a>
@@ -623,10 +623,12 @@
   <section class="sc-card sc-filter-bar" id="filters-card" hidden>
     <div class="sc-filter-bar__head">
       <span class="sc-eyebrow">filters</span>
+      <button class="sc-btn sc-btn--ghost sc-btn--sm" id="data-refresh" type="button" aria-label="Check for listing updates">Refresh</button>
       <span class="sc-note" id="filter-count" role="status" aria-live="polite"></span>
       <button class="sc-btn sc-press sc-btn--ghost sc-btn--sm sc-filter-bar__toggle" id="filter-toggle" type="button"
               aria-expanded="false" aria-controls="filters">Filters</button>
     </div>
+    <p class="sc-hint" id="data-refresh-status" role="status" hidden></p>
     <div class="sc-filters" id="filters">
       <div class="sc-field" id="f-model-field">Models
         <div class="sc-tabs" id="f-model" role="group" aria-label="Models — pick any; two or more compares them; none selected means every model"></div>
@@ -721,18 +723,9 @@
         <p class="sc-hint" id="car-map-hint"></p>
       </div>
     </div>
-    <div class="car-map-switch" role="group" aria-label="Map view">
-      <button type="button" id="car-street-switch" aria-pressed="true" aria-controls="car-discovery">Places &amp; cars</button>
-      <button type="button" id="car-atlas-switch" aria-pressed="false" aria-controls="car-atlas">Market atlas</button>
-    </div>
     <div id="car-discovery"></div>
-    <div id="car-atlas" hidden>
-    <p class="sc-hint" id="map-hint"></p>
-    <div class="sc-legend" id="map-legend" aria-hidden="true"></div>
-    <div class="sc-map" id="map" role="group" tabindex="0" aria-label="Map of the cars for sale. Use left and right arrow keys to step through cars west to east, Enter to open, Escape to clear."></div>
-    <p class="sc-sr-only" id="map-say" role="status" aria-live="polite"></p>
+    <p class="sc-sr-only" id="map-hint"></p>
     <div class="sc-sr-only" id="map-twin"></div>
-    </div>
     <div class="sc-chart-caption">
       <span>SpicyCar · the market record</span>
       <span class="sc-signature sc-signature--small">
@@ -1530,7 +1523,6 @@
   // standing on. Their own nodes rather than the tooltips', because a tooltip
   // is also a pointer surface and a live one would announce on every pixel of
   // a mouse move.
-  const MAP_SAY = $('map-say');
   const SCATTER_SAY = $('scatter-say');
   // The trim as a car's own name, for reading aloud — the tooltips show
   // trim_label, which is the name of the QUERY, and for a model watched whole
@@ -1539,601 +1531,36 @@
     const label = String(x.trim_label || '').trim();
     return (/^all(\s+trims)?$/i.test(label) ? '' : label) || String(x.trim || '').trim();
   };
-  // ---------- the market map ----------
-  // US states from the same pinned-CDN pattern the design system uses; the
-  // topology is pre-projected (geoAlbersUsa, 975×610), and the dots use the
-  // matching hand-rolled Albers for the lower 48. The view is dynamic: it
-  // fits itself to the Where selection, and scroll/pinch/drag (or the
-  // buttons) zoom and pan it freely. If the fetch fails or no listing
-  // carries coordinates yet, the card simply stays hidden.
-  const MAP_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json';
-  const MAP_FULL = SC.geo.EXTENT;   // the frame us-atlas is already projected into
-  let MAP_STATES = null, MAP_PROMISE = null, MAP_RENDER = 0, MAP_FIT_KEY = null, MAP_ANIM = null;
-  const albers48 = SC.geo.albersUsa48;
-  const decodeStates = (topo) => SC.geo.decodeTopology(topo, 'states');
-  const STATE_ABBR = SC.geo.STATE_ABBR;
-  const STATE_NAME = (() => { const o = {}; for (const [n, a] of Object.entries(STATE_ABBR)) o[a] = n; return o; })();
-  function fetchMap() {
-    if (MAP_STATES) return Promise.resolve(MAP_STATES);
-    MAP_PROMISE = MAP_PROMISE || fetch(MAP_URL).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then((t) => (MAP_STATES = decodeStates(t)))
-      .catch(() => null);
-    return MAP_PROMISE;
-  }
-  // The view the current selection deserves: picked states framed — and with
-  // nothing picked, the cars
-  // themselves (plus the ring, so home stays in frame). A coast-to-coast
-  // market still reads as the whole country.
-  function mapFitTarget(states, cars) {
-    const buyer = (S.site || {}).buyer || {}, names = buyer.state_names || {};
-    const boxes = [];
-    for (const key of S.where) {
-      if (key === 'beyond') return MAP_FULL;
-      const st = states.find((s) => s.name === names[key]);
-      if (st) boxes.push(st.bbox);
-    }
-    if (!boxes.length && cars && cars.length) {
-      let b = [1e9, 1e9, -1e9, -1e9];
-      for (const c of cars) {
-        const [px, py] = albers48(c.x.lon, c.x.lat);
-        if (!(px >= -8 && px <= 983 && py >= -8 && py <= 618)) continue;
-        b = [Math.min(b[0], px), Math.min(b[1], py), Math.max(b[2], px), Math.max(b[3], py)];
-      }
-      if (b[2] > b[0]) {
-        boxes.push(b);
-        // keep home in frame for context — the anchor point, now that the
-        // drive ring is gone
-        if (Array.isArray(buyer.anchor)) {
-          const [hx, hy] = albers48(buyer.anchor[1], buyer.anchor[0]);
-          boxes.push([hx, hy, hx, hy]);
-        }
-      }
-    }
-    // the union, the pad, the aspect lock and the overflow fallback are all
-    // SC.geo.fitBoxes now — what stays here is only which boxes to fit
-    return SC.geo.fitBoxes(boxes);
-  }
-  // The map is built ONCE per view identity (the overview, or one brand/model)
-  // from the superset of cars with coordinates. Every filter, the trim picker
-  // and the overview's hidden-models set then act by toggling a class on dots
-  // that already exist — a chip press no longer rebuilds the SVG, re-creates
-  // the view engine, or interrupts the reader's zoom. Only switching what the
-  // map is OF rebuilds it.
-  let MAP_CTL = null;   // { key, mode, entries, picked, visible, VIEW, svg, hideTip, states } — or { key, empty: true }
-  const mapKey = () => (S.brand === 'all' ? 'overview' : 'model|' + S.brand + '/' + S.model);
-  function buildMap() {
-    const card = $('map-card');
-    const mode = S.brand === 'all' ? 'overview' : 'model';
-    const key = mapKey();
-    // Two lists: the cars the drawing can place, and the ones it cannot — a
-    // listing with no coordinates is still under the filters, and dropping it
-    // here left the hint and the table twin one or two short of the count line
-    // above them ("493 cars under the current filters" beside "showing all
-    // 495 cars"). The card's empty guard and the frame fit stay keyed on the
-    // placeable cars; the unplaced ones ride along as entries with no dot.
-    const cars = [], unplaced = [];
-    const take = (x, bk, mk, m) => ((x.lat != null && x.lon != null) ? cars : unplaced).push({ x, bk, mk, m });
-    if (mode === 'overview') {
-      for (const { bk, mk, m } of allModels())
-        for (const x of (m.listings || [])) take(x, bk, mk, m);
-    } else {
-      const m = model();
-      for (const x of (m.listings || [])) take(x, S.brand, S.model, m);
-    }
-    // VIN order, so dot z-order and the collocation spirals never depend on the
-    // table's sort — a scoped update and a full render draw the identical map
-    cars.sort((a, b) => ((a.x.vin || '') < (b.x.vin || '') ? -1 : 1));
-    if (!cars.length) { card.hidden = !DISCOVERY_COUNT; $('map').textContent = 'No verified coordinates in this view. Every car is still in Places & cars.'; MAP_CTL = { key, empty: true }; return; }
-    // Reserve the card NOW, not when the topojson lands: the cars are already
-    // known, and #map:empty (see the stylesheet) holds the svg's final height,
-    // so the async fetch can't shift the sections below the card. A cached
-    // atlas resolves on a microtask, before the next paint, so the placeholder
-    // hint only ever shows while the network is genuinely in flight.
-    // updateMapVisibility still owns hiding the card when a filter empties it.
-    card.hidden = false;
-    if (!MAP_STATES) $('map-hint').textContent = DISCOVERY_COUNT + ' cars in the current view. Asking prices as listed; shipping is shown separately.';
-    const token = ++MAP_RENDER;
-    fetchMap().then((states) => {
-      if (token !== MAP_RENDER) return;
-      if (!states) { card.hidden = !DISCOVERY_COUNT; $('map').textContent = 'The atlas could not load. Places & cars and the listing tables are still available.'; MAP_CTL = { key, empty: true }; return; }
-      if (MAP_CTL && MAP_CTL.VIEW) MAP_CTL.VIEW.destroy();   // cancel any in-flight animation on the old svg
-      const buyer = S.site.buyer || {};
-      // Any device with a coarse pointer gets invisible hit halos over the
-      // dots (~25px targets) — any-pointer, not pointer, so a touch-laptop's
-      // finger is covered even though its PRIMARY pointer is the trackpad.
-      // A pure desktop (no coarse pointer at all) keeps the bare dots, so
-      // hover can never fire from 12px away there; on a hybrid the mouse
-      // hovers the halos instead, and the delegated pointerover below gives
-      // it the same nearest-car(≤13px) tooltip the bare dots would.
-      const COARSE = window.matchMedia('(any-pointer: coarse)').matches;
-      const halos = [];   // every halo — sizeMapHalos() derives r from the rendered width, and again when it changes
-      // Which cars are elevated (picks ringed in the accent, shortlisted VINs
-      // drawn in it outright) is filter-dependent, so it belongs to
-      // updateMapVisibility — this set is refreshed IN PLACE there, keeping
-      // the tooltip closures below truthful without a rebuild.
-      const picked = new Set();
-      const view = S.mapView || MAP_FULL;
-
-      const svg = svgEl('svg', { viewBox: `${view.x} ${view.y} ${view.w} ${view.h}`, 'aria-hidden': 'true' });
-      for (const st of states) svg.appendChild(svgEl('path', { class: 'sc-map__state', d: st.d, 'vector-effect': 'non-scaling-stroke' }));
-      // quiet postal labels, invisible at the full-US view and fading in once
-      // the zoom is tight enough for them to read
-      for (const st of states) {
-        const ab = STATE_ABBR[st.name];
-        if (ab) svg.appendChild(svgEl('text', { class: 'sc-map__state-label', x: st.center[0].toFixed(1), y: st.center[1].toFixed(1), 'data-bf': 13 }, document.createTextNode(ab)));
-      }
-      // The home anchor stays — shipping estimates measure from it — but the
-      // drive ring is gone: drivable is a list of states now, not a radius.
-      let anchorEl = null;
-      if (Array.isArray(buyer.anchor)) {
-        const [ax, ay] = albers48(buyer.anchor[1], buyer.anchor[0]);
-        anchorEl = svgEl('circle', { class: 'sc-map__anchor', cx: ax, cy: ay, r: 4.5, 'data-br': 4.5, 'vector-effect': 'non-scaling-stroke' });
-        svg.appendChild(anchorEl);
-      }
-      // On the nav path restoreFocus runs synchronously, BEFORE this .then —
-      // it can re-land focus on the OLD map's zoom buttons, which the wipe
-      // below then destroys, dumping the keyboard user on <body>. Remember a
-      // map:* focus here and re-land it on the new buttons once they exist.
-      const focusA = document.activeElement;
-      const focusFk = focusA && focusA.getAttribute && focusA.getAttribute('data-fkey');
-      const wantFocus = focusFk && focusFk.indexOf('map:') === 0 ? focusFk : null;
-      const host = $('map'); host.textContent = '';
-      const TIP = SC.tooltip(host, { live: false, flip: 0.55, offsetX: 14, offsetY: -40 });
-      const tip = TIP.node;
-      // Interaction guards: a pan that ends on a dot must not fire its click,
-      // and on touch — where hover isn't real — the first tap previews the car
-      // (tooltip with an Open link) and only a second tap opens it.
-      let lastPtr = 'mouse', armed = null, showAnchorTip = null;
-      const hideTip = () => { TIP.hide(); armed = null; };
-      // A tap resolves to the NEAREST visible car within 13px of the finger,
-      // not to whichever transparent halo happens to be stacked on top — on a
-      // dense map the halos overlap, and topmost-wins would hand most of a
-      // metro to one arbitrary car. Nearest-centre keeps co-located spiral
-      // dots individually targetable to exactly the extent they are visually
-      // distinct. The anchor competes as a candidate on equal terms.
-      const nearestEntry = (x, y) => {
-        let best = null, bd = 13 * 13;
-        const test = (node, en) => {
-          const r = node.getBoundingClientRect();
-          const dx = r.left + r.width / 2 - x, dy = r.top + r.height / 2 - y;
-          const d = dx * dx + dy * dy;
-          if (d < bd) { bd = d; best = en; }
-        };
-        for (const en of entries) if (en.dot && !en.dot.classList.contains('is-off')) test(en.dot, en);
-        if (anchorEl) test(anchorEl, { anchor: true });
-        return best;
-      };
-      const clampTip = () => TIP.clamp();
-      const openCar = (c) => {
-        if (mode === 'model') { const u = safeUrl(c.x.url); if (u) window.open(u, '_blank', 'noopener'); else goTo(c.bk, c.mk); }
-        else goTo(c.bk, c.mk);
-      };
-      const fillTip = (c, clientX, clientY, tap) => {
-        tip.textContent = '';
-        const photo = safeUrl(c.x.image);
-        if (photo) {
-          const img = el('img', { class: 'sc-tooltip__img', src: photo, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
-          img.addEventListener('error', () => { img.remove(); clampTip(); });
-          img.addEventListener('load', clampTip);
-          tip.appendChild(img);
-        }
-        // Name the thing the dot's colour is standing for. On a model page the
-        // hue carries the trim and nothing else on the map said which trim a dot
-        // was — a colour with no text channel is not an answer for a reader who
-        // cannot separate the two hues, or for one using a screen reader.
-        tip.appendChild(el('div', { class: 'sc-tooltip__date' },
-          [c.m.label, carTrim(c.x), c.x.year || ''].filter(Boolean).join(' · ')));
-        tip.appendChild(el('div', { class: 'sc-tooltip__row' }, el('i', { style: 'background:' + SC.toneRef(brandTone(c.bk)) }),
-          el('b', null, money(c.x.price)), el('span', null, placeTxt(c.x))));
-        const extras = [];
-        if (picked.has(c.x.vin)) extras.push('spicy pick');
-        if (onShortlist(c.x)) extras.push('on your shortlist');
-        tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, (c.x.miles != null ? `${num(c.x.miles)} mi · ` : '')
-          + (c.x.local ? 'drivable · no shipping' : (c.x.ship ? `+ ${money(c.x.ship)} shipping` : 'shipping n/a'))
-          + (extras.length ? ' · ' + extras.join(' · ') : '')));
-        if (tap) {
-          const u = mode === 'model' ? safeUrl(c.x.url) : null;
-          if (u) tip.appendChild(el('a', { class: 'sc-tooltip__link', href: u, target: '_blank', rel: 'noopener' }, 'Open the listing →'));
-          else if (mode !== 'model') tip.appendChild(el('a', { class: 'sc-tooltip__link', href: '#',
-            onclick: (ev) => { ev.preventDefault(); openCar(c); } }, `Open ${c.m.label} →`));
-          tip.classList.add('sc-tooltip--tap');
-        } else tip.classList.remove('sc-tooltip--tap');
-        tip.classList.add('is-on');
-        TIP.place({ clientX, clientY });
-      };
-      if (anchorEl) {
-        showAnchorTip = (clientX, clientY) => {
-          tip.textContent = '';
-          tip.classList.remove('sc-tooltip--tap');
-          tip.appendChild(el('div', { class: 'sc-tooltip__date' }, homeName()));
-          tip.appendChild(el('div', { class: 'sc-tooltip__meta' }, 'Home anchor — distances and shipping estimates measure from here.'));
-          tip.classList.add('is-on');
-          TIP.place({ clientX, clientY }, { offsetY: -34 });   // the home marker's tooltip is one line, so it sits closer
-        };
-        anchorEl.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') showAnchorTip(e.clientX, e.clientY); });
-        anchorEl.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
-        // clicks and taps reach the anchor through the delegated handler below
-        if (COARSE) {   // the anchor's halo, so home is tappable too
-          const ahit = svgEl('circle', { class: 'dot-hit', cx: anchorEl.getAttribute('cx'),
-            cy: anchorEl.getAttribute('cy'), r: 1 });
-          ahit.style.cursor = 'help';
-          svg.appendChild(ahit);
-          halos.push(ahit);
-        }
-      }
-      const entries = [];   // one per car; dot stays null beyond the lower 48 and for a car with no location
-      for (const c of unplaced) entries.push({ c, dot: null, ring: null, noloc: true });
-      const seen = {};
-      for (const c of cars) {
-        const [px, py] = albers48(c.x.lon, c.x.lat);
-        if (!(px >= -8 && px <= 983 && py >= -8 && py <= 618)) { entries.push({ c, dot: null, ring: null }); continue; }
-        const kk = (px | 0) + ',' + (py | 0);
-        const i = seen[kk] = (seen[kk] || 0) + 1;
-        const a = i * 2.39996, r = i > 1 ? 2.4 * Math.sqrt(i) : 0;
-        const cx = (px + r * Math.cos(a)).toFixed(1), cy = (py + r * Math.sin(a)).toFixed(1);
-        // co-located cars carry their spiral index so the view engine can keep
-        // their on-screen spread constant instead of exploding it under zoom
-        const spread = { 'data-px': px.toFixed(1), 'data-py': py.toFixed(1), 'data-di': i };
-        const isShort = onShortlist(c.x);
-        // a var() reference, not a resolved hex — the map is built once per
-        // view, so a draw-time colour would sit stale after a theme flip
-        const hueRef = isShort ? 'var(--sc-accent)' : SC.toneRef(carTone(c.x, c.bk, mode === 'model' ? c.m : null));
-        const dot = svgEl('circle', {
-          class: 'sc-dot sc-dot--link is-off ' + (c.x.local ? 'is-filled' : 'is-hollow'),
-          cx, cy,
-          r: 3.2, 'data-br': 3.2, 'vector-effect': 'non-scaling-stroke', ...spread,
-          style: c.x.local ? 'fill:' + hueRef : 'stroke:' + hueRef,
-        });
-        // hover stays per-dot (desktop only reaches the bare dots); clicks and
-        // taps are handled once, on the svg, through nearest-car resolution
-        dot.addEventListener('pointerenter', (e) => {
-          if (e.pointerType === 'touch') return;
-          fillTip(c, e.clientX, e.clientY, false);
-        });
-        dot.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') hideTip(); });
-        // The halo: a listener-less tap catcher, invisible and STATIC — no
-        // data-br and no data-di, so neither zoom loop ever visits it. Its
-        // fixed user-unit radius covers its dot at every zoom (the spiral
-        // drift is always far smaller than the halo), and the nearest-car
-        // cap below does the actual disambiguation. r is sized once, below.
-        let hit = null;
-        if (COARSE) {
-          hit = svgEl('circle', { class: 'dot-hit is-off', cx, cy, r: 1 });
-          halos.push(hit);
-        }
-        svg.appendChild(dot);
-        entries.push({ c, dot, hit, ring: null, cx, cy, spread });
-      }
-      // halos paint nothing but sit ABOVE every dot, so what a thumb lands on
-      // is always inside some halo — never a dead 2px gap between dots
-      for (const e of entries) if (e.hit) svg.appendChild(e.hit);
-      // one press/tap/click pipeline for dots, halos and the anchor
-      svg.addEventListener('pointerdown', (e) => { lastPtr = e.pointerType || 'mouse'; });
-      svg.addEventListener('click', (e) => {
-        const cl = e.target.classList;
-        if (!cl || !(cl.contains('sc-dot') || cl.contains('dot-hit') || cl.contains('sc-map__anchor'))) return;
-        if (VIEW.dragDistance() > 4) return;             // that was a pan, not a click
-        // A precise pointer that clicked a painted mark means THAT mark — the
-        // hovered dot and the opened car must be the same car even when two
-        // dots overlap. Nearest-centre is for taps and halos, where the
-        // finger never singled out a specific dot.
-        let en = null;
-        if (lastPtr !== 'touch') {
-          if (cl.contains('sc-map__anchor')) en = { anchor: true };
-          else if (cl.contains('sc-dot')) en = entries.find((x) => x.dot === e.target) || null;
-        }
-        if (!en) en = nearestEntry(e.clientX, e.clientY);
-        if (!en) { hideTip(); return; }   // a tap on halo-covered emptiness dismisses, like background
-        if (en.anchor) {
-          if (showAnchorTip) { const r = anchorEl.getBoundingClientRect(); showAnchorTip(r.left + r.width / 2, r.top); }
-          return;
-        }
-        if (lastPtr === 'touch' && armed !== en) {       // first tap previews
-          armed = en;
-          const r = en.dot.getBoundingClientRect();
-          fillTip(en.c, r.left + r.width / 2, r.top, true);
-          return;
-        }
-        openCar(en.c);
-      });
-      // a mouse paired with a touch-primary device hovers the halos; give it
-      // the same nearest-car tooltip instead of nothing
-      svg.addEventListener('pointerover', (e) => {
-        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('dot-hit')) return;
-        const en = nearestEntry(e.clientX, e.clientY);
-        if (en && !en.anchor) fillTip(en.c, e.clientX, e.clientY, false);
-        else if (en && en.anchor && showAnchorTip) showAnchorTip(e.clientX, e.clientY);
-      });
-      svg.addEventListener('pointerout', (e) => {
-        if (e.pointerType === 'touch' || !e.target.classList || !e.target.classList.contains('dot-hit')) return;
-        const rt = e.relatedTarget;
-        if (!(rt && rt.classList && (rt.classList.contains('dot-hit') || rt.classList.contains('sc-dot')))) hideTip();
-      });
-      host.appendChild(svg);
-      host.appendChild(tip);
-
-      // --- the view engine: apply, animate, and the zoom/pan gestures ---
-      // The whole view engine — clamping, easing, wheel-with-modifier, mouse
-      // drag, two-finger pan and pinch, and the marks that must NOT scale with
-      // the zoom — is SC.mapView now. What stays here is what a map of CARS
-      // needs: where the view should sit, and what a press means.
-      const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
-      const scrollHint = el('div', { class: 'sc-map__scrollhint', 'aria-hidden': 'true' },
-        el('span', null, `Use ${isMac ? '⌘' : 'Ctrl'} + scroll to zoom the map`));
-      host.appendChild(scrollHint);
-      let hintTimer = null;
-      const VIEW = SC.mapView(svg, {
-        extent: MAP_FULL,
-        view: S.mapView || view,
-        // the app keeps its own copy so a re-render mid-gesture can hand the
-        // live view back rather than the one it captured before drawing
-        onApply: (v) => { S.mapView = v; },
-        onPlainScroll: () => {
-          scrollHint.classList.add('is-on');
-          clearTimeout(hintTimer);
-          hintTimer = setTimeout(() => scrollHint.classList.remove('is-on'), 1200);
-        },
-        isPointNode: (n) => n.classList && (n.classList.contains('sc-dot') || n.classList.contains('dot-hit')),
-        onPressBackground: hideTip,
-        onDragStart: hideTip,
-      });
-      // buttons: zoom in, zoom out, and back to the selection's own view —
-      // reset reads the CURRENT visible set, not the one this build saw
-      const btns = el('div', { class: 'sc-map__btns' },
-        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom in', 'data-fkey': 'map:in', onclick: () => VIEW.zoomBy(0.67) }, '+'),
-        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Zoom out', 'data-fkey': 'map:out', onclick: () => VIEW.zoomBy(1.5) }, '−'),
-        el('button', { class: 'sc-map__btn', type: 'button', 'aria-label': 'Reset view', 'data-fkey': 'map:reset',
-          onclick: () => VIEW.reset(mapFitTarget(states, (MAP_CTL && MAP_CTL.visible) || [])) }, '⤢'));
-      host.appendChild(btns);
-      if (wantFocus) {
-        const b = btns.querySelector('[data-fkey="' + wantFocus + '"]');
-        if (b) b.focus({ preventScroll: true });
-      }
-
-      MAP_CTL = { key, mode, entries, picked, visible: [], VIEW, svg, hideTip, states,
-                  // whether the dots wear trim hues, which decides the pick
-                  // ring's dash — a property of the view, not of the selection,
-                  // so it is settled once here with the rest of the build
-                  byTrimHue: mode === 'model' && trimIds(model()).length > 1,
-                  halos, hitR: null, haloW: 0, haloStale: false, twinKey: null, kOrder: [], kIdx: -1, kBig: null };
-      // Keyboard: arrows step the VISIBLE dots west→east (the order the map
-      // reads), Enter opens the car, Escape clears, blur clears — the
-      // scatter's contract, adapted to a surface that zooms. kOrder lives on
-      // MAP_CTL and is rebuilt by updateMapVisibility, so the arrows can
-      // never land on a dot a filter just hid. The enlargement rides
-      // data-br — the engine's own non-scaling contract — so it survives
-      // every zoom apply; r is set too so it shows without waiting for one.
-      const kbSize = (en, br) => {
-        en.dot.setAttribute('data-br', br);
-        en.dot.setAttribute('r', (br * Math.max(VIEW.get().w / MAP_FULL.w, 0.12)).toFixed(2));
-      };
-      // What the keyboard cursor is standing on, said out loud. The dot grows
-      // and the tooltip appears, and both are visual; a reader arrowing across
-      // 495 cars was told nothing at all. Written ONLY from here — never from
-      // fillTip(), which the pointer also calls — so moving a mouse stays
-      // silent. Composed as a sentence rather than copied from the tooltip,
-      // whose blocks concatenate without separators and read back as
-      // "2024$43,568".
-      const kbSay = (c) => {
-        if (!MAP_SAY) return;
-        MAP_SAY.textContent = c ? [
-          [c.m.label, carTrimText(c.x), c.x.year || ''].filter(Boolean).join(' '),
-          money(c.x.price), placeTxt(c.x),
-          c.x.miles != null ? `${num(c.x.miles)} miles` : null,
-          c.x.local ? 'drivable' : (c.x.ship ? `plus ${money(c.x.ship)} shipping` : null),
-        ].filter(Boolean).join(', ') : '';
-      };
-      const kbFocus = (i) => {
-        const ctl = MAP_CTL; if (!ctl || ctl.empty) return;
-        if (ctl.kBig) { kbSize(ctl.kBig, 3.2); ctl.kBig = null; }
-        if (i < 0 || i >= ctl.kOrder.length) { ctl.kIdx = -1; hideTip(); kbSay(null); return; }
-        ctl.kIdx = i;
-        const en = ctl.kOrder[i]; ctl.kBig = en;
-        kbSize(en, 6);
-        // a dot outside the zoomed frame gets the frame brought to it, so the
-        // tooltip is never anchored to something off-screen
-        const v = VIEW.get(), px = +en.spread['data-px'], py = +en.spread['data-py'];
-        if (px < v.x || px > v.x + v.w || py < v.y || py > v.y + v.h)
-          VIEW.set({ w: v.w, h: v.h, x: px - v.w / 2, y: py - v.h / 2 });
-        const r = en.dot.getBoundingClientRect();
-        fillTip(en.c, r.left + r.width / 2, r.top, false);
-        kbSay(en.c);
-      };
-      host.onkeydown = (e) => {
-        if (e.target !== host) return;   // the zoom buttons live inside the host — their keys are their own
-        const ctl = MAP_CTL; if (!ctl || ctl.empty || !ctl.kOrder.length) return;
-        if (e.key === 'ArrowRight') { kbFocus(ctl.kIdx < 0 ? 0 : Math.min(ctl.kOrder.length - 1, ctl.kIdx + 1)); e.preventDefault(); }
-        else if (e.key === 'ArrowLeft') { kbFocus(ctl.kIdx < 0 ? ctl.kOrder.length - 1 : Math.max(0, ctl.kIdx - 1)); e.preventDefault(); }
-        else if (e.key === 'Enter' && ctl.kIdx >= 0) openCar(ctl.kOrder[ctl.kIdx].c);
-        else if (e.key === 'Escape') kbFocus(-1);
-      };
-      host.onblur = () => kbFocus(-1);
-      // Dot visibility, rings, legend, hint, the card and the fit all come from
-      // the CURRENT S — so a filter change that landed while the topojson was
-      // still downloading is applied here rather than lost.
-      updateMapVisibility();
-    });
-  }
-
-  // The scoped path: which of the built dots show, which wear rings, and the
-  // counts and legend that describe them. Runs on every filter change; falls
-  // through to buildMap only when the map is OF something else now.
-  let DISCOVERY_COUNT = 0;
+  // One geographic browser; the listing filters own its data.
+  const STATE_NAME = Object.fromEntries(Object.entries(SC.geo.STATE_ABBR).map(([name, ab]) => [ab, name]));
+  const MAP_SUMMARY = { twinKey: null, picked: new Set() };
   const DISCOVERY = window.CarDiscovery ? window.CarDiscovery.create({
     root: $('car-discovery'),
     openCar: (vin) => { const c = findVin(vin); if (c) goTo(c.bk, c.mk, c.x.vin); },
     starCar: (vin) => { const c = findVin(vin); return c ? starButton(c.x) : null; },
   }) : null;
-  for (const [id, street] of [['car-street-switch', true], ['car-atlas-switch', false]]) {
-    $(id).onclick = () => {
-      $('car-discovery').hidden = !street;
-      $('car-atlas').hidden = street;
-      $('car-street-switch').setAttribute('aria-pressed', String(street));
-      $('car-atlas-switch').setAttribute('aria-pressed', String(!street));
-      if (street && DISCOVERY) DISCOVERY.resize();
-      if (!street) sizeMapHalos(true);
-    };
-  }
-  if (!DISCOVERY) { $('car-street-switch').hidden = true; $('car-atlas-switch').click(); }
   function updateMapVisibility() {
-    // The same rows and order as the listings; map exploration is presentation
-    // state only and never changes the buyer's filters or scoring rules.
     const rows = S.brand === 'all' ? pooledRows() : filtered();
-    DISCOVERY_COUNT = rows.length;
-    $('map-card').hidden = !DISCOVERY_COUNT;
-    if (DISCOVERY) DISCOVERY.update(rows.map((x) => {
+    $('map-card').hidden = !rows.length;
+    const sets = pickSets(scopedScored(), pickCap());
+    MAP_SUMMARY.picked = new Set([...sets.local, ...sets.far].map((p) => p.x.vin));
+    const places = rows.map((x) => {
       const found = findVin(String(x.vin || '').toUpperCase());
       return { vin: x.vin, title: [x.year, found && found.m.label, carTrimText(x)].filter(Boolean).join(' '),
         price: x.price, priceLabel: money(x.price), milesLabel: x.miles == null ? 'Mileage unreported' : num(x.miles) + ' mi',
         location: placeTxt(x), dealer: x.dealer || 'Dealer unreported', lat: x.lat, lng: x.lon,
-        shipping: shipNote(x), image: safeUrl(x.image),
-        flags: (x.flags || []).join(' · ') };
-    }), mapKey() + '|' + [...S.where].sort().join(',') + '|' + [...S.models].sort().join(','));
-    $('car-map-hint').textContent = DISCOVERY_COUNT + ' cars in the current view. Asking prices as listed; shipping is shown separately.';
-    if (!MAP_CTL || MAP_CTL.key !== mapKey()) { buildMap(); return; }
-    if (MAP_CTL.empty) return;
-    const ctl = MAP_CTL, mode = ctl.mode;
-    // The trim rule is trimRows', not a second copy of it: one predicate for
-    // the table, the counts and the dots, so they cannot drift apart. On the
-    // watchlist the model chips narrow the map the same way — and only they
-    // do. S.hidden used to cut dots here too, which is the drift this comment
-    // claims to prevent: pressing "Hide BMW i7" took 137 of the 484 cars off
-    // the map (479 dots → 342) while #filter-count still read "showing all
-    // 484 cars", the tile still said 7 models, the index still listed all
-    // seven rows and the caption still blamed "the current filters". The chip
-    // that did it is 1,058px BELOW the map card (y=3839 vs y=2781), in the
-    // chart's legend, and it outlives the visit in localStorage — so a
-    // returning reader met a map missing a whole model with nothing on screen
-    // naming the filter. S.hidden is the price chart's legend and stops there.
-    const inSel = (e) => (mode === 'model'
-      ? (!S.trims.size || [...S.trims].some((id) => inTrim(e.c.x, id)))
-      : (!S.models.size || S.models.has(modelKey(e.c.bk, e.c.mk))));
-    const entryVisible = (e) => inSel(e) && passesShared(e.c.x);
-    // literally the same pick sets as the cards above the map
-    const sets = pickSets(scopedScored(), pickCap());
-    ctl.picked.clear();
-    for (const p of [...sets.local, ...sets.far]) ctl.picked.add(p.x.vin);
-    let onMap = 0, offMap = 0, noLoc = 0, anyShort = false, addedRing = false;
-    const visible = [], kOrder = [];
-    for (const e of ctl.entries) {
-      const vis = entryVisible(e);
-      if (vis) { visible.push({ x: e.c.x }); if (onShortlist(e.c.x)) anyShort = true; }
-      if (!e.dot) { if (vis) { if (e.noloc) noLoc++; else offMap++; } continue; }
-      e.dot.classList.toggle('is-off', !vis);
-      if (e.hit) e.hit.classList.toggle('is-off', !vis);
-      if (vis) { onMap++; kOrder.push(e); }
-      const wantRing = vis && (ctl.picked.has(e.c.x.vin) || onShortlist(e.c.x));
-      if (wantRing && !e.ring) {
-        e.ring = svgEl('circle', { class: 'sc-dot-ring',
-          // dashed where the dots wear trim hues — see the scatter's ring
-          'stroke-dasharray': ctl.byTrimHue ? '3 2.5' : null,
-          cx: e.cx, cy: e.cy, r: 6.4, 'data-br': 6.4, 'vector-effect': 'non-scaling-stroke', ...e.spread });
-        ctl.svg.insertBefore(e.ring, e.dot);
-        addedRing = true;
-      }
-      if (e.ring) e.ring.classList.toggle('is-off', !wantRing);
-    }
-    ctl.visible = visible;
-    // Keyboard order, rebuilt against what is actually shown: west→east by
-    // projected x (ties north→south) — the order the map reads. The focused
-    // car keeps its place if it survived the filter; if it was just hidden,
-    // its enlargement is undone and stepping restarts fresh.
-    kOrder.sort((a, b) => (+a.spread['data-px'] - +b.spread['data-px']) || (+a.spread['data-py'] - +b.spread['data-py']));
-    const kPrev = ctl.kIdx >= 0 && ctl.kOrder ? ctl.kOrder[ctl.kIdx] : null;
-    ctl.kOrder = kOrder;
-    ctl.kIdx = kPrev ? kOrder.indexOf(kPrev) : -1;
-    if (ctl.kIdx < 0 && ctl.kBig) {
-      ctl.kBig.dot.setAttribute('data-br', 3.2);
-      ctl.kBig.dot.setAttribute('r', (3.2 * Math.max(ctl.VIEW.get().w / MAP_FULL.w, 0.12)).toFixed(2));
-      ctl.kBig = null;
-    }
-    if (addedRing) ctl.VIEW.set(ctl.VIEW.get());   // a fresh ring picks up the current zoom's non-scaling radius
-    ctl.hideTip();   // the tooltip may be anchored to a dot that just went off
-    const card = $('map-card');
-    if (!visible.length) { card.hidden = true; return; }
-    card.hidden = false;
-    // Halo sizing: ~12.5px screen radius at the full-US view, in user units,
-    // measured once the card can be laid out — and re-measured after a
-    // rotation, which roughly doubles or halves the svg's width. (Circles
-    // built with vector-effect in a detached tree never acquire a stroke hit
-    // region in Chromium, so the halos are pure geometry instead.)
-    sizeMapHalos();
-    // Refit when the Where selection (or what the map is of) changes; the other
-    // filters hide dots without moving the frame — exactly the old behavior.
-    // Sorted, both of them: a Set iterates in insertion order, so pressing the
-    // same two models in the other order would otherwise read as a new frame
-    // and animate for nothing.
-    const fitKey = mode + '|' + [...S.where].sort().join(',') + '|'
-      + (mode === 'model' ? S.brand + '/' + S.model : [...S.models].sort().join(','));
-    if (fitKey !== MAP_FIT_KEY) {
-      MAP_FIT_KEY = fitKey;
-      ctl.VIEW.animateTo(mapFitTarget(ctl.states, visible));
-    }
-    const lg = $('map-legend'); lg.textContent = '';
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-chart-context)' }), 'filled — drivable'));
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid var(--sc-chart-context)' }), 'hollow — shipping added'));
-    // On a model page the dots are coloured by trim (carTone), so the key says
-    // which is which — and only for the trims actually on the map right now.
-    if (mode === 'model') {
-      const t = model(), keys = trimIds(t);
-      if (keys.length > 1) for (const id of keys) {
-        if (!visible.some((v) => v.x.trim_id === id)) continue;
-        lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + SC.toneRef(trimTone(t, id)) }), trimLabel(t, id)));
-      }
-    }
-    if (ctl.picked.size) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px ' + (ctl.byTrimHue ? 'dashed' : 'solid') + ' var(--sc-accent)' }), 'spicy pick'));
-    if (anyShort) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-accent)' }), 'shortlist'));
-    const noPointer = window.matchMedia('(hover: none)').matches;
-    const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
-    // The count line's own total, split the way the drawing splits it: on
-    // the map, beyond its edge, and — not "beyond the lower 48", which is a
-    // geographic claim — simply without a location.
-    const more = [offMap ? `${offMap} more beyond the lower 48` : '', noLoc ? `${noLoc} with no location` : ''].filter(Boolean);
-    $('map-hint').textContent = `${onMap} cars under the current filters`
-      + (more.length ? ` (${more.join(', ')})` : '')
-      // Filled and hollow lead, because that is the channel this map can
-      // really carry at a thousand dots: five categorical slots against
-      // thirty-four brands means most of them share one grey, and saying
-      // "colored by brand" told the reader a channel was carrying something
-      // it is not. The five it does colour are named rather than implied.
-      + (mode === 'model' ? ' — tap a dot for the car'
-         : ' — filled dots are drivable, hollow ones pay shipping; tap a dot for the car')
-      + (noPointer
-          ? '. Pinch to zoom, drag with two fingers, ⤢ resets.'
-          : `. The view follows your Where picks; pinch or ${isMac ? '⌘' : 'Ctrl'}+scroll to zoom, drag with a mouse or two fingers to pan, ⤢ resets.`);
-    renderMapTwin(ctl, visible, onMap, offMap, noLoc);
+        local: !!x.local, picked: MAP_SUMMARY.picked.has(x.vin), saved: onShortlist(x),
+        tone: SC.toneRef(found ? carTone(x, found.bk, S.brand === 'all' ? null : found.m) : 'chart-context'),
+        shipping: shipNote(x), image: safeUrl(x.image), flags: (x.flags || []).join(' · ') };
+    });
+    if (DISCOVERY) DISCOVERY.update(places, [S.brand, S.model, [...S.where].sort().join(','), [...S.models].sort().join(',')].join('|'));
+    else $('car-discovery').textContent = 'Map unavailable. All cars are in the listings below.';
+    const located = places.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng) && Math.abs(c.lat) <= 90 && Math.abs(c.lng) <= 180 && (c.lat !== 0 || c.lng !== 0)).length;
+    $('car-map-hint').textContent = rows.length + ' cars in the current view. Tap a dot to see the car and its asking price.';
+    $('map-hint').textContent = located + ' cars on the map' + (rows.length - located ? ', ' + (rows.length - located) + ' with no location' : '') + '.';
+    renderMapTwin(MAP_SUMMARY, rows.map((x) => ({x})), located, 0, rows.length - located);
   }
 
-  // The halos' user-unit radius is a function of the svg's on-screen width,
-  // so a rotation invalidates it: 390→844 leaves ~29px halos (gross overlap),
-  // 844→390 shrinks them to ~5px (untappable). Cheap by design: the layout
-  // read only happens when the viewport width moved since the last sizing
-  // (rotation, window resize) — never on the filter path — and the halos are
-  // only re-set when the svg's width moved >10%.
-  function sizeMapHalos(force) {
-    const ctl = MAP_CTL;
-    if (!ctl || ctl.empty || !ctl.halos || !ctl.halos.length) return;
-    // The filter path pays ZERO layout reads — even window.innerWidth is a
-    // forced reflow when the pass just dirtied ~500 class toggles, and it
-    // doubled the where-chip cost on phones. It re-measures only on the
-    // first pass after a build, or after the resize handler (which watches
-    // innerWidth on its own cached copy) forces it / marked it stale.
-    if (!force && ctl.hitR != null && !ctl.haloStale) return;
-    const w = ctl.svg.getBoundingClientRect().width;
-    if (!w) { ctl.haloStale = true; return; }   // hidden or not laid out yet — retry on the next pass
-    ctl.haloStale = false;
-    if (ctl.hitR != null && Math.abs(w - ctl.haloW) <= ctl.haloW * 0.1) { ctl.haloW = w; return; }
-    ctl.haloW = w;
-    ctl.hitR = (12.5 * MAP_FULL.w / w).toFixed(1);
-    for (const n of ctl.halos) n.setAttribute('r', ctl.hitR);
-  }
-
-  // The map's accessible twin: what the map SAYS, in words — the visible cars
-  // grouped by state, with the filled/hollow encoding spelled out as drivable
-  // vs shipping counts. Rebuilt inside every visibility pass so a screen
-  // reader always reads the same cars, and the caption the same counts, as
-  // the dots and the hint. Deliberately NOT a live region: filter changes
-  // announce through the filter-count line, not by re-reading a table.
   function renderMapTwin(ctl, visible, onMap, offMap, noLoc) {
     const mount = $('map-twin'); if (!mount) return;
     const byState = new Map();
@@ -2733,13 +2160,10 @@
     // now: the nationwide CPO watch and the ordinary eDrive40 target match the
     // same certified cars, and the per-trim day rows prove it — the i5's four
     // trims add to 137 vehicles on 2026-08-30 over a model row of 136. This
-    // map is what keeps the pooled trim scope honest about it.
-    const uniq = new Map();
-    for (const x of byTrim((m.listings || []).concat(m.gone || [])).filter((x) => passesShared(x))) {
-      const k = String(x.vin || '').toUpperCase();
-      if (!k) continue;
-      if (!uniq.has(k)) uniq.set(k, x);   // the live listing comes first and wins
-    }
+    // selection happens separately on each day: a live CPO listing cannot
+    // erase an earlier sighting under eDrive40 before the CPO watch began.
+    const candidates = byTrim((m.listings || []).concat(m.gone || []))
+      .filter((x) => x.vin && passesShared(x));
     // A day holds what the record KNEW on it, not what was fetched on it.
     // Trims run on their own cadences, so counting sightings alone made a
     // model's day rows halve on every off day — the i5 went 127, 119, 71, 130,
@@ -2795,7 +2219,7 @@
     // falls back to the flag it already has.
     const localOn = localOnDay;
     const by = new Map();
-    for (const x of uniq.values()) {
+    for (const x of candidates) {
       const seen = new Map();
       for (const pt of (x.series || [])) if (pt[1]) seen.set(pt[0], pt[1]);
       if (!seen.size) continue;
@@ -2806,9 +2230,10 @@
         const f = fetchDays[x.trim_id] && fetchDays[x.trim_id].length ? latestFetch(x.trim_id, day) : day;
         if (!f || !seen.has(f)) continue;
         let e = by.get(day);
-        if (!e) by.set(day, e = { prices: [], local: 0 });
-        e.prices.push(seen.get(f));
-        if (localOn(x, day)) e.local++;
+        if (!e) by.set(day, e = new Map());
+        const vin = String(x.vin).toUpperCase(), price = seen.get(f), prior = e.get(vin);
+        // Match pick_display_rows: the cheapest eligible observation wins.
+        if (!prior || price < prior.price) e.set(vin, { price, local: localOn(x, day) });
       }
     }
     // Stop where the departure record stops. Past that line the file has only
@@ -2818,9 +2243,9 @@
     // is here so that the day it starts mattering, it already works.
     const from = (S.site || {}).departures_from || '';
     return [...by.keys()].sort().filter((date) => date >= from).map((date) => {
-      const e = by.get(date), p = e.prices.sort((a, b) => a - b);
+      const cars = [...by.get(date).values()], p = cars.map((x) => x.price).sort((a, b) => a - b);
       // trunc, not round: the builder writes int(median(...)) in Python
-      return { date, n: p.length, n_local: e.local, min_price: p[0], median_price: Math.trunc(median(p)) };
+      return { date, n: p.length, n_local: cars.filter((x) => x.local).length, min_price: p[0], median_price: Math.trunc(median(p)) };
     });
   }
   // At module scope because the floor ledger asks the same question of the
@@ -6748,7 +6173,7 @@
     kindSel.value = S.budgetKind;
     $('f-budget').value = S.budget || '';
   }
-  function buildFilters() {
+  function buildFilters(keepYear = false) {
     const overview = S.brand === 'all';
     const t = overview ? null : model();
     // Models: on the watchlist a chip per model, pressed to narrow — two or
@@ -6816,7 +6241,7 @@
         () => toggleIn(S.where, key, fw.querySelector(`[data-fkey="where:${key}"]`), 'rows', { persist: true }));
     }
     syncSortField();
-    fillYearSelect(overview ? modelsInView().map(({ m }) => m) : [t], false);
+    fillYearSelect(overview ? modelsInView().map(({ m }) => m) : [t], keepYear);
     $('f-miles').value = String(S.miles);
     $('f-sort').value = S.sort;
     $('f-clean').checked = S.clean;
@@ -7173,11 +6598,7 @@
         lastW = window.innerWidth;
         placeToggle();
         syncBarHeight();   // the bar wraps differently at every band
-        // The map is deliberately NOT rebuilt on resize, and the model view
-        // below never reaches updateMapVisibility — so the halos' user-unit
-        // radius must be re-derived here or a rotation leaves it ~2× off.
-        // Forced: this handler has already established the width changed.
-        sizeMapHalos(true);
+        if (DISCOVERY) DISCOVERY.resize();
         // The clipped-edge fade is set at render time; a width change inside a
         // band re-renders nothing, so re-derive it here or it lies both ways.
         markClipped($('list-scroll')); markClipped($('gone-scroll'));
@@ -7246,11 +6667,49 @@
     n.hidden = false;
   }
 
+  let feedSignature = '', lastFeedCheck = Date.now(), refreshPending = false;
+  async function refreshFeed(manual = false) {
+    if (!S.site || refreshPending || (!manual && Date.now() - lastFeedCheck < 300000)) return;
+    refreshPending = true;
+    const button = $('data-refresh'), status = $('data-refresh-status');
+    button.disabled = true; button.textContent = 'Checking…';
+    try {
+      const response = await fetch('data.json?v=' + Date.now(), { cache: 'no-store' });
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      const raw = await response.json(), signature = JSON.stringify(raw);
+      if (!raw.brands || !Object.keys(raw.brands).length) throw new Error('Empty listing feed');
+      const changed = signature !== feedSignature;
+      if (changed) {
+        const previous = { ...S, models: new Set(S.models), trims: new Set(S.trims) };
+        try {
+          const site = adapt(raw);
+          S.site = site; _fetchDays = null;
+          if (S.brand !== 'all' && !site.brands[S.brand]?.models?.[S.model]) {
+            S.brand = 'all'; S.model = null; S.trims.clear();
+          }
+          S.models = new Set([...S.models].filter((id) => { const [bk, mk] = id.split('/'); return !!site.brands[bk]?.models?.[mk]; }));
+          annotateValue(site); annotateFinance(site);
+          buildFilters(true); render(); feedSignature = signature;
+        } catch (error) {
+          Object.assign(S, previous); _fetchDays = null; buildFilters(true); render(); throw error;
+        }
+      }
+      lastFeedCheck = Date.now();
+      if (manual) { status.hidden = false; status.textContent = (changed ? 'Loaded the latest published listings. ' : 'You have the latest published listings. ') + 'Data through ' + (dataThrough() || '—') + '. Models follow their own check schedules.'; }
+    } catch (error) {
+      if (manual) { status.hidden = false; status.textContent = 'Could not check for updates. Your current listings are still available. Try Refresh again.'; }
+    } finally { refreshPending = false; button.disabled = false; button.textContent = 'Refresh'; syncBarHeight(); }
+  }
+  $('data-refresh').addEventListener('click', () => refreshFeed(true));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshFeed(); });
+  window.addEventListener('pageshow', (event) => { if (event.persisted) refreshFeed(); });
+
   // ---------- boot ----------
   wireFilters();
-  (window.__data || fetch('data.json', { cache: 'no-cache' })
+  (window.__data || fetch('data.json?v=' + Date.now(), { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }))
     .then((raw) => {
+      feedSignature = JSON.stringify(raw);
       const site = adapt(raw || {});
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }
       S.site = site;

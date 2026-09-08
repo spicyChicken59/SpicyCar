@@ -35,6 +35,7 @@ hist = T.build_history(all_rows)
 report, site, subject = T.build_outputs(today_rows, all_rows, hist)
 Path("REPORT.md").write_text(report)
 (T.DOCS / "data.json").write_text(json.dumps(site, indent=1))
+T.update_sheet_size(site)
 
 models = [(bk, mk, m) for bk, b in site["brands"].items()
           for mk, m in b["models"].items()]
