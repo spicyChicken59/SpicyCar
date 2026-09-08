@@ -44,8 +44,8 @@ try {
   assert.equal(await page.locator('#promo-card').isVisible(),false,'BMW offers do not lead a non-BMW search');
   await page.locator('#shop-apr').fill('0'); await page.locator('#shop-offers').uncheck();
   await page.locator('#shop-cost-controls').click(); await page.locator('#f-sort').selectOption('payment');
-  assert.match(await page.locator('#list-hint').textContent(),/0%/);
-  assert.doesNotMatch(await page.locator('#list-hint').textContent(),/2\.99%|BMW FS/);
+  assert.match(await page.locator('#compare-hint').textContent(),/0%/);
+  assert.doesNotMatch(await page.locator('#compare-hint').textContent(),/2\.99%|BMW FS/);
   await page.getByRole('button',{name:'Explore cars',exact:true}).click();
   const star=page.locator('.car-place-actions [data-fkey^="star:"]').first();
   await star.click();
