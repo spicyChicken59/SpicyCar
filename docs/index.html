@@ -5994,7 +5994,14 @@
   }
   function orderSections(view) {
     let prev = document.querySelector('main#main > .sc-title');
-    for (const id of SECTION_ORDER[view]) {
+    let sequence = SECTION_ORDER[view].flatMap((id) => id === 'promo-card' ? [id, 'finance-settings'] : [id]);
+    if (S.workspace !== 'report') {
+      prev = $('shopping-workspace');
+      sequence = ['filters-card', 'notice', 'map-card', 'finalists-card', 'finance-settings', 'compare-card', 'signal-card', 'hero-card', 'kpis', 'shortlist', 'takeaway', 'list-card', 'chart-card', 'scatter-card', 'notes-card', 'gone-card', 'overview-card', 'promo-card', 'next-callout', 'car-heading'];
+    } else if ($('car-heading').previousElementSibling !== $('shopping-workspace')) {
+      $('shopping-workspace').after($('car-heading'));
+    }
+    for (const id of sequence) {
       const n = $(id);
       if (!n || !prev) continue;
       if (n.previousElementSibling !== prev) prev.after(n);   // only move what is out of place

@@ -40,7 +40,7 @@ try {
   assert.match(await page.locator('.shop-subtitle').textContent(),new RegExp('^'+expected+' matching cars'));
   await page.getByRole('button',{name:'Compare & save',exact:true}).click();
   const chosenLabels=await page.locator('#hero-cars .sc-tile__label').allTextContents();
-  assert.deepEqual(chosenLabels.sort(),selected.map((m)=>m.label).sort());
+  assert.deepEqual(chosenLabels.map((s)=>s.split(' — ')[0].trim()).sort(),selected.map((m)=>m.label).sort());
   assert.equal(await page.locator('#promo-card').isVisible(),false,'BMW offers do not lead a non-BMW search');
   await page.locator('#shop-apr').fill('0'); await page.locator('#shop-offers').uncheck();
   await page.locator('#shop-cost-controls').click(); await page.locator('#f-sort').selectOption('payment');
