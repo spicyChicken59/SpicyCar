@@ -3756,13 +3756,13 @@ def seen_label(s):
     It was calendar days between the first and last sighting, which is the
     same thing only at a daily cadence.
 
-    Twenty-five of the twenty-nine targets run every sixth day now. A car
-    present at every single fetch of one of them read "seen 6 of 31 days"
+    Targets on three-trim models run every ninth day now. A car
+    present at every single fetch of one of them read "seen 4 of 31 days"
     beside another car's "seen 31 of 31 days", and a buyer reasonably
     concludes the first keeps disappearing — a relisted car, a flaky dealer,
     something to ask about. It had a perfect record. Worse, at that cadence
-    the old form could not tell perfect attendance from a real gap: 3-of-31
-    against 2-of-31 is a distinction no reader makes.
+    the old form could not tell perfect attendance from a real gap: 4-of-31
+    against 3-of-31 is a distinction no reader makes.
 
     The docstring this replaces said the count is kept "because a slower
     cadence must not be able to inflate it" — the count was right all along,

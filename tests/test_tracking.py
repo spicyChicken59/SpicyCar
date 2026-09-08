@@ -205,13 +205,13 @@ class TestBudget(unittest.TestCase):
                           f"buyer.shopping names {tid!r}, which is not a target")
 
     def test_each_model_rotates_its_trims_without_skipping_a_turn(self):
-        """Every model has one baseline observation each two-day turn."""
+        """Every model has one baseline observation each three-day turn."""
         grouped = defaultdict(list)
         for t in T.TARGETS.values():
             grouped[(t["brand"], t["model_key"])].append(t)
         for model, targets in grouped.items():
             turn = targets[0]["model_cadence"]
-            self.assertEqual(turn, 2, model)
+            self.assertEqual(turn, 3, model)
             self.assertEqual({t["cadence"] for t in targets}, {turn * len(targets)})
             horizon = turn * len(targets)
             due = [sum(T.due_on(t, T.TODAY_ORD + day) for t in targets)
@@ -3714,11 +3714,11 @@ class TestSeenLabel(unittest.TestCase):
     DENOMINATOR was not: it stayed calendar days between the first and last
     sighting, which is the same thing only at a daily cadence.
 
-    Twenty-five of the twenty-nine targets run every sixth day now. A car
-    present at every single fetch of one read "seen 6 of 31 days" beside
+    Targets on three-trim models run every ninth day now. A car
+    present at every single fetch of one read "seen 4 of 31 days" beside
     another car's "seen 31 of 31 days", so a buyer reads a perfect record as
     a car that keeps disappearing — a relisted car, a flaky dealer, something
-    to ask about. And 3-of-31 against 2-of-31 is a distinction no reader
+    to ask about. And 4-of-31 against 3-of-31 is a distinction no reader
     makes, so it could not tell perfect attendance from a real gap either.
     """
 
@@ -5265,7 +5265,7 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
     def test_no_shopping_choice_gets_a_daily_baseline_privilege(self):
         self.assertTrue(T.FAIR.get("enabled"))
         self.assertNotIn(1, self._by_cadence())
-        self.assertEqual({t["model_cadence"] for t in T.TARGETS.values()}, {2})
+        self.assertEqual({t["model_cadence"] for t in T.TARGETS.values()}, {3})
 
     def test_the_watchlist_types_no_cadence_at_all(self):
         """The ladder is gone, and this is the test that says so.
@@ -5494,7 +5494,7 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
     def test_the_prose_describes_model_visits_and_rotating_trims(self):
         for name in ("README.md", "docs/how.html"):
             flat = html_mod.unescape(" ".join(Path(name).read_text().lower().split()))
-            self.assertIn("every 2 days", flat, name)
+            self.assertIn("every 3 days", flat, name)
             self.assertIn("trim", flat, name)
             self.assertIn("rotat", flat, name)
 
@@ -7504,16 +7504,17 @@ class TestConfig(unittest.TestCase):
             for k, v in was.items():
                 setattr(T, k, v)
 
-    def test_the_i4_paid_for_the_i7(self):
-        """The i4 was already a benchmark rather than a candidate, and at full
-        depth on a daily cadence it was the single most expensive target on the
-        list — ten calls a day, a third of the whole plan. Standing it down is
-        what bought the i7 its own daily hunt without the month moving."""
-        self.assertTrue(all("i4" not in tid for tid in T.TARGETS))
+    def test_the_i4_returns_with_its_previous_trims_inside_the_fair_budget(self):
+        """Restoring the i4 must retain its history ids and the recovery reserve."""
+        i4 = {tid: t for tid, t in T.TARGETS.items() if t["model_key"] == "i4"}
+        self.assertEqual(set(i4), {"bmw-i4-edrive40", "bmw-i4-m50"})
+        for t in i4.values():
+            self.assertEqual(t["years"], ["2024", "2025", "2026", "2027"])
+            self.assertEqual((t["model_cadence"], t["cadence"]), (3, 6))
         self.assertIn("bmw-i7-edrive50", T.TARGETS)
         _, worst, avg = T.planned_calls()
         self.assertLessEqual(worst, T.BUDGET)
-        self.assertLessEqual(avg * 30.5, T.MONTHLY)
+        self.assertLessEqual(avg * 31, T.MONTHLY - T.FAIR["reserve"])
 
     def test_the_ix_stepped_back_without_leaving(self):
         """Toned down, not removed: still tracked for comparison, on the slow
@@ -7525,7 +7526,7 @@ class TestConfig(unittest.TestCase):
         self.assertNotIn("bmw-ix-cpo", T.TARGETS)
         for tid in ix:
             self.assertFalse(T.TARGETS[tid]["shopping"])
-            self.assertEqual(T.TARGETS[tid]["model_cadence"], 2)
+            self.assertEqual(T.TARGETS[tid]["model_cadence"], 3)
 
     def test_cpo_watches_are_affordable_and_staggered(self):
         # national_only halves each watch's cost (no States query — the
