@@ -74,6 +74,8 @@ try {
   await phone.route(/^https?:\/\/(?!127\.0\.0\.1)/,(r)=>r.abort());
   const mobile=await phone.newPage(); mobile.on('pageerror',(e)=>errors.push(e.message));
   await mobile.goto(base); await mobile.locator('.car-place-card').first().waitFor();
+  const firstPhoneCar=await mobile.locator('.car-place-card').first().boundingBox();
+  assert.ok(firstPhoneCar && firstPhoneCar.y >= 0 && firstPhoneCar.y + Math.min(100, firstPhoneCar.height) <= 844, 'phone shows at least 100px of the first car before scrolling');
   assert.equal(await mobile.locator('.car-place-panel').isVisible(),false);
   await mobile.getByRole('button',{name:'Map',exact:true}).click();
   assert.equal(await mobile.locator('.car-place-panel').isVisible(),true);

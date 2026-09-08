@@ -99,3 +99,12 @@
 @media(max-width:720px) { .market-studio[data-workspace="report"] #filters-card:not(.is-open) #filters { display: none; } }
 
 @media print { body.market-studio[data-workspace] #main > #car-heading { display: block !important; } }
+
+/* Phone browsing already has a car count and Cars / Map controls. Keep the
+   section heading available to assistive technology without another intro. */
+@media screen and (max-width: 720px) {
+  .market-studio[data-workspace="explore"] #map-card > .sc-card__head {
+    position: absolute; width: 1px; height: 1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}
