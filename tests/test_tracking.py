@@ -66,8 +66,9 @@ FIXTURE_SHOPPING = ["bmw-i5-edrive40", "bmw-i7-edrive50"]
 def _fixture_targets():
     cfg = json.loads(Path("targets.json").read_text())
     cfg["buyer"]["shopping"] = list(FIXTURE_SHOPPING)
-    was = {k: getattr(T, k) for k in ("SHOPPING",)}
+    was = {k: getattr(T, k) for k in ("SHOPPING", "FAIR", "COMPARISON_CADENCE")}
     T.SHOPPING = list(FIXTURE_SHOPPING)
+    T.FAIR = {"enabled": False}
     try:
         return T.build_targets()
     finally:
@@ -97,11 +98,14 @@ class UsesFixtureTargets(unittest.TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls._shipped_targets = T.TARGETS
+        cls._shipped_fair = T.FAIR
         T.TARGETS = FIXTURE_TARGETS
+        T.FAIR = {"enabled": False}
 
     @classmethod
     def tearDownClass(cls):
         T.TARGETS = cls._shipped_targets
+        T.FAIR = cls._shipped_fair
         super().tearDownClass()
 
 
@@ -141,6 +145,7 @@ def fixture_cfg():
     test that means to vary the shopping list sets it after this and says so."""
     cfg = json.loads(Path("targets.json").read_text())
     cfg["buyer"]["shopping"] = list(FIXTURE_SHOPPING)
+    cfg["collection"] = {"enabled": False}
     return cfg
 
 
@@ -199,31 +204,23 @@ class TestBudget(unittest.TestCase):
             self.assertIn(tid, T.TARGETS,
                           f"buyer.shopping names {tid!r}, which is not a target")
 
-    def test_a_models_trims_share_a_day_per_cadence(self):
-        """One page, one fetch day — but only among trims that run at the same
-        rate. Taking a model's offset from whichever trim was listed first gave
-        the i7's every-third-day trims the CPO watch's every-second-day slot,
-        and left them never claiming a place in the cadence-3 rotation: they
-        landed on the Ioniq 5's and Lucid's day and pushed the worst day from
-        34 to 36 of 40 while the monthly average went down."""
-        # every model's trims at one cadence sit on one day...
-        by_model = {}
+    def test_each_model_rotates_its_trims_without_skipping_a_turn(self):
+        """Every model has one baseline observation each two-day turn."""
+        grouped = defaultdict(list)
         for t in T.TARGETS.values():
-            by_model.setdefault((t["model_key"], t["cadence"]), set()).add(t["offset"])
-        for (mk, cad), offsets in by_model.items():
-            self.assertEqual(len(offsets), 1,
-                             f"{mk} at cadence {cad} is split across days {offsets}")
-        # ...and each cadence's models are dealt round-robin across its slots,
-        # which is the half that broke: the i7's cadence-3 trims took a slot
-        # from the cadence-2 counter, so the three-day rotation held 2/3/1
-        # models instead of 2/2/2 and one day carried the extra.
-        for cad in {t["cadence"] for t in T.TARGETS.values() if t["cadence"] > 1}:
-            slots = Counter(off for (mk, c), (off,) in
-                            ((k, tuple(v)) for k, v in by_model.items()) if c == cad)
-            spread = max(slots.values()) - min(slots[i] for i in range(cad))
-            self.assertLessEqual(spread, 1,
-                                 f"cadence {cad} deals models unevenly: "
-                                 f"{dict(slots)} over {cad} slots")
+            grouped[(t["brand"], t["model_key"])].append(t)
+        for model, targets in grouped.items():
+            turn = targets[0]["model_cadence"]
+            self.assertEqual(turn, 2, model)
+            self.assertEqual({t["cadence"] for t in targets}, {turn * len(targets)})
+            horizon = turn * len(targets)
+            due = [sum(T.due_on(t, T.TODAY_ORD + day) for t in targets)
+                   for day in range(horizon)]
+            self.assertEqual(sum(due), len(targets), model)
+            self.assertLessEqual(max(due), 1, model)
+            for day in range(horizon):
+                self.assertEqual(sum(due[(day + offset) % horizon]
+                                     for offset in range(turn)), 1, model)
 
     def test_newest_pages_are_budgeted(self):
         """The newest-first fetch must be counted, or the plan lies."""
@@ -4183,9 +4180,9 @@ class TestTheCutOffProseNamesBothAxes(unittest.TestCase):
     """
 
     def test_the_axis_is_not_always_a_price(self):
-        dims = {t["id"]: T.window_dim(t) for t in T.TARGETS.values()}
+        dims = {t["id"]: T.window_dim(t) for t in FIXTURE_TARGETS.values()}
         self.assertIn("miles", dims.values(),
-                      "the watchlist should still carry a miles-sorted watch "
+                      "the legacy fixture should carry a miles-sorted watch "
                       "for this to be about")
         self.assertIn("price", dims.values())
 
@@ -4536,7 +4533,12 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
             self.assertIn(key, clause.group(1),
                           f"the line does not read {key} off the trim")
         # …and the sheet carries what the line needs, on every certified watch.
-        sheet = json.loads(Path("docs/data.json").read_text())
+        with unittest.mock.patch.object(T, "TARGETS", FIXTURE_TARGETS), \
+             unittest.mock.patch.object(T, "FAIR", {"enabled": False}):
+            rows = T.load_history()
+            latest = max(r["snapshot_date"] for r in rows)
+            _, sheet, _ = T.build_outputs([r for r in rows if r["snapshot_date"] == latest],
+                                         rows, T.build_history(rows))
         watches = [tr for b in sheet["brands"].values()
                    for m in b["models"].values()
                    for tr in (m.get("trims") or {}).values() if tr.get("cpo_only")]
@@ -4545,8 +4547,8 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
             self.assertIn("national_only", tr)
             self.assertTrue(tr.get("sorts"), tr.get("label"))
             self.assertEqual(tr["sorts"],
-                             list(T.sorts_pages(T.TARGETS[[
-                                 k for k, v in T.TARGETS.items()
+                             list(T.sorts_pages(FIXTURE_TARGETS[[
+                                 k for k, v in FIXTURE_TARGETS.items()
                                  if v.get("label") == tr["label"]
                                  and v.get("cpo_only")][0]])[0]))
 
@@ -4798,47 +4800,24 @@ class TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives(unittest.TestCase):
             self.assertIn(str(T.MONTHLY), text.replace(",", ""),
                           f"{where} does not name the monthly cap ({T.MONTHLY})")
 
-    def test_the_cadence_paragraph_argues_from_numbers_it_can_derive(self):
-        """Both surfaces argue the derivation by example: "two BMW trims at 22
-        calls a day put them on 6 days, one Kia EV9 at 11 puts them on 3". All
-        four numbers follow from the config, and the whole point of the
-        sentence is that they move when the shopped car does — so a reader who
-        checked one of them against a stale figure would be checking the claim
-        this paragraph exists to make.
+    def test_the_baseline_reserves_room_in_a_31_day_month(self):
+        """The fair baseline fits the longest month while keeping recovery calls."""
+        horizon = T.plan_horizon()
+        day_calls = [sum(T.calls_for(t) for t in T.TARGETS.values()
+                         if T.due_on(t, T.TODAY_ORD + day))
+                     for day in range(horizon + 30)]
+        reserve = int(T.FAIR.get("recovery_reserve", 50))
+        self.assertGreaterEqual(reserve, 50)
+        for day in range(horizon):
+            self.assertLessEqual(sum(day_calls[day:day + 31]) + reserve, T.MONTHLY)
 
-        The old version of this test guarded a different argument: fifteen days
-        chosen over thirteen and fourteen because of what each does to the
-        cadence cycle. Nobody chooses the tail's cadence any more, so that
-        sentence is gone and so is its guard.
-        """
-        def shape(cfg):
-            built = TestConfig._rebuild(self, cfg)
-            shopped = sum(T.calls_for(t) / t["cadence"]
-                          for t in built.values() if t["shopping"])
-            comp = next(t["cadence"] for t in built.values() if not t["shopping"])
-            return round(shopped), comp
-        cfg = json.loads(Path("targets.json").read_text())
-        here_cost, here_cad = shape(cfg)
-        cfg["buyer"]["shopping"] = ["kia-ev9"]
-        ev9_cost, ev9_cad = shape(cfg)
-        self.assertLess(ev9_cad, here_cad, "precondition: the EV9 is the cheaper example")
-        said = (f"{here_cost} calls a day put them on {here_cad} days, one Kia EV9 "
-                f"at {ev9_cost} puts them on {ev9_cad}")
-        for name in ("README.md", "docs/how.html"):
-            flat = html_mod.unescape(" ".join(Path(name).read_text().split()))
-            self.assertIn(said, flat, f"{name} argues from numbers the config does not give")
-
-    def test_the_levelling_figures_are_the_ones_the_packer_achieves(self):
-        """"took the busiest day from 38 of 40 to 32 and the quietest from 24 to
-        30" — the two BEFORE numbers are history and cannot be recomputed, the
-        two after can, and those are the ones a reader would act on."""
+    def test_the_daily_baseline_range_matches_both_surfaces(self):
         days = [sum(T.calls_for(t) for t in T.TARGETS.values()
                     if T.due_on(t, T.TODAY_ORD + k)) for k in range(T.plan_horizon())]
-        said = (f"busiest day from 38 of {T.BUDGET} to {max(days)} and the quietest "
-                f"from 24 to {min(days)}")
+        said = f"baseline range is {min(days)}–{max(days)} calls per day"
         for name in ("README.md", "docs/how.html"):
             flat = html_mod.unescape(" ".join(Path(name).read_text().split()))
-            self.assertIn(said, flat, f"{name}: the plan runs {min(days)}-{max(days)}")
+            self.assertIn(said, flat, name)
 
 
 class TestNoCommentCitesALineNumber(unittest.TestCase):
@@ -5283,11 +5262,10 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
             self.assertNotIn("BMW siblings run every other day", text, name)
             self.assertNotIn("BMW siblings are fetched every other day", text, name)
 
-    def test_the_daily_targets_are_shopped_trims_and_there_are_two(self):
-        daily = sorted(self._by_cadence().get(1, []))
-        self.assertEqual(len(daily), 2, f"the prose says two run daily: {daily}")
-        self.assertTrue(set(daily) <= set(T.SHOPPING),
-                        f"…and that they are shopped ones: {daily}")
+    def test_no_shopping_choice_gets_a_daily_baseline_privilege(self):
+        self.assertTrue(T.FAIR.get("enabled"))
+        self.assertNotIn(1, self._by_cadence())
+        self.assertEqual({t["model_cadence"] for t in T.TARGETS.values()}, {2})
 
     def test_the_watchlist_types_no_cadence_at_all(self):
         """The ladder is gone, and this is the test that says so.
@@ -5322,35 +5300,20 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
                           "buyer.shopping_fetch"])
         self.assertEqual(cfg["buyer"]["comparison_fetch"]["cadence"], T.AUTO)
 
-    def test_every_target_is_shopped_or_on_the_one_derived_cadence(self):
-        """Two roles, not five rungs. A target is a car being bought — at
-        shopping_fetch's rate, or its certified watch at cpo_watch's — or it is
-        a comparison, and every comparison runs at the same derived cadence."""
-        derived = {t["cadence"] for t in T.TARGETS.values() if not t["shopping"]}
-        self.assertEqual(len(derived), 1,
-                         f"the comparisons run at one cadence: {sorted(derived)}")
-        for t in T.TARGETS.values():
-            if not t["shopping"]:
-                continue
-            want = (T.CPO_WATCH if t.get("derived") == T.CPO_KEY else T.SHOPPING_FETCH)
-            self.assertEqual(t["cadence"], want["cadence"], t["id"])
+    def test_every_model_gets_the_same_baseline_query_recipe(self):
+        for tid, t in T.TARGETS.items():
+            self.assertNotEqual(t.get("derived"), T.CPO_KEY, tid)
+            self.assertEqual(T.sorts_pages(t), (["price.asc"], 1), tid)
+            self.assertEqual(t["newest"], 1, tid)
+            self.assertTrue(t["newest_national_only"], tid)
+            self.assertEqual(T.calls_for(t), len(T.sources_for(t)) + 1, tid)
 
-    def test_the_derived_cadence_is_the_fastest_that_fits(self):
-        """Not merely "a cadence that fits" — one day faster must NOT fit, or
-        the derivation is leaving the plan unspent and calling it a rule."""
-        c = next(t["cadence"] for t in T.TARGETS.values() if not t["shopping"])
-        self.assertGreater(c, 1)
-        faster = {tid: dict(t) for tid, t in T.TARGETS.items()}
-        for t in faster.values():
-            if not t["shopping"]:
-                t["cadence"] = c - 1
-        T.assign_offsets(faster)
-        _, worst, avg = T.planned_calls(faster)
-        self.assertTrue(worst > T.BUDGET * T.HEADROOM_DAY
-                        or avg * 30.5 > T.MONTHLY * T.HEADROOM_MONTH,
-                        f"every comparison could run every {c - 1} days at "
-                        f"{avg * 30.5:.0f}/month and a worst day of {worst}; the "
-                        f"derivation settled for {c}")
+    def test_daily_visits_for_every_model_would_exceed_the_budget(self):
+        groups = {(t["brand"], t["model_key"]): T.calls_for(t)
+                  for t in T.TARGETS.values()}
+        daily = sum(groups.values())
+        self.assertTrue(daily > T.BUDGET or daily * 31 > T.MONTHLY)
+        self.assertLessEqual(T.planned_calls()[1], T.BUDGET)
 
     def test_both_budgets_can_be_the_one_that_binds(self):
         """Which cap stops the derivation getting faster is a fact about the
@@ -5528,20 +5491,12 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
                   if not t["shopping"] and tid != "kia-ev9"}
         self.assertNotIn(9, others, "…and it is its own, not everyone's")
 
-    def test_the_config_has_no_cadence_the_prose_does_not_name(self):
-        """Both surfaces name exactly three: daily for a car being bought,
-        every other day for its certified watch, and the derived one. A fourth
-        can only come from a typed override, which is a thing a person did on
-        purpose and which the prose then has to mention."""
-        named = {T.SHOPPING_FETCH["cadence"], T.CPO_WATCH["cadence"],
-                 next(t["cadence"] for t in T.TARGETS.values() if not t["shopping"])}
-        others = {c for c in self._by_cadence() if c not in named}
-        self.assertFalse(others, f"both surfaces name {sorted(named)}, "
-                                 f"the config also has {sorted(others)}")
-        derived = next(t["cadence"] for t in T.TARGETS.values() if not t["shopping"])
+    def test_the_prose_describes_model_visits_and_rotating_trims(self):
         for name in ("README.md", "docs/how.html"):
-            flat = html_mod.unescape(" ".join(Path(name).read_text().split()))
-            self.assertIn(f"every {_ORDINAL_WORD[derived]} day", flat, name)
+            flat = html_mod.unescape(" ".join(Path(name).read_text().lower().split()))
+            self.assertIn("every 2 days", flat, name)
+            self.assertIn("trim", flat, name)
+            self.assertIn("rotat", flat, name)
 
     def test_the_call_figures_both_surfaces_quote(self):
         today, worst, avg = T.planned_calls()
@@ -5554,29 +5509,11 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
             for want in needed:
                 self.assertIn(want, text, f"{name}: {want}")
 
-    def test_the_brand_counts_both_surfaces_quote(self):
-        """Four numbers in prose that move with the watchlist.
-
-        README's opening names the brands beside BMW; both surfaces name the
-        tenth-day tier. Nothing pinned either, and a brand added or dropped
-        makes them false in a sentence nobody re-reads.
-        """
-        brands = {t["brand"] for t in T.TARGETS.values()}
-        others = len(brands - {"bmw"})
-        readme = " ".join(Path("README.md").read_text().split())
-        how = " ".join(Path("docs/how.html").read_text().split())
-        self.assertIn(f"each of the other {others} brands", readme)
-        # The tail-tier half of this test is gone with the tier. There is one
-        # comparison cadence now, so what both surfaces name is how many
-        # targets are ON it — the number that used to be split across four
-        # rungs and is the whole of "the rest" today.
-        rest = sum(1 for t in T.TARGETS.values() if not t["shopping"])
-        self.assertIn(f"for all {rest} of them", readme)
-        self.assertIn(f"for all {rest} of them", how)
-        # And the two roles account for every target: nothing is on a schedule
-        # that belongs to neither.
-        shopped = sum(1 for t in T.TARGETS.values() if t["shopping"])
-        self.assertEqual(rest + shopped, len(T.TARGETS))
+    def test_the_model_counts_both_surfaces_quote(self):
+        models = {(t["brand"], t["model_key"]) for t in T.TARGETS.values()}
+        for name in ("README.md", "docs/how.html"):
+            flat = " ".join(Path(name).read_text().split())
+            self.assertIn(f"{len(models)} models", flat, name)
 
     def test_the_cycle_length_both_surfaces_quote(self):
         """README says how long the plan window is and how.html names it in the
@@ -5584,7 +5521,7 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         the horizon was the fortnight floor, so the day a cadence widened it
         both sentences went quietly false."""
         flat = " ".join(Path("README.md").read_text().split())
-        self.assertIn(f"the cycle is {T.plan_horizon()} days", flat)
+        self.assertIn(f"cycle is {T.plan_horizon()} days", flat)
 
     def test_the_window_is_a_whole_number_of_cycles(self):
         """The average the plan quotes is taken over the window, so a window
@@ -6542,7 +6479,7 @@ class TestACertificationIsIssuedBySomeone(UsesFixtureTargets):
                           f"line {i + 1} wears a bare CPO over {seller[:60]!r}")
 
 
-class TestDepartureEvidence(unittest.TestCase):
+class TestDepartureEvidence(UsesFixtureTargets):
     """A departure counts as a car that left only where a query actually looked.
 
     exit_stats() and one_cohort() have always refused to price a departure from
@@ -7212,63 +7149,25 @@ class TestConfig(unittest.TestCase):
             self.assertIn(tid, T.TARGETS)
             self.assertEqual(T.TARGETS[tid]["trim_key"], "all", tid)
 
-    def test_shopping_names_cars_and_the_watches_follow(self):
-        """buyer.shopping names CARS. Everything else about being shopped —
-        the depth, the newest sweep, the daily cadence, the nationwide
-        certified watch — is derived from being named there, so this asserts
-        the derivation rather than a list somebody typed twice.
+    def test_shopping_names_cars_without_creating_extra_paid_watches(self):
+        named = json.loads(Path("targets.json").read_text())["buyer"]["shopping"]
+        self.assertTrue(named)
+        self.assertEqual(set(T.shopping_ids()), set(named))
+        self.assertFalse(any(t.get("derived") == T.CPO_KEY for t in T.TARGETS.values()))
+        for tid in named:
+            self.assertIn(tid, T.TARGETS)
+            self.assertNotEqual(T.TARGETS[tid]["trim_key"], T.CPO_KEY)
 
-        It used to name `bmw-i5-cpo` as a target of its own, which is why the
-        expected list here was a literal: the watch was a hand-written trim on
-        three BMW models and no other car could have one."""
+    def test_shopping_another_car_does_not_steal_other_models_baseline(self):
         cfg = json.loads(Path("targets.json").read_text())
-        named = cfg["buyer"]["shopping"]
-        # NOT asserted as a literal. It was ["bmw-i5-edrive40",
-        # "bmw-i7-edrive50"], and it is the one field a person is meant to
-        # change, so pinning it made choosing another car a failure in a test
-        # about the derivation. What has to hold is that every id named
-        # RESOLVES: an id that does not is the silent state where the tool
-        # shops nothing and no surface says so.
-        self.assertTrue(named, "buyer.shopping names the cars being bought")
-        for tid in named:
-            self.assertIn(tid, T.TARGETS,
-                          f"buyer.shopping names {tid!r}, which is no target")
-        for tid in named:
-            self.assertNotIn(T.CPO_KEY, T.TARGETS[tid]["trim_key"],
-                             "shopping names the car, not its certified watch")
-        # One derived watch per shopped MODEL — not per target, since two
-        # trims of one model would otherwise ask the country the same question
-        # twice — and every one of them flagged shopping.
-        models = {(t["brand"], t["model_key"]) for t in T.TARGETS.values() if t["shopping"]}
-        want = {f"{b}-{m}-{T.CPO_KEY}" for b, m in models}
-        derived = {tid for tid, t in T.TARGETS.items() if t.get("derived") == T.CPO_KEY}
-        self.assertEqual(derived, want,
-                         "every shopped model gets a certified watch and no "
-                         "unshopped one does")
-        # The resolved list — what the sheet publishes — is every shopped
-        # target in watchlist order, so a car and its own watch sit together.
-        self.assertEqual(T.shopping_ids(),
-                         [tid for tid, t in T.TARGETS.items() if t["shopping"]])
-        self.assertEqual(set(T.shopping_ids()) - set(named), derived,
-                         "the resolved list adds the watches and nothing else")
-
-    def test_readme_prices_a_shopped_car_at_what_it_really_costs(self):
-        """README says what adding one costs, because "naming it is all it
-        takes" was true of the config and not of the budget: it read "the whole
-        of what it would take", and a third shopped car makes the run exit 1
-        without fetching anything. Three numbers, all derived."""
-        cfg = fixture_cfg()
-        two = self._rebuild(cfg)
-        per = sum(T.calls_for(t) / t["cadence"] for t in two.values()
-                  if t["shopping"]) / len(cfg["buyer"]["shopping"])
-        head = (T.MONTHLY - T.planned_calls(two)[2] * 30.5) / 30.5
-        cfg["buyer"]["shopping"] = list(cfg["buyer"]["shopping"]) + ["bmw-ix-xdrive"]
-        three = round(T.planned_calls(self._rebuild(cfg))[2] * 30.5)
-        readme = " ".join(Path("README.md").read_text().split())
-        self.assertIn(f"about {per:.0f} calls a day", readme)
-        self.assertIn(f"~{head:.0f} a\n     day of headroom".replace("\n     ", " "), readme)
-        self.assertIn(f"three shopped cars is {three:,} calls a month", readme)
-        self.assertGreater(three, T.MONTHLY, "…and that it does not fit")
+        before = self._rebuild(cfg)
+        cfg["buyer"]["shopping"] = ["kia-ev9", "bmw-ix-xdrive"]
+        after = self._rebuild(cfg)
+        self.assertEqual(set(before), set(after))
+        for tid in before:
+            self.assertEqual((before[tid]["cadence"], T.calls_for(before[tid])),
+                             (after[tid]["cadence"], T.calls_for(after[tid])), tid)
+        self.assertEqual(T.planned_calls(before), T.planned_calls(after))
 
     def test_the_rule_tests_do_not_move_with_the_buyers_choice(self):
         """The property that makes choosing another car survivable, asserted
@@ -7582,9 +7481,10 @@ class TestConfig(unittest.TestCase):
         untouched."""
         was = {k: getattr(T, k) for k in
                ("WATCHLIST", "DEFAULTS", "SHOPPING", "SHOPPING_FETCH",
-                "COMPARISON_FETCH", "CPO_WATCH", "BUDGET", "MONTHLY",
+                "COMPARISON_FETCH", "CPO_WATCH", "FAIR", "BUDGET", "MONTHLY",
                 "HEADROOM_DAY", "HEADROOM_MONTH")}
         T.WATCHLIST = cfg["watchlist"]
+        T.FAIR = dict(cfg.get("collection") or {})
         T.DEFAULTS = cfg.get("defaults", {})
         T.SHOPPING = list(cfg["buyer"].get("shopping", []))
         T.SHOPPING_FETCH = dict(cfg["buyer"].get("shopping_fetch") or {})
@@ -7625,7 +7525,7 @@ class TestConfig(unittest.TestCase):
         self.assertNotIn("bmw-ix-cpo", T.TARGETS)
         for tid in ix:
             self.assertFalse(T.TARGETS[tid]["shopping"])
-            self.assertGreaterEqual(T.TARGETS[tid]["cadence"], 3)
+            self.assertEqual(T.TARGETS[tid]["model_cadence"], 2)
 
     def test_cpo_watches_are_affordable_and_staggered(self):
         # national_only halves each watch's cost (no States query — the
@@ -7633,10 +7533,10 @@ class TestConfig(unittest.TestCase):
         # two watches take alternating cadence-2 days, so neither the worst
         # day nor the month blows the budget the way two full-depth
         # nationwide targets naively would.
-        watches = [tid for tid in T.TARGETS if tid.endswith("-cpo")]
-        self.assertTrue(watches, "the i5 certified watch is the live one")
+        watches = [tid for tid in FIXTURE_TARGETS if tid.endswith("-cpo")]
+        self.assertTrue(watches, "the legacy fixture preserves certified-watch behavior")
         for tid in watches:
-            t = T.TARGETS[tid]
+            t = FIXTURE_TARGETS[tid]
             self.assertEqual(T.sources_for(t), [("National", None)])
             self.assertEqual(T.calls_for(t), 2)     # 1 source x 1 sort x 2 pages
             self.assertEqual(T.window_dim(t), "miles")
@@ -7648,7 +7548,7 @@ class TestConfig(unittest.TestCase):
         # 2, 3, 4 and 5 watches; the bound holds at each.
         import collections as _c
         cad = max(1, int(T.CPO_WATCH.get("cadence") or 1))
-        per_day = _c.Counter(T.TARGETS[tid]["offset"] for tid in watches)
+        per_day = _c.Counter(FIXTURE_TARGETS[tid]["offset"] for tid in watches)
         self.assertLessEqual(max(per_day.values()), -(-len(watches) // cad),
                              f"{len(watches)} watches on a {cad}-day cadence "
                              f"should spread over {min(len(watches), cad)} days: "
@@ -7672,11 +7572,11 @@ class TestConfig(unittest.TestCase):
         rules, which is what says the floor is the one that generalises."""
         floor = T.to_int(T.CPO_WATCH.get("min_miles"))
         self.assertTrue(floor, "the recipe carries a mileage floor")
-        for tid in (t for t, v in T.TARGETS.items() if v.get("derived") == T.CPO_KEY):
-            self.assertEqual(T.TARGETS[tid]["min_miles"], floor,
+        for tid in (t for t, v in FIXTURE_TARGETS.items() if v.get("derived") == T.CPO_KEY):
+            self.assertEqual(FIXTURE_TARGETS[tid]["min_miles"], floor,
                              f"{tid} does not carry it")
-            _, pages = T.sorts_pages(T.TARGETS[tid])
-            window = len(T.sorts_pages(T.TARGETS[tid])[0]) * pages * T.PER_PAGE
+            _, pages = T.sorts_pages(FIXTURE_TARGETS[tid])
+            window = len(T.sorts_pages(FIXTURE_TARGETS[tid])[0]) * pages * T.PER_PAGE
 
         def first_certified(prefix, min_miles):
             """Per recorded day: where the lowest-mileage certified car sits
@@ -7719,7 +7619,7 @@ class TestConfig(unittest.TestCase):
         by_model = defaultdict(set)
         for r in self._snapshot_rows():
             if r["cpo"] == "1" and (r["miles"] or "").strip():
-                key = (T.TARGETS.get(r["target"]) or {}).get("model_key") \
+                key = (FIXTURE_TARGETS.get(r["target"]) or {}).get("model_key") \
                     or r["target"].rsplit("-", 1)[0]
                 by_model[key].add((r["vin"], int(r["miles"])))
         under = {m: sorted(x for _, x in v if x < floor) for m, v in by_model.items()}
@@ -7824,7 +7724,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(T.first({"a": "", "b": "x"}, ["a", "b"]), "x")
 
 
-class TestDashboardContract(UsesFixtureTargets):
+class TestDashboardContract(unittest.TestCase):
     """What docs/index.html is allowed to assume about docs/data.json.
 
     The dashboard is 3,700 lines that no test in this file has ever run, and
@@ -8379,11 +8279,11 @@ class TestSpend(unittest.TestCase):
         planned = sum(T.calls_for(t) for t in due)
         for t in due:
             T.SPENT[t["id"]] = T.calls_for(t)
-        T.SPENT[due[0]["id"]] -= 3
+        T.SPENT[due[0]["id"]] -= 1
         row = T.spend_report(planned)
-        self.assertEqual(row["banked"], 3)
+        self.assertEqual(row["banked"], 1)
         self.assertEqual(row["unrun"], 0)
-        self.assertEqual(row["off_plan"][due[0]["id"]], [T.calls_for(due[0]), T.calls_for(due[0]) - 3])
+        self.assertEqual(row["off_plan"][due[0]["id"]], [T.calls_for(due[0]), T.calls_for(due[0]) - 1])
 
     def test_a_target_that_never_ran_is_not_headroom(self):
         """The whole reason this class exists."""
@@ -8391,10 +8291,10 @@ class TestSpend(unittest.TestCase):
         planned = sum(T.calls_for(t) for t in due)
         for t in due:
             T.SPENT[t["id"]] = T.calls_for(t)
-        T.SPENT[due[0]["id"]] -= 3          # a real saving
+        T.SPENT[due[0]["id"]] -= 1          # a real saving
         T.SPENT[due[1]["id"]] = 0           # a failure wearing a saving's clothes
         row = T.spend_report(planned)
-        self.assertEqual(row["banked"], 3, "only the working target's underspend is headroom")
+        self.assertEqual(row["banked"], 1, "only the working target's underspend is headroom")
         self.assertEqual(row["unrun"], T.calls_for(due[1]))
         self.assertIn(due[1]["id"], row["silent_targets"])
 

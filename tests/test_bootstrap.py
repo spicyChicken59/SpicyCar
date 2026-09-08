@@ -12,6 +12,11 @@ import Tracking as T
 
 class BootstrapTests(unittest.TestCase):
     def setUp(self):
+        # Exercise the retained legacy bootstrap path explicitly. Fair mode
+        # seeds targets during the regular collector and has its own tests.
+        for name, value in [('FAIR', {'enabled': False}), ('COMPARISON_CADENCE', T.COMPARISON_CADENCE)]:
+            p = patch.object(T, name, value); p.start(); self.addCleanup(p.stop)
+        p = patch.object(T, 'TARGETS', T.build_targets()); p.start(); self.addCleanup(p.stop)
         self.target = next(t for t in T.TARGETS.values() if T.calls_for(t) == 2 and len(T.sources_for(t)) == 2)
         self.tid = self.target['id']
         self.sources = [name for name, _ in T.sources_for(self.target)]
