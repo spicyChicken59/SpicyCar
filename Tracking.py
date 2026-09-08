@@ -256,9 +256,19 @@ def calls_for(t):
 
 
 def due_on(t, ordinal):
-    """Cadence 1 runs every day. Cadence N runs every Nth day; models with
-    the same cadence take successive offsets in watchlist order, so the load
-    is spread evenly and each model keeps the same days of the cycle."""
+    """Cadence 1 runs every day. Cadence N runs every Nth day, on the day
+    assign_offsets() gave it.
+
+    This used to promise "successive offsets in watchlist order" and "each
+    model keeps the same days of the cycle", and neither survived the day the
+    days started being chosen to level the COST: the offsets are dealt
+    most-expensive-group-first onto the cheapest residue, so on this watchlist
+    the twenty-five comparison groups run 1,1,2,2,3,3,4,5,5,0,… rather than in
+    turn, and any edit to the watchlist or to buyer.shopping re-packs every
+    group. The days ARE stable against the calendar — the arithmetic is over
+    absolute ordinals — and they are published, so a model can move from
+    "first run 2026-09-07" to "2026-09-12" on a config change that never named
+    it."""
     c = t["cadence"]
     return c <= 1 or (ordinal + t["offset"]) % c == 0
 

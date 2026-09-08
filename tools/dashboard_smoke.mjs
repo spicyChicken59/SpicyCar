@@ -499,6 +499,7 @@ const cohorts = ['?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m',
                  '?brand=bmw&m=i7&trims=bmw-i7-edrive50,bmw-i7-m70',
                  '?models=bmw-i5,bmw-i7'].filter(inSheet);
 if (!cohorts.length) return skipRest('this snapshot holds none of the comparisons the rule was written against');
+const verdicts = [];
 for (const q of cohorts) {
   await open(q);
   const r = await page.evaluate(() => {
@@ -509,9 +510,17 @@ for (const q of cohorts) {
              marked: cells.filter((td) => td.classList.contains('is-best')).length };
   });
   const comparable = r.bases.every((b) => b === 'trim');
-  ok(MARKED, comparable ? r.marked <= 1 : r.marked === 0,
-    `${q} → ${r.marked} marked, bases ${r.bases.join('/')}`);
+  verdicts.push({ q, ok: comparable ? r.marked <= 1 : r.marked === 0,
+                  detail: `${q} → ${r.marked} marked, bases ${r.bases.join('/')}` });
 }
+// ONE ok() for the whole loop, because there is one plan(). It called ok()
+// once per surviving cohort, and the cohorts are five literal urls filtered by
+// inSheet — so retiring one model from the watchlist dropped the recorded
+// total by one and the run printed "A check was lost or added silently" and
+// exited 1 over a suite in which every check that ran had passed. EXPECTED's
+// own comment says the declared total must not move with the data.
+ok(MARKED, verdicts.every((v) => v.ok),
+   `${verdicts.length} cohort(s): ` + verdicts.map((v) => v.detail).join(' · '));
 });
 
 // --- the compare card counts its dated cars ----------------------------------
@@ -7039,7 +7048,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 322;
+const EXPECTED = 318;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
