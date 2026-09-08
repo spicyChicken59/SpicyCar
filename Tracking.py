@@ -780,13 +780,13 @@ def build_targets():
                 # decision. Reproduced before the order was split: with both at
                 # the end, a trim asking for cadence 9 was rebuilt at the
                 # derived comparison cadence and its typed value did nothing.
-                base = ((DEFAULTS, b, m, tr) if shopped
+                base = ((DEFAULTS, b, m, tr) if shopped or FAIR.get("enabled")
                         else (COMPARISON_FETCH, DEFAULTS, b, m, tr))
                 for layer in base:
                     for k in PARAM_KEYS:
                         if k in layer:
                             t[k] = layer[k]
-                if shopped:
+                if shopped and not FAIR.get("enabled"):
                     _upgrade(t, SHOPPING_FETCH)
                 t.update({
                     "id": f"{bkey}-{mkey}" + (f"-{tkey}" if tkey else ""),
@@ -810,7 +810,7 @@ def build_targets():
             # Built after the trims, because whether the model is shopped is
             # only known once they are. It takes its fetch day from
             # assign_offsets() like every other target.
-            watch = cpo_target(bkey, b, mkey, m, made)
+            watch = None if FAIR.get("enabled") else cpo_target(bkey, b, mkey, m, made)
             if watch is not None and not FAIR.get("enabled"):
                 targets[watch["id"]] = watch
     # Cadence, then days. Both are facts about the whole watchlist against the
