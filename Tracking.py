@@ -133,7 +133,13 @@ AUTO = "auto"                                   # the cadence marker, kept as it
 COMPARISON_CADENCE = None
 PER_PAGE = 20                       # the free plan clamps limit to 20
 PARAM_KEYS = ["min_price", "depth", "cadence", "sorts", "pages", "years",
-              "newest", "max_miles", "cpo_only", "national_only"]
+              "newest", "max_miles", "cpo_only", "national_only", "fuel"]
+# What `fuel` may say. "electric" is what this tool has always enforced and
+# what defaults carries, so the shipped behaviour is unchanged and now
+# visible; "any" turns the check off for a buyer whose car is not one. The
+# API has no fuel parameter, so this is a filter on the rows and never on the
+# query — a target set to "any" still pays for every record it drops.
+FUEL_ANY = "any"
 # The price/miles sorts sample the settled bottom of the market; a fresh,
 # well-priced car can list and sell before it ever ranks there. Targets with
 # newest > 0 also fetch that many newest-first pages per source, so a new
@@ -279,6 +285,11 @@ def a_or_an(n):
 # planning and short enough to enumerate; past it the answer is that the
 # cadences are wrong, and this says so instead of hanging.
 MAX_CYCLE_DAYS = 366
+# How many times the levelling pass may sweep every group. A backstop only:
+# each accepted move strictly lowers a bounded score, so it converges on its
+# own — this stops a pathological config from spending the run's first minute
+# in arithmetic.
+MAX_LEVEL_SWEEPS = 20
 
 
 def cadence_cycle(targets):
@@ -425,6 +436,7 @@ def assign_offsets(targets):
     cycle = cadence_cycle(targets)
     load = [0] * cycle
     taken = Counter()      # groups already placed, per (cadence, day of it)
+    placed = []            # (group, cadence, cost, offset), for the levelling pass
     groups = {}
     for t in targets.values():
         groups.setdefault((t["brand"], t["model_key"], t["cadence"]), []).append(t)
@@ -454,9 +466,78 @@ def assign_offsets(targets):
         taken[(c, (-best) % max(1, c))] += 1
         for d in days(best):
             load[d] += cost
+        placed.append((grp, c, cost, best))
         for g in grp:
             g["offset"] = best
+    _level(placed, load, cycle)
+    for grp, _, _, off in placed:
+        for g in grp:
+            g["offset"] = off
     return targets
+
+
+def _score(load):
+    """How flat a cycle is, worst-first: the peak the daily cap is measured
+    against, then the range a reader sees, then the spread itself. Sum of
+    squares last because it is the only one of the three that keeps improving
+    after the first two have stopped, which is what lets a sweep find the move
+    that unblocks them."""
+    return (max(load), max(load) - min(load), sum(x * x for x in load))
+
+
+def _level(placed, load, cycle):
+    """Move one group at a time, while any move makes the cycle flatter.
+
+    First-fit-decreasing places each group against the days as they stand when
+    its turn comes, so a group placed early can end up in the way of one placed
+    later and nothing reconsiders it. Whether that costs anything in practice
+    is a question for measurement, and it does: over 156 placements from 60
+    configs — random shopping lists, random typed cadences, three budgets —
+    this sweep improved 8, the best of them taking the busiest day from 28
+    calls to 26 and the cycle's range from 4 to 2.
+
+    What it cannot do is beat the cadences themselves. A group that runs every
+    third day puts its cost on two days of a six-day cycle, so 26 such groups
+    split 9/9/8 whatever anyone does and the range that leaves is arithmetic,
+    not a placement to be found. An earlier draft of this docstring claimed
+    exactly that case was two calls off optimal; it was not, and the sweep
+    correctly found nothing there.
+
+    Terminates because every accepted move strictly decreases _score(), which
+    takes finitely many values and is bounded below. The sweep cap is a
+    backstop, not the argument. Deterministic: groups are tried in placement
+    order and ties resolve to the lowest offset.
+    """
+    for _ in range(MAX_LEVEL_SWEEPS):
+        moved = False
+        for i, (grp, c, cost, off) in enumerate(placed):
+            if c <= 1:
+                continue            # a daily group is on every day; there is nowhere to move it
+            here = _score(load)
+            best, best_score = off, here
+            for cand in range(c):
+                if cand == off:
+                    continue
+                trial = list(load)
+                for d in range(cycle):
+                    if d % c == (-off) % c:
+                        trial[d] -= cost
+                    if d % c == (-cand) % c:
+                        trial[d] += cost
+                sc = _score(trial)
+                if sc < best_score:
+                    best, best_score = cand, sc
+            if best != off:
+                for d in range(cycle):
+                    if d % c == (-off) % c:
+                        load[d] -= cost
+                    if d % c == (-best) % c:
+                        load[d] += cost
+                placed[i] = (grp, c, cost, best)
+                moved = True
+        if not moved:
+            return load
+    return load
 
 
 def fit_cadence(targets):
@@ -610,6 +691,37 @@ def cpo_target(bkey, b, mkey, m, made):
 # the buyer is shopping, <- buyer.shopping_fetch. The certified watch is
 # derived from buyer.cpo_watch for every model being shopped.
 # --------------------------------------------------------------------------
+def _refuse_unshoppable(targets):
+    """An id in buyer.shopping that matches no target stops the run.
+
+    Silence here is the worst answer available, because every consequence
+    looks like a working tool: shopping_ids() comes back empty, the sheet
+    publishes an empty buyer.shopping, and the page's own "the one state where
+    a reader most needs telling what to do next" branch renders "No models are
+    named as the ones you are shopping" over a targets.json naming two. The
+    plan quietly drops — the shopped depth is most of it — so even the call
+    line looks healthy. A model id where a trim id is needed does it
+    (`bmw-i5`), so does a typo, and so does standing a brand down and
+    forgetting the list.
+
+    Near-misses are printed because the id is nearly always a spelling: the
+    difference between what was typed and what exists is what a person needs
+    to see, not the whole watchlist."""
+    missing = [tid for tid in SHOPPING if tid not in targets]
+    if not missing:
+        return
+    lines = []
+    for tid in missing:
+        near = sorted(k for k in targets if k.startswith(tid) or tid.startswith(k))
+        lines.append(f"  {tid!r}" + (f" — did you mean {', '.join(near[:4])}?" if near else ""))
+    sys.exit("targets.json: buyer.shopping names "
+             f"{len(missing)} id{'s' if len(missing) > 1 else ''} that no target "
+             "matches, so the tool would shop nothing and say so nowhere:\n"
+             + "\n".join(lines)
+             + "\nA trim is 'brand-model-trim'; a model with no trims is "
+               "'brand-model'. Empty the list to shop nothing on purpose.")
+
+
 def build_targets():
     targets = {}
     for bkey, b in WATCHLIST.items():
@@ -689,6 +801,7 @@ def build_targets():
     # the loop above: the comparison cadence depends on what the shopped
     # targets cost, and a fetch day is only well chosen against every other
     # target's. fit_cadence() assigns the offsets it decided on.
+    _refuse_unshoppable(targets)
     global COMPARISON_CADENCE
     COMPARISON_CADENCE = fit_cadence(targets)
     return targets
@@ -2470,7 +2583,15 @@ FAILED_SCOPES = set()  # (target id, source): a query that still failed after it
                        # whatever the OTHER scope returned, and every car only that query
                        # could see is published as a departure. A dead National query on
                        # bmw-i7-edrive50 turned 9 real departures into 93.
-RAW_N = Counter()      # (target id, source) -> RAW records the API returned today, before
+KEPT_N = Counter()     # target id -> rows this target kept today, after every filter.
+                       # RAW_N says what the API returned and this says what
+                       # survived: a target that billed calls, got records and
+                       # kept none of them is a third fault, and it was
+                       # invisible. See spend_report()'s filtered_targets.
+# Counted where the run RECEIVES the batch, not inside fetch(): the transport
+# is what a test replaces, and counting there meant a driven run recorded
+# nothing and the fault class below could never fire in one.
+RAW_N = Counter()      # (target id, source) -> RAW records the run received today, before
                        # normalize() dropped any. EXHAUSTED is set from this count, and the
                        # offline reconstruction used to re-derive it from KEPT rows instead
                        # — which is a different number for every filtered target (bmw-i5-cpo
@@ -2627,6 +2748,16 @@ def spend_report(planned_today):
     # different fault from a query finding nothing.
     empty = sorted(t["id"] for t in due if SPENT.get(t["id"])
                    and not sum(n for (tid, _), n in RAW_N.items() if tid == t["id"]))
+    # And the third fault, which neither of the other two can see: a target
+    # that billed its calls, GOT records, and kept none of them. A wrong
+    # trim_match does it, and so does shopping a car the row filters refuse —
+    # a petrol model fetched its whole plan, kept 0 of 200 records, and the
+    # report said "No listings found yet." over a night on which 200 listings
+    # were found, while the health line named five innocent targets and not
+    # this one. It is not silent (it spent) and not empty (the API answered).
+    filtered = sorted(t["id"] for t in due if SPENT.get(t["id"])
+                      and sum(n for (tid, _), n in RAW_N.items() if tid == t["id"])
+                      and not KEPT_N.get(t["id"]))
     return {
         "planned": planned_today,
         "actual": actual,
@@ -2636,6 +2767,7 @@ def spend_report(planned_today):
         "unrun": lost,
         "silent_targets": silent,
         "empty_targets": empty,
+        "filtered_targets": filtered,
         "targets_due": len(due),
         "exhausted": len(EXHAUSTED),
         "failed": FAILED_FETCHES,
@@ -2656,6 +2788,11 @@ def report_spend(row, hist):
         print(f"  ! {len(row['empty_targets'])} target(s) spent a call and the API "
               f"returned nothing — check the model string in targets.json: "
               f"{', '.join(row['empty_targets'])}")
+    if row.get("filtered_targets"):
+        print(f"  ! {len(row['filtered_targets'])} target(s) billed their calls, got "
+              f"records back and kept NONE of them — the query works and a row "
+              f"filter refuses everything it returns (trim_match, years, "
+              f"min_price, fuel): {', '.join(row['filtered_targets'])}")
     if row.get("silent_targets"):
         print(f"  ! {row['unrun']} calls' worth of targets were due and never ran — "
               f"NOT headroom: {', '.join(row['silent_targets'])}")
@@ -3034,7 +3171,6 @@ def fetch(source_name, source, sort, page, t):
                               f"keys were {sorted(payload)[:8]}")
                     if batch and not SAMPLE.exists():
                         SAMPLE.write_text(json.dumps(batch[0], indent=2))
-                    RAW_N[(t["id"], source_name)] += len(batch)
                     return batch
                 err = ("HTTP 200 with no `data` list in the envelope"
                        + (f" — keys were {sorted(payload)[:8]}" if isinstance(payload, dict)
@@ -3146,10 +3282,14 @@ def normalize(rec, t, dropped):
         # unknown mileage cannot prove "under the cap", so it is out too
         dropped["at/over max_miles"] += 1
         return None
-    # …and it has to be an electric car. The query cannot ask for one — the
-    # API has no fuel parameter — so this is the only place it can be asked.
+    # …and it has to be the fuel the target asks for. The query cannot ask —
+    # the API has no fuel parameter — so this is the only place it can be.
     # False only, never None: a feed that stops saying must not empty a target.
-    if is_battery_electric(rec) is False:
+    # It was unconditional, with no knob anywhere, so "any car is fair game"
+    # was false in the plainest way: a shopped petrol model fetched its whole
+    # plan and kept nothing. `fuel` resolves like every other filter now, and
+    # defaults says "electric", which is what this tool has always done.
+    if (t.get("fuel") or "electric") != FUEL_ANY and is_battery_electric(rec) is False:
         dropped["not a battery EV"] += 1
         return None
     loc = rec.get("location")
@@ -4943,6 +5083,7 @@ def main():
                         break   # failed even after the retry: keep what we
                                 # have, and never call this scope exhausted
                     raw_n += len(batch)
+                    RAW_N[(tid, source_name)] += len(batch)
                     for rec in batch:
                         n = normalize(rec, t, dropped)
                         if not n:
@@ -4978,6 +5119,7 @@ def main():
                 if batch is None:
                     break
                 raw_n += len(batch)
+                RAW_N[(tid, source_name)] += len(batch)
                 for rec in batch:
                     n = normalize(rec, t, dropped)
                     if not n:
@@ -4992,6 +5134,7 @@ def main():
                     EXHAUSTED.add((tid, source_name))
                     break
         kept = sum(1 for k in rows if k[0] == tid)
+        KEPT_N[tid] = kept
         print(f"{tid}: {raw_n} raw -> {kept} kept")
     if dropped:
         print("Dropped: " + ", ".join(f"{k} x{v}" for k, v in dropped.items()))

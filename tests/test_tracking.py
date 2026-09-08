@@ -43,10 +43,114 @@ CHICAGO = (41.8855, -87.6221)
 INDY = (39.7684, -86.1581)
 
 
+# The one thing this file must not inherit from targets.json is WHICH CAR IS
+# BEING SHOPPED, because that is the field the tool exists to let a person
+# change. It used to: `target()` read T.TARGETS, so pointing buyer.shopping at
+# a Kia — a car already on the watchlist, at a plan comfortably inside every
+# cap — took the suite from green to 39 failures and 23 errors, most of them in
+# tests about rules that had nothing to do with the buyer's choice.
+# TestBudget.test_newest_pages_are_budgeted was the sharpest: it asserted
+# newest == 1 on a BMW trim, which is not a fact about the budget rule but
+# about which car shopping_fetch happened to be applied to, under a docstring
+# reading "the newest-first fetch must be counted, or the plan lies".
+#
+# So the WATCHLIST stays real — config resolution is under test, and a model
+# added or dropped still moves these — and the buyer's own choice is the
+# fixture's. Tests that are genuinely ABOUT the shipped config read T.TARGETS
+# and shopping_ids() directly and are supposed to move with it: the prose
+# guards and the committed record are exactly that, and their going red on a
+# config change is the doc sweep working.
+FIXTURE_SHOPPING = ["bmw-i5-edrive40", "bmw-i7-edrive50"]
+
+
+def _fixture_targets():
+    cfg = json.loads(Path("targets.json").read_text())
+    cfg["buyer"]["shopping"] = list(FIXTURE_SHOPPING)
+    was = {k: getattr(T, k) for k in ("SHOPPING",)}
+    T.SHOPPING = list(FIXTURE_SHOPPING)
+    try:
+        return T.build_targets()
+    finally:
+        for k, v in was.items():
+            setattr(T, k, v)
+
+
+FIXTURE_TARGETS = _fixture_targets()
+
+
+class UsesFixtureTargets(unittest.TestCase):
+    """For a test whose subject is BEHAVIOUR keyed to a target id.
+
+    These build synthetic rows against a real target and drive the report or
+    the sheet, so the id has to exist — and a derived certified watch exists
+    only while its model is shopped. Pointing buyer.shopping at another car
+    took eighteen of them down with KeyError on `bmw-i5-cpo`, which says
+    nothing about the code they are testing and everything about a field the
+    tool exists to let a person change.
+
+    The shipped TARGETS is deliberately NOT replaced globally: the prose and
+    plan guards read it on purpose, and their going red when the config moves
+    is the doc sweep working. This swaps it only for the classes whose subject
+    is the code."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._shipped_targets = T.TARGETS
+        T.TARGETS = FIXTURE_TARGETS
+
+    @classmethod
+    def tearDownClass(cls):
+        T.TARGETS = cls._shipped_targets
+        super().tearDownClass()
+
+
+def ids_the_watchlist_knows_about(cfg):
+    """Target ids the config accounts for even though it does not build them.
+
+    Two kinds. A trim or model marked inactive: it is stood down on purpose and
+    its rows are not stranded. And a derived certified watch — which exists
+    only while its model is SHOPPED, and whose rows outlive that. The second
+    used to be missing, because the walk is over TRIMS and could never produce
+    a `brand-model-cpo` id: choosing another car reported bmw-i5-cpo's twenty
+    rows as orphaned, when the watch returns under the same id the day the
+    model is named again.
+
+    One function, because the guard and the test that checks the guard against
+    a swapped buyer both need it, and two copies of a rule is how one of them
+    stops noticing."""
+    known = set()
+    watch_on = (cfg["buyer"].get("cpo_watch") or {}).get("enabled", True)
+    for bk, b in cfg["watchlist"].items():
+        for mk, m in b["models"].items():
+            dead = (not b.get("active", True)) or (not m.get("active", True))
+            for tk, tr in (m.get("trims") or {None: {}}).items():
+                tid = f"{bk}-{mk}" + (f"-{tk}" if tk else "")
+                if dead or not tr.get("active", True):
+                    known.add(tid)
+            if watch_on:
+                known.add(f"{bk}-{mk}-{T.CPO_KEY}")
+    return known
+
+
+def fixture_cfg():
+    """targets.json with the fixture's buyer, for a test that rebuilds.
+
+    A test that hands build_targets() the file's own buyer inherits the
+    buyer's choice, which is what made choosing another car cost 62 tests. A
+    test that means to vary the shopping list sets it after this and says so."""
+    cfg = json.loads(Path("targets.json").read_text())
+    cfg["buyer"]["shopping"] = list(FIXTURE_SHOPPING)
+    return cfg
+
+
 def target(tid):
-    """A real target from targets.json, so config resolution is under test too."""
-    assert tid in T.TARGETS, f"{tid} missing from targets.json (targets: {sorted(T.TARGETS)})"
-    return T.TARGETS[tid]
+    """A real target, resolved through the real watchlist under the fixture's
+    own buyer — so config resolution is under test and the buyer's choice is
+    not."""
+    assert tid in FIXTURE_TARGETS, (
+        f"{tid} missing from the watchlist (targets: {sorted(FIXTURE_TARGETS)})")
+    return FIXTURE_TARGETS[tid]
 
 
 def listing(**over):
@@ -363,7 +467,7 @@ class TestNormalize(unittest.TestCase):
         # because the i7 watch was stood down and had no target; it is derived
         # from buyer.shopping now, so the thing to assert about is the one the
         # fetch will use.
-        i7cpo = T.TARGETS["bmw-i7-cpo"]
+        i7cpo = target("bmw-i7-cpo")
         self.assertNotIn("m70", i7cpo["trim_query"].lower())
         self.assertEqual(i7cpo["trim_exclude"], "m70",
                          "the i7 M70 is spelled with xDrive, so the query "
@@ -461,7 +565,7 @@ class TestNormalize(unittest.TestCase):
 # Spicy picks: eligibility, and the within-model scoring that stops a cheap
 # model from winning simply for being cheap.
 # --------------------------------------------------------------------------
-class TestPicks(unittest.TestCase):
+class TestPicks(UsesFixtureTargets):
     def test_rental_and_fleet_usage_is_recognised(self):
         for usage in ("Rental Use", "Corporate Fleet", "Corporate Use",
                       "Commercial Use", "Taxi Use", "Multiple Use"):
@@ -1018,7 +1122,7 @@ class TestCohortMustBeComparable(unittest.TestCase):
 # --------------------------------------------------------------------------
 # A departure from one query is not a departure from the market.
 # --------------------------------------------------------------------------
-class TestStillListedIsNotGone(unittest.TestCase):
+class TestStillListedIsNotGone(UsesFixtureTargets):
     """A CPO watch's market is "certified cars under the mileage cap", so a car
     that loses its badge leaves THAT watch for real — the builder has always
     said so in delisted()'s own docstring. What was wrong was the words built
@@ -1425,7 +1529,7 @@ class TestBrokenEnvelope(unittest.TestCase):
         try:
             T.requests.get = lambda *a, **k: self._resp(body, text)
             T.time.sleep = lambda *_: None
-            return T.fetch("National", None, "price.asc", 1, T.TARGETS["bmw-i5-m60"])
+            return T.fetch("National", None, "price.asc", 1, target("bmw-i5-m60"))
         finally:
             T.requests.get, T.time.sleep = old_get, old_sleep
             T.FAILED_FETCHES = old_failed
@@ -1451,7 +1555,7 @@ class TestBrokenEnvelope(unittest.TestCase):
             T.requests.get = lambda *a, **k: self._resp({"nope": 1})
             T.time.sleep = lambda *_: None
             T.FAILED_SCOPES.discard(("bmw-i5-m60", "National"))
-            T.fetch("National", None, "price.asc", 1, T.TARGETS["bmw-i5-m60"])
+            T.fetch("National", None, "price.asc", 1, target("bmw-i5-m60"))
             self.assertIn(("bmw-i5-m60", "National"), T.FAILED_SCOPES)
         finally:
             T.requests.get, T.time.sleep = old_get, old_sleep
@@ -1588,7 +1692,7 @@ class TestHistoryRoundTrip(unittest.TestCase):
                 T.SNAPSHOTS = was
 
 
-class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
+class TestTodaySectionIsRelativeToTheData(UsesFixtureTargets):
     """The leading section describes the newest snapshot, not the wall clock —
     and says which day that was.
 
@@ -1682,7 +1786,7 @@ class TestTodaySectionIsRelativeToTheData(unittest.TestCase):
                       "the i5's own section reports its own last fetch in full")
 
 
-class TestEveryDatedSentenceNamesItsOwnDay(unittest.TestCase):
+class TestEveryDatedSentenceNamesItsOwnDay(UsesFixtureTargets):
     """One record, built on a day it was not fetched, read four ways.
 
     The report dated its changes by three different clocks: the cut bullets by
@@ -1849,7 +1953,7 @@ class TestEveryDatedSentenceNamesItsOwnDay(unittest.TestCase):
         self.assertNotIn("today", line)
 
 
-class TestATrimSectionIsAboutItsOwnQuery(unittest.TestCase):
+class TestATrimSectionIsAboutItsOwnQuery(UsesFixtureTargets):
     """The table is one row per VEHICLE; a trim section is about LISTINGS.
 
     The certified watch matches cars the ordinary trim targets match too, so a
@@ -2124,7 +2228,7 @@ class TestSummarize(unittest.TestCase):
         self.assertEqual(T.summarize(("t", "MISSING"), {}), {"series": []})
 
 
-class TestDelisted(unittest.TestCase):
+class TestDelisted(UsesFixtureTargets):
     def setUp(self):
         self._pw, self._ex = dict(T.PRICE_WINDOW), set(T.EXHAUSTED)
         self._fs, self._log = set(T.FAILED_SCOPES), T.FETCH_LOG
@@ -2440,7 +2544,7 @@ class TestDelisted(unittest.TestCase):
         that also runs a newest probe — and an unexercised clause is one a
         later edit deletes without anything going red.
         """
-        base = dict(T.TARGETS["bmw-i5-m60"])
+        base = dict(target("bmw-i5-m60"))
         light = {**base, "depth": "light", "sorts": ["price.asc", "miles.asc"], "newest": 0}
         self.assertEqual(T.sorts_pages(light)[0], ["price.asc"],
                          "light depth fetches the FIRST configured sort only")
@@ -3051,7 +3155,7 @@ class TestAnEvScreenerChecksThatACarIsAnEv(unittest.TestCase):
 
     def setUp(self):
         self.dropped = Counter()
-        self.t = T.TARGETS["bmw-i5-m60"]     # the sample record is an M60
+        self.t = target("bmw-i5-m60")     # the sample record is an M60
 
     def rec(self, **over):
         r = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
@@ -3143,7 +3247,7 @@ class TestTheTwoFactsThatNarrowAThirtySixModelMarket(unittest.TestCase):
 
     def setUp(self):
         self.dropped = Counter()
-        self.t = T.TARGETS["bmw-i5-m60"]
+        self.t = target("bmw-i5-m60")
 
     def rec(self, **over):
         r = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
@@ -3318,15 +3422,7 @@ class TestEveryTargetInTheRecordIsAccountedFor(unittest.TestCase):
         import csv as _csv
         cfg = json.loads(Path("targets.json").read_text())
         legacy = cfg.get("legacy_ids", {})
-        inactive = set()
-        for bk, b in cfg["watchlist"].items():
-            for mk, m in b["models"].items():
-                dead = (not b.get("active", True)) or (not m.get("active", True))
-                trims = m.get("trims") or {None: {}}
-                for tk, tr in trims.items():
-                    tid = f"{bk}-{mk}" + (f"-{tk}" if tk else "")
-                    if dead or not tr.get("active", True):
-                        inactive.add(tid)
+        inactive = ids_the_watchlist_knows_about(cfg)
         with open("data/snapshots.csv", newline="", encoding="utf-8-sig") as f:
             seen = {r["target"] for r in _csv.DictReader(f)}
         stray = sorted(t for t in seen
@@ -3429,7 +3525,7 @@ class TestDailySeries(unittest.TestCase):
         self.assertEqual([x["date"] for x in slow_only], [d2])
 
 
-class TestNewToday(unittest.TestCase):
+class TestNewToday(UsesFixtureTargets):
     """"New" means first seen on the snapshot the sentence is about.
 
     days_tracked is the length of a car's price series and a series only grows
@@ -3495,7 +3591,7 @@ class TestNewToday(unittest.TestCase):
                          "a car last seen in January is not first seen this run")
 
 
-class TestOneCarTwoTargets(unittest.TestCase):
+class TestOneCarTwoTargets(UsesFixtureTargets):
     """A car two targets both return has two records and one row.
 
     The listings table is one row per VIN (the cheapest copy), the record is
@@ -3816,7 +3912,7 @@ class TestANumberThatIsNotOneIsNone(unittest.TestCase):
     def test_a_listing_priced_at_infinity_is_dropped_not_fatal(self):
         """Through the real normalize(), which is where it landed."""
         rec = json.loads(Path("data/sample_record.json").read_text())
-        t = T.TARGETS["bmw-i5-m60"]      # the sample record is an M60
+        t = target("bmw-i5-m60")      # the sample record is an M60
         base = T.normalize(json.loads(json.dumps(rec)), t, Counter())
         self.assertTrue(base and base.get("price"), "the sample record is a car")
         for path in (("retailListing", "price"), ("retailListing", "miles"),
@@ -3932,7 +4028,7 @@ class TestTheWindowAxisIsTheOneTheRunOpened(unittest.TestCase):
         for t in T.TARGETS.values():
             want = "price" if "price.asc" in T.sorts_pages(t)[0] else "miles"
             self.assertEqual(T.window_dim(t), want, t["id"])
-        self.assertEqual(T.window_dim(T.TARGETS["bmw-i5-cpo"]), "miles",
+        self.assertEqual(T.window_dim(target("bmw-i5-cpo")), "miles",
                          "the certified watch sorts by mileage and always did")
 
 
@@ -4829,7 +4925,7 @@ class TestTheWorkedExampleFollowsTheCadenceItIsDrawnFrom(unittest.TestCase):
                              f"{name}: the contrast pair is still the old cadence's")
 
 
-class TestTheStatesQueryPaidForItself(unittest.TestCase):
+class TestTheStatesQueryPaidForItself(UsesFixtureTargets):
     """The measurement README's decision rests on, held three ways.
 
     The 28 national-only targets were standing on `sources_for()`'s premise —
@@ -5013,6 +5109,108 @@ class _Numbers(dict):
 NUMBER_WORD = _Numbers(_NUMBER_WORD)
 
 
+class TestATargetThatKeepsNothingIsItsOwnFault(UsesFixtureTargets):
+    """A target that billed its calls, GOT records, and kept none of them.
+
+    silent_targets is "due and never ran"; empty_targets is "spent and the API
+    answered with nothing". Neither can see the third: the query works and a
+    row filter refuses everything it returns. A shopped petrol model is the
+    sharpest case — 200 records fetched, 0 kept, "No listings found yet." in
+    the report under a heading naming the car — and the health line named five
+    innocent targets that had merely returned nothing.
+    """
+
+    def _row(self, raw, kept, spent=2):
+        was = (dict(T.SPENT), T.RAW_N.copy(), T.KEPT_N.copy())
+        T.SPENT.clear(); T.RAW_N.clear(); T.KEPT_N.clear()
+        tid = next(t["id"] for t in T.TARGETS.values() if T.due_on(t, T.TODAY_ORD))
+        T.SPENT[tid] = spent
+        if raw:
+            T.RAW_N[(tid, "National")] = raw
+        if kept:
+            T.KEPT_N[tid] = kept
+        try:
+            return tid, T.spend_report(T.planned_calls()[0])
+        finally:
+            T.SPENT.clear(); T.SPENT.update(was[0])
+            T.RAW_N.clear(); T.RAW_N.update(was[1])
+            T.KEPT_N.clear(); T.KEPT_N.update(was[2])
+
+    def test_the_run_really_records_what_each_target_kept(self):
+        """The two above set KEPT_N themselves, so deleting the line that
+        RECORDS it left them green — the counter existed and nothing filled
+        it. Driven through the real fetch loop instead: a target handed
+        records it must refuse has to come out of a real run in
+        filtered_targets."""
+        petrol = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                                if not k.startswith("_")})
+        petrol["vehicle"]["fuel"] = "Gasoline"
+        petrol["vehicle"]["trim"] = "eDrive40"
+        petrol["vehicle"]["series"] = "eDrive40 4dr Sedan"
+        subject = "bmw-i5-edrive40"
+
+        # A second target is served cars it WILL keep, because "kept nothing"
+        # reads the same as "never recorded": with the recording line deleted,
+        # KEPT_N.get(subject, 0) is still 0 and an assertion on that alone
+        # cannot fail. One of each is what tells the states apart.
+        electric = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                                  if not k.startswith("_")})
+        keeper = next(t["id"] for t in T.TARGETS.values()
+                      if t["id"] != subject and T.due_on(t, T.TODAY_ORD)
+                      and t["trim_match"] in ("", "m60"))
+
+        def batches(t, source_name, sort, page):
+            if page > 1:
+                return []
+            if t["id"] == subject:
+                return [copy.deepcopy(petrol) for _ in range(T.PER_PAGE)]
+            if t["id"] == keeper:
+                return [copy.deepcopy(electric)]
+            return []
+        TestGuardAndProvenanceBehaviour._drive(self, [], batches, allow_refetch=True)
+        ran = self.last_run
+        self.assertGreater(sum(ran["RAW_N"].values()), 0, "the double served records")
+        self.assertEqual(ran["KEPT_N"].get(subject, 0), 0, "and every one was refused")
+        self.assertTrue(ran["KEPT_N"].get(keeper),
+                        f"{keeper} kept cars and the run recorded none: "
+                        f"{dict(ran['KEPT_N'])}")
+        self.assertTrue(ran["SPENT"].get(subject), "and it billed for them")
+        # Classified through the real function, on the state the run left.
+        was = (dict(T.SPENT), T.RAW_N.copy(), T.KEPT_N.copy())
+        T.SPENT.clear(); T.SPENT.update(ran["SPENT"])
+        T.RAW_N.clear(); T.RAW_N.update(ran["RAW_N"])
+        T.KEPT_N.clear(); T.KEPT_N.update(ran["KEPT_N"])
+        try:
+            row = T.spend_report(T.planned_calls()[0])
+        finally:
+            T.SPENT.clear(); T.SPENT.update(was[0])
+            T.RAW_N.clear(); T.RAW_N.update(was[1])
+            T.KEPT_N.clear(); T.KEPT_N.update(was[2])
+        self.assertIn(subject, row["filtered_targets"],
+                      f"a real run must name it: {row['filtered_targets']}")
+
+    def test_the_three_faults_are_told_apart(self):
+        tid, row = self._row(raw=200, kept=0)
+        self.assertEqual(row["filtered_targets"], [tid],
+                         "billed, answered, kept nothing")
+        self.assertNotIn(tid, row["empty_targets"], "the API did answer")
+        self.assertNotIn(tid, row["silent_targets"], "and it did run")
+        _, row = self._row(raw=0, kept=0)
+        self.assertEqual(row["filtered_targets"], [], "nothing to filter")
+        _, row = self._row(raw=200, kept=7)
+        self.assertEqual(row["filtered_targets"], [], "it kept some")
+
+    def test_the_run_log_says_which_fault_it_is(self):
+        tid, row = self._row(raw=200, kept=0)
+        out = _io.StringIO()
+        with contextlib.redirect_stdout(out):
+            T.report_spend(row, {})
+        said = out.getvalue()
+        self.assertIn(tid, said)
+        self.assertIn("kept NONE of them", said)
+        self.assertIn("fuel", said, "…and names the filters that could do it")
+
+
 class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
     """"BMW siblings run every other day, rival brands every third day", on a
     watchlist where four of the six non-shopped BMW targets are on cadence 3.
@@ -5128,7 +5326,7 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
             head = cfg.get("budget_headroom") or {}
             return (worst > cfg["budget_per_day"] * head.get("day", 0.9),
                     avg * 30.5 > cfg["budget_per_month"] * head.get("month", 0.95))
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         day, month = binds(cfg)
         self.assertTrue(month, "the shipped config is the month-binds case")
         # Isolate the other half on a config a person could really have: a
@@ -5149,7 +5347,7 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         calls a month, so there is nothing to spread and the answer is 1 —
         which no shipped config reaches, so a mutant that started the search at
         2 was invisible."""
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["buyer"]["shopping"] = []
         cfg["watchlist"] = {"kia": cfg["watchlist"]["kia"]}
         built = TestConfig._rebuild(self, cfg)
@@ -5174,7 +5372,7 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         # And the module really imports under a config that reaches one: three
         # shopped models put the comparisons at the fallback, which is where
         # this used to die.
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["buyer"]["shopping"] = ["bmw-i5-edrive40", "bmw-i7-edrive50",
                                     "bmw-ix-xdrive"]
         built = TestConfig._rebuild(self, cfg)
@@ -5192,23 +5390,72 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         H = T.plan_horizon()
         days = [sum(T.calls_for(t) for t in T.TARGETS.values()
                     if T.due_on(t, T.TODAY_ORD + k)) for k in range(H)]
-        biggest = max(T.calls_for(t) for t in T.TARGETS.values() if not t["shopping"])
-        self.assertLessEqual(max(days) - min(days), biggest,
-                             f"the cycle runs {min(days)}-{max(days)} calls a day, "
-                             f"a spread wider than the {biggest} calls of one "
-                             f"comparison target: {days}")
+        # The bound is what the CADENCES leave, not one target's cost. A group
+        # that runs every third day puts its cost on two days of a six-day
+        # cycle, so 26 such groups split 9/9/8 whatever anyone does; the range
+        # that leaves is arithmetic. What no cadence forces is a group being
+        # left in the way of another, and that is what the levelling sweep is
+        # for. A daily group is on every day and moves nothing.
+        import collections as _c
+        by_cadence = _c.defaultdict(int)
+        for t in T.TARGETS.values():
+            if t["cadence"] > 1:
+                key = (t["brand"], t["model_key"], t["cadence"])
+                by_cadence[key] += T.calls_for(t)
+        forced = sum(max(v for k, v in by_cadence.items() if k[2] == c)
+                     for c in {k[2] for k in by_cadence})
+        self.assertLessEqual(max(days) - min(days), forced,
+                             f"the cycle runs {min(days)}-{max(days)} calls a "
+                             f"day, wider than the {forced} its cadences force: {days}")
         self.assertLessEqual(max(days), T.BUDGET * T.HEADROOM_DAY)
+
+    def test_the_levelling_sweep_earns_its_place(self):
+        """First-fit-decreasing alone leaves value on the table, and the sweep
+        that reconsiders it has to be shown to change an answer or it is
+        machinery nobody needs. Measured over 156 placements from 60 configs:
+        it improved 8, the best taking the busiest day from 28 to 26. This
+        plants one of those states rather than trusting the measurement."""
+        # One of the eight, kept as the config that produced it: the busiest
+        # day 28 -> 26 and the range 4 -> 2.
+        cfg = fixture_cfg()
+        cfg["buyer"]["shopping"] = ["audi-q6-etron"]
+        cfg["watchlist"]["mercedes"]["models"]["eqb"]["cadence"] = 8
+        cfg["watchlist"]["audi"]["models"]["q4-etron"]["cadence"] = 12
+        cfg["watchlist"]["hyundai"]["models"]["ioniq9"]["cadence"] = 12
+        for b, m in (("audi", "q6-etron"), ("audi", "q4-etron")):
+            cfg["watchlist"][b]["models"][m]["active"] = True
+        built = TestConfig._rebuild(self, cfg)
+        L = T.cadence_cycle(built)
+        after = [sum(T.calls_for(t) for t in built.values()
+                     if T.due_on(t, T.TODAY_ORD + k)) for k in range(L)]
+        # …and the same placement with the sweep taken out.
+        was = T._level
+        T._level = lambda placed, load, cycle: load
+        try:
+            greedy = TestConfig._rebuild(self, cfg)
+        finally:
+            T._level = was
+        before = [sum(T.calls_for(t) for t in greedy.values()
+                      if T.due_on(t, T.TODAY_ORD + k)) for k in range(L)]
+        self.assertLess(T._score(after), T._score(before),
+                        f"the sweep changed nothing here: greedy {sorted(before)} "
+                        f"vs levelled {sorted(after)}")
 
     def test_a_cheaper_car_to_shop_buys_a_faster_comparison_cadence(self):
         """The point of deriving it. The user edits one list; the schedule for
         everything else re-derives from what that choice costs."""
-        cfg = json.loads(Path("targets.json").read_text())
-        now = next(t["cadence"] for t in T.TARGETS.values() if not t["shopping"])
+        # Both sides built here. Measuring the EV9 against whatever
+        # targets.json happens to say makes the comparison vacuous the day the
+        # file already says EV9 — the precondition then fails with "3 not less
+        # than 3" rather than the test noticing it has nothing to compare.
+        cfg = fixture_cfg()
+        base = TestConfig._rebuild(self, cfg)
+        now = next(t["cadence"] for t in base.values() if not t["shopping"])
         cfg["buyer"]["shopping"] = ["kia-ev9"]
         built = TestConfig._rebuild(self, cfg)
         cheap = next(t["cadence"] for t in built.values() if not t["shopping"])
         shopped_now = sum(T.calls_for(t) / t["cadence"]
-                          for t in T.TARGETS.values() if t["shopping"])
+                          for t in base.values() if t["shopping"])
         shopped_ev9 = sum(T.calls_for(t) / t["cadence"]
                           for t in built.values() if t["shopping"])
         self.assertLess(shopped_ev9, shopped_now, "precondition: the EV9 is cheaper to shop")
@@ -5223,7 +5470,7 @@ class TestTheCadenceProseMatchesTheConfig(unittest.TestCase):
         cadence keeps it. Reproduced before the layer order was split: with it
         applied last, a trim asking for 9 was rebuilt at the derived cadence
         and its typed value did nothing."""
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["watchlist"]["kia"]["models"]["ev9"]["cadence"] = 9
         built = TestConfig._rebuild(self, cfg)
         self.assertEqual(built["kia-ev9"]["cadence"], 9)
@@ -6173,7 +6420,7 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
         self.assertLess(line.index("reach, not arrival"), line.index("under typical"))
 
 
-class TestACertificationIsIssuedBySomeone(unittest.TestCase):
+class TestACertificationIsIssuedBySomeone(UsesFixtureTargets):
     """Manufacturer certification is issued by the manufacturer's own stores,
     so a car flagged certified at a dealership named for another marque is a
     claim to confirm rather than count on. On this record 21 of 46 certified
@@ -6353,7 +6600,7 @@ class TestCutTag(unittest.TestCase):
         self.assertIn("above first seen", above)
 
 
-class TestFetchDaysExport(unittest.TestCase):
+class TestFetchDaysExport(UsesFixtureTargets):
     """The days each target actually fetched, which nothing else can be asked.
 
     The dashboard rebuilds a day row from the cars themselves whenever a filter
@@ -6922,8 +7169,16 @@ class TestConfig(unittest.TestCase):
         three BMW models and no other car could have one."""
         cfg = json.loads(Path("targets.json").read_text())
         named = cfg["buyer"]["shopping"]
-        self.assertEqual(named, ["bmw-i5-edrive40", "bmw-i7-edrive50"],
-                         "the decision is the i5 against the i7")
+        # NOT asserted as a literal. It was ["bmw-i5-edrive40",
+        # "bmw-i7-edrive50"], and it is the one field a person is meant to
+        # change, so pinning it made choosing another car a failure in a test
+        # about the derivation. What has to hold is that every id named
+        # RESOLVES: an id that does not is the silent state where the tool
+        # shops nothing and no surface says so.
+        self.assertTrue(named, "buyer.shopping names the cars being bought")
+        for tid in named:
+            self.assertIn(tid, T.TARGETS,
+                          f"buyer.shopping names {tid!r}, which is no target")
         for tid in named:
             self.assertNotIn(T.CPO_KEY, T.TARGETS[tid]["trim_key"],
                              "shopping names the car, not its certified watch")
@@ -6936,10 +7191,140 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(derived, want,
                          "every shopped model gets a certified watch and no "
                          "unshopped one does")
+        # The resolved list — what the sheet publishes — is every shopped
+        # target in watchlist order, so a car and its own watch sit together.
         self.assertEqual(T.shopping_ids(),
-                         ["bmw-i5-edrive40", "bmw-i5-cpo",
-                          "bmw-i7-edrive50", "bmw-i7-cpo"],
-                         "and the resolved list is what the sheet publishes")
+                         [tid for tid, t in T.TARGETS.items() if t["shopping"]])
+        self.assertEqual(set(T.shopping_ids()) - set(named), derived,
+                         "the resolved list adds the watches and nothing else")
+
+    def test_readme_prices_a_shopped_car_at_what_it_really_costs(self):
+        """README says what adding one costs, because "naming it is all it
+        takes" was true of the config and not of the budget: it read "the whole
+        of what it would take", and a third shopped car makes the run exit 1
+        without fetching anything. Three numbers, all derived."""
+        cfg = fixture_cfg()
+        two = self._rebuild(cfg)
+        per = sum(T.calls_for(t) / t["cadence"] for t in two.values()
+                  if t["shopping"]) / len(cfg["buyer"]["shopping"])
+        head = (T.MONTHLY - T.planned_calls(two)[2] * 30.5) / 30.5
+        cfg["buyer"]["shopping"] = list(cfg["buyer"]["shopping"]) + ["bmw-ix-xdrive"]
+        three = round(T.planned_calls(self._rebuild(cfg))[2] * 30.5)
+        readme = " ".join(Path("README.md").read_text().split())
+        self.assertIn(f"about {per:.0f} calls a day", readme)
+        self.assertIn(f"~{head:.0f} a\n     day of headroom".replace("\n     ", " "), readme)
+        self.assertIn(f"three shopped cars is {three:,} calls a month", readme)
+        self.assertGreater(three, T.MONTHLY, "…and that it does not fit")
+
+    def test_the_rule_tests_do_not_move_with_the_buyers_choice(self):
+        """The property that makes choosing another car survivable, asserted
+        where it can fail on the shipped config.
+
+        Pointing buyer.shopping at a Kia — already on the watchlist, at a plan
+        inside every cap — used to take the suite from green to 39 failures and
+        23 errors. It is twelve now, and every one of the twelve is a doc guard
+        holding a figure this config no longer produces. What fixed the rest is
+        that the fixture owns the buyer, and both halves of that are checked
+        here: FIXTURE_TARGETS must not move when buyer.shopping does, and
+        fixture_cfg() must hand back the fixture's list and not the file's.
+        Both were invisible on the shipped config, because the two agree there.
+        """
+        was = list(T.SHOPPING)
+        try:
+            T.SHOPPING[:] = ["kia-ev9"]
+            again = _fixture_targets()
+            self.assertEqual(sorted(again), sorted(FIXTURE_TARGETS),
+                             "the fixture's targets followed the buyer")
+            self.assertEqual({k for k, v in again.items() if v["shopping"]},
+                             {k for k, v in FIXTURE_TARGETS.items() if v["shopping"]},
+                             "…and so did which of them are shopped")
+        finally:
+            T.SHOPPING[:] = was
+        # …and fixture_cfg() against a targets.json whose buyer really differs,
+        # since on the shipped one the two agree and the assertion cannot fail.
+        import tempfile as _tf
+        here = os.getcwd()
+        with _tf.TemporaryDirectory() as d:
+            other = json.loads(Path("targets.json").read_text())
+            other["buyer"]["shopping"] = ["kia-ev9"]
+            Path(d, "targets.json").write_text(json.dumps(other))
+            try:
+                os.chdir(d)
+                self.assertEqual(fixture_cfg()["buyer"]["shopping"], FIXTURE_SHOPPING,
+                                 "fixture_cfg() handed back the file's buyer")
+            finally:
+                os.chdir(here)
+        self.assertNotEqual(FIXTURE_SHOPPING, ["kia-ev9"], "precondition")
+
+    def test_the_record_accounting_claims_a_watch_the_buyer_stopped_shopping(self):
+        """A derived brand-model-cpo id exists only while its model is shopped,
+        and its rows outlive that. The accounting test built its "known about"
+        set by walking TRIMS, so it could never produce the id: choosing
+        another car reported bmw-i5-cpo's twenty rows as stranded, when the
+        watch returns under the same id the day the model is named again."""
+        rows = [{"target": "bmw-i5-cpo", "snapshot_date": T.TODAY, "vin": "V" * 17}]
+        cfg = fixture_cfg()
+        cfg["buyer"]["shopping"] = ["kia-ev9"]
+        built = self._rebuild(cfg)
+        self.assertNotIn("bmw-i5-cpo", built, "precondition: the watch is gone")
+        claimed = ids_the_watchlist_knows_about(cfg)
+        stray = [r["target"] for r in rows
+                 if r["target"] not in built and r["target"] not in claimed
+                 and r["target"] not in cfg.get("legacy_ids", {})]
+        self.assertEqual(stray, [],
+                         "a watch the buyer stopped shopping is not an orphan")
+
+    def test_a_shopping_id_that_matches_no_target_stops_the_run(self):
+        """Silence here is the worst answer available, because every
+        consequence looks like a working tool. Reproduced before the guard:
+        buyer.shopping = ['bmw-i5'] — a model id where a trim id is needed —
+        gave shopping_ids() == [], a sheet publishing an empty buyer.shopping,
+        and the page rendering "No models are named as the ones you are
+        shopping" over a targets.json naming two, while the plan quietly fell
+        from ~925 calls a month to ~824 because the shopped depth is most of
+        it. Nothing on any surface said a word."""
+        for bad, near in (("bmw-i5", "bmw-i5-edrive40"),
+                          ("kia-ev9-gtline", "kia-ev9"),
+                          ("ford-fiesta", None)):
+            cfg = fixture_cfg()
+            cfg["buyer"]["shopping"] = [bad]
+            with self.assertRaises(SystemExit, msg=bad) as e:
+                self._rebuild(cfg)
+            said = str(e.exception)
+            self.assertIn(repr(bad), said)
+            if near:
+                self.assertIn(near, said, "…and points at the id that exists")
+        # Empty is not a mistake: it is how a person says they have not chosen.
+        cfg = fixture_cfg()
+        cfg["buyer"]["shopping"] = []
+        built = self._rebuild(cfg)
+        self.assertTrue(built)
+        self.assertEqual([t for t in built.values() if t["shopping"]], [])
+
+    def test_the_fuel_a_row_must_have_is_config_not_a_law(self):
+        """"Any car is fair game" was false in the plainest way: normalize()
+        refused every non-battery-EV row with no knob anywhere, so a shopped
+        petrol model fetched its whole plan and kept none of it. `fuel`
+        resolves like every other filter now, and defaults says "electric",
+        which is exactly what this tool has always done."""
+        import copy
+        rec = copy.deepcopy({k: v for k, v in FIXTURES["clean"].items()
+                             if not k.startswith("_")})
+        rec["vehicle"]["fuel"] = "Gasoline"
+        for value, kept in (("electric", False), (T.FUEL_ANY, True), (None, False)):
+            t = dict(target("kia-ev9"))
+            t["fuel"] = value
+            got = T.normalize(rec, t, Counter())
+            self.assertEqual(bool(got), kept, f"fuel={value!r}")
+        self.assertIn("fuel", T.PARAM_KEYS, "it has to resolve, not be read raw")
+        cfg = fixture_cfg()
+        self.assertEqual(cfg["defaults"]["fuel"], "electric",
+                         "the shipped behaviour is unchanged and now visible")
+        cfg["watchlist"]["kia"]["models"]["ev9"]["fuel"] = T.FUEL_ANY
+        built = self._rebuild(cfg)
+        self.assertEqual(built["kia-ev9"]["fuel"], T.FUEL_ANY)
+        self.assertEqual(built["bmw-i5-edrive40"]["fuel"], "electric",
+                         "…and only for the model that asked")
 
     def test_pointing_the_tool_at_another_car_moves_the_spending(self):
         """The defect this replaced, kept as a test because it was invisible.
@@ -6951,7 +7336,7 @@ class TestConfig(unittest.TestCase):
         returned the same three numbers either way. Reproduced by rebuilding
         with that config and reading the targets back, which is what this does.
         """
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["buyer"]["shopping"] = ["kia-ev9"]
         built = self._rebuild(cfg)
         ev9 = built["kia-ev9"]
@@ -6981,7 +7366,7 @@ class TestConfig(unittest.TestCase):
         watchlist was tracking slowly is fetched properly once it is named.
         Reversed, the trim wins and naming a slow comparison car as the one you
         are buying leaves it on its comparison schedule."""
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         # On the TRIM, which is the layer this is about. Setting it on the
         # model does not distinguish the two orders — a mutant that runs the
         # shopped layer before the trim still beats the model, so the first
@@ -7004,7 +7389,7 @@ class TestConfig(unittest.TestCase):
         3 newest went from 18 calls a fetch to 10 the moment the buyer said it
         was the car they were buying. README, targets.json's own note and this
         test's sibling all say it can only add."""
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         tr = cfg["watchlist"]["bmw"]["models"]["i5"]["trims"]["edrive40"]
         tr.update({"depth": "full", "pages": 3, "newest": 3})
         shopped = self._rebuild(cfg)["bmw-i5-edrive40"]
@@ -7016,7 +7401,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual((shopped["pages"], shopped["newest"]), (3, 3))
         # And every parameter the recipe names, over every target it touches:
         # nothing anywhere goes down.
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         for tid, t in self._rebuild(cfg).items():
             if not t["shopping"] or t.get("derived"):
                 continue
@@ -7039,7 +7424,7 @@ class TestConfig(unittest.TestCase):
         Derived configs cannot reach this (one comparison cadence plus the
         shopped ones is lcm(1, 2, c)), so only a hand-typed watchlist meets it,
         and it is told which cadences did it and what to do instead."""
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         for bk, cad in zip(list(cfg["watchlist"])[:6], (7, 11, 13, 17, 19, 23)):
             cfg["watchlist"][bk]["cadence"] = cad
         with self.assertRaises(SystemExit) as e:
@@ -7050,7 +7435,7 @@ class TestConfig(unittest.TestCase):
             self.assertIn(str(cad), said, "…and names the cadences that did it")
         # A long cycle that IS plannable stays plannable: this refuses an
         # unplannable one, not any cadence a person might not expect.
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["watchlist"]["kia"]["cadence"] = 8
         cfg["watchlist"]["audi"]["cadence"] = 9
         built = self._rebuild(cfg)
@@ -7067,21 +7452,21 @@ class TestConfig(unittest.TestCase):
                     {f"ev9-{T.CPO_KEY}": {"label": "Kia EV9 CPO-spec", "model": "EV9"}})),
                 ("trim", lambda c: c["watchlist"]["kia"]["models"]["ev9"].update(
                     {"trims": {T.CPO_KEY: {"label": "hand-written"}}}))):
-            cfg = json.loads(Path("targets.json").read_text())
+            cfg = fixture_cfg()
             plant(cfg)
             with self.assertRaises(SystemExit, msg=where) as e:
                 self._rebuild(cfg)
             self.assertIn(f"kia-ev9-{T.CPO_KEY}", str(e.exception), where)
 
     def test_a_model_can_stand_its_own_certified_watch_down(self):
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["watchlist"]["bmw"]["models"]["i5"]["cpo"]["active"] = False
         built = self._rebuild(cfg)
         self.assertNotIn("bmw-i5-cpo", built)
         self.assertIn("bmw-i7-cpo", built, "and only its own")
 
     def test_the_certified_watch_can_be_switched_off_for_every_car(self):
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["buyer"]["cpo_watch"]["enabled"] = False
         built = self._rebuild(cfg)
         self.assertEqual([tid for tid in built if tid.endswith("-cpo")], [])
@@ -7090,7 +7475,7 @@ class TestConfig(unittest.TestCase):
     def test_a_models_cpo_block_overrides_the_recipe(self):
         """The narrowing is the last layer. Under it, a model could not slow
         or deepen its own watch and the recipe would silently win."""
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         self.assertEqual(cfg["buyer"]["cpo_watch"]["cadence"], 2, "precondition")
         cfg["watchlist"]["bmw"]["models"]["i5"]["cpo"]["cadence"] = 7
         self.assertEqual(self._rebuild(cfg)["bmw-i5-cpo"]["cadence"], 7)
@@ -7099,7 +7484,7 @@ class TestConfig(unittest.TestCase):
         """A hand-written `cpo` trim and the derived watch both claim
         brand-model-cpo. One of the two would win silently — and which one is
         an ordering accident — so the run refuses to start."""
-        cfg = json.loads(Path("targets.json").read_text())
+        cfg = fixture_cfg()
         cfg["watchlist"]["kia"]["models"]["ev9"]["trims"] = {
             "cpo": {"label": "hand-written", "trim_query": "GT-Line"}}
         with self.assertRaises(SystemExit) as e:
@@ -7114,8 +7499,8 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(T.cpo_label(45000), "CPO under 45k mi")
         self.assertEqual(T.cpo_label(12500), "CPO under 12,500 mi")
         self.assertEqual(T.cpo_label(None), "CPO")
-        self.assertEqual(T.TARGETS["bmw-i5-cpo"]["label"],
-                         T.cpo_label(T.TARGETS["bmw-i5-cpo"]["max_miles"]))
+        self.assertEqual(target("bmw-i5-cpo")["label"],
+                         T.cpo_label(target("bmw-i5-cpo")["max_miles"]))
 
     def test_the_i5_watch_does_not_spend_its_window_on_m_cars(self):
         """The i5's narrowing exists to keep the M60 out of the query, not
@@ -7127,7 +7512,7 @@ class TestConfig(unittest.TestCase):
         widening trim_match to "drive" refuses the M60 anyway, and the test
         beside this one passes either way. The query is what has to be pinned.
         """
-        query = T.TARGETS["bmw-i5-cpo"]["trim_query"].lower()
+        query = target("bmw-i5-cpo")["trim_query"].lower()
         self.assertTrue(query, "the i5 narrows its watch")
         for m_trim in ("m60", "m"):
             self.assertNotIn(m_trim, [q.strip() for q in query.split(",")])
@@ -7234,7 +7619,7 @@ class TestConfig(unittest.TestCase):
         everything else and its first certified car ranks 3-26 on the same
         days. Both halves are measured below rather than asserted from prose.
         """
-        watch = T.TARGETS["bmw-i7-cpo"]
+        watch = target("bmw-i7-cpo")
         _, pages = T.sorts_pages(watch)
         window = len(T.sorts_pages(watch)[0]) * pages * T.PER_PAGE
         # The years the QUERY asks for, not the wall clock: read off the
@@ -7246,7 +7631,7 @@ class TestConfig(unittest.TestCase):
                          f"the i7 watch cannot reach a certified i7 with "
                          f"{this_year} in its years: new inventory at single-"
                          f"digit mileage fills the whole {window}-record window")
-        self.assertIn(this_year, [str(y) for y in T.TARGETS["bmw-i5-cpo"]["years"]],
+        self.assertIn(this_year, [str(y) for y in target("bmw-i5-cpo")["years"]],
                       "and the i5 needs no such narrowing — this is the i7's "
                       "own fact, not the watch's")
 
@@ -7375,7 +7760,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(T.first({"a": "", "b": "x"}, ["a", "b"]), "x")
 
 
-class TestDashboardContract(unittest.TestCase):
+class TestDashboardContract(UsesFixtureTargets):
     """What docs/index.html is allowed to assume about docs/data.json.
 
     The dashboard is 3,700 lines that no test in this file has ever run, and
@@ -8191,7 +8576,7 @@ class TestEmailDelivery(unittest.TestCase):
 Exit = __import__("collections").namedtuple("Exit", "code text")
 
 
-class TestGuardAndProvenanceBehaviour(unittest.TestCase):
+class TestGuardAndProvenanceBehaviour(UsesFixtureTargets):
     """These two features drive the real code. The rest of their coverage does
     not, and that is the point of this class.
 
@@ -8229,13 +8614,20 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         for g in ("EXHAUSTED", "FAILED_SCOPES"):
             getattr(T, g).clear()
         for g in ("PRICE_WINDOW", "MILES_WINDOW", "SOURCE_VINS", "SPENT",
-                  "OVERLAP", "TOTALS", "RAW_N"):
+                  "OVERLAP", "TOTALS", "RAW_N", "KEPT_N"):
             getattr(T, g).clear()
         T.CALLS = 0
         T.FAILED_FETCHES = 0
 
         def fake_fetch(source_name, source, sort, page, t):
             seen.append((t["id"], source_name, sort, page))
+            # The double stands in for the TRANSPORT, so it keeps the
+            # transport's ledger: SPENT and CALLS are counted inside fetch()
+            # on purpose (a retry costs twice and only fetch() sees one), and a
+            # double that skipped them left every driven run looking as though
+            # it had spent nothing — which is the gate spend_report() reads.
+            T.SPENT[t["id"]] = T.SPENT.get(t["id"], 0) + 1
+            T.CALLS += 1
             return batches(t, source_name, sort, page)
 
         def fake_write_rows(rows):
@@ -8267,6 +8659,13 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
                                        lambda *a, **k: ((wrote is not None and wrote.append("data/fetch_log.json")), {})[1]),
             unittest.mock.patch.dict(os.environ, env, clear=True),
         ]
+        # The run's own counters are module globals and the double writes two
+        # of them, so they are restored on the way out. Without this a driven
+        # run left T.CALLS at 21 and the next test to rebuild the record got
+        # "21 API calls today" where the committed one says "no calls made" —
+        # the golden master failing on state, not on code.
+        counters = {g: getattr(T, g) for g in ("CALLS", "FAILED_FETCHES")}
+        spent_was = dict(T.SPENT)
         for p_ in patches:
             p_.start()
         try:
@@ -8283,6 +8682,15 @@ class TestGuardAndProvenanceBehaviour(unittest.TestCase):
         finally:
             for p_ in reversed(patches):
                 p_.stop()
+            # What the run recorded, kept for the caller before it is undone —
+            # a test that wants to ask spend_report() what the night looked
+            # like cannot, once these are back to what they were.
+            self.last_run = {"SPENT": dict(T.SPENT), "RAW_N": T.RAW_N.copy(),
+                             "KEPT_N": T.KEPT_N.copy(), "CALLS": T.CALLS}
+            for g, v in counters.items():
+                setattr(T, g, v)
+            T.SPENT.clear()
+            T.SPENT.update(spent_was)
 
     def test_a_night_that_fetched_nothing_says_what_it_wrote(self):
         """The exit message is the last line in the Actions log and the whole
@@ -8792,7 +9200,7 @@ class TestFees(unittest.TestCase):
         self.assertTrue(f["tax_note"].strip(), "the rate needs its explanation shipped beside it")
 
 
-class TestExitStats(unittest.TestCase):
+class TestExitStats(UsesFixtureTargets):
     """Where comparable cars stopped being advertised.
 
     A tool with no transaction feed will never know a sale price. What it does
@@ -8937,7 +9345,7 @@ class TestExitStats(unittest.TestCase):
         two trims that really do open two windows are the shopped ones, where
         the withholding matters most and still holds.
         """
-        light = T.TARGETS["bmw-i5-m60"]
+        light = target("bmw-i5-m60")
         self.assertEqual(light["depth"], "light")
         self.assertEqual(len(light["sorts"]), 2, "config still names two sorts")
         self.assertEqual(T.sorts_pages(light)[0], ["price.asc"], "one is fetched")

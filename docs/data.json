@@ -1,8 +1,8 @@
 {
  "app": "SpicyCar",
- "generated": "2026-09-07",
+ "generated": "2026-09-08",
  "data_through": "2026-09-07",
- "departures_from": "2026-07-09",
+ "departures_from": "2026-07-10",
  "buyer": {
   "id": "chicago",
   "label": "Chicago",
@@ -77,7 +77,7 @@
   "finance": {
    "fallback_apr": 6.9,
    "fallback_checked": "2026-09-01",
-   "stale_days": 6,
+   "stale_days": 7,
    "default_term": 60,
    "terms": [
     36,
@@ -95,7 +95,7 @@
      "expires": "2026-10-31",
      "label": "BMW FS certified 2.99%",
      "active": true,
-     "days_left": 54
+     "days_left": 53
     },
     {
      "model": "bmw/ix",
@@ -105,7 +105,7 @@
      "expires": "2026-10-31",
      "label": "BMW FS certified 2.49%",
      "active": true,
-     "days_left": 54
+     "days_left": 53
     }
    ]
   },
@@ -159,7 +159,7 @@
      "last_asked": "2026-09-07",
      "fetched_today": true,
      "due_today": true,
-     "next_due": "2026-09-07",
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 20000
      },
@@ -15317,7 +15317,7 @@
      "last_asked": "2026-09-07",
      "fetched_today": true,
      "due_today": true,
-     "next_due": "2026-09-07",
+     "next_due": "2026-09-08",
      "params": {
       "min_price": 35000
      },
@@ -37883,7 +37883,7 @@
      "overdue": false,
      "last_asked": "2026-09-07",
      "fetched_today": true,
-     "due_today": false,
+     "due_today": true,
      "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
@@ -40876,7 +40876,7 @@
      "overdue": false,
      "last_asked": "2026-09-06",
      "fetched_today": false,
-     "due_today": false,
+     "due_today": true,
      "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
@@ -42532,8 +42532,8 @@
      "overdue": false,
      "last_asked": "2026-09-05",
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-07",
+     "due_today": false,
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 30000
      },
@@ -47383,7 +47383,7 @@
      "overdue": true,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": false,
+     "due_today": true,
      "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
@@ -49446,8 +49446,8 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-07",
+     "due_today": false,
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 8000
      },
@@ -49686,7 +49686,7 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": false,
+     "due_today": true,
      "next_due": "2026-09-08",
      "params": {
       "min_price": 8000
@@ -49866,8 +49866,8 @@
      "overdue": false,
      "last_asked": null,
      "fetched_today": false,
-     "due_today": true,
-     "next_due": "2026-09-07",
+     "due_today": false,
+     "next_due": "2026-09-13",
      "params": {
       "min_price": 8000
      },

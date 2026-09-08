@@ -74,8 +74,26 @@ Two things are configured, separately:
   its own, because sorting the i7 rows this repo has recorded by mileage puts the first
   certified car at rank 52–80 with that year in and 6–18 with it out, against a 40-record
   window — the i5 needs no such narrowing, at rank 3–26 on the same days. The iX is tracked
-  for comparison only, and naming it in `buyer.shopping` is the whole of what it would take
-  to give it the same treatment.
+  for comparison only. Naming it in `buyer.shopping` is all it takes to give it the same
+  treatment — and it has a price: a shopped car costs `shopping_fetch`'s depth on its fetch
+  days plus a certified watch of its own, about 11 calls a day here, and the plan has ~2 a
+  day of headroom. So swapping a car for another is free and **adding a third needs the
+  budgets raised or `shopping_fetch` cut** — measured: three shopped cars is 1,023 calls a
+  month against a plan of 1,000, and the run refuses to start and says so.
+
+  ### Changing which car you are shopping
+
+  1. Edit `buyer.shopping`. An id that matches no target stops the run and names the near
+     misses, rather than leaving you shopping nothing with every surface looking healthy.
+  2. `AUTODEV_API_KEY=offline python3 tools/rebuild_outputs.py` — the printed call plan is
+     the check: it says today, the worst day of the cycle and the month.
+  3. Run the tests. **Some will be red on purpose:** this README, `docs/how.html` and
+     `targets.json`'s comments quote figures derived from the config — the cadence, the call
+     plan, the counts — and the guards that hold them exist so a config change cannot leave
+     the prose lying. Each failure names the sentence and the number it should say, and they
+     are the only ones that move: swapping the BMW i5 and i7 for a Kia EV9 used to turn 62
+     tests red and now turns none red but those, because the rule-tests build their own buyer
+     rather than reading yours.
 
   **Outside BMW it is one EV per brand, model year 2024 and newer.** The 2024+ rule is one
   line in `defaults` and no target restates it. Every brand selling a 2024-or-newer battery
