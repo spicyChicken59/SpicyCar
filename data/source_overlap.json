@@ -306,5 +306,55 @@
    1,
    18
   ]
+ },
+ "2026-09-09": {
+  "bmw-i4-edrive40": [
+   13,
+   37,
+   3,
+   10
+  ],
+  "bmw-ix-m": [
+   12,
+   37,
+   7,
+   5
+  ],
+  "chevrolet-equinox-ev": [
+   10,
+   20,
+   0,
+   10
+  ],
+  "dodge-charger-daytona": [
+   18,
+   30,
+   8,
+   10
+  ],
+  "hyundai-ioniq9": [
+   20,
+   34,
+   3,
+   17
+  ],
+  "lucid-air-pure": [
+   6,
+   36,
+   3,
+   3
+  ],
+  "porsche-taycan": [
+   20,
+   38,
+   1,
+   19
+  ],
+  "volkswagen-id4": [
+   19,
+   37,
+   0,
+   19
+  ]
  }
 }

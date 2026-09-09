@@ -1,0 +1,1512 @@
+{
+ "days": {
+  "2026-09-09": {
+   "bmw-i4-edrive40": {
+    "bonus": false,
+    "bonus_calls": 2,
+    "calls": 5,
+    "complete": true,
+    "model": "bmw/i4",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 9,
+      "exploration": false,
+      "failed": false,
+      "kept": 13,
+      "new": 3,
+      "page": 1,
+      "raw": 13,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 13
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 3,
+      "exploration": false,
+      "failed": false,
+      "kept": 18,
+      "new": 13,
+      "page": 1,
+      "raw": 20,
+      "rejected": 2,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 521
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 19,
+      "new": 18,
+      "page": 1,
+      "raw": 20,
+      "rejected": 1,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 521
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 18,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 521
+     },
+     {
+      "calls": 1,
+      "census": true,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 2,
+      "new": 0,
+      "page": 1,
+      "raw": 20,
+      "rejected": 18,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 1346
+     }
+    ],
+    "useful": 64,
+    "useful_vins": [
+     "WBY23HD00SFU02897",
+     "WBY23HD00SFU06965",
+     "WBY23HD02SFU32676",
+     "WBY23HD02SFU90772",
+     "WBY23HD03SFU00254",
+     "WBY23HD04SFU46143",
+     "WBY23HD05SFT69721",
+     "WBY23HD05SFU92712",
+     "WBY23HD09SFT87607",
+     "WBY23HD09SFV09382",
+     "WBY23HD0XSFU31257",
+     "WBY63HD00TFX33501",
+     "WBY63HD00TFX34583",
+     "WBY63HD01TFX15511",
+     "WBY63HD02TFW37952",
+     "WBY63HD03TFX39437",
+     "WBY63HD04TFW31120",
+     "WBY63HD05TFX23157",
+     "WBY63HD05TFX39553",
+     "WBY63HD06TFX34376",
+     "WBY63HD07TFX34435",
+     "WBY63HD08TFW15924",
+     "WBY63HD08TFX38493",
+     "WBY63HD09TFX30886",
+     "WBY63HD0XTFX31657",
+     "WBY73AW00RFR51049",
+     "WBY73AW00RFR67364",
+     "WBY73AW00RFS00050",
+     "WBY73AW00RFT36887",
+     "WBY73AW00RFT38526",
+     "WBY73AW01RFR48824",
+     "WBY73AW01RFR49004",
+     "WBY73AW01RFR51366",
+     "WBY73AW01RFS02275",
+     "WBY73AW01RFS54022",
+     "WBY73AW01RFS98960",
+     "WBY73AW02RFR48248",
+     "WBY73AW02RFR51215",
+     "WBY73AW02RFS53798",
+     "WBY73AW02RFS65580",
+     "WBY73AW03RFR48744",
+     "WBY73AW03RFS23211",
+     "WBY73AW03RFS90309",
+     "WBY73AW04RFR81395",
+     "WBY73AW04RFS87371",
+     "WBY73AW05RFR48096",
+     "WBY73AW05RFR55064",
+     "WBY73AW05RFR57834",
+     "WBY73AW05RFR67960",
+     "WBY73AW06RFR48771",
+     "WBY73AW06RFR58197",
+     "WBY73AW06RFT17373",
+     "WBY73AW06RFT36456",
+     "WBY73AW08RFR51252",
+     "WBY73AW08RFR55673",
+     "WBY73AW08RFR62851",
+     "WBY73AW08RFR67371",
+     "WBY73AW08RFS98566",
+     "WBY73AW08RFT21568",
+     "WBY73AW09RFR50496",
+     "WBY73AW09RFR53978",
+     "WBY73AW09RFS79606",
+     "WBY73AW0XRFR70031",
+     "WBY73AW0XRFS55251"
+    ]
+   },
+   "bmw-ix-m": {
+    "bonus": false,
+    "bonus_calls": 2,
+    "calls": 5,
+    "complete": true,
+    "model": "bmw/ix",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 2,
+      "exploration": false,
+      "failed": false,
+      "kept": 12,
+      "new": 0,
+      "page": 1,
+      "raw": 12,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 12
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 1,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 15,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 69
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 13,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 69
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 8,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 69
+     },
+     {
+      "calls": 1,
+      "census": true,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 0,
+      "new": 0,
+      "page": 1,
+      "raw": 20,
+      "rejected": 20,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 1134
+     }
+    ],
+    "useful": 39,
+    "useful_vins": [
+     "WB533CF00RCN34801",
+     "WB533CF00RCP02047",
+     "WB533CF01RCN71632",
+     "WB533CF01RCN78905",
+     "WB533CF01SCR77495",
+     "WB533CF02RCN33181",
+     "WB533CF02RCN62373",
+     "WB533CF02RCR51255",
+     "WB533CF03RCN33027",
+     "WB533CF03RCN59417",
+     "WB533CF03RCR65567",
+     "WB533CF04RCN34574",
+     "WB533CF04RCN34588",
+     "WB533CF04RCN37054",
+     "WB533CF04RCP13648",
+     "WB533CF04SCT00408",
+     "WB533CF05RCN19906",
+     "WB533CF05RCN35460",
+     "WB533CF05RCN44532",
+     "WB533CF05RCN74940",
+     "WB533CF06RCN30624",
+     "WB533CF06RCN33166",
+     "WB533CF06RCN33216",
+     "WB533CF06RCN71870",
+     "WB533CF07RCN36822",
+     "WB533CF07RCN63602",
+     "WB533CF07RCP18410",
+     "WB533CF08RCN39227",
+     "WB533CF08RCN70221",
+     "WB533CF08RCP12213",
+     "WB533CF09RCN18547",
+     "WB533CF09RCN40600",
+     "WB533CF09RCN78876",
+     "WB533CF09RCN92972",
+     "WB533CF09RCP66264",
+     "WB533CF0XRCN10621",
+     "WB533CF0XRCN55414",
+     "WB533CF0XRCN83648",
+     "WB533CF0XRCP06395"
+    ]
+   },
+   "chevrolet-equinox-ev": {
+    "bonus": true,
+    "bonus_calls": 3,
+    "calls": 3,
+    "complete": true,
+    "model": "chevrolet/equinox-ev",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 10,
+      "new": 10,
+      "page": 1,
+      "raw": 20,
+      "rejected": 10,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 835
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 0,
+      "new": 0,
+      "page": 1,
+      "raw": 20,
+      "rejected": 20,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 3398
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 20,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 3398
+     }
+    ],
+    "useful": 30,
+    "useful_vins": [
+     "3GN7DLRP0RS271187",
+     "3GN7DLRP0RS271965",
+     "3GN7DLRP1RS257461",
+     "3GN7DLRP1RS283574",
+     "3GN7DLRP1SS131333",
+     "3GN7DLRP1SS197607",
+     "3GN7DLRP3SS153916",
+     "3GN7DLRP4RS271497",
+     "3GN7DLRP4SS166352",
+     "3GN7DLRP5RS279706",
+     "3GN7DLRP5RS282928",
+     "3GN7DLRP6RS251803",
+     "3GN7DLRP7RS289752",
+     "3GN7DLRP9RS244148",
+     "3GN7DLRPXRS283167",
+     "3GN7DLRPXSS139382",
+     "3GN7DLRR4RS285921",
+     "3GN7DMRP4SS240455",
+     "3GN7DMRP6SS237573",
+     "3GN7DMRP8SS250230",
+     "3GN7DNRP1RS240736",
+     "3GN7DNRP7TS101489",
+     "3GN7DNRP8RS124188",
+     "3GN7DNRR4SS242178",
+     "3GN7DNRR4TS153809",
+     "3GN7DNRR5TS153818",
+     "3GN7DPRR6RS221242",
+     "3GN7DSRP4RS297365",
+     "3GN7DSRP9RS296115",
+     "3GN7DSRR2TS173975"
+    ]
+   },
+   "dodge-charger-daytona": {
+    "bonus": false,
+    "bonus_calls": 0,
+    "calls": 3,
+    "complete": true,
+    "model": "dodge/charger-daytona",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 5,
+      "exploration": false,
+      "failed": false,
+      "kept": 18,
+      "new": 1,
+      "page": 1,
+      "raw": 19,
+      "rejected": 1,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 10
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 17,
+      "new": 1,
+      "page": 1,
+      "raw": 20,
+      "rejected": 3,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 52
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 9,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 52
+     }
+    ],
+    "useful": 16,
+    "useful_vins": [
+     "2C3CDBCK2SR550551",
+     "2C3CDBCK3RR193990",
+     "2C3CDBCK6SR536913",
+     "2C3CDBCK6SR537222",
+     "2C3CDBCK8SR547251",
+     "2C3CDBCK9RR207634",
+     "2C3CDBCK9SR559361",
+     "2C3CDBDK0RR207262",
+     "2C3CDBDK3RR206915",
+     "2C3CDBDK3SR514205",
+     "2C3CDBDK6RR207749",
+     "2C3CDBDK6SR210401",
+     "2C3CDBDK7RR197197",
+     "2C3CDBDK9SR546897",
+     "2C3CDBDKXRR206927",
+     "2C3CDBDKXRR207480"
+    ]
+   },
+   "hyundai-ioniq9": {
+    "bonus": false,
+    "bonus_calls": 2,
+    "calls": 5,
+    "complete": true,
+    "model": "hyundai/ioniq9",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 7,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 4,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 51
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 7,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 9,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 406
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 14,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 406
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 11,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 406
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 1,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 18,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 51
+     }
+    ],
+    "useful": 71,
+    "useful_vins": [
+     "7YAMS5S11TY003325",
+     "7YAMS5S12TY003124",
+     "7YAMS5S12TY004659",
+     "7YAMS5S13TY007277",
+     "7YAMS5S14TY005506",
+     "7YAMS5S16TY007998",
+     "7YAMS5S17TY012126",
+     "7YAMS5S19TY001659",
+     "7YAMS5S19TY003007",
+     "7YAMS5S19TY011818",
+     "7YAMS5S1XTY011956",
+     "7YAMS5S1XTY012315",
+     "7YAMTFS30TY001876",
+     "7YAMTFS30TY008889",
+     "7YAMTFS31TY004012",
+     "7YAMTFS31TY012353",
+     "7YAMTFS32TY004827",
+     "7YAMTFS32TY005671",
+     "7YAMTFS32TY007520",
+     "7YAMTFS33TY003606",
+     "7YAMTFS33TY010586",
+     "7YAMTFS34TY002741",
+     "7YAMTFS34TY007552",
+     "7YAMTFS34TY007938",
+     "7YAMTFS34TY009463",
+     "7YAMTFS34TY010290",
+     "7YAMTFS35TY004854",
+     "7YAMTFS35TY007172",
+     "7YAMTFS35TY008189",
+     "7YAMTFS36TY002188",
+     "7YAMTFS36TY006113",
+     "7YAMTFS36TY006967",
+     "7YAMTFS36TY009027",
+     "7YAMTFS36TY011280",
+     "7YAMTFS37TY009814",
+     "7YAMTFS37TY010851",
+     "7YAMTFS37TY011112",
+     "7YAMTFS38TY008199",
+     "7YAMTFS38TY010406",
+     "7YAMTFS39TY000709",
+     "7YAMTFS39TY008499",
+     "7YAMTFS39TY009488",
+     "7YAMTFS3XTY009757",
+     "7YAMTFS3XTY011816",
+     "7YAMTFS3XTY012349",
+     "7YAMUFS30TY006394",
+     "7YAMUFS30TY012289",
+     "7YAMUFS31TY000345",
+     "7YAMUFS31TY004945",
+     "7YAMUFS32TY005618",
+     "7YAMUFS32TY008809",
+     "7YAMUFS32TY012021",
+     "7YAMUFS33TY009452",
+     "7YAMUFS35TY008299",
+     "7YAMUFS36TY007999",
+     "7YAMUFS36TY008960",
+     "7YAMUFS36TY011874",
+     "7YAMUFS38TY000648",
+     "7YAMUFS38TY005834",
+     "7YAMUFS39TY001033",
+     "7YAMUFS39TY009309",
+     "7YAMWFS55TY004281",
+     "7YAMWFS56TY010686",
+     "7YAMWFS58TY011046",
+     "7YAMYFS50TY004571",
+     "7YAMYFS51TY001629",
+     "7YAMYFS53TY000630",
+     "7YAMYFS55TY000807",
+     "7YAMYFS56TY003697",
+     "7YAMYFS58TY009601",
+     "7YAMYFS59TY002737"
+    ]
+   },
+   "lucid-air-pure": {
+    "bonus": false,
+    "bonus_calls": 2,
+    "calls": 5,
+    "complete": true,
+    "model": "lucid/air",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 6,
+      "new": 1,
+      "page": 1,
+      "raw": 6,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 6
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 4,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 2,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 144
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 1,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 15,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 144
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 18,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 144
+     },
+     {
+      "calls": 1,
+      "census": true,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 18,
+      "new": 0,
+      "page": 1,
+      "raw": 20,
+      "rejected": 2,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 400
+     }
+    ],
+    "useful": 41,
+    "useful_vins": [
+     "50EA1PGA0RA002665",
+     "50EA1PGA0RA009597",
+     "50EA1PGA1RA004943",
+     "50EA1PGA1SA009694",
+     "50EA1PGA2RA004529",
+     "50EA1PGA2RA005406",
+     "50EA1PGA2RA006121",
+     "50EA1PGA2SA001555",
+     "50EA1PGA3RA004281",
+     "50EA1PGA3RA004314",
+     "50EA1PGA3RA007262",
+     "50EA1PGA3RA008508",
+     "50EA1PGA4RA002085",
+     "50EA1PGA4RA002670",
+     "50EA1PGA4RA003754",
+     "50EA1PGA4RA007920",
+     "50EA1PGA5RA001303",
+     "50EA1PGA5RA003911",
+     "50EA1PGA5RA007411",
+     "50EA1PGA5RA009773",
+     "50EA1PGA5SA001890",
+     "50EA1PGA6RA002332",
+     "50EA1PGA6RA003206",
+     "50EA1PGA6RA006364",
+     "50EA1PGA6RA009233",
+     "50EA1PGA7RA001321",
+     "50EA1PGA7RA003604",
+     "50EA1PGA7RA004610",
+     "50EA1PGA7RA007832",
+     "50EA1PGA7RA008351",
+     "50EA1PGA7SA003527",
+     "50EA1PGA7TA023956",
+     "50EA1PGA8RA001389",
+     "50EA1PGA8RA004888",
+     "50EA1PGA8RA008682",
+     "50EA1PGA9RA002518",
+     "50EA1PGA9RA003460",
+     "50EA1PGAXRA003807",
+     "50EA1PGAXRA006674",
+     "50EA1PGAXRA008022",
+     "50EA1PGAXRA008585"
+    ]
+   },
+   "porsche-taycan": {
+    "bonus": false,
+    "bonus_calls": 1,
+    "calls": 4,
+    "complete": true,
+    "model": "porsche/taycan",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 3,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 1,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 38
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 2,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 1,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 412
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 17,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 412
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 17,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 412
+     }
+    ],
+    "useful": 41,
+    "useful_vins": [
+     "WP0AA2Y10SSA08667",
+     "WP0AA2Y10SSA11987",
+     "WP0AA2Y11RSA11927",
+     "WP0AA2Y11RSA12477",
+     "WP0AA2Y11RSA12687",
+     "WP0AA2Y11RSA12768",
+     "WP0AA2Y12RSA11466",
+     "WP0AA2Y12RSA12343",
+     "WP0AA2Y12RSA12424",
+     "WP0AA2Y13RSA10925",
+     "WP0AA2Y13RSA11461",
+     "WP0AA2Y13RSA12223",
+     "WP0AA2Y13RSA12240",
+     "WP0AA2Y13RSA12660",
+     "WP0AA2Y14RSA11596",
+     "WP0AA2Y14TSA11072",
+     "WP0AA2Y15RSA10411",
+     "WP0AA2Y15RSA10621",
+     "WP0AA2Y15TSA10237",
+     "WP0AA2Y16SSA09225",
+     "WP0AA2Y18RSA10922",
+     "WP0AA2Y18SSA09131",
+     "WP0AA2Y19RSA10461",
+     "WP0AA2Y19RSA12890",
+     "WP0AA2Y19RSA13490",
+     "WP0AA2Y19SSA11826",
+     "WP0AA2Y19TSA10693",
+     "WP0AA2Y1XRSA12395",
+     "WP0AA2Y1XRSA13157",
+     "WP0AB2Y10SSA42122",
+     "WP0AB2Y14RSA35068",
+     "WP0AB2Y15TSA28010",
+     "WP0AB2Y18SSA40182",
+     "WP0AB2Y19TSA28687",
+     "WP0AB2Y1XSSA40135",
+     "WP0AE2Y10TSA43019",
+     "WP0BA2Y15RSA60231",
+     "WP0BB2Y18TSA55125",
+     "WP0CD2Y10RSA84254",
+     "WP0CD2Y11RSA84277",
+     "WP0CD2Y18RSA84132"
+    ]
+   },
+   "volkswagen-id4": {
+    "bonus": false,
+    "bonus_calls": 2,
+    "calls": 5,
+    "complete": true,
+    "model": "volkswagen/id4",
+    "queries": [
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 3,
+      "exploration": false,
+      "failed": false,
+      "kept": 19,
+      "new": 1,
+      "page": 1,
+      "raw": 20,
+      "rejected": 1,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 118
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 4,
+      "exploration": false,
+      "failed": false,
+      "kept": 17,
+      "new": 1,
+      "page": 1,
+      "raw": 20,
+      "rejected": 3,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 1230
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": false,
+      "failed": false,
+      "kept": 20,
+      "new": 20,
+      "page": 1,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "createdAt.desc",
+      "source": "National",
+      "total": 1230
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 16,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "National",
+      "total": 1230
+     },
+     {
+      "calls": 1,
+      "census": false,
+      "changed": 0,
+      "exploration": true,
+      "failed": false,
+      "kept": 20,
+      "new": 20,
+      "page": 2,
+      "raw": 20,
+      "rejected": 0,
+      "sort": "price.asc",
+      "source": "States",
+      "total": 118
+     }
+    ],
+    "useful": 65,
+    "useful_vins": [
+     "1V25MPE81RC001962",
+     "1V25MPE82RC001730",
+     "1V25MPE82RC005762",
+     "1V25MPE84RC011868",
+     "1V25MPE87RC014439",
+     "1V25MPE89RC002146",
+     "1V25MPE8XRC010109",
+     "1V2BMPE80RC005486",
+     "1V2BMPE80RC008081",
+     "1V2BMPE80RC015385",
+     "1V2BMPE80RC019632",
+     "1V2BMPE81RC013340",
+     "1V2BMPE82RC005909",
+     "1V2BMPE82RC016828",
+     "1V2BMPE83RC006860",
+     "1V2BMPE83RC012710",
+     "1V2BMPE83RC015252",
+     "1V2BMPE84RC015762",
+     "1V2BMPE84RC021268",
+     "1V2BMPE85RC011896",
+     "1V2BMPE86RC009297",
+     "1V2BMPE86RC015553",
+     "1V2BMPE87RC004979",
+     "1V2BMPE87RC019885",
+     "1V2BMPE88RC005820",
+     "1V2BMPE88RC006904",
+     "1V2BMPE88RC007177",
+     "1V2BMPE88RC008975",
+     "1V2BMPE89RC006071",
+     "1V2BMPE89RC008998",
+     "1V2BMPE89RC012503",
+     "1V2BMPE8XRC008976",
+     "1V2CRPE81RC019046",
+     "1V2CRPE82SC011477",
+     "1V2CRPE86SC010977",
+     "1V2CRPE87SC005917",
+     "1V2DSPE80RC022626",
+     "1V2DSPE80SC016797",
+     "1V2DSPE83SC017796",
+     "1V2DSPE84SC018424",
+     "1V2DSPE84SC018441",
+     "1V2DSPE85SC003107",
+     "1V2DSPE87SC018255",
+     "1V2DSPE89SC017043",
+     "1V2DSPE8XRC009799",
+     "1V2DSPE8XSC018458",
+     "1V2JSPE83TC002073",
+     "1V2VRPE80SC017190",
+     "1V2VRPE82SC011651",
+     "1V2VRPE83SC005051",
+     "1V2VRPE84SC003020",
+     "1V2VRPE85SC017217",
+     "1V2VRPE88SC014201",
+     "1V2VRPE89RC002763",
+     "1V2WSPE80RC011151",
+     "1V2WSPE80RC023350",
+     "1V2WSPE80SC018378",
+     "1V2WSPE81RC024684",
+     "1V2WSPE81SC010855",
+     "1V2WSPE83RC000564",
+     "1V2WSPE83RC017316",
+     "1V2WSPE83RC017896",
+     "1V2WSPE85RC016992",
+     "1V2WSPE89RC001010",
+     "1V2WSPE89RC008720"
+    ]
+   }
+  }
+ },
+ "exploration": {
+  "bmw-i4-edrive40|National": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "BMW",
+    "model": "i4",
+    "region": null,
+    "sort": "price.asc",
+    "source": "National",
+    "trim": "eDrive40",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "bmw-ix-m|National": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "BMW",
+    "model": "iX",
+    "region": null,
+    "sort": "price.asc",
+    "source": "National",
+    "trim": "M60,M70",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "hyundai-ioniq9|National": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "Hyundai",
+    "model": "Ioniq 9,IONIQ 9",
+    "region": null,
+    "sort": "price.asc",
+    "source": "National",
+    "trim": "",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "hyundai-ioniq9|States": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "Hyundai",
+    "model": "Ioniq 9,IONIQ 9",
+    "region": {
+     "retailListing.state": "IL,OH,IN,WI,MI,IA,MO,KY"
+    },
+    "sort": "price.asc",
+    "source": "States",
+    "trim": "",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "lucid-air-pure|National": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "Lucid",
+    "model": "Air",
+    "region": null,
+    "sort": "price.asc",
+    "source": "National",
+    "trim": "Pure",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "porsche-taycan|National": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "Porsche",
+    "model": "Taycan",
+    "region": null,
+    "sort": "price.asc",
+    "source": "National",
+    "trim": "",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "volkswagen-id4|National": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "Volkswagen",
+    "model": "ID.4,ID4,ID 4",
+    "region": null,
+    "sort": "price.asc",
+    "source": "National",
+    "trim": "",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "volkswagen-id4|States": {
+   "cursor": null,
+   "last_attempt": "2026-09-09",
+   "last_success": "2026-09-09",
+   "next_page": 3,
+   "query": {
+    "make": "Volkswagen",
+    "model": "ID.4,ID4,ID 4",
+    "region": {
+     "retailListing.state": "IL,OH,IN,WI,MI,IA,MO,KY"
+    },
+    "sort": "price.asc",
+    "source": "States",
+    "trim": "",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  }
+ },
+ "markets": {
+  "bmw/i4": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "BMW",
+    "model": "i4",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 1346
+  },
+  "bmw/ix": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "BMW",
+    "model": "iX",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 1134
+  },
+  "chevrolet/equinox-ev": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "Chevrolet",
+    "model": "Equinox EV",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 3398
+  },
+  "dodge/charger-daytona": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "Dodge",
+    "model": "Charger Daytona",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 52
+  },
+  "hyundai/ioniq9": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "Hyundai",
+    "model": "Ioniq 9,IONIQ 9",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 406
+  },
+  "lucid/air": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "Lucid",
+    "model": "Air",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 400
+  },
+  "porsche/taycan": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "Porsche",
+    "model": "Taycan",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 412
+  },
+  "volkswagen/id4": {
+   "as_of": "2026-09-09",
+   "query": {
+    "make": "Volkswagen",
+    "model": "ID.4,ID4,ID 4",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "total": 1230
+  }
+ },
+ "weights": {
+  "epoch": "2026-09-07",
+  "queries": {
+   "acura/zdx": {
+    "make": "Acura",
+    "model": "ZDX",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "audi/a6-etron": {
+    "make": "Audi",
+    "model": "A6 e-tron,A6 E-Tron,e-tron A6",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "bmw/i4": {
+    "make": "BMW",
+    "model": "i4",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "bmw/i5": {
+    "make": "BMW",
+    "model": "i5",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "bmw/i7": {
+    "make": "BMW",
+    "model": "i7",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "bmw/ix": {
+    "make": "BMW",
+    "model": "iX",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "cadillac/lyriq": {
+    "make": "Cadillac",
+    "model": "LYRIQ,Lyriq",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "chevrolet/equinox-ev": {
+    "make": "Chevrolet",
+    "model": "Equinox EV",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "dodge/charger-daytona": {
+    "make": "Dodge",
+    "model": "Charger Daytona",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "ford/mustang-mach-e": {
+    "make": "Ford",
+    "model": "Mustang Mach-E,Mach-E,Mustang Mach E",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "honda/prologue": {
+    "make": "Honda",
+    "model": "Prologue",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "hyundai/ioniq9": {
+    "make": "Hyundai",
+    "model": "Ioniq 9,IONIQ 9",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "kia/ev9": {
+    "make": "Kia",
+    "model": "EV9",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "lexus/rz": {
+    "make": "Lexus",
+    "model": "RZ,RZ 300e,RZ 450e",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "lucid/air": {
+    "make": "Lucid",
+    "model": "Air",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "mercedes/eqb": {
+    "make": "Mercedes-Benz",
+    "model": "EQB,EQB 250+,EQB 300,EQB 350",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "nissan/ariya": {
+    "make": "Nissan",
+    "model": "Ariya,ARIYA",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "porsche/taycan": {
+    "make": "Porsche",
+    "model": "Taycan",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "rivian/r1s": {
+    "make": "Rivian",
+    "model": "R1S",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "toyota/bz4x": {
+    "make": "Toyota",
+    "model": "bZ4X,bZ,BZ4X",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   },
+   "volkswagen/id4": {
+    "make": "Volkswagen",
+    "model": "ID.4,ID4,ID 4",
+    "years": [
+     "2024",
+     "2025",
+     "2026",
+     "2027"
+    ]
+   }
+  },
+  "values": {
+   "acura/zdx": 1.0,
+   "audi/a6-etron": 1.0,
+   "bmw/i4": 1.3199999999999998,
+   "bmw/i5": 1.0,
+   "bmw/i7": 1.0,
+   "bmw/ix": 1.02,
+   "cadillac/lyriq": 1.0,
+   "chevrolet/equinox-ev": 1.0,
+   "dodge/charger-daytona": 0.2567275724474637,
+   "ford/mustang-mach-e": 1.0,
+   "honda/prologue": 1.0,
+   "hyundai/ioniq9": 1.2155174373849176,
+   "kia/ev9": 1.0,
+   "lexus/rz": 1.0,
+   "lucid/air": 0.86,
+   "mercedes/eqb": 1.0,
+   "nissan/ariya": 1.0,
+   "porsche/taycan": 0.8832214872833554,
+   "rivian/r1s": 1.0,
+   "toyota/bz4x": 1.0,
+   "volkswagen/id4": 1.699483597678279
+  }
+ }
+}
