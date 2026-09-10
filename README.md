@@ -407,7 +407,7 @@ What it measures today, on the committed record:
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 21 | 1,100 | 193 KB | 77% |
+| as committed | 21 | 1,414 | 227 KB | 91% |
 | every target fetching | 20 | 847 | 161 KB | 64% |
 | …three fetches deep on each | 20 | 847 | 171 KB | 69% |
 | …seven fetches deep on each | 20 | 847 | 186 KB | 75% |
