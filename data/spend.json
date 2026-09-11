@@ -165,5 +165,19 @@
   "silent_targets": [],
   "targets_due": 9,
   "unrun": 0
+ },
+ "2026-09-11": {
+  "actual": 35,
+  "banked": 0,
+  "empty_targets": [],
+  "exhausted": 2,
+  "failed": 0,
+  "filtered_targets": [],
+  "off_plan": {},
+  "planned": 35,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 9,
+  "unrun": 0
  }
 }
