@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SpicyChicken Design System — sc.css  v2.12.0
+   SpicyChicken Design System — sc.css  v2.13.0
    SpicyChicken · github.com/spicyChicken59
 
    One file, no build step. Drop it in (or link it) and every page shares the
@@ -1609,7 +1609,60 @@ html[data-sc-motion-paused="true"] .sc-disclosure[open] > .sc-disclosure__body {
 .sc-pick__more { align-self: flex-start; }
 
 /* --------------------------------------------------------------------------
-   4g. FIGURE BASIS — how a printed number was arrived at
+   4g. THE RECORD COMPARISON — where two columns are not enough
+   A comparison whose columns are RECORDS rather than criteria already has
+   .sc-signal-matrix--fit, which gets the identity column and two record
+   columns onto a 390px screen. Two consumers then hit the same two walls
+   independently and answered them the same way in their own stylesheets, so
+   the answers come here.
+
+   FIRST: which rows actually differ. A comparison of four saved records prints
+   every measure at equal weight, and the reader's question is narrower than
+   that — where do these differ? [data-differs="true"] on a row marks it. It is
+   a DIFFERENCE and never a winner: the mark is on the row's own label, not on
+   a cell, so nothing about it says which record is better. A page that folds
+   the identical rows away must say so and keep them readable somewhere; the
+   identity, the cost basis and any statement of uncertainty are never folded.
+
+   SECOND: a screen too narrow even for two columns. Shrinking the type further
+   is not an answer, and neither is a horizontal scroller that pushes one
+   record's identity off the edge. .sc-compare-pair turns the matrix on its
+   side: both records named at the top where they STAY (sticky, so the reader
+   always knows whose number they are reading), one measure per row, and the
+   records' values side by side under it. Two at a time is the shape, and where
+   the comparison holds more, the heads carry the control that chooses which
+   two — a selection, never a silent truncation.
+   -------------------------------------------------------------------------- */
+.sc-signal-matrix tr[data-differs="true"] th[scope="row"] { box-shadow: inset 2px 0 0 var(--sc-accent); padding-left: 10px; color: var(--sc-heading); }
+.sc-compare-pair { display: block; }
+/* The identities stay on screen: a value read against the wrong record is
+   worse than a value not read at all. */
+.sc-compare-pair__heads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s2);
+  position: sticky; top: 0; z-index: 2; padding: var(--sc-s2) 0; background: var(--sc-surface);
+  border-bottom: 1px solid var(--sc-border); }
+.sc-compare-pair__heads:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+.sc-compare-pair__head { min-width: 0; }
+.sc-compare-pair__head > .sc-eyebrow { margin: 0 0 4px; }
+.sc-compare-pair__head > :is(select, .sc-select) { width: 100%; }
+.sc-compare-pair__rows { margin: var(--sc-s2) 0 0; }
+/* The measure's own row: its name, and — when a page marks them — whether the
+   records agree on it. A dt, so the pair below is its definition. */
+.sc-compare-pair__measure { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sc-s2);
+  margin: var(--sc-s3) 0 5px; padding-top: var(--sc-s2); border-top: 1px solid var(--sc-border);
+  color: var(--sc-text-2); font: 500 var(--sc-text-xs)/1.6 var(--sc-font-mono); }
+.sc-compare-pair__rows > dt:first-child { border-top: 0; margin-top: 4px; padding-top: 0; }
+.sc-compare-pair__rows > dt[data-differs="true"] { box-shadow: inset 2px 0 0 var(--sc-accent); padding-left: 10px; color: var(--sc-heading); }
+.sc-compare-pair__values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-s2); margin: 0; }
+.sc-compare-pair__values:has(> :only-child) { grid-template-columns: minmax(0, 1fr); }
+.sc-compare-pair__value { min-width: 0; padding: 8px 10px; border: 1px solid var(--sc-border);
+  border-radius: var(--sc-r-sm); background: var(--sc-raised); overflow-wrap: anywhere; }
+/* Same word the matrix uses for the same fact, so a page does not need two. */
+.sc-compare-pair__value.is-best { border-color: var(--sc-good); }
+.sc-compare-pair__value > .sc-figure { display: block; font-weight: 700; color: var(--sc-heading); }
+.sc-compare-pair__value > .sc-note { display: block; }
+
+/* --------------------------------------------------------------------------
+   4h. FIGURE BASIS — how a printed number was arrived at
    A page prints three kinds of number and, until 2.12, one ink for all three:
    a figure READ from the record, a figure DERIVED from stated assumptions,
    and one the source never supplied. Recorded is the default and wears no

@@ -67,7 +67,10 @@
     function update() {
       const models = api.models(), current = api.scope(), saved = models.filter((m) => m.shopping), view = api.currentView();
       title.textContent = current.length === 1 ? models.find((m) => m.key === current[0])?.label || 'Find your next EV.' : 'Find your next EV.';
-      subtitle.textContent = api.count() + ' matching cars · ' + current.length + ' model' + (current.length === 1 ? '' : 's') + ' · data through ' + api.through();
+      // The masthead carries "data through <day>" at every width; saying it
+      // again here cost a whole line above the first car on a phone.
+      subtitle.textContent = api.count() + ' matching cars · ' + current.length + ' model' + (current.length === 1 ? '' : 's')
+        + (window.matchMedia('(max-width: 720px)').matches ? '' : ' · data through ' + api.through());
       choose.textContent = 'Choose cars'; all.textContent = 'All ' + models.length + ' models'; mine.textContent = 'My choices' + (saved.length ? ' · ' + saved.length : ''); mine.disabled = !saved.length;
       all.setAttribute('aria-pressed', String(current.length === models.length));
       mine.setAttribute('aria-pressed', String(saved.length > 0 && current.length === saved.length && saved.every((m) => current.includes(m.key))));

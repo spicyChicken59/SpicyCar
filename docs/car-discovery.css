@@ -147,3 +147,84 @@ html[data-theme="dark"] .market-studio .leaflet-tile-pane { filter: invert(.9) h
   .market-studio .car-place-heading h3 { font-size: 22px; }
   .market-studio .car-map-gesture { padding-top: 10px; }
 }
+
+/* ---------------------------------------------------------------------------
+   Three views, one set of cars. The cards, the map and the price-against-miles
+   plot are the same visible candidates read three ways; only one evidence view
+   is drawn at a time, and on a phone only one column is.
+   --------------------------------------------------------------------------- */
+.market-studio .car-panel-switch { flex: 0 0 auto; margin: 0; gap: 4px; }
+.market-studio .car-panel-switch .sc-field__label { margin: 0; }
+.market-studio .car-panel-switch .sc-tabs { gap: 4px; }
+.market-studio .car-place-panel[data-panel="chart"] .car-place-map,
+.market-studio .car-place-panel[data-panel="chart"] .car-area-button,
+.market-studio .car-place-panel[data-panel="chart"] .car-map-gesture,
+.market-studio .car-place-panel[data-panel="chart"] .car-map-legend,
+.market-studio .car-place-panel[data-panel="chart"] .car-map-status,
+.market-studio .car-place-panel[data-panel="chart"] .car-map-foot,
+.market-studio .car-place-panel[data-panel="chart"] .car-move-map,
+.market-studio .car-place-panel[data-panel="chart"] .car-place-heading .car-text-button { display: none; }
+.market-studio .car-place-panel:not([data-panel="chart"]) .car-place-plot { display: none; }
+.market-studio .car-place-plot { padding: 14px 16px 0; }
+.market-studio .car-plot-legend { margin: 0 0 8px; }
+.market-studio .car-plot-host { min-height: 340px; }
+.market-studio .car-plot-host svg { max-width: 100%; height: auto; }
+.market-studio .car-plot-host .sc-dot.is-selected { stroke: var(--sc-brand); stroke-width: 2.5; }
+.market-studio .car-plot-halo { fill: none; stroke: var(--sc-brand); stroke-width: 2; opacity: .85; }
+
+/* What a view cannot draw, said in the view, and reachable from it. */
+.market-studio .car-place-missing-wrap { padding: 0 16px; }
+.market-studio .car-place-missing { margin: 0; font: 400 12px/1.6 var(--sc-font-body); color: var(--sc-text-2); }
+.market-studio .car-missing-reach { min-height: 36px; padding: 4px 0; }
+.market-studio .car-missing-reach[hidden] { display: none; }
+
+/* The car the reader chose, when this search does not hold it. */
+.market-studio .car-outside { margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--sc-border-strong);
+  border-left: 3px solid var(--sc-accent); border-radius: var(--sc-r-md); background: var(--sc-raised); }
+.market-studio .car-outside[hidden] { display: none; }
+.market-studio .car-outside__say { margin: 0; font: 400 14px/1.55 var(--sc-font-body); color: var(--sc-text); }
+.market-studio .car-outside__acts { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+@media (max-width: 720px) {
+  .market-studio .car-panel-switch { display: none; }
+  .market-studio:not([data-workspace="report"]) .car-discovery-layout[data-display="chart"] .car-place-results { display: none; }
+  .market-studio .car-place-plot { padding: 12px 12px 0; }
+  .market-studio .car-plot-host { min-height: 300px; }
+}
+
+/* ---------------------------------------------------------------------------
+   The card: identity, price, evidence, action — in that order, with one next
+   action and the rest quiet. Every action the card had, it still has.
+   --------------------------------------------------------------------------- */
+/* Beside the body the photo fills its column (one column width, one crop per
+   card); stacked above it, it keeps a landscape frame rather than a slab. A
+   top-aligned 4:3 was tried and left 222px of empty column under every card. */
+.market-studio .car-place-photo { align-self: stretch; min-height: 150px; }
+.market-studio .car-photo-placeholder { display: grid; place-items: center; gap: 2px; width: 100%; height: 100%;
+  border-right: 1px solid var(--sc-border); font: 600 11px/1.4 var(--sc-font-mono); letter-spacing: .3px;
+  text-transform: lowercase; color: var(--sc-text-2); background: var(--sc-raised); }
+.market-studio .car-place-location { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.market-studio .car-saved-label, .market-studio .car-here-label { padding: 1px 7px; border-radius: var(--sc-r-pill);
+  font: 500 11px/1.5 var(--sc-font-mono); letter-spacing: .04em; }
+.market-studio .car-saved-label { background: var(--sc-brand-fill); color: var(--sc-brand); }
+.market-studio .car-here-label { background: var(--sc-accent-fill, var(--sc-raised)); color: var(--sc-accent);
+  border: 1px solid var(--sc-accent); }
+.market-studio .car-fact-missing { color: var(--sc-text-3); font-style: italic; }
+.market-studio .car-place-actions { display: block; gap: 0; margin-top: 12px; padding-top: 10px; }
+.market-studio .car-place-actions__main { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+.market-studio .car-place-actions__main > * { flex: 0 0 auto; }
+.market-studio .car-place-actions__more { display: flex; align-items: center; gap: 2px 16px; flex-wrap: wrap;
+  margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--sc-border); }
+.market-studio .car-place-actions__more .car-text-button, .market-studio .car-place-actions__more a {
+  min-height: 36px; font-size: 13px; font-weight: 500; }
+.market-studio .car-place-actions > :first-child { font-weight: inherit; }
+@media (max-width: 1100px) and (min-width: 721px) {
+  .market-studio .car-place-photo { aspect-ratio: 16 / 9; height: auto; min-height: 0; }
+}
+@media (max-width: 720px) {
+  .market-studio .car-place-photo { aspect-ratio: 16 / 9; height: auto; min-height: 0; }
+  /* A card action is pressed with a thumb here: the 28px small button is a
+     desktop size, and the 44px floor is the one the rest of this page keeps. */
+  .market-studio .car-place-actions__main > :is(.sc-btn, button, a) { flex: 1 1 auto; min-height: 44px; justify-content: center; }
+  .market-studio .car-place-actions__more :is(.car-text-button, a) { min-height: 44px; }
+}

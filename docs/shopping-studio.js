@@ -138,6 +138,12 @@
       const facts=el('div','studio-facts'); for(const [name,value] of [['Mileage',c.milesLabel],['Dealer',c.dealer],['VIN',c.vin],['Condition',c.flags || 'No condition details reported'],['First tracked',c.firstSeen || 'Unreported'],['Record through',c.through]]) facts.append(stat(name,value,null,basisOf(value))); content.append(facts);
       content.append(history(c),notesField(c));
     }
+    // What the RECORD says has happened to a saved car since the reader last
+    // saw new data — never what this visit did. api.change is the dashboard's
+    // own detection over the same `spicycar.seen` day the front page reads, so
+    // a reload changes nothing here and a rebuilt site is not a new observation.
+    function changeOf(c) { return (!c.missing && api.change) ? api.change(c.vin) : null; }
+    const CHANGE_WORD = { cut: 'asking price cut', up: 'asking price up', left: 'no longer being seen', held: 'still listed' };
     function drawGarage() {
       title.textContent='Your garage';back.hidden=true;
       const cars=records(),active=cars.filter(c=>['short','called'].includes(c.status));
@@ -145,8 +151,72 @@
       const brief=button('Build dealer brief','studio-button studio-button-primary',()=>showBrief(records().filter(c=>['short','called'].includes(c.status))));brief.disabled=!active.length;tools.append(brief);content.append(tools);
       content.append(el('p','studio-muted','Statuses and notes are saved on this device. Your brief includes your notes; review it before sharing.'));
       if (!cars.length) {const empty=el('div','studio-empty');empty.append(el('h3','','Room for your next car.'),el('p','','Save a car from the results, or add a note in Quick look.'));content.append(empty);return;}
+      // Needs another look: the cars the record moved under, named with the day
+      // it was observed, and one press each to the car itself. A car whose
+      // price has not moved is not in this band — it is a line on its own card.
+      const moved = active.map((c) => ({ c, ch: changeOf(c) })).filter((o) => o.ch && o.ch.look);
+      const since = api.lastSeenDay && api.lastSeenDay();
+      if (moved.length) {
+        const band = el('section', 'studio-look'); band.setAttribute('aria-labelledby', 'studio-look-title');
+        const h = el('h3', '', moved.length === 1 ? 'One saved car needs another look' : moved.length + ' saved cars need another look'); h.id = 'studio-look-title';
+        band.append(h, el('p', 'studio-muted', 'What the tracker recorded since you last saw new data' + (since ? ' (' + since + ')' : '') + '.'));
+        const list = el('ul', 'studio-look-list');
+        for (const { c, ch } of moved) {
+          const li = el('li', 'studio-look-item'); li.dataset.lookVin = c.vin; li.dataset.lookKind = ch.kind;
+          li.append(el('span', 'studio-look-tag studio-look-tag--' + ch.kind, CHANGE_WORD[ch.kind] || 'changed'));
+          const words = el('div', 'studio-look-words');
+          words.append(el('strong', '', c.title), el('p', '', ch.words));
+          const go = button('Open showroom', 'studio-text-button', () => open(c.vin));
+          go.setAttribute('aria-label', 'Open showroom for ' + c.title);
+          li.append(words, go);
+          list.append(li);
+        }
+        band.append(list); content.append(band);
+      } else if (since) {
+        content.append(el('p', 'studio-muted studio-look-none', 'Nothing the tracker recorded has moved on your saved cars since ' + since + '.'));
+      }
       const grid=el('div','studio-garage-grid');
-      for(const c of cars) {const card=el('article','studio-garage-card');card.dataset.garageVin=c.vin; if(!c.missing)card.append(photo(c,'studio-garage-photo'));const body=el('div','studio-garage-body');body.append(el('h3','',c.title),el('p','studio-garage-price',c.missing?c.vin:money(c.price)),el('p','studio-muted',c.missing?'Your status and notes are retained.':c.gone?'No longer in the tracked listings':c.location+' · '+c.milesLabel));body.append(statusControl(c));if(!c.missing)body.append(button('Open showroom','studio-text-button',()=>open(c.vin)));if(notes[c.vin])body.append(el('p','studio-note-preview',notes[c.vin]));if(c.missing)body.append(notesField(c));card.append(body);grid.append(card);}content.append(grid);
+      for(const c of cars) {
+        const card=el('article','studio-garage-card');card.dataset.garageVin=c.vin;
+        if(!c.missing)card.append(photo(c,'studio-garage-photo'));
+        const body=el('div','studio-garage-body');
+        body.append(el('h3','',c.title),el('p','studio-garage-price',c.missing?c.vin:money(c.price)),
+          el('p','studio-muted',c.missing?'Your status and notes are retained.':c.gone?'No longer in the tracked listings':c.location+' · '+c.milesLabel));
+        // The band above already names every car the record MOVED under, in the
+        // same words; repeating them on the card is the same sentence twice on
+        // one screen. What the band does not carry is the quieter fact — the
+        // car is still there at the same price — so that is what the card says.
+        const ch = changeOf(c);
+        if (ch && !ch.look) { const line = el('p', 'studio-garage-change studio-garage-change--' + ch.kind, ch.words); line.dataset.changeKind = ch.kind; body.append(line); }
+        body.append(statusControl(c));
+        // One primary way in, and the rest quiet: the showroom holds the photo,
+        // the price journey, the note and the brief, so the card does not need
+        // to carry four buttons of equal weight beside it.
+        if(!c.missing){
+          const acts=el('div','studio-garage-acts');
+          const openBtn=button('Open showroom','studio-button studio-garage-open',()=>open(c.vin));
+          openBtn.setAttribute('aria-label','Open showroom for '+c.title);
+          acts.append(openBtn);
+          if (api.compared && ['short','called'].includes(c.status)) {
+            const inCmp = api.compared(c.vin);
+            const t = button(inCmp ? 'In the comparison' : 'Add to comparison', 'studio-text-button studio-garage-compare', () => {
+              /* membership only: the car stays saved and keeps its notes either way */
+              api.compared(c.vin, !inCmp);
+              const y = content.scrollTop; draw(); content.scrollTop = y;
+              const again = [...content.querySelectorAll('.studio-garage-compare')].find((n) => n.closest('[data-garage-vin]')?.dataset.garageVin === c.vin);
+              (again || title).focus({ preventScroll: true });
+            });
+            t.setAttribute('aria-pressed', String(inCmp));
+            t.setAttribute('aria-label', (inCmp ? 'Take ' + c.title + ' out of the comparison' : 'Add ' + c.title + ' to the comparison') + ' — it stays saved either way');
+            acts.append(t);
+          }
+          body.append(acts);
+        }
+        if(notes[c.vin])body.append(el('p','studio-note-preview',notes[c.vin]));
+        if(c.missing)body.append(notesField(c));
+        card.append(body);grid.append(card);
+      }
+      content.append(grid);
       const compare=button('Compare saved cars','studio-button',()=>{dialog.close();api.compare();});compare.disabled=!active.length;content.append(compare);
     }
     function briefText(cars) {
