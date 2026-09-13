@@ -62,9 +62,9 @@ both landed on `main` as `600283f` (#23). Additive both ways, checked:
 and nothing else; the one edit to mine is Home renumbering my section `4f → 4g`,
 still **last in the component band** — the load-bearing property its own comment
 names. The snapshot is re-vendored from that merged `main`, 22 files, every hash
-verified. Upstream `npm run check` is green there (110
-component blocks, 368 classes) but for the missing v2.12.0 tag, the owner's to
-publish: a tag cannot be pushed from this sandbox.
+verified. Upstream `npm run check` is green there on all eighteen gates (110
+component blocks, 368 classes), and `v2.12.0` is tagged at that same commit —
+lightweight, as `v2.11.0` is — so the version the pages cite resolves.
 
 **PASS** (offline): consumer lint · `studio` · `workspace` · `discovery` ·
 `visual-check --browser` 6/6 · print pagination on both tables · 320px · keyboard
@@ -109,14 +109,12 @@ touches a number.
 > byte-identical in this snapshot and its pin is four releases older — but it is
 > still OPEN and must not be closed or merged without approval.
 >
-> Three things remain, none of them this branch's to fix:
-> 1. **No `v2.12.0` tag exists.** `npm run check` on design-system `main` fails
->    on exactly that, and every documented jsDelivr pin (`design-system@v2.12.0/…`)
->    is a 404 until it is published. A tag cannot be pushed from this sandbox:
->    the agent proxy passes `refs/heads/*` and refuses `refs/tags/*`. Cutting a
->    release in the GitHub web UI targeting `main` is the way round it, and it is
->    the owner's call, not yours.
-> 2. **SpicyCar CI is red on tracker drift, not on this diff.** `test` fails two
+> Two things remain, neither of them this branch's to fix. (`v2.12.0` **is**
+> tagged now, at `600283f`, and design-system `main` passes all eighteen gates —
+> if you cut a later one, note that a tag cannot be pushed from this sandbox: the
+> agent proxy passes `refs/heads/*` and refuses `refs/tags/*`, so a release cut
+> in the GitHub web UI targeting `main` is the way round it.)
+> 1. **SpicyCar CI is red on tracker drift, not on this diff.** `test` fails two
 >    tests (the committed record's key order; the README `| as committed |` sheet
 >    row) and `dashboard` fails four (price sort order, the BMW i4 stock sentence,
 >    "Open this car", and `docs/data.json` at 282KB compressed against a 250KB
@@ -128,7 +126,7 @@ touches a number.
 >    Whoever next runs the tracker owns these. If a `dashboard` run instead dies
 >    with `route.fetch: read ECONNRESET` and prints no tally at all, that is the
 >    harness's own unguarded route handlers, not your diff — see Defer above.
-> 3. **#77 wants a human merge.** It is conflict-free with no review threads.
+> 2. **#77 wants a human merge.** It is conflict-free with no review threads.
 >
 > If you do pick up the tracker work: `Tracking.py`, `targets.json`,
 > `docs/data.json`, `REPORT.md` and the ledgers are its territory and were
