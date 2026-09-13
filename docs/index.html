@@ -49,7 +49,7 @@
 <script src="design-system/sc-charts.js"></script>
 <script src="design-system/sc-map.js"></script>
 <style>
-  /* Page-specific only. Everything generic now lives in sc.css v2.10.0 — the
+  /* Page-specific only. Everything generic now lives in sc.css v2.12.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
      frame's photo loader and the 44px touch targets were all promoted out of
      this file and are no longer maintained here. */
@@ -194,8 +194,17 @@
      a comparison. */
   #compare-table .cmp-metric,
   #compare-table thead th:first-child { position: sticky; left: 0; z-index: 1; background: var(--sc-surface); text-align: left; }
-  #compare-table .cmp-metric { font-weight: 600; min-width: 168px; }
-  #compare-table thead th { vertical-align: bottom; min-width: 148px; }
+  #compare-table .cmp-metric { font-weight: 600; }
+  #compare-table thead th { vertical-align: bottom; }
+  /* Column minimums, above the narrow band only. Below 721px the widths are
+     .sc-signal-matrix--fit's, and an id selector here would beat it silently:
+     a min-width greater than a max-width WINS in CSS, so leaving these on a
+     phone pinned the label column at 168px, pushed the second car off the
+     region, and left no sign of it in the cascade the max-width came from. */
+  @media (min-width: 721px) {
+    #compare-table .cmp-metric { min-width: 168px; }
+    #compare-table thead th { min-width: 148px; }
+  }
   #compare-table thead th > span { display: block; }   /* the header stacks; the chip inside the last one must not stretch to the column */
   #compare-table .cmp-swatch { margin-bottom: 4px; }
   #compare-table td { vertical-align: top; }
@@ -203,25 +212,22 @@
   #finalists-table .sc-benchmark__track { height: 16px; }
   #finalists-table .sc-benchmark__point { width: 10px; height: 10px; }
   #finalists-table .sc-benchmark__scale { font-size: 9px; }
-  /* On a phone the scroll window is 348px and the metric column took 168 of
-     it, so every right-aligned figure in the table started outside the strip:
-     ten labels and no numbers until the reader scrolled each row. The metric
-     column gives back what it can, the value columns narrow to what a price
-     needs, and the figures move left so the first thing past the label IS the
-     number. (Every other table on the page shrinks or becomes cards below
-     721px; this one had no narrow band at all.) */
+  /* The narrow band for both comparison tables is .sc-signal-matrix--fit in
+     sc.css now (2.12.0), promoted from the rules that used to live here: on a
+     phone the scroll window is 348px and the identity column took 168 of it,
+     so every figure started outside the strip. The shortlist table never got
+     this band and kept the matrix's 600px floor — measured, three saved cars
+     were a 693px table in a 348px window with ONE car column on screen and
+     373px of the card off it. Both wear the modifier; both give the identity
+     column 96px and cap each record column, so two are visible at 390px.
+     What stays here is this page's own: the benchmark rail inside a shortlist
+     cell needs more room than the cap alone leaves it, and both headers hold a
+     .sc-nowrap run — a status chip beside an "Open →" link — that has to wrap
+     once the column narrows, or the cell's overflow:hidden eats the link. */
   @media (max-width: 720px) {
-    /* Widths, not minimums: the columns are sized by their longest sub-line
-       ("2024 · 40,138 mi · Cincinnati, OH"), which ran the two-column table to
-       687px inside a 348px window. Capped and wrapped, two columns come to
-       96 + 124 + 124 = 344 and both are on screen at once, which is the whole
-       point of the card; three or more scroll, with the metric column sticky. */
-    #compare-table.sc-signal-matrix { min-width: 100%; }
-    #compare-table .cmp-metric { min-width: 96px; max-width: 96px; white-space: normal; }
-    #compare-table thead th, #compare-table tbody td { min-width: 0; max-width: 124px; white-space: normal; overflow-wrap: anywhere; }
     #finalists-table .sc-benchmark { min-width: 112px; }
-    #compare-table tbody td { text-align: left; }
-    #compare-table thead th .sc-nowrap { white-space: normal; }
+    #compare-table thead th .sc-nowrap,
+    #finalists-table thead th .sc-nowrap { white-space: normal; }
   }
   /* The one marked winner on the page. It is a weight and a rule, not a colour
      of its own: the "best value here" line under it already carries the word. */
@@ -356,7 +362,7 @@
   }
 
   /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
-     masthead, theme toggle and footer are sc.css v2.10.0's own 44px block,
+     masthead, theme toggle and footer are sc.css v2.12.0's own 44px block,
      keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
      Two mechanisms, split by whether layout may move:
 
@@ -710,7 +716,7 @@
         <p class="sc-hint" id="compare-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Vehicle comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values" id="compare-table"></table></div>
+    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Vehicle comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values sc-signal-matrix--fit" id="compare-table"></table></div>
   </section>
 
   <section class="sc-card" id="finalists-card" hidden>
@@ -721,7 +727,7 @@
         <p class="sc-hint" id="finalists-hint"></p>
       </div>
     </div>
-    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Shortlisted car comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values" id="finalists-table"></table></div>
+    <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Shortlisted car comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values sc-signal-matrix--fit" id="finalists-table"></table></div>
   </section>
 
   <div id="shortlist" hidden></div>
@@ -3655,9 +3661,15 @@
     // that sentence belongs to the one row measured against a cohort, and this
     // table does not mark a winner on that row at all, because two cars scored
     // against two different cohorts are not comparable on the percentage.
-    const cell = (v, sub, best, word) =>
+    // `basis` is how the figure was arrived at, and nothing else: 'estimate'
+    // for a number this page computed over the buyer's own tax, fee and
+    // financing settings, undefined for one read off the listing. Asking is a
+    // recorded price and never carries it; out-the-door and per-month always
+    // do. Three dollar figures in one column used to be one weight, one size
+    // and one ink, with the difference carried only by the row label.
+    const cell = (v, sub, best, word, basis) =>
       el('td', { class: 'sc-num' + (best ? ' is-best' : '') },
-        el('span', { class: 'sc-figure' }, v),
+        el('span', { class: 'sc-figure' + (basis === 'estimate' ? ' sc-estimate' : '') }, v),
         sub ? el('span', { class: 'sc-note' }, sub) : null,
         best ? el('span', { class: 'sc-note sc-text-good' }, word) : null);
     // A bare "not scored" is exactly the kind of blank this page exists to
@@ -3694,7 +3706,7 @@
       const bestOtd = lowest((r) => (r.gone ? null : otd(r.x)));
       row('Out the door', 'Asking plus tax, paperwork and getting it here — an estimate until buyer.fees.checked is dated',
         (r) => cell(r.gone ? '—' : money(otd(r.x)), r.gone ? '' : 'all in',
-          !r.gone && otd(r.x) != null && otd(r.x) === bestOtd, 'cheapest all in'));
+          !r.gone && otd(r.x) != null && otd(r.x) === bestOtd, 'cheapest all in', r.gone ? null : 'estimate'));
     }
     if (financeCfg()) {
       const bestPay = lowest((r) => (r.gone ? null : payFor(r.x)));
@@ -3702,7 +3714,7 @@
         (r) => cell(r.gone ? '—' : perMo(payFor(r.x)),
           r.gone ? '' : `${r.x.apr}%${r.x.apr_promo ? ' promo' : ''} · ${termFor(r.x)}mo`
             + (r.x.apr_seller_unnamed ? ` · seller not named ${r.x.apr_seller_brand}` : ''),
-          !r.gone && payFor(r.x) != null && payFor(r.x) === bestPay, 'lowest payment'));
+          !r.gone && payFor(r.x) != null && payFor(r.x) === bestPay, 'lowest payment', r.gone ? null : 'estimate'));
     }
     const bestMiles = lowest((r) => r.x.miles);
     row('Miles', null, (r) => cell(r.x.miles != null ? num(r.x.miles) : '—', null,
@@ -3986,7 +3998,11 @@
       row.appendChild(el('th', { scope: 'row' },
         el('span', { class: 'sc-signal-matrix__name' }, name),
         x ? el('span', { class: 'sc-signal-matrix__note' }, `${x.year || ''} ${carTrim(x)}`.trim()) : null,
-        x ? el('span', { class: 'market-matrix__price' }, money(total)) : null,
+        // The largest number on a decision card is not the asking price: it is
+        // this page's arithmetic over the buyer's own fees, tax and shipping
+        // bands. The note under it has always said so in 10px mono; the figure
+        // says it too now, in the design system's estimate mark.
+        x ? el('span', { class: 'market-matrix__price sc-estimate' }, money(total)) : null,
         x ? el('span', { class: 'sc-signal-matrix__note' }, feesCfg() ? 'all in, estimated' : 'landed, shipping estimated') : null,
         x ? el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'signal:' + (x.vin || ''),
           onclick: (e) => { e.preventDefault(); goTo(o.bk, o.mk, x.vin); } }, `Open ${name} candidate →`) : null));
@@ -5580,10 +5596,14 @@
   }
   // A cell that is a figure and a line about it, so every column reads the same
   // way down the table.
-  function cmpCell(figure, sub, best, basis) {
+  // `derived` says the figure was computed here from the buyer's own settings
+  // rather than read off a listing — shipping bands, tax, paperwork, a rate
+  // and a term. It changes no number and decides nothing; it is the design
+  // system's estimate mark, and the row label still carries the word.
+  function cmpCell(figure, sub, best, basis, derived) {
     return el('td', { class: 'sc-num' + (best ? ' is-best' : ''),
                       title: basis ? basis.title : null, 'data-basis': basis ? basis.kind : null },
-      el('span', { class: 'sc-figure' }, figure),
+      el('span', { class: 'sc-figure' + (derived ? ' sc-estimate' : '') }, figure),
       sub ? el('span', { class: 'sc-note' }, sub) : null,
       best ? el('span', { class: 'sc-note sc-text-good' }, 'best value here') : null);
   }
@@ -5689,11 +5709,12 @@
       stat.map((v) => cmpCell(v.best ? money(v.best.price) : '—',
         v.best ? `${v.best.year} · ${num(v.best.miles)} mi · ${placeTxt(v.best)}${v.best.local ? '' : (v.best.ship ? ` · + ${money(v.best.ship)} ship` : '')}` : 'no priced listings')));
     row('Cheapest landed', 'Asking plus shipping — what it costs to have one in the driveway',
-      stat.map((v) => cmpCell(v.landed != null ? money(v.landed) : '—', 'asking + shipping')));
+      stat.map((v) => cmpCell(v.landed != null ? money(v.landed) : '—', 'asking + shipping', false, null, v.landed != null)));
     if (financeCfg()) {
       row('Cheapest monthly', 'The lowest payment in this column at its own best rate — a certified car on a promo can beat a cheaper one that is not',
         stat.map((v) => cmpCell(v.payBest ? perMo(v.payBest.pay) : '—',
-          v.payBest ? `${v.payBest.x.year} · ${v.payBest.x.apr}%${v.payBest.x.apr_promo ? ' promo' : ''} · ${termFor(v.payBest.x)}mo` : 'no priced listings')));
+          v.payBest ? `${v.payBest.x.year} · ${v.payBest.x.apr}%${v.payBest.x.apr_promo ? ' promo' : ''} · ${termFor(v.payBest.x)}mo` : 'no priced listings',
+          false, null, !!v.payBest)));
     }
     row('Median asking', 'The middle of this column’s own market',
       stat.map((v) => cmpCell(v.med != null ? money(v.med) : '—', `${v.priced.length} priced`)));
