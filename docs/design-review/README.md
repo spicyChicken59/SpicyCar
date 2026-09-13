@@ -1,6 +1,8 @@
 # SpicyCar design review · 6 September 2026
 
-The next design pass is documented in [Fieldwork: the photograph and the facts](fieldwork.md):
+The most recent pass is [Decision polish](decision-polish.md): the shortlist comparison made
+readable on a phone, asking prices told apart from computed estimates, and the exact car's
+photograph given a stage of its own. Before it, [Fieldwork: the photograph and the facts](fieldwork.md):
 larger uncropped candidate photographs, an ink instrument strip and preserved phone decision access.
 
 The desktop images below are real captures of the public SpicyCar page, not mockups. They preserve

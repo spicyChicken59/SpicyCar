@@ -47,10 +47,29 @@
       if (c.image) { const img = el('img'); img.src = c.image; img.alt = c.title; img.referrerPolicy = 'no-referrer'; img.onload = () => empty.hidden = true; img.onerror = () => img.remove(); wrap.append(img); }
       return wrap;
     }
-    function statusControl(c) {
+    // The one car in focus gets the design system's own photo dossier rather
+    // than a box sized by the column of text beside it: a 16:10 stage on the
+    // raised ground, the dealer's photograph shown WHOLE (--studio fits by
+    // contain, so nothing is cropped away by a layout decision), the corner
+    // brackets, and the shared "no photo" band when the listing has none.
+    // The garage grid keeps photo() above — its cards are a cover crop by
+    // design, and this stage is for the record being decided on.
+    function heroPhoto(c) {
+      const card = el('div', 'sc-photo-card sc-dossier sc-dossier--studio studio-hero-stage');
+      const media = el('div', 'sc-photo-card__media');
+      const fallback = () => { media.replaceChildren(el('span', 'sc-frame sc-frame--empty', 'photo unavailable')); };
+      if (c.image) {
+        const frame = el('div', 'sc-frame sc-frame--photo');
+        const img = el('img', 'sc-frame__img'); img.src = c.image; img.alt = c.title; img.referrerPolicy = 'no-referrer';
+        img.onload = () => img.classList.add('is-loaded'); img.onerror = fallback;
+        frame.append(img); media.append(frame);
+      } else fallback();
+      card.append(media); return card;
+    }
+    function statusControl(c, after) {
       const select = el('select', 'studio-select'); select.setAttribute('aria-label', 'Status for ' + c.vin);
       for (const [value, text] of [['','Not saved'],['short','Saved'],['called','Contacted'],['out','Ruled out']]) { const o = el('option','',text); o.value = value; select.append(o); }
-      select.value = c.status || ''; select.onchange = () => { api.status(c.vin, select.value); update(); if(mode==='garage'){ const y=content.scrollTop; draw(); content.scrollTop=y; const replacement=[...content.querySelectorAll('select')].find(n=>n.getAttribute('aria-label')==='Status for '+c.vin); (replacement||title).focus({preventScroll:true}); } };
+      select.value = c.status || ''; select.onchange = () => { api.status(c.vin, select.value); update(); if (after) after(select.value); if(mode==='garage'){ const y=content.scrollTop; draw(); content.scrollTop=y; const replacement=[...content.querySelectorAll('select')].find(n=>n.getAttribute('aria-label')==='Status for '+c.vin); (replacement||title).focus({preventScroll:true}); } };
       return select;
     }
     function notesField(c) {
@@ -59,7 +78,24 @@
       input.oninput = () => { saveNotes(c.vin, input.value); state.textContent = storageOkay ? 'Saved on this device.' : 'Storage unavailable — copy your notes before closing.'; };
       const wrap = el('div'); wrap.append(label('Your notes',input),state); return wrap;
     }
-    function stat(name, value, sub) { const n = el('div','studio-stat'); n.append(el('span','',name),el('strong','',value)); if (sub) n.append(el('small','',sub)); return n; }
+    // basis: how the figure was arrived at, and nothing else. 'estimate' is a
+    // number this page computed from the reader's own financing and fee
+    // assumptions; 'unreported' is a fact the source never supplied. Recorded
+    // is the default and carries no class, which is the design system's rule.
+    // Nothing here decides which is which — the caller passes what the record
+    // already said, and the label beside the value still says the word.
+    function stat(name, value, sub, basis) {
+      const n = el('div','studio-stat'); const v = el('strong', basis === 'estimate' ? 'sc-estimate' : basis === 'unreported' ? 'sc-unreported' : null, value);
+      n.append(el('span','',name), v); if (sub) n.append(el('small','',sub)); return n;
+    }
+    // The words Tracking.py writes when a listing field is absent. A value is
+    // "unreported" only when it IS one of them: a zero, a dash or an empty
+    // string is not an absence and must not be dressed as one.
+    const UNREPORTED = new Set(['Unreported','Mileage unreported','Dealer unreported','No condition details reported']);
+    const basisOf = (value) => UNREPORTED.has(value) ? 'unreported' : undefined;
+    // The same four words the status control offers, as a chip on the action
+    // bar. One map, so the chip and the control cannot disagree.
+    const STATUS_WORD = { '': 'not saved', short: 'saved', called: 'contacted', out: 'ruled out' };
     function history(c) {
       const section = el('section','studio-history'); section.append(el('h3','','The price journey'));
       const series = (c.series || []).filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p[0]) && Number.isFinite(p[1]) && p[1] > 0).slice().sort((a,b)=>a[0].localeCompare(b[0]));
@@ -78,14 +114,29 @@
     }
     function drawCar(c) {
       title.textContent = c.title; back.hidden = false;
-      const hero=el('div','studio-showroom');hero.append(photo(c,'studio-hero-photo'));
+      const hero=el('div','studio-showroom');hero.append(heroPhoto(c));
       const info=el('div','studio-showroom-info');info.append(el('p','studio-eyebrow',c.gone ? 'LEFT THE TRACKED LISTINGS' : 'THE CAR IN FOCUS'),el('p','studio-hero-price',money(c.price)),el('p','studio-muted',c.gone?'Last recorded asking price':'Asking price · '+c.location));
-      const stats=el('div','studio-cost-grid');stats.append(stat('Estimated all in',money(c.otd),'Includes configured tax, fees and shipping'),stat('Estimated monthly',c.payment==null?'Unavailable':money(c.payment)+'/mo',c.terms));info.append(stats);
+      // The asking price above is what the listing says. These two are not:
+      // they are this page's arithmetic over the reader's own tax, fee and
+      // financing settings, and they now say so in the figure as well as the
+      // label. An unavailable payment is an absence, not a number.
+      const stats=el('div','studio-cost-grid');stats.append(stat('Estimated all in',money(c.otd),'Includes configured tax, fees and shipping','estimate'),stat('Estimated monthly',c.payment==null?'Unavailable':money(c.payment)+'/mo',c.terms,c.payment==null?'unreported':'estimate'));info.append(stats);
       info.append(el('p','studio-muted',c.shipping));
-      const actions=el('div','studio-actions');actions.append(statusControl(c)); if(c.url)actions.append(link('Dealer listing ↗',c.url));actions.append(button('Copy dealer brief','studio-button',()=>showBrief([c])));info.append(actions);hero.append(info);content.append(hero);
-      const facts=el('div','studio-facts'); for(const [name,value] of [['Mileage',c.milesLabel],['Dealer',c.dealer],['VIN',c.vin],['Condition',c.flags || 'No condition details reported'],['First tracked',c.firstSeen || 'Unreported'],['Record through',c.through]]) facts.append(stat(name,value)); content.append(facts);
+      hero.append(info);content.append(hero);
+      // One action bar, the design system's: the saved-state word, the one
+      // sentence that used to sit alone at the foot of the dialog, and the one
+      // action. The status control and the dealer's own listing follow it.
+      const bar=el('div','sc-actionbar studio-bar');
+      const chip=el('span','sc-chip','');
+      const sayStatus=(s)=>{chip.textContent=STATUS_WORD[s||'']||'not saved';chip.className='sc-chip '+(['short','called'].includes(s)?'sc-chip--brand':'sc-chip--neutral');};
+      sayStatus(c.status);
+      bar.append(chip,
+        el('p','','Recorded listing and estimates. Confirm availability, condition and the written out-the-door quote with the dealer.'),
+        button('Copy dealer brief','sc-btn sc-btn--secondary',()=>showBrief([c])));
+      const more=el('div','sc-actionbar__more');more.append(label('Status',statusControl(c,sayStatus)));if(c.url)more.append(link('Dealer listing ↗',c.url));
+      bar.append(more);content.append(bar);
+      const facts=el('div','studio-facts'); for(const [name,value] of [['Mileage',c.milesLabel],['Dealer',c.dealer],['VIN',c.vin],['Condition',c.flags || 'No condition details reported'],['First tracked',c.firstSeen || 'Unreported'],['Record through',c.through]]) facts.append(stat(name,value,null,basisOf(value))); content.append(facts);
       content.append(history(c),notesField(c));
-      content.append(el('p','studio-muted','Recorded listings and estimates. Confirm availability, condition and the written out-the-door quote with the dealer.'));
     }
     function drawGarage() {
       title.textContent='Your garage';back.hidden=true;

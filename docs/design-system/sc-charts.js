@@ -1,4 +1,4 @@
-/* SpicyChicken Design System — sc-charts.js v2.10.0 · chart and native-table presentation bundle · sources: build/charts.js, sc-matrix-nav.js, build/matrix-auto.js · needs sc.css */
+/* SpicyChicken Design System — sc-charts.js v2.12.0 · chart and native-table presentation bundle · sources: build/charts.js, sc-matrix-nav.js, build/matrix-auto.js · needs sc.css */
 (function (w) {
   'use strict';
   var SC = w.SC = (w.SC || {});

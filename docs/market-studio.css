@@ -452,10 +452,15 @@
   line-height: 1.5;
 }
 
+/* The size and the face are this card's; the INK is the figure's basis. This
+   number is the all-in (or landed) total, which is always this page's
+   arithmetic over the buyer's own fees and shipping bands, so it carries
+   .sc-estimate and takes its colour from there. Declaring a colour here would
+   win on specificity and put a computed total back in recorded ink — which is
+   the confusion the mark exists to remove. */
 .market-studio #decision-matrix .market-matrix__price {
   display: block;
   margin-top: var(--sc-s0);
-  color: var(--sc-heading);
   font: 700 24px/1.1 var(--sc-font-display);
   letter-spacing: -.035em;
   font-variant-numeric: tabular-nums;

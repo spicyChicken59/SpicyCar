@@ -1,6 +1,6 @@
 /* ==========================================================================
-   SpicyChicken Design System — sc.css  v2.10.0
-   Mohammed Tahir Madni · github.com/spicyChicken59
+   SpicyChicken Design System — sc.css  v2.12.0
+   SpicyChicken · github.com/spicyChicken59
 
    One file, no build step. Drop it in (or link it) and every page shares the
    same surfaces, type, components and chart colors.
@@ -451,6 +451,16 @@ a.sc-btn[aria-disabled="true"] { pointer-events: none; }   /* stops the click, n
 
 /* Inputs & selects */
 .sc-field { display: flex; align-items: center; gap: 8px; min-height: 24px; font: 600 11.5px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; color: var(--sc-text-2); }
+/* A caption beside a segmented control. <label> can only name one labelable
+   control, and a role="group" is not one, so the group form is a <div> whose
+   caption is its own element and whose group points at it by id:
+   <div class="sc-field sc-field--group"><span class="sc-field__label" id="x">range</span>
+     <div class="sc-tabs" role="group" aria-labelledby="x"> … </div></div>
+   Two unlabelled segmented rows side by side are unreadable as soon as their
+   words overlap (a "setup" mode beside a "setup" range); the caption is what
+   tells them apart, for the eye and for a screen reader, in one place. */
+.sc-field--group { align-items: center; flex-wrap: nowrap; }
+.sc-field__label { white-space: nowrap; }
 .sc-input, .sc-select { font: 500 14px var(--sc-font-body); color: var(--sc-heading); background: var(--sc-surface); border: 1px solid var(--sc-border-control); border-radius: var(--sc-r-sm); padding: 8px 10px; transition: border-color var(--sc-motion) var(--sc-ease); min-width: 0; }
 .sc-input::placeholder { color: var(--sc-text-3); }
 .sc-input:hover, .sc-select:hover { border-color: var(--sc-brand-strong); }
@@ -514,6 +524,33 @@ a.sc-btn[aria-disabled="true"] { pointer-events: none; }   /* stops the click, n
 .sc-signal-matrix tbody td.sc-signal-matrix__value { padding: 12px; line-height: 1.45; }
 .sc-signal-matrix__name { display: block; }
 .sc-signal-matrix__note { display: block; margin-top: 3px; color: var(--sc-text-2); font: 500 10px/1.45 var(--sc-font-mono); }
+/* A TRANSPOSED comparison: the columns are the records, the rows the measures.
+   The criterion navigator declines these on purpose — its buttons would be
+   named after the records rather than the criteria — so on a phone the only
+   way across is the scroll, and the min-width above guarantees one. Measured
+   in a consumer: three saved cars rendered a 693px table inside a 348px
+   region, so the card headed "side by side" showed one car and kept 373px of
+   itself off screen. --fit drops the floor and caps the record columns
+   instead, so two sit beside the sticky identity column at 390px and a fourth
+   is what starts the scroll. The two widths are custom properties because
+   96/112 is tuned to short figures; a comparison of sentences wants more.
+   Only the narrow band changes — above 720px the table is what it was. */
+.sc-signal-matrix.sc-signal-matrix--fit { min-width: 100%; }
+@media (max-width: 720px) {
+  .sc-signal-matrix--fit :is(thead th, tbody th):first-child { min-width: var(--sc-matrix-identity, 96px); max-width: var(--sc-matrix-identity, 96px); white-space: normal; }
+  /* A cap, never a squeeze: the record columns keep the matrix's own minimum,
+     so a third record starts a scroll instead of crushing the first two into
+     broken words.
+     The defaults are the arithmetic of a 390px phone, BORDER-SPACING INCLUDED,
+     which is the part that is easy to forget: a .sc-wrap on a phone leaves a
+     348px region, the matrix spaces its cells 4px apart, and three gaps plus
+     the outer pair is 16px — so 96 + 112 + 112 + 16 = 336 and the identity
+     column and two records are on screen with 12px to spare. At 124px they
+     came to 360 and the second record fell off the edge it was written to
+     reach. Raise both properties together on a wider region. */
+  .sc-signal-matrix--fit :is(thead th:not(:first-child), tbody td) { max-width: var(--sc-matrix-record, 112px); white-space: normal; overflow-wrap: anywhere; }
+  .sc-signal-matrix--fit tbody td { text-align: left; }
+}
 .sc-signal { box-sizing: border-box; display: grid; place-content: center; justify-items: center; gap: 5px; min-height: 72px; padding: 10px 8px; color: var(--sc-text-2); background: var(--sc-raised); text-align: center; }
 .sc-signal__glyph { color: var(--sc-heading); font: 700 18px/1 var(--sc-font-mono); }
 .sc-signal__label { font: 600 10px/1.3 var(--sc-font-mono); letter-spacing: .25px; text-transform: lowercase; }
@@ -552,7 +589,10 @@ a.sc-btn[aria-disabled="true"] { pointer-events: none; }   /* stops the click, n
 .sc-details[open] summary::before { content: "↓ "; content: "↓ " / ""; }
 
 /* Tabs — a segmented control (pill row). Contract: <div class="sc-tabs" role="group" aria-label="…">
-   with <button class="sc-tab" aria-pressed="true|false">. aria-selected is styled too for old markup. */
+   with <button class="sc-tab" aria-pressed="true|false">. aria-selected is styled too for old markup.
+   More than one group in a row: caption each with .sc-field--group and swap the
+   aria-label for aria-labelledby, so the words the reader sees are the words
+   assistive tech announces. */
 .sc-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .sc-tab { font: 600 11px/1 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; padding: 8px 13px; border-radius: var(--sc-r-sm); border: 1px solid var(--sc-border); background: var(--sc-surface); color: var(--sc-heading); cursor: pointer; transition: background var(--sc-motion) var(--sc-ease), border-color var(--sc-motion) var(--sc-ease); }
 .sc-tab:hover { background: var(--sc-hover); border-color: var(--sc-brand-strong); }
@@ -562,6 +602,26 @@ a.sc-btn[aria-disabled="true"] { pointer-events: none; }   /* stops the click, n
 /* Notice — the stop-and-read block */
 .sc-notice { background: var(--sc-surface); border: 2px solid var(--sc-danger); border-radius: var(--sc-r-md); padding: 16px 18px; margin: var(--sc-s3) 0; }
 .sc-notice .sc-eyebrow { color: var(--sc-danger); }
+
+/* Action bar — the one action available here, its status word and the reason
+   beside it, on one line while there is room. Contract: an optional .sc-chip,
+   one <p> saying what is on offer or why nothing is, one .sc-btn, and an
+   optional __more row for whatever follows from the action.
+   Narrow, it stacks: the paragraph loses the row basis first. A flex-basis
+   written for a row becomes a HEIGHT once the container turns into a column,
+   which is how a one-line sentence ends up 260px tall and pushes the only
+   button on the page under the fold — measured, on a phone, in a consumer. */
+.sc-actionbar { display: flex; align-items: center; gap: var(--sc-s2) var(--sc-s3); flex-wrap: wrap; padding: var(--sc-s2) var(--sc-s3); border: 1px solid var(--sc-border); border-radius: var(--sc-r-md); background: var(--sc-raised); }
+.sc-actionbar > p { flex: 1 1 260px; min-width: 0; margin: 0; color: var(--sc-text); font-size: var(--sc-text-sm); line-height: 1.5; }
+.sc-actionbar > .sc-chip { flex: 0 0 auto; }
+.sc-actionbar > .sc-btn { flex: 0 0 auto; }
+.sc-actionbar__more { flex: 1 1 100%; display: flex; align-items: center; gap: var(--sc-s1) var(--sc-s2); flex-wrap: wrap; padding-top: var(--sc-s2); border-top: 1px dashed var(--sc-border); }
+@media (max-width: 720px) {
+  .sc-actionbar { flex-direction: column; align-items: stretch; }
+  .sc-actionbar > p { flex: 0 0 auto; }
+  .sc-actionbar > .sc-chip { align-self: flex-start; }
+  .sc-actionbar > .sc-btn { justify-content: center; }
+}
 
 /* Footer & watermark — brand endorsement lives here, small, always the same */
 .sc-foot { background: var(--sc-ink); color: var(--sc-on-ink-3); padding: 20px var(--sc-s4); margin-top: var(--sc-s6); font: 500 10.5px/1.8 var(--sc-font-mono); letter-spacing: .3px; text-transform: lowercase; display: flex; justify-content: space-between; align-items: center; gap: var(--sc-s3); flex-wrap: wrap; border-top: 1px solid var(--sc-ink-line); }
@@ -654,6 +714,9 @@ img.sc-mark--lg { height: 48px; }
 /* Figure + note — the lead value and its mono footnote inside a cell or row */
 .sc-figure { font-weight: 700; color: var(--sc-heading); white-space: nowrap; }
 .sc-note { display: block; font: 400 12px/1.45 var(--sc-font-body); color: var(--sc-text-2); }
+
+/* Figure basis is at the END of this band (before section 5), because a value
+   slot sets its own colour and the basis has to win at equal specificity. */
 
 /* Quiet link — for dense tables and media rows, where a spice link per cell is noise */
 .sc-link--quiet { color: var(--sc-text-2); border-bottom-color: var(--sc-border-strong); }
@@ -1490,6 +1553,98 @@ html[data-sc-motion-paused="true"] .sc-disclosure[open] > .sc-disclosure__body {
 /* 4e. VISUAL LIBRARY END */
 
 /* --------------------------------------------------------------------------
+   4f. COMPONENTS ADDED IN 2.12
+   The plotted surfaces grew dense enough that selection broke, and two
+   consumers improvised the same answer independently before it came here.
+   On a crowded map or scatter a press lands on whichever mark the browser
+   hit-tested -- in practice the last one appended -- so the reader silently
+   gets a different datum than the one under the finger. Resolving by DISTANCE
+   from the press settles the common case; when several marks sit within one
+   finger of it, the honest answer is to ask. This is that question.
+   -------------------------------------------------------------------------- */
+
+/* Pick -- "which one did you mean?". Contract:
+   <div class="sc-pick" role="dialog" aria-labelledby="..."> inside the
+   positioned surface (.sc-map and .sc-chart already are; any other host needs
+   position: relative), holding a .sc-pick__head whose heading states the count,
+   a .sc-pick__list of options NEAREST FIRST, and a close control.
+
+   It is a POPOVER, not a modal. A dense surface leaves hundreds of tabbable
+   marks live behind the panel, so aria-modal would be a claim the page cannot
+   keep: Tab may leave, and leaving closes. Escape returns focus to the control
+   that opened the panel, never to the mark the browser hit-tested -- that mark
+   is the one the panel exists to refuse, and handing it the focus gives the
+   reader the wrong datum one keystroke later. Dismissing by a press on the bare
+   surface must move the focus deliberately too: the press's own default action
+   runs after the handler and would otherwise drop it on <body>. */
+/* Width comes from the surface; height does not. A surface too short to show
+   about three options is overflowed rather than made unreadable -- the panel is
+   the interaction while it is open, and a two-line scroller is not one. */
+.sc-pick { position: absolute; left: var(--sc-s2); top: var(--sc-s2); z-index: 5;
+  width: min(280px, calc(100% - 12px)); max-height: min(60vh, max(calc(100% - 12px), 264px)); overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--sc-s1); padding: var(--sc-s2);
+  border: 1px solid var(--sc-border-strong); border-radius: var(--sc-r-md);
+  background: var(--sc-surface); box-shadow: var(--sc-shadow-pop); }
+.sc-pick__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s2); }
+.sc-pick__head > :is(h2, h3, h4) { margin: 0; font: 600 var(--sc-text-sm)/1.3 var(--sc-font-body); color: var(--sc-heading); }
+/* How the panel was reached and how to leave it, in one line. A reader who did
+   not mean to open it needs the way out before the list. */
+.sc-pick__hint { margin: 0; font: 500 11px/1.5 var(--sc-font-mono); color: var(--sc-text-2); }
+.sc-pick__list { display: flex; flex-direction: column; gap: 2px; }
+/* 44px because the panel exists for a finger; the value rides in the second
+   column as a plain .sc-figure rather than a class of its own. */
+.sc-pick__item { display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name figure" "meta figure"; gap: 0 var(--sc-s2); align-items: center;
+  width: 100%; min-height: 44px; padding: 6px var(--sc-s1); border: 1px solid transparent;
+  border-radius: var(--sc-r-sm); background: transparent; color: var(--sc-text);
+  font: inherit; text-align: left; cursor: pointer; }
+.sc-pick__item:hover { border-color: var(--sc-border-strong); background: var(--sc-raised); }
+.sc-pick__item:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: -2px; }
+.sc-pick__item[aria-pressed="true"] { border-color: var(--sc-accent); background: var(--sc-raised); }
+.sc-pick__name { grid-area: name; min-width: 0; font: 600 var(--sc-text-sm)/1.35 var(--sc-font-body); color: var(--sc-heading); }
+.sc-pick__meta { grid-area: meta; min-width: 0; font: 500 11px/1.4 var(--sc-font-mono); color: var(--sc-text-2); }
+.sc-pick__item > .sc-figure { grid-area: figure; font-size: var(--sc-text-sm); }
+/* A crowd has no useful bottom: show a readable few and let the reader ask for
+   the rest, rather than a scroller that hides its own length. */
+.sc-pick__more { align-self: flex-start; }
+
+/* --------------------------------------------------------------------------
+   4g. FIGURE BASIS — how a printed number was arrived at
+   A page prints three kinds of number and, until 2.12, one ink for all three:
+   a figure READ from the record, a figure DERIVED from stated assumptions,
+   and one the source never supplied. Recorded is the default and wears no
+   class; the other two say so.
+   The WORD still has to be in the markup. A row label, a caption or the
+   value's own text names the basis, exactly as .sc-signal's label — not its
+   glyph and not its tone — carries its meaning: the mark below is drawn with
+   empty alt text, so a screen reader never hears it, and the colour is
+   reinforcement. Never apply either from a computation the page just did:
+   apply them from what the record says about the figure.
+   LAST in the component band on purpose. A value slot (.sc-stat__value,
+   .sc-figure, .sc-tile__value, .sc-comparison__value) sets its own colour at
+   one class of specificity, so the basis has to come after it to win — the
+   same reason .sc-case is last in the sheet. Inside a slot styled by a
+   DESCENDANT rule (a dd in .sc-facts, a th in a matrix) specificity still
+   wins, so wrap the value in a span there — which is what you want anyway,
+   since the label is not an estimate.
+   Measured in a consumer: a recorded asking price, a derived out-the-door
+   total and a derived monthly payment stood in one column at one weight, one
+   size and one ink, and an unreported mileage wore the same heading colour as
+   a mileage that had been measured.
+   -------------------------------------------------------------------------- */
+.sc-estimate { color: var(--sc-basis-ink, var(--sc-text)); }
+.sc-estimate::before { content: var(--sc-estimate-mark, "≈"); content: var(--sc-estimate-mark, "≈") / ""; margin-inline-end: .12em; font-weight: 500; }
+/* An absence must not align, weigh or read like a measurement, so this is a
+   status word in mono and never a value: it does not inherit the figure's
+   size, and a headline slot that holds one stops being a headline. */
+.sc-unreported { color: var(--sc-basis-muted, var(--sc-text-2)); font: 500 var(--sc-text-sm)/1.5 var(--sc-font-mono); letter-spacing: .2px; text-transform: lowercase; font-variant-numeric: normal; white-space: normal; }
+/* The ink contexts in 2c re-scope --sc-text and --sc-text-2, so the defaults
+   above are already right inside a masthead, footer, tooltip or ink callout.
+   The instrument deck is the one ink surface that carries its own channel
+   instead, so it hands the basis that channel rather than the page's. */
+.sc-stat-strip--instrument { --sc-basis-ink: var(--sc-stat-muted); --sc-basis-muted: var(--sc-stat-muted); }
+
+/* --------------------------------------------------------------------------
    5. UTILITIES
    -------------------------------------------------------------------------- */
 .sc-mono { font-family: var(--sc-font-mono); }
@@ -1563,6 +1718,10 @@ html[data-sc-motion-paused="true"] .sc-disclosure[open] > .sc-disclosure__body {
 
 @media print {
   :root { color-scheme: light; }
+  /* A paper report has no scrollbar: release bounded tables so later rows
+     participate in pagination. Screen scroll and sticky identity stay intact. */
+  .sc-table-scroll { max-height: none; overflow: visible; }
+  .sc-table-scroll :is(th, td) { position: static !important; }
   body { background: #fff; color: #2F3741; font-size: 11pt; }
   .sc-masthead, .sc-foot { background: #111F31 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   pre, .sc-callout--ink, .sc-tooltip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
