@@ -1553,7 +1553,63 @@ html[data-sc-motion-paused="true"] .sc-disclosure[open] > .sc-disclosure__body {
 /* 4e. VISUAL LIBRARY END */
 
 /* --------------------------------------------------------------------------
-   4f. FIGURE BASIS — how a printed number was arrived at
+   4f. COMPONENTS ADDED IN 2.12
+   The plotted surfaces grew dense enough that selection broke, and two
+   consumers improvised the same answer independently before it came here.
+   On a crowded map or scatter a press lands on whichever mark the browser
+   hit-tested -- in practice the last one appended -- so the reader silently
+   gets a different datum than the one under the finger. Resolving by DISTANCE
+   from the press settles the common case; when several marks sit within one
+   finger of it, the honest answer is to ask. This is that question.
+   -------------------------------------------------------------------------- */
+
+/* Pick -- "which one did you mean?". Contract:
+   <div class="sc-pick" role="dialog" aria-labelledby="..."> inside the
+   positioned surface (.sc-map and .sc-chart already are; any other host needs
+   position: relative), holding a .sc-pick__head whose heading states the count,
+   a .sc-pick__list of options NEAREST FIRST, and a close control.
+
+   It is a POPOVER, not a modal. A dense surface leaves hundreds of tabbable
+   marks live behind the panel, so aria-modal would be a claim the page cannot
+   keep: Tab may leave, and leaving closes. Escape returns focus to the control
+   that opened the panel, never to the mark the browser hit-tested -- that mark
+   is the one the panel exists to refuse, and handing it the focus gives the
+   reader the wrong datum one keystroke later. Dismissing by a press on the bare
+   surface must move the focus deliberately too: the press's own default action
+   runs after the handler and would otherwise drop it on <body>. */
+/* Width comes from the surface; height does not. A surface too short to show
+   about three options is overflowed rather than made unreadable -- the panel is
+   the interaction while it is open, and a two-line scroller is not one. */
+.sc-pick { position: absolute; left: var(--sc-s2); top: var(--sc-s2); z-index: 5;
+  width: min(280px, calc(100% - 12px)); max-height: min(60vh, max(calc(100% - 12px), 264px)); overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--sc-s1); padding: var(--sc-s2);
+  border: 1px solid var(--sc-border-strong); border-radius: var(--sc-r-md);
+  background: var(--sc-surface); box-shadow: var(--sc-shadow-pop); }
+.sc-pick__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-s2); }
+.sc-pick__head > :is(h2, h3, h4) { margin: 0; font: 600 var(--sc-text-sm)/1.3 var(--sc-font-body); color: var(--sc-heading); }
+/* How the panel was reached and how to leave it, in one line. A reader who did
+   not mean to open it needs the way out before the list. */
+.sc-pick__hint { margin: 0; font: 500 11px/1.5 var(--sc-font-mono); color: var(--sc-text-2); }
+.sc-pick__list { display: flex; flex-direction: column; gap: 2px; }
+/* 44px because the panel exists for a finger; the value rides in the second
+   column as a plain .sc-figure rather than a class of its own. */
+.sc-pick__item { display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name figure" "meta figure"; gap: 0 var(--sc-s2); align-items: center;
+  width: 100%; min-height: 44px; padding: 6px var(--sc-s1); border: 1px solid transparent;
+  border-radius: var(--sc-r-sm); background: transparent; color: var(--sc-text);
+  font: inherit; text-align: left; cursor: pointer; }
+.sc-pick__item:hover { border-color: var(--sc-border-strong); background: var(--sc-raised); }
+.sc-pick__item:focus-visible { outline: 2px solid var(--sc-focus); outline-offset: -2px; }
+.sc-pick__item[aria-pressed="true"] { border-color: var(--sc-accent); background: var(--sc-raised); }
+.sc-pick__name { grid-area: name; min-width: 0; font: 600 var(--sc-text-sm)/1.35 var(--sc-font-body); color: var(--sc-heading); }
+.sc-pick__meta { grid-area: meta; min-width: 0; font: 500 11px/1.4 var(--sc-font-mono); color: var(--sc-text-2); }
+.sc-pick__item > .sc-figure { grid-area: figure; font-size: var(--sc-text-sm); }
+/* A crowd has no useful bottom: show a readable few and let the reader ask for
+   the rest, rather than a scroller that hides its own length. */
+.sc-pick__more { align-self: flex-start; }
+
+/* --------------------------------------------------------------------------
+   4g. FIGURE BASIS — how a printed number was arrived at
    A page prints three kinds of number and, until 2.12, one ink for all three:
    a figure READ from the record, a figure DERIVED from stated assumptions,
    and one the source never supplied. Recorded is the default and wears no

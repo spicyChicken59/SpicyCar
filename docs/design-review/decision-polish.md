@@ -52,11 +52,23 @@ shared no-photo band — and the dialog ends in one `.sc-actionbar`.
 ## Provenance and verification
 
 Before: `0a427ca9e8d1a37a38251d1b4c77beae2512a57d` at design-system `08cd626f`
-(v2.10.0). Upstream: `design/car-decision-polish`, proposed **v2.12.0** — no tag
-cut; the version is settled at integration. Captures come from the Chromium
-harness over the checked-in `docs/data.json` with the documented offline font
-and photo fallbacks; they are evidence of layout, not listing or financing
-claims.
+(v2.10.0). Captures come from the Chromium harness over the checked-in
+`docs/data.json` with the documented offline font and photo fallbacks; they are
+evidence of layout, not listing or financing claims.
+
+**Upstream, integrated.** `design/car-decision-polish` (`6068da8`) went in
+through design-system #24, and SpicyHome's parallel branch reconciled it into
+its own before both landed on `main` as `600283f` (#23). The reconcile is
+additive on both sides: my `6068da8` is an ancestor of `main`, the sheet diff
+from it is Home's `.sc-pick` and nothing else, and the one edit to my work is
+that Home renumbered my section `4f → 4g` while **keeping it last in the
+component band**, which is the load-bearing property the block's own comment
+names. Upstream `npm run check` is green on the merged `main` (110 component
+blocks, 368 classes findable); the only problem it reports is the missing
+v2.12.0 tag, which is the owner's to publish — a tag cannot be pushed from the
+build sandbox. The snapshot here is re-vendored from that merged `main`, so the
+pin names a commit on `main` rather than a branch tip, and it carries both
+contributions.
 
 Offline: 565 Python tests, two failures pre-existing on `main` and unrelated
 (the committed record's key order; the README sheet row). Consumer lint clean.
@@ -80,48 +92,49 @@ or financing arithmetic. Nothing here touches a number.
 
 ## Next builder prompt
 
-> Continue SpicyCar. This is the **integration** step for one upstream
-> contribution, not a new design pass.
+> Continue SpicyCar. The upstream integration for this pass is **done**; what
+> follows is not design work.
 >
-> State: SpicyCar branch `claude/spicycar-shopping-polish-0ebw1k` (PR open) pins
-> design-system `design/car-decision-polish`, which proposes **v2.12.0** adding
-> `.sc-signal-matrix--fit`, `.sc-estimate` and `.sc-unreported`. **No tag is
-> cut.** SpicyHome ran a parallel upstream branch; its work is not in this one.
-> SpicyCar PR #67 (`design/print-table-flow`) is **superseded** — its two print
-> rules are byte-identical in this snapshot and its v2.10.0 pin is older — but it
-> is still OPEN and must not be closed, merged, or merged on top of the newer
-> pin without approval.
+> State: design-system `main` is `600283f` (v2.12.0 in every version string,
+> carrying both this pass's `.sc-estimate` / `.sc-unreported` /
+> `.sc-signal-matrix--fit` and SpicyHome's `.sc-pick`). SpicyCar branch
+> `claude/spicycar-shopping-polish-0ebw1k` (PR #77) pins that exact commit,
+> re-vendored from the clean merged checkout, all 22 hashes verified. SpicyCar
+> PR #67 (`design/print-table-flow`) is superseded — its two print rules are
+> byte-identical in this snapshot and its pin is four releases older — but it is
+> still OPEN and must not be closed or merged without approval.
 >
-> Do, in order:
-> 1. Fetch both repos. If Home's upstream branch is approved or merged first,
->    reconcile this branch's **source** onto that result — never resolve a
->    generated file (`styleguide.html`, `tokens.json`, `sc-*.js`,
->    `.claude/skills/**`) by choosing a side: take both sides' source edits, then
->    regenerate with `node build/brand-assets.mjs && node build/templates.mjs &&
->    node build/gen-tokens.mjs && node build/assemble.mjs`. Keep both
->    contributions; resolve duplicate primitives by name and behaviour, and
->    settle one correct next version across `sc.css`, both `package.json`s,
->    `react/package-lock.json`, the style guide and AUDIT-AND-ROADMAP §5.
-> 2. `npm run check` (the cover's component-block count moves with the classes)
->    and `node build/visual-check.mjs --browser --shots /tmp/sc`.
-> 3. Commit upstream, then from the clean committed checkout:
->    `node build/vendor.mjs <SpicyCar>/docs/design-system`, and check
->    `node tools/design_snapshot.mjs` reports the new commit.
-> 4. Sweep the consumer: `docs/index.html` and `docs/how.html` cite the sheet
->    version in prose, and a test fails if they name one they do not load.
-> 5. Re-run, matching the linter's checkout to the new pin:
->    `AUTODEV_API_KEY=test-key-not-used python -m unittest discover -s tests -t . -v`
->    (two failures are pre-existing on `main`: the committed record's key order
->    and the README sheet row — reproduce them there before blaming this branch),
->    `node tools/consumer_lint_ci.mjs <upstream> docs/index.html docs/how.html tools/og_card.html`,
->    `node tools/studio_smoke.mjs`, `node tools/workspace_smoke.mjs`,
->    `node tools/discovery_smoke.mjs`,
->    `node tools/dashboard_smoke.mjs <upstream> --shots /tmp/car-review`
->    (302/306 with four pre-existing failures is the baseline; anything else is
->    yours), and look at the shots at 390 and 1280 in both themes.
-> 6. Only then does the tag question arise, and it is the owner's.
+> Three things remain, none of them this branch's to fix:
+> 1. **No `v2.12.0` tag exists.** `npm run check` on design-system `main` fails
+>    on exactly that, and every documented jsDelivr pin (`design-system@v2.12.0/…`)
+>    is a 404 until it is published. A tag cannot be pushed from this sandbox:
+>    the agent proxy passes `refs/heads/*` and refuses `refs/tags/*`. Cutting a
+>    release in the GitHub web UI targeting `main` is the way round it, and it is
+>    the owner's call, not yours.
+> 2. **SpicyCar CI is red on tracker drift, not on this diff.** `test` fails two
+>    tests (the committed record's key order; the README `| as committed |` sheet
+>    row) and `dashboard` fails four (price sort order, the BMW i4 stock sentence,
+>    "Open this car", and `docs/data.json` at 282KB compressed against a 250KB
+>    budget). All six reproduce on `main` at `0a427ca` — diff the smoke's "what
+>    failed" block against an `origin/main` worktree before believing otherwise —
+>    and every fix means regenerating published tracker output. `main` has taken
+>    three daily snapshot commits since its last green run, and the commit-back
+>    does not trigger the workflow, so no run reported on them until #77's.
+>    Whoever next runs the tracker owns these.
+> 3. **#77 wants a human merge.** It is conflict-free with no review threads.
 >
-> Do not touch `Tracking.py`, `targets.json`, `docs/data.json`, `REPORT.md`, the
-> ledgers, ranking or financing arithmetic. Do not weaken a lint rule or mask an
-> overflow. A basis mark is applied from what the record already says about a
-> figure, never from a computation the page just performed.
+> If you do pick up the tracker work: `Tracking.py`, `targets.json`,
+> `docs/data.json`, `REPORT.md` and the ledgers are its territory and were
+> deliberately untouched here. Re-run, in this order, with the linter's checkout
+> matching the pin:
+> `AUTODEV_API_KEY=test-key-not-used python -m unittest discover -s tests -t . -v`,
+> `node tools/design_snapshot.mjs`,
+> `node tools/consumer_lint_ci.mjs <design-system@600283f> docs/index.html docs/how.html tools/og_card.html`,
+> `node tools/studio_smoke.mjs`, `node tools/workspace_smoke.mjs`,
+> `node tools/discovery_smoke.mjs`,
+> `node tools/dashboard_smoke.mjs <design-system@600283f> --shots /tmp/car-review`,
+> then look at the shots at 390 and 1280 in both themes.
+>
+> Do not weaken a lint rule or mask an overflow. A basis mark is applied from
+> what the record already says about a figure, never from a computation the page
+> just performed.
