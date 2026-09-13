@@ -96,6 +96,8 @@ jobs:
           node tools/studio_smoke.mjs
           node tools/workspace_smoke.mjs
           node tools/discovery_smoke.mjs
+      - name: Walk the shopping journey — three views, the comparison, the garage
+        run: node tools/browse_smoke.mjs --shots /tmp/browse-shots
       - name: Open the dashboard and ask whether it works
         run: |
           set -o pipefail
@@ -106,5 +108,7 @@ jobs:
         if: always()
         with:
           name: dashboard-screenshots
-          path: /tmp/shots
+          path: |
+            /tmp/shots
+            /tmp/browse-shots
           if-no-files-found: ignore

@@ -555,6 +555,42 @@ added. OpenStreetMap tiles are attributed and optional: map failures leave the
 cards and listing tables usable. `tools/discovery_smoke.mjs` covers sorting,
 filters, shortlist state, map/card focus, phone popups, and offline fallback.
 
+**Three views, one set of cars.** Beside the cards the panel reads the same
+visible candidates two ways — the **map** and **price against miles** — chosen by
+one captioned control at desktop width and by the Cars / Map / Price switch on a
+phone. Both halves draw exactly what the cards show: the plot is the dashboard's
+own scatter, not a second one, and neither view invents or drops a car. What a
+view cannot draw it says, names and reaches: a car with no verified location is
+not on the map, a car whose mileage was never published is not on the plot, both
+are counted in the panel's own sentence, and one press lists them in the cards.
+Choosing a car anywhere — a card, a dot, a marker — chooses it everywhere and
+rides in the address bar as `?car=`, with `?show=` for the view, so Back and a
+shared link both land on the same car in the same view. A chosen car the current
+filters exclude is never silently let back in: the page says which filter or
+unshopped model is hiding it and offers the one press that changes that.
+
+**Comparing actual cars.** `Compare & save` puts the cars you saved side by side,
+one column each, priced on their own terms. Membership in that comparison is not
+the same decision as saving: **Remove** takes a car out of the table and leaves it
+saved, with its notes and its status, and one press puts it back. Rows the cars
+do not agree on are marked, *Only what differs* prints just those and keeps the
+rest readable under the table, and identity, the cost basis and any statement of
+uncertainty are never folded. Every price carries how many observations are behind
+it and the days they span — never a daily price the tracker never took. On a phone
+the table becomes a **pair view**: two cars named in a sticky head, one measure per
+row and both values beside it, with a chooser for which two.
+
+**The garage on return.** Saved cars, their statuses and your notes stay in the
+browser. On a visit with newer data the garage leads with the cars the record
+moved under — an asking price cut or raised, or a car that stopped being seen —
+each with the date of the observation behind it and one press to the showroom. The
+baseline is the data day you last saw, so a reload is not a new observation, a
+newer site build is not a fresh one, and a listing that stopped being seen is
+never called a sale. `tools/browse_smoke.mjs` covers the three views' shared
+membership, the explained omissions, selection and history continuity, the
+comparison's membership and folds, the dated changes, an older or unavailable
+local store, keyboard reach and the phone's targets.
+
 The authored pages are `docs/index.html` and `docs/how.html`. The daily tracker writes
 `docs/data.json` and `REPORT.md`; it does not regenerate the HTML, so the visual design
 survives every daily update without touching the tracker or its data.

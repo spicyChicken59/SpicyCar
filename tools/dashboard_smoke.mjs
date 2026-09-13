@@ -4130,7 +4130,7 @@ await step('since your visit', async () => {
   const since = sharedDays.filter((d) => d < through).slice(-3)[0];
   if (!since) return skipRest('the record holds fewer than three fetch days before the newest');
   const sentence = () => {
-    const bits = [];
+    const bits = [], tot = { fresh: 0, less: 0, exact: 0, unseen: 0 };
     for (const o of models) {
       const tids = new Set(Object.keys(o.m.trims || {}).filter((id) => want.has(id)));
       const days = [...new Set([...tids].flatMap((t) => (o.m.fetch_days || {})[t] || []))].sort();
@@ -4152,12 +4152,35 @@ await step('since your visit', async () => {
       const left = !real.length ? 'none gone' : exact && unseen ? `${exact} gone, ${unseen} more stopped being seen` : exact ? `${exact} gone` : `${unseen} stopped being seen, none confirmed gone`;
       const dropped = moved ? `${moved} dropped from the watchlist` : '';
       bits.push(`${o.label} — ${[floor, `${fresh} new`, `${less} ask less than then`, left, dropped].filter(Boolean).join(', ')}`);
+      tot.fresh += fresh; tot.less += less; tot.exact += exact; tot.unseen += unseen;
     }
-    return bits.length ? `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.` : '';
+    if (!bits.length) return '';
+    // One model still prints the whole thing as a sentence; two or more lead
+    // with the totals and carry a line per model behind the summary, and this
+    // reads the same words out of either shape.
+    if (bits.length === 1) return `Since you last saw data through ${fmtDate(since)}: ${bits[0]}.`;
+    const gone = tot.exact && tot.unseen ? `${tot.exact} gone, ${tot.unseen} more stopped being seen`
+      : tot.exact ? `${tot.exact} gone`
+      : tot.unseen ? `${tot.unseen} stopped being seen`
+      : 'none gone';
+    return `Since you last saw data through ${fmtDate(since)}: ${tot.fresh} new, ${tot.less} ask less than then, ${gone}.`
+      + ' ' + bits.map((b) => b + '.').join(' ');
   };
   const wantTxt = sentence();
   const plant = (obj) => page.evaluate((o) => { try { if (o === null) localStorage.removeItem('spicycar.seen'); else localStorage.setItem('spicycar.seen', JSON.stringify(o)); } catch { /* private mode */ } }, obj);
-  const read = () => page.evaluate(() => { const n = document.getElementById('notice'); const p = n && n.querySelector('p[data-since]'); return { hidden: !n || n.hidden, text: p ? p.textContent.replace(/\s+/g, ' ').trim() : '', since: p ? p.getAttribute('data-since') : null, other: n && !n.hidden && !p ? n.textContent.replace(/\s+/g, ' ').trim().slice(0, 80) : '' }; });
+  // The sentence is a paragraph for one model and a summary with a line per
+  // model for two or more; both carry data-since, and both are read here as
+  // the same words in the same order.
+  const read = () => page.evaluate(() => {
+    const n = document.getElementById('notice');
+    const p = n && n.querySelector('[data-since]');
+    const flat = (el2) => (el2.tagName === 'DETAILS'
+      ? [el2.querySelector('summary'), ...el2.querySelectorAll('li')].filter(Boolean).map((k) => k.textContent.replace(/\s+/g, ' ').trim()).join(' ')
+      : el2.textContent.replace(/\s+/g, ' ').trim());
+    return { hidden: !n || n.hidden, text: p ? flat(p) : '', since: p ? p.getAttribute('data-since') : null,
+             open: p ? (p.tagName === 'DETAILS' ? p.open : null) : null,
+             other: n && !n.hidden && !p ? n.textContent.replace(/\s+/g, ' ').trim().slice(0, 80) : '' };
+  });
   await open('');
   await plant({ through: since, since: null });   // the reader last saw data through `since`
   await open('');

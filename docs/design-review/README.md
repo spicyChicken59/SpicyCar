@@ -1,8 +1,12 @@
 # SpicyCar design review · 6 September 2026
 
-The most recent pass is [Decision polish](decision-polish.md): the shortlist comparison made
+The most recent pass is [Discover → Compare → Decide](discover-compare-decide.md): the cards, the
+map and price-against-miles made three views of one candidate set with their omissions named and
+reachable, the comparison given a phone arrangement and a membership of its own, and the garage
+told what the record moved under since the reader last saw data. Before it,
+[Decision polish](decision-polish.md): the shortlist comparison made
 readable on a phone, asking prices told apart from computed estimates, and the exact car's
-photograph given a stage of its own. Before it, [Fieldwork: the photograph and the facts](fieldwork.md):
+photograph given a stage of its own. Before that, [Fieldwork: the photograph and the facts](fieldwork.md):
 larger uncropped candidate photographs, an ink instrument strip and preserved phone decision access.
 
 The desktop images below are real captures of the public SpicyCar page, not mockups. They preserve

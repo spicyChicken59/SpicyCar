@@ -108,3 +108,28 @@
     overflow: hidden; clip-path: inset(50%); white-space: nowrap;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Phone chrome. Every row above the first car was true and useful, and there
+   were eleven of them: the first card began at 804px of an 844px screen. What
+   is kept is what a shopper needs to see a car and act on it; the rest is one
+   press away, not gone.
+   --------------------------------------------------------------------------- */
+.ss-since { margin: 0; }
+.ss-since__list { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.ss-since__list .sc-hint { margin: 0; }
+@media (max-width: 720px) {
+  .market-studio:not([data-workspace="report"]) .shop-kicker { display: none; }
+  .market-studio .shop-title { font-size: clamp(24px, 7vw, 30px); line-height: 1.12; }
+  .market-studio .shop-scope { flex-wrap: wrap; align-items: center; }
+  .market-studio .shop-selection-summary { flex: 1 1 100%; margin: 0; }
+  .market-studio .shop-intro { gap: 10px; }
+  .market-studio .shop-subtitle { margin-top: 2px; }
+  .market-studio .shop-scope { margin-top: 10px; }
+  .market-studio .shop-navigation { margin-top: 10px; }
+  .market-studio #main > #filters-card { margin-top: 10px; }
+  .market-studio .studio-toolbar { margin-bottom: 8px; }
+  .market-studio .car-view-switch { margin-bottom: 8px; }
+  .market-studio .car-place-count { margin-bottom: 8px; }
+  .market-studio #map-card > .sc-card__head { margin-bottom: 8px; }
+}

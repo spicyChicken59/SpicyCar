@@ -39,7 +39,9 @@ try{
  assert.equal(await first.getByRole('button',{name:'Saved ✓',exact:true}).getAttribute('aria-pressed'),'true');
  await first.getByRole('button',{name:'Saved ✓',exact:true}).click();
  assert.equal(await first.getByRole('button',{name:'Save car',exact:true}).getAttribute('aria-pressed'),'false');
- await first.getByRole('button',{name:'Quick look',exact:true}).click();
+ // The name begins with the action and goes on to name the car — eight
+ // identical "Quick look" buttons in a column tell a screen reader nothing.
+ await first.getByRole('button',{name:/^Quick look\b/}).click();
  assert.equal(await dialog.isVisible(),true);
  assert.equal(await page.locator('#studio-title').evaluate(n=>n===document.activeElement),true);
  assert.ok((await dialog.textContent()).includes(vin));

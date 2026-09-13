@@ -49,7 +49,7 @@
 <script src="design-system/sc-charts.js"></script>
 <script src="design-system/sc-map.js"></script>
 <style>
-  /* Page-specific only. Everything generic now lives in sc.css v2.12.0 — the
+  /* Page-specific only. Everything generic now lives in sc.css v2.13.0 — the
      map, the data dots, the legend chips, the photo card, the filter bar, the
      frame's photo loader and the 44px touch targets were all promoted out of
      this file and are no longer maintained here. */
@@ -362,7 +362,7 @@
   }
 
   /* Bridge, dense surfaces — touch targets the sheet doesn't cover. (The
-     masthead, theme toggle and footer are sc.css v2.12.0's own 44px block,
+     masthead, theme toggle and footer are sc.css v2.13.0's own 44px block,
      keyed to (pointer: coarse); the bridge that mirrored it here is gone.)
      Two mechanisms, split by whether layout may move:
 
@@ -727,7 +727,10 @@
         <p class="sc-hint" id="finalists-hint"></p>
       </div>
     </div>
+    <div class="fin-tools" id="finalists-tools"></div>
     <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Shortlisted car comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values sc-signal-matrix--fit" id="finalists-table"></table></div>
+    <div class="sc-compare-pair fin-pair" id="finalists-pairs" hidden></div>
+    <div class="fin-same" id="finalists-same" hidden></div>
   </section>
 
   <div id="shortlist" hidden></div>
@@ -875,7 +878,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, mission: 'all', lens: 'price', workspace: new URLSearchParams(location.search).get('view') || 'explore' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, mission: 'all', lens: 'price', car: null, show: 'cars', compareOut: new Set(), diffOnly: false, pairA: null, pairB: null, workspace: new URLSearchParams(location.search).get('view') || 'explore' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -920,7 +923,14 @@
       // how a control stops being used.
       S.budget = Number.isFinite(p.budget) && p.budget > 0 ? p.budget : 0;
       S.budgetKind = p.budgetKind === 'mo' ? 'mo' : 'otd';
-    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; }
+      // Which saved cars the reader took OUT of the comparison, and whether
+      // the comparison is printing every measure or only the ones that
+      // differ. Both are readings of the shortlist, never the shortlist
+      // itself: an older profile that has neither compares everything, which
+      // is what it did before these existed.
+      S.compareOut = new Set(Array.isArray(p.compareOut) ? p.compareOut.filter((v) => typeof v === 'string' && /^[A-Z0-9]{6,24}$/.test(v)) : []);
+      S.diffOnly = p.diffOnly === true;
+    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; S.compareOut = new Set(); S.diffOnly = false; }
   }
   // What the reader last saw, so the front page can say what changed since.
   // A key of its own, not a field in the prefs: the prefs are rewritten on
@@ -942,7 +952,7 @@
     } catch (e) { SEEN.since = null; /* private mode etc. */ }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ lens: S.lens, shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ lens: S.lens, shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind, compareOut: [...S.compareOut], diffOnly: S.diffOnly })); } catch (e) { /* private mode etc. */ }
   }
   let WORKSPACE = null, STUDIO = null;
   function applyShopping() {
@@ -982,6 +992,16 @@
       car: studioCar, savedVins: () => Object.keys(S.stars).filter((v) => STAR_STEPS.includes(S.stars[v]) && S.stars[v]),
       status: (vin, value) => { if (value === undefined) return S.stars[vin] || ''; setStar({vin}, value); },
       through: dataThrough,
+      // The garage reads the record's own change detection rather than keeping
+      // a second baseline of its own, and the comparison's membership rather
+      // than a second shortlist.
+      change: carChange,
+      lastSeenDay: () => SEEN.since,
+      compared: (vin, value) => {
+        if (value === undefined) return !S.compareOut.has(String(vin || '').toUpperCase());
+        setCompare(String(vin || '').toUpperCase(), !!value);
+        return !!value;
+      },
       state: () => ({mission:S.mission, lens:S.lens, hasFinance:!!financeCfg(), monthlyBudget:S.budgetKind==='mo'?S.budget:0,
         terms:`${chosenTerm()} months · ${money(S.down)} down · base APR ${financeCfg()?.fallback_apr ?? 'unreported'}%${S.offers?' · eligible lower offers included':''}. Tax and fees estimated; shipping may be separate.`}),
       mission: (value) => { S.mission = value; if(value==='drops') S.sort='cut'; else if(value==='fresh') S.sort='newest'; syncUrl(); buildFilters(true); render(); },
@@ -1628,7 +1648,53 @@
     quickCar: (vin) => STUDIO?.open(vin),
     starCar: (vin) => { const c = findVin(vin); return c ? (S.workspace === 'report' ? starButton(c.x) : studioSaveButton(c.x)) : null; },
     resetFilters: () => { S.mission='all'; S.budget=0; S.where.clear(); S.year='all'; S.miles=0; S.clean=false; S.rental=false; S.cpo=false; S.hideNew=false; savePrefs(); syncUrl(); buildFilters(true); render(); },
+    // The third view of the one visible set: the plot this page already had,
+    // drawn into the panel over exactly the VINs the cards are showing. No
+    // second scatter, no second population, no second definition of a dot.
+    plotCars: ({ host, legend, note, say, vins, selected, omitted, select }) => {
+      const want = new Set(vins);
+      const rows = (S.brand === 'all' ? pooledRows() : filtered()).filter((x) => want.has(x.vin));
+      renderScatter(rows, { host, legend, note, say, selected, omitted, select, ringed: MAP_SUMMARY.picked });
+    },
+    onSelect: (vin) => {
+      S.car = vin || null;
+      syncUrl(true);
+      renderSelected();
+    },
+    onView: (next) => { if (S.show !== next) { S.show = next; syncUrl(true); } },
   }) : null;
+  // A car chosen in one view is the car every other view is looking at, and
+  // choosing one is a reading of the results and never a permission: a car the
+  // current filters exclude is NOT quietly let back in. The page says which
+  // filter — or which unshopped model — is hiding it, and offers the one press
+  // that changes that, so widening is always the reader's own act.
+  function renderSelected() {
+    if (!DISCOVERY) return;
+    const vin = S.car;
+    if (!vin || DISCOVERY.holds(vin)) { DISCOVERY.explain(null); return; }
+    const hit = findVin(vin);
+    if (!hit) { S.car = null; DISCOVERY.explain(null); syncUrl(true); return; }
+    const name = `${hit.x.year || ''} ${hit.m.label || hit.mk}`.replace(/\s+/g, ' ').trim();
+    const key = hit.bk + '/' + hit.mk;
+    const unshopped = S.models.size && !S.models.has(key);
+    const bits = filterBits(false);
+    const say = el('p', { class: 'car-outside__say' },
+      `The car you chose — ${name}, ${placeTxt(hit.x)} — is not in these results: `,
+      unshopped ? `${hit.m.label || hit.mk} is not one of the models you are browsing.`
+                : (bits.length ? `it is hidden by ${bits.join(' · ')}.` : 'the current search does not hold it.'));
+    const act = el('button', { class: 'car-text-button', type: 'button', 'data-fkey': 'outside:' + vin,
+      onclick: () => {
+        if (unshopped) { S.models = new Set([...S.models, key]); S.shopOnly = true; savePrefs(); syncUrl(); rerender('nav'); return; }
+        S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false;
+        S.cpo = false; S.hideNew = false; S.budget = 0; S.mission = 'all';
+        savePrefs(); syncUrl(); buildFilters(true); render();
+      } },
+      unshopped ? `Add ${hit.m.label || hit.mk} to this search` : (bits.length ? `Clear ${bits.join(' · ')}` : 'Clear the filters'));
+    const drop = el('button', { class: 'car-text-button', type: 'button', 'data-fkey': 'outside-clear',
+      onclick: () => { S.car = null; syncUrl(true); renderSelected(); } }, 'Forget that car');
+    DISCOVERY.explain(el('div', { class: 'car-outside__body', 'data-outside-vin': vin }, say,
+      el('div', { class: 'car-outside__acts' }, act, drop)));
+  }
   function updateMapVisibility() {
     const rows = S.brand === 'all' ? pooledRows() : filtered();
     $('map-card').hidden = !rows.length && S.workspace !== 'explore';
@@ -1640,12 +1706,18 @@
         price: x.price, priceLabel: money(x.price), paymentLabel: perMo(payFor(x)), monthly:S.lens==='monthly' && !!financeCfg() && S.workspace!=='report',
         paymentNote: `${x.apr ?? 'unreported'}% APR · ${termFor(x)}mo · ${money(S.down)} down; tax/fees estimated${x.apr_promo?'; confirm offer eligibility':''}`,
         radar: twoPrices(x) ? 'Two recorded prices' : lastStep(x)<0 ? money(-lastStep(x))+' lower vs previous fetch' : isNew(x) ? 'New at last fetch' : '', milesLabel: x.miles == null ? 'Mileage unreported' : num(x.miles) + ' mi',
+        miles: (typeof x.miles === 'number' && Number.isFinite(x.miles)) ? x.miles : null,
         location: placeTxt(x), dealer: x.dealer || 'Dealer unreported', lat: x.lat, lng: x.lon,
         local: !!x.local, picked: MAP_SUMMARY.picked.has(x.vin), saved: ['short','called'].includes(starOf(x)),
         tone: SC.toneRef(found ? carTone(x, found.bk, S.brand === 'all' ? null : found.m) : 'chart-context'),
         url: safeUrl(x.url), shipping: shipNote(x), image: safeUrl(x.image), flags: (x.flags || []).join(' · ') };
     });
-    if (DISCOVERY) DISCOVERY.update(places, [S.brand, S.model, S.mission, S.budgetKind, S.budget, [...S.where].sort().join(','), [...S.models].sort().join(',')].join('|'));
+    if (DISCOVERY) {
+      DISCOVERY.update(places, [S.brand, S.model, S.mission, S.budgetKind, S.budget, [...S.where].sort().join(','), [...S.models].sort().join(',')].join('|'));
+      DISCOVERY.view(S.show);
+      if (S.car && DISCOVERY.selected() !== S.car) DISCOVERY.select(S.car, false);
+      renderSelected();
+    }
     else $('car-discovery').textContent = 'Map unavailable. All cars are in the listings below.';
     const located = places.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng) && Math.abs(c.lat) <= 90 && Math.abs(c.lng) <= 180 && (c.lat !== 0 || c.lng !== 0)).length;
     $('car-map-hint').textContent = rows.length + ' cars in the current view. Tap a dot to see the car and its asking price.';
@@ -1692,33 +1764,89 @@
     SC.tableTwin(mount, { caption, head, rows, details: false });
   }
 
-  // ---------- price-vs-miles scatter (model view) ----------
+  // ---------- price against miles ----------
   // One dot per car under the current filters: the brand hue, filled when
   // drivable and hollow when it pays shipping (the map's encoding), spicy
   // picks ringed in the accent. The dashed lines are the typical-value
   // lines per model year (the same cohort medians the picks are scored
   // against, at the drivable reference), so "18% under typical" reads as a
-  // visible gap below the year's line. Click a dot to open its listing;
-  // the listings table below is the accessible twin.
-  function renderScatter(rows) {
+  // visible gap below the year's line.
+  //
+  // ONE plot, two places to stand it. On a model page it is the section under
+  // the listings and a click opens the dealer's listing. In the browse panel it
+  // is the third way of reading the SAME visible candidates the cards and the
+  // map read — one row set, one selection — and a click selects the car rather
+  // than leaving the page. Nothing about a dot's meaning changes between them.
+  //
+  // What the scope decides is only what a hue means and what "typical" can be
+  // measured against: on one model page the trim varies and a model year has a
+  // cohort, across models the brand varies and no cross-model median exists, so
+  // the lines are drawn per model instead and only while few enough models are
+  // in view to read. Nothing is invented in either case.
+  function scatterScope() {
+    if (S.brand !== 'all') {
+      const t = model();
+      const ids = trimIds(t);
+      return { label: t.label, pool: (t.listings || []), lines: 'year',
+        hueSplit: ids.length > 1,
+        base: SC.toneRef(brandTone(S.brand)),
+        toneOf: (x) => SC.toneRef(carTone(x, S.brand, t)),
+        cohortLabel: () => t.label,
+        lineKeyOf: (x) => String(x.year || ''),
+        keys: ids.map((id) => ({ id, label: trimLabel(t, id), tone: SC.toneRef(trimTone(t, id)), has: (x) => x.trim_id === id })) };
+    }
+    // Across the watchlist: the brand carries the hue, exactly as the map's
+    // dots do, so a car is the same colour in both halves of the panel.
+    const inView2 = modelsInView();
+    const byVin = new Map();
+    for (const { bk, mk, m } of inView2) for (const x of (m.listings || [])) byVin.set(String(x.vin || '').toUpperCase(), { bk, mk, m });
+    const owner = (x) => byVin.get(String(x.vin || '').toUpperCase()) || null;
+    return { label: inView2.length === 1 ? (inView2[0].m.label || inView2[0].mk) : 'car', pool: [],
+      lines: inView2.length <= SCATTER_LINE_MODELS ? 'model' : 'none',
+      hueSplit: new Set(inView2.map(({ bk }) => bk)).size > 1,
+      base: SC.toneRef('chart-1'),
+      toneOf: (x) => { const o = owner(x); return SC.toneRef(o ? brandTone(o.bk) : 'chart-context'); },
+      cohortLabel: (x) => { const o = owner(x); return o ? (o.m.label || o.mk) : ''; },
+      lineKeyOf: (x) => { const o = owner(x); return o ? o.bk + '/' + o.mk : ''; },
+      models: inView2,
+      owner,
+      keys: inView2.map(({ bk, mk, m }) => ({ id: bk + '/' + mk, label: m.label || mk, tone: SC.toneRef(brandTone(bk)),
+                                              has: (x) => { const o = owner(x); return !!o && o.bk === bk && o.mk === mk; } })) };
+  }
+  // Above this many models in view a per-model typical line is a thicket, so
+  // none is drawn and the caption says why rather than drawing an average of
+  // cars that are not comparable.
+  const SCATTER_LINE_MODELS = 3;
+  function renderScatter(rows, opts) {
+    opts = opts || {};
     const card = $('scatter-card');
-    const t = model();
+    const inPanel = !!opts.host;
+    const t = scatterScope();
     // VIN order, so dot z-order never depends on the table's sort — a scoped
     // update and a full render draw the identical scatter
     const pts = rows.filter((x) => hasPrice(x) && x.miles != null)
       .slice().sort((a, b) => ((a.vin || '') < (b.vin || '') ? -1 : 1));
-    if (pts.length < 3) { card.hidden = true; return; }
-    card.hidden = false;            // unhide before measuring, or clientWidth is 0 on a direct load
-    const host = $('scatter'); host.textContent = '';
+    const floor = inPanel ? 1 : 3;
+    if (pts.length < floor) {
+      if (inPanel) {
+        opts.host.textContent = ''; opts.legend.textContent = '';
+        opts.note.textContent = pts.length
+          ? 'One car in view has both a price and a mileage — a plot needs more than one to place it against.'
+          : 'No car in view publishes both a price and a mileage, so there is nothing to plot. The cards and the map still have every one of them.';
+      } else card.hidden = true;
+      return;
+    }
+    if (!inPanel) card.hidden = false;   // unhide before measuring, or clientWidth is 0 on a direct load
+    const host = opts.host || $('scatter'); host.textContent = '';
     // A live var() reference — re-resolves on a theme flip. `color` is what a
     // dot wears when nothing else distinguishes it; on a model with more than
     // one trim the TRIM takes the hue instead (carTone), because that is the
     // only thing that varies inside one model page and the plot's whole job is
     // to show which cars sit under their year's line.
-    const color = SC.toneRef(brandTone(S.brand));
-    const byTrimHue = trimIds(t).length > 1;
-    const dotTone = (x) => SC.toneRef(carTone(x, S.brand, t));
-    const W = Math.max(320, host.clientWidth || 720), H = 300;
+    const color = t.base;
+    const byTrimHue = t.hueSplit;
+    const dotTone = (x) => t.toneOf(x);
+    const W = Math.max(320, host.clientWidth || 720), H = inPanel ? 340 : 300;
     const m = { t: 16, r: 60, b: 40, l: 56 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const xt = niceTicks(0, Math.max(...pts.map((x) => x.miles)), 5);
@@ -1740,11 +1868,27 @@
     // rows refuse to print a percentage against — from the FULL model market
     // (stable under filters, matching the row scores)
     const P = pickParams();
-    const pool = (t.listings || []).filter((x) => pickEligible(x, P));
-    const byYear = {};
-    for (const x of pool) { const y = String(x.year || ''); (byYear[y] = byYear[y] || []).push(pickValue(x, P)); }
-    const cohorts = Object.entries(byYear).filter(([, vs]) => vs.length >= COHORT_FLOOR)
-      .map(([y, vs]) => ({ year: y, med: median(vs) })).sort((a, b) => a.year < b.year ? -1 : 1);
+    // The line's population is the FULL market of its cohort, not the filtered
+    // rows: a typical value that moved every time a where chip was pressed
+    // would be a different claim on every press. On a model page that is the
+    // model's own listings by year; across models it is each model's own
+    // listings, whole, so a line says "a typical Kia EV9" and nothing wider.
+    const cohortsOf = () => {
+      if (t.lines === 'year') {
+        const pool = (t.pool || []).filter((x) => pickEligible(x, P));
+        const byYear = {};
+        for (const x of pool) { const y = String(x.year || ''); (byYear[y] = byYear[y] || []).push(pickValue(x, P)); }
+        return Object.entries(byYear).filter(([, vs]) => vs.length >= COHORT_FLOOR)
+          .map(([y, vs]) => ({ year: y, label: y, med: median(vs), tone: null })).sort((a, b) => a.year < b.year ? -1 : 1);
+      }
+      if (t.lines !== 'model') return [];
+      return (t.models || []).map(({ bk, mk, m }) => {
+        const vs = (m.listings || []).filter((x) => pickEligible(x, P)).map((x) => pickValue(x, P));
+        return vs.length >= COHORT_FLOOR
+          ? { year: bk + '/' + mk, label: m.label || mk, med: median(vs), tone: SC.toneRef(brandTone(bk)) } : null;
+      }).filter(Boolean).sort((a, b) => (a.med ?? 0) - (b.med ?? 0));
+    };
+    const cohorts = cohortsOf();
     const priceAt = (med, mi) => med - (mi - P.base) * P.cpm;
     // The year, made visible: hovering a year's line, its label, or its legend
     // chip keeps that cohort's dots at full strength and dims the rest — the
@@ -1765,12 +1909,13 @@
       }
       if (m2 <= m1) continue;
       const x1 = xOf(m1), y1 = yOf(priceAt(c.med, m1)), x2 = xOf(m2), y2 = yOf(priceAt(c.med, m2));
-      svg.appendChild(svgEl('line', { class: 'sc-scatter__line', 'data-yline': c.year, x1, y1, x2, y2 }));
+      svg.appendChild(svgEl('line', { class: 'sc-scatter__line', 'data-yline': c.year, x1, y1, x2, y2,
+        style: c.tone ? 'stroke:' + c.tone : null }));
       const hit = svgEl('line', { class: 'sc-scatter__line-hit', x1, y1, x2, y2 });
       hit.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(c.year); });
       hit.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
       svg.appendChild(hit);
-      yLabels.push({ year: c.year, x: Math.min(x2 + 4, W - 4), y: y2 + 4 });
+      if (t.lines === 'year') yLabels.push({ year: c.year, label: c.label, x: Math.min(x2 + 4, W - 4), y: y2 + 4 });
     }
     // labels pushed apart vertically so converging lines never overprint
     yLabels.sort((a, b) => a.y - b.y);
@@ -1778,14 +1923,16 @@
     for (let i = yLabels.length - 1; i >= 0; i--) { const max = H - m.b - 2 - (yLabels.length - 1 - i) * 12; if (yLabels[i].y > max) yLabels[i].y = max; }
     for (let i = 1; i < yLabels.length; i++) if (yLabels[i].y - yLabels[i - 1].y < 12) yLabels[i].y = yLabels[i - 1].y + 12;
     for (const L of yLabels) {
-      const t2 = svgEl('text', { class: 'sc-scatter__series-label', 'data-yline': L.year, x: L.x.toFixed(1), y: L.y.toFixed(1) }, document.createTextNode(L.year));
+      const t2 = svgEl('text', { class: 'sc-scatter__series-label', 'data-yline': L.year, x: L.x.toFixed(1), y: L.y.toFixed(1) }, document.createTextNode(L.label));
       t2.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') highlightYear(L.year); });
       t2.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') highlightYear(stuckYear); });
       svg.appendChild(t2);
     }
     // the picks currently shown above, ringed
-    const scSets = pickSets(scopedScored(rows), pickCap());
-    const ringed = new Set([...scSets.local, ...scSets.far].map((p) => p.x.vin));
+    const ringed = opts.ringed || (() => {
+      const scSets = pickSets(scopedScored(rows), pickCap());
+      return new Set([...scSets.local, ...scSets.far].map((p) => p.x.vin));
+    })();
     const TIP = SC.tooltip(host, { live: false, flip: 0.6, offsetX: 14, offsetY: -34 });
     const tip = TIP.node;
     // Same touch contract as the map: first tap previews (photo, facts, an
@@ -1809,7 +1956,7 @@
         el('b', null, money(x.price)), el('span', null, `${num(x.miles)} mi`)));
       const bits = [placeTxt(x), x.local ? 'drivable' : (x.ship ? `+ ${money(x.ship)} shipping` : 'shipping n/a')];
       if (x.pick_stand === 'under' && x.pick_pct >= 0.02) {
-        const c = cohortOf(x, t.label);
+        const c = cohortOf(x, t.cohortLabel(x));
         bits.push(`${Math.round(x.pick_pct * 100)}% under typical` + (c ? ` (${c.short}, n=${c.n})` : ''));
       }
       if (onShortlist(x)) bits.push('on your shortlist');
@@ -1856,12 +2003,17 @@
       if (lastPtr !== 'touch' && cl.contains('sc-dot')) k = kOrder.find((q) => q.dot === e.target) || null;
       if (!k) k = nearestPt(e.clientX, e.clientY);
       if (!k) { hideTip(); return; }   // a tap on halo-covered emptiness dismisses, like background
-      if (lastPtr === 'touch' && armed !== k.dot) {   // first tap previews
+      // In the panel a dot IS the car in the cards beside it, so a press moves
+      // the one shared selection rather than leaving the page; on the model
+      // page, where there is no selection to move, it opens the listing as it
+      // always has. A touch still previews first in both.
+      if (lastPtr === 'touch' && armed !== k.dot && !opts.select) {   // first tap previews
         armed = k.dot;
         const r = k.dot.getBoundingClientRect();
         fillTip(k.x, r.left + r.width / 2, r.top, true);
         return;
       }
+      if (opts.select) { opts.select(k.x.vin); return; }
       const u = safeUrl(k.x.url);
       if (u) window.open(u, '_blank', 'noopener');
     });
@@ -1881,16 +2033,18 @@
       const cx = xOf(x.miles).toFixed(1), cy = yOf(x.price).toFixed(1);
       const isShort = onShortlist(x);
       const hue = isShort ? 'var(--sc-accent)' : dotTone(x);      // shortlisted cars wear the accent outright
-      const yr = String(x.year || '');
+      const yr = t.lineKeyOf(x);
       // Dashed when the dots are trim-coloured: --sc-accent (#AC3400) and the
       // second categorical slot (#D24100) are both dark orange, so a ringed
       // eDrive40 was an orange ring around an orange dot and read as a fuzzy
       // edge rather than a mark. The dash is a channel no palette can take.
       if (ringed.has(x.vin) || isShort) svg.appendChild(svgEl('circle', { class: 'sc-dot-ring', cx, cy, r: 7.5,
         'stroke-dasharray': byTrimHue ? '3 2.5' : null, 'data-year': yr }));
+      if (opts.selected && opts.selected === x.vin) svg.appendChild(svgEl('circle', { class: 'car-plot-halo', cx, cy, r: 10 }));
       const u = safeUrl(x.url);
-      const dot = svgEl('circle', { class: 'sc-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' sc-dot--link' : ''),
-        cx, cy, r: 4, 'data-year': yr, style: x.local ? 'fill:' + hue : 'stroke:' + hue });
+      const dot = svgEl('circle', { class: 'sc-dot ' + (x.local ? 'is-filled' : 'is-hollow') + (u ? ' sc-dot--link' : '')
+          + (opts.selected && opts.selected === x.vin ? ' is-selected' : ''),
+        cx, cy, r: 4, 'data-year': yr, 'data-plot-vin': x.vin || null, style: x.local ? 'fill:' + hue : 'stroke:' + hue });
       // presses and clicks ride the delegated pipeline above; hover stays
       // per-dot (a fine pointer only ever reaches the bare dots)
       dot.addEventListener('pointerenter', (e) => {
@@ -1924,9 +2078,10 @@
     // Same rule as the map's: written only from the arrow keys, composed as a
     // sentence rather than copied out of the tooltip, whose blocks concatenate
     // without separators and read back as "2024$43,568".
+    const SAY = opts.say || SCATTER_SAY;
     const dotSay = (x) => {
-      if (!SCATTER_SAY) return;
-      SCATTER_SAY.textContent = x ? [
+      if (!SAY) return;
+      SAY.textContent = x ? [
         `${x.year || ''} ${carTrimText(x)}`.replace(/\s+/g, ' ').trim(),
         money(x.price), x.miles != null ? `${num(x.miles)} miles` : null, placeTxt(x),
         x.local ? 'drivable' : (x.ship ? `plus ${money(x.ship)} shipping` : null),
@@ -1944,39 +2099,44 @@
     host.onkeydown = (e) => {
       if (e.key === 'ArrowRight') { focusDot(kIdx < 0 ? 0 : Math.min(kOrder.length - 1, kIdx + 1)); e.preventDefault(); }
       else if (e.key === 'ArrowLeft') { focusDot(kIdx < 0 ? kOrder.length - 1 : Math.max(0, kIdx - 1)); e.preventDefault(); }
-      else if (e.key === 'Enter' && kIdx >= 0) { const u = safeUrl(kOrder[kIdx].x.url); if (u) window.open(u, '_blank', 'noopener'); }
+      else if (e.key === 'Enter' && kIdx >= 0) {
+        if (opts.select) { opts.select(kOrder[kIdx].x.vin); e.preventDefault(); return; }
+        const u = safeUrl(kOrder[kIdx].x.url); if (u) window.open(u, '_blank', 'noopener');
+      }
       else if (e.key === 'Escape') focusDot(-1);
     };
     host.onblur = () => focusDot(-1);
-    const lg = $('scatter-legend'); lg.textContent = '';
-    // Fill and outline say drivable or shipped; hue says which trim, when there
-    // is more than one. Named here rather than left to be guessed, because a
-    // reader comparing two trims will read the colour first.
-    const trimKeys = trimIds(t);
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + (trimKeys.length > 1 ? 'var(--sc-chart-context)' : color) }), 'drivable'));
-    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + (trimKeys.length > 1 ? 'var(--sc-chart-context)' : color) }), 'shipping added'));
-    if (trimKeys.length > 1) for (const id of trimKeys) {
-      if (!pts.some((x) => x.trim_id === id)) continue;   // a trim with no car on the plot needs no key
-      lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + SC.toneRef(trimTone(t, id)) }), trimLabel(t, id)));
+    const lg = opts.legend || $('scatter-legend'); lg.textContent = '';
+    // Fill and outline say drivable or shipped; hue says which trim on a model
+    // page and which brand across the watchlist, when more than one is in view.
+    // Named here rather than left to be guessed, because a reader comparing two
+    // of anything will read the colour first.
+    const keys = t.keys.filter((k) => pts.some(k.has));   // a key with no car on the plot needs no swatch
+    const split = byTrimHue && keys.length > 1;
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + (split ? 'var(--sc-chart-context)' : color) }), 'drivable'));
+    lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:1.5px solid ' + (split ? 'var(--sc-chart-context)' : color) }), 'shipping added'));
+    if (split) for (const k of keys) {
+      lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:' + k.tone }), k.label));
     }
     lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:none;border:2px ' + (byTrimHue ? 'dashed' : 'solid') + ' var(--sc-accent)' }), 'spicy pick'));
     if (pts.some(onShortlist)) lg.appendChild(el('span', null, el('i', { class: 'is-swatch', style: 'border-radius:50%;background:var(--sc-accent)' }), 'shortlist'));
-    if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed var(--sc-border-strong)' }), 'typical value by year'));
-    // one chip per model year — hover to preview, press to hold (the touch path)
+    if (cohorts.length) lg.appendChild(el('span', null, el('i', { style: 'border-top:1.5px dashed var(--sc-border-strong)' }),
+      t.lines === 'model' ? 'typical value by model' : 'typical value by year'));
+    // one chip per cohort — hover to preview, press to hold (the touch path)
     const setChips = () => { for (const b of lg.querySelectorAll('.sc-legend__chip--select')) b.setAttribute('aria-pressed', String(b.dataset.y === stuckYear)); };
     for (const c of cohorts) {
       const sample = svgEl('svg', { width: 20, height: 10, viewBox: '0 0 20 10', 'aria-hidden': 'true' },
-        svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, style: 'stroke:var(--sc-border-strong)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
+        svgEl('line', { x1: 2, y1: 5, x2: 18, y2: 5, style: 'stroke:' + (c.tone || 'var(--sc-border-strong)'), 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
       const chip = el('button', { class: 'sc-legend__chip sc-legend__chip--select', type: 'button', 'aria-pressed': 'false',
         'data-fkey': 'ychip:' + c.year,
-        title: `Highlight the ${c.year} cars`,
+        title: `Highlight the ${c.label} cars`,
         onclick: () => { stuckYear = stuckYear === c.year ? null : c.year; highlightYear(stuckYear); setChips(); },
         onmouseenter: () => highlightYear(c.year),
-        onmouseleave: () => highlightYear(stuckYear) }, sample, el('span', null, c.year));
+        onmouseleave: () => highlightYear(stuckYear) }, sample, el('span', null, c.label));
       chip.dataset.y = c.year;
       lg.appendChild(chip);
     }
-    const touch = window.matchMedia('(hover: none)').matches;
+    const touchPlot = window.matchMedia('(hover: none)').matches;
     const stock = stockCounts(pts);
     // "priced cars" is a population this page counts elsewhere and it is not
     // this one: the plot needs a price AND a mileage, so three i7s that publish
@@ -1984,14 +2144,30 @@
     // own "3 publish no mileage and are in neither". The parts under this
     // sentence (49 stock + 99 used) add to the number it names either way; what
     // was wrong was which total the reader would find it against.
-    $('scatter-hint').textContent = `${pts.length} car${pts.length === 1 ? '' : 's'} with a price and a mileage under the current filters.`
+    // What the plot is OF, what it cannot draw, and what a reader does with it.
+    // The omitted count is the panel's own: a car with no published mileage is
+    // still in the results and still on the cards, and saying only "142 cars"
+    // over a search that found 150 is the omission this page exists to refuse.
+    const omitted = inPanel ? (opts.omitted || 0) : 0;
+    const lineWords = !cohorts.length
+      ? (t.lines === 'none' ? ` Typical-value lines are drawn when ${SCATTER_LINE_MODELS} or fewer models are in view; narrow the models to see them.` : '')
+      : t.lines === 'model'
+        ? ' A dot below its model\u2019s dashed line asks less than a typical one of that model with the same miles allowed for.'
+        : ` A dot below its year\u2019s dashed line asks less than a typical ${t.label} of that year with the same miles allowed for.`;
+    (opts.note || $('scatter-hint')).textContent =
+      `${pts.length} car${pts.length === 1 ? '' : 's'} with a recorded price and a recorded mileage`
+      + (inPanel ? ' in view' : ' under the current filters') + '.'
+      + (omitted ? ` ${omitted} more ${omitted === 1 ? 'is' : 'are'} in the results with no published mileage and cannot be placed here.` : '')
       // The column of dots at the left edge is a different market, and a
       // year's line fitted through it is fitted through dealer stock.
       + (stock.nNew >= 5 ? ` ${stock.nNew} of them sit under ${NEW_STOCK_MILES} miles — dealer stock priced near sticker, the column at the left edge — and the ${stock.nUsed} used cars are the rest.` : '')
-      + ` A dot below its year's dashed line asks less than a typical ${t.label} of that year with the same miles allowed for.`
-      + (touch ? ' Tap a dot to preview it, tap again to open; press a year chip to light up that year.'
-               : ' Hover a line or year chip to light up that year; hover a dot for the car, click to open the listing.');
-    card.hidden = false;
+      + lineWords
+      + (opts.select
+          ? (touchPlot ? ' Tap a dot to choose that car; it is the same car in the cards.'
+                       : ' Hover a dot for the car, click to choose it — the cards beside this follow the choice.')
+          : (touchPlot ? ' Tap a dot to preview it, tap again to open; press a year chip to light up that year.'
+                       : ' Hover a line or year chip to light up that year; hover a dot for the car, click to open the listing.'));
+    if (!inPanel) card.hidden = false;
   }
 
   // ---------- data access ----------
@@ -2999,6 +3175,12 @@
     const q = new URLSearchParams();
     if (S.workspace !== 'explore') q.set('view', S.workspace);
     if (S.mission !== 'all') q.set('hunt', S.mission);
+    // The browse surface's own state: which car is being looked at and which of
+    // the three views is looking at it. Both ride here so Back returns to the
+    // car you were on rather than to the top of a rebuilt search, and a link
+    // opens on the same car in the same view.
+    if (S.car) q.set('car', S.car);
+    if (S.show && S.show !== 'cars') q.set('show', S.show);
     if (S.brand !== 'all') {
       q.set('brand', S.brand);
       if (S.model) q.set('m', S.model);
@@ -3019,6 +3201,12 @@
     const q = new URLSearchParams(location.search);
     setWorkspaceView(q.get('view') || 'explore', false);
     S.mission = ['near','drops','fresh','saved'].includes(q.get('hunt')) ? q.get('hunt') : 'all';
+    S.show = ['cars', 'map', 'chart'].includes(q.get('show')) ? q.get('show') : 'cars';
+    // A car named in the address bar is honoured only when the record still
+    // holds exactly that VIN. Anything else is dropped rather than resolved to
+    // a different car — the same rule ?vin= follows one block down.
+    const wantCar = String(q.get('car') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    S.car = wantCar && findVin(wantCar) ? wantCar : null;
     const lc = (k) => { const v = q.get(k); return v ? v.toLowerCase() : v; };   // keys are lowercase slugs; casing alone must not fake a miss
     const list = (k) => (lc(k) || '').split(',').map((x) => x.trim()).filter(Boolean);
     const wantBrand = lc('brand'), wantModel = lc('model'), wantM = lc('m');
@@ -3604,82 +3792,42 @@
     }
     return out.sort((a, b) => ((a.x.price ?? 1e12) - (b.x.price ?? 1e12)));
   }
-  function renderFinalists() {
-    const card = $('finalists-card');
-    const rows = finalists();
-    // Emptied, not just hidden. A comparison of cars you have since ruled out
-    // is not a thing to leave lying in the document waiting for a print
-    // stylesheet, a find-in-page or the next reader of the DOM to surface it.
-    if (rows.length < 1) { card.hidden = S.workspace !== 'compare'; $('finalists-table').textContent = ''; $('finalists-hint').textContent = 'Save a car while exploring to keep it here. Save another to compare them side by side.'; return; }
-    card.hidden = false;
-    // The table holds what is still in play; two things it deliberately leaves
-    // out have to be said out loud or the reader is quietly missing cars they
-    // marked themselves. A car you ruled out is kept in the profile (that is
-    // the point of the fourth state) but not compared, and a car the sheet no
-    // longer carries at all — departed long enough ago to have fallen out of
-    // `gone` — would otherwise just stop appearing, with nothing to say it ever
-    // did. Both are counted, neither is invented.
-    const outN = Object.values(S.stars).filter((v) => v === 'out').length;
-    const lostN = starred().filter((v) => !findVin(v)).length;
-    const goneN = rows.filter((r) => r.gone).length;
-    $('finalists-hint').textContent =
-      `${rows.length === 1 ? 'Your saved car' : rows.length + ' cars you are deciding between, cheapest first'} — each priced on its own terms.`
-      + (goneN ? ` ${goneN} of them ${goneN === 1 ? 'has' : 'have'} left the market and ${goneN === 1 ? 'is' : 'are'} kept here for the comparison.` : '')
-      + (outN ? ` ${outN} more ruled out, still marked on ${outN === 1 ? 'its' : 'their'} own row.` : '')
-      + (lostN ? ` ${lostN} the sheet no longer carries at all.` : '')
-      + ' Press a car\'s button again to mark it called, then ruled out.'
-      + financeNote(rows.map((r) => r.bk + '/' + r.mk)) + costBasisNote();
-    const table = $('finalists-table'); table.textContent = '';
-    table.appendChild(el('caption', { class: 'sc-sr-only' },
-      `Your shortlist, side by side — one column per car, ${rows.length} of them`));
-    const head = el('tr', null, el('th', { scope: 'col' }, 'Measure'));
-    for (const r of rows) {
-      head.appendChild(el('th', { class: 'sc-case', scope: 'col',
-        'aria-label': `${r.m.label || ''} ${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim() },
-        el('span', null, `${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim()),
-        el('span', { class: 'sc-note' }, r.m.label || r.mk),
-        el('span', { class: 'sc-nowrap' },
-          el('span', { class: 'sc-chip ' + (r.gone ? 'sc-chip--danger' : STAR_CHIP[r.status] || 'sc-chip--neutral') },
-             r.gone ? 'gone' : STAR_WORD[r.status] || 'shortlisted'), ' ',
-          el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'fin:' + r.vin,
-                    onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →'))));
-    }
-    table.appendChild(el('thead', null, head));
-    const body = el('tbody');
-    const row = (label, title, cell) => {
-      const tr = el('tr', null, el('th', { class: 'cmp-metric', scope: 'row', title: title || null }, label));
-      for (const r of rows) tr.appendChild(cell(r));
-      body.appendChild(tr);
+  // Saving a car and comparing it are two different decisions, and this is
+  // where they stopped being the same one. The comparison's members are the
+  // saved cars MINUS the ones the reader took out of it; taking one out is a
+  // change to this table and to nothing else — the car keeps its status, its
+  // notes and its place in the garage, and one press puts it back. Nothing here
+  // can delete a saved car: setStar is the only writer of S.stars, and this
+  // never calls it.
+  const comparing = () => finalists().filter((r) => !S.compareOut.has(r.vin));
+  const setCompare = (vin, on) => {
+    if (on) S.compareOut.delete(vin); else S.compareOut.add(vin);
+    savePrefs(); renderFinalists();
+  };
+  // One definition of every measure, read by the table and by the phone's
+  // pair view, so the two cannot come to say different things about one car.
+  // `text` is the same value as a string: it is what "the same for all of
+  // them" is decided on, and what the pair view reads out.
+  //   always — a measure that is never folded away, however equal it looks:
+  //            what the car IS, what it asks, and what it would cost.
+  function finalistMeasures(rows) {
+    const out = [];
+    // What a measure SAYS about a car — the whole cell, figure and note, as a
+    // string. It is what "the same for all of them" is decided on, and it is
+    // read off the cell rather than authored a second time: two dashes reading
+    // "an accident on record" and "gone — scored against the live market only"
+    // are not the same answer, and a second spelling of each value is how a
+    // fold comes to print one car's reason over another car.
+    const said = (mm, r) => {
+      if (!mm._t) mm._t = new WeakMap();
+      if (!mm._t.has(r)) mm._t.set(r, mm.cell(r).textContent.replace(/\s+/g, ' ').trim());
+      return mm._t.get(r);
     };
-    // The compare card above marks a winner on exactly one row, and says so at
-    // length: across MODELS a price is not a score, so calling the cheapest one
-    // "best" would say the EV9 beat the i5 by being smaller. This table is a
-    // different question. Every car in it is one you starred yourself, so "which
-    // of these is cheapest" has a real answer — but the answer is still only
-    // what it literally is. Each row therefore names its own winner in its own
-    // words (lowest asking, fewest miles), and none of them says "best value":
-    // that sentence belongs to the one row measured against a cohort, and this
-    // table does not mark a winner on that row at all, because two cars scored
-    // against two different cohorts are not comparable on the percentage.
-    // `basis` is how the figure was arrived at, and nothing else: 'estimate'
-    // for a number this page computed over the buyer's own tax, fee and
-    // financing settings, undefined for one read off the listing. Asking is a
-    // recorded price and never carries it; out-the-door and per-month always
-    // do. Three dollar figures in one column used to be one weight, one size
-    // and one ink, with the difference carried only by the row label.
-    const cell = (v, sub, best, word, basis) =>
-      el('td', { class: 'sc-num' + (best ? ' is-best' : '') },
-        el('span', { class: 'sc-figure' + (basis === 'estimate' ? ' sc-estimate' : '') }, v),
-        sub ? el('span', { class: 'sc-note' }, sub) : null,
-        best ? el('span', { class: 'sc-note sc-text-good' }, word) : null);
-    // A bare "not scored" is exactly the kind of blank this page exists to
-    // refuse. Every reason a car falls out of the scored pool is a rule the
-    // buyer wrote themselves in targets.json — a mileage cap, no accidents, no
-    // ex-rentals — so the cell names the rule instead of shrugging. The last
-    // branch is the honest remainder: scorePicks needs three eligible cars in
-    // a cohort before it will call anything typical.
-    const whyUnscored = (r) => (r.gone ? 'gone — scored against the live market only'
-      : pickExcuse(r.x) || 'too few comparable cars to say');
+    const lowest = (get) => {
+      let b = null;
+      for (const r of rows) { const v = get(r); if (v != null && (b == null || v < b)) b = v; }
+      return b;
+    };
     // "3 cuts · $0 off" read as a discount on a car that was cut and then put
     // back up. `cuts` counts the downward steps; `delta` is last minus first.
     // When those two disagree the car did not end up cheaper, and on a shortlist
@@ -3693,86 +3841,388 @@
         : d > 0 ? `${n}, then back up · ${money(d)} over its first price`
         : `${n}, then back up · back to its first price`;
     };
-    const lowest = (get) => {
-      let b = null;
-      for (const r of rows) { const v = get(r); if (v != null && (b == null || v < b)) b = v; }
-      return b;
-    };
+    // A bare "not scored" is exactly the kind of blank this page exists to
+    // refuse. Every reason a car falls out of the scored pool is a rule the
+    // buyer wrote themselves in targets.json — a mileage cap, no accidents, no
+    // ex-rentals — so the cell names the rule instead of shrugging. The last
+    // branch is the honest remainder: scorePicks needs three eligible cars in
+    // a cohort before it will call anything typical.
+    const whyUnscored = (r) => (r.gone ? 'gone — scored against the live market only'
+      : pickExcuse(r.x) || 'too few comparable cars to say');
+    // `basis` is how the figure was arrived at, and nothing else: 'estimate'
+    // for a number this page computed over the buyer's own tax, fee and
+    // financing settings, undefined for one read off the listing. Asking is a
+    // recorded price and never carries it; out-the-door and per-month always
+    // do. Three dollar figures in one column used to be one weight, one size
+    // and one ink, with the difference carried only by the row label.
+    const cell = (v, sub, best, word, basis) =>
+      el('td', { class: 'sc-num' + (best ? ' is-best' : ''),
+                 'data-figure': v, 'data-sub': sub || null, 'data-best': best ? word : null },
+        el('span', { class: 'sc-figure' + (basis === 'estimate' ? ' sc-estimate' : '') }, v),
+        sub ? el('span', { class: 'sc-note' }, sub) : null,
+        best ? el('span', { class: 'sc-note sc-text-good' }, word) : null);
+
     const bestPrice = lowest((r) => (r.gone ? null : r.x.price));
-    row('Asking', 'The price as listed', (r) => cell(money(r.gone ? r.x.last_price : r.x.price),
-      r.gone ? `last seen ${fmtDate(r.x.last_seen)}` : shipNote(r.x),
-      !r.gone && r.x.price != null && r.x.price === bestPrice, 'lowest asking'));
+    out.push({ key: 'asking', label: 'Asking', always: true, title: 'The price as listed',
+      cell: (r) => cell(money(r.gone ? r.x.last_price : r.x.price),
+        r.gone ? `last seen ${fmtDate(r.x.last_seen)}` : shipNote(r.x),
+        !r.gone && r.x.price != null && r.x.price === bestPrice, 'lowest asking') });
     if (feesCfg()) {
       const bestOtd = lowest((r) => (r.gone ? null : otd(r.x)));
-      row('Out the door', 'Asking plus tax, paperwork and getting it here — an estimate until buyer.fees.checked is dated',
-        (r) => cell(r.gone ? '—' : money(otd(r.x)), r.gone ? '' : 'all in',
-          !r.gone && otd(r.x) != null && otd(r.x) === bestOtd, 'cheapest all in', r.gone ? null : 'estimate'));
+      out.push({ key: 'otd', label: 'Out the door', always: true,
+        title: 'Asking plus tax, paperwork and getting it here — an estimate until buyer.fees.checked is dated',
+        cell: (r) => cell(r.gone ? '—' : money(otd(r.x)), r.gone ? '' : 'all in',
+          !r.gone && otd(r.x) != null && otd(r.x) === bestOtd, 'cheapest all in', r.gone ? null : 'estimate') });
     }
     if (financeCfg()) {
       const bestPay = lowest((r) => (r.gone ? null : payFor(r.x)));
-      row('Per month', 'At this car\'s own rate — a certified car on a promo can beat a cheaper one that is not',
-        (r) => cell(r.gone ? '—' : perMo(payFor(r.x)),
+      out.push({ key: 'pay', label: 'Per month', always: true,
+        title: 'At this car’s own rate — a certified car on a promo can beat a cheaper one that is not',
+        cell: (r) => cell(r.gone ? '—' : perMo(payFor(r.x)),
           r.gone ? '' : `${r.x.apr}%${r.x.apr_promo ? ' promo' : ''} · ${termFor(r.x)}mo`
             + (r.x.apr_seller_unnamed ? ` · seller not named ${r.x.apr_seller_brand}` : ''),
-          !r.gone && payFor(r.x) != null && payFor(r.x) === bestPay, 'lowest payment', r.gone ? null : 'estimate'));
+          !r.gone && payFor(r.x) != null && payFor(r.x) === bestPay, 'lowest payment', r.gone ? null : 'estimate') });
     }
     const bestMiles = lowest((r) => r.x.miles);
-    row('Miles', null, (r) => cell(r.x.miles != null ? num(r.x.miles) : '—', null,
-      r.x.miles != null && r.x.miles === bestMiles, 'fewest miles'));
-    row('Value vs typical', picksRule(), (r) => {
-      const c = cohortOf(r.x, r.m.label);
+    out.push({ key: 'miles', label: 'Miles',
+      cell: (r) => cell(r.x.miles != null ? num(r.x.miles) : '—', r.x.miles == null ? 'not published' : null,
+        r.x.miles != null && r.x.miles === bestMiles, 'fewest miles') });
+    out.push({ key: 'value', label: 'Value vs typical', title: picksRule(),
       // Both directions here, unlike everywhere else on the page. The picks,
-      // the chips and the map rings only speak when a car sits UNDER typical,
-      // because that is what a pick IS — a car worth surfacing. On your own
-      // shortlist the opposite reading is the more valuable one: you are about
-      // to ring a dealer, and "6% over typical" is exactly what you would want
-      // to have known first. Printing a dash there hid the answer.
+      // the chips and the map rings only speak when a car sits UNDER its
+      // cohort's interval, because that is what a pick IS — a car worth
+      // surfacing. On your own shortlist the opposite reading is the more
+      // valuable one: you are about to ring a dealer, and "6% over typical" is
+      // exactly what you would want to have known first.
       // "about typical" covers the whole of the cohort's interval, not a
       // half-percent band around its median: 3% under a median of nine can
-      // sit inside that median's own sampling error — it depends on the
-      // cohort's spread, not on nine — and printing "3% under" there would
-      // be the page reading noise as a discount.
-      const p = r.x.pick_pct, st = r.x.pick_stand;
-      const word = p == null || st === 'mixed' ? '—'
-        : st === 'under' ? `${Math.round(p * 100)}% under`
-        : st === 'over' ? `${Math.round(-p * 100)}% over`
-        : 'about typical';
-      const sub = !c ? whyUnscored(r)
-        : c.mixed ? `too few comparable ${c.short} listings to say`
-        : `${c.short}, n=${c.n}`;
-      const out = cmpCell(word, sub, false, c ? { kind: c.basis, title: c.words } : null);
-      if (p != null && st !== 'mixed') {
-        // A centered visual reading of the exact percentage already printed
-        // above. ±20% is explicitly a context scale, not another score; values
-        // beyond it clamp only the decorative point while the words stay exact.
-        const position = Math.max(0, Math.min(100, 50 + p * 250));
-        const tone = st === 'under' ? 'var(--sc-good)'
-          : st === 'over' ? 'var(--sc-warn)' : 'var(--sc-chart-emphasis)';
-        out.appendChild(el('figure', {
-          class: 'sc-benchmark',
-          style: `--sc-benchmark-position:${position}%;--sc-benchmark-reference:50%;--sc-benchmark-tone:${tone}`
-        },
-          el('figcaption', { class: 'sc-sr-only' }, `${word} on a context scale from 20% over typical to 20% under typical`),
-          el('div', { class: 'sc-benchmark__track', 'aria-hidden': 'true' },
-            el('span', { class: 'sc-benchmark__reference' }),
-            el('span', { class: 'sc-benchmark__point' })
-          ),
-          el('div', { class: 'sc-benchmark__scale', 'aria-hidden': 'true' },
-            el('span', null, '20% over'), el('span', null, 'typical'), el('span', null, '20% under')
-          )
-        ));
-      }
-      return out;
-    });
-    row('Where', 'Drivable means listed in one of your states — no shipping',
-      (r) => cmpCell(placeCell(r.x), r.x.local ? 'drivable' : (r.x.distance != null ? `~${num(r.x.distance)} mi away` : 'distance n/a')));
-    row('On the market', 'Days since it was listed, where the feed gives a real listing date',
-      (r) => cmpCell(r.x.days_listed != null ? `${r.x.days_listed}d` : '—', cutNote(r.x)));
-    row('History', null, (r) => el('td', null, flagsCell(r.x)));
-    row('Price so far', 'The same series the chart draws for this car',
-      (r) => el('td', null, spark((r.x.series || []).map((q) => q[1]), 90, 26, (r.x.delta || 0) < 0)));
+      // sit inside that median's own sampling error.
+      cell: (r) => {
+        const c = cohortOf(r.x, r.m.label);
+        const p = r.x.pick_pct, st = r.x.pick_stand;
+        const word = p == null || st === 'mixed' ? '—'
+          : st === 'under' ? `${Math.round(p * 100)}% under`
+          : st === 'over' ? `${Math.round(-p * 100)}% over`
+          : 'about typical';
+        const sub = !c ? whyUnscored(r)
+          : c.mixed ? `too few comparable ${c.short} listings to say`
+          : `${c.short}, n=${c.n}`;
+        const outc = cmpCell(word, sub, false, c ? { kind: c.basis, title: c.words } : null);
+        if (p != null && st !== 'mixed') {
+          // A centered visual reading of the exact percentage already printed
+          // above. ±20% is explicitly a context scale, not another score;
+          // values beyond it clamp only the decorative point while the words
+          // stay exact.
+          const position = Math.max(0, Math.min(100, 50 + p * 250));
+          const tone = st === 'under' ? 'var(--sc-good)'
+            : st === 'over' ? 'var(--sc-warn)' : 'var(--sc-chart-emphasis)';
+          outc.appendChild(el('figure', {
+            class: 'sc-benchmark',
+            style: `--sc-benchmark-position:${position}%;--sc-benchmark-reference:50%;--sc-benchmark-tone:${tone}`
+          },
+            el('figcaption', { class: 'sc-sr-only' }, `${word} on a context scale from 20% over typical to 20% under typical`),
+            el('div', { class: 'sc-benchmark__track', 'aria-hidden': 'true' },
+              el('span', { class: 'sc-benchmark__reference' }),
+              el('span', { class: 'sc-benchmark__point' })
+            ),
+            el('div', { class: 'sc-benchmark__scale', 'aria-hidden': 'true' },
+              el('span', null, '20% over'), el('span', null, 'typical'), el('span', null, '20% under')
+            )
+          ));
+        }
+        return outc;
+      } });
+    out.push({ key: 'where', label: 'Where', title: 'Drivable means listed in one of your states — no shipping',
+      cell: (r) => cmpCell(placeCell(r.x), r.x.local ? 'drivable' : (r.x.distance != null ? `~${num(r.x.distance)} mi away` : 'distance n/a')) });
+    out.push({ key: 'market', label: 'On the market', title: 'Days since it was listed, where the feed gives a real listing date',
+      cell: (r) => cmpCell(r.x.days_listed != null ? `${r.x.days_listed}d` : '—', cutNote(r.x)) });
+    out.push({ key: 'history', label: 'Reported history',
+      cell: (r) => el('td', null, flagsCell(r.x)) });
+    // The record's own observations, in the decision itself: how many there
+    // are, when the first and the last one were made, and what moved between
+    // them. Never a daily price — these are the days the tracker actually
+    // looked, and the sentence says so — and one press opens the dated list
+    // the dossier already draws rather than a second copy of it here.
+    out.push({ key: 'record', label: 'Recorded prices', title: 'The days this car was actually observed, and the asking price on each',
+      cell: (r) => {
+        const s = observations(r.x);
+        const td = el('td', null);
+        if (!s.length) { td.appendChild(el('span', { class: 'sc-unreported' }, 'no recorded prices')); return td; }
+        td.appendChild(spark(s.map((q) => q[1]), 90, 26, (s.at(-1)[1] - s[0][1]) < 0));
+        td.appendChild(el('span', { class: 'sc-note' }, observationWords(r.x)));
+        if (STUDIO) td.appendChild(el('button', { class: 'sc-link--quiet fin-open', type: 'button',
+          'data-fkey': 'finrec:' + r.vin,
+          onclick: () => STUDIO.open(r.vin) },
+          s.length === 1 ? 'Open the record' : `See all ${s.length} →`));
+        return td;
+      } });
+    for (const mm of out) mm.text = (r) => said(mm, r);
+    return out;
+  }
+  // What this car was asking on a given data day — the last observation at or
+  // before it. Module scope because two surfaces read it: the front page's
+  // "since you last saw data" sentence and the garage's needs-another-look
+  // band, and two copies of this rule is how they come to disagree.
+  const priceOn = (x, day) => { let v = null; for (const pt of (x.series || [])) { if (pt[0] <= day && pt[1]) v = pt[1]; else if (pt[0] > day) break; } return v; };
+  // What the record says has happened to ONE saved car since the reader last
+  // saw new data. The baseline is `spicycar.seen`, the same one the front page
+  // uses, and it only moves when the DATA moves: a reload is not an
+  // observation, a rebuilt site is not a new one, and a car that stopped being
+  // seen is not a car that sold. Every sentence carries the date of the
+  // observation behind it.
+  function carChange(vin) {
+    const since = SEEN.since, through = dataThrough();
+    if (!since || !through || since >= through) return null;
+    if (S.site.departures_from && since < S.site.departures_from) return null;
+    const hit = findVin(String(vin || '').toUpperCase());
+    if (!hit) return null;
+    const x = hit.x;
+    if (hit.gone) {
+      if (!x.last_seen || x.last_seen < since) return null;
+      return { kind: 'left', on: x.last_seen, look: true,
+        words: `Stopped being seen after ${fmtDate(x.last_seen)}`
+          + (x.likely === 'delisted' ? ', and its listing ended' : ' — it may only have fallen outside a fetch window')
+          + `. Last recorded asking ${money(x.last_price)}.` };
+    }
+    const obs = observations(x);
+    const last = obs.length ? obs[obs.length - 1] : null;
+    if (!last || last[0] <= since) return null;      // nothing new was observed
+    const then = priceOn(x, since);
+    if (then == null) return null;                   // no price on that day to compare against
+    if (last[1] === then) return { kind: 'held', on: last[0], look: false,
+      words: `Still listed at ${money(last[1])}, seen again ${fmtDate(last[0])}.` };
+    const down = last[1] < then;
+    return { kind: down ? 'cut' : 'up', on: last[0], look: true,
+      words: `${money(Math.abs(last[1] - then))} ${down ? 'lower' : 'higher'} than when you last saw data — `
+        + `${money(then)} on ${fmtDate(since)}, ${money(last[1])} on ${fmtDate(last[0])}.` };
+  }
+  // The observations themselves: dated, sorted, and only the ones that are
+  // real. A price of zero or a malformed stamp is not an observation.
+  function observations(x) {
+    return (x.series || []).filter((p) => Array.isArray(p) && /^\d{4}-\d{2}-\d{2}$/.test(p[0]) && Number.isFinite(p[1]) && p[1] > 0)
+      .slice().sort((a, b) => a[0].localeCompare(b[0]));
+  }
+  // What the record can honestly say about a price over time. The span is the
+  // first and last days it was SEEN — never "since it was listed" — and a
+  // single observation says so rather than drawing a trend through one point.
+  function observationWords(x) {
+    const s = observations(x);
+    if (!s.length) return 'no recorded prices';
+    const first = s[0], last = s[s.length - 1];
+    if (s.length === 1) return `one observation, ${fmtDate(first[0])}`;
+    const move = last[1] - first[1];
+    return `${s.length} observations, ${fmtDate(first[0])}–${fmtDate(last[0])} · `
+      + (move < 0 ? `${money(-move)} lower` : move > 0 ? `${money(move)} higher` : 'unchanged');
+  }
+  // The identity of a car, spelled one way wherever the comparison names one.
+  const finName = (r) => `${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim();
+  const finStatusChip = (r) => el('span', { class: 'sc-chip ' + (r.gone ? 'sc-chip--danger' : STAR_CHIP[r.status] || 'sc-chip--neutral') },
+    r.gone ? 'gone' : STAR_WORD[r.status] || 'shortlisted');
+  // Out of the comparison, not out of the garage. The word on the button says
+  // which of the two it is, because that was the whole confusion.
+  const finDrop = (r) => el('button', { class: 'sc-link--quiet fin-drop', type: 'button',
+    'data-fkey': 'findrop:' + r.vin, title: `Take ${finName(r)} out of this comparison — it stays saved, with its notes`,
+    onclick: () => setCompare(r.vin, false) }, 'Remove');
+  function renderFinalists() {
+    const card = $('finalists-card');
+    const all = finalists();
+    const rows = comparing();
+    const host = $('finalists-table');
+    const pairHost = $('finalists-pairs');
+    const tools = $('finalists-tools');
+    tools.textContent = ''; pairHost.textContent = '';
+    // Emptied, not just hidden. A comparison of cars you have since ruled out
+    // is not a thing to leave lying in the document waiting for a print
+    // stylesheet, a find-in-page or the next reader of the DOM to surface it.
+    if (all.length < 1) {
+      card.hidden = S.workspace !== 'compare'; host.textContent = ''; pairHost.hidden = true;
+      $('finalists-same').hidden = true; card.dataset.finMode = 'table';
+      $('finalists-hint').textContent = 'Save a car while exploring to keep it here. Save another to compare them side by side.';
+      return;
+    }
+    card.hidden = false;
+    // The table holds what is still in play; three things it deliberately
+    // leaves out have to be said out loud or the reader is quietly missing cars
+    // they marked themselves. A car you ruled out is kept in the profile (that
+    // is the point of the fourth state) but not compared; a car the sheet no
+    // longer carries at all — departed long enough ago to have fallen out of
+    // `gone` — would otherwise just stop appearing; and a car the reader took
+    // out of the comparison is still saved and has to be able to come back.
+    // All three are counted, none is invented.
+    const outN = Object.values(S.stars).filter((v) => v === 'out').length;
+    const lostN = starred().filter((v) => !findVin(v)).length;
+    const goneN = rows.filter((r) => r.gone).length;
+    const setAside = all.filter((r) => S.compareOut.has(r.vin));
+    $('finalists-hint').textContent =
+      (!rows.length ? 'None of your saved cars is in the comparison right now'
+        : rows.length === 1 ? 'One saved car in the comparison'
+        : `${rows.length} cars in the comparison, cheapest first`)
+      + ' — each priced on its own terms.'
+      + (goneN ? ` ${goneN} of them ${goneN === 1 ? 'has' : 'have'} left the market and ${goneN === 1 ? 'is' : 'are'} kept here for the comparison.` : '')
+      + (outN ? ` ${outN} more ruled out, still marked on ${outN === 1 ? 'its' : 'their'} own row.` : '')
+      + (lostN ? ` ${lostN} the sheet no longer carries at all.` : '');
+    // The assumptions behind the estimates, in full, under their own summary.
+    // They were nine lines of paragraph above the cars on a phone; the figures
+    // themselves still carry the basis where they are read — the estimate mark,
+    // "all in", the rate and the term — and this is the long form of it, one
+    // press away at every width rather than in front of every reader.
+    const basis = (financeNote(rows.map((r) => r.bk + '/' + r.mk)) + costBasisNote()).trim();
+
+    // Two controls, and they are about reading, not about saving: which
+    // measures to print, and which saved cars are in the comparison at all.
+    const measures = finalistMeasures(rows);
+    const same = rows.length > 1
+      ? measures.filter((mm) => !mm.always && rows.every((r) => mm.text(r) === mm.text(rows[0])))
+      : [];
+    const sameKeys = new Set(same.map((mm) => mm.key));
+    const shown = S.diffOnly ? measures.filter((mm) => !sameKeys.has(mm.key)) : measures;
+    if (rows.length > 1) {
+      const toggle = el('button', { class: 'sc-btn sc-btn--ghost sc-btn--sm sc-press', type: 'button',
+        'data-fkey': 'findiff', 'aria-pressed': S.diffOnly ? 'true' : 'false',
+        title: same.length ? `${same.length} measure${same.length === 1 ? ' reads' : 's read'} the same for every car here`
+                           : 'Every measure differs between these cars',
+        onclick: () => { S.diffOnly = !S.diffOnly; savePrefs(); renderFinalists(); } },
+        S.diffOnly ? 'Showing what differs' : 'Only what differs');
+      tools.appendChild(toggle);
+      tools.appendChild(el('span', { class: 'sc-note' },
+        same.length ? `${same.length} of ${measures.length} measures read the same for all ${rows.length}.`
+                    : `All ${measures.length} measures differ between these cars.`));
+    }
+    if (setAside.length) {
+      tools.appendChild(el('span', { class: 'sc-note fin-aside' },
+        `${setAside.length} saved ${setAside.length === 1 ? 'car is' : 'cars are'} out of this comparison: `,
+        ...setAside.flatMap((r, i) => [i ? ', ' : '', el('button', { class: 'sc-link--quiet', type: 'button',
+          'data-fkey': 'finback:' + r.vin, onclick: () => setCompare(r.vin, true) }, finName(r) + ' ↩')])));
+    }
+    if (basis) tools.appendChild(el('details', { class: 'sc-details sc-disclosure fin-basis' },
+      el('summary', null, 'What these estimates assume'), el('p', { class: 'sc-note' }, basis)));
+    // A comparison of nothing is still a page that has to say what happened and
+    // how to undo it — the cars are all saved, every one of them.
+    if (!rows.length) {
+      host.textContent = ''; pairHost.hidden = false; $('finalists-same').hidden = true; card.dataset.finMode = 'pairs';
+      pairHost.appendChild(el('p', { class: 'sc-hint' },
+        'Every saved car has been taken out of this comparison. They are all still in your garage, with their notes; put one back above.'));
+      return;
+    }
+    card.dataset.finMode = narrow() ? 'pairs' : 'table';
+    if (narrow()) {
+      host.textContent = ''; $('finalists-same').hidden = true;
+      renderFinalistPairs(rows, shown, sameKeys, measures); pairHost.hidden = false; return;
+    }
+    pairHost.hidden = true;
+    renderFinalistTable(rows, shown, same, sameKeys);
+  }
+  function renderFinalistTable(rows, shown, same, sameKeys) {
+    const table = $('finalists-table'); table.textContent = '';
+    table.appendChild(el('caption', { class: 'sc-sr-only' },
+      `Your shortlist, side by side — one column per car, ${rows.length} of them`));
+    const head = el('tr', null, el('th', { scope: 'col' }, 'Measure'));
+    for (const r of rows) {
+      head.appendChild(el('th', { class: 'sc-case', scope: 'col', 'data-fin-vin': r.vin,
+        'aria-label': `${r.m.label || ''} ${r.x.year || ''} ${carTrim(r.x)}`.replace(/\s+/g, ' ').trim() },
+        el('span', null, finName(r)),
+        el('span', { class: 'sc-note' }, r.m.label || r.mk),
+        el('span', { class: 'sc-nowrap' }, finStatusChip(r), ' ',
+          el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'fin:' + r.vin,
+                    onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')),
+        el('span', { class: 'sc-nowrap' }, finDrop(r))));
+    }
+    table.appendChild(el('thead', null, head));
+    const body = el('tbody');
+    // The compare card above marks a winner on exactly one row, and says so at
+    // length: across MODELS a price is not a score, so calling the cheapest one
+    // "best" would say the EV9 beat the i5 by being smaller. This table is a
+    // different question. Every car in it is one you starred yourself, so "which
+    // of these is cheapest" has a real answer — but the answer is still only
+    // what it literally is. Each row therefore names its own winner in its own
+    // words (lowest asking, fewest miles), and none of them says "best value":
+    // that sentence belongs to the one row measured against a cohort, and this
+    // table does not mark a winner on that row at all, because two cars scored
+    // against two different cohorts are not comparable on the percentage.
+    for (const mm of shown) {
+      const tr = el('tr', { 'data-measure': mm.key,
+        'data-differs': rows.length > 1 && !sameKeys.has(mm.key) ? 'true' : null },
+        el('th', { class: 'cmp-metric', scope: 'row', title: mm.title || null }, mm.label));
+      for (const r of rows) tr.appendChild(mm.cell(r));
+      body.appendChild(tr);
+    }
     table.appendChild(body);
+    // Folded, never dropped: what every car in the comparison says identically
+    // is still on the page, once, under the table it was taken out of.
+    const fold = $('finalists-same'); fold.textContent = '';
+    fold.hidden = !(S.diffOnly && same.length);
+    if (S.diffOnly && same.length) {
+      fold.appendChild(el('p', { class: 'sc-note' }, `The same for all ${rows.length} cars:`));
+      const dl = el('dl', { class: 'fin-same__list' });
+      for (const mm of same) { dl.appendChild(el('dt', null, mm.label)); dl.appendChild(el('dd', null, mm.text(rows[0]))); }
+      fold.appendChild(dl);
+    }
     markClipped(table.closest('.sc-table-scroll'));
+  }
+  // The phone answer, and it is not a smaller table. Two cars at a time, both
+  // named at the top where they stay, one measure per row with its two values
+  // beside each other — so the question a phone can actually answer ("which of
+  // these two, on this measure") is the question the layout asks. Which two is
+  // the reader's, out of the same comparison the table holds; nothing here
+  // changes what is saved or what is compared.
+  function renderFinalistPairs(rows, shown, sameKeys, measures) {
+    const hostEl = $('finalists-pairs'); hostEl.textContent = '';
+    const vins = rows.map((r) => r.vin);
+    if (!vins.includes(S.pairA)) S.pairA = vins[0];
+    if (!vins.includes(S.pairB) || S.pairB === S.pairA) S.pairB = vins.find((v) => v !== S.pairA) || null;
+    const A = rows.find((r) => r.vin === S.pairA), B = rows.find((r) => r.vin === S.pairB);
+    const chooser = (side, chosen, other) => {
+      const sel = el('select', { class: 'sc-select', 'aria-label': `Car ${side} in the comparison`,
+        'data-fkey': 'finpair:' + side,
+        onchange: (e) => { const v = e.currentTarget.value; if (side === 'A') S.pairA = v; else S.pairB = v; renderFinalists(); } });
+      for (const r of rows) {
+        if (r.vin !== chosen && r.vin === other) continue;   // the other side's car is not offered twice
+        // What tells two saved cars apart at a glance, in the width a phone
+        // select has: the trim and where the car is. The price is the first
+        // measure in the list below and does not need saying twice, and two
+        // eDrive40s at $34,989 and $36,500 both read "eDrive40 · $3…" truncated.
+        sel.appendChild(el('option', { value: r.vin, selected: r.vin === chosen ? 'selected' : null },
+          `${carTrim(r.x) || r.x.year || r.vin.slice(-6)} · ${placeCell(r.x)}`));
+      }
+      return sel;
+    };
+    const headOf = (r, side) => el('div', { class: 'sc-compare-pair__head fin-pair__head', 'data-side': side, 'data-fin-vin': r ? r.vin : null },
+      el('span', { class: 'sc-eyebrow sc-eyebrow--muted' }, side === 'A' ? 'car A' : 'car B'),
+      r ? chooser(side, r.vin, side === 'A' ? S.pairB : S.pairA) : null,
+      r ? el('p', { class: 'fin-pair__who' }, el('strong', null, r.m.label || r.mk), ' ',
+            el('span', { class: 'sc-note' }, placeCell(r.x))) : null,
+      r ? el('p', { class: 'fin-pair__marks' }, finStatusChip(r), ' ', finDrop(r)) : null);
+    if (!B) {
+      hostEl.appendChild(el('div', { class: 'sc-compare-pair__heads' }, headOf(A, 'A')));
+      hostEl.appendChild(el('p', { class: 'sc-hint' }, 'One car in the comparison. Save another and they appear here side by side.'));
+    } else {
+      hostEl.appendChild(el('div', { class: 'sc-compare-pair__heads' }, headOf(A, 'A'), headOf(B, 'B')));
+      const swap = el('button', { class: 'sc-btn sc-btn--ghost sc-btn--sm', type: 'button', 'data-fkey': 'finswap',
+        onclick: () => { const t2 = S.pairA; S.pairA = S.pairB; S.pairB = t2; renderFinalists(); } }, 'Swap A and B');
+      hostEl.appendChild(el('div', { class: 'fin-pair__tools' }, swap,
+        el('span', { class: 'sc-note' }, rows.length > 2 ? `${rows.length - 2} more saved ${rows.length - 2 === 1 ? 'car' : 'cars'} in the comparison — choose ${rows.length - 2 === 1 ? 'it' : 'any of them'} above.` : '')));
+    }
+    const list = el('dl', { class: 'sc-compare-pair__rows' });
+    const pair = B ? [A, B] : [A];
+    for (const mm of shown) {
+      list.appendChild(el('dt', { class: 'sc-compare-pair__measure', 'data-measure': mm.key,
+        'data-differs': rows.length > 1 && !sameKeys.has(mm.key) ? 'true' : null }, mm.label,
+        sameKeys.has(mm.key) ? el('span', { class: 'sc-note' }, 'same for all') : null));
+      const dd = el('dd', { class: 'sc-compare-pair__values' });
+      for (const r of pair) {
+        const box = el('div', { class: 'sc-compare-pair__value', 'data-side': r === A ? 'A' : 'B' });
+        const cell = mm.cell(r);
+        while (cell.firstChild) box.appendChild(cell.firstChild);
+        if (cell.classList.contains('is-best')) box.classList.add('is-best');
+        dd.appendChild(box);
+      }
+      list.appendChild(dd);
+    }
+    hostEl.appendChild(list);
+    if (S.diffOnly && shown.length < measures.length) {
+      hostEl.appendChild(el('p', { class: 'sc-note' },
+        `${measures.length - shown.length} measure${measures.length - shown.length === 1 ? '' : 's'} read the same for every car and ${measures.length - shown.length === 1 ? 'is' : 'are'} folded away.`));
+    }
   }
   // ---------- the decision ----------
   // The first screen of this page on a phone was: the masthead, a three-line
@@ -5912,8 +6362,7 @@
     if (!n.hidden || S.brand !== 'all' || !since || !through || since >= through) return;
     if (S.site.departures_from && since < S.site.departures_from) return;
     const shopping = new Set(((S.site || {}).buyer || {}).shopping || []);
-    const P = pickParams(), bits = [];
-    const priceOn = (x, day) => { let v = null; for (const pt of (x.series || [])) { if (pt[0] <= day && pt[1]) v = pt[1]; else if (pt[0] > day) break; } return v; };
+    const P = pickParams(), bits = [], tot = { fresh: 0, less: 0, exact: 0, unseen: 0 };
     for (const o of heroModels()) {
       const tids = new Set(Object.keys(o.m.trims || {}).filter((id) => shopping.has(id)));
       const fd = o.m.fetch_days || {};
@@ -5943,9 +6392,30 @@
         : `${unseen} stopped being seen, none confirmed gone`;
       const dropped = moved ? `${moved} dropped from the watchlist` : '';
       bits.push(`${o.m.label || o.mk} — ${[floor, `${fresh} new`, `${less} ask less than then`, left, dropped].filter(Boolean).join(', ')}`);
+      tot.fresh += fresh; tot.less += less; tot.exact += exact; tot.unseen += unseen;
     }
     if (!bits.length) return;
-    n.appendChild(el('p', { class: 'sc-hint', 'data-since': since }, `Since you last saw data through ${fmtDate(since)}: ${bits.join('; ')}.`));
+    // The totals first, the models behind them. This sentence was five lines of
+    // prose above the first car on a phone — every word of it true and none of
+    // it the thing the reader came for — so what changed is one line and which
+    // model it changed on is one press away.
+    const words = [`${tot.fresh} new`, `${tot.less} ask less than then`,
+      tot.exact && tot.unseen ? `${tot.exact} gone, ${tot.unseen} more stopped being seen`
+        : tot.exact ? `${tot.exact} gone`
+        : tot.unseen ? `${tot.unseen} stopped being seen`
+        : 'none gone'].join(', ');
+    const head = `Since you last saw data through ${fmtDate(since)}: ${words}.`;
+    if (bits.length === 1) {
+      n.appendChild(el('p', { class: 'sc-hint', 'data-since': since },
+        `Since you last saw data through ${fmtDate(since)}: ${bits[0]}.`));
+    } else {
+      const d = el('details', { class: 'sc-details sc-disclosure ss-since', 'data-since': since },
+        el('summary', null, head));
+      const ul = el('ul', { class: 'ss-since__list' });
+      for (const b of bits) ul.appendChild(el('li', { class: 'sc-hint' }, b + '.'));
+      d.appendChild(ul);
+      n.appendChild(d);
+    }
     n.hidden = false;
   }
   // The car in hand: a link or the VIN field named one car and its model
@@ -6750,6 +7220,7 @@
           renderList(rows);
           renderGone();                // its column set follows the band too
           renderPicks(scopedScored(rows), pickCap());   // the picks' phone collapse follows the breakpoint too
+          renderFinalists();   // a table at 1280, a pair of cars at 390 — the same band edge
           restoreFocus(fk, false);
         }
       });
