@@ -2,21 +2,20 @@
 
 One bounded pass over the shopping journey — choose a model, inspect an exact
 vehicle, compare evidence and costs, save or open the source — rendered in
-Chromium before anything was edited, with the same records and the same three
-saved cars held constant. Three weaknesses were measured, not argued.
+Chromium before anything was edited, records and saved cars held constant. Three
+weaknesses, measured rather than argued.
 
 ## 1 · "Side by side" showed one car on a phone
 
-`#finalists-table` kept `.sc-signal-matrix`'s 680px floor. Three saved cars
-rendered a **693px table inside a 348px region** — columns 136/176/176/185, the
-measure column and **one** car on screen, **373px off it**. The model comparison
-beside it already had a narrow band, written for `#compare-table` alone.
+`#finalists-table` kept `.sc-signal-matrix`'s 680px floor: three saved cars were a
+**693px table in a 348px region** — columns 136/176/176/185, the measure column
+and **one** car on screen, **373px off it**. The narrow band that would have saved
+it was written for `#compare-table` alone.
 
-That band is upstream now as **`.sc-signal-matrix--fit`**, for the transposed
-shape the criterion navigator excludes by design. Both tables wear it; the local
-fork is gone. After: **96/112/112/112**, the measure column and **two** cars on
-screen, 132px off it. The identity column stays sticky, nothing is hidden, and
-the desktop table is unchanged.
+It is upstream now as **`.sc-signal-matrix--fit`**, for the transposed shape the
+criterion navigator excludes by design; both tables wear it and the local fork is
+gone. After: **96/112/112/112**, the measure column and **two** cars on screen,
+132px off. Identity stays sticky, nothing is hidden, desktop is unchanged.
 
 | Before | After |
 | --- | --- |
@@ -26,14 +25,14 @@ the desktop table is unchanged.
 
 Asking, out-the-door and per-month were one ink in the dossier and one size,
 weight and colour in the shortlist; in the signal matrix the **largest number on
-the card** was the estimated all-in, its basis carried by a 10px note. An
-unreported fact wore a measured fact's 16px heading ink.
+the card** was the estimated all-in, its basis in a 10px note. An unreported fact
+wore a measured fact's 16px heading ink.
 
-Upstream: **`.sc-estimate`** and **`.sc-unreported`**. Recorded stays the default
-and wears no class. A derived figure steps one shade off heading ink and takes
-the approximation mark — drawn in CSS with empty alt text, so the word beside it
-still carries the meaning. An absence becomes a mono lowercase status word at
-its own size and never lines up with a number. No figure changed.
+Upstream: **`.sc-estimate`** and **`.sc-unreported`**. Recorded is the default and
+wears no class. A derived figure steps one shade off heading ink and takes the
+approximation mark — drawn in CSS with empty alt text, so the word beside it
+still carries the meaning. An absence becomes a mono lowercase status word at its
+own size, never lining up with a number. No figure changed.
 
 ![Mileage and dealer in heading ink beside "no condition details reported" in small mono](unreported-fact.png)
 
@@ -53,30 +52,31 @@ shared no-photo band — and the dialog ends in one `.sc-actionbar`.
 
 Before: `0a427ca9e8d1a37a38251d1b4c77beae2512a57d` at design-system `08cd626f`
 (v2.10.0). Captures come from the Chromium harness over the checked-in
-`docs/data.json` with the documented offline font and photo fallbacks; they are
-evidence of layout, not listing or financing claims.
+`docs/data.json` with the documented offline font and photo fallbacks: evidence
+of layout, not of a listing or a financing claim.
 
-**Upstream, integrated.** `design/car-decision-polish` (`6068da8`) went in
-through design-system #24, and SpicyHome's parallel branch reconciled it into
-its own before both landed on `main` as `600283f` (#23). The reconcile is
-additive on both sides: my `6068da8` is an ancestor of `main`, the sheet diff
-from it is Home's `.sc-pick` and nothing else, and the one edit to my work is
-that Home renumbered my section `4f → 4g` while **keeping it last in the
-component band**, which is the load-bearing property the block's own comment
-names. Upstream `npm run check` is green on the merged `main` (110 component
-blocks, 368 classes findable); the only problem it reports is the missing
-v2.12.0 tag, which is the owner's to publish — a tag cannot be pushed from the
-build sandbox. The snapshot here is re-vendored from that merged `main`, so the
-pin names a commit on `main` rather than a branch tip, and it carries both
-contributions.
+**Upstream, integrated.** `design/car-decision-polish` (`6068da8`) went in through
+design-system #24; SpicyHome's parallel branch reconciled it into its own before
+both landed on `main` as `600283f` (#23). Additive both ways, checked:
+`6068da8` is an ancestor of `main`; the sheet diff from it is Home's `.sc-pick`
+and nothing else; the one edit to mine is Home renumbering my section `4f → 4g`,
+still **last in the component band** — the load-bearing property its own comment
+names. The snapshot is re-vendored from that merged `main`, 22 files, every hash
+verified. Upstream `npm run check` is green there (110
+component blocks, 368 classes) but for the missing v2.12.0 tag, the owner's to
+publish: a tag cannot be pushed from this sandbox.
 
-Offline: 565 Python tests, two failures pre-existing on `main` and unrelated
-(the committed record's key order; the README sheet row). Consumer lint clean.
-`studio`, `workspace`, `discovery` green. `dashboard_smoke` 302/306, zero page
-errors — the identical four pre-existing failures `main` reports. Print
-pagination on both tables, 320px, keyboard reach, reduced motion, forced colors
-and the missing-photograph state all pass. Upstream `npm run check` green (109
-component blocks, 360 classes findable); `visual-check --browser` 6/6.
+**PASS** (offline): consumer lint · `studio` · `workspace` · `discovery` ·
+`visual-check --browser` 6/6 · print pagination on both tables · 320px · keyboard
+reach · reduced motion · forced colors · the missing-photograph state.
+**FAIL, pre-existing:** 2 Python tests of 565; 4 dashboard checks of 306 — each
+reproduced on an `origin/main` worktree, "what failed" identical.
+**CI** at `0ddf11e`: lint green, the same six, `302/306, 16 skipped, 0 page
+errors`. Attempt 1 died mid-run on `route.fetch: read ECONNRESET`; the re-run
+matched this sandbox exactly, so the transport error was transient — the crash
+was not. A throwing async route handler is an unhandled rejection outside any
+step's `try`: node ends the process and 300 decided checks report nothing.
+**NOT RUN:** provider calls, a tracker run, Pages.
 
 ## Keep / fix / defer / omit
 
@@ -85,10 +85,15 @@ record says, never from a computation; the photo stage and the one action bar.
 **Fix if it bites:** the action bar is 293px tall on a phone (98px as a ragged
 row) — the height buys a bounded, ordered block, but the listing link is now
 below a sentence; the no-photo band is a 144px slab in a 480px stage.
-**Defer:** the discovery card's four-action footer (Home owns list composition);
-`--sc-matrix-record` as a calc() over the region rather than a tuned pixel.
-**Omit:** any change to the tracker, watchlist, `targets.json`, ledgers, ranking
-or financing arithmetic. Nothing here touches a number.
+**Defer:** `dashboard_smoke.mjs` has 34 unguarded `await route.fetch()` calls in
+its route handlers — the same defect its own header records fixing for locators
+one layer in, reproduced here in isolation as exit 1 with the tally lost. Giving
+them the error boundary the steps already have would have turned that run into
+four named failures instead of none. Also: the discovery card's four-action
+footer (Home owns list composition), and `--sc-matrix-record` as a `calc()` over
+the region rather than a tuned pixel. **Omit:** any change to the tracker,
+watchlist, `targets.json`, ledgers, ranking or financing arithmetic. Nothing here
+touches a number.
 
 ## Next builder prompt
 
@@ -120,7 +125,9 @@ or financing arithmetic. Nothing here touches a number.
 >    and every fix means regenerating published tracker output. `main` has taken
 >    three daily snapshot commits since its last green run, and the commit-back
 >    does not trigger the workflow, so no run reported on them until #77's.
->    Whoever next runs the tracker owns these.
+>    Whoever next runs the tracker owns these. If a `dashboard` run instead dies
+>    with `route.fetch: read ECONNRESET` and prints no tally at all, that is the
+>    harness's own unguarded route handlers, not your diff — see Defer above.
 > 3. **#77 wants a human merge.** It is conflict-free with no review threads.
 >
 > If you do pick up the tracker work: `Tracking.py`, `targets.json`,
