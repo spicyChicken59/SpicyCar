@@ -10,12 +10,11 @@ weaknesses, measured rather than argued.
 `#finalists-table` kept `.sc-signal-matrix`'s 680px floor: three saved cars were a
 **693px table in a 348px region** — columns 136/176/176/185, the measure column
 and **one** car on screen, **373px off it**. The narrow band that would have saved
-it was written for `#compare-table` alone.
-
-It is upstream now as **`.sc-signal-matrix--fit`**, for the transposed shape the
-criterion navigator excludes by design; both tables wear it and the local fork is
-gone. After: **96/112/112/112**, the measure column and **two** cars on screen,
-132px off. Identity stays sticky, nothing is hidden, desktop is unchanged.
+it was written for `#compare-table` alone. It is upstream now as
+**`.sc-signal-matrix--fit`**, for the transposed shape the criterion navigator
+excludes by design; both tables wear it and the local fork is gone. After:
+**96/112/112/112**, the measure column and **two** cars on screen, 132px off,
+identity still sticky, nothing hidden, desktop unchanged.
 
 | Before | After |
 | --- | --- |
@@ -29,10 +28,10 @@ the card** was the estimated all-in, its basis in a 10px note. An unreported fac
 wore a measured fact's 16px heading ink.
 
 Upstream: **`.sc-estimate`** and **`.sc-unreported`**. Recorded is the default and
-wears no class. A derived figure steps one shade off heading ink and takes the
-approximation mark — drawn in CSS with empty alt text, so the word beside it
-still carries the meaning. An absence becomes a mono lowercase status word at its
-own size, never lining up with a number. No figure changed.
+wears no class; a derived figure steps one shade off heading ink and takes the
+approximation mark, drawn in CSS with empty alt text so the word beside it still
+carries the meaning; an absence becomes a mono lowercase status word at its own
+size, never lining up with a number. No figure changed.
 
 ![Mileage and dealer in heading ink beside "no condition details reported" in small mono](unreported-fact.png)
 
@@ -57,24 +56,27 @@ of layout, not of a listing or a financing claim.
 
 **Upstream, integrated.** `design/car-decision-polish` (`6068da8`) went in through
 design-system #24; SpicyHome's parallel branch reconciled it into its own before
-both landed on `main` as `600283f` (#23). Additive both ways, checked:
-`6068da8` is an ancestor of `main`; the sheet diff from it is Home's `.sc-pick`
-and nothing else; the one edit to mine is Home renumbering my section `4f → 4g`,
-still **last in the component band** — the load-bearing property its own comment
-names. The snapshot is re-vendored from that merged `main`, 22 files, every hash
-verified. Upstream `npm run check` is green there on all eighteen gates (110
-component blocks, 368 classes), and `v2.12.0` is tagged at that same commit —
-lightweight, as `v2.11.0` is — so the version the pages cite resolves.
+both landed on `main` as `600283f` (#23), tagged `v2.12.0` — lightweight, as
+`v2.11.0` is — so the version the pages cite resolves. Additive both ways,
+checked: `6068da8` is an ancestor of `main`; the sheet diff from it is Home's
+`.sc-pick` and nothing else; the one edit to mine is Home renumbering my section
+`4f → 4g`, still **last in the component band**, the load-bearing property its
+own comment names. The snapshot is re-vendored from that merged `main`, 22
+files, every hash verified; upstream `npm run check` is green there on all
+eighteen gates (110 component blocks, 368 classes).
 
 **PASS** (offline): consumer lint · `studio` · `workspace` · `discovery` ·
 `visual-check --browser` 6/6 · print pagination on both tables · 320px · keyboard
 reach · reduced motion · forced colors · the missing-photograph state.
-**FAIL, pre-existing:** 2 Python tests of 565; 4 dashboard checks of 306 — each
-reproduced on an `origin/main` worktree, "what failed" identical.
-**CI** at `0ddf11e`: lint green, the same six, `302/306, 16 skipped, 0 page
-errors`. Attempt 1 died mid-run on `route.fetch: read ECONNRESET`; the re-run
-matched this sandbox exactly, so the transport error was transient — the crash
-was not. A throwing async route handler is an unhandled rejection outside any
+**FAIL, pre-existing:** 2 Python tests of 565, and 8 dashboard checks of 309 on
+the record CI actually uses — `check` builds the MERGE ref, and `main` took
+snapshot `7e7d854` mid-pass. All eight are main's: `origin/main` alone at that
+snapshot gives the identical list and the identical `301/309, 13 skipped, 0 page
+errors`, the one difference in the whole comparison being this diff's own
+`index.html`, 436 → 438 KB raw. The prompt below carries the mechanics.
+**CI** at `0ddf11e`, before that snapshot, read `302/306` with four; its first
+attempt died mid-run on `route.fetch: read ECONNRESET` and the re-run matched
+this sandbox, so the transport error was transient — the crash was not. A throwing async route handler is an unhandled rejection outside any
 step's `try`: node ends the process and 300 decided checks report nothing.
 **NOT RUN:** provider calls, a tracker run, Pages.
 
@@ -114,16 +116,22 @@ touches a number.
 > if you cut a later one, note that a tag cannot be pushed from this sandbox: the
 > agent proxy passes `refs/heads/*` and refuses `refs/tags/*`, so a release cut
 > in the GitHub web UI targeting `main` is the way round it.)
-> 1. **SpicyCar CI is red on tracker drift, not on this diff.** `test` fails two
->    tests (the committed record's key order; the README `| as committed |` sheet
->    row) and `dashboard` fails four (price sort order, the BMW i4 stock sentence,
->    "Open this car", and `docs/data.json` at 282KB compressed against a 250KB
->    budget). All six reproduce on `main` at `0a427ca` — diff the smoke's "what
->    failed" block against an `origin/main` worktree before believing otherwise —
->    and every fix means regenerating published tracker output. `main` has taken
->    three daily snapshot commits since its last green run, and the commit-back
->    does not trigger the workflow, so no run reported on them until #77's.
->    Whoever next runs the tracker owns these. If a `dashboard` run instead dies
+> 1. **SpicyCar CI is red on tracker drift, not on this diff.** `test` fails
+>    two tests (the committed record's key order; the README `| as committed |`
+>    sheet row) and `dashboard` eight (price sort order; the BMW i4 stock
+>    sentence; "Open this car"; `docs/data.json` at 301KB compressed against a
+>    250KB budget; and four owed by `the decision, day by day`, which throws
+>    `waitForFunction: Timeout 20000ms` re-serving the 3.5MB sheet). All ten
+>    reproduce on `main` alone — the smoke's "what failed" block against an
+>    `origin/main` worktree is identical, the one difference in the comparison
+>    being this diff's own `index.html` at 438KB against main's 436KB. Note that
+>    `check` runs on `pull_request` and therefore builds the MERGE ref, so this
+>    list moves when `main` takes a snapshot even though the branch has not
+>    changed: it went from four dashboard failures to eight when `7e7d854`
+>    landed. Every fix means regenerating published tracker output. `main` has
+>    taken four daily snapshot commits since its last green run, and the
+>    commit-back does not trigger the workflow, so no run reported on them until
+>    #77's. Whoever next runs the tracker owns these. If a `dashboard` run instead dies
 >    with `route.fetch: read ECONNRESET` and prints no tally at all, that is the
 >    harness's own unguarded route handlers, not your diff — see Defer above.
 > 2. **#77 wants a human merge.** It is conflict-free with no review threads.
