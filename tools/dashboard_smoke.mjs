@@ -246,13 +246,70 @@ const WATCHED = Object.entries(SHEET.brands || {}).flatMap(([bk, b]) =>
     bk, mk, id: `${bk} ${mk}`, slug: `${bk}-${mk}`, q: `?brand=${bk}&m=${mk}`, label: (m || {}).label || mk,
     trims: Object.keys((m || {}).trims || {}), cars: ((m || {}).listings || []).length })));
 const shot = async (n) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, n + '.png') }); };
+// Wait for the page to stop changing, not for a number of milliseconds.
+//
+// The page finishes rendering across animation frames — scheduleListRender()
+// is two deep, and the clip marks and the filter re-arm each add another — so a
+// check that reads the DOM the instant #h1 appears reads a half-built page.
+// That was covered by a flat 350ms sleep, which is the same shape of proxy as
+// the scrollY landing check this suite used to make: a number that happens to
+// be longer than the page takes, until the day it isn't, and 343ms of every one
+// of the two hundred loads a run makes — seventy seconds of a five-minute suite.
+//
+// This waits for what the sleep was standing in for: three animation frames in
+// a row with no DOM mutation in them AND no image still loading. The sleep's own
+// duration becomes the CEILING rather than the cost, so a page that never goes
+// quiet — an animation, a ticking clock — waits exactly as long as it used to and
+// no check can come out flakier than it was.
+//
+// A photograph arriving is part of finishing, and it lands as a mutation after
+// the page has otherwise gone still — so an image still in flight resets the
+// count too. IN FLIGHT, not merely incomplete: `complete` is false for every
+// lazy image the browser has not requested, and thirty-odd of those sit below
+// the fold of this page forever. Asking about all of them made the condition
+// permanently true and the settle ran to its deadline every time — a 350ms
+// sleep wearing a better comment, which is how a first pass here measured
+// exactly the same five minutes as the sleep it replaced. An image is waited on
+// when it is incomplete AND laid out within a screen of the viewport, which is
+// what the browser is actually fetching.
+const SETTLE_MS = 350;
+const QUIET_FRAMES = 3;
+const settle = (cap = SETTLE_MS) => page.evaluate(([cap, frames]) => new Promise((done) => {
+  const deadline = performance.now() + cap;
+  const inFlight = (img) => {
+    if (img.complete) return false;
+    const r = img.getBoundingClientRect();
+    return r.width + r.height > 0 && r.bottom > -innerHeight && r.top < innerHeight * 2;
+  };
+  let quiet = 0;
+  const obs = new MutationObserver(() => { quiet = 0; });
+  obs.observe(document.documentElement, { subtree: true, childList: true, attributes: true, characterData: true });
+  // …and a scroll still running. A smooth scroll moves nothing in the DOM, so
+  // the first version of this settled mid-flight and two checks read their
+  // geometry on a page that was still moving — the listings heading measured at
+  // y=449 on its way to y=6829, and the matrix's own scrollLeft at 40 on its way
+  // to 16. They stayed green, which is worse than failing: an assertion about
+  // where something lands, made before it lands, holds by luck. Captured, so an
+  // element scrolling inside the page counts as well as the window.
+  const onScroll = () => { quiet = 0; };
+  document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+  const tick = () => {
+    if ([...document.images].some(inFlight)) quiet = 0;
+    if (quiet++ >= frames || performance.now() >= deadline) {
+      obs.disconnect(); document.removeEventListener('scroll', onScroll, { capture: true }); done(); return;
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}), [cap, QUIET_FRAMES]);
+
 async function open(query) {
   await page.goto(BASE + '/index.html?view=report' + (query ? '&' + query.replace(/^\?/, '') : ''), { waitUntil: 'load' });
   await page.waitForFunction(() => {
     const h = document.getElementById('h1');
     return h && h.textContent.trim() && h.textContent !== 'Snapshot unavailable';
   }, null, { timeout: 20000 });
-  await page.waitForTimeout(350);
+  await settle();
 }
 
 // --- the watchlist ---------------------------------------------------------
@@ -333,10 +390,10 @@ await step('comparing trims', async () => {
   await open(trio.q);
   const trims = page.locator('#f-trim button');
   ok('the trim control is chips', (await trims.count()) > 1, `${await trims.count()} chips`);
-  await trims.nth(1).click(); await page.waitForTimeout(250);
+  await trims.nth(1).click(); await settle(250);
   ok('one trim is a scope, not a comparison', await page.locator('#compare-card').isHidden());
   ok('one trim reaches the title', (await page.textContent('#h1')).split(' ').length >= 2);
-  await trims.nth(2).click(); await page.waitForTimeout(350);
+  await trims.nth(2).click(); await settle(350);
   ok('two trims compare', await page.locator('#compare-card').isVisible());
   ok('the title says vs', (await page.textContent('#h1')).includes(' vs '), await page.textContent('#h1'));
   ok('a column per trim', (await page.locator('#compare-table thead th').count()) === 3);
@@ -364,9 +421,9 @@ await step('comparing models', async () => {
   if (WATCHED.length < 2) return skipRest('the watchlist holds fewer than two models today — nothing to compare');
   await open('');
   const models = page.locator('#f-model button');
-  await models.nth(0).click(); await page.waitForTimeout(250);
+  await models.nth(0).click(); await settle(250);
   ok('one model narrows the index', (await page.locator('#overview-table tbody tr').count()) === 1);
-  await models.nth(1).click(); await page.waitForTimeout(400);
+  await models.nth(1).click(); await settle(400);
   ok('two models compare', await page.locator('#compare-card').isVisible());
   ok('the index narrows to both', (await page.locator('#overview-table tbody tr').count()) === 2);
   ok('their cars pool into one table', await page.locator('#list-card').isVisible());
@@ -1177,7 +1234,7 @@ if (!inSheet(q)) return skipRest(`${q} names a trim the watchlist no longer hold
 await open(q);
 await page.evaluate(() => document.querySelector('[data-fkey^="cmp:"]').focus());
 await page.keyboard.press('Enter');
-await page.waitForTimeout(400);
+await settle(400);
 ok('narrowing to one column keeps the keyboard somewhere',
   (await page.evaluate(() => document.activeElement.tagName)) !== 'BODY');
 });
@@ -1237,7 +1294,7 @@ if (!scopeSubject) {
   ok('at rest the tiles claim the nation and the chart chip agrees',
     /nationwide/.test(rest.tiles[0]) && /drivable asking/.test(rest.tiles[1]) && !/^filtered/.test(rest.chip),
     JSON.stringify(rest));
-  await page.locator('#f-trim button').nth(scopeSubject.nth).click(); await page.waitForTimeout(350);
+  await page.locator('#f-trim button').nth(scopeSubject.nth).click(); await settle(350);
   const scoped = await scopeSaid();
   ok('a trim chip makes the price tiles say filtered, like the chart chip',
     /^filtered/.test(scoped.chip) && /\(filtered\)/.test(scoped.tiles[0]) && /\(filtered\)/.test(scoped.tiles[1]),
@@ -1349,7 +1406,7 @@ if (!zt) {
      `${furniture.empty} .sc-empty, ${furniture.notice} .sc-notice in #notice`);
   // Guarded so the regression reports as a failed check rather than a 30s hang
   // on a link that is not there.
-  if (await page.locator('#notice a').count()) { await page.click('#notice a'); await page.waitForTimeout(400); }
+  if (await page.locator('#notice a').count()) { await page.click('#notice a'); await settle(400); }
   const backFromZero = { trims: await page.evaluate(() => new URLSearchParams(location.search).get('trims')),
                          count: (await page.textContent('#filter-count')).trim(), sections: await onScreen() };
   ok('and its way out drops the trim and brings the sections back',
@@ -1369,7 +1426,7 @@ if (!zt) {
   await open('?brand=' + zt.bk + '&m=' + zt.mk + '&trims=' + zt.tid + ',' + ghost);
   const stale = await page.evaluate(() => ({ hidden: document.getElementById('notice').hidden,
     text: document.getElementById('notice').textContent, links: document.querySelectorAll('#notice a').length }));
-  if (stale.links) { await page.click('#notice a'); await page.waitForTimeout(400); }
+  if (stale.links) { await page.click('#notice a'); await settle(400); }
   const backFromStale = { trims: await page.evaluate(() => new URLSearchParams(location.search).get('trims')),
                           count: (await page.textContent('#filter-count')).trim() };
   ok('a stale link onto an empty trim is not a dead end either',
@@ -1416,9 +1473,9 @@ else {
   await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
   await open('?brand=' + nt.bk + '&m=' + nt.mk + '&trims=' + nt.tid);
   await page.click('[data-fkey="where:' + nt.w + '"]');
-  await page.waitForTimeout(400);
+  await settle(400);
   const promised = (await page.textContent('#notice')).match(/All ([\d,]+) cars are filtered out/);
-  if (await page.locator('#notice a').count()) { await page.click('#notice a'); await page.waitForTimeout(400); }
+  if (await page.locator('#notice a').count()) { await page.click('#notice a'); await settle(400); }
   const restored = (await page.textContent('#filter-count')).trim().match(/^showing ([\d,]+) of ([\d,]+) cars/);
   const n = (s) => Number(String(s).replace(/,/g, ''));
   ok('the empty-filters notice counts what its own link restores',
@@ -1464,7 +1521,7 @@ if (!legendKey) {
   skipRest('no legend chip has a line drawn in this data — the legend and map checks had nothing to press');
 } else {
   await page.click(`#legend [data-fkey="${legendKey}"]`);
-  await page.waitForTimeout(400);
+  await settle(400);
   const hidden = await mapState();
   ok('a legend chip still hides its own line', hidden.lines < litUp.lines,
     `${legendKey}: ${litUp.lines} series nodes → ${hidden.lines}`);
@@ -1527,10 +1584,10 @@ await page.setViewportSize({ width: 390, height: 844 });
 if (WATCHED.length < 2) return skipRest('the watchlist holds fewer than two models today — no chips to press');
 await open('');
 await page.locator('#filter-toggle').click();
-await page.waitForTimeout(200);
+await settle(200);
 const chips = await page.locator('#f-model button').count();
-for (let i = 0; i < chips; i++) { await page.locator('#f-model button').nth(i).click(); await page.waitForTimeout(60); }
-await page.waitForTimeout(400);
+for (let i = 0; i < chips; i++) { await page.locator('#f-model button').nth(i).click(); await settle(60); }
+await settle(400);
 const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 ok('nor does selecting every model', wide <= 1, `${chips} models, ${wide}px of overflow`);
 });
@@ -1913,7 +1970,7 @@ await step('the monthly payment', async () => {
   } else {
     await open(subject.q);
     await page.selectOption('#f-sort', 'payment');
-    await page.waitForTimeout(350);
+    await settle(350);
     const seen = await page.$$eval('#list-table tbody tr', (rows) => rows.map((r) => {
       const code = r.querySelector('.sc-media__code');
       const note = [...r.querySelectorAll('.sc-note')].map((n) => n.textContent).find((t) => /\/mo at /.test(t)) || '';
@@ -1931,7 +1988,7 @@ await step('the monthly payment', async () => {
     const longest = Math.max(...((fin.terms || [60])));
     if (subject.cap && longest > subject.cap) {
       await page.selectOption('#f-term', String(longest));
-      await page.waitForTimeout(350);
+      await settle(350);
       // Show all first. The table renders thirty rows, and at the LONGEST term
       // the promo cars are exactly the ones that cannot use it — capped at 60,
       // they quote a higher payment than the uncapped cars around them and sort
@@ -1940,7 +1997,7 @@ await step('the monthly payment', async () => {
       // none did, and this check read an empty string and called the dashboard
       // broken. The subject was there the whole time, thirty rows down.
       const all = page.locator('[data-fkey="more:list"]');
-      if (await all.count() && await all.isVisible()) { await all.click(); await page.waitForTimeout(500); }
+      if (await all.count() && await all.isVisible()) { await all.click(); await settle(500); }
       const title = await page.$$eval('#list-table tbody .sc-note', (ns, apr) => {
         const t = ns.map((n) => n.getAttribute('title') || '').find((t) => t.includes(apr + '%'));
         return t || '';
@@ -1975,7 +2032,7 @@ await step('out the door', async () => {
   } else {
     await open(carried.q);
     await page.selectOption('#f-sort', 'otd');
-    await page.waitForTimeout(350);
+    await settle(350);
     const rows = await page.evaluate(() => {
       // Row shape, verified against the rendered DOM rather than assumed: the
       // price cell carries the first .sc-figure, and the shipping cell is the
@@ -2081,9 +2138,9 @@ await step('the finance note owns the promo term cap', async () => {
   const chips = await page.$$('#f-trim button');
   if (chips.length < 2) return skipRest('this model has fewer than two trims to compare');
   await chips[0].click(); await chips[1].click();
-  await page.waitForTimeout(300);
+  await settle(300);
   await page.selectOption('#f-term', String(longest));
-  await page.waitForTimeout(350);
+  await settle(350);
   const hint = await page.$eval('#compare-hint', (n) => n.textContent);
   ok('a note that claims 72 months says which promos are capped shorter',
      hint.includes(`${longest} months`) && hint.includes(`capped at ${capped.max_term} months`),
@@ -2093,7 +2150,7 @@ await step('the finance note owns the promo term cap', async () => {
   // a term the promo already accommodates, the note must not mention a cap.
   const fits = Math.min(...(fin.terms || [60]).filter((t) => t <= capped.max_term));
   await page.selectOption('#f-term', String(fits));
-  await page.waitForTimeout(350);
+  await settle(350);
   const short = await page.$eval('#compare-hint', (n) => n.textContent);
   ok('and claims no cap when the term already fits inside one',
      short.includes(`${fits} months`) && !short.includes('capped at'),
@@ -2116,7 +2173,7 @@ await step('a down payment larger than the car', async () => {
   // was reading 4 rows of 30, and a clamp applied to the promo branch alone
   // passed it green while 25 rows printed "60 months on -$359,373 financed".
   await page.selectOption('#f-sort', 'payment');
-  await page.waitForTimeout(300);
+  await settle(300);
   await page.fill('#f-down', '400000');
   // fill() raises `input`; the control listens for `change`, which a real reader
   // fires by leaving the field. Without this the page never sees the number and
@@ -2170,8 +2227,8 @@ await step('the rebuilt day rows match the precomputed ones', async () => {
   // every Where chip pressed: each car sits in one of the buyer's states or
   // outside them, so the selection is the whole market by construction
   const chips = await page.$$('#f-where button');
-  for (const c of chips) { await c.click(); await page.waitForTimeout(60); }
-  await page.waitForTimeout(400);
+  for (const c of chips) { await c.click(); await settle(60); }
+  await settle(400);
   const after = await readRows();
   const rebuilt = await page.textContent('#chart-scope');
   const same = before.length === after.length && before.every((r, i) => r === after[i]);
@@ -2269,7 +2326,7 @@ await step('the listings table honours the order it advertises', async () => {
   await open(subject.q);
   for (const [key, , dir] of ORDERS) {
     await page.selectOption('#f-sort', key);
-    await page.waitForTimeout(350);
+    await settle(350);
     // read the VALUES from the rows, by the same key the sort claims to use
     const vals = await page.evaluate((k) => {
       const cells = (tr) => [...tr.querySelectorAll('td')];
@@ -2418,7 +2475,7 @@ await step('a value percentage names its cohort', async () => {
   if (!subject) return skipRest('no model on the watchlist holds enough cars');
   await open(subject.q);
   await page.selectOption('#f-sort', 'value');
-  await page.waitForTimeout(350);
+  await settle(350);
   const notes = await page.$$eval('#list-scroll tbody .sc-note',
     (ns) => ns.map((n) => ({ text: n.textContent.replace(/\s+/g, ' ').trim(),
                              basis: n.getAttribute('data-basis'),
@@ -2547,12 +2604,12 @@ await step('the budget', async () => {
     await page.fill('#f-budget', String(v));
     await page.locator('#f-budget').press('Tab');
     if (kind) await page.selectOption('#f-budget-kind', kind);
-    await page.waitForTimeout(400);
+    await settle(400);
   };
   await setBudget(budget, 'otd');
   // The listings table is the page's own answer to "which cars are left".
   const more = page.locator('[data-fkey="more:list"]');
-  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+  if (await more.count() && await more.isVisible()) { await more.click(); await settle(400); }
   const shown = await page.locator('#list-table tbody .sc-media__code')
     .evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
   // Both directions. A budget that lets an expensive car through is the
@@ -2660,14 +2717,14 @@ await step('the phone filter panel', async () => {
   if (WATCHED.length < 2) return skipRest('the watchlist holds fewer than two models today — no chips to press');
   await open('');
   await page.locator('#filter-toggle').click();
-  await page.waitForTimeout(200);
+  await settle(200);
   const isOpen = () => page.locator('#filters-card').evaluate((n) => n.classList.contains('is-open'));
   if (!(await isOpen())) return skipRest('the filter panel did not open on this viewport');
   const chips = Math.min(3, await page.locator('#f-model button').count());
   const states = [];
   for (let i = 0; i < chips; i++) {
     await page.locator('#f-model button').nth(i).click();
-    await page.waitForTimeout(200);
+    await settle(200);
     states.push(await isOpen());
   }
   ok('pressing model chips does not close the filter panel',
@@ -2795,7 +2852,7 @@ await step('the decision panel', async () => {
   else {
     const shown = await page.locator('#hero-card').evaluate((n) => !n.hidden);
     await jump.click();
-    await page.waitForTimeout(400);
+    await settle(400);
     ok('and it is not on a model page',
        shown && await page.locator('#hero-card').evaluate((n) => n.hidden),
        `visible on the watchlist: ${shown}; then opened ${await page.textContent('#h1')}`);
@@ -3022,7 +3079,7 @@ await step('seen at two prices is not cut', async () => {
   await open(found.w.q);
   await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
   await open(found.w.q);
-  if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+  if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await settle(300); }
   const rowText = await page.evaluate((vin) => { const b = document.querySelector(`#list-table [data-fkey="star:${vin}"]`); const tr = b && b.closest('tr'); return tr ? tr.textContent.replace(/\s+/g, ' ') : ''; }, car.vin);
   const wantChip = `seen at ${money(pair[0])} and ${money(pair[1])}`;
   ok('a car seen at two prices wears those prices, not a cut count', rowText.includes(wantChip) && !/\d+ cuts?\b/.test(rowText.split(wantChip)[0].slice(-40)),
@@ -3038,7 +3095,7 @@ await step('seen at two prices is not cut', async () => {
           `tile "${(tileTxt.match(/\d+ (?:price )?cuts?[^·]*/) || [tileTxt.slice(0, 60)])[0].trim()}" · sheet: ${wantCuts} cut (${rawCuts} with the sawtooth's down days counted)`);
   // the shortlist table: star the car and one more
   const other = listings.find((x) => x.vin !== car.vin && x.price != null);
-  for (const v of [car.vin, other && other.vin].filter(Boolean)) { await page.click(`button[data-fkey="star:${v}"]`); await page.waitForTimeout(150); }
+  for (const v of [car.vin, other && other.vin].filter(Boolean)) { await page.click(`button[data-fkey="star:${v}"]`); await settle(150); }
   const cell = await page.evaluate((vin) => {
     const tbl = document.getElementById('finalists-table'); if (!tbl) return null;
     const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.querySelector(`[data-fkey="fin:${vin}"]`));
@@ -3062,7 +3119,7 @@ await step('seen at two prices is not cut', async () => {
   });
   try {
     await open(found.w.q);
-    if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+    if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await settle(300); }
     const rowText2 = await page.evaluate((vin) => { const b = document.querySelector(`#list-table [data-fkey="star:${vin}"]`); const tr = b && b.closest('tr'); return tr ? tr.textContent.replace(/\s+/g, ' ') : ''; }, car.vin);
     ok('and a single blip up and back is still a cut that did not stick', /cut, then back up/.test(rowText2) && !rowText2.includes('seen at'),
        `${car.vin.slice(-6)} with one sighting of ${money(pair[1])}: ${/cut, then back up/.test(rowText2) ? 'reads "cut, then back up"' : rowText2.includes('seen at') ? 'still reads "seen at"' : `reads "${rowText2.slice(0, 80)}"`}`);
@@ -3134,7 +3191,7 @@ await step('dealer stock is a market of its own', async () => {
      split ? `${subject.tid}: "${split}" — sheet says ${subject.fresh.length} of ${subject.priced.length} under ${NEW} mi at ${med(subject.fresh.map((x) => x.price))}, ${subject.used.length} used at ${med(subject.used.map((x) => x.price))}`
            : `${subject.tid}: no split line on the tile — ${before.join(' | ')}`);
   await page.check('#f-hidenew');
-  await page.waitForTimeout(400);
+  await settle(400);
   const count = (await page.textContent('#filter-count')).trim();
   const shown = +(count.match(/^showing ([\d,]+) of/) || [])[1]?.replace(/,/g, '');
   const wantShown = subject.rows.filter((x) => !(x.miles != null && x.miles < NEW)).length;
@@ -3843,8 +3900,8 @@ await step('under typical only outside its own interval', async () => {
   if (!subject) return skipRest('no model on the watchlist');
   const model0 = SHEET.brands[subject.bk].models[subject.mk];
   const scores = scoreModel(model0);
-  const sortByValue = async () => { await page.selectOption('#f-sort', 'value'); await page.waitForTimeout(350); };
-  const showAll = async () => { if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); } };
+  const sortByValue = async () => { await page.selectOption('#f-sort', 'value'); await settle(350); };
+  const showAll = async () => { if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await settle(300); } };
   await open(subject.q); await sortByValue();
   const rows = await readRows();
   const noted = rows.filter((r) => r.note);
@@ -4022,7 +4079,7 @@ await step('under typical only outside its own interval', async () => {
       const picked = await page.locator(`#takeaway [data-fkey^="pick:${hx.vin}:"]`).count();
       await open(heroModel.q); await sortByValue(); await showAll();
       const other = (await readRows()).find((r) => r.vin && r.vin !== hx.vin);
-      for (const v of [hx.vin, other && other.vin].filter(Boolean)) { await page.click(`button[data-fkey="star:${v}"]`); await page.waitForTimeout(150); }
+      for (const v of [hx.vin, other && other.vin].filter(Boolean)) { await page.click(`button[data-fkey="star:${v}"]`); await settle(150); }
       const cell = await page.evaluate((vin) => {
         const tbl = document.getElementById('finalists-table'); if (!tbl) return null;
         const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.querySelector(`[data-fkey="fin:${vin}"]`));
@@ -4063,7 +4120,7 @@ await step('under typical only outside its own interval', async () => {
     });
     try {
       await open(subject.q); await clearStars2(); await open(subject.q); await sortByValue(); await showAll();
-      for (const v of [targetVin, otherVin]) { await page.click(`button[data-fkey="star:${v}"]`); await page.waitForTimeout(150); }
+      for (const v of [targetVin, otherVin]) { await page.click(`button[data-fkey="star:${v}"]`); await settle(150); }
       const cell = await page.evaluate((vin) => {
         const tbl = document.getElementById('finalists-table'); if (!tbl) return null;
         const col = [...tbl.querySelectorAll('thead th')].findIndex((th) => th.querySelector(`[data-fkey="fin:${vin}"]`));
@@ -4407,7 +4464,7 @@ await step('a VIN in hand', async () => {
   await open('');
   await page.fill('#f-vin', six.toLowerCase());
   await page.press('#f-vin', 'Enter');
-  await page.waitForTimeout(500);
+  await settle(500);
   const r6 = await read();
   ok('and the VIN field is the same path as the link', r6.card === vin && r6.landed === vin && r6.url.includes('vin=' + vin) && (await page.inputValue('#f-vin')) === '',
      `typed "${six.toLowerCase()}": card ${r6.card} · landed ${r6.landed} · url "${r6.url}"`);
@@ -4427,7 +4484,7 @@ await step('a VIN in hand', async () => {
   const tab = other && page.locator(`button[data-fkey="tab-model:${other.mk}"]`);
   if (!other || !(await tab.count())) skip('and leaving the model page leaves the car behind', 'no second model of the brand to tab to');
   else {
-    await tab.click(); await page.waitForTimeout(500);
+    await tab.click(); await settle(500);
     const r8 = await read();
     ok('and leaving the model page leaves the car behind', !r8.card && r8.h1.includes(other.label) && !r8.url.includes('vin='), `${other.label} by its tab: card ${r8.card} · url "${r8.url}"`);
   }
@@ -4539,7 +4596,7 @@ await step('the decision card folds its evidence on a phone', async () => {
     ok('and the card fits one phone screen', r.cardH <= r.inner + 60, `card ${r.cardH}px on an ${r.inner}px screen (it ran to 1,754px unfolded)`);
     const before = r.cardH;
     await page.locator('#hero-cars details.hero-fold summary').first().click();
-    await page.waitForTimeout(200);
+    await settle(200);
     const r2 = await read();
     ok('and the fold opens to the evidence', r2.tiles[0].open === true && r2.cardH > before + 80, `open: ${r2.tiles[0].open}, card ${before}px → ${r2.cardH}px`);
     const gapOk = /costs \$[\d,]+ more than .* on today's cheapest of each/.test(r.gapHead) && !!r.gapFold && r.gapFold.open === false
@@ -4600,7 +4657,7 @@ await step('a departure from one query is not a departure from the market', asyn
     const tile = [...document.querySelectorAll('#kpis .sc-tile')].map((t) => t.textContent.replace(/\s+/g, ' ')).find((t) => /since the previous/i.test(t)) || '';
     return { hint: hint.replace(/\s+/g, ' ').trim(), rows, tile };
   });
-  const showAllGone = async () => { if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await page.waitForTimeout(300); } };
+  const showAllGone = async () => { if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await settle(300); } };
   if (!subject) {
     skip('the gone card counts a car still listed apart from the departures', 'no model on the sheet has a car that left a watch while still listed');
     skip('and the row says which watch it left and what it asks now', 'no such car');
@@ -4692,7 +4749,7 @@ await step('a watchlist edit reads as a watchlist edit, not a departure', async 
     });
     try {
       await open(host.w.q);
-      if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await page.waitForTimeout(300); }
+      if (await page.locator('#gone-more button').count()) { await page.click('#gone-more button'); await settle(300); }
       return await readGone();
     } finally { await ctx.unroute('**/data.json*'); }
   };
@@ -4769,7 +4826,7 @@ await step('a cohort of mixed trims prices the mix, not the car', async () => {
     const chips = [...document.querySelectorAll('.sc-photo-card__chip')].map((c) => c.textContent.trim()).filter((t) => /typical/.test(t));
     return { rows, picks, chips };
   });
-  const showAll = async () => { if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); } };
+  const showAll = async () => { if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await settle(300); } };
   await open(subject.w.q); await showAll();
   const r = await readNotes();
   const byVin = new Map((subject.m.listings || []).map((x) => [x.vin, x]));
@@ -4786,7 +4843,7 @@ await step('a cohort of mixed trims prices the mix, not the car', async () => {
      anyMixed.length ? `${anyMixed[0].vin.slice(-6)}: "${anyMixed[0].note}"` : named.map((p) => p.note.replace(/^.*below a typical /, '').slice(0, 42)).join(' · '));
   // the value sort must not put a mixed car first on a number it will not print
   await open(subject.w.q);
-  await page.selectOption('#f-sort', 'value'); await page.waitForTimeout(350);
+  await page.selectOption('#f-sort', 'value'); await settle(350);
   const sorted = await readNotes();
   // Only the ELIGIBLE cars are scored at all — an ineligible one carries no
   // percentage and sorts with the mixed, which is right and is not what this
@@ -5018,14 +5075,14 @@ await step('one tap lands on the car', async () => {
     const model = WATCHED.find((w) => (SHEET.brands[w.bk].models[w.mk].listings || []).some((x) => x.vin === vin));
     if (!model) continue;
     await open(model.q);
-    if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+    if (await page.locator('#list-more button').count()) { await page.click('#list-more button'); await settle(300); }
     const idx = await page.$$eval('#list-table tbody tr', (trs, v) => trs.findIndex((tr) => tr.querySelector(`[data-fkey="star:${v}"]`)), vin);
     if (idx >= 0 && (!subject || idx > subject.idx)) subject = { vin, idx, model };
   }
   if (!subject) return skipRest('no decision-tile car could be found in its model\'s list');
   await open('');
   await page.click(`#hero-cars [data-fkey="hero:${subject.vin}"]`);
-  await page.waitForTimeout(600);
+  await settle(600);
   const landed = await page.evaluate((v) => {
     const b = document.querySelector(`#list-card [data-fkey="star:${v}"]`);
     if (!b) return { found: false };
@@ -5125,7 +5182,7 @@ await step('the shortlist you build yourself', async () => {
   // three times and starred three different cars.
   const press = async (k) => {
     await page.locator(`button[data-fkey="${k}"]`).first().click();
-    await page.waitForTimeout(120);
+    await settle(120);
   };
   const vinOf = (k) => k.split(':')[1];
   await press(keys[0]);
@@ -5212,12 +5269,12 @@ await step('the shortlist refuses to call a price a score', async () => {
   await open(home.q);
   const more = page.locator('[data-fkey="more:list"]');
   if (await more.count()) await more.click();
-  await page.waitForTimeout(200);
+  await settle(200);
   const starred = [];
   for (const vin of wanted) {
     const b = page.locator(`button[data-fkey="star:${vin}"]`).first();
     if (!(await b.count())) continue;
-    await b.click(); await page.waitForTimeout(120);
+    await b.click(); await settle(120);
     starred.push(vin);
   }
   if (starred.length < 2) return skipRest(`only ${starred.length} of the wanted cars is on ${home.id}'s page today`);
@@ -5319,7 +5376,7 @@ await step('a car is called what it is', async () => {
   // name the car the same way, are read instead on such a day.
   const picksText = ((await page.locator('#takeaway').evaluate((h) => (h.hidden ? '' : h.textContent))) || '').trim();
   const usingPicks = picksText.length > 0;
-  if (!usingPicks && await page.locator('#list-more button').count()) { await page.click('#list-more button'); await page.waitForTimeout(300); }
+  if (!usingPicks && await page.locator('#list-more button').count()) { await page.click('#list-more button'); await settle(300); }
   const said = usingPicks ? picksText : ((await page.textContent('#list-table tbody')) || '');
   const surface = usingPicks ? 'pick cards' : 'list rows (this model draws no pick card today)';
   ok('no surface names a car "all trims"', said.length > 0 && !/all trims/i.test(said),
@@ -5494,7 +5551,7 @@ await step('a car is new only on the day it arrives', async () => {
   const today = held.filter((x) => String(x.first_seen || '').slice(0, 10) === dt);
   await open(home.q);
   const more = page.locator('[data-fkey="more:list"]');
-  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  if (await more.count() && await more.isVisible()) { await more.click(); await settle(500); }
   // The chip rides in the vehicle cell beside the title, so read it per row.
   const chipped = await page.locator('#list-table tbody tr').evaluateAll((rows) => rows
     .filter((r) => [...r.querySelectorAll('.sc-chip')].some((c) => c.textContent.trim() === 'new'))
@@ -5575,7 +5632,7 @@ await step('a car is new only on the day it arrives', async () => {
     for (const w of first) {
       await open(w.q);
       const more2 = page.locator('[data-fkey="more:list"]');
-      if (await more2.count() && await more2.isVisible()) { await more2.click(); await page.waitForTimeout(400); }
+      if (await more2.count() && await more2.isVisible()) { await more2.click(); await settle(400); }
       const tile2 = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent.replace(/\s+/g, ' ').trim()))
         ).find((t) => /previous snapshot/i.test(t)) || '';
       const chips2 = await page.locator('#list-table tbody tr').evaluateAll((rows) => rows
@@ -5714,7 +5771,7 @@ await step('what a keyboard gets', async () => {
   else {
     await page.locator('.car-dot-marker').first().focus();
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(250);
+    await settle(250);
     const said = (await page.textContent('#map-say') || '').trim();
     ok('the map announces the car opened with the keyboard',
        said.length > 0 && /\$[\d,]+/.test(said),
@@ -5744,7 +5801,7 @@ await step('what a keyboard gets', async () => {
     if (!(await link.count())) continue;
     await link.focus();
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(500);
+    await settle(500);
     landed.push({ key, card, inside: await page.evaluate((c) =>
       !!(document.activeElement && document.activeElement.closest('#' + c)), card) });
   }
@@ -5768,20 +5825,37 @@ await step('what a keyboard gets', async () => {
                                     'this model draws no "new" tile link today');
     else {
       await link.click();
-      await page.waitForTimeout(700);
-      const geom = await page.evaluate(() => {
-        const bar = document.getElementById('filters-card');
-        const h = document.getElementById('list-title');
-        if (!bar || bar.hidden || !h) return null;
-        const b = bar.getBoundingClientRect(), t = h.getBoundingClientRect();
-        return { barBottom: Math.round(b.bottom), titleTop: Math.round(t.top),
-                 pad: getComputedStyle(document.documentElement).scrollPaddingTop };
-      });
+      await settle(700);
+      // Read the landing twice, a frame apart, and require it to be the SAME
+      // place both times. Where a jump lands is only a claim about where it
+      // lands if the page has stopped moving: a smooth scroll animates without
+      // touching the DOM, so a wait that asks only about mutations returns
+      // mid-flight and this heading measured y=449 on its way to y=6829 — a
+      // green assertion about a position the reader never sees. That is what
+      // the settle's scroll condition is for, and this is what fails without it.
+      const geom = await page.evaluate(() => new Promise((done) => {
+        const read = () => {
+          const bar = document.getElementById('filters-card');
+          const h = document.getElementById('list-title');
+          if (!bar || bar.hidden || !h) return null;
+          const b = bar.getBoundingClientRect(), t = h.getBoundingClientRect();
+          return { barBottom: Math.round(b.bottom), titleTop: Math.round(t.top),
+                   pad: getComputedStyle(document.documentElement).scrollPaddingTop };
+        };
+        const first = read();
+        if (!first) return done(null);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const again = read();
+          done({ ...first, still: !!again && again.titleTop === first.titleTop && again.barBottom === first.barBottom,
+                 drift: again ? again.titleTop - first.titleTop : null });
+        }));
+      }));
       if (!geom) skip('and nothing it jumps to lands under the sticky filter bar', 'no sticky bar on this view');
       else ok('and nothing it jumps to lands under the sticky filter bar',
-              geom.titleTop >= geom.barBottom,
+              geom.still && geom.titleTop >= geom.barBottom,
               `the listings heading lands at y=${geom.titleTop}, the bar ends at y=${geom.barBottom}`
-              + ` (scroll-padding-top ${geom.pad})`);
+              + ` (scroll-padding-top ${geom.pad})`
+              + (geom.still ? ' and has stopped there' : `, still moving — ${geom.drift}px in the next two frames`));
     }
   }
 });
@@ -5857,7 +5931,7 @@ await step('the rate the page is ranking on', async () => {
   if (!subject) return skipRest('no model on the watchlist holds cars today');
   await open(subject.q);
   await page.selectOption('#f-sort', 'payment');
-  await page.waitForTimeout(350);
+  await settle(350);
   const hidden = await page.locator('#compare-card').evaluate((n) => n.hidden);
   const hint = (await page.textContent('#list-hint')) || '';
   ok('a model page says what rate its payments assume',
@@ -5878,9 +5952,9 @@ await step('the rate the page is ranking on', async () => {
   await open(home.q);
   await page.selectOption('#f-sort', 'payment');
   await page.selectOption('#f-term', String(longest));
-  await page.waitForTimeout(350);
+  await settle(350);
   const more = page.locator('[data-fkey="more:list"]');
-  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  if (await more.count() && await more.isVisible()) { await more.click(); await settle(500); }
   // Every VISIBLE payment note quoting the promo rate, read as a reader reads
   // it — the text, not the tooltip.
   const notes = await page.locator('#list-table tbody .sc-note').evaluateAll(
@@ -5972,7 +6046,7 @@ await step('a certified badge on a departed car names who issued it', async () =
   const car = (SHEET.brands[subject.bk].models[subject.mk].gone || []).find(caveat);
   await open(subject.q);
   const more = page.locator('[data-fkey="more:gone"]');
-  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(600); }
+  if (await more.count() && await more.isVisible()) { await more.click(); await settle(600); }
   const row = await page.locator('#gone-table tbody tr, #gone-cards > *').evaluateAll((rs, tail) => {
     const hit = rs.find((r) => r.innerText.toUpperCase().includes(tail));
     return hit ? hit.innerText.replace(/\s+/g, ' ') : '';
@@ -6047,8 +6121,8 @@ await step('a split adds up to the total it named', async () => {
   const theirs = names.findIndex((t, i) => i !== mine);
   if (mine < 0 || theirs < 0) return skip('and the compare table puts an unplaced car in neither column',
                                           'the watchlist holds fewer than two models today');
-  await chips.nth(mine).click(); await page.waitForTimeout(250);
-  await chips.nth(theirs).click(); await page.waitForTimeout(500);
+  await chips.nth(mine).click(); await settle(250);
+  await chips.nth(theirs).click(); await settle(500);
   const cell = await page.locator('#compare-table').evaluate((table, modelLabel) => {
     const index = [...table.querySelectorAll('thead th')].findIndex((th) =>
       (th.getAttribute('aria-label') || '') === modelLabel || (th.getAttribute('aria-label') || '').startsWith(modelLabel + ','));
@@ -6146,7 +6220,7 @@ await step('the record and the page tell one story about one model', async () =>
     if (!label || md.indexOf(`## Shopping: ${label}\n`) < 0) continue;
     await open(w.q);
     const more = page.locator('[data-fkey="more:list"]');
-    if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+    if (await more.count() && await more.isVisible()) { await more.click(); await settle(400); }
     for (const t of await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((r) => r.innerText))) {
       const vin = (t.match(/\b[A-HJ-NPR-Z0-9]{17}\b/) || [])[0];
       const pc = (t.match(/(\d+)% under typical/) || [])[1];
@@ -6195,7 +6269,7 @@ await step('a sentence does not outrun the view it was built from', async () => 
   const m = SHEET.brands[sub.bk].models[sub.mk];
   const years = [...new Set((m.listings || []).filter((x) => x.local && x.price).map((x) => String(x.year)))].sort();
   await page.selectOption('#f-year', years[years.length - 1]);
-  await page.waitForTimeout(500);
+  await settle(500);
   const narrowed = (await page.textContent('#next-figure')) || '';
   const tile = (await page.locator('#kpis .sc-tile').evaluateAll((ts) => ts.map((t) => t.textContent))).find((t) => /drivable/i.test(t)) || '';
   ok('the next card names the filter it was built under',
@@ -6215,7 +6289,7 @@ await step('a sentence does not outrun the view it was built from', async () => 
   const i = names.findIndex((t) => t.startsWith(wheres[0]));
   if (i < 0) return skip('the comparison stops saying anywhere when it is not anywhere',
                          `no where chip for ${wheres[0]}`);
-  await chips.nth(i).click(); await page.waitForTimeout(600);
+  await chips.nth(i).click(); await settle(600);
   const after = (await page.textContent('#compare-table')) || '';
   ok('the comparison stops saying anywhere when it is not anywhere',
      /Lowest asking anywhere/.test(before) && !/Lowest asking anywhere/.test(after)
@@ -6261,7 +6335,7 @@ await step('the car in hand is a car the reader can find', async () => {
     skip('and its way out really brings the row back', 'the card offered no way out to press');
   else {
     await page.click('[data-fkey="notice:vin-clear"]');
-    await page.waitForTimeout(600);
+    await settle(600);
     const back = (await page.textContent('#notice')) || '';
     ok('and its way out really brings the row back',
        (await inList()) && /row is in the list below/.test(back),
@@ -6278,7 +6352,7 @@ await step('the car in hand is a car the reader can find', async () => {
   if (!(await opener.count())) return skip('and "Open this car" lands on the car rather than the top of the page',
                                            'the card has no open link on this sheet');
   await opener.click();
-  await page.waitForTimeout(800);
+  await settle(800);
   // What landOnCar() promises is that the CAR's row is what you arrive at —
   // in view and holding the focus, so the keyboard and the eye land together.
   // `scrollY > 0` was a proxy for that and is a fact about where the car
@@ -6331,7 +6405,7 @@ await step('the way out of an empty page is a way out', async () => {
     return skip('and clearing the filters really clears it', 'the notice offered no way out to press');
   }
   await page.click('[data-fkey="notice:clear"]');
-  await page.waitForTimeout(600);
+  await settle(600);
   const after = await count();
   const left = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').budget) || 0; } catch { return 0; } });
   ok('and clearing the filters really clears it',
@@ -6415,7 +6489,7 @@ await step('the history the record publishes is the history the page draws', asy
   if (!subject) return skipRest('no row on this sheet carries an owner or accident word');
   await open(subject.q);
   const more = page.locator('[data-fkey="more:list"]');
-  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(500); }
+  if (await more.count() && await more.isVisible()) { await more.click(); await settle(500); }
   const drawn = await page.locator('#list-table tbody tr').evaluateAll((trs) => trs.map((tr) => {
     const code = tr.querySelector('.sc-media__code');
     const cell = tr.querySelector('.flags');
@@ -6491,9 +6565,9 @@ await step('a trim chip counts what its query returned', async () => {
   if (!subject) return skip('and pressing one shows that many rows', 'no trim on this sheet holds a car today');
   await open(subject.q);
   await page.click(`[data-fkey="trim:${subject.id}"]`);
-  await page.waitForTimeout(400);
+  await settle(400);
   const more = page.locator('[data-fkey="more:list"]');
-  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(400); }
+  if (await more.count() && await more.isVisible()) { await more.click(); await settle(400); }
   const shown = await page.locator('#list-table tbody tr').count();
   ok('and pressing one shows that many rows', shown === subject.md,
      `${subject.label}: the chip says ${subject.md}, the record says ${subject.md}, the table shows ${shown}`);
@@ -6676,9 +6750,9 @@ await step('the cut sort does not call a sawtooth flip a cut', async () => {
   if (!subject) return skipRest('no model on this sheet holds both a sawtooth down-day and a real cut');
   await open(subject.q);
   await page.selectOption('#f-sort', 'cut');
-  await page.waitForTimeout(350);
+  await settle(350);
   const more = page.locator('[data-fkey="more:list"]');
-  if (await more.count() && await more.isVisible()) { await more.click(); await page.waitForTimeout(600); }
+  if (await more.count() && await more.isVisible()) { await more.click(); await settle(600); }
   // Read each row whole, so the VIN and the note are judged together.
   const rows = await page.locator('#list-table tbody tr').evaluateAll(
     (rs) => rs.map((r) => r.innerText.replace(/\s+/g, ' ')));
@@ -6906,7 +6980,7 @@ await step('market studio keyboard navigation', async () => {
     const region = page.locator('#signal-card .sc-table-scroll');
     await region.focus();
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(200);
+    await settle(200);
     const scroll = await region.evaluate((r) => ({ role: r.getAttribute('role'), label: r.getAttribute('aria-label'), focused: document.activeElement === r,
       outline: getComputedStyle(r).outlineStyle, left: r.scrollLeft, needsScroll: r.scrollWidth > r.clientWidth, described: r.getAttribute('aria-describedby') }));
     ok('the signal matrix is a named focusable region that scrolls by keyboard', scroll.role === 'region' && !!scroll.label && scroll.focused
@@ -6915,7 +6989,7 @@ await step('market studio keyboard navigation', async () => {
     const vin = (await link.getAttribute('data-fkey')).slice(7);
     await link.focus();
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(400);
+    await settle(400);
     const hidden = await page.locator('.market-cover__index a').evaluateAll((as) => as.every((a) => a.hidden === !!document.querySelector(a.getAttribute('href'))?.hidden));
     const landed = await page.evaluate((id) => {
       const star = document.querySelector(`#list-card [data-fkey="star:${id}"]`);
@@ -6939,12 +7013,12 @@ await step('market studio cover links follow scoped filters', async () => {
   try {
     await page.fill('#f-budget', '1');
     await page.locator('#f-budget').press('Tab');
-    await page.waitForTimeout(400);
+    await settle(400);
     const empty = await linkState();
     const matrixGone = await page.locator('#signal-card').isHidden();
     await page.fill('#f-budget', '');
     await page.locator('#f-budget').press('Tab');
-    await page.waitForTimeout(400);
+    await settle(400);
     const restored = await linkState();
     ok('cover links update when a budget hides sections and recover when it is cleared', matrixGone
       && await page.locator('#signal-card').isVisible()
