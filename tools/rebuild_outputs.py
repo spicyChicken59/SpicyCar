@@ -18,7 +18,7 @@
 # What replaces them is what a thirty-six-model watchlist actually needs
 # answered after an edit: which models the record can say nothing about yet,
 # and when each of them first fetches.
-import os, sys, json
+import os, sys
 os.environ.setdefault("AUTODEV_API_KEY", "offline-rebuild")
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
 os.chdir(__import__("pathlib").Path(__file__).resolve().parent.parent)
@@ -34,7 +34,7 @@ print(f"history: {len(all_rows)} rows over {len(days)} days; latest {latest} has
 hist = T.build_history(all_rows)
 report, site, subject = T.build_outputs(today_rows, all_rows, hist)
 Path("REPORT.md").write_text(report)
-(T.DOCS / "data.json").write_text(json.dumps(site, indent=1))
+T.write_sheet(site)
 T.update_sheet_size(site)
 
 models = [(bk, mk, m) for bk, b in site["brands"].items()

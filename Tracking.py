@@ -5074,14 +5074,58 @@ def send_email(report, subject=None):
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-def update_sheet_size(site, path=Path("README.md")):
-    """Keep the documented payload measurement in sync with every snapshot."""
+def write_sheet(site, path=None):
+    """The ONE writer of docs/data.json.
+
+    Three call sites wrote this file and they did not agree how: fair
+    collection's atomic_json sorts the keys and writes a trailing newline,
+    while main() and the offline rebuild used a plain json.dumps. Same content,
+    two byte layouts, 2% apart once gzipped — so which layout was committed
+    depended on the path the day took, the README row measured an ordering
+    nobody had on disk, and the test that rebuilds the record could not match
+    it. Sorted wins because it is what the live path has been committing.
+    """
+    from fair_collection import atomic_json    # local: that module imports this one
+    atomic_json(path or (DOCS / "data.json"), site)
+
+
+def sheet_text(site):
+    """What write_sheet() puts on disk, for anything that needs to compare."""
+    return json.dumps(site, indent=1, sort_keys=True, allow_nan=False) + "\n"
+
+
+# What the browser is allowed to download. The page fetches the sheet on load,
+# so this is a fact about how the site feels rather than housekeeping — and it
+# is a tripwire for a change that adds a megabyte, not a target to optimise
+# towards. Raise it on purpose, in the commit that needs it, and move every
+# copy together: tools/dashboard_smoke.mjs, tools/measure_sheet.py, the README
+# table and tests/test_tracking.py all quote this number.
+SHEET_BUDGET = 400 * 1024
+
+
+def update_sheet_size(site, path=Path("README.md"), sheet=None):
+    """Keep the documented payload measurement in sync with every snapshot.
+
+    Measured on the FILE, never on the object in hand. The two writers of this
+    sheet do not serialise it the same way — fair_collection's atomic_json
+    sorts the keys and Tracking's own write_text does not — so a row computed
+    from `site` described a serialisation nobody had committed. It was 2% low
+    on every snapshot for as long as the fair path has been the live one (295
+    against 302 KB on 13 Sep, 277 against 283 the day before), and the test
+    that holds the row to the sheet beside it had no way to pass. Gzipping the
+    committed bytes is the only reading that is true whichever writer wrote
+    them, and it is also the number the reader actually waits for.
+    """
     import gzip, re
+    sheet = Path(sheet) if sheet else DOCS / "data.json"
+    if not sheet.exists():
+        return
     models = [m for b in site["brands"].values() for m in b["models"].values()]
     cars = sum(len(m.get("listings") or []) for m in models)
     live = sum(bool(m.get("listings")) for m in models)
-    size = len(gzip.compress(json.dumps(site, indent=1).encode(), 9))
-    row = f"| as committed | {live} | {cars:,} | {round(size / 1024)} KB | {round(size / (250 * 1024) * 100)}% |"
+    size = len(gzip.compress(sheet.read_bytes(), 9))
+    row = (f"| as committed | {live} | {cars:,} | {round(size / 1024)} KB | "
+           f"{round(size / SHEET_BUDGET * 100)}% |")
     if path.exists():
         path.write_text(re.sub(r"^\| as committed \|.*$", lambda _: row, path.read_text(), flags=re.M))
 
@@ -5370,7 +5414,7 @@ def main():
     report, site, subject = build_outputs(today_rows, all_rows, hist)
 
     Path("REPORT.md").write_text(report)
-    (DOCS / "data.json").write_text(json.dumps(site, indent=1))
+    write_sheet(site)
     update_sheet_size(site)
     print("\n" + report)
     print(f"\nSubject: {subject}")

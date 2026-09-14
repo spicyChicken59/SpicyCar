@@ -3329,10 +3329,24 @@
       if (!S.showAllList) { S.showAllList = true; rerender('showList'); hit = find(); }
     }
     if (!hit) return false;
-    const row = hit.closest('tr') || hit.closest('.sc-media') || hit;
-    row.tabIndex = -1;
-    row.scrollIntoView({ block: 'center' });
-    row.focus({ preventScroll: true });
+    const land = () => {
+      const b = find();
+      const row = b && (b.closest('tr') || b.closest('.sc-media') || b);
+      if (!row) return false;
+      row.tabIndex = -1;
+      row.scrollIntoView({ block: 'center' });
+      row.focus({ preventScroll: true });
+      return true;
+    };
+    if (!land()) return false;
+    // …and again once any deferred rebuild has run. scheduleListRender() waits
+    // two frames before replacing the rows, so a landing that happened on the
+    // way in scrolled to a row that was then swapped out from under it: the
+    // focus survived (the fkey machinery re-lands it) and the SCROLL did not,
+    // leaving the reader at the top of a page whose focused row was three
+    // screens down. Re-finding by the same key is what makes the second pass
+    // land on the rebuilt row rather than a detached one.
+    requestAnimationFrame(() => requestAnimationFrame(land));
     return true;
   }
   function segment(host, ids, current, labelOf, caseClass, onPick, fkey) {
@@ -4741,7 +4755,12 @@
     const da = last.a - first.a, db = last.b - first.b, change = last.gap - first.gap;
     const side = (label, d) => `${money(Math.abs(d))} ${label}'s floor ${d > 0 ? 'rising' : 'falling'}`;
     const parts = [da ? side(a.o.m.label, da) : null, db ? side(b.o.m.label, db) : null].filter(Boolean);
-    parts[0] = parts[0].replace(' ', ' is ');   // "$4,481 is BMW i5's floor rising and $981 BMW i7's floor falling"
+    // Both floors ending the window where they started is an ordinary day on
+    // this record, and it names no side: the gap has not changed, so `change`
+    // is zero and this sentence is never printed. Respelling parts[0] before
+    // asking took the whole page down with a TypeError the boot catch swallowed
+    // into "Snapshot unavailable".
+    if (parts.length) parts[0] = parts[0].replace(' ', ' is ');   // "$4,481 is BMW i5's floor rising and $981 BMW i7's floor falling"
     return `Over the ${shared.length} fetch days both were fetched, ${b.o.m.label} has cost ${lo === hi ? money(lo) : `${money(lo)}–${money(hi)}`} more:`
       + ` ${money(first.gap)} on ${fmtDate(first.day)}, ${money(last.gap)} ${last.day === dataThrough() ? 'today' : 'on ' + fmtDate(last.day)}.`
       + (change ? ` Of that ${money(Math.abs(change))} change, ${parts.join(' and ')}. ` : ' ');

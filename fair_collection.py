@@ -517,6 +517,6 @@ def run(T):
     today_rows = [r for r in all_rows if r["snapshot_date"] == T.TODAY]
     report_text, site, _ = T.build_outputs(today_rows, all_rows, T.build_history(all_rows))
     Path("REPORT.md").write_text(report_text)
-    atomic_json(T.DOCS / "data.json", site)
+    T.write_sheet(site)
     T.update_sheet_size(site)
     print(f"Fair collection: {len(successful)} complete observations, {T.CALLS} requests, {budget.month_spent}/{T.MONTHLY} recorded this month.")

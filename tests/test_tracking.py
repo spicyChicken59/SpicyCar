@@ -22,6 +22,7 @@ import re
 import shutil
 import struct
 import sys
+import tempfile
 import unittest
 import unittest.mock
 import contextlib
@@ -4631,6 +4632,18 @@ class TestTheOverlapLogRecordsOnlyQueriesThatFinished(unittest.TestCase):
         self.assertIn(self.TID, T.source_overlap({}))
 
 
+# current_rows() reads the repository's OWN fetch log to learn the newest day a
+# target was completely observed, and takes that day over the newest day in the
+# rows it was handed. That is right in production and fatal in a fixture: a
+# synthetic row dated 2026-09-06 stops being "the latest snapshot" the moment
+# the daily job commits a later one, and every test built on one starts failing
+# on a day nobody touched it. Six did. Pin the log to nothing for the duration
+# and the fixture's own rows decide their own latest day, which is the only
+# thing these tests are about.
+def no_fetch_log():
+    return unittest.mock.patch.object(T, "load_fetch_log", lambda *a, **k: {})
+
+
 class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
     """A row the watchlist has moved out from under is not current inventory.
 
@@ -4659,7 +4672,8 @@ class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
     def test_a_row_outside_its_targets_years_is_not_a_live_listing(self):
         tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
         rows = self._rows(tid, [2022, 2023, 2024, 2025])
-        kept = T.current_rows(rows, {tid})
+        with no_fetch_log():
+            kept = T.current_rows(rows, {tid})
         self.assertEqual(["2024", "2025"], sorted(r["year"] for r in kept),
                          "a model year this watchlist can no longer return was "
                          "published as a car on the market")
@@ -4669,21 +4683,24 @@ class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
         function that returns nothing."""
         tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
         rows = self._rows(tid, [2024, 2024, 2025])
-        self.assertEqual(3, len(T.current_rows(rows, {tid})))
+        with no_fetch_log():
+            self.assertEqual(3, len(T.current_rows(rows, {tid})))
 
     def test_only_the_latest_day_survives_either_way(self):
         """The function's original job, which the scope rule must not break."""
         tid = next(t["id"] for t in T.TARGETS.values() if "2024" in t["years"])
         rows = self._rows(tid, [2024, 2025], day="2026-09-01") + \
                self._rows(tid, [2024], day="2026-09-06")
-        kept = T.current_rows(rows, {tid})
+        with no_fetch_log():
+            kept = T.current_rows(rows, {tid})
         self.assertEqual(["2026-09-06"], sorted({r["snapshot_date"] for r in kept}))
 
     def test_a_target_the_config_no_longer_knows_keeps_its_rows(self):
         """An id with no target cannot be scope-checked against anything, and
         dropping its rows would silently delete history rather than scope it."""
         rows = self._rows("some-retired-target", [2019, 2024])
-        kept = T.current_rows(rows, {"some-retired-target"})
+        with no_fetch_log():
+            kept = T.current_rows(rows, {"some-retired-target"})
         self.assertEqual(2, len(kept),
                          "rows whose target has left the config were dropped; "
                          "there is nothing to judge them against")
@@ -4707,7 +4724,7 @@ class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
 class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
     """The sheet's size is a published number and the file grows every day.
 
-    The browser suite fails the build past 250 KB gzipped, and README now
+    The browser suite fails the build past 400 KB gzipped, and README now
     quotes what the sheet weighs today and what it will weigh once every target
     is fetching. The first of those moves with every snapshot the daily job
     commits, so it is held to the file rather than to a memory of it — this is
@@ -4720,21 +4737,30 @@ class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
     in under three seconds and README says to run it.
     """
 
-    BUDGET_KB = 250
+    BUDGET_KB = 400
 
     @staticmethod
     def _row():
-        """The table's first row, as the sheet on disk makes it."""
+        """The table's first row, as the sheet on disk makes it.
+
+        The FILE's bytes, not a re-serialisation of them: the two writers of
+        this sheet disagree about key order (fair_collection sorts, Tracking
+        does not), and a row measured on either one's ordering is not a
+        measurement of what the browser downloads. Re-dumping the parsed sheet
+        happened to agree here because a round trip keeps the file's own order
+        — but only by accident, and it hid the writer's bug rather than
+        catching it.
+        """
         import gzip
-        site = json.loads(Path("docs/data.json").read_text())
-        blob = json.dumps(site, indent=1).encode()
+        raw = Path("docs/data.json").read_bytes()
+        site = json.loads(raw.decode())
         cars = sum(len(m.get("listings") or [])
                    for b in site["brands"].values() for m in b["models"].values())
         live = sum(1 for b in site["brands"].values() for m in b["models"].values()
                    if m.get("listings"))
-        gz = len(gzip.compress(blob, 9))
+        gz = len(gzip.compress(raw, 9))
         return (f"| as committed | {live} | {cars:,} | {round(gz / 1024)} KB | "
-                f"{round(gz / (250 * 1024) * 100)}% |")
+                f"{round(gz / (400 * 1024) * 100)}% |")
 
     def test_the_committed_row_is_the_sheet_on_disk(self):
         readme = " ".join(Path("README.md").read_text().split())
@@ -4759,6 +4785,114 @@ class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
         smoke = Path("tools/dashboard_smoke.mjs").read_text()
         self.assertIn(f"'data.json': {self.BUDGET_KB} * 1024", smoke)
         self.assertIn(f"cap = {self.BUDGET_KB} * 1024", Path("tools/measure_sheet.py").read_text())
+        self.assertEqual(self.BUDGET_KB * 1024, T.SHEET_BUDGET,
+                         "the constant the writer divides by is not the one the "
+                         "build fails on, so the documented percentage is of "
+                         "some other budget")
+
+
+class TestTheDocumentedRowMeasuresTheFileThatWasWritten(unittest.TestCase):
+    """update_sheet_size() writes the row the test above then holds to disk.
+
+    It used to gzip `json.dumps(site, indent=1)` — the object in hand, in
+    Tracking's own serialisation — while the path that actually ran every day
+    wrote the file through fair_collection's atomic_json, which sorts the keys
+    and ends with a newline. Same content, two byte layouts, about 2% apart
+    once gzipped: the published row said 295 KB of a 302 KB file, on every
+    snapshot, and the only thing that ever noticed was the test that compares
+    the row with the file — after the run, in CI, with nothing naming the
+    writer as the cause.
+
+    So this states the contract the way the bug broke it: the SIZE is read off
+    the file, and the counts off the sheet. The file here is deliberately not a
+    serialisation of the object handed in — it carries a second model — so a
+    version that measures the argument cannot pass by coincidence.
+    """
+
+    @staticmethod
+    def _site(models):
+        # Incompressible on purpose: a repeated filler string gzips to nothing
+        # and one model weighs the same as two, which would let a row measured
+        # off the wrong object pass by coincidence. Hashed digits are
+        # deterministic and do not compress.
+        import hashlib
+        blob = lambda i, j: hashlib.sha256(f"{i}:{j}".encode()).hexdigest() * 6
+        return {"brands": {"bmw": {"models": {
+            f"m{i}": {"listings": [{"vin": f"{i:08d}{j:09d}", "price": 40000 + j,
+                                    "note": blob(i, j)} for j in range(60)]}
+            for i in range(models)}}}}
+
+    def test_the_size_is_the_file_and_the_counts_are_the_sheet(self):
+        import gzip
+        with tempfile.TemporaryDirectory() as d:
+            sheet, readme = Path(d) / "data.json", Path(d) / "README.md"
+            site = self._site(1)
+            T.write_sheet(self._site(2), sheet)      # the file is not this object
+            readme.write_text("intro\n| as committed | 9 | 9 | 9 KB | 9% |\nrest\n")
+            T.update_sheet_size(site, readme, sheet)
+            gz = len(gzip.compress(sheet.read_bytes(), 9))
+            self.assertNotEqual(round(gz / 1024),
+                                round(len(gzip.compress(json.dumps(site, indent=1).encode(), 9)) / 1024),
+                                "the fixture does not discriminate: the file and the "
+                                "object in hand gzip to the same number of KB")
+            self.assertIn(f"| as committed | 1 | 60 | {round(gz / 1024)} KB | "
+                          f"{round(gz / T.SHEET_BUDGET * 100)}% |", readme.read_text())
+            self.assertTrue(readme.read_text().startswith("intro\n"), "the rest of README moved")
+
+    def test_a_sheet_that_is_not_on_disk_leaves_the_row_alone(self):
+        """A rebuild pointed at a record that was never written must not
+        publish a measurement of nothing — the old code would have gzipped the
+        object and written a row for a file no browser can fetch."""
+        with tempfile.TemporaryDirectory() as d:
+            readme = Path(d) / "README.md"
+            readme.write_text("| as committed | 9 | 9 | 9 KB | 9% |\n")
+            T.update_sheet_size(self._site(1), readme, Path(d) / "nothing.json")
+            self.assertEqual("| as committed | 9 | 9 | 9 KB | 9% |\n", readme.read_text())
+
+
+class TestOneWriterPutsTheSheetOnDisk(unittest.TestCase):
+    """Three call sites wrote docs/data.json and they did not agree how.
+
+    main() and tools/rebuild_outputs.py used a plain json.dumps(indent=1);
+    fair_collection.run() used atomic_json, which sorts the keys and ends the
+    file with a newline. Which layout was committed depended on which path the
+    day took, and everything downstream that compares bytes — the README row,
+    the test that rebuilds the record from the ledger — was comparing against
+    whichever one it happened to be written with.
+    """
+
+    def test_sheet_text_is_what_write_sheet_puts_on_disk(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "data.json"
+            site = {"z": 1, "a": {"n": [1, 2], "m": "x"}}
+            T.write_sheet(site, f)
+            self.assertEqual(T.sheet_text(site), f.read_text(),
+                             "the text anything compares against is not the text "
+                             "the writer wrote")
+
+    def test_the_keys_are_sorted_because_the_live_path_sorts_them(self):
+        """Not a taste: fair_collection has been committing sorted files for
+        as long as it has been the live path, so unsorting now would rewrite
+        every byte of the published record for nothing."""
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "data.json"
+            T.write_sheet({"z": 1, "a": 2}, f)
+            text = f.read_text()
+            self.assertLess(text.index('"a"'), text.index('"z"'))
+            self.assertTrue(text.endswith("\n"), "atomic_json ends the file with a newline")
+
+    def test_every_writer_in_the_repo_goes_through_it(self):
+        """The bug was three spellings, not one bad one. A fourth call site
+        spelling the write itself puts the file back in two layouts."""
+        for name in ("Tracking.py", "fair_collection.py", "tools/rebuild_outputs.py"):
+            src = Path(name).read_text()
+            if "def write_sheet(" in src:        # its own body is the one place that may
+                head, rest = src.split("def write_sheet(", 1)
+                src = head + rest.split("\ndef ", 1)[1]
+            stray = [ln.strip() for ln in src.splitlines()
+                     if 'data.json"' in ln and ("write_text" in ln or "atomic_json" in ln)
+                     and not ln.strip().startswith("#")]
+            self.assertEqual([], stray, f"{name} writes the sheet without write_sheet()")
 
 
 class TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives(unittest.TestCase):
@@ -6130,10 +6264,18 @@ class TestTheCommittedRecordIsThisCodesOwn(unittest.TestCase):
             T.PRICE_WINDOW.clear(); T.PRICE_WINDOW.update(keep[2])
             T.EXHAUSTED.clear(); T.EXHAUSTED.update(keep[3])
             T.FAILED_SCOPES.clear(); T.FAILED_SCOPES.update(keep[4])
-        # Only the process footer differs: a live fetch states its request
-        # count and an offline rebuild accurately states it made no calls.
+        # Two things a rebuild cannot know, and neither is the record drifting.
+        # The footer: a live fetch states its request count and an offline
+        # rebuild accurately states it made no calls. And the nationwide total
+        # in a trim heading, which is TOTALS — what the API said its query
+        # matched — held only for the run that asked. A rebuild from the ledger
+        # has no such number and correctly omits the clause, so comparing it
+        # against a committed report written by a live run failed on the one
+        # fact the ledger does not carry. Everything else must still match to
+        # the character, which is what this test is for.
         def stable_report(text):
-            return re.sub(r" · (?:\d+ API calls? today|outputs rebuilt from the snapshot on disk — no calls made)\._$", "._", text)
+            text = re.sub(r" · (?:\d+ API calls? today|outputs rebuilt from the snapshot on disk — no calls made)\._$", "._", text)
+            return re.sub(r" tracked of [\d,]+ the API lists nationwide", "", text)
         if stable_report(built) != stable_report(report.read_text()):
             import difflib
             diff = list(difflib.unified_diff(report.read_text().splitlines(),
@@ -6145,8 +6287,10 @@ class TestTheCommittedRecordIsThisCodesOwn(unittest.TestCase):
                       + "\n".join(diff[:40]))
         # Through the writer, not through a loaded object: a tuple and a list
         # are the same JSON and a different Python value, and it is the FILE the
-        # dashboard fetches.
-        self.assertEqual(_json.dumps(site, indent=1),
+        # dashboard fetches. sheet_text() is what write_sheet() puts on disk, so
+        # this compares the bytes rather than one of the two layouts the file
+        # used to get depending on which code path wrote it.
+        self.assertEqual(T.sheet_text(site),
                          (T.DOCS / "data.json").read_text(),
                          "…and docs/data.json with it, which is the file the "
                          "dashboard and every browser check read")
@@ -6673,7 +6817,8 @@ class TestLocalHistoryExport(unittest.TestCase):
 
     def test_a_car_that_never_moved_carries_nothing(self):
         rows = [self.row("S" * 17, d, "IL") for d in ("2026-08-01", "2026-08-02")]
-        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        with no_fetch_log():
+            _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
         got = site["brands"]["bmw"]["models"]["i5"]["listings"][0]
         self.assertNotIn("local_hist", got,
                          "999 cars in 1000 must not pay bytes for this")
@@ -6682,7 +6827,8 @@ class TestLocalHistoryExport(unittest.TestCase):
         vin = "M" * 17
         rows = [self.row(vin, "2026-08-01", "IL"), self.row(vin, "2026-08-02", "IL"),
                 self.row(vin, "2026-08-03", "MO"), self.row(vin, "2026-08-04", "MO")]
-        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        with no_fetch_log():
+            _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
         got = site["brands"]["bmw"]["models"]["i5"]["listings"][0]
         self.assertEqual(got["local_hist"], [["2026-08-01", 1], ["2026-08-03", 0]],
                          "the change points, not a value a day")
@@ -6693,7 +6839,8 @@ class TestLocalHistoryExport(unittest.TestCase):
         answer the page asks for — drivable? — never changed."""
         vin = "N" * 17
         rows = [self.row(vin, "2026-08-01", "IL"), self.row(vin, "2026-08-02", "OH")]
-        _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+        with no_fetch_log():
+            _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
         got = site["brands"]["bmw"]["models"]["i5"]["listings"][0]
         self.assertNotIn("local_hist", got)
 

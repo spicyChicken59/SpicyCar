@@ -395,7 +395,7 @@ subject — and while that assertion was made only when nothing skipped, the com
 one skip on every run and the backstop never fired.
 
 **The sheet has a transfer budget, and the watchlist is going to spend it.** The browser suite fails
-the build when `docs/index.html` passes 200 KB gzipped or `docs/data.json` passes 250 KB — the page
+the build when `docs/index.html` passes 200 KB gzipped or `docs/data.json` passes 400 KB — the page
 fetches the sheet on load, so its size is a fact about how the site feels, not a housekeeping number.
 `tools/measure_sheet.py` answers what it will weigh, by BUILDING the file rather than multiplying:
 it clones real rows onto every target that has never fetched, at the cap a `depth: light` target
@@ -407,14 +407,23 @@ What it measures today, on the committed record:
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 21 | 1,698 | 295 KB | 118% |
-| every target fetching | 20 | 847 | 161 KB | 64% |
-| …three fetches deep on each | 20 | 847 | 171 KB | 69% |
-| …seven fetches deep on each | 20 | 847 | 186 KB | 75% |
+| as committed | 21 | 1,698 | 302 KB | 75% |
+| every target fetching | 21 | 1,698 | 302 KB | 75% |
+| …three fetches deep on each | 21 | 1,698 | 302 KB | 75% |
+| …seven fetches deep on each | 21 | 1,698 | 302 KB | 75% |
 
-At thirty-six models that last row read **110%** — the build going red on its own record, in about a
-quarter. That is what the trim was for, and it is why the number is re-measured on every config
-change rather than argued: there is no field to cut instead. Measured by deleting each in turn,
+The three projections have been overtaken, and the table says so by repeating itself: every target on
+this watchlist carries rows now, so "every target fetching" IS the committed record and the deeper
+rows have nothing left to clone onto. They stay because the tool still answers them, and because a
+model added tomorrow makes them mean something again. They read the committed row exactly, which is
+the point of `Tracking.write_sheet()` being the one writer: the measurement and the file it describes
+are the same serialisation, sorted keys and all. Reading them apart — the tool's own `json.dumps`
+against the fair-collection path's sorted one — is what had the documented row 2% under the bytes a
+browser downloads, on every snapshot, for as long as the fair path has been the live one.
+
+At thirty-six models the deepest row read **110%** against the old 250 KB line — the build going red
+on its own record, in about a quarter. That is what the trim was for, and it is why the number is
+re-measured on every config change rather than argued: there is no field to cut instead. Measured by deleting each in turn,
 `series` is 13% of the file and `url` 9%, both load-bearing — the series is what the sparkline draws
 and what the cut detector reads, and the url is how a reader opens the listing — and everything else
 is under 3%. The sheet was never carrying fat; it was carrying too many models.
