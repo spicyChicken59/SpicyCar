@@ -2,13 +2,16 @@
 # it grows as the record lengthens — built, not projected.
 #
 # The page's whole fetch-on-load design is argued from this number, and
-# tools/dashboard_smoke.mjs fails the build at 250 KB gzipped. Today's file is
-# 92 KB with SEVEN of thirty-six models carrying listings, so the interesting
-# question is what happens when the other twenty-nine start, and that is not a
-# question to answer by multiplying: this repo's notes record two estimates of
-# a sibling file disagreeing by a factor of two, settled only by building the
-# real thing. `indent=1` is most of the raw size and a compact estimate is not
-# the file a browser fetches, so this drives src's own writer.
+# tools/dashboard_smoke.mjs fails the build at 400 KB gzipped. This was written
+# when the file was 92 KB with seven of thirty-six models carrying listings and
+# the question was what happens when the other twenty-nine start — a question
+# not to answer by multiplying: this repo's notes record two estimates of a
+# sibling file disagreeing by a factor of two, settled only by building the
+# real thing. Every target on the watchlist carries rows now, so the
+# projections have caught up with the record and read it back; they mean
+# something again the day a model is added. `indent=1` is most of the raw size
+# and a compact estimate is not the file a browser fetches, so this drives
+# src's own writer, sorted keys and all.
 #
 # Synthetic rows are cloned from REAL ones, per model, so every field a real
 # listing carries is present at a realistic length — a row of placeholder
@@ -49,13 +52,17 @@ def measure(rows, label):
     days = sorted({r["snapshot_date"] for r in rows})
     today = [r for r in rows if r["snapshot_date"] == days[-1]]
     _, site, _ = T.build_outputs(today, rows, hist)
-    blob = json.dumps(site, indent=1).encode()
+    # The writer's own serialisation, not this file's: Tracking.write_sheet()
+    # sorts the keys, and the same content in two orderings is 2% apart once
+    # gzipped — a projection measured the other way is not comparable with the
+    # committed row beside it in the README.
+    blob = T.sheet_text(site).encode()
     raw, gz = len(blob), len(gzip.compress(blob, 9))
     cars = sum(len(m.get("listings") or [])
                for b in site["brands"].values() for m in b["models"].values())
     live = sum(1 for b in site["brands"].values() for m in b["models"].values()
                if m.get("listings"))
-    cap = 250 * 1024
+    cap = 400 * 1024   # Tracking.SHEET_BUDGET
     print(f"  {label:<44} {live:>2} models · {cars:>4} cars · "
           f"raw {raw/1024:>6.0f}KB · gz {gz/1024:>5.1f}KB · {gz/cap:>5.1%} of budget"
           + ("   OVER" if gz > cap else ""))

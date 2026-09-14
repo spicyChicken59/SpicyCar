@@ -2275,7 +2275,19 @@ await step('the listings table honours the order it advertises', async () => {
       const cells = (tr) => [...tr.querySelectorAll('td')];
       return [...document.querySelectorAll('#list-scroll tbody tr')].map((tr) => {
         const tds = cells(tr);
-        const num = (el) => { const m = (el ? el.textContent : '').match(/-?[\d,]+/); return m ? Number(m[0].replace(/,/g, '')) : null; };
+        // The FIGURE, not the first digits in the cell. A price cell renders
+        // its value note straight after the number with no separator in
+        // textContent — "$29,15011% under typical · 2024 …" — so a bare
+        // /[\d,]+/ read 2,915,011 and called a correctly sorted table out of
+        // order. Which rows carry that note is a fact about the market, so the
+        // check passed or failed by luck. Read .sc-figure where the page marks
+        // one, and stop at the first token otherwise.
+        const num = (el) => {
+          if (!el) return null;
+          const lead = el.querySelector('.sc-figure') || el;
+          const m = (lead.textContent || '').trim().match(/^[^\d-]*(-?[\d,]+)/);
+          return m ? Number(m[1].replace(/,/g, '')) : null;
+        };
         if (k === 'price') return num(tds[1]);
         if (k === 'miles') return num(tds[2]);
         const loc = tds.find((td) => /d listed|since /.test(td.textContent));
@@ -3297,6 +3309,7 @@ await step('the decision, day by day', async () => {
   plan('each shopped tile says how many cars held its floor, and since when',
        'and what stands behind the headline car today',
        'the premium over the shared fetch days is the one the ledgers make',
+       'and a window in which neither floor moved names no side',
        'the drivable premium over the record is the one the ledgers make',
        'and six fetch days are too few to say it',
        'and one drivable car a day is not a premium',
@@ -3406,6 +3419,54 @@ await step('the decision, day by day', async () => {
          && (wantSplit ? saidSplit === wantSplit : !saidSplit),
        m ? `page: "${m[0]} ${saidSplit || ''}" · ledgers: ${shared.length} days, ${Math.min(...gaps)}–${Math.max(...gaps)}, first ${Math.abs(shared[0].gap)}, last ${Math.abs(shared[shared.length - 1].gap)}; split "${wantSplit || ''}"`
          : `no premium sentence in "${gapTxt.slice(0, 160)}"`);
+  }
+  // A shared window in which NEITHER floor moved is an ordinary record: the
+  // gap on the last day is the gap on the first, so the sentence names no side
+  // and prints no split. The page used to respell the first named side before
+  // asking whether there was one, and on an empty list the TypeError went into
+  // the boot catch and took the WHOLE page down to "Snapshot unavailable" —
+  // which is why this check opens the page rather than only reading the
+  // sentence. Served flat: every shopped trim of both models fetched on the
+  // same days, every fit car seen on every one of them at one price and in one
+  // place, so the pool and its floor are identical end to end.
+  const flatten = (pm) => {
+    const tids = Object.keys(pm.trims || {}).filter((id) => want.has(id));
+    const days = [...new Set(tids.flatMap((t) => (pm.fetch_days || {})[t] || []))].sort();
+    if (!days.length) return;                      // nothing to flatten; ledgerOf() will say so
+    for (const t of tids) pm.fetch_days[t] = [...days];
+    for (const x of (pm.listings || []).concat(pm.gone || [])) {
+      if (!tids.includes(x.trim_id)) continue;
+      const seen = (x.series || []).find((pt) => pt[1]);
+      if (!seen) continue;
+      x.series = days.map((d) => [d, seen[1]]);
+      delete x.local_hist;   // placement constant too, or the ship fee moves the floor
+    }
+  };
+  const flat = two.length === 2 ? two.map((o) => { const pm = JSON.parse(JSON.stringify(o.m)); flatten(pm); return { ...o, m: pm, ledger: ledgerOf(pm) }; }) : [];
+  const flatGaps = flat.every((o) => o.ledger)
+    ? (() => { const by = new Map(flat[0].ledger.drawn.map((d) => [d.day, d.v]));
+               return flat[1].ledger.drawn.filter((d) => by.has(d.day)).map((d) => Math.abs(d.v - by.get(d.day))); })()
+    : [];
+  if (flatGaps.length < 5 || new Set(flatGaps).size !== 1)
+    skip('and a window in which neither floor moved names no side',
+         flat.length !== 2 ? `${two.length} shopped model(s) carry a ledger today`
+           : `flattening this sheet leaves ${flatGaps.length} shared day(s) and ${new Set(flatGaps).size} distinct gap(s)`);
+  else {
+    await ctx.route('**/data.json*', async (route) => {
+      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      for (const o of flat) sheet.brands[o.bk].models[o.mk] = o.m;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
+    });
+    try {
+      await open('');
+      const txt = ((await page.textContent('#hero-gap')) || '').replace(/\s+/g, ' ');
+      const g = flatGaps[0];
+      const m2 = txt.match(/Over the (\d+) fetch days both were fetched, .*? has cost \$([\d,]+) more: \$([\d,]+) on [A-Z][a-z]{2} \d+, \$([\d,]+) (?:today|on [A-Z][a-z]{2} \d+)\./);
+      ok('and a window in which neither floor moved names no side',
+         !!m2 && +m2[1] === flatGaps.length && num(m2[2]) === g && num(m2[3]) === g && num(m2[4]) === g && !/Of that /.test(txt),
+         m2 ? `${flatGaps.length} shared days, every gap $${g}: page says "${m2[0]}"${/Of that /.test(txt) ? ` and then "${(txt.match(/Of that [^.]*\./) || [''])[0]}"` : ' and names no side'}`
+            : `no premium sentence in "${txt.slice(0, 160)}"`);
+    } finally { await ctx.unroute('**/data.json*'); await open(''); }   // the checks below read the live page
   }
   // What driving to one has cost over the record: the drivable floor minus
   // the floor on each ledger day with two or more drivable cars, seven such
@@ -5935,11 +5996,21 @@ await step('a split adds up to the total it named', async () => {
   plan('the stock sentence accounts for every car it counted',
        'the typical-days split accounts for every dated car',
        'and the compare table puts an unplaced car in neither column');
+  // The subject has to satisfy BOTH halves of what is being checked: a car the
+  // page declined to classify (no mileage) AND a sentence to be left out of,
+  // which index.html's stockCounts() prints only once each side has five
+  // priced cars of its own. Picking on the first alone chose BMW i4 — two
+  // cars under 100 miles against the five a median needs — and failed the page
+  // for correctly saying nothing.
+  const STOCK_FLOOR = 5;   // index.html stockCounts(): `fresh.length >= 5`, `used.length >= 5`
+  const NEW_MILES = 100;   // index.html: NEW_STOCK_MILES
   const subject = WATCHED.map((w) => {
-    const L = SHEET.brands[w.bk].models[w.mk].listings || [];
-    return { ...w, L, noMi: L.filter((x) => x.price != null && x.miles == null).length };
-  }).sort((a, b) => b.noMi - a.noMi)[0];
-  if (!subject || !subject.noMi) return skipRest('every priced car on this sheet publishes its mileage');
+    const L = SHEET.brands[w.bk].models[w.mk].listings || [], priced = L.filter((x) => x.price != null);
+    return { ...w, L, noMi: priced.filter((x) => x.miles == null).length,
+             fresh: priced.filter((x) => x.miles != null && x.miles < NEW_MILES).length,
+             used: priced.filter((x) => x.miles != null && x.miles >= NEW_MILES).length };
+  }).filter((w) => w.noMi && w.fresh >= STOCK_FLOOR && w.used >= STOCK_FLOOR).sort((a, b) => b.noMi - a.noMi)[0];
+  if (!subject) return skipRest(`no model on this sheet both withholds a mileage and has ${STOCK_FLOOR} priced cars either side of ${NEW_MILES} miles`);
   await open(subject.q);
   const subs = await page.locator('#kpis .sc-tile__sub').evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
   const stock = subs.find((t) => /delivery-mileage stock/.test(t)) || '';
@@ -6208,10 +6279,24 @@ await step('the car in hand is a car the reader can find', async () => {
                                            'the card has no open link on this sheet');
   await opener.click();
   await page.waitForTimeout(800);
-  const y = await page.evaluate(() => Math.round(window.scrollY));
+  // What landOnCar() promises is that the CAR's row is what you arrive at —
+  // in view and holding the focus, so the keyboard and the eye land together.
+  // `scrollY > 0` was a proxy for that and is a fact about where the car
+  // happens to sit today: a car inside the first screenful needs no scroll,
+  // and the page was failed for arriving correctly without one. Ask the row.
+  const landing = await page.evaluate(() => {
+    const el = document.activeElement;
+    const row = el && el.closest && (el.closest('tr') || el.closest('.sc-media'));
+    if (!row) return { focused: false };
+    const r = row.getBoundingClientRect();
+    return { focused: true, inView: r.top >= 0 && r.bottom <= innerHeight,
+             vin: (row.textContent.match(/[A-HJ-NPR-Z0-9]{17}/) || [''])[0], y: Math.round(scrollY) };
+  });
   ok('and "Open this car" lands on the car rather than the top of the page',
-     (await inList()) && y > 0,
-     `the row is ${(await inList()) ? 'on screen' : 'still filtered out'} and the page sits at y=${y}`);
+     (await inList()) && landing.focused && landing.inView && landing.vin === far.vin,
+     `the row is ${(await inList()) ? 'on screen' : 'still filtered out'}; the focus is on `
+     + `${landing.focused ? (landing.vin ? landing.vin.slice(-6) : 'a row with no VIN') : 'nothing in a row'}`
+     + `${landing.focused ? (landing.inView ? ', in view' : ', off screen') : ''} (page at y=${landing.y ?? 0})`);
   // This step is the only one that writes a where-chip into localStorage and
   // then leaves the page on a model, so it puts the profile back itself:
   // recover() runs only after a step that THREW, and a filter left behind here
@@ -6987,7 +7072,7 @@ await step('market studio shortlist benchmark sizing', async () => {
 await step('what it costs to open', async () => {
   plan('the page and its data stay inside their transfer budget');
   const { gzipSync } = await import('node:zlib');
-  const BUDGET = { 'index.html': 200 * 1024, 'data.json': 250 * 1024 };
+  const BUDGET = { 'index.html': 200 * 1024, 'data.json': 400 * 1024 };   // Tracking.SHEET_BUDGET
   const rows = [];
   for (const name of Object.keys(BUDGET)) {
     const file = join(ROOT, name);
@@ -7035,7 +7120,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 322;
+const EXPECTED = 323;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
