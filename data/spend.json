@@ -207,5 +207,24 @@
   "silent_targets": [],
   "targets_due": 9,
   "unrun": 0
+ },
+ "2026-09-14": {
+  "actual": 35,
+  "banked": 1,
+  "empty_targets": [],
+  "exhausted": 5,
+  "failed": 0,
+  "filtered_targets": [],
+  "off_plan": {
+   "lucid-air-grand-touring": [
+    3,
+    2
+   ]
+  },
+  "planned": 36,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 9,
+  "unrun": 0
  }
 }
