@@ -3009,10 +3009,35 @@
   // only by coincidence; a comparison would have had to make the same guess
   // three more times. `rows` is the model page's already-filtered set when the
   // caller has it in hand, so the filtering is not paid for twice.
+  // THE SHOPPING SET: the models the reader is actually choosing between.
+  //
+  // Explicit intent only, in the order the product already establishes it —
+  // the local model choices when they have made any, otherwise the shopping
+  // defaults the record carries. It is NEVER inferred from price, body style,
+  // drivetrain, brand, a ranking score or anybody's idea of what goes with
+  // what: a car is a candidate because the reader said so, and for no other
+  // reason. Everything else the watchlist holds is market coverage, which is
+  // a different question and stays visible.
+  function shoppingSet() {
+    if (S.models.size) return new Set(S.models);
+    const out = new Set();
+    for (const { bk, mk, m } of allModels()) if (m.shopping) out.add(modelKey(bk, mk));
+    return out;
+  }
+  // One word for each side of that distinction, read by every surface that
+  // shows it — the pick cards, the model comparison's column heads and the
+  // model index. Three copies of `shopping ? 'shopping' : 'comparison'` used
+  // to answer this, and "comparison" was the wrong word twice over: it ASSERTS
+  // that a car is an alternative in the decision, which is exactly what a
+  // market-coverage model is not, and it read that way even on a model the
+  // reader had just put INTO a comparison on purpose.
+  const roleWord = (inSet) => (inSet ? 'your choice' : 'market context');
+  const roleChip = (inSet) => el('span', { class: 'sc-chip ' + (inSet ? 'sc-chip--brand' : 'sc-chip--neutral') }, roleWord(inSet));
   function scopedScored(rows) {
-    if (S.brand === 'all') return modelsInView().flatMap(({ m, mk }) => scoredFrom(applyShared(m.listings || []), m.label || mk, !!m.shopping));
+    const set = shoppingSet();
+    if (S.brand === 'all') return modelsInView().flatMap(({ bk, m, mk }) => scoredFrom(applyShared(m.listings || []), m.label || mk, set.has(modelKey(bk, mk))));
     const t = model();
-    return scoredFrom(rows || applyShared(trimRows(t.listings || [])), t.label || S.model, !!t.shopping);
+    return scoredFrom(rows || applyShared(trimRows(t.listings || [])), t.label || S.model, set.has(modelKey(S.brand, S.model)));
   }
   // The boot-time full-market scores, restricted to the rows currently in view.
   function scoredFrom(rows, label, shopping) {
@@ -3618,9 +3643,7 @@
     return el('div', { class: 'sc-photo-card sc-dossier sc-hover-lift' }, media, el('div', { class: 'sc-photo-card__body sc-dossier__body' },
       el('h3', { class: 'sc-dossier__title' }, p.modelLabel),
       el('div', { class: 'sc-nowrap' },
-        p.shopping === undefined ? null
-          : el('span', { class: 'sc-chip ' + (p.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') },
-               p.shopping ? 'shopping' : 'comparison'),
+        p.shopping === undefined ? null : roleChip(p.shopping),
         isNew(b) ? el('span', { class: 'sc-chip sc-chip--spice', style: 'margin-left:6px' }, 'new') : null),
       el('span', { class: 'sc-note sc-dossier__evidence', title: (cohortOf(b, p.modelLabel) || {}).words || null },
         `${money(p.under)} below a typical ${cohort} with similar mileage`
@@ -3637,18 +3660,38 @@
   // cards are kept instead of being rebuilt and their images re-fetched.
   let PICKS_KEY = null;
   function renderPicks(scored, perModel) {
-    // The shopped models lead the display as well as holding reserved seats.
-    const byRole = (a, b) => (Number(!!b.shopping) - Number(!!a.shopping)) || (b.pct - a.pct);
-    const sets = pickSets(scored, perModel);
-    const local = sets.local.slice().sort(byRole);
-    const far = sets.far.slice().sort(byRole);
+    // A pick is a RECOMMENDATION, so it is only ever made among the models the
+    // reader said they are choosing between. Everything else the watchlist
+    // holds is still shown — under its own heading, in its own words, as
+    // context and not as a suggestion.
+    //
+    // This used to rank the whole watchlist together and lead with the shopped
+    // models: on the committed 2026-09-15 record, shopping BMW i5 + i7, five of
+    // the eight cards under "Spicy picks" were a Hyundai Ioniq 9, a Volkswagen
+    // ID.4 and a Toyota bZ4X, each chipped "comparison" — a three-row SUV
+    // offered as a pick to someone choosing between two saloons, and numerically
+    // ahead of every BMW at 29% and 31% under typical. Nothing scored differently
+    // here: annotateValue() settles every car's percentage once at boot against
+    // its OWN model's cohort, so which models are in view cannot move a number.
+    // Only the eligible set changed.
+    const chosen = scored.filter((p) => p.shopping);
+    const context = scored.filter((p) => !p.shopping);
+    const anyChoice = shoppingSet().size > 0;
+    const sets = pickSets(chosen, perModel);
+    const byPct = (a, b) => b.pct - a.pct;
+    const local = sets.local.slice().sort(byPct);
+    const far = sets.far.slice().sort(byPct);
+    const ctx = pickSets(context, perModel);
+    const near = [...ctx.local, ...ctx.far].sort(byPct).slice(0, pickParams().count);
     const key = (S.brand === 'all' ? 'ov' : 'm|' + S.brand + '/' + S.model) + '|' + (perModel || '')
       + '|' + (narrow() ? 'n' : 'w')   // the phone collapse is decided at render time, so the breakpoint is part of the output
-      + '|' + local.map((p) => p.x.vin).join(',') + '|' + far.map((p) => p.x.vin).join(',');
+      + '|' + (anyChoice ? 'c' : '-')
+      + '|' + local.map((p) => p.x.vin).join(',') + '|' + far.map((p) => p.x.vin).join(',')
+      + '|' + near.map((p) => p.x.vin).join(',');
     if (key === PICKS_KEY) return;
     PICKS_KEY = key;
     const host = $('takeaway'); host.textContent = '';
-    if (!local.length && !far.length) { host.hidden = true; return; }
+    if (!local.length && !far.length && !near.length) { host.hidden = true; return; }
     const cheapest = (picks) => picks.reduce((a, p) => (a == null || p.x.price < a ? p.x.price : a), null);
     const group = (label, picks, empty, collapse) => {
       const body = picks.length ? el('div', { class: 'sc-grid picks-grid' }, ...picks.map(pickCard))
@@ -3661,12 +3704,33 @@
       }
       return el('div', { class: 'picks-group' }, el('div', { class: 'sc-eyebrow sc-eyebrow--case' }, label), body);
     };
-    host.appendChild(el('div', { class: 'sc-callout sc-callout--core' },
-      el('div', { class: 'picks-head' },
-        el('h2', { class: 'picks-title sc-with-mark' }, 'Spicy picks', markImg()),
-        el('p', { class: 'sc-hint' }, picksRule())),
-      group(`drivable — ${scopeTxt()}`, local, 'Nothing drivable qualifies yet — the best of the rest is below.'),
-      group('worth the ship — nationwide', far, 'Nothing beyond your states qualifies under these filters.', true)));
+    // The models the watchlist tracks that the reader has NOT chosen. Folded
+    // away behind its own summary at every width, because an unchosen car is
+    // worth seeing and is not worth putting above one that was chosen.
+    const marketGroup = () => !near.length ? null : el('details', { class: 'sc-details picks-group', 'data-picks-market': String(near.length) },
+      el('summary', null, `market context — ${near.length} strong value${near.length === 1 ? '' : 's'} in ${anyChoice ? 'models you have not chosen' : 'every model Car tracks'}`),
+      el('p', { class: 'sc-hint' }, anyChoice
+        ? 'Not recommendations: these are other models Car tracks, shown so the market you are choosing inside has a shape. Add one under Choose cars to let it compete.'
+        : 'Not recommendations: nothing has been chosen to shop for, so these are the whole market\u2019s strongest values rather than picks for you.'),
+      el('div', { class: 'sc-grid picks-grid' }, ...near.map(pickCard)));
+    const head = anyChoice
+      ? el('div', { class: 'picks-head' },
+          el('h2', { class: 'picks-title sc-with-mark' }, 'Spicy picks', markImg()),
+          el('p', { class: 'sc-hint' }, `Among the ${shoppingSet().size === 1 ? 'model' : `${shoppingSet().size} models`} you chose. ` + picksRule()))
+      // No choice made, so nothing here is a pick FOR anyone. The watchlist is
+      // not silently promoted to "your picks": it is named as the market, and
+      // the way to get picks is said out loud.
+      : el('div', { class: 'picks-head' },
+          el('h2', { class: 'picks-title sc-with-mark' }, 'Strong values across the market', markImg()),
+          el('p', { class: 'sc-hint' }, 'You have not chosen any cars to shop for, so these are not picks for you \u2014 they are the best-value cars in every model Car tracks. Press Choose cars to pick the models you are deciding between, and this becomes your picks. ' + picksRule()));
+    host.appendChild(el('div', { class: 'sc-callout sc-callout--core' }, head,
+      ...(anyChoice ? [
+        chosen.length ? null : el('p', { class: 'sc-hint', 'data-picks-empty': 'chosen' },
+          `Nothing in the ${shoppingSet().size === 1 ? 'model' : 'models'} you chose qualifies under these filters. Your choices and the filters are separate \u2014 widen the filters, or choose another model, and nothing here is changed for you.`),
+        group(`drivable — ${scopeTxt()}`, local, 'Nothing drivable qualifies yet — the best of the rest is below.'),
+        group('worth the ship — nationwide', far, 'Nothing beyond your states qualifies under these filters.', true),
+      ].filter(Boolean) : []),
+      marketGroup()));
     host.hidden = false;
   }
   // The shortlist: the cars actually being decided on, pinned to the front
@@ -6194,7 +6258,7 @@
         el('span', null, v.c.label),
         el('span', { class: 'sc-note' }, v.c.sub),
         el('span', { class: 'sc-nowrap' },
-          el('span', { class: 'sc-chip ' + (v.c.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') }, v.c.shopping ? 'shopping' : 'comparison'), ' ',
+          roleChip(v.c.shopping), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'cmp:' + v.c.key,
             onclick: (e) => { e.preventDefault(); v.c.go(); } }, v.c.goTxt))));
     }
@@ -6335,7 +6399,7 @@
         el('div', { class: 'sc-media__title' }, r.label),
         el('div', { class: 'sc-media__sub' }, `${r.n} on the market · ${r.n_local} drivable`),
         oBandSlim ? el('div', { class: 'sc-note' }, `data through ${dataTxt}`) : null,
-        el('div', { class: 'sc-nowrap' }, el('span', { class: 'sc-chip ' + (r.shopping ? 'sc-chip--brand' : 'sc-chip--neutral') }, r.shopping ? 'shopping' : 'comparison'), ' ',
+        el('div', { class: 'sc-nowrap' }, roleChip(r.shopping), ' ',
           el('a', { class: 'sc-link--quiet', href: '#', 'data-fkey': 'open:' + r.bk + '/' + r.mk, onclick: (e) => { e.preventDefault(); goTo(r.bk, r.mk); } }, 'Open →')))));
       const data = oBandSlim ? null : el('td', { class: 'sc-nowrap' }, el('span', { class: 'sc-note' }, dataTxt));
       const trend = oBandSlim ? null : el('td', null, spark(r.trend, 80, 26, false, modelTone(r.bk)));
