@@ -1706,6 +1706,11 @@
         if (unshopped) { S.models = new Set([...S.models, key]); S.shopOnly = true; savePrefs(); syncUrl(); rerender('nav'); return; }
         S.where = new Set(); S.year = 'all'; S.miles = 0; S.clean = false; S.rental = false;
         S.cpo = false; S.hideNew = false; S.budget = 0; S.mission = 'all';
+        // and the drivetrain, which filterBits() already NAMES on the button
+        // above: without this the control read "Clear AWD" and cleared
+        // everything except AWD, so the car it was offering to bring back
+        // stayed hidden by the one filter the reader had just been told about.
+        S.drive = 'all';
         savePrefs(); syncUrl(); buildFilters(true); render();
       } },
       unshopped ? `Add ${hit.m.label || hit.mk} to this search` : (bits.length ? `Clear ${bits.join(' · ')}` : 'Clear the filters'));
