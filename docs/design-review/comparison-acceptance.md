@@ -209,6 +209,24 @@ the run, and the two steps that used to return early on an absent subject are as
 `index.html` 200 KB and `data.json` 400 KB gzipped — and reports 151 KB and 337 KB, inside
 both. No data was trimmed, no writer repaired and no output regenerated to obtain a green.
 
+### Confirmed on CI's own interpreters
+
+Run `35016771112` on head `df6a479`, **all three jobs green**, which closes the interpreter
+divergence above — the runner is Python 3.12 and Node 24 with a fresh `playwright@1.56.1`
+install, not this sandbox's 3.11/22.
+
+| Job | Result | Step timings |
+| --- | --- | --- |
+| `test` | success | Python 3.12, 34s |
+| `consumer-lint` | success | 13s |
+| `dashboard` | success, 6m18s | studio/workspace/discovery 20s · **browse 66s** · **the two repaired harnesses 29s** · dashboard 234s |
+
+The added step is real work, not a no-op: 29 seconds against the ~28 measured here, and
+`matrix_navigation_smoke` exits non-zero unless it records exactly 26 checks, so a run that
+executed nothing could not have passed. `dashboard_smoke` reports **308/308, 15 skipped, 0 page
+errors** on the runner — the same totals as here, down to the same named skip — and the
+artifact now carries `/tmp/design-shots` beside the two it already had.
+
 ### Evidence classes, kept apart
 
 - **Historical CI.** #79's merged-commit run `34807296459` (test, consumer-lint, dashboard) and
