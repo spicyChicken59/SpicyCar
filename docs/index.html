@@ -3708,7 +3708,11 @@
     // away behind its own summary at every width, because an unchosen car is
     // worth seeing and is not worth putting above one that was chosen.
     const marketGroup = () => !near.length ? null : el('details', { class: 'sc-details picks-group', 'data-picks-market': String(near.length) },
-      el('summary', null, `market context — ${near.length} strong value${near.length === 1 ? '' : 's'} in ${anyChoice ? 'models you have not chosen' : 'every model Car tracks'}`),
+      // The design system lowercases a summary in mono, so "every model Car
+      // tracks" came out "every model car tracks" — which reads as a kind of
+      // car rather than as the product. The watchlist says the same thing and
+      // survives being lowercased.
+      el('summary', null, `market context — ${near.length} strong value${near.length === 1 ? '' : 's'} in ${anyChoice ? 'models you have not chosen' : 'every model on the watchlist'}`),
       el('p', { class: 'sc-hint' }, anyChoice
         ? 'Not recommendations: these are other models Car tracks, shown so the market you are choosing inside has a shape. Add one under Choose cars to let it compete.'
         : 'Not recommendations: nothing has been chosen to shop for, so these are the whole market\u2019s strongest values rather than picks for you.'),

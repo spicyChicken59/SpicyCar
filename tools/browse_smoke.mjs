@@ -1409,7 +1409,7 @@ try {
       assert.match(none.hint, /not chosen any cars/i, 'the page says why');
       assert.match(none.hint, /Choose cars/i, 'and how to get picks');
       assert.ok(none.market.length > 0, 'while the market is still there to read');
-      assert.match(none.marketSummary, /every model/i, 'named as the whole market rather than as picks');
+      assert.match(none.marketSummary, /every model on the watchlist/i, 'named as the whole market rather than as picks');
       await shot(page, 'scope-picks-none');
       // Restoring a choice is the reader's own act, made through the picker,
       // and it survives a reload this browser was not re-seeded through.
