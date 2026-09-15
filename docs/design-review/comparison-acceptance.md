@@ -184,6 +184,15 @@ repository's, and is recorded rather than papered over.
 
 No harness was consolidated or removed, so every command above is the one that was run.
 
+**Why 308 and not #79's 309.** `dashboard_smoke`'s expected total is 323 and it still is: #79's
+pull-request run (`34802551292`, at `cd0a82f`) recorded 309/309 with 14 skipped, and this
+snapshot gives 308/308 with 15 skipped. One check moved from run to skip across two nights of
+new tracker data; this run's skip list is all data-dependent, one of them reading *bmw i5 does
+not print a typical-days split today*. #79's skip list was not captured, so which check moved is
+not claimed here — only that the total is unchanged, that nothing in this pass touches
+`dashboard_smoke`, and that the same 308/15 was measured at the untouched baseline before any
+edit.
+
 **Skips are reported as skips.** `dashboard_smoke` reports 15 data-dependent skips, each a
 branch with no subject in this snapshot: an unfetched model, a model with fewer than two trims
 to compare, a fallback cohort, a car that left one watch while still listed on another, a
