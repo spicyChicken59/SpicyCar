@@ -101,9 +101,9 @@ const errors = [];
 // with empty storage and makes every write through the controls instead. The
 // addInitScript runs on EVERY navigation, so a seeded context re-seeds itself
 // on reload and cannot be used to prove anything survived one.
-async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTES, seen = SINCE, storage = true, record = null } = {}) {
+async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTES, seen = SINCE, storage = true, record = null, theme = 'dark' } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, isMobile: width <= 420, hasTouch: width <= 420,
-    reducedMotion: 'reduce', colorScheme: 'dark' });
+    reducedMotion: 'reduce', colorScheme: theme });
   await context.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => (/\.(png|jpe?g|webp|gif|svg)/i.test(r.request().url())
     ? r.fulfill({ status: 200, contentType: 'image/png', body: PIXEL })
     : r.fulfill({ status: 200, contentType: 'text/plain', body: '' })));
@@ -111,7 +111,7 @@ async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTE
     const body = JSON.stringify(record);
     await context.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body }));
   }
-  await context.addInitScript(([p, n, s, ok]) => {
+  await context.addInitScript(([p, n, s, ok, t]) => {
     if (!ok) {   // a browser with storage switched off, which is a state and not a crash
       const boom = () => { throw new DOMException('denied', 'SecurityError'); };
       Object.defineProperty(window, 'localStorage', { configurable: true, get: boom });
@@ -120,8 +120,8 @@ async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTE
     if (p) localStorage.setItem('spicycar.prefs', JSON.stringify(p));
     if (n) localStorage.setItem('spicycar.garage', JSON.stringify(n));
     if (s) localStorage.setItem('spicycar.seen', JSON.stringify({ through: s, since: null }));
-    localStorage.setItem('sc-theme', 'dark');
-  }, [prefs, notes, seen, storage]);
+    localStorage.setItem('sc-theme', t);
+  }, [prefs, notes, seen, storage, theme]);
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push('uncaught: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
@@ -748,8 +748,18 @@ try {
 
   // Unknown is unknown. Not zero accidents, not one owner, not zero miles.
   await step('a car with no mileage and no history says so, and is never given a clean record', async () => {
-    const record = shape(clone(), BLANK, (car) => { car.miles = null; car.accidents = null; car.owners = null; car.flags = []; car.carfax = null; });
-    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    // usage is set to a plain recorded value rather than left as the subject's
+    // own "rental", which is a real fact and would rightly keep the history cell
+    // from reading as empty. What this case is about is the ABSENT fields.
+    const record = shape(clone(), BLANK, (car) => {
+      car.miles = null; car.accidents = null; car.owners = null; car.flags = []; car.carfax = null; car.usage = 'Personal Use';
+    });
+    // Saved, so the comparison's "Reported history" cell — which is where
+    // flagsCell() actually renders — is on the page to be read. Reading only the
+    // card and the sheet left a hole: a mutant that printed "no accidents" for a
+    // null count survived, because the card prints the record's own `flags` list
+    // and the sheet never calls flagsCell at all.
+    const { context, page } = await session({ record, prefs: { ...PREFS, stars: { [BLANK]: 'short' }, compareOut: [] }, notes: null, seen: null });
     try {
       await open(page, '?car=' + BLANK);
       await page.waitForTimeout(500);
@@ -764,12 +774,17 @@ try {
       const marked = await page.locator('.studio-content .sc-unreported').count();
       assert.ok(marked >= 1, 'and an absent fact is marked as unreported rather than left to read as a value');
       await shot(page, 'unknown-history-sheet');
-      // The matrix's own answer for the same car, on the route that owns it
+      // And the comparison's own history cell, which is the surface that turns
+      // the record's accident and owner counts into words.
       await page.keyboard.press('Escape');
       await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
-      await page.locator('#decision-matrix tbody tr[data-signal-vin]').first().waitFor();
-      const signals = await page.locator('#decision-matrix tbody tr[data-signal-vin]').evaluateAll((rs) => rs.map((r) => r.textContent.replace(/\s+/g, ' ')));
-      for (const row of signals) assert.ok(!/\b0 accidents\b/i.test(row), `no row reads an unknown count as zero: "${row.slice(0, 160)}"`);
+      await page.locator('#finalists-table tbody tr[data-measure="history"]').waitFor();
+      const heads = await page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll((as) => as.map((a) => a.dataset.fkey.slice(4)));
+      assert.deepEqual(heads, [BLANK], 'the blank car is the one column in the comparison');
+      const hist = (await page.locator('#finalists-table tbody tr[data-measure="history"] td').first().textContent()).replace(/\s+/g, ' ').trim();
+      assert.ok(!/no accidents|\b0 accidents?\b/i.test(hist), `an unknown accident count is never a clean record: "${hist}"`);
+      assert.ok(!/owner/i.test(hist), `and an unknown owner count is never an owner claim: "${hist}"`);
+      assert.match(hist, /history n\/a/i, `and the cell says the history is not available: "${hist}"`);
     } finally { await context.close(); }
   });
 
@@ -881,8 +896,16 @@ try {
       await page.locator('.shop-garage').click();
       await page.locator('.studio-dialog[open]').waitFor();
       const garage = (await page.locator('.studio-content').textContent()).replace(/\s+/g, ' ');
-      assert.match(garage, /Stopped being seen|fetch window|left the tracked/i,
-        `the garage says what happened in the record's own words: "${garage.slice(0, 260)}"`);
+      // An OR of three phrases let a mutant through: "Stopped being seen ... and
+      // its listing ended" still matched the first branch, so the clause that
+      // carries the UNCERTAINTY was never pinned. This record says `likely:
+      // 'unseen'` — it knows the car stopped printing and nothing more — so all
+      // three of these have to hold.
+      assert.match(garage, /Stopped being seen after/i,
+        `the garage dates when it stopped printing: "${garage.slice(0, 260)}"`);
+      assert.match(garage, /may only have fallen outside a fetch window/i,
+        `and says an absence from a sampled fetch is not the end of the listing: "${garage.slice(0, 260)}"`);
+      assert.ok(!/listing ended/i.test(garage), 'and claims no ending the record cannot see');
       assert.ok(!/\bsold\b/i.test(garage), 'and does not call it sold either');
       await shot(page, 'departed-saved-car');
     } finally { await context.close(); }
@@ -960,6 +983,71 @@ try {
       await shot(page, 'no-coordinates-reachable');
     } finally { await context.close(); }
   });
+
+
+  // ---- the journey's own surfaces, at both widths and in both themes -------
+  // Every session above runs dark at 1280, so the light theme and the phone were
+  // being read only through the dashboard suite's own layout checks and never
+  // through the controls this journey presses. A screenshot is not a pass, so
+  // each control is measured: on screen, inside the viewport, big enough to
+  // press, and legible against what is actually behind it.
+  for (const [width, height] of [[1280, 900], [390, 844]]) for (const theme of ['dark', 'light']) {
+    await step(`the journey's controls hold at ${width}px in the ${theme} theme`, async () => {
+      const { context, page } = await session({ width, height, theme });
+      try {
+        await open(page);
+        await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+        await page.waitForTimeout(400);
+        const usable = async (locator, name) => {
+          assert.equal(await locator.count() > 0, true, `${name} is on the page`);
+          const box = await locator.first().evaluate((node) => {
+            const b = node.getBoundingClientRect();
+            const cs = getComputedStyle(node);
+            const rgb = (v) => (v.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+            const lum = (v) => rgb(v).map((c) => { c /= 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; })
+              .reduce((sum, c, i) => sum + c * [.2126, .7152, .0722][i], 0);
+            // what is actually behind it, rather than the node's own transparent background
+            let bg = cs.backgroundColor, at = node;
+            while (at && (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent')) { at = at.parentElement; bg = at ? getComputedStyle(at).backgroundColor : 'rgb(255, 255, 255)'; }
+            const ratio = (Math.max(lum(cs.color), lum(bg)) + .05) / (Math.min(lum(cs.color), lum(bg)) + .05);
+            return { w: b.width, h: b.height, left: b.left, right: b.right, display: cs.display, visibility: cs.visibility, ratio };
+          });
+          assert.ok(box.display !== 'none' && box.visibility !== 'hidden' && box.w > 0 && box.h > 0, `${name} is visible (${JSON.stringify(box)})`);
+          // The 44px and 36px touch targets belong to the phone step above, which
+          // owns them; 28px is what the design system's --sm button is on a
+          // desktop and is not a defect there. What this asserts is a real box.
+          const floor = width <= 420 ? 36 : 20;
+          assert.ok(box.h >= floor && box.w >= 24, `${name} is a real press target (${Math.round(box.w)}x${Math.round(box.h)}, floor ${floor})`);
+          assert.ok(box.left >= -1 && box.right <= width + 1, `${name} is not clipped off the side (${Math.round(box.left)}..${Math.round(box.right)} of ${width})`);
+          assert.ok(box.ratio >= 4.5, `${name} reads at ${box.ratio.toFixed(2)}:1 against what is behind it`);
+        };
+        await usable(page.getByRole('button', { name: 'Choose cars' }), 'Choose cars');
+        await usable(page.getByRole('button', { name: 'Compare & save', exact: true }), 'Compare & save');
+        await usable(page.locator('.shop-garage'), 'Garage');
+        const vin = await page.locator('.car-place-card').first().getAttribute('data-car-vin');
+        await usable(page.locator(`[data-focus-vin="${vin}"][data-focus-action="look"]`), 'Quick look');
+        await usable(page.locator(`[data-fkey="star:${vin}"]`), 'Save car');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'nothing scrolls sideways');
+        await shot(page, `journey-explore-${width}-${theme}`);
+        // the sheet the save and the note are made in
+        await page.locator(`[data-focus-vin="${vin}"][data-focus-action="look"]`).click();
+        await page.locator('.studio-dialog[open]').waitFor();
+        await usable(page.locator(`select[aria-label="Status for ${vin}"]`), 'the status control');
+        await usable(page.locator('.studio-notes'), 'the notes field');
+        const sheet = await page.locator('.studio-dialog').evaluate((node) => { const b = node.getBoundingClientRect(); return { left: b.left, right: b.right, top: b.top }; });
+        assert.ok(sheet.left >= -1 && sheet.right <= width + 1, `the sheet fits the screen (${Math.round(sheet.left)}..${Math.round(sheet.right)})`);
+        await shot(page, `journey-sheet-${width}-${theme}`);
+        await page.keyboard.press('Escape');
+        // and the comparison the evidence is read in
+        await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
+        await page.locator('#finalists-table thead th, .sc-compare-pair__heads').first().waitFor();
+        await page.waitForTimeout(400);
+        await usable(page.locator('.fin-basis summary'), 'the assumptions disclosure');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'the comparison does not scroll the page sideways');
+        await shot(page, `journey-compare-${width}-${theme}`);
+      } finally { await context.close(); }
+    });
+  }
 
   assert.deepEqual(errors, [], 'page errors: ' + errors.join(' | '));
   if (failures) { console.log(`browse smoke: ${failures} check(s) failed`); process.exitCode = 1; }
