@@ -98,6 +98,15 @@ jobs:
           node tools/discovery_smoke.mjs
       - name: Walk the shopping journey — three views, the comparison, the garage
         run: node tools/browse_smoke.mjs --shots /tmp/browse-shots
+      # These two were the only browser harnesses nothing ran. Both had been
+      # waiting on the Explore route for a panel that route hides by design,
+      # timing out against a page that worked, and no gate said so for two
+      # snapshots. They cost about fifteen seconds each; the reason they rotted
+      # was that they were optional.
+      - name: The photo dossier and the signal matrix, on the route that owns them
+        run: |
+          node tools/fieldwork_smoke.mjs /tmp/design-system --shots /tmp/design-shots
+          node tools/matrix_navigation_smoke.mjs /tmp/design-system --shots /tmp/design-shots
       - name: Open the dashboard and ask whether it works
         run: |
           set -o pipefail
@@ -111,4 +120,5 @@ jobs:
           path: |
             /tmp/shots
             /tmp/browse-shots
+            /tmp/design-shots
           if-no-files-found: ignore

@@ -2,6 +2,15 @@
 // declared 274 checks stay unchanged; this opens the unchanged application
 // with its checked-in chart + native-table presentation bundle.
 //
+// WHERE THE MATRIX LIVES. A reader arrives in Explore — the workspace header,
+// the filter bar and the first car card. The signal matrix is not on that
+// route: shopping-workspace.css hides #signal-card under
+// [data-workspace="explore"] deliberately, because Explore browses and
+// "Compare & save" decides. This harness is about the matrix, so it arrives
+// where a reader arrives and then presses the control a reader presses. It
+// used to wait on the Explore route for a table that route does not show, and
+// spent thirty seconds proving the page was not the one it was looking at.
+//
 // node tools/matrix_navigation_smoke.mjs <design-system-checkout> [--shots <dir>]
 // Requires Playwright Chromium; missing browser/dependencies are a failure.
 // Dealer images and atlas geometry use the existing dashboard harness's
@@ -60,10 +69,42 @@ const check = (name, pass, detail = '') => {
   checks.push({ name, pass: !!pass });
   console.log(`  ${pass ? 'ok  ' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`);
 };
-const open = async () => {
+// The nav control by its role and its accessible name: what a reader reaches
+// for, and what a screen reader announces. Never a CSS override — a panel this
+// route hides is the design, and forcing it visible would test a page nobody
+// is served.
+const compareButton = () => page.getByRole('button', { name: 'Compare & save', exact: true });
+const arrive = async () => {
   await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+  // Explore's own readiness condition, the one the CI-wired browse and
+  // discovery suites already wait on: a car, or the map saying it has none.
+  await page.waitForSelector('.car-place-card, .car-map-unavailable');
+  await page.waitForTimeout(250);
+  return page.evaluate(() => {
+    const card = document.querySelector('.car-place-card');
+    const box = card && card.getBoundingClientRect();
+    const signal = document.getElementById('signal-card');
+    const press = [...document.querySelectorAll('.shop-nav-button')].find((b) => b.dataset.shopView === 'compare');
+    const pressBox = press && press.getBoundingClientRect();
+    return {
+      workspace: document.body.dataset.workspace,
+      firstCarOnScreen: !!box && box.height > 0 && box.top < innerHeight && box.bottom > 0,
+      // The matrix is off this route, and off it by CSS rather than by being
+      // unbuilt: the rows are in the document, carrying their exact VINs.
+      matrixOffRoute: !!signal && getComputedStyle(signal).display === 'none',
+      rowsInDocument: document.querySelectorAll('#decision-matrix tbody tr[data-signal-vin]').length,
+      // and the way to it is a real control a reader can see and press
+      pressReachable: !!press && !press.hidden && !!pressBox && pressBox.width >= 44 && pressBox.height >= 44
+        && pressBox.top < innerHeight && pressBox.bottom > 0,
+    };
+  });
+};
+const open = async () => {
+  const arrival = await arrive();
+  await compareButton().click();
   await page.waitForSelector('#decision-matrix tbody tr[data-signal-vin]');
   await page.waitForTimeout(250);
+  return arrival;
 };
 const shot = async (name) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, name + '.png') }); };
 const matrix = () => page.locator('#decision-matrix');
@@ -79,7 +120,7 @@ let baseline, heroBaseline;
 try {
   for (const [width, height] of [[390, 844], [820, 1180], [1280, 1000]]) for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width, height });
-    await open();
+    const arrival = await open();
     await page.evaluate((value) => document.documentElement.setAttribute('data-theme', value), theme);
     await page.waitForTimeout(100);
     const geometry = await page.evaluate(() => {
@@ -96,8 +137,26 @@ try {
     check(`${width}px ${theme}: native matrix and full header navigation fit without page overflow`, geometry.native && geometry.pageWidth <= width + 1
       && geometry.groups === 1 && geometry.controls === geometry.overflow && JSON.stringify(geometry.labels) === JSON.stringify(LABELS)
       && (!geometry.controls || geometry.targets.every(([w, h]) => w >= 44 && h >= 44)), JSON.stringify(geometry));
-    check(`${width}px ${theme}: the first signal remains on the opening screen`, geometry.firstBottom > 0 && geometry.firstBottom < height, `${geometry.firstBottom}px / ${height}px`);
-    await shot(`matrix-navigation-first-${width}-${theme}`);
+    // What replaced "the first signal remains on the opening screen": that
+    // sentence was true of the matrix-first homepage and is false of this one,
+    // and the honest contract underneath it is that Explore arrives on the
+    // cars, the matrix is one named press away, and what opens is complete.
+    await page.locator('#decision-matrix .sc-signal__label').first().scrollIntoViewIfNeeded();
+    const reach = await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('#decision-matrix tbody tr[data-signal-vin]')];
+      const label = document.querySelector('#decision-matrix .sc-signal__label');
+      const box = label.getBoundingClientRect();
+      return { workspace: document.body.dataset.workspace,
+        onScreen: box.height > 0 && box.top >= 0 && box.bottom <= innerHeight,
+        rowsDrawn: rows.length, rowsShown: rows.filter((r) => r.getBoundingClientRect().height > 0).length,
+        vins: rows.map((r) => r.dataset.signalVin) };
+    });
+    check(`${width}px ${theme}: Explore arrives on the cars and one press opens the whole matrix`,
+      arrival.workspace === 'explore' && arrival.firstCarOnScreen && arrival.matrixOffRoute
+      && arrival.rowsInDocument > 1 && arrival.pressReachable
+      && reach.workspace === 'compare' && reach.onScreen && reach.rowsDrawn > 1 && reach.rowsShown === reach.rowsDrawn
+      && reach.vins.every((vin) => /^[A-HJ-NPR-Z0-9]{17}$/.test(vin)), JSON.stringify({ arrival, reach }));
+    await shot(`matrix-navigation-explore-arrival-${width}-${theme}`);
     await page.locator('#signal-card').scrollIntoViewIfNeeded();
     await shot(`matrix-navigation-${width}-${theme}`);
   }

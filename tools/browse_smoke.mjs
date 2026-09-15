@@ -63,25 +63,65 @@ const days = [...new Set(pool.flatMap((x) => (x.series || []).map((p) => p[0])))
 const SINCE = days.filter((d) => d < data.data_through).slice(-1)[0] || null;
 
 const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=', 'base64');
+
+// ---- deterministic subjects -------------------------------------------------
+// Six shapeable cars from the buyer's own models, chosen by position in the
+// committed record so every run shapes the same cars. The first three are the
+// `live` set above; the last three are this pass's named subjects, so a check
+// about an absent fact cannot pass because tonight's snapshot happens to hold
+// no car with that fact missing. That is how two checks in this file have been
+// passing: `if (!noMiles.length) return` and `if (!vin) return` are a silent
+// green over a record with no subject, and both are asserts now.
+const shapeable = pool.filter((x) => plottable(x) && (x.series || []).length > 2);
+assert.ok(shapeable.length >= 7, `the record holds seven shapeable cars, not ${shapeable.length}`);
+const [BLANK, STALE, NOWHERE, FILTERED] = shapeable.slice(3, 7).map((x) => x.vin);
+const clone = () => JSON.parse(JSON.stringify(data));
+// Reach into a shaped copy by VIN, and say so loudly if the car moved: a
+// fixture that silently shapes nothing is a check that silently passes.
+function shape(d, vin, change) {
+  for (const b of Object.values(d.brands)) for (const m of Object.values(b.models)) {
+    const i = (m.listings || []).findIndex((x) => x.vin === vin);
+    if (i >= 0) { change(m.listings[i], m, i); return d; }
+  }
+  throw new Error(`${vin} is not in the record to shape`);
+}
+// Later than the newest day any car was observed: a build date is not an
+// observation date, and this is what tells the two apart.
+const LATER = (() => { const t = new Date(data.data_through + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + 3); return t.toISOString().slice(0, 10); })();
 const browser = await chromium.launch();
 const errors = [];
-async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTES, seen = SINCE, storage = true } = {}) {
+// `record` shapes a COPY of the committed snapshot and serves it to one browser
+// context. docs/data.json is never written: it stays the published record to
+// the byte, and the shaped copy lives in this process only. The page asks for
+// `data.json?v=<now>`, so the route has to match the query too.
+//
+// `prefs: null` / `notes: null` decline the seeding entirely. Every step above
+// seeds a finished garage before the first paint — which proves what the page
+// DOES with a save, not that saving works — so the journey step below starts
+// with empty storage and makes every write through the controls instead. The
+// addInitScript runs on EVERY navigation, so a seeded context re-seeds itself
+// on reload and cannot be used to prove anything survived one.
+async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTES, seen = SINCE, storage = true, record = null, theme = 'dark' } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, isMobile: width <= 420, hasTouch: width <= 420,
-    reducedMotion: 'reduce', colorScheme: 'dark' });
+    reducedMotion: 'reduce', colorScheme: theme });
   await context.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => (/\.(png|jpe?g|webp|gif|svg)/i.test(r.request().url())
     ? r.fulfill({ status: 200, contentType: 'image/png', body: PIXEL })
     : r.fulfill({ status: 200, contentType: 'text/plain', body: '' })));
-  await context.addInitScript(([p, n, s, ok]) => {
+  if (record) {
+    const body = JSON.stringify(record);
+    await context.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body }));
+  }
+  await context.addInitScript(([p, n, s, ok, t]) => {
     if (!ok) {   // a browser with storage switched off, which is a state and not a crash
       const boom = () => { throw new DOMException('denied', 'SecurityError'); };
       Object.defineProperty(window, 'localStorage', { configurable: true, get: boom });
       return;
     }
-    localStorage.setItem('spicycar.prefs', JSON.stringify(p));
-    localStorage.setItem('spicycar.garage', JSON.stringify(n));
+    if (p) localStorage.setItem('spicycar.prefs', JSON.stringify(p));
+    if (n) localStorage.setItem('spicycar.garage', JSON.stringify(n));
     if (s) localStorage.setItem('spicycar.seen', JSON.stringify({ through: s, since: null }));
-    localStorage.setItem('sc-theme', 'dark');
-  }, [prefs, notes, seen, storage]);
+    localStorage.setItem('sc-theme', t);
+  }, [prefs, notes, seen, storage, theme]);
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push('uncaught: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
@@ -142,7 +182,11 @@ try {
     try {
       await open(page);
       const noMiles = pool.filter((x) => !plottable(x));
-      if (!noMiles.length) return;   // nothing to omit today; the check has no subject
+      // `return` here was a silent pass on any record that happened to publish
+      // every mileage. The deterministic twin of this case is the fixture step
+      // "a car with no mileage and no history"; this one is about the real
+      // snapshot, so it says out loud when the snapshot stops providing one.
+      assert.ok(noMiles.length, 'the committed record holds a car this view cannot plot');
       await page.locator('.car-panel-switch .sc-tab', { hasText: 'Price & miles' }).click();
       await page.waitForTimeout(400);
       await page.locator('.car-missing-reach').click();
@@ -205,7 +249,7 @@ try {
     try {
       await open(page);
       const vin = pool.find((x) => x.miles != null && x.miles > 40000)?.vin;
-      if (!vin) return;
+      assert.ok(vin, 'the committed record holds a car over 40,000 miles to filter out');
       await page.goto(base + '/?car=' + vin, { waitUntil: 'load' });
       await page.waitForTimeout(900);
       // Narrow the search until the car is out of it, then read what the page says.
@@ -548,6 +592,462 @@ try {
       } finally { await context.close(); }
     }
   });
+
+
+  // ---- one connected journey, with nothing pre-saved ----------------------
+  // Every step above seeds a finished garage before the first paint, which
+  // proves what the page does WITH a save and never that saving works. This one
+  // starts with empty storage and makes every write through a control a reader
+  // has: choose the models, look at all three views, open one car, save it,
+  // write a note, compare it, take it out, put it back, and come back to it
+  // after a reload that re-seeds nothing.
+  await step('the whole journey with nothing pre-saved: choose, look, save, note, compare, reload', async () => {
+    const { context, page } = await session({ prefs: null, notes: null, seen: null });
+    try {
+      await open(page);
+      assert.deepEqual(await page.evaluate(() => ({
+        stars: Object.keys(JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').stars || {}),
+        notes: Object.keys(JSON.parse(localStorage.getItem('spicycar.garage') || '{}')),
+      })), { stars: [], notes: [] }, 'this browser starts with no saved car and no note');
+
+      // 1 — choose the models, through the picker
+      await page.getByRole('button', { name: 'Choose cars' }).click();
+      await page.locator('.shop-picker').waitFor();
+      await page.getByRole('button', { name: 'Clear' }).click();
+      for (const key of shopped) {
+        const label = all.find((o) => o.key === key).m.label;
+        await page.getByRole('checkbox', { name: label, exact: true }).check();
+      }
+      await page.getByRole('button', { name: 'Shop these models' }).click();
+      await page.waitForFunction(() => !document.querySelector('.shop-picker[open]'));
+      await page.waitForTimeout(600);
+      const counted = Number(((await page.locator('.car-place-count').textContent()).match(/^(\d[\d,]*)/) || [])[1].replace(/,/g, ''));
+      assert.equal(counted, pool.length, `choosing the two models gives ${pool.length} cars, the page says ${counted}`);
+
+      // 2 — all three views of that one set
+      const say = async () => (await page.locator('.car-place-missing').textContent()).trim();
+      await page.locator('.car-panel-switch .sc-tab', { hasText: 'Map' }).click();
+      await page.waitForTimeout(300);
+      const mapSays = await say();
+      await page.locator('.car-panel-switch .sc-tab', { hasText: 'Price & miles' }).click();
+      await page.waitForTimeout(400);
+      const plotSays = await say();
+      assert.match(mapSays, /map/i, `the map names its own omissions: "${mapSays}"`);
+      assert.match(plotSays, /plot|price and mileage/i, `the plot names its own omissions: "${plotSays}"`);
+      assert.ok(await page.locator('.car-place-panel svg').count() > 0, 'the plot drew something to read');
+
+      // 3 — open ONE car through the card's own action
+      const vin = await page.locator('.car-place-card').first().getAttribute('data-car-vin');
+      assert.match(vin, /^[A-HJ-NPR-Z0-9]{17}$/, `the first card names a VIN: ${vin}`);
+      await page.locator(`[data-focus-vin="${vin}"][data-focus-action="look"]`).click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      const status = page.locator(`select[aria-label="Status for ${vin}"]`);
+      assert.equal(await status.count(), 1, 'the sheet that opened is that car’s own');
+      assert.equal(await status.inputValue(), '', 'and it is not saved yet');
+
+      // 4 — save it and write a note, both through the sheet
+      await status.selectOption('short');
+      await page.waitForTimeout(250);
+      const NOTE = 'Fixture note: asked about the second key. Not a real enquiry.';
+      await page.locator('.studio-notes').fill(NOTE);
+      await page.waitForTimeout(250);
+      assert.match(await page.locator('.studio-note-state').first().textContent(), /Saved on this device/i,
+        'the sheet says the note was kept');
+      const written = await page.evaluate(() => ({
+        stars: JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').stars || {},
+        notes: JSON.parse(localStorage.getItem('spicycar.garage') || '{}'),
+      }));
+      assert.equal(written.stars[vin], 'short', 'the page wrote the save itself');
+      assert.equal(written.notes[vin], NOTE, 'and the note beside it');
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(250);
+
+      // 5 — the comparison, reached by its own nav control
+      await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
+      await page.locator('#finalists-table thead th, .sc-compare-pair__heads').first().waitFor();
+      const heads = () => page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll((as) => as.map((a) => a.dataset.fkey.slice(4)));
+      assert.deepEqual(await heads(), [vin], 'the one saved car is the one column in the comparison');
+      const record = await page.locator('#finalists-table tbody tr[data-measure="record"] td').first().textContent();
+      const obs = (pool.find((x) => x.vin === vin).series || []).filter((q) => /^\d{4}-\d{2}-\d{2}$/.test(q[0]) && Number.isFinite(q[1]) && q[1] > 0);
+      assert.ok(record.includes(String(obs.length)), `its evidence says how many observations there are (${obs.length}): "${record.trim()}"`);
+
+      // 6 — out of the comparison; the save, the note and the status stay
+      await page.locator('.fin-drop').first().click();
+      await page.waitForTimeout(400);
+      const afterDrop = await page.evaluate(() => {
+        const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
+        return { stars: p.stars || {}, out: p.compareOut || [], notes: JSON.parse(localStorage.getItem('spicycar.garage') || '{}') };
+      });
+      assert.equal(afterDrop.stars[vin], 'short', 'taking it out of the comparison did not unsave it');
+      assert.equal(afterDrop.notes[vin], NOTE, 'and did not touch its note');
+      assert.deepEqual(afterDrop.out, [vin], 'the removal is a comparison membership on its own');
+
+      // 7 — and one press puts it back
+      await page.locator('.fin-aside button').first().click();
+      await page.waitForTimeout(400);
+      assert.deepEqual(await heads(), [vin], 'one press puts it back in the comparison');
+
+      // 8 — the garage, then a reload that re-seeds nothing
+      await page.locator('.shop-garage').click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      assert.match(await page.locator('.studio-note-preview').first().textContent(), /second key/i,
+        'the garage shows the note the reader wrote');
+      await page.keyboard.press('Escape');
+      await page.reload({ waitUntil: 'load' });
+      await page.locator('.shop-garage').waitFor();
+      await page.waitForTimeout(900);
+      const survived = await page.evaluate(() => ({
+        stars: JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').stars || {},
+        notes: JSON.parse(localStorage.getItem('spicycar.garage') || '{}'),
+      }));
+      assert.equal(survived.stars[vin], 'short', 'the save survived a reload it was not re-seeded through');
+      assert.equal(survived.notes[vin], NOTE, 'and so did the note');
+      await page.locator('.shop-garage').click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      // Reopening the same car after the reload: its own status control, its own note.
+      const back = page.locator(`select[aria-label="Status for ${vin}"]`);
+      assert.equal(await back.count(), 1, 'the garage still holds that car\u2019s own status control');
+      assert.equal(await back.inputValue(), 'short', 'and it still reads Saved after the reload');
+      assert.match(await page.locator('.studio-note-preview').first().textContent(), /second key/i,
+        'and the note the reader typed is still the note it shows');
+      await shot(page, 'journey-garage-after-reload');
+    } finally { await context.close(); }
+  });
+
+  // ---- what the reader can see and reach ---------------------------------
+  // A build date is not an observation date. STALE is shaped to have stopped
+  // being observed three days before the record says it was generated, which is
+  // the case a "data through <today>" headline can quietly absorb.
+  await step('a generated date is not an observation date for every car', async () => {
+    const cut = (() => { const t = new Date(data.data_through + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - 4); return t.toISOString().slice(0, 10); })();
+    let lastSeen = null;
+    const record = shape(clone(), STALE, (car) => {
+      car.series = (car.series || []).filter((q) => q[0] <= cut);
+      assert.ok(car.series.length >= 2, 'the stale subject keeps two observations of its own');
+      lastSeen = car.series.at(-1)[0];
+      car.price = car.series.at(-1)[1];
+    });
+    assert.ok(lastSeen < data.data_through && lastSeen < LATER, `the subject last printed on ${lastSeen}, before the build date`);
+    record.generated = LATER; record.data_through = LATER;
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page, '?car=' + STALE);
+      await page.waitForTimeout(400);
+      assert.match(await page.locator('.sc-masthead, header').first().textContent(), new RegExp(LATER.replace(/-/g, '.?')),
+        'the page carries the newer build date');
+      await page.locator(`[data-focus-vin="${STALE}"][data-focus-action="look"]`).click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      const journey = await page.locator('.studio-history-summary').textContent();
+      assert.ok(journey.includes(lastSeen), `the car's own last observation is ${lastSeen}, and it says so: "${journey.trim()}"`);
+      assert.ok(!journey.includes(LATER), `and it does not claim it was seen on the build date: "${journey.trim()}"`);
+      await page.locator('.studio-history summary').click();
+      const rows = await page.locator('.studio-history-table tbody tr').evaluateAll((rs) => rs.map((r) => r.cells[0].textContent.trim()));
+      assert.ok(!rows.includes(LATER), 'and the dated list gains no row for a day nothing was observed');
+    } finally { await context.close(); }
+  });
+
+  // Unknown is unknown. Not zero accidents, not one owner, not zero miles.
+  await step('a car with no mileage and no history says so, and is never given a clean record', async () => {
+    // usage is set to a plain recorded value rather than left as the subject's
+    // own "rental", which is a real fact and would rightly keep the history cell
+    // from reading as empty. What this case is about is the ABSENT fields.
+    const record = shape(clone(), BLANK, (car) => {
+      car.miles = null; car.accidents = null; car.owners = null; car.flags = []; car.carfax = null; car.usage = 'Personal Use';
+    });
+    // Saved, so the comparison's "Reported history" cell — which is where
+    // flagsCell() actually renders — is on the page to be read. Reading only the
+    // card and the sheet left a hole: a mutant that printed "no accidents" for a
+    // null count survived, because the card prints the record's own `flags` list
+    // and the sheet never calls flagsCell at all.
+    const { context, page } = await session({ record, prefs: { ...PREFS, stars: { [BLANK]: 'short' }, compareOut: [] }, notes: null, seen: null });
+    try {
+      await open(page, '?car=' + BLANK);
+      await page.waitForTimeout(500);
+      const card = await page.locator(`.car-place-card[data-car-vin="${BLANK}"]`).textContent();
+      assert.match(card, /Mileage unreported/i, `the card says the mileage is unreported: "${card.replace(/\s+/g, ' ').slice(0, 200)}"`);
+      assert.ok(!/\b0 mi\b/.test(card), 'and never prints it as zero miles');
+      assert.ok(!/no accidents|1-owner/i.test(card), 'and claims neither a clean record nor an owner count');
+      await page.locator(`[data-focus-vin="${BLANK}"][data-focus-action="look"]`).click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      const sheet = (await page.locator('.studio-content').textContent()).replace(/\s+/g, ' ');
+      assert.ok(!/no accidents|\b1 owner\b|1-owner/i.test(sheet), `the sheet invents no history: "${sheet.slice(0, 260)}"`);
+      const marked = await page.locator('.studio-content .sc-unreported').count();
+      assert.ok(marked >= 1, 'and an absent fact is marked as unreported rather than left to read as a value');
+      await shot(page, 'unknown-history-sheet');
+      // And the comparison's own history cell, which is the surface that turns
+      // the record's accident and owner counts into words.
+      await page.keyboard.press('Escape');
+      await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
+      await page.locator('#finalists-table tbody tr[data-measure="history"]').waitFor();
+      const heads = await page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll((as) => as.map((a) => a.dataset.fkey.slice(4)));
+      assert.deepEqual(heads, [BLANK], 'the blank car is the one column in the comparison');
+      const hist = (await page.locator('#finalists-table tbody tr[data-measure="history"] td').first().textContent()).replace(/\s+/g, ' ').trim();
+      assert.ok(!/no accidents|\b0 accidents?\b/i.test(hist), `an unknown accident count is never a clean record: "${hist}"`);
+      assert.ok(!/owner/i.test(hist), `and an unknown owner count is never an owner claim: "${hist}"`);
+      assert.match(hist, /history n\/a/i, `and the cell says the history is not available: "${hist}"`);
+    } finally { await context.close(); }
+  });
+
+  // Asking is a recorded price. Out-the-door and per-month are this page's
+  // arithmetic over the reader's own assumptions, and the comparison has to keep
+  // them apart where the decision is made.
+  await step('asking, shipping, all-in and the financing assumptions stay told apart', async () => {
+    const { context, page } = await session();
+    try {
+      await page.goto(base + '/?view=compare', { waitUntil: 'load' });
+      await page.locator('#finalists-table tbody tr[data-measure="asking"]').waitFor();
+      const marks = await page.locator('#finalists-table tbody tr[data-measure]').evaluateAll((rows) => rows.map((r) => ({
+        measure: r.dataset.measure,
+        label: (r.cells[0].textContent || '').replace(/\s+/g, ' ').trim(),
+        estimates: [...r.querySelectorAll('td .sc-figure')].map((f) => f.classList.contains('sc-estimate')),
+        subs: [...r.querySelectorAll('td .sc-note')].map((n) => n.textContent.trim()),
+      })));
+      const row = (key) => marks.find((m) => m.measure === key);
+      assert.ok(row('asking'), 'the comparison prints the asking price');
+      assert.ok(row('asking').estimates.every((e) => e === false), 'a recorded asking price is never marked an estimate');
+      assert.match(row('asking').subs.join(' | '), /ship|drive|last seen/i,
+        `and shipping rides beside it rather than inside it: "${row('asking').subs.join(' | ')}"`);
+      for (const key of ['otd', 'pay']) {
+        if (!row(key)) continue;   // the measure only exists when the buyer configured it
+        assert.ok(row(key).estimates.some((e) => e === true), `${key} is marked as this page's estimate`);
+      }
+      const basis = page.locator('.fin-basis');
+      assert.equal(await basis.count(), 1, 'the assumptions are one disclosure, not a paragraph over the cars');
+      await basis.locator('summary').click();
+      const words = (await basis.locator('p').textContent()).replace(/\s+/g, ' ');
+      assert.match(words, /Shipping/i, `the assumptions name the shipping basis: "${words.slice(0, 200)}"`);
+      assert.match(words, /tax|fee|paperwork/i, 'and the tax and paperwork basis');
+      assert.ok(!/\$0\b/.test(words), 'and no unavailable figure is written as zero');
+      // an unavailable estimate reads as unavailable, never as nothing owed
+      const gone = await page.locator('#finalists-table tbody tr[data-measure="otd"] td').allTextContents().catch(() => []);
+      for (const cell of gone) assert.ok(!/^\s*\$0\s*$/.test(cell), `an all-in cell is never a bare $0: "${cell}"`);
+      await shot(page, 'cost-basis-disclosure');
+    } finally { await context.close(); }
+  });
+
+  // The dated list, read row by row against the record, and never one row per
+  // day of a drawn line.
+  await step('the recorded prices are the days the car was observed, with their own dates', async () => {
+    const { context, page } = await session();
+    try {
+      const subject = live.find((x) => (x.series || []).length >= 3) || live[0];
+      await open(page, '?car=' + subject.vin);
+      await page.waitForTimeout(400);
+      await page.locator(`[data-focus-vin="${subject.vin}"][data-focus-action="look"]`).click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      await page.locator('.studio-history summary').click();
+      const rows = await page.locator('.studio-history-table tbody tr').evaluateAll((rs) => rs.map((r) => [r.cells[0].textContent.trim(), r.cells[1].textContent.trim()]));
+      const obs = (subject.series || []).filter((q) => /^\d{4}-\d{2}-\d{2}$/.test(q[0]) && Number.isFinite(q[1]) && q[1] > 0)
+        .slice().sort((a, b) => a[0].localeCompare(b[0]));
+      assert.equal(rows.length, obs.length, `${obs.length} observations were recorded and ${rows.length} rows are printed`);
+      for (const [i, [day, price]] of rows.entries()) {
+        assert.equal(day, obs[i][0], `row ${i + 1} carries its own observation date`);
+        assert.equal(price.replace(/[^\d]/g, ''), String(obs[i][1]), `row ${i + 1} carries the price observed on ${obs[i][0]}`);
+      }
+      await shot(page, 'recorded-prices-disclosure');
+    } finally { await context.close(); }
+  });
+
+  // Absence from a sampled query is not a sale, and a save keeps the evidence it
+  // was made on. Two records: the car is live and saved in the first, departed in
+  // the second, and nothing rewrites what the first one said.
+  await step('a saved car that stops being seen keeps its own dated evidence, and is never called sold', async () => {
+    const next = clone();
+    let moved = null, lastSeen = null;
+    shape(next, STALE, (car, model, index) => {
+      moved = car;
+      lastSeen = (car.series || []).at(-1)[0];
+      model.listings.splice(index, 1);
+      model.gone = model.gone || [];
+      // `likely: 'unseen'` is the honest branch: the record does not know the
+      // listing ended, only that the car stopped printing.
+      model.gone.push({ ...car, last_price: car.price, last_seen: lastSeen, likely: 'unseen', exact: true });
+    });
+    // The reader's baseline has to be BEFORE the car stopped printing, or
+    // nothing has moved since they last looked and the garage rightly says so —
+    // which is what this check was reading as a missing sentence.
+    const seenDay = days.filter((d) => d < lastSeen).at(-1);
+    assert.ok(seenDay, `the record holds a day before ${lastSeen} for the reader to have last seen`);
+    next.generated = LATER; next.data_through = LATER; next.departures_from = data.departures_from;
+    const { context, page } = await session({ record: next, prefs: { ...PREFS, stars: { [STALE]: 'short' } }, notes: null, seen: seenDay });
+    try {
+      await page.goto(base + '/?view=compare', { waitUntil: 'load' });
+      await page.locator('#finalists-table thead th, .sc-compare-pair__heads').first().waitFor();
+      await page.waitForTimeout(500);
+      const shown = await page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll((as) => as.map((a) => a.dataset.fkey.slice(4)));
+      assert.ok(shown.includes(STALE), 'a car that left the listings is still in the comparison it was saved into');
+      const asking = await page.locator('#finalists-table tbody tr[data-measure="asking"] td').nth(shown.indexOf(STALE)).textContent();
+      assert.ok(asking.replace(/[^\d]/g, '').includes(String(moved.price)), `its last recorded asking price is the one the record made: "${asking.trim()}"`);
+      assert.match(asking, /last seen/i, 'and it is dated as last seen rather than quoted as current');
+      // The page's own legend for departures names four causes — sold, pulled,
+      // re-listed, or simply not fetched — which is the honest sentence and not
+      // a claim, so a blanket search for the word is the wrong test. What must
+      // not happen is a verdict about THIS car, and the legend must keep
+      // offering the alternative rather than settling on a sale.
+      const legend = (await page.locator('#gone-card, #main').first().textContent()).replace(/\s+/g, ' ');
+      const explains = /[^.]*\bsold\b[^.]*\./i.exec(legend);
+      assert.ok(explains, 'the record explains what a departure can mean');
+      assert.match(explains[0], /\bor\b/i, `and offers more than one cause: "${explains[0].trim()}"`);
+      assert.match(explains[0], /not fetched|cut-off|re-listed|pulled/i,
+        'including the one that is not a sale at all');
+      const mine = (await page.locator(`#finalists-table [data-fkey="fin:${STALE}"]`).first()
+        .evaluate((node) => node.closest('th').textContent)).replace(/\s+/g, ' ');
+      assert.ok(!/\bsold\b/i.test(mine), `and nothing on this car's own column calls it sold: "${mine.trim()}"`);
+      await page.locator('.shop-garage').click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      const garage = (await page.locator('.studio-content').textContent()).replace(/\s+/g, ' ');
+      // An OR of three phrases let a mutant through: "Stopped being seen ... and
+      // its listing ended" still matched the first branch, so the clause that
+      // carries the UNCERTAINTY was never pinned. This record says `likely:
+      // 'unseen'` — it knows the car stopped printing and nothing more — so all
+      // three of these have to hold.
+      assert.match(garage, /Stopped being seen after/i,
+        `the garage dates when it stopped printing: "${garage.slice(0, 260)}"`);
+      assert.match(garage, /may only have fallen outside a fetch window/i,
+        `and says an absence from a sampled fetch is not the end of the listing: "${garage.slice(0, 260)}"`);
+      assert.ok(!/listing ended/i.test(garage), 'and claims no ending the record cannot see');
+      assert.ok(!/\bsold\b/i.test(garage), 'and does not call it sold either');
+      await shot(page, 'departed-saved-car');
+    } finally { await context.close(); }
+  });
+
+  // The deterministic twin of "a car the filters hide is explained": that step
+  // reads the committed record, which today happens to hold a car over 40,000
+  // miles; this one shapes one, so the case has a subject whatever the tracker
+  // publishes next.
+  await step('a listing the reader\u2019s own filter excludes is explained, and only the reader brings it back', async () => {
+    const record = shape(clone(), FILTERED, (car) => { car.miles = 88000; });
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page, '?car=' + FILTERED);
+      await page.waitForTimeout(700);
+      assert.equal(await page.locator(`.car-place-card[data-car-vin="${FILTERED}"]`).count(), 1, 'the shaped car is in the results to begin with');
+      if (await page.locator('#filter-toggle').isVisible()) {
+        if ((await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') await page.locator('#filter-toggle').click();
+        await page.waitForTimeout(250);
+      }
+      await page.selectOption('#f-miles', '15000');
+      await page.waitForTimeout(700);
+      assert.equal(await page.locator(`.car-place-card[data-car-vin="${FILTERED}"]`).count(), 0, 'the 88,000-mile car is out of a 15,000-mile search');
+      const outside = page.locator('.car-outside');
+      assert.equal(await outside.isVisible(), true, 'and the page says where it went');
+      const words = (await outside.textContent()).replace(/\s+/g, ' ');
+      assert.match(words, /not in these results/i, `the exclusion is explained: "${words.slice(0, 160)}"`);
+      assert.equal(await page.evaluate(() => document.querySelector('#f-miles').value), '15000',
+        'and the filter the reader set was not quietly widened to fit the car back in');
+      await page.locator('.car-outside .car-text-button').first().click();
+      await page.waitForTimeout(700);
+      assert.equal(await page.locator(`.car-place-card[data-car-vin="${FILTERED}"]`).count(), 1,
+        'only the reader\u2019s own press brings it back');
+      await shot(page, 'outside-the-filters');
+    } finally { await context.close(); }
+  });
+
+  // No fabricated map position: a car with no coordinates is off the map, named
+  // as off it, and one press away in the cards.
+  await step('a car with no coordinates is never placed on the map, and is reachable without one', async () => {
+    const record = shape(clone(), NOWHERE, (car) => { car.lat = null; car.lon = null; });
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page);
+      await page.locator('.car-panel-switch .sc-tab', { hasText: 'Map' }).click();
+      await page.waitForTimeout(500);
+      const placed = await page.evaluate((vin) => {
+        const marks = [...document.querySelectorAll('.car-place-panel [data-map-vin], .leaflet-marker-icon')];
+        return marks.some((m) => (m.dataset && m.dataset.mapVin) === vin);
+      }, NOWHERE);
+      assert.equal(placed, false, 'the car with no coordinates has no marker');
+      const says = (await page.locator('.car-place-missing').textContent()).trim();
+      assert.match(says, /not on this map/i, `the map names the omission: "${says}"`);
+      assert.match(says, /location|verified/i, 'and says why');
+      await page.locator('.car-missing-reach').click();
+      await page.waitForTimeout(500);
+      const shownVins = async () => page.locator('.car-place-card').evaluateAll((cs) => cs.map((c) => c.dataset.carVin));
+      // No shopping preference was seeded, so every model is in view and the
+      // omitted set is the whole record's — reading it off `pool` alone made
+      // this assertion fail on cars from models the check never shaped.
+      const omitted = all.flatMap(rowsOf).filter((x) => !located(x) || x.vin === NOWHERE).map((x) => x.vin);
+      let vins = await shownVins();
+      assert.ok(vins.length && vins.every((v) => omitted.includes(v)),
+        'every card the omission link reaches is one of the cars the map could not place');
+      // The cards are paged eight at a time, so "reachable" means reachable by
+      // pressing the page's own control, not present on the first page.
+      for (let guard = 0; guard < 40 && !vins.includes(NOWHERE); guard += 1) {
+        const more = page.locator('.car-discovery-more');
+        if (!(await more.isVisible())) break;
+        await more.click();
+        await page.waitForTimeout(200);
+        vins = await shownVins();
+      }
+      assert.ok(vins.includes(NOWHERE), `the omission link reaches the car itself in the cards (${vins.length} shown)`);
+      await shot(page, 'no-coordinates-reachable');
+    } finally { await context.close(); }
+  });
+
+
+  // ---- the journey's own surfaces, at both widths and in both themes -------
+  // Every session above runs dark at 1280, so the light theme and the phone were
+  // being read only through the dashboard suite's own layout checks and never
+  // through the controls this journey presses. A screenshot is not a pass, so
+  // each control is measured: on screen, inside the viewport, big enough to
+  // press, and legible against what is actually behind it.
+  for (const [width, height] of [[1280, 900], [390, 844]]) for (const theme of ['dark', 'light']) {
+    await step(`the journey's controls hold at ${width}px in the ${theme} theme`, async () => {
+      const { context, page } = await session({ width, height, theme });
+      try {
+        await open(page);
+        await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+        await page.waitForTimeout(400);
+        const usable = async (locator, name) => {
+          assert.equal(await locator.count() > 0, true, `${name} is on the page`);
+          const box = await locator.first().evaluate((node) => {
+            const b = node.getBoundingClientRect();
+            const cs = getComputedStyle(node);
+            const rgb = (v) => (v.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+            const lum = (v) => rgb(v).map((c) => { c /= 255; return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; })
+              .reduce((sum, c, i) => sum + c * [.2126, .7152, .0722][i], 0);
+            // what is actually behind it, rather than the node's own transparent background
+            let bg = cs.backgroundColor, at = node;
+            while (at && (bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent')) { at = at.parentElement; bg = at ? getComputedStyle(at).backgroundColor : 'rgb(255, 255, 255)'; }
+            const ratio = (Math.max(lum(cs.color), lum(bg)) + .05) / (Math.min(lum(cs.color), lum(bg)) + .05);
+            return { w: b.width, h: b.height, left: b.left, right: b.right, display: cs.display, visibility: cs.visibility, ratio };
+          });
+          assert.ok(box.display !== 'none' && box.visibility !== 'hidden' && box.w > 0 && box.h > 0, `${name} is visible (${JSON.stringify(box)})`);
+          // The 44px and 36px touch targets belong to the phone step above, which
+          // owns them; 28px is what the design system's --sm button is on a
+          // desktop and is not a defect there. What this asserts is a real box.
+          const floor = width <= 420 ? 36 : 20;
+          assert.ok(box.h >= floor && box.w >= 24, `${name} is a real press target (${Math.round(box.w)}x${Math.round(box.h)}, floor ${floor})`);
+          assert.ok(box.left >= -1 && box.right <= width + 1, `${name} is not clipped off the side (${Math.round(box.left)}..${Math.round(box.right)} of ${width})`);
+          assert.ok(box.ratio >= 4.5, `${name} reads at ${box.ratio.toFixed(2)}:1 against what is behind it`);
+        };
+        await usable(page.getByRole('button', { name: 'Choose cars' }), 'Choose cars');
+        await usable(page.getByRole('button', { name: 'Compare & save', exact: true }), 'Compare & save');
+        await usable(page.locator('.shop-garage'), 'Garage');
+        const vin = await page.locator('.car-place-card').first().getAttribute('data-car-vin');
+        await usable(page.locator(`[data-focus-vin="${vin}"][data-focus-action="look"]`), 'Quick look');
+        await usable(page.locator(`[data-fkey="star:${vin}"]`), 'Save car');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'nothing scrolls sideways');
+        await shot(page, `journey-explore-${width}-${theme}`);
+        // the sheet the save and the note are made in
+        await page.locator(`[data-focus-vin="${vin}"][data-focus-action="look"]`).click();
+        await page.locator('.studio-dialog[open]').waitFor();
+        await usable(page.locator(`select[aria-label="Status for ${vin}"]`), 'the status control');
+        await usable(page.locator('.studio-notes'), 'the notes field');
+        const sheet = await page.locator('.studio-dialog').evaluate((node) => { const b = node.getBoundingClientRect(); return { left: b.left, right: b.right, top: b.top }; });
+        assert.ok(sheet.left >= -1 && sheet.right <= width + 1, `the sheet fits the screen (${Math.round(sheet.left)}..${Math.round(sheet.right)})`);
+        await shot(page, `journey-sheet-${width}-${theme}`);
+        await page.keyboard.press('Escape');
+        // and the comparison the evidence is read in
+        await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
+        await page.locator('#finalists-table thead th, .sc-compare-pair__heads').first().waitFor();
+        await page.waitForTimeout(400);
+        await usable(page.locator('.fin-basis summary'), 'the assumptions disclosure');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'the comparison does not scroll the page sideways');
+        await shot(page, `journey-compare-${width}-${theme}`);
+      } finally { await context.close(); }
+    });
+  }
 
   assert.deepEqual(errors, [], 'page errors: ' + errors.join(' | '));
   if (failures) { console.log(`browse smoke: ${failures} check(s) failed`); process.exitCode = 1; }

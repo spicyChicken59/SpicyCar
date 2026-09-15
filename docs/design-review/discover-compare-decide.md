@@ -1,5 +1,21 @@
 # Discover → Compare → Decide · 13 September 2026
 
+> **Status note, 15 September 2026.** Everything below is what was measured on 13 September and
+> stays as that day's record. Three of its present-tense claims are no longer current, and the
+> corrections live in [Trust the current comparison](comparison-acceptance.md):
+>
+> - **The failures are gone.** The eight dashboard failures and the two Python drifts recorded
+>   below were about the tracker's published output, and two snapshots later they no longer
+>   reproduce. Measured at `1080d8c`, not inferred: the Python suite is 570 tests, all passing,
+>   and `dashboard_smoke` is 308/308 with 15 data-dependent skips.
+> - **The sheet budget is 400 KB gzipped, not 250 KB.** `docs/data.json` is 337 KB compressed
+>   against it and `index.html` 151 KB against its own 200 KB, both inside. The 250 KB figure
+>   below is the limit that was in force on 13 September, not a limit that was breached and
+>   left breached.
+> - **The shared release has landed.** design-system v2.13.0 (`ad5aa0f`) is merged and tagged,
+>   so "a separate pull request" and "pinned to an unmerged commit" describe a state that has
+>   since resolved; `tools/design_snapshot.mjs` verifies 22/22 assets against it.
+
 One pass over the whole shopping journey — choose models, browse, inspect a VIN,
 compare actual cars, save one, come back — rendered in Chromium over the
 committed `docs/data.json` and a fixed saved-car state before anything was
@@ -127,6 +143,9 @@ Chromium at 390 and 1280 in both themes. The local fork is gone — SpicyCar kee
 only what is about cars. **The design-system release is a separate pull request
 and this page's snapshot already carries its commit**: the two land together or
 this branch is pinned to an unmerged commit.
+
+**As measured on 13 September 2026** — superseded by the status note above; kept as that day's
+record rather than rewritten.
 
 **PASS** (offline): 565 Python tests with the same 8 pre-existing failures as
 `main` · design snapshot 22/22 · consumer lint clean on all three pages ·
