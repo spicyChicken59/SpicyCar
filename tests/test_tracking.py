@@ -2985,23 +2985,47 @@ class TestWhatTheReadmeSaysAboutRanking(unittest.TestCase):
         self.assertEqual({p["model_label"] for p in scored}, {"BMW i5"},
                          "every score carries the one label it was given")
 
-    def test_the_drivable_list_reserves_seats_and_the_shipped_list_does_not(self):
-        """The asymmetry README names. `reserve_shopping` holds the first N
-        drivable seats for the models being shopped; the worth-the-ship list
-        is ranked by margin alone, so a cheap model can take all of it."""
-        scored = ([self.car(f"F{i}", 0.40 - i / 100, f"Cheap {i}", local=False)
-                   for i in range(6)]
-                  + [self.car(f"S{i}", 0.05 - i / 1000, f"Shopped {i}",
-                              local=False, shopping=True) for i in range(3)]
-                  + [self.car(f"L{i}", 0.40 - i / 100, f"Cheap {i}") for i in range(6)]
-                  + [self.car(f"P{i}", 0.05 - i / 1000, f"Shopped {i}",
-                              shopping=True) for i in range(3)])
+    def test_both_pick_lists_are_scoped_to_the_models_being_shopped(self):
+        """A pick is a recommendation, so it is made only among the models
+        actually being shopped — the drivable list and the worth-the-ship list
+        alike.
+
+        This replaces the asymmetry README used to name. `reserve_shopping`
+        held the first N drivable seats and handed the rest, and the whole
+        shipped list, to whatever sat furthest under its own typical price —
+        which put a car nobody was choosing between on the front page under a
+        heading that recommends. Reserving half the seats was the half-measure;
+        scoping the eligible set is the answer, and `reserve` becomes a no-op
+        inside a set that is already scoped.
+
+        Everything outside the set is still tracked, still scored and still
+        counted — and when NOTHING is being shopped there is no set to scope
+        to, so the whole market stands as it did."""
+        cheap = ([self.car(f"F{i}", 0.40 - i / 100, f"Cheap {i}", local=False)
+                  for i in range(6)]
+                 + [self.car(f"L{i}", 0.40 - i / 100, f"Cheap {i}") for i in range(6)])
+        shopped = ([self.car(f"S{i}", 0.05 - i / 1000, f"Shopped {i}",
+                             local=False, shopping=True) for i in range(3)]
+                   + [self.car(f"P{i}", 0.05 - i / 1000, f"Shopped {i}",
+                               shopping=True) for i in range(3)])
+        scored = cheap + shopped
         local, far = T.split_picks(scored, 4, per_model=2, reserve=2)
-        self.assertEqual(sum(1 for p in local if p["shopping"]), 2,
-                         "two drivable seats are held for the shopped models")
-        self.assertEqual(sum(1 for p in far if p["shopping"]), 0,
-                         "and the shipped list holds none — the margins alone "
-                         "decide it, which is what README says")
+        self.assertTrue(local and far, "both lists have cars to offer")
+        self.assertTrue(all(p["shopping"] for p in local),
+                        "every drivable pick is a model being shopped")
+        self.assertTrue(all(p["shopping"] for p in far),
+                        "and so is every worth-the-ship pick, however far under "
+                        "its own typical price a cheaper model sits")
+        # Selection never rewrites a margin: score_picks judges a car against
+        # its own model's cohort, so the eligible set cannot move a percentage.
+        src = {p["vin"]: p["pick_pct"] for p in scored}
+        for p in local + far:
+            self.assertEqual(p["pick_pct"], src[p["vin"]],
+                             f"{p['vin']} carries the margin it was scored with")
+        # Nothing shopped is not the same as nothing eligible.
+        bare_local, bare_far = T.split_picks(cheap, 4, per_model=2, reserve=2)
+        self.assertTrue(bare_local and bare_far,
+                        "with no shopping models the whole market stands as it did")
 
     def test_a_bigger_margin_on_a_cheaper_car_outranks_a_smaller_one(self):
         """The defect itself, stated as a test rather than as an adjective: a
@@ -3020,8 +3044,14 @@ class TestWhatTheReadmeSaysAboutRanking(unittest.TestCase):
         self.assertTrue(reserve and per_model, "the config carries both knobs")
         self.assertIn("`picks.per_model` caps each model at two", readme)
         self.assertEqual(per_model, 2, "…and two is what it is set to")
-        self.assertIn("holds the first two drivable seats", readme)
-        self.assertEqual(reserve, 2, "…and two is what it is set to")
+        # The rule the reserve was half of. README has to say what actually
+        # decides the lists now, and has to say what became of the knob rather
+        # than leaving a config value nothing reads and nothing explains.
+        self.assertIn("made only among the models being shopped", readme)
+        self.assertIn("no-op inside a set that is already scoped", readme)
+        self.assertEqual(reserve, 2,
+                         "the knob still carries its old value, which is why "
+                         "README has to say it no longer decides anything")
 
 
 class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
