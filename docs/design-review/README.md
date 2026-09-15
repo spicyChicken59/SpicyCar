@@ -1,6 +1,12 @@
 # SpicyCar design review · 6 September 2026
 
-The most recent pass is [Discover → Compare → Decide](discover-compare-decide.md): the cards, the
+The most recent pass is [Trust the current comparison](comparison-acceptance.md), 15 September
+2026: the two browser harnesses nothing ran were classified and repaired, the shopping journey is
+walked once with nothing pre-saved, and six evidence invariants — freshness, unknown history, cost
+basis, dated prices, disappearance, geography — are pinned on named subjects. It supersedes the
+verification numbers and the sheet budget quoted in the pass below; that page's measurements stay as
+what was true on 13 September. Before it,
+[Discover → Compare → Decide](discover-compare-decide.md): the cards, the
 map and price-against-miles made three views of one candidate set with their omissions named and
 reachable, the comparison given a phone arrangement and a membership of its own, and the garage
 told what the record moved under since the reader last saw data. Before it,
@@ -13,6 +19,14 @@ The desktop images below are real captures of the public SpicyCar page, not mock
 the visual review of the matrix-first redesign in [PR #62](https://github.com/spicyChicken59/SpicyCar/pull/62).
 The figures and dealer photographs are the site's snapshot on that date; they
 are historical evidence, not current listing or financing claims.
+
+> **Superseded as a description of the arrival, 15 September 2026.** The captures and the reading
+> below are what the page was on 6 September, and they stay. Since the shopping workspace (#77) the
+> watchlist opens in **Explore**, which browses; the signal matrix, the photo dossier and the
+> instrument strip belong to **Compare & save**, which decides, and `shopping-workspace.css` hides
+> them on the Explore route deliberately. "Opening view" and "opening screen" below mean the page of
+> 6 September, not today's arrival. See
+> [Trust the current comparison](comparison-acceptance.md).
 
 | Before | After |
 | --- | --- |
@@ -75,5 +89,8 @@ node tools/matrix_navigation_smoke.mjs ../design-system --shots /tmp/car-matrix-
 
 Its 26 checks cover the six viewport/theme combinations, every criterion jump,
 sticky identities, keyboard focus, reduced motion, forced colors, print,
-rerendering and the native fallback. The exact upstream commit and asset hashes
+rerendering and the native fallback. Since 15 September it reaches the matrix by
+pressing **Compare & save** rather than expecting it on arrival, and `check.yml`
+runs it — and `tools/fieldwork_smoke.mjs` — on every push and pull request, so
+neither can rot unnoticed again. The exact upstream commit and asset hashes
 are recorded in [`../design-system/provenance.json`](../design-system/provenance.json).

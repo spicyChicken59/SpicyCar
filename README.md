@@ -540,12 +540,21 @@ The dashboard and field guide use the same SpicyChicken cover, original chick ma
 metric strip, chart signature, responsive typography and restrained motion. Motion is
 progressive enhancement and follows the device's reduced-motion preference.
 
-The watchlist opens with a visible **signal matrix** for the exact daily-decision
-candidates: their estimated totals, existing value context, reach, certification,
-and accident record. Unknown facts stay neutral. Exact-car photographs accompany
-the detailed decision below; the map comes before the longer picks and listings.
-The cover's native section links follow the visible filtered state. All scoring,
-eligibility, financing, and data remain owned by the existing tracker and helpers.
+The **signal matrix** compares the exact daily-decision candidates on their
+estimated totals, existing value context, reach, certification and accident
+record. Unknown facts stay neutral. Exact-car photographs accompany the detailed
+decision beside it. The cover's native section links follow the visible filtered
+state. All scoring, eligibility, financing, and data remain owned by the existing
+tracker and helpers.
+
+Since the shopping workspace (#77), the matrix is not on the arrival route. The
+watchlist opens in **Explore**, which browses — the workspace header, the filter
+bar and the cars, with the map and price-against-miles beside them — and the
+matrix, the photo dossier and the instrument strip belong to **Compare & save**,
+which decides. `shopping-workspace.css` hides them under
+`[data-workspace="explore"]` for that reason, `?view=compare` is the deep link,
+and `tools/matrix_navigation_smoke.mjs` and `tools/fieldwork_smoke.mjs` reach
+them the way a reader does, by pressing the nav control.
 
 `docs/market-studio.css` is the product composition over that shared snapshot;
 consumer lint checks it alongside the page's inline styles. The shared system's
