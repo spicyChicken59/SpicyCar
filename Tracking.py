@@ -4229,6 +4229,10 @@ def delisted(tids, all_rows, today_rows, hist):
             "miles": to_int(r["miles"]),
             "last_price": last_price,
             "city": r["city"], "dealer": r["dealer"],
+            # carried on a departure too, because the comparison keeps a saved
+            # car that left the listings and a blank there would read as "the
+            # record does not know" about a car it does.
+            "drivetrain": (r.get("drivetrain") or "").strip(),
             "url": r["url"], "last_seen": last_day,
             "listed_since": ("" if str(r["listed_since"])[:10] in INDEX_DATES
                              else r["listed_since"]),
@@ -4280,6 +4284,17 @@ def listing_entry(r, s):
         "carfax": r.get("carfax", ""), "color": r.get("color", ""),
         "cpo": is_cpo(r), "owners": to_int(r.get("owners")),
         "accidents": to_int(r.get("accidents")),
+        # Recorded since the column was added, read by the page since the
+        # coverage justified it: 1,535 of 1,678 live cars on the 2026-09-15
+        # snapshot, in a three-word vocabulary drivetrain_of() already folded
+        # (AWD / RWD / FWD), and splitting 18 of the 21 models that carry
+        # listings rather than restating the model the reader already picked.
+        # "" is the feed not saying, and the page keeps it as Unknown — never
+        # as a car that failed the filter. Taken from this row like colour and
+        # owners are, and not merged across days: on this snapshot the union
+        # over 24 days knows exactly ONE car more, which is not worth a second
+        # rule for one field to disagree with the others by.
+        "drivetrain": (r.get("drivetrain") or "").strip(),
         "usage": r.get("usage", ""), "flags": flags(r),
         # withheld, not blanked by accident: see find_index_dates()
         "listed_since": ("" if str(r["listed_since"])[:10] in INDEX_DATES

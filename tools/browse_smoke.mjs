@@ -73,8 +73,15 @@ const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
 // passing: `if (!noMiles.length) return` and `if (!vin) return` are a silent
 // green over a record with no subject, and both are asserts now.
 const shapeable = pool.filter((x) => plottable(x) && (x.series || []).length > 2);
-assert.ok(shapeable.length >= 7, `the record holds seven shapeable cars, not ${shapeable.length}`);
+assert.ok(shapeable.length >= 10, `the record holds ten shapeable cars, not ${shapeable.length}`);
 const [BLANK, STALE, NOWHERE, FILTERED] = shapeable.slice(3, 7).map((x) => x.vin);
+// Three more for the drivetrain cases: one told AWD, one told RWD, one the feed
+// never described. Named, so "unknown is not a negative match" has a subject on
+// any snapshot rather than only on one where the feed happened to go quiet.
+const [DRV_AWD, DRV_RWD, DRV_NONE] = shapeable.slice(7, 10).map((x) => x.vin);
+const drive = (x) => { const d = String((x && x.drivetrain) || '').trim().toUpperCase();
+  return ['AWD', 'RWD', 'FWD'].includes(d) ? d : ''; };
+const everyCar = all.flatMap(rowsOf);
 const clone = () => JSON.parse(JSON.stringify(data));
 // Reach into a shaped copy by VIN, and say so loudly if the car moved: a
 // fixture that silently shapes nothing is a check that silently passes.
@@ -1048,6 +1055,208 @@ try {
       } finally { await context.close(); }
     });
   }
+
+
+  // ---- narrowing the market by drivetrain -------------------------------
+  // The record has carried `drivetrain` since the column was added and nothing
+  // read it. What makes it a filter rather than a decoration is measured in the
+  // commit that shipped it; what these check is that the page says what the
+  // record says, and that a car the feed never described is never quietly
+  // treated as a car that failed.
+  await step('the drivetrain filter counts what the record says, and names what it set aside', async () => {
+    const { context, page } = await session({ prefs: null, notes: null, seen: null });
+    try {
+      await open(page);
+      const openFilters = async () => {
+        if (await page.locator('#filter-toggle').isVisible()
+            && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') {
+          await page.locator('#filter-toggle').click(); await page.waitForTimeout(250);
+        }
+      };
+      await openFilters();
+      const shown = async () => Number(((await page.locator('.car-place-count').textContent()).match(/^(\d[\d,]*)/) || [])[1].replace(/,/g, ''));
+      assert.equal(await shown(), everyCar.length, 'every car is in view before the filter');
+      const quiet = everyCar.filter((x) => !drive(x)).length;
+      assert.ok(quiet > 0, 'the record holds a car whose listing did not report a drivetrain');
+      for (const want of ['AWD', 'RWD', 'FWD']) {
+        const expect = everyCar.filter((x) => drive(x) === want).length;
+        if (!expect) continue;
+        await page.selectOption('#f-drive', want);
+        await page.waitForTimeout(700);
+        assert.equal(await shown(), expect, `${want} shows the ${expect} cars the record records as ${want}`);
+        const aside = page.locator('#drive-aside');
+        assert.equal(await aside.isVisible(), true, `${want} names the cars it could not judge`);
+        const said = (await aside.textContent()).replace(/\s+/g, ' ');
+        assert.ok(said.includes(String(quiet)), `and counts them (${quiet}): "${said.slice(0, 120)}"`);
+        assert.match(said, /did not report a drivetrain/i, 'and says why, rather than calling them a miss');
+      }
+      // and the three known answers plus the unreported account for the market
+      await page.selectOption('#f-drive', 'unknown');
+      await page.waitForTimeout(700);
+      assert.equal(await shown(), quiet, 'Not reported shows exactly the cars the feed did not describe');
+      const sum = ['AWD', 'RWD', 'FWD'].reduce((a, w) => a + everyCar.filter((x) => drive(x) === w).length, 0) + quiet;
+      assert.equal(sum, everyCar.length, 'the four states account for every car, so none is counted twice or lost');
+      await shot(page, 'drivetrain-unreported');
+    } finally { await context.close(); }
+  });
+
+  await step('a car whose drivetrain the feed never reported is unknown, not a negative match', async () => {
+    // Three named cars in one model, so the arithmetic is exact rather than
+    // whatever today's market happens to hold.
+    let model = null;
+    const record = clone();
+    for (const [vin, value] of [[DRV_AWD, 'AWD'], [DRV_RWD, 'RWD'], [DRV_NONE, '']]) {
+      shape(record, vin, (car, m) => { car.drivetrain = value; model = m; });
+    }
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page, '?car=' + DRV_NONE);
+      await page.waitForTimeout(700);
+      if (await page.locator('#filter-toggle').isVisible()
+          && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') {
+        await page.locator('#filter-toggle').click(); await page.waitForTimeout(250);
+      }
+      const on = async (vin) => (await page.locator(`.car-place-card[data-car-vin="${vin}"]`).count()) > 0;
+      const reach = async (vin) => {
+        for (let i = 0; i < 60; i += 1) {
+          if (await on(vin)) return true;
+          const more = page.locator('.car-discovery-more');
+          if (!(await more.isVisible())) return false;
+          await more.click(); await page.waitForTimeout(150);
+        }
+        return await on(vin);
+      };
+      await page.selectOption('#f-drive', 'AWD');
+      await page.waitForTimeout(800);
+      assert.equal(await reach(DRV_AWD), true, 'the car recorded AWD is in an AWD search');
+      assert.equal(await on(DRV_RWD), false, 'the car recorded RWD is not');
+      assert.equal(await on(DRV_NONE), false, 'and neither is the one nothing was reported for');
+      // …but the two are not the same kind of absence, and the page says so.
+      const said = (await page.locator('#drive-aside').textContent()).replace(/\s+/g, ' ');
+      assert.match(said, /could not be judged/i, `the unreported are set aside, not failed: "${said.slice(0, 120)}"`);
+      await page.locator('[data-fkey="drive:unknown"]').click();
+      await page.waitForTimeout(800);
+      assert.equal(await page.locator('#f-drive').inputValue(), 'unknown', 'one press goes to them');
+      assert.equal(await reach(DRV_NONE), true, 'and the unreported car is there');
+      assert.equal(await on(DRV_RWD), false, 'while a car the feed DID describe is not mixed in with them');
+      const now = (await page.locator('#drive-aside').textContent()).replace(/\s+/g, ' ');
+      assert.match(now, /not cars recorded as something else/i,
+        `and the page says what this set is: "${now.slice(0, 140)}"`);
+    } finally { await context.close(); }
+  });
+
+  await step('a chosen car the drivetrain filter excludes is explained, and only the reader brings it back', async () => {
+    const record = shape(clone(), DRV_RWD, (car) => { car.drivetrain = 'RWD'; });
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page, '?car=' + DRV_RWD);
+      await page.waitForTimeout(800);
+      assert.equal(await page.locator(`.car-place-card[data-car-vin="${DRV_RWD}"]`).count(), 1, 'the chosen car is in the results to begin with');
+      if (await page.locator('#filter-toggle').isVisible()
+          && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') {
+        await page.locator('#filter-toggle').click(); await page.waitForTimeout(250);
+      }
+      await page.selectOption('#f-drive', 'AWD');
+      await page.waitForTimeout(900);
+      assert.equal(await page.locator(`.car-place-card[data-car-vin="${DRV_RWD}"]`).count(), 0, 'an AWD search really removes it');
+      const outside = page.locator('.car-outside');
+      assert.equal(await outside.isVisible(), true, 'and the page says where it went');
+      const words = (await outside.textContent()).replace(/\s+/g, ' ');
+      assert.match(words, /not in these results/i, `the exclusion is explained: "${words.slice(0, 160)}"`);
+      assert.match(words, /AWD/, 'and names the filter doing it');
+      assert.equal(await page.locator('#f-drive').inputValue(), 'AWD', 'the filter was not quietly widened to fit the car back in');
+      await page.locator('.car-outside .car-text-button').first().click();
+      await page.waitForTimeout(900);
+      assert.equal(await page.locator(`.car-place-card[data-car-vin="${DRV_RWD}"]`).count(), 1, 'only the reader’s own press brings it back');
+    } finally { await context.close(); }
+  });
+
+  await step('the cards, the map and the plot are one set after a drivetrain filter, and it composes', async () => {
+    const { context, page } = await session({ prefs: null, notes: null, seen: null });
+    try {
+      await open(page);
+      if (await page.locator('#filter-toggle').isVisible()
+          && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') {
+        await page.locator('#filter-toggle').click(); await page.waitForTimeout(250);
+      }
+      const shown = async () => Number(((await page.locator('.car-place-count').textContent()).match(/^(\d[\d,]*)/) || [])[1].replace(/,/g, ''));
+      const want = ['FWD', 'RWD', 'AWD'].find((w) => everyCar.some((x) => drive(x) === w));
+      await page.selectOption('#f-drive', want);
+      await page.waitForTimeout(800);
+      const onCards = await shown();
+      assert.equal(onCards, everyCar.filter((x) => drive(x) === want).length, `${want} narrows to the record's own count`);
+      await page.locator('.car-panel-switch .sc-tab', { hasText: 'Map' }).click();
+      await page.waitForTimeout(600);
+      assert.equal(await shown(), onCards, 'the map describes the same set');
+      await page.locator('.car-panel-switch .sc-tab', { hasText: 'Price & miles' }).click();
+      await page.waitForTimeout(700);
+      assert.equal(await shown(), onCards, 'and so does the plot');
+      // composes with the filters that were already there
+      await page.selectOption('#f-miles', '25000');
+      await page.waitForTimeout(900);
+      const both = everyCar.filter((x) => drive(x) === want && x.miles != null && x.miles < 25000).length;
+      assert.equal(await shown(), both, `${want} under 25,000 miles is the intersection, not one or the other`);
+      assert.match(await page.locator('#filter-toggle').textContent(), /Filters · 2/, 'and both are counted as filters');
+    } finally { await context.close(); }
+  });
+
+  await step('a drivetrain choice survives a reload it was not re-seeded through', async () => {
+    const { context, page } = await session({ prefs: null, notes: null, seen: null });
+    try {
+      await open(page);
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').drive || null),
+        null, 'this browser starts with no drivetrain preference');
+      if (await page.locator('#filter-toggle').isVisible()
+          && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') {
+        await page.locator('#filter-toggle').click(); await page.waitForTimeout(250);
+      }
+      const want = ['FWD', 'RWD', 'AWD'].find((w) => everyCar.some((x) => drive(x) === w));
+      await page.selectOption('#f-drive', want);
+      await page.waitForTimeout(800);
+      const before = (await page.locator('.car-place-count').textContent()).trim();
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').drive || null),
+        want, 'the page wrote the choice itself');
+      await page.reload({ waitUntil: 'load' });
+      await page.waitForFunction(() => !!document.querySelector('.car-place-card, .car-map-unavailable'), null, { timeout: 20000 });
+      await page.waitForTimeout(900);
+      if (await page.locator('#filter-toggle').isVisible()
+          && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') {
+        await page.locator('#filter-toggle').click(); await page.waitForTimeout(250);
+      }
+      assert.equal(await page.locator('#f-drive').inputValue(), want, 'and it survived a reload that re-seeded nothing');
+      assert.equal((await page.locator('.car-place-count').textContent()).trim(), before, 'over the same cars as before');
+    } finally { await context.close(); }
+  });
+
+  await step('a drivetrain no car in the chosen model has empties the page and says so', async () => {
+    // Every car in one model told the same drivetrain, so asking for another is
+    // a real empty result rather than an accident of today's market.
+    const record = clone();
+    let key = null;
+    shape(record, DRV_AWD, (car, m, i) => { for (const c of m.listings) c.drivetrain = 'AWD'; key = m; });
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page, '?car=' + DRV_AWD);
+      await page.waitForTimeout(800);
+      if (await page.locator('#filter-toggle').isVisible()
+          && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') {
+        await page.locator('#filter-toggle').click(); await page.waitForTimeout(250);
+      }
+      // narrow to that model, then ask for a drivetrain none of them has
+      await page.selectOption('#f-drive', 'AWD');
+      await page.waitForTimeout(700);
+      const awd = Number(((await page.locator('.car-place-count').textContent()).match(/^(\d[\d,]*)/) || [])[1].replace(/,/g, ''));
+      assert.ok(awd > 0, 'the shaped model is in an AWD search');
+      await page.fill('#f-budget', '1');
+      await page.locator('#f-budget').press('Tab');
+      await page.waitForTimeout(900);
+      assert.match((await page.locator('.car-place-count').textContent()).trim(), /^0 cars/, 'nothing matches');
+      const notice = (await page.locator('#notice').textContent()).replace(/\s+/g, ' ');
+      assert.match(notice, /filtered out/i, `and the page says so rather than looking broken: "${notice.slice(0, 140)}"`);
+      assert.match(notice, /Clear the filters/i, 'and offers the way back');
+      await shot(page, 'drivetrain-empty');
+    } finally { await context.close(); }
+  });
 
   assert.deepEqual(errors, [], 'page errors: ' + errors.join(' | '));
   if (failures) { console.log(`browse smoke: ${failures} check(s) failed`); process.exitCode = 1; }

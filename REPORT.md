@@ -666,4 +666,4 @@ _By asking price, with a shipping estimate per car, on a slower cadence: the 20 
 - **Lexus RZ** — 52 cars · 9 drivable · lowest asking $23,300 (Wake Forest, NC) + $787 shipping · drivable from $33,405 (Lake Villa, IL) · median asking $34,714 _(every 3 days · as of 2026-09-14, 1 day ago)_
 
 ---
-_3641 vehicle histories across 24 days · 35 API calls today._
+_3641 vehicle histories across 24 days · outputs rebuilt from the snapshot on disk — no calls made._

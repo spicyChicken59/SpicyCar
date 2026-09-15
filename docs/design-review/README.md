@@ -1,6 +1,11 @@
 # SpicyCar design review · 6 September 2026
 
-The most recent pass is [Trust the current comparison](comparison-acceptance.md), 15 September
+The most recent pass is [Narrowing by drivetrain](narrowing-by-drivetrain.md), 15 September 2026:
+the two columns the record kept and nothing read were measured against the committed snapshot, and
+one of them earned a filter. Drivetrain covers 1,535 of 1,678 live listings and splits 18 of the 21
+models, so it narrows the market rather than restating the model already chosen; seats is deferred,
+because 17 of 21 models record exactly one value and one model is 21% covered. Before it,
+[Trust the current comparison](comparison-acceptance.md), 15 September
 2026: the two browser harnesses nothing ran were classified and repaired, the shopping journey is
 walked once with nothing pre-saved, and six evidence invariants — freshness, unknown history, cost
 basis, dated prices, disappearance, geography — are pinned on named subjects. It supersedes the

@@ -407,7 +407,7 @@ What it measures today, on the committed record:
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 21 | 1,678 | 338 KB | 85% |
+| as committed | 21 | 1,678 | 340 KB | 85% |
 | every target fetching | 21 | 1,698 | 302 KB | 75% |
 | …three fetches deep on each | 21 | 1,698 | 302 KB | 75% |
 | …seven fetches deep on each | 21 | 1,698 | 302 KB | 75% |
@@ -493,19 +493,33 @@ Parameters resolve trim ← model ← brand ← defaults:
 | `newest` | extra newest-first (`createdAt.desc`) pages per source, so brand-new listings are caught the day they list. On for the shopped targets; new cars lead their report section as **New today**. Skipped automatically when a query already returned its whole scope. |
 | `years` | model years; sent as a range and also filtered client-side |
 
-**Two columns the record keeps and nothing reads yet.** `seats` and `drivetrain` are how a
-person goes from every EV on sale to the six worth looking at — "three rows", "all-wheel
-drive" — and neither was recoverable from anything else the CSV held: seats appears nowhere,
-and drivetrain only inside the trim string, and only for the brands whose trim encodes it (an
-i5 eDrive40 against an xDrive40, but a Model Y Long Range against a Model Y Long Range AWD,
-and nothing at all on most of the rest). They are recorded before they are read on purpose:
-the filters they are for are worth building once the record shows the feed *fills* them, and
-this repo has one sample listing to judge that from. The run log prints the coverage every
-night — "seats on 312 of 323 (97%)" — and one real night decides whether those filters get
-built or the columns come back out. `drivetrain` is folded to AWD / RWD / FWD, because that
-is the question a buyer asks and because 4WD and AWD are the same answer to it on a car with
-no transfer case; an unrecognised string is dropped rather than passed through, so the column
-holds a vocabulary and not whatever a dealer typed.
+**Two columns recorded before they were read, and one of them now is.** `seats` and
+`drivetrain` are how a person goes from every EV on sale to the six worth looking at — "three
+rows", "all-wheel drive" — and neither was recoverable from anything else the CSV held: seats
+appears nowhere, and drivetrain only inside the trim string, and only for the brands whose
+trim encodes it (an i5 eDrive40 against an xDrive40, but a Model Y Long Range against a Model
+Y Long Range AWD, and nothing at all on most of the rest). They were recorded before they were
+read on purpose: the filters they are for are worth building once the record shows the feed
+*fills* them, and for a long time this repo had one sample listing to judge that from. Twenty-
+four nights decided it.
+
+`drivetrain` is a filter (see
+[Narrowing by drivetrain](docs/design-review/narrowing-by-drivetrain.md)). Measured on the
+2026-09-15 snapshot: **1,535 of 1,678 live listings, 91.5%**, as AWD 894 / RWD 439 / FWD 201
+with 144 unreported; worst model 73%, nothing unusable; it splits 18 of the 21 models that
+carry listings, so it narrows the market instead of restating the model already chosen; and it
+agrees with the trim string on all 389 listings whose trim encodes a drivetrain, with zero
+contradictions. It is folded to AWD / RWD / FWD because that is the question a buyer asks and
+because 4WD and AWD are the same answer to it on a car with no transfer case; an unrecognised
+string is dropped rather than passed through, so the column holds a vocabulary and not whatever
+a dealer typed.
+
+`seats` is still recorded and still unread, and the aggregate is not the reason. It covers
+1,297 of 1,678 (77.3%), but **17 of the 21 models record exactly one value**, so a seats filter
+would mostly repeat the model picker; Dodge Charger Daytona is 21% covered; six more models sit
+at 67–70%; and a Lucid Air Pure is recorded with 2 seats, which is impossible. The one place it
+genuinely discriminates — 6 against 7 captain's chairs in the Ioniq 9 and the EV9, 122 cars —
+is already in the trim string. The run log keeps printing its coverage.
 
 A target's id is `brand-model-trim`, or `brand-model` for a model without trims. Add a brand as
 another key under `watchlist`; the dashboard grows a brand tab. Check the printed call plan after
