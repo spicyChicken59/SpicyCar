@@ -83,6 +83,60 @@ const drive = (x) => { const d = String((x && x.drivetrain) || '').trim().toUppe
   return ['AWD', 'RWD', 'FWD'].includes(d) ? d : ''; };
 const everyCar = all.flatMap(rowsOf);
 const clone = () => JSON.parse(JSON.stringify(data));
+// ---- one shopping model, one market model, and a planted bargain ----------
+// Chosen from the record so the case has subjects whatever the watchlist holds,
+// and the bargain is CONSTRUCTED rather than observed: the point is never
+// "whichever model happens to score best in tomorrow's snapshot", it is that a
+// car the reader did not choose cannot be recommended to them however good it
+// is. So the market model is given the best value in the record on purpose.
+const withCars = all.filter((o) => (o.m.listings || []).length >= 12).sort((a, b) => a.key.localeCompare(b.key));
+assert.ok(withCars.length >= 2, `the record holds two models with cars, not ${withCars.length}`);
+const SHOP = withCars.find((o) => shopped.includes(o.key)) || withCars[0];
+const MARKET = withCars.find((o) => o.key !== SHOP.key);
+// The planted bargain: a clean, low-mileage car in the MARKET model at well
+// under half its model's median, so scorePicks puts it at the top of the whole
+// record. Eligibility is set explicitly (mileage, accidents, usage) because the
+// pick rules exclude on all three and a bargain that is excluded proves nothing.
+function plantBargain(d) {
+  for (const [bk, b] of Object.entries(d.brands)) for (const [mk, m] of Object.entries(b.models)) {
+    if (bk + '/' + mk !== MARKET.key) continue;
+    // It has to land in a cohort that can actually return a verdict. The rule
+    // is the page's own: a car is under typical only when its value sits below
+    // the 95% interval of its cohort's median, and NINE cars are the fewest
+    // that can put one outside it. Planted in a six-car cohort the bargain
+    // scored nothing at all — cheapest in the record and still not "under" —
+    // which would have made this a test of the cohort floor, not of scope.
+    const groups = new Map();
+    for (const x of (m.listings || [])) {
+      if (!Number.isFinite(x.price)) continue;
+      const k = `${x.year}|${x.trim || ''}`;
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(x);
+    }
+    const cohort = [...groups.entries()].filter(([, v]) => v.length >= 9)
+      .sort((a, z) => z[1].length - a[1].length || a[0].localeCompare(z[0]))[0];
+    assert.ok(cohort, `${MARKET.key} needs a nine-car cohort for a car to be judged outside it`);
+    const rows = cohort[1].slice().sort((a, z) => a.price - z.price);
+    const mid = rows[Math.floor(rows.length / 2)].price;
+    const car = rows[Math.floor(rows.length / 2)];
+    car.price = Math.round(mid * 0.45);
+    car.miles = 9000; car.accidents = 0; car.owners = 1; car.usage = 'Personal Use';
+    car.series = [[data.data_through, car.price]];
+    return { d, vin: car.vin, price: car.price };
+  }
+  throw new Error(`${MARKET.key} is not in the record`);
+}
+// The shopping set, written into a copy of the record as the buyer defaults —
+// which is the path taken when this browser has made no local choice of its own.
+function shoppingRecord(keys) {
+  const { d, vin } = plantBargain(clone());
+  for (const [bk, b] of Object.entries(d.brands)) for (const [mk, m] of Object.entries(b.models)) {
+    m.shopping = keys.includes(bk + '/' + mk);
+    for (const t of Object.values(m.trims || {})) t.shopping = m.shopping;
+  }
+  d.buyer = { ...d.buyer, shopping: keys.length ? d.buyer.shopping : [] };
+  return { record: d, bargain: vin };
+}
 // Reach into a shaped copy by VIN, and say so loudly if the car moved: a
 // fixture that silently shapes nothing is a check that silently passes.
 function shape(d, vin, change) {
@@ -1255,6 +1309,201 @@ try {
       assert.match(notice, /filtered out/i, `and the page says so rather than looking broken: "${notice.slice(0, 140)}"`);
       assert.match(notice, /Clear the filters/i, 'and offers the way back');
       await shot(page, 'drivetrain-empty');
+    } finally { await context.close(); }
+  });
+
+
+  // ---- recommendation scope: your choices vs the market ------------------
+  // What a pick surface says, read as a reader reads it: which cars it
+  // RECOMMENDS, and which it only shows for context.
+  const readPicks = (page) => page.evaluate(() => {
+    const host = document.getElementById('takeaway');
+    if (!host || host.hidden) return { visible: false, picks: [], market: [] };
+    const cards = (root) => [...root.querySelectorAll('.picks-grid > .sc-photo-card')].map((c) => ({
+      model: (c.querySelector('.sc-dossier__title') || {}).textContent || '',
+      vin: ((c.querySelector('[data-fkey^="pick:"]') || {}).dataset || {}).fkey?.split(':')[1] || '',
+      role: [...c.querySelectorAll('.sc-chip')].map((n) => n.textContent).find((t) => /your choice|market context/.test(t)) || '',
+      pct: ([...c.querySelectorAll('.sc-chip')].map((n) => n.textContent).find((t) => /under typical/.test(t)) || ''),
+    }));
+    const market = host.querySelector('[data-picks-market]');
+    const groups = [...host.querySelectorAll('.picks-group')].filter((g) => !g.hasAttribute('data-picks-market'));
+    return { visible: true,
+      heading: (host.querySelector('.picks-title') || {}).textContent || '',
+      hint: (host.querySelector('.picks-head .sc-hint') || {}).textContent || '',
+      emptyNote: (host.querySelector('[data-picks-empty]') || {}).textContent || '',
+      picks: groups.flatMap(cards),
+      marketCollapsed: market ? !market.open : null,
+      marketSummary: market ? market.querySelector('summary').textContent : '',
+      market: market ? cards(market) : [] };
+  });
+  const choose = async (page, labels) => {
+    await page.getByRole('button', { name: 'Choose cars' }).click();
+    await page.locator('.shop-picker').waitFor();
+    await page.getByRole('button', { name: 'Clear' }).click();
+    for (const label of labels) await page.getByRole('checkbox', { name: label, exact: true }).check();
+    await page.getByRole('button', { name: 'Shop these models' }).click();
+    await page.waitForFunction(() => !document.querySelector('.shop-picker[open]'));
+    await page.waitForTimeout(900);
+  };
+  const openPicks = async (page, query) => {
+    await page.goto(base + '/' + query, { waitUntil: 'load' });
+    await page.waitForSelector('#takeaway', { state: 'attached', timeout: 20000 });
+    await page.waitForTimeout(1400);
+  };
+
+  await step('a pick is only ever a model you chose, and the best car outside them is context', async () => {
+    const { record, bargain } = shoppingRecord([SHOP.key]);
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await openPicks(page, '?view=compare');
+      const r = await readPicks(page);
+      assert.equal(r.visible, true, 'the pick surface is on the decision workspace');
+      assert.match(r.heading, /Spicy picks/, 'a chosen model means these are picks');
+      assert.ok(r.picks.length > 0, 'the chosen model has cars to recommend');
+      for (const c of r.picks) {
+        assert.equal(c.model.trim(), SHOP.m.label, `every recommendation is the model that was chosen, not ${c.model}`);
+        assert.equal(c.role, 'your choice', 'and is labelled as the reader’s own choice');
+      }
+      // The planted bargain is the best value in the whole record and is NOT
+      // recommended, because it is not a car the reader said they were choosing
+      // between. It is still shown.
+      assert.ok(!r.picks.some((c) => c.vin.includes(bargain)), 'the strongest car outside the choices is not a pick');
+      assert.ok(r.market.some((c) => c.vin.includes(bargain)), 'it is in market context, not hidden');
+      for (const c of r.market) assert.equal(c.role, 'market context', 'and everything there is labelled as context');
+      assert.match(r.marketSummary, /market context/i, 'the group says what it is');
+      assert.match(r.marketSummary, /have not chosen/i, 'and why these cars are in it');
+      assert.equal(r.marketCollapsed, true, 'folded away, so an unchosen car never sits above a chosen one');
+      await shot(page, 'scope-picks-chosen');
+    } finally { await context.close(); }
+  });
+
+  await step('choosing the market model lets it compete, with no code or config change', async () => {
+    const { record, bargain } = shoppingRecord([SHOP.key]);
+    // The reader's own local choice, which is the other door explicit intent
+    // comes through: the record still says only SHOP is a default.
+    const { context, page } = await session({ record, prefs: { ...PREFS, shoppingModels: [SHOP.key, MARKET.key], shopOnly: true, stars: {} }, notes: null, seen: null });
+    try {
+      await openPicks(page, '?view=compare');
+      const r = await readPicks(page);
+      assert.match(r.heading, /Spicy picks/, 'still picks');
+      assert.ok(r.picks.some((c) => c.vin.includes(bargain)),
+        `the same car is a recommendation once its model is chosen: ${JSON.stringify(r.picks.map((c) => c.model.trim()))}`);
+      const models = new Set(r.picks.map((c) => c.model.trim()));
+      assert.ok(models.has(MARKET.m.label), 'the market model competes normally');
+      assert.ok([...models].every((m) => m === SHOP.m.label || m === MARKET.m.label),
+        `and nothing else joined it: ${JSON.stringify([...models])}`);
+    } finally { await context.close(); }
+  });
+
+  await step('with nothing chosen the watchlist is not called your picks, and a choice survives a reload', async () => {
+    const { record } = shoppingRecord([]);
+    // prefs: null, so nothing is re-seeded on the reload below and the only
+    // writer of the choice is the page itself.
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await openPicks(page, '?view=compare');
+      const none = await readPicks(page);
+      assert.ok(!/Spicy picks/.test(none.heading),
+        `nothing was chosen, so nothing is called a pick: "${none.heading}"`);
+      assert.equal(none.picks.length, 0, 'and no card is offered as a recommendation');
+      assert.match(none.hint, /not chosen any cars/i, 'the page says why');
+      assert.match(none.hint, /Choose cars/i, 'and how to get picks');
+      assert.ok(none.market.length > 0, 'while the market is still there to read');
+      assert.match(none.marketSummary, /every model/i, 'named as the whole market rather than as picks');
+      await shot(page, 'scope-picks-none');
+      // Restoring a choice is the reader's own act, made through the picker,
+      // and it survives a reload this browser was not re-seeded through.
+      await choose(page, [SHOP.m.label]);
+      await page.reload({ waitUntil: 'load' });
+      await page.waitForSelector('#takeaway', { state: 'attached', timeout: 20000 });
+      await page.waitForTimeout(1400);
+      const back = await readPicks(page);
+      assert.match(back.heading, /Spicy picks/, 'the restored choice makes picks again after a reload');
+      assert.ok(back.picks.length > 0 && back.picks.every((c) => c.model.trim() === SHOP.m.label),
+        'and they are the restored model’s own cars');
+    } finally { await context.close(); }
+  });
+
+  await step('one chosen model still recommends several of its own cars, and filters emptying it say so', async () => {
+    const { record, bargain } = shoppingRecord([SHOP.key]);
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await openPicks(page, '?view=compare');
+      const one = await readPicks(page);
+      assert.ok(one.picks.length >= 2, `one model can still hold more than one recommendation (${one.picks.length})`);
+      assert.ok(one.picks.every((c) => c.model.trim() === SHOP.m.label), 'all from the one model chosen');
+      // Now empty it with a filter. Scope and filtering are different
+      // dimensions: the model stays chosen, and nothing is promoted to fill in.
+      await page.evaluate(() => {
+        const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
+        p.budget = 1; p.budgetKind = 'otd';
+        localStorage.setItem('spicycar.prefs', JSON.stringify(p));
+      });
+      await page.reload({ waitUntil: 'load' });
+      await page.waitForSelector('#takeaway', { state: 'attached', timeout: 20000 });
+      await page.waitForTimeout(1400);
+      const empty = await readPicks(page);
+      assert.equal(empty.picks.length, 0, 'the filter emptied the chosen model');
+      assert.ok(!empty.picks.some((c) => c.vin.includes(bargain)), 'and no market car was promoted to fill the gap');
+      if (empty.visible) {
+        assert.match(empty.emptyNote, /qualifies under these filters/i,
+          `the page says the filters did it, not the choice: "${empty.emptyNote}"`);
+        assert.match(empty.emptyNote, /separate/i, 'and keeps the two dimensions apart');
+      }
+      await shot(page, 'scope-picks-filtered-empty');
+    } finally { await context.close(); }
+  });
+
+  await step('scoping the picks moved no score, and a car saved outside your choices stays saved', async () => {
+    const pctFor = async (keys) => {
+      const { record } = shoppingRecord(keys);
+      const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+      try {
+        await openPicks(page, '?view=compare');
+        const r = await readPicks(page);
+        return r.picks.filter((c) => c.model.trim() === SHOP.m.label).map((c) => `${c.vin.trim()} ${c.pct}`);
+      } finally { await context.close(); }
+    };
+    const alone = await pctFor([SHOP.key]);
+    const withMarket = await pctFor([SHOP.key, MARKET.key]);
+    assert.ok(alone.length > 0, 'the chosen model is recommended either way');
+    // Every car that appears in both runs carries the identical percentage:
+    // annotateValue() scores against the car's OWN model cohort at boot, so the
+    // eligible set can change without a number moving.
+    const byVin = new Map(withMarket.map((t) => [t.split(' ')[0], t]));
+    let shared = 0;
+    for (const t of alone) {
+      const vin = t.split(' ')[0];
+      if (!byVin.has(vin)) continue;
+      shared += 1;
+      assert.equal(byVin.get(vin), t, `${vin} is scored the same whichever models are in the set`);
+    }
+    assert.ok(shared > 0, 'at least one car appears in both sets to compare');
+
+    // A saved car from a model that is NOT in the shopping set is the reader's
+    // decision, not the scope's: it stays saved, stays reopenable, and its
+    // comparison membership is its own separate fact.
+    const { record, bargain } = shoppingRecord([SHOP.key]);
+    const { context, page } = await session({ record, prefs: { ...PREFS, shoppingModels: [SHOP.key, MARKET.key], shopOnly: true, stars: { [bargain]: 'short' } }, notes: null, seen: null });
+    try {
+      await page.goto(base + '/?view=compare', { waitUntil: 'load' });
+      await page.locator('#finalists-table thead th, .sc-compare-pair__heads').first().waitFor();
+      await page.waitForTimeout(700);
+      const heads = await page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll((as) => as.map((a) => a.dataset.fkey.slice(4)));
+      assert.ok(heads.includes(bargain), 'the saved market car is in the comparison to begin with');
+      // Drop its model out of the shopping set, through the picker. The save is
+      // the reader's decision and the scope is a different question.
+      await choose(page, [SHOP.m.label]);
+      await page.locator('#finalists-table thead th, .sc-compare-pair__heads').first().waitFor();
+      await page.waitForTimeout(900);
+      const still = await page.evaluate((v) => (JSON.parse(localStorage.getItem('spicycar.prefs') || '{}').stars || {})[v], bargain);
+      assert.equal(still, 'short', 'a car saved outside the shopping set is still saved');
+      const after = await page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll((as) => as.map((a) => a.dataset.fkey.slice(4)));
+      assert.ok(after.includes(bargain), 'and still in the comparison it was put in');
+      await page.locator('.shop-garage').click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      assert.equal(await page.locator(`select[aria-label="Status for ${bargain}"]`).count(), 1,
+        'and reopenable from the garage, whatever the shopping set now says');
     } finally { await context.close(); }
   });
 
