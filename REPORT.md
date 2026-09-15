@@ -619,27 +619,24 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 - **$44,486** · BMW i5 · 2024 · 15,707 mi · drivable · no shipping · Madison, WI
   _spicy pick: 7% under typical for a 2024 BMW i5 eDrive40 ($3,162 less, from 23 such cars)_ · _2 owners · no accidents_
   [listing](https://rosennissanmadison.com/certified/BMW/2024-BMW-i5-7106ba6eac1824b1018118ba11304b66.htm) `WBY33FK09RCP96469`
-- **$36,550** · Hyundai Ioniq 9 · 2026 · 33,921 mi · drivable · no shipping · Cuyahoga Falls, OH
-  _spicy pick: 29% under typical for a 2026 Hyundai Ioniq 9 SEL ($16,325 less, from 24 such cars)_ · _1-owner · no accidents_
-  [listing](https://www.carfax.com/vehicle/7YAMUFS39TY001033) `7YAMUFS39TY001033`
-- **$21,998** · Volkswagen ID.4 · 2024 · 7,792 mi · drivable · no shipping · Columbus, OH
-  _spicy pick: 18% under typical for a 2024 Volkswagen ID.4 Standard ($4,115 less, from 39 such cars)_ · _1-owner · no accidents_
-  [listing](https://www.autoboutiqueohio.com/vehicle-details/used-2024-volkswagen-id-4-standard-1v2bmpe87rc014010) `1V2BMPE87RC014010`
+- **$64,729** · BMW i7 · 2024 · 9,354 mi · drivable · no shipping · Greenwood, IN
+  _spicy pick: 5% under typical for a 2024 BMW i7 eDrive50 ($2,935 less, from 30 such cars)_ · _no accidents_
+  [listing](https://www.carfax.com/vehicle/WBY43EJ0XRCR70324) `WBY43EJ0XRCR70324`
 
 ### Worth the ship — nationwide
 
-- **$42,294** · Hyundai Ioniq 9 · 2026 · 6,949 mi · + $828 shipping · Wall Township, NJ
-  _spicy pick: 31% under typical for a 2026 Hyundai Ioniq 9 SEL ($17,845 less, from 24 such cars)_ · _1-owner · no accidents_
-  [listing](https://www.autolist.com/hyundai-ioniq+9#vin=7YAMUFS37TY003119) `7YAMUFS37TY003119`
-- **$44,889** · Hyundai Ioniq 9 · 2026 · 6,357 mi · + $808 shipping · Ewing, NJ
-  _spicy pick: 27% under typical for a 2026 Hyundai Ioniq 9 SEL ($15,448 less, from 24 such cars)_ · _1-owner · no accidents_
-  [listing](https://www.carfax.com/vehicle/7YAMUFS38TY005834) `7YAMUFS38TY005834`
 - **$46,995** · BMW i5 · 2024 · 13,399 mi · + $951 shipping · Allston, MA
   _spicy pick: 25% under typical for a 2024 BMW i5 M60 ($15,559 less, from 21 such cars)_ · _1-owner · no accidents_
   [listing](https://bostonforeignmotor.com/used/BMW/2024-BMW-i5-d285e603ac182ab4c93744180d2b5d81.htm) `WBY43FK03RCR45219`
-- **$23,998** · Toyota bZ4X · 2024 · 3,573 mi · + $350 shipping · Kalamazoo, MI
-  _spicy pick: 24% under typical for a 2024 Toyota bZ4X XLE ($6,277 less, from 12 such cars)_ · _1-owner · no accidents_
-  [listing](https://foxmotors.com/used/Toyota/2024-Toyota-bZ4X-4c5c5ef9ac1826090cabaa516ee31ada.htm) `JTMAAAAA1RA048466`
+- **$46,538** · BMW i5 · 2025 · 6,895 mi · + $808 shipping · Haddon Township, NJ
+  _spicy pick: 22% under typical for a 2025 BMW i5 xDrive40 ($12,265 less, from 28 such cars)_ · _1-owner · no accidents_
+  [listing](https://www.carfax.com/vehicle/WBY13HG09SCS84860) `WBY13HG09SCS84860`
+- **$62,000** · BMW i7 · 2024 · 14,531 mi · + $725 shipping · Marietta, GA
+  _spicy pick: 15% under typical for a 2024 BMW i7 xDrive60 ($10,757 less, from 24 such cars)_ · _1-owner · no accidents · ex-lease_
+  [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ05RCP11857) `WBY53EJ05RCP11857`
+- **$54,898** · BMW i7 · 2024 · 21,412 mi · + $725 shipping · Marietta, GA
+  _spicy pick: 13% under typical for a 2024 BMW i7 eDrive50 ($8,423 less, from 30 such cars)_
+  [listing](https://www.autolist.com/bmw-i7#vin=WBY43EJ01RCN97139) `WBY43EJ01RCN97139`
 
 ## Comparison
 

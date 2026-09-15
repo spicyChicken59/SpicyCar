@@ -115,11 +115,19 @@ Two things are configured, separately:
   ranking", and that is wrong about the mechanism — worth correcting rather than
   deleting, because the wrong mechanism suggests the wrong fix. Nothing on the front
   page is ranked by price. The picks are ranked by how far under **its own model's**
-  typical price a car sits, cohorts never cross models, `picks.per_model` caps each
-  model at two, and `picks.reserve_shopping` holds the first two drivable seats for the
-  models actually being shopped — a rule `choose_picks_reserving` exists for and whose
-  docstring records the exact failure it was written against. On today's sheet the
-  drivable picks really are an i5, an i7, an iX and an Ioniq 9.
+  typical price a car sits, cohorts never cross models, and `picks.per_model` caps each
+  model at two.
+
+  `picks.reserve_shopping` used to hold the first two drivable seats for the models
+  actually being shopped, and hand the other two — and the whole worth-the-ship list —
+  to whatever sat furthest under its own typical price. That was half an answer to the
+  right question, and `choose_picks_reserving`'s docstring still records the failure it
+  was written against. **A pick is a recommendation, so it is now made only among the
+  models being shopped**, on both lists and on both surfaces; `reserve_shopping` is a
+  no-op inside a set that is already scoped. Everything outside the set is market
+  coverage — still tracked, still scored, still counted, shown under its own heading and
+  never offered as a suggestion — and when nothing is being shopped there is no set to
+  scope to, so the whole market stands as it did.
 
   What is true, and is the defect, is that **price class is nowhere in the ranking**.
   A $27,025 Kia EV9 at 35% under a typical EV9 outranks a $64,729 i7 at 4% under a

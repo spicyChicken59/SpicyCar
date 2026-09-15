@@ -1,6 +1,12 @@
 # SpicyCar design review · 6 September 2026
 
-The most recent pass is [Narrowing by drivetrain](narrowing-by-drivetrain.md), 15 September 2026:
+The most recent pass is [Your choices, and the market around them](shopping-scope.md), 15
+September 2026: Spicy picks recommended across the whole 21-model watchlist while the reader's
+declared choices were two, so a Hyundai Ioniq 9 was offered as a pick to someone choosing
+between two BMW saloons. Recommendations are scoped to the shopping set now — the local model
+choices where present, otherwise the `buyer.shopping` defaults — and the market stays visible
+under its own collapsed heading. No ranking arithmetic changed. Before it,
+[Narrowing by drivetrain](narrowing-by-drivetrain.md), 15 September 2026:
 the two columns the record kept and nothing read were measured against the committed snapshot, and
 one of them earned a filter. Drivetrain covers 1,535 of 1,678 live listings and splits 18 of the 21
 models, so it narrows the market rather than restating the model already chosen; seats is deferred,

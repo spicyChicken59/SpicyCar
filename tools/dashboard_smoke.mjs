@@ -5109,8 +5109,17 @@ await step('one tap lands on the car', async () => {
 await step('spice is for events, the key is for models', async () => {
   plan('no role chip wears spice', 'and each decision tile carries its model\'s line key');
   await open('');
-  const spicy = await page.$$eval('.sc-chip--spice', (cs) => cs.map((c) => c.textContent.trim()).filter((t) => /^(shopping|comparison)$/.test(t)));
-  ok('no role chip wears spice', spicy.length === 0, spicy.length ? `${spicy.length} role chip(s) in spice` : 'shopping/comparison chips wear brand or neutral');
+  // The words moved — "comparison" asserted that a market-coverage model was an
+  // alternative under consideration, which is what it is not — so this regex
+  // moved with them. Left as it was it would have matched nothing and passed
+  // over a page with no role chips at all, which is not the same as a page
+  // whose role chips are not spicy.
+  const ROLE = /^(your choice|market context)$/;
+  const roles = await page.$$eval('.sc-chip', (cs) => cs.map((c) => c.textContent.trim()));
+  const spicy = await page.$$eval('.sc-chip--spice', (cs) => cs.map((c) => c.textContent.trim()));
+  const named = roles.filter((t) => /^(your choice|market context)$/.test(t));
+  ok('no role chip wears spice', named.length > 0 && spicy.filter((t) => ROLE.test(t)).length === 0,
+     named.length ? `${named.length} role chip(s), none in spice` : 'NO role chip found at all — the check had nothing to judge');
   const keys = await page.$$eval('#hero-cars .sc-tile .sc-tile__label .cmp-swatch svg line', (ls) => ls.map((l) => ({ dash: l.getAttribute('stroke-dasharray') || '', stroke: l.getAttribute('style') || '' })));
   const tiles = await page.locator('#hero-cars .sc-tile').count();
   if (tiles < 2) skip('and each decision tile carries its model\'s line key', `${tiles} decision tile(s) — one model needs no key`);
