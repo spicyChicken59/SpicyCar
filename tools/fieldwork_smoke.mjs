@@ -2,6 +2,15 @@
 // node tools/fieldwork_smoke.mjs <design-system-checkout> [--shots <dir>]
 // Uses unchanged checked-in product data. External photographs are replaced
 // with a visibly labeled geometry fixture; these captures are NOT live proof.
+//
+// WHERE THE DOSSIER LIVES. A reader arrives in Explore, which browses: the
+// workspace header, the filter bar and the first car card. The photo dossier
+// (#hero-card), the instrument strip (#kpis) and the signal matrix belong to
+// "Compare & save", which decides — shopping-workspace.css hides all three
+// under [data-workspace="explore"] on purpose. So this harness arrives where a
+// reader arrives and presses the control a reader presses. It used to wait on
+// the Explore route for the matrix that route does not show, and timed out
+// against a page that was working.
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
@@ -58,10 +67,36 @@ const check = (name, pass, detail = '') => {
   checks.push({ name, pass: !!pass });
   console.log(`  ${pass ? 'ok  ' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`);
 };
-const open = async () => {
+// The nav control by role and accessible name, never a CSS override: a panel
+// this route hides is the design, and unhiding it would review a page nobody
+// is served.
+const compareButton = () => page.getByRole('button', { name: 'Compare & save', exact: true });
+const arrive = async () => {
   await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+  // Explore's own readiness condition, the one the CI-wired suites wait on.
+  await page.waitForSelector('.car-place-card, .car-map-unavailable');
+  await page.waitForTimeout(250);
+  return page.evaluate(() => {
+    const card = document.querySelector('.car-place-card');
+    const box = card && card.getBoundingClientRect();
+    const off = (id) => { const n = document.getElementById(id); return !!n && getComputedStyle(n).display === 'none'; };
+    const press = [...document.querySelectorAll('.shop-nav-button')].find((b) => b.dataset.shopView === 'compare');
+    const pressBox = press && press.getBoundingClientRect();
+    return { workspace: document.body.dataset.workspace,
+      firstCarOnScreen: !!box && box.height > 0 && box.top < innerHeight && box.bottom > 0,
+      // hidden by route, not missing: the candidates are in the document
+      dossierOffRoute: off('hero-card'), stripOffRoute: off('kpis'),
+      candidatesInDocument: document.querySelectorAll('#hero-cars > .market-candidate').length,
+      pressReachable: !!press && !press.hidden && !!pressBox && pressBox.width >= 44 && pressBox.height >= 44
+        && pressBox.top < innerHeight && pressBox.bottom > 0 };
+  });
+};
+const open = async () => {
+  const arrival = await arrive();
+  await compareButton().click();
   await page.waitForSelector('#decision-matrix tbody tr[data-signal-vin]');
   await page.waitForTimeout(250);
+  return arrival;
 };
 const shot = async (name, locator) => {
   if (SHOTS) await locator.screenshot({ path: join(SHOTS, name + '.png'), animations: 'disabled' });
@@ -79,7 +114,15 @@ const inspect = () => page.evaluate(() => {
   const strip = document.getElementById('kpis'), stripBg = getComputedStyle(strip).backgroundColor;
   return {
     overflow: document.documentElement.scrollWidth - innerWidth,
+    workspace: document.body.dataset.workspace,
     firstSignal: document.querySelector('#decision-matrix .sc-signal__label').getBoundingClientRect().bottom,
+    // On this route the three panels the review is about are shown, and shown
+    // with height: the old check read the matrix label's distance down an
+    // Explore page that never draws it.
+    dossierShown: getComputedStyle(document.getElementById('hero-card')).display !== 'none'
+      && document.getElementById('hero-card').getBoundingClientRect().height > 0,
+    stripShown: getComputedStyle(document.getElementById('kpis')).display !== 'none'
+      && document.getElementById('kpis').getBoundingClientRect().height > 0,
     heroHeight: document.getElementById('hero-card').getBoundingClientRect().height,
     photos: [...document.querySelectorAll('.market-candidate__media')].map((media) => {
       const image = media.querySelector('img.sc-frame__img'), frame = media.querySelector('.sc-frame'), caption = media.querySelector('.market-candidate__index');
@@ -95,9 +138,10 @@ const inspect = () => page.evaluate(() => {
 try {
   for (const [width, height] of [[390, 844], [820, 1180], [1280, 1000]]) for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width, height });
-    await open();
+    const arrival = await open();
     await page.evaluate((value) => document.documentElement.setAttribute('data-theme', value), theme);
-    const before = await facts();
+    const arrivalFacts = await facts();
+    const before = arrivalFacts;
     await page.locator('link[href="market-studio.css"]').evaluate((link) => { link.disabled = true; });
     const native = await facts();
     await page.locator('link[href="market-studio.css"]').evaluate((link) => { link.disabled = false; });
@@ -108,9 +152,24 @@ try {
       && shape.photos.length === 2 && shape.photos.every((p) => p.media.w >= (width <= 600 ? 110 : p.tile.w - 50) && p.media.h >= (width <= 600 ? 112 : 168)
         && p.naturalWidth === 953 && p.naturalHeight === 768 && (width < 1000 || p.drawnWidth >= p.media.w * .65)
         && p.fit === 'contain' && p.transform === 'none' && p.frame.bottom <= p.caption.y + 1), JSON.stringify(shape.photos));
-    check(`${width}px ${theme}: first signal stays on arrival and instrument values remain legible`, shape.firstSignal > 0 && shape.firstSignal < height
+    // What replaced "first signal stays on arrival": the dossier is not on the
+    // arrival route any more, and the contract that survives is the one a
+    // reader can act on — Explore arrives on the cars, the dossier is one named
+    // press away, and when it opens the photograph is on screen and the
+    // instrument values are legible and inside their tiles.
+    await page.locator('.market-candidate__media').first().scrollIntoViewIfNeeded();
+    const reach = await page.locator('.market-candidate__media').first().evaluate((node) => {
+      const b = node.getBoundingClientRect();
+      return { onScreen: b.height > 0 && b.top >= 0 && b.bottom <= innerHeight + 1 };
+    });
+    check(`${width}px ${theme}: the dossier opens one press from Explore and its instruments stay legible`,
+      arrival.workspace === 'explore' && arrival.firstCarOnScreen && arrival.dossierOffRoute && arrival.stripOffRoute
+      && arrival.candidatesInDocument === 2 && arrival.pressReachable
+      && shape.workspace === 'compare' && shape.dossierShown && shape.stripShown && reach.onScreen
       && (width > 600 || shape.heroHeight <= height + 60)
-      && shape.contrast.every((ratio) => ratio >= 4.5) && shape.values.every((v) => v.box.x >= v.parent.x && v.box.x + v.box.w <= v.parent.x + v.parent.w), JSON.stringify({ firstSignal: shape.firstSignal, minimumContrast: Math.min(...shape.contrast) }));
+      && shape.contrast.every((ratio) => ratio >= 4.5) && shape.values.every((v) => v.box.x >= v.parent.x && v.box.x + v.box.w <= v.parent.x + v.parent.w),
+      JSON.stringify({ arrival, workspace: shape.workspace, dossierShown: shape.dossierShown, stripShown: shape.stripShown,
+        reach, minimumContrast: Math.min(...shape.contrast) }));
     check(`${width}px ${theme}: CSS preserves exact candidates, evidence, metric text, photos and links`, JSON.stringify(before) === JSON.stringify(native));
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await shot(`fieldwork-dossier-${width}-${theme}`, page.locator(width <= 600 ? '#hero-cars > .market-candidate' : '#hero-card').first());
@@ -125,8 +184,18 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await open();
   const nativeDetails = page.locator('#hero-cars details').first(), summary = nativeDetails.locator('summary');
-  await summary.focus();
-  const focused = await summary.evaluate((node) => document.activeElement === node && getComputedStyle(node).outlineStyle !== 'none');
+  // The ring this check is about is a :focus-visible ring, and a programmatic
+  // .focus() does not raise :focus-visible — Chromium reports outline: none for
+  // it on a page whose keyboard ring is perfectly good. So the summary is
+  // reached the way a reader reaches it: land on it, step off, and Tab back, which
+  // is a keyboard interaction and shows what a keyboard user is shown. Asserted
+  // as it was, this check could only ever have failed a correct page.
+  await summary.scrollIntoViewIfNeeded();
+  await summary.evaluate((node) => node.focus({ preventScroll: true }));
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  const focused = await summary.evaluate((node) => document.activeElement === node && node.matches(':focus-visible')
+    && getComputedStyle(node).outlineStyle !== 'none' && parseFloat(getComputedStyle(node).outlineWidth) >= 2);
   await page.keyboard.press('Enter');
   check('phone evidence remains a native keyboard disclosure with visible focus', focused && await nativeDetails.evaluate((node) => node.open));
   const motion = await page.locator('.market-candidate__media img').first().evaluate((node) => ({ animation: getComputedStyle(node).animationName, duration: getComputedStyle(node).transitionDuration, transform: getComputedStyle(node).transform }));
