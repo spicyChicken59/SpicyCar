@@ -648,6 +648,12 @@
               aria-expanded="false" aria-controls="filters">Filters</button>
     </div>
     <p class="sc-hint" id="data-refresh-status" role="status" hidden></p>
+    <!-- A drivetrain filter can exclude a car for two different reasons and the
+         reader has to be able to tell them apart: the listing says FWD and you
+         asked for AWD, or the listing says nothing at all. The second group is
+         never silently dropped — it is counted here, by name, with one press to
+         go and look at it. -->
+    <p class="sc-hint" id="drive-aside" role="status" hidden></p>
     <div class="sc-filters" id="filters">
       <div class="sc-field" id="f-model-field">Models
         <div class="sc-tabs" id="f-model" role="group" aria-label="Models — pick any; two or more compares them; none selected means every model"></div>
@@ -668,6 +674,15 @@
           <option value="25000">Under 25k</option>
           <option value="35000">Under 35k</option>
           <option value="50000">Under 50k</option>
+        </select>
+      </label>
+      <label class="sc-field">Drivetrain
+        <select class="sc-select" id="f-drive">
+          <option value="all">Any</option>
+          <option value="AWD">AWD</option>
+          <option value="RWD">RWD</option>
+          <option value="FWD">FWD</option>
+          <option value="unknown">Not reported</option>
         </select>
       </label>
       <label class="sc-field">Sort
@@ -878,7 +893,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, mission: 'all', lens: 'price', car: null, show: 'cars', compareOut: new Set(), diffOnly: false, pairA: null, pairB: null, workspace: new URLSearchParams(location.search).get('view') || 'explore' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, mission: 'all', lens: 'price', car: null, show: 'cars', compareOut: new Set(), diffOnly: false, pairA: null, pairB: null, drive: 'all', workspace: new URLSearchParams(location.search).get('view') || 'explore' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -930,7 +945,11 @@
       // is what it did before these existed.
       S.compareOut = new Set(Array.isArray(p.compareOut) ? p.compareOut.filter((v) => typeof v === 'string' && /^[A-Z0-9]{6,24}$/.test(v)) : []);
       S.diffOnly = p.diffOnly === true;
-    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; S.compareOut = new Set(); S.diffOnly = false; }
+      // An older profile has no drive key and gets 'Any', which is what it saw
+      // before this existed; a stored value the vocabulary no longer offers is
+      // dropped rather than left narrowing the page invisibly.
+      S.drive = ['AWD', 'RWD', 'FWD', 'unknown'].includes(p.drive) ? p.drive : 'all';
+    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; S.compareOut = new Set(); S.diffOnly = false; S.drive = 'all'; }
   }
   // What the reader last saw, so the front page can say what changed since.
   // A key of its own, not a field in the prefs: the prefs are rewritten on
@@ -952,7 +971,7 @@
     } catch (e) { SEEN.since = null; /* private mode etc. */ }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ lens: S.lens, shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind, compareOut: [...S.compareOut], diffOnly: S.diffOnly })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ lens: S.lens, shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind, compareOut: [...S.compareOut], diffOnly: S.diffOnly, drive: S.drive })); } catch (e) { /* private mode etc. */ }
   }
   let WORKSPACE = null, STUDIO = null;
   function applyShopping() {
@@ -1647,7 +1666,7 @@
     openCar: (vin) => { const c = findVin(vin); if (c) goTo(c.bk, c.mk, c.x.vin); },
     quickCar: (vin) => STUDIO?.open(vin),
     starCar: (vin) => { const c = findVin(vin); return c ? (S.workspace === 'report' ? starButton(c.x) : studioSaveButton(c.x)) : null; },
-    resetFilters: () => { S.mission='all'; S.budget=0; S.where.clear(); S.year='all'; S.miles=0; S.clean=false; S.rental=false; S.cpo=false; S.hideNew=false; savePrefs(); syncUrl(); buildFilters(true); render(); },
+    resetFilters: () => { S.mission='all'; S.budget=0; S.where.clear(); S.year='all'; S.miles=0; S.clean=false; S.rental=false; S.cpo=false; S.hideNew=false; S.drive='all'; savePrefs(); syncUrl(); buildFilters(true); render(); },
     // The third view of the one visible set: the plot this page already had,
     // drawn into the panel over exactly the VINs the cards are showing. No
     // second scatter, no second population, no second definition of a dot.
@@ -3142,7 +3161,7 @@
   // rather than handing passesShared to .filter() directly — .filter supplies
   // the INDEX as the second argument, and index 1 would have quietly turned the
   // budget off for every car but the first.
-  function passesShared(x, skipBudget) {
+  function passesShared(x, skipBudget, skipDrive) {
     if (S.mission==='near' && !x.local) return false;
     if (S.mission==='drops' && !(lastStep(x)<0 && !twoPrices(x))) return false;
     if (S.mission==='fresh' && !isNew(x)) return false;
@@ -3155,7 +3174,24 @@
     if (S.cpo && !x.cpo) return false;
     if (S.rental && isRental(x)) return false;
     if (S.hideNew && isNewStock(x)) return false;
+    // Unknown is a state, not a failure. Asking for AWD sets aside the cars
+    // whose listing did not report a drivetrain as well as the ones reported
+    // RWD — they are not AWD as far as anything recorded goes — but the page
+    // says so and offers them under "Not reported" rather than letting them
+    // vanish into the gap between a count and a card.
+    if (!skipDrive && S.drive !== 'all') {
+      const d = driveOf(x);
+      if (S.drive === 'unknown' ? !!d : d !== S.drive) return false;
+    }
     return true;
+  }
+  // The record's own word, never a guess: "" is the feed not saying, and a
+  // value outside the three the tracker folds to is treated the same way
+  // rather than shown to a reader as a fourth kind of car.
+  const DRIVES = ['AWD', 'RWD', 'FWD'];
+  function driveOf(x) {
+    const d = String((x && x.drivetrain) || '').trim().toUpperCase();
+    return DRIVES.includes(d) ? d : '';
   }
   function applyShared(rows) { return rows.filter((x) => passesShared(x)); }   // the filters that make sense across models
   const SORT_DESC = { days_listed: true, newest: true };
@@ -6861,6 +6897,7 @@
     syncSortField();
     fillYearSelect(overview ? modelsInView().map(({ m }) => m) : [t], keepYear);
     $('f-miles').value = String(S.miles);
+    $('f-drive').value = S.drive;
     $('f-sort').value = S.sort;
     $('f-clean').checked = S.clean;
     $('f-rental').checked = S.rental;
@@ -6920,6 +6957,7 @@
     if (S.rental) bits.push('no rentals');
     if (S.hideNew) bits.push('no delivery-mileage stock');
     if (S.budget) bits.push(S.budgetKind === 'mo' ? `under ${money(S.budget)}/mo` : `under ${money(S.budget)} all in`);
+    if (S.drive !== 'all') bits.push(S.drive === 'unknown' ? 'drivetrain not reported' : S.drive);
     return bits;
   }
   // The chip in the chart card's header. It read "whole market — not filtered"
@@ -6980,6 +7018,31 @@
     const out = $('filter-count');
     if (out.textContent !== line) out.textContent = line;
     $('filter-toggle').textContent = bits.length ? `Filters · ${bits.length}` : 'Filters';
+    driveAside(overview);
+  }
+  // Two reasons a drivetrain filter can exclude a car, said apart. The count is
+  // taken with every OTHER filter applied and this one lifted, so it answers
+  // "how many of the cars you are looking at did the listing not describe" and
+  // not "how many are in the record".
+  function driveAside(overview) {
+    const out = $('drive-aside');
+    if (!out) return;
+    const scope = overview
+      ? modelsInView().flatMap(({ m }) => m.listings || [])
+      : (model().listings || []);
+    const judged = scope.filter((x) => passesShared(x, false, true));
+    const quiet = judged.filter((x) => !driveOf(x)).length;
+    out.textContent = '';
+    if (S.drive === 'all' || (S.drive !== 'unknown' && !quiet)) { out.hidden = true; return; }
+    out.hidden = false;
+    if (S.drive === 'unknown') {
+      out.append(`${num(quiet)} car${quiet === 1 ? '' : 's'} whose listing did not report a drivetrain. `
+        + 'They are not cars recorded as something else — the source said nothing, so nothing is claimed.');
+      return;
+    }
+    out.append(`${num(quiet)} more car${quiet === 1 ? '' : 's'} could not be judged: the listing did not report a drivetrain. `);
+    out.append(el('button', { class: 'car-text-button', type: 'button', 'data-fkey': 'drive:unknown',
+      onclick: () => { S.drive = 'unknown'; savePrefs(); buildFilters(true); render(); } }, 'Show them'));
   }
 
   // Focus, across a rebuild. A control that gets rebuilt carries a stable
@@ -7113,6 +7176,7 @@
   function wireFilters() {
     $('f-year').addEventListener('change', (e) => { S.year = e.target.value; rerender('rows'); });
     $('f-miles').addEventListener('change', (e) => { S.miles = Number(e.target.value); rerender('rows'); });
+    $('f-drive').addEventListener('change', (e) => { S.drive = e.target.value; savePrefs(); rerender('rows'); });
     $('f-sort').addEventListener('change', (e) => { S.sort = e.target.value; rerender('sort'); });
     $('f-clean').addEventListener('change', (e) => { S.clean = e.target.checked; rerender('rows'); });
     // The VIN field is a link the reader types: it goes through the address
