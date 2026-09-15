@@ -1652,10 +1652,29 @@ def split_picks(scored, n, per_model=None, reserve=0):
 
     Only the drivable list reserves seats: it is the short list a buyer can act
     on this weekend, and it is the one the shopped cars keep falling out of.
+
+    A PICK IS A RECOMMENDATION, so it is made only among the models actually
+    being shopped. choose_picks_reserving's own docstring above diagnosed this
+    and answered it halfway: holding the first `reserve` seats kept some of the
+    front page for the cars being decided on, and handed the rest to whatever
+    sat furthest under its own typical price — "an Ioniq 5 at 21% under a
+    typical Ioniq 5 outranks every BMW on the sheet". Reserving two of four
+    seats means half the list is still a car nobody is choosing between.
+    Everything outside the shopping set is market coverage: still tracked,
+    still scored, still counted, and not offered as a suggestion.
+
+    Nothing about the SCORING changes here, on either side. score_picks()
+    judges a car against its own model's cohort, so which models are eligible
+    cannot move a percentage; only the eligible set moves. And when nothing is
+    being shopped there is no set to scope to, so the whole market stands as it
+    did — a report with no shopping models is market coverage, not a
+    recommendation nobody asked for.
     """
-    return (choose_picks_reserving([p for p in scored if p.get("local")],
+    shopping = [p for p in scored if p.get("shopping")]
+    eligible = shopping if shopping else scored
+    return (choose_picks_reserving([p for p in eligible if p.get("local")],
                                    n, per_model, reserve),
-            choose_picks([p for p in scored if not p.get("local")], n, per_model))
+            choose_picks([p for p in eligible if not p.get("local")], n, per_model))
 
 
 def fmt_pick(p):
