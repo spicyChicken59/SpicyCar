@@ -125,3 +125,61 @@ rather than made inconsistent with *year*, *miles* and *sort* beside it.
 **None.** The filter uses `.sc-field` and `.sc-select` as released; the set-aside sentence is
 `.sc-hint` with the page's own `.car-text-button`, both already Car-local idioms. `consumer_lint`
 reports the policy clean with no new candidate.
+
+## Verification
+
+Newly executed here, on this sandbox (Python 3.11.15, Node 22.22.2, Playwright 1.56.1 with the
+pre-installed Chromium) against an isolated read-only design-system checkout at the pinned
+`ad5aa0f`. CI runs Python 3.12 and Node 24.
+
+| # | Command | Result | Executed |
+| --- | --- | --- | --- |
+| 1 | `AUTODEV_API_KEY=test-key-not-used python -m unittest discover -s tests -t . -v` | **PASS** | 570 run, 569 passed, 1 skipped, 0 failed |
+| 2 | `node tools/design_snapshot.mjs` | **PASS** | 22/22 assets from `ad5aa0f` |
+| 3 | `node tools/consumer_lint_ci.mjs "$DS" docs/index.html docs/how.html tools/og_card.html` | **PASS** | policy clean, 0 new promotion candidates |
+| 4 | `node tools/studio_smoke.mjs` | **PASS** | all checks, 0 page errors |
+| 5 | `node tools/workspace_smoke.mjs` | **PASS** | all checks, 0 page errors |
+| 6 | `node tools/discovery_smoke.mjs` | **PASS** | all checks, 0 page errors |
+| 7 | `node tools/browse_smoke.mjs --shots "$SHOTS/browse"` | **PASS** | **40/40** steps, 0 skips, 0 page errors (34 pre-existing + 6 added) |
+| 8 | `node tools/dashboard_smoke.mjs "$DS" --shots "$SHOTS/dashboard"` | **PASS** | 308/308, 15 data-dependent skips, 0 page errors |
+| 9 | `node tools/fieldwork_smoke.mjs "$DS"` | **PASS** | 26/26 |
+| 10 | `node tools/matrix_navigation_smoke.mjs "$DS"` | **PASS** | 26/26 |
+
+9 and 10 are CI gates since #80 and are run here as part of the normal pass, not as optional
+legacy tests. The transfer guard is untouched and reports `index.html` 153 KB and `data.json`
+339 KB compressed, against 200 KB and 400 KB.
+
+**Evidence classes, kept apart.** *Newly executed:* the table above, the five negative controls,
+and the visual measurements. *Existing CI evidence:* run `35026711423` on `main` at `6761e34`,
+green on `test`, `consumer-lint` and `dashboard` — the baseline this started from, not a result
+for this diff. *Fixture evidence:* the six browse steps, on shaped copies of the record served
+to one browser context; dealer photographs are the offline 1×1 stand-in and map geometry is a
+synthetic atlas, so these are not real photo or live-map proof. *Committed snapshot
+observations:* every coverage figure above, read from `docs/data.json` at `042936a4…` and
+`data/snapshots.csv`. *Live/provider facts:* **NOT RUN** — no provider call, no tracker fetch,
+no `daily.yml` dispatch, no mail, no deployment.
+
+## Keep / fix / defer / omit
+
+**Keep.** Measuring before deciding, and reporting per-model coverage, which is what caught
+both the Charger Daytona at 21% and drivetrain splitting 18 of 21 models. One branch in
+`passesShared()` rather than a filter each view applies for itself. Unknown as a named state
+with its own option, its own sentence and its own count. The export proved minimal by rebuilding
+the unchanged tree first.
+
+**Fix if it bites.** The set-aside count is computed over the current scope on every
+`filterCount()`, which is a pass over the in-view listings; it is not measurable against the
+existing work on this record but would be worth memoising if the watchlist grows several times.
+
+**Defer, deliberately.** *Seats*, on the evidence above. *A drivetrain row in the comparison*:
+the field is exported for departed listings too — 0.64 KB gzipped, a known value for 987 of the
+1,676 — and **nothing reads it there yet**. That is a filter's worth of scope beyond the one
+this milestone is for, so it is written down rather than quietly added; the export is one field
+for live and departed cars alike so that whatever reads it next has no special case to write.
+*The two EQB VINs* that recorded FWD one day and RWD another are left as the record has them:
+two of 1,678, and inventing a tie-break would be the page deciding something the feed did not.
+
+**Omit.** Any change to the tracker's collection allocation, the API budget, target or model
+definitions, ranking or spicy-pick semantics, shipping or financing arithmetic, the private
+garage, workflow schedules, the design-system release or vendoring, and any sibling repository.
+None was touched.
