@@ -4968,20 +4968,37 @@ await step('a headline figure carries its own date', async () => {
 // floor cars. Recomputed here from the sheet by the same rule — the previous
 // day row's floor car found through the series with the trim's carry-forward,
 // today's from the tile's own VIN — for every watched model page, and then a
-// served sheet retires today's floor car into a confirmed departure so the
-// "left the market" branch is exercised on a day nothing left.
+// served sheet retires the previous day row's floor car into a departure so
+// the "left the market" and "stopped being seen" branches are exercised on a
+// day nothing left, and one more sheet contradicts itself so the refusal is
+// pinned beside them.
+//
+// WHICH car is retired is the record's answer, not this file's: the car its
+// own histories put on the previous day row's floor, with that row's floor
+// left exactly as the builder wrote it. The plant used to retire TODAY's floor
+// car and overwrite the previous day row's floor with that car's price, which
+// contradicts the sheet on any day another car sat under that price the day
+// before. On the 2026-09-18 sheet the Acura ZDX's $26,890 floor car had been
+// raised to $28,980, so the served row claimed a $26,987 floor for Sep 13
+// while a live car's own history said $26,890 on that same day. The page
+// reconstructs the previous floor from every car's history, found the
+// $26,890, and named no cause — which is right, and is the refusal the last
+// check below holds it to: daily_stats() writes a day row's floor as the
+// lowest price among the cars the record knew on that day, and a served sheet
+// that breaks that promise is not a departure, it is a record disagreeing
+// with itself.
 await step('the floor delta names its cause', async () => {
   plan('the cause on every model page is the one the two floor cars make',
        'and a confirmed departure of the floor car is named as one',
-       'and an unconfirmed one is not');
+       'and an unconfirmed one is not',
+       'and a day row the histories undercut names no departure');
   const money = (n) => '$' + Math.round(n).toLocaleString('en-US');
   const latest = (days, day) => { let b = null; for (const d of (days || [])) { if (d <= day) b = d; else break; } return b; };
-  const causeOf = (m, bestVin) => {
-    const daily = m.daily || [];
-    const today = daily[daily.length - 1], prev = daily.length >= 2 ? daily[daily.length - 2] : null;
-    const best = (m.listings || []).find((x) => x.vin === bestVin);
-    if (!prev || !today || !best || prev.min_price == null || today.min_price == null || prev.min_price === today.min_price || today.min_price !== best.price) return null;
-    const fd = m.fetch_days || {};
+  // The page's own reconstruction, written once for the mirror and the plant:
+  // one entry per VIN (the live listing wins) with its sightings, and a car's
+  // price on a day is what it carried at its trim's latest fetch on or before
+  // that day.
+  const carsOf = (m) => {
     const cars = new Map();
     for (const x of (m.listings || []).concat(m.gone || [])) {
       const k = String(x.vin || '').toUpperCase();
@@ -4989,20 +5006,30 @@ await step('the floor delta names its cause', async () => {
       const seen = new Map((x.series || []).filter((pt) => pt[1]).map((pt) => [pt[0], pt[1]]));
       if (seen.size) cars.set(k, { x, seen });
     }
-    const priceOn = (c, day) => { const days = fd[c.x.trim_id]; const lf = days && days.length ? latest(days, day) : day; return lf && c.seen.has(lf) ? c.seen.get(lf) : null; };
-    let prevCar = null;
-    for (const c of cars.values()) { const v = priceOn(c, prev.date); if (v != null && (!prevCar || v < prevCar.v)) prevCar = { c, v }; }
+    return cars;
+  };
+  const priceOn = (m, c, day) => { const days = (m.fetch_days || {})[c.x.trim_id]; const lf = days && days.length ? latest(days, day) : day; return lf && c.seen.has(lf) ? c.seen.get(lf) : null; };
+  const floorCarOn = (m, cars, day) => { let f = null; for (const c of cars.values()) { const v = priceOn(m, c, day); if (v != null && (!f || v < f.v)) f = { c, v }; } return f; };
+  const causeOf = (m, bestVin) => {
+    const daily = m.daily || [];
+    const today = daily[daily.length - 1], prev = daily.length >= 2 ? daily[daily.length - 2] : null;
+    const best = (m.listings || []).find((x) => x.vin === bestVin);
+    if (!prev || !today || !best || prev.min_price == null || today.min_price == null || prev.min_price === today.min_price || today.min_price !== best.price) return null;
+    const cars = carsOf(m);
+    const prevCar = floorCarOn(m, cars, prev.date);
     if (!prevCar || prevCar.v !== prev.min_price) return null;
     const d = today.min_price - prev.min_price;
     if (prevCar.c.x.vin === best.vin) return `this car was ${d < 0 ? 'cut' : 'raised'} ${money(Math.abs(d))}`;
-    if (d < 0) { const bc = cars.get(String(best.vin).toUpperCase()); return bc && priceOn(bc, prev.date) != null ? `another car cut to ${money(best.price)}` : `a car arriving at ${money(best.price)}`; }
-    const still = priceOn(prevCar.c, today.date);
+    if (d < 0) { const bc = cars.get(String(best.vin).toUpperCase()); return bc && priceOn(m, bc, prev.date) != null ? `another car cut to ${money(best.price)}` : `a car arriving at ${money(best.price)}`; }
+    const still = priceOn(m, prevCar.c, today.date);
     if (still != null) return still > prevCar.v ? `the ${money(prevCar.v)} car was raised to ${money(still)}` : null;
     const confirmed = (m.gone || []).some((g) => g.vin === prevCar.c.x.vin && g.likely === 'delisted' && g.exact === true);
     return `the ${money(prevCar.v)} car ${confirmed ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
   };
+  // subs: the car line under the value, and the cause when the tile names one
   const readTile = () => page.locator('#kpis .sc-tile').first().evaluate((n) => ({
     vin: n.getAttribute('data-vin') || '', delta: (n.querySelector('.sc-delta') || {}).textContent || '',
+    subs: n.querySelectorAll('.sc-tile__sub').length,
     why: [...n.querySelectorAll('.sc-tile__sub')].map((s) => s.textContent.replace(/\s+/g, ' ').trim()).find((s) => /^(this car was|another car cut|a car arriving|the \$[\d,]+ car )/.test(s)) || '' }));
   const seen = [], wrong = [];
   for (const w of WATCHED.filter((w) => w.cars)) {
@@ -5014,41 +5041,100 @@ await step('the floor delta names its cause', async () => {
   }
   ok('the cause on every model page is the one the two floor cars make', wrong.length === 0 && seen.length > 0,
      wrong.length ? wrong.join(' | ') : (seen.join(' · ') || 'no floor moved on any model today'));
-  // The served sheet: the carried model's floor car is retired — its listing
-  // removed, its series ending on the previous day row, a gone row stamped
-  // exact — so today's floor is the runner-up and the old floor car left.
+  // The served sheet: the carried model's previous-day floor car — the one
+  // the record's own histories put there — is retired: its live listing
+  // removed, its series ending at its last sighting on or before that day
+  // row, one gone row stamped with the variant. The day row's floor is the
+  // builder's own, so nothing else on the sheet can contradict it, and
+  // today's floor is whatever the remaining cars make. retire() says which
+  // car that is on a day the floor fell, and why.
+  const NAMED = ['and a confirmed departure of the floor car is named as one', 'and an unconfirmed one is not',
+                 'and a day row the histories undercut names no departure'];
   const m0 = SHEET.brands[carried.bk].models[carried.mk];
-  const daily = m0.daily || [];
-  if (daily.length < 2) { skip('and a confirmed departure of the floor car is named as one', `${carried.label} has one day row`); skip('and an unconfirmed one is not', `${carried.label} has one day row`); }
-  else for (const exact of [true, false]) {
+  const retire = (exact) => {
     const planted = JSON.parse(JSON.stringify(m0));
-    const today = planted.daily[planted.daily.length - 1], prev = planted.daily[planted.daily.length - 2];
-    const priced = planted.listings.filter((x) => x.price != null).sort((a, b) => a.price - b.price);
-    const floor = priced[0], next = priced[1];
-    planted.listings = planted.listings.filter((x) => x !== floor);
-    floor.series = (floor.series || []).filter((pt) => pt[0] <= prev.date);
-    // Make the served history agree with the served daily floor. The real
-    // car may have cut its price today: preserving yesterday's older price
-    // while changing prev.min_price creates contradictory evidence, which
-    // the production renderer correctly refuses to describe as a departure.
-    const prevFetch = latest((planted.fetch_days || {})[floor.trim_id], prev.date) || prev.date;
-    floor.series = floor.series.filter((pt) => pt[0] < prevFetch).concat([[prevFetch, floor.price]]);
-    prev.min_price = floor.price; today.min_price = next.price;
-    planted.gone = (planted.gone || []).concat([{ ...floor, last_price: floor.price, last_seen: prev.date, likely: 'delisted', exact }]);
-    const wantWhy = `the ${money(floor.price)} car ${exact ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
-    const name = exact ? 'and a confirmed departure of the floor car is named as one' : 'and an unconfirmed one is not';
+    const daily = planted.daily || [];
+    if (daily.length < 2) return { why: `${carried.label} has one day row` };
+    const today = daily[daily.length - 1], prev = daily[daily.length - 2];
+    if (prev.min_price == null || today.min_price == null) return { why: `${carried.label} has an unpriced day row` };
+    const cars = carsOf(planted);
+    const prevCar = floorCarOn(planted, cars, prev.date);
+    // Cannot happen on a sheet the builder wrote — its day rows ARE this
+    // reconstruction — but a plant on top of it would be the old contradiction.
+    if (!prevCar || prevCar.v !== prev.min_price) {
+      return { why: `${carried.label}'s histories do not reproduce its ${money(prev.min_price)} floor of ${prev.date}` };
+    }
+    // Which car leaves. When the floor held or rose, the previous day's own
+    // floor car, and the day row keeps the floor the builder wrote. When it
+    // FELL — a car arrived or was cut under it — retiring that car cannot
+    // raise the floor, so today's floor car is retired instead, served with
+    // one sighting at its own price on the previous fetch day: consistent,
+    // because every other car's history sits above that price there.
+    const fell = today.min_price < prev.min_price;
+    const floor = fell ? planted.listings.filter((x) => x.price != null).sort((a, b) => a.price - b.price)[0] : null;
+    if (fell && (!floor || floor.price !== today.min_price)) return { why: `${carried.label}'s listings do not reproduce its ${money(today.min_price)} floor of ${today.date}` };
+    const car = fell ? floor : prevCar.c.x, price = fell ? floor.price : prevCar.v, vin = car.vin;
+    const days = (planted.fetch_days || {})[car.trim_id];
+    const lastSeen = days && days.length ? latest(days, prev.date) : prev.date;
+    // A car whose trim has not been fetched since is carried forward to today
+    // by the page's own rule, so nothing served can make it vanish there.
+    if (days && days.length && latest(days, today.date) === lastSeen) {
+      return { why: `${carried.label}'s ${money(price)} floor car's trim was not fetched on ${today.date}, so it cannot vanish there` };
+    }
+    planted.listings = (planted.listings || []).filter((x) => x.vin !== vin);
+    planted.gone = (planted.gone || []).filter((g) => g.vin !== vin);
+    let series = (car.series || []).filter((pt) => pt[0] <= lastSeen);
+    if (fell) { series = series.filter((pt) => pt[0] < lastSeen).concat([[lastSeen, price]]); prev.min_price = price; }
+    const gone = { ...car, series, last_price: price, last_seen: lastSeen, prev_fetch_day: lastSeen, likely: 'delisted', exact };
+    delete gone.price; delete gone.still_listed;   // a departure carries last_price, and no forwarding address
+    planted.gone.push(gone);
+    const left = planted.listings.filter((x) => x.price != null).sort((a, b) => a.price - b.price)[0];
+    if (!left || left.price <= prev.min_price) {
+      return { why: left ? `${String(left.vin).slice(-6)} asks ${money(left.price)} today, at or under the ${money(prev.min_price)} floor of ${prev.date}, so retiring that floor car cannot raise the floor`
+                         : `${carried.label} has no other priced car` };
+    }
+    today.min_price = left.price;
+    const how = fell ? `today's ${money(price)} floor car, served as the floor of ${prev.date} too`
+      : `${money(price)} floor car of ${prev.date}, ${(m0.listings || []).some((x) => x.vin === vin) ? 'live today' : 'already departed'}`;
+    return { planted, cars, prev, today, price, vin, how };
+  };
+  const serve = async (planted, body) => {
     await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch(); const sheet = JSON.parse(await r.text());
       sheet.brands[carried.bk].models[carried.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
-    try {
-      await open(carried.q);
-      const t = await readTile();
-      ok(name, t.why === wantWhy && /▲/.test(t.delta),
-         `${carried.label} with its ${money(floor.price)} floor car retired (exact ${exact}): "${t.delta} — ${t.why}" · expected "${wantWhy}"`);
-    } finally {
-      await ctx.unroute('**/data.json*');
+    try { await open(carried.q); return await body(); }
+    finally { await ctx.unroute('**/data.json*'); }
+  };
+  for (const exact of [true, false]) {
+    const name = exact ? NAMED[0] : NAMED[1];
+    const p = retire(exact);
+    if (p.why) { skip(name, p.why); continue; }
+    const wantWhy = `the ${money(p.price)} car ${exact ? 'left the market' : 'stopped being seen — not a confirmed departure'}`;
+    const t = await serve(p.planted, async () => { const r = await readTile(); await shot(`floor-delta-${exact ? 'confirmed' : 'unconfirmed'}`); return r; });
+    ok(name, t.why === wantWhy && /▲/.test(t.delta),
+       `${carried.label} with its ${p.how} retired as exact ${exact}: "${t.delta} — ${t.why}" · expected "${wantWhy}"`);
+  }
+  // …and the contradiction the old plant made, served on purpose: the retired
+  // car's departure is stamped exact, and another car's history is re-priced
+  // under the day row's floor on that same day. The record now disagrees with
+  // itself about what the floor was, so the tile must name no cause at all —
+  // not the departure the gone row alone would support.
+  {
+    const p = retire(true);
+    let other = null;
+    if (!p.why) for (const c of p.cars.values()) { if (c.x.vin !== p.vin && priceOn(p.planted, c, p.prev.date) != null) { other = c; break; } }
+    if (p.why) skip(NAMED[2], p.why);
+    else if (!other) skip(NAMED[2], `${carried.label} has no other car with a sighting on ${p.prev.date}`);
+    else {
+      const days = (p.planted.fetch_days || {})[other.x.trim_id], lf = days && days.length ? latest(days, p.prev.date) : p.prev.date;
+      const under = p.price - 100;
+      other.x.series = (other.x.series || []).map((pt) => (pt[0] === lf ? [lf, under] : pt));
+      const t = await serve(p.planted, async () => { const r = await readTile(); await shot('floor-delta-contradiction'); return r; });
+      ok(NAMED[2], t.why === '' && t.subs === 1 && /▲/.test(t.delta),
+         `${carried.label} with its ${p.how} retired as exact and ${String(other.x.vin).slice(-6)} re-priced to ${money(under)} on ${lf}: `
+         + `"${t.delta} — ${t.why || '(no cause)'}" over ${t.subs} sub-line${t.subs === 1 ? '' : 's'} · expected no cause`);
     }
   }
 });
@@ -7203,7 +7289,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 323;
+const EXPECTED = 324;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
