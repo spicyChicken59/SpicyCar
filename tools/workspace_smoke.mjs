@@ -29,8 +29,12 @@ try {
   assert.equal(await page.locator('#hero-card').isVisible(),false,'browse opens before recommendation panels');
   assert.equal(await page.locator('#promo-card').isVisible(),false,'no promotional hero');
   await choose(page); await page.getByRole('button',{name:'Clear',exact:true}).click();
-  assert.equal(await page.getByRole('button',{name:'Shop these models'}).isDisabled(),true);
+  // Zero models is a state the reader can keep — the brands stay marked and no
+  // model is chosen for them — so the primary action stays live and says so.
+  assert.equal(await page.getByRole('button',{name:'Save with no models',exact:true}).isEnabled(),true);
+  assert.equal(await page.getByRole('button',{name:'Shop these models',exact:true}).count(),0,'an empty set is not offered as "shop these models"');
   for(const m of selected) await page.getByRole('checkbox',{name:m.label,exact:true}).check();
+  assert.equal(await page.getByRole('button',{name:'Shop these models',exact:true}).isEnabled(),true);
   await page.getByRole('button',{name:'Shop these models'}).click();
   assert.match(await page.locator('.shop-subtitle').textContent(),new RegExp('^'+expected+' matching cars'));
   await page.goBack(); await page.locator('.car-place-card').first().waitFor();
@@ -59,6 +63,55 @@ try {
   await page.getByRole('button',{name:'Shop these models'}).click();
   assert.match(await page.locator('.shop-subtitle').textContent(),new RegExp(models.length+' models'));
   console.log('ok choose any/all models, shopping roles, Back, persistence, contextual finance, and a single saved car');
+  // The chooser groups the same models by the record's own brand keys: one
+  // group per brand, its count the models the watchlist tracks — "1 model
+  // tracked" is a fact about coverage, never a verdict that one fits.
+  const brands=Object.entries(data.brands);
+  await choose(page);
+  assert.equal(await page.locator('.shop-brand-group').count(),brands.length,'one group per tracked brand');
+  for(const [bk,b] of brands){
+    const group=page.locator(`.shop-brand-group[data-brand="${bk}"]`),n=Object.keys(b.models).length;
+    assert.equal(await group.locator('.shop-model-choice').count(),n,bk+' lists every model it tracks');
+    assert.equal((await group.locator('.shop-brand-count').textContent()).trim(),n+(n===1?' model tracked':' models tracked'));
+    assert.equal(await group.getByRole('button',{name:'Interested in '+b.label,exact:true}).getAttribute('aria-pressed'),'false');
+  }
+  // Keyboard: from the search, Tab reaches Select all, Clear and then the first
+  // brand's Interested control (the interested-only filter is disabled while
+  // nothing is marked, so the tab order skips it); Space marks the brand.
+  const [firstKey,firstBrand]=brands[0];
+  await page.getByRole('searchbox',{name:'Search available car models'}).focus();
+  for(let i=0;i<3;i++) await page.keyboard.press('Tab');
+  assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Interested in '+firstBrand.label,'Tab reaches the first brand\u2019s Interested control');
+  await page.keyboard.press('Space');
+  assert.equal(await page.locator(`.shop-brand-group[data-brand="${firstKey}"] .shop-brand-interest`).getAttribute('aria-pressed'),'true');
+  assert.match(await page.locator('.shop-picker-bottom p').textContent(),/interested in 1 brand$/);
+  // Interested brands narrows the list to the marked brand; pressing it again brings every brand back.
+  await page.getByRole('button',{name:/^Interested brands/}).click();
+  assert.deepEqual(await page.locator('.shop-brand-group').evaluateAll((ns)=>ns.map((n)=>n.dataset.brand)),[firstKey]);
+  await page.getByRole('button',{name:/^Interested brands/}).click();
+  assert.equal(await page.locator('.shop-brand-group').count(),brands.length);
+  // Escape is a cancel: the draft is discarded, nothing is written, and the
+  // focus goes back to the control that opened the dialog.
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>!document.querySelector('.shop-picker[open]'));
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Choose cars','the focus returns to Choose cars');
+  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('spicycar.prefs')).interestedBrands),[],'a cancelled draft writes no interest');
+  await choose(page);
+  assert.equal(await page.locator('.shop-brand-interest[aria-pressed="true"]').count(),0,'and the reopened dialog shows none marked');
+  // An interest-only apply writes the interest and nothing else: the explicit
+  // model choices, the browse scope and the subtitle stay exactly as they were.
+  const modelsBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('spicycar.prefs')).shoppingModels);
+  const subtitleBefore=await page.locator('.shop-subtitle').textContent();
+  await page.getByRole('button',{name:'Interested in '+firstBrand.label,exact:true}).click();
+  await page.getByRole('button',{name:'Shop these models',exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('.shop-picker[open]'));
+  const written=await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem('spicycar.prefs'));return {models:p.shoppingModels,interest:p.interestedBrands};});
+  assert.deepEqual(written.interest,[firstKey],'the interest is written');
+  assert.deepEqual(written.models,modelsBefore,'and the shopping models are untouched');
+  assert.equal(await page.locator('.shop-subtitle').textContent(),subtitleBefore,'the scope did not move');
+  assert.equal(await page.locator('.shop-interest-summary').textContent(),'Interested in '+firstBrand.label);
+  await page.getByRole('searchbox',{name:'Search available car models'}).waitFor({state:'hidden'});
+  console.log('ok brand groups by record key, tracked-model counts, keyboard marking, the interested-only filter, cancel, and an interest-only apply');
   // Every candidate still receives the entered zero rate, including certified BMWs.
   await page.getByRole('button',{name:'Compare & save',exact:true}).click();
   await page.locator('#shop-offers').check();

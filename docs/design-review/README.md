@@ -1,6 +1,10 @@
 # SpicyCar design review · 6 September 2026
 
-The most recent pass is [Your choices, and the market around them](shopping-scope.md), 15
+The most recent pass is [Brands in consideration, before choosing models](brand-interest.md), 19
+September 2026: the *Choose cars* dialog groups models by the record's own brands and lets a brand be
+marked **Interested** — a device-local note that keeps it in view and leads the chooser, and that
+chooses no model, moves no scope and reaches no recommendation. Before it,
+[Your choices, and the market around them](shopping-scope.md), 15
 September 2026: Spicy picks recommended across the whole 21-model watchlist while the reader's
 declared choices were two, so a Hyundai Ioniq 9 was offered as a pick to someone choosing
 between two BMW saloons. Recommendations are scoped to the shopping set now — the local model

@@ -578,6 +578,21 @@ which decides. `shopping-workspace.css` hides them under
 and `tools/matrix_navigation_smoke.mjs` and `tools/fieldwork_smoke.mjs` reach
 them the way a reader does, by pressing the nav control.
 
+**Brands in consideration, before any model is chosen.** The *Choose cars* dialog groups the
+watchlist's models by brand, from the record's own brand keys and labels, and says how many
+models each brand tracks — "1 model tracked" is a fact about coverage, not a verdict that one
+fits. A brand can be marked **Interested**: a reversible, device-local note (`interestedBrands`
+in the same browser profile as the model choices) that keeps the brand in view and leads the
+chooser next time. It is deliberately not a choice. Marking a brand chooses none of its models,
+writes nothing to the shopping set, moves no browse scope and reaches no recommendation — the
+shopping set is still the explicit model choices, or the `buyer.shopping` defaults when none
+have been made, and only a changed model draft reaches it — so a brand-only decision (brands
+marked, zero models chosen) browses the whole market and calls nothing a pick. Filter changes
+and *Reset search filters* leave the interest standing; removing the interest leaves the model
+choices, saved cars, notes and comparison membership standing. `tools/workspace_smoke.mjs` and
+`tools/browse_smoke.mjs` hold both directions, including the profile that names a brand the
+watchlist does not carry.
+
 `docs/market-studio.css` is the product composition over that shared snapshot;
 consumer lint checks it alongside the page's inline styles. The shared system's
 [Decision brief recipe](https://spicychicken59.github.io/design-system/templates/decision-brief.html)
