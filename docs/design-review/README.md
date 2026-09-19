@@ -1,6 +1,9 @@
 # SpicyCar design review · 6 September 2026
 
-The most recent pass is [Brands in consideration, before choosing models](brand-interest.md), 19
+The most recent pass is [Choose, then compare](decision-journey.md), 19 September 2026: reachable
+phone chooser controls, a model-first decision screen, and the existing evidence read two models at
+a time on a phone. It preserves brand interest, explicit model choices and recommendation rules.
+Before it, [Brands in consideration, before choosing models](brand-interest.md), 19
 September 2026: the *Choose cars* dialog groups models by the record's own brands and lets a brand be
 marked **Interested** — a device-local note that keeps it in view and leads the chooser, and that
 chooses no model, moves no scope and reaches no recommendation. Before it,
