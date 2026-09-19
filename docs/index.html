@@ -530,8 +530,8 @@
 <link rel="stylesheet" href="car-discovery.css?v=20260908-workspace">
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="car-discovery.js?v=20260908-studio"></script>
-<link rel="stylesheet" href="shopping-workspace.css?v=20260908-workspace">
-<script src="shopping-workspace.js?v=20260908-workspace"></script>
+<link rel="stylesheet" href="shopping-workspace.css?v=20260919-brands">
+<script src="shopping-workspace.js?v=20260919-brands"></script>
 <link rel="stylesheet" href="shopping-studio.css?v=20260908-studio">
 <script src="shopping-studio.js?v=20260908-studio"></script>
 <link rel="stylesheet" href="collection-health.css?v=20260908-fair">
@@ -893,7 +893,7 @@
   // where: a multi-select of place keys (state codes, 'beyond') — empty means everywhere.
   // hidden: model ids (brand/model) whose LINE is switched off in the market
   //   chart's legend. Per visit only, on purpose — see loadPrefs.
-  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, apr: null, offers: true, mission: 'all', lens: 'price', car: null, show: 'cars', compareOut: new Set(), diffOnly: false, pairA: null, pairB: null, drive: 'all', workspace: new URLSearchParams(location.search).get('view') || 'explore' };
+  const S = { site: null, brand: 'all', model: null, trims: new Set(), models: new Set(), where: new Set(), hidden: new Set(), year: 'all', miles: 0, sort: 'local', clean: false, rental: false, cpo: false, hideNew: false, showAllList: false, showAllGone: false, vinAsk: null, mapView: null, range: '90', term: null, down: 0, stars: {}, budget: 0, budgetKind: 'otd', shoppingModels: null, shopOnly: false, brandInterest: new Set(), apr: null, offers: true, mission: 'all', lens: 'price', car: null, show: 'cars', compareOut: new Set(), diffOnly: false, pairA: null, pairB: null, drive: 'all', workspace: new URLSearchParams(location.search).get('view') || 'explore' };
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   // No draw-time colour resolution: every painted colour is a var() reference
@@ -915,6 +915,12 @@
       const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
       S.shoppingModels = Array.isArray(p.shoppingModels) ? p.shoppingModels.filter((k) => typeof k === 'string') : null;
       S.shopOnly = p.shopOnly === true;
+      // Brands kept in consideration. Distinct from the shopping models and the
+      // browse scope: it chooses no model and reaches no recommendation. Read
+      // against the record's own brand keys, so a key the watchlist does not
+      // carry — or an object-prototype name a hostile profile could plant —
+      // never becomes a brand.
+      S.brandInterest = brandInterestOf(p.interestedBrands);
       S.apr = Number.isFinite(p.apr) && p.apr >= 0 && p.apr <= 40 ? p.apr : null;
       S.offers = p.offers !== false;
       S.lens = p.lens === 'monthly' ? 'monthly' : 'price';
@@ -949,7 +955,7 @@
       // before this existed; a stored value the vocabulary no longer offers is
       // dropped rather than left narrowing the page invisibly.
       S.drive = ['AWD', 'RWD', 'FWD', 'unknown'].includes(p.drive) ? p.drive : 'all';
-    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; S.compareOut = new Set(); S.diffOnly = false; S.drive = 'all'; }
+    } catch (e) { S.where = new Set(); S.range = '90'; S.term = null; S.down = 0; S.stars = {}; S.budget = 0; S.budgetKind = 'otd'; S.compareOut = new Set(); S.diffOnly = false; S.drive = 'all'; S.brandInterest = new Set(); }
   }
   // What the reader last saw, so the front page can say what changed since.
   // A key of its own, not a field in the prefs: the prefs are rewritten on
@@ -971,9 +977,16 @@
     } catch (e) { SEEN.since = null; /* private mode etc. */ }
   }
   function savePrefs() {
-    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ lens: S.lens, shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind, compareOut: [...S.compareOut], diffOnly: S.diffOnly, drive: S.drive })); } catch (e) { /* private mode etc. */ }
+    try { localStorage.setItem('spicycar.prefs', JSON.stringify({ lens: S.lens, shoppingModels: S.shoppingModels, shopOnly: S.shopOnly, interestedBrands: [...S.brandInterest], apr: S.apr, offers: S.offers, where: [...S.where], range: S.range, term: S.term, down: S.down, stars: S.stars, budget: S.budget, budgetKind: S.budgetKind, compareOut: [...S.compareOut], diffOnly: S.diffOnly, drive: S.drive })); } catch (e) { /* private mode etc. */ }
   }
   let WORKSPACE = null, STUDIO = null;
+  // The one door a brand key comes through. Only a string naming an own
+  // property of the record's brands survives, in the record's own order, so
+  // 'constructor' and '__proto__' are refused with any other unknown key.
+  function brandInterestOf(list) {
+    const asked = new Set((Array.isArray(list) ? list : []).filter((k) => typeof k === 'string'));
+    return new Set(Object.keys((S.site || {}).brands || {}).filter((k) => asked.has(k) && own(S.site.brands, k)));
+  }
   function applyShopping() {
     if (!Array.isArray(S.shoppingModels)) return;
     const wanted = new Set(S.shoppingModels), trims = [];
@@ -996,7 +1009,7 @@
   function syncWorkspace() {
     if (!S.site || !window.ShoppingWorkspace) return;
     if (!WORKSPACE) WORKSPACE = ShoppingWorkspace.create({
-      models: () => allModels().map(({bk,mk,m}) => ({key: bk + '/' + mk, label: m.label, cars: (m.listings || []).length,
+      models: () => allModels().map(({bk,mk,m}) => ({key: bk + '/' + mk, brand: bk, label: m.label, cars: (m.listings || []).length,
         shopping: !!m.shopping, price: (m.listings || []).some(hasPrice) ? money(Math.min(...m.listings.filter(hasPrice).map((c) => c.price))) : null,
         image: safeUrl((m.listings || []).find((c) => c.image)?.image)})),
       scope: () => S.brand === 'all' ? modelsInView().map(({bk,mk}) => bk + '/' + mk) : [S.brand + '/' + S.model],
@@ -1006,6 +1019,12 @@
       view: setWorkspaceView,
       browse: browseModels,
       shop: (keys) => { S.shoppingModels = keys; applyShopping(); savePrefs(); browseModels(keys); },
+      // Brand interest, by the record's own keys and labels. Saving it writes
+      // the profile and redraws the workspace's one summary line — nothing
+      // else on the page reads it: not the shopping set, not the browse scope,
+      // not the picks.
+      brands: () => Object.entries(S.site.brands).map(([bk, b]) => ({ key: bk, label: b.label || bk, interested: S.brandInterest.has(bk) })),
+      interest: (keys) => { S.brandInterest = brandInterestOf(keys); savePrefs(); WORKSPACE.update(); },
     });
     if (!STUDIO && window.ShoppingStudio) STUDIO = ShoppingStudio.create({
       car: studioCar, savedVins: () => Object.keys(S.stars).filter((v) => STAR_STEPS.includes(S.stars[v]) && S.stars[v]),
@@ -7445,6 +7464,7 @@
             S.brand = 'all'; S.model = null; S.trims.clear();
           }
           S.models = new Set([...S.models].filter((id) => { const [bk, mk] = id.split('/'); return !!site.brands[bk]?.models?.[mk]; }));
+          S.brandInterest = brandInterestOf([...S.brandInterest]);
           applyShopping(); annotateValue(site); annotateFinance(site);
           buildFilters(true); render(); feedSignature = signature;
         } catch (error) {

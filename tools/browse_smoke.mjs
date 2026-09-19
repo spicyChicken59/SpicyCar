@@ -162,7 +162,11 @@ const errors = [];
 // with empty storage and makes every write through the controls instead. The
 // addInitScript runs on EVERY navigation, so a seeded context re-seeds itself
 // on reload and cannot be used to prove anything survived one.
-async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTES, seen = SINCE, storage = true, record = null, theme = 'dark' } = {}) {
+// `once: true` seeds the first navigation only. The init script runs again on
+// every reload, so a seeded context re-seeds itself and cannot prove that a
+// write the page made survived one; a once-seeded context can, and still
+// starts from the profile the step describes.
+async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTES, seen = SINCE, storage = true, record = null, theme = 'dark', once = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, isMobile: width <= 420, hasTouch: width <= 420,
     reducedMotion: 'reduce', colorScheme: theme });
   await context.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => (/\.(png|jpe?g|webp|gif|svg)/i.test(r.request().url())
@@ -172,17 +176,18 @@ async function session({ width = 1280, height = 900, prefs = PREFS, notes = NOTE
     const body = JSON.stringify(record);
     await context.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body }));
   }
-  await context.addInitScript(([p, n, s, ok, t]) => {
+  await context.addInitScript(([p, n, s, ok, t, one]) => {
     if (!ok) {   // a browser with storage switched off, which is a state and not a crash
       const boom = () => { throw new DOMException('denied', 'SecurityError'); };
       Object.defineProperty(window, 'localStorage', { configurable: true, get: boom });
       return;
     }
+    if (one) { try { if (sessionStorage.getItem('spicycar.smoke-seeded')) return; sessionStorage.setItem('spicycar.smoke-seeded', '1'); } catch (e) { /* seed every time */ } }
     if (p) localStorage.setItem('spicycar.prefs', JSON.stringify(p));
     if (n) localStorage.setItem('spicycar.garage', JSON.stringify(n));
     if (s) localStorage.setItem('spicycar.seen', JSON.stringify({ through: s, since: null }));
     localStorage.setItem('sc-theme', t);
-  }, [prefs, notes, seen, storage, theme]);
+  }, [prefs, notes, seen, storage, theme, once]);
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push('uncaught: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
@@ -1504,6 +1509,363 @@ try {
       await page.locator('.studio-dialog[open]').waitFor();
       assert.equal(await page.locator(`select[aria-label="Status for ${bargain}"]`).count(), 1,
         'and reopenable from the garage, whatever the shopping set now says');
+    } finally { await context.close(); }
+  });
+
+
+  // ---- brands kept in consideration, before any model is chosen -----------
+  // Curiosity is not a choice. A brand marked "interested" is a device-local
+  // note that the reader wants it in view; it chooses no model, moves no
+  // scope and reaches no recommendation. The subjects are picked by SHAPE from
+  // the record's own hierarchy — one brand tracking several models, one
+  // tracking exactly one — so the case has subjects whatever the watchlist
+  // holds, and the labels come from the record, never from a split string.
+  const brandRows = Object.entries(data.brands).map(([bk, b]) => ({ bk, label: b.label || bk,
+    models: Object.entries(b.models || {}).map(([mk, m]) => ({ key: bk + '/' + mk, mk, label: m.label || mk, cars: (m.listings || []).length })) }));
+  const MULTI = brandRows.filter((b) => b.models.length >= 2).sort((a, z) => z.models.length - a.models.length || a.bk.localeCompare(z.bk))[0];
+  const SINGLE = brandRows.find((b) => b.bk === 'porsche' && b.models.length === 1 && b.models[0].cars >= 12)
+    || brandRows.filter((b) => b.models.length === 1 && b.models[0].cars >= 12 && b.bk !== (MULTI || {}).bk).sort((a, z) => a.bk.localeCompare(z.bk))[0];
+  assert.ok(MULTI && SINGLE, 'the record holds a brand tracking several models and a brand tracking one');
+  const MARKET_BRAND = brandRows.find((b) => b.bk === MARKET.bk);
+  // The record's own order of the brands the reader marked — what the profile
+  // stores and what the chooser leads with.
+  const recordOrder = (keys) => brandRows.map((b) => b.bk).filter((k) => keys.includes(k));
+  const prefsOf = (page) => page.evaluate(() => {
+    const p = JSON.parse(localStorage.getItem('spicycar.prefs') || '{}');
+    return { models: p.shoppingModels === undefined ? 'absent' : p.shoppingModels, shopOnly: p.shopOnly,
+             interest: p.interestedBrands === undefined ? 'absent' : p.interestedBrands, stars: p.stars || {}, out: p.compareOut || [] };
+  });
+  const openChooser = async (page) => { await page.getByRole('button', { name: 'Choose cars', exact: true }).click(); await page.locator('.shop-picker[open]').waitFor(); };
+  const closed = async (page) => { await page.waitForFunction(() => !document.querySelector('.shop-picker[open]')); await page.waitForTimeout(900); };
+  const mark = (page, label) => page.getByRole('button', { name: 'Interested in ' + label, exact: true });
+  const applyChooser = async (page) => { await page.locator('.shop-picker-bottom .shop-primary').click(); await closed(page); };
+  const readChooser = (page) => page.evaluate(() => ({
+    order: [...document.querySelectorAll('.shop-brand-group')].map((g) => g.dataset.brand),
+    pressed: [...document.querySelectorAll('.shop-brand-interest[aria-pressed="true"]')].map((b) => b.closest('.shop-brand-group').dataset.brand),
+    status: document.querySelector('.shop-picker-bottom p').textContent,
+    apply: document.querySelector('.shop-picker-bottom .shop-primary').textContent,
+  }));
+  const summaryOf = (page) => page.locator('.shop-interest-summary').evaluate((n) => (n.hidden ? null : n.textContent));
+  // A profile an older build wrote: every key it knew and none of the new one.
+  const LEGACY = { lens: 'price', shopOnly: false, where: [], range: '90', offers: true, stars: {}, budget: 0, budgetKind: 'otd' };
+
+  await step('marking brands as interesting changes no model choice, no scope and no recommendation', async () => {
+    const { record, bargain } = shoppingRecord([SHOP.key]);
+    const { context, page } = await session({ record, prefs: LEGACY, notes: null, seen: null, once: true });
+    try {
+      await openPicks(page, '?view=compare');
+      const before = await readPicks(page), beforePrefs = await prefsOf(page), beforeSubtitle = await page.locator('.shop-subtitle').textContent();
+      assert.equal(beforePrefs.models, 'absent', 'the legacy profile made no model choice: the record’s default is the shopping set');
+      assert.match(before.heading, /Spicy picks/, 'and that default makes picks');
+      assert.equal(await summaryOf(page), null, 'no brand is marked yet');
+      await openChooser(page);
+      const fresh = await readChooser(page);
+      assert.deepEqual(fresh.order, brandRows.map((b) => b.bk), 'with nothing marked the groups run in the record’s own order');
+      assert.deepEqual(fresh.pressed, [], 'and none is pressed');
+      const multi = page.locator(`.shop-brand-group[data-brand="${MULTI.bk}"]`);
+      assert.equal(await multi.locator('.shop-model-choice').count(), MULTI.models.length, `${MULTI.label} lists all ${MULTI.models.length} of its tracked models`);
+      assert.deepEqual(await multi.locator('.shop-model-info strong').allTextContents(), MULTI.models.map((m) => m.label), 'by the record’s own labels');
+      assert.equal((await page.locator(`.shop-brand-group[data-brand="${SINGLE.bk}"] .shop-brand-count`).textContent()).trim(), '1 model tracked', `${SINGLE.label} says one model is tracked, not that one fits`);
+      await mark(page, MULTI.label).click();
+      await mark(page, SINGLE.label).click();
+      const marked = await readChooser(page);
+      assert.match(marked.status, /interested in 2 brands$/, `the status counts the marks: "${marked.status}"`);
+      assert.equal(marked.apply, 'Shop these models', 'the model draft is untouched, so the action still reads as the models');
+      await applyChooser(page);
+      const after = await prefsOf(page);
+      assert.deepEqual(after.interest, recordOrder([MULTI.bk, SINGLE.bk]), 'the interest is written, by key, in the record’s order');
+      assert.equal(after.models, null, 'the shopping models were not written: the inherited default stays inherited');
+      assert.equal(after.shopOnly, false, 'and the browse scope did not move');
+      assert.equal(await page.locator('.shop-subtitle').textContent(), beforeSubtitle, 'the workspace subtitle is unchanged');
+      assert.equal(await summaryOf(page), `Interested in ${[MULTI, SINGLE].sort((a, z) => recordOrder([a.bk, z.bk]).indexOf(a.bk) - recordOrder([a.bk, z.bk]).indexOf(z.bk)).map((b) => b.label).join(' · ')}`, 'the summary names the brands, by their labels');
+      const now = await readPicks(page);
+      assert.equal(now.heading, before.heading, 'the pick heading is unchanged');
+      assert.deepEqual(now.picks, before.picks, 'every recommendation, its role and its percentage are the ones before the marks');
+      assert.ok(now.market.some((c) => c.vin.includes(bargain)) && !now.picks.some((c) => c.vin.includes(bargain)), 'the planted bargain is still context, not a pick');
+      // A reload this context was seeded through only once: what survives is what the page wrote.
+      await page.reload({ waitUntil: 'load' });
+      await page.waitForSelector('#takeaway', { state: 'attached', timeout: 20000 });
+      await page.waitForTimeout(1200);
+      assert.deepEqual((await prefsOf(page)).interest, recordOrder([MULTI.bk, SINGLE.bk]), 'the interest survived the reload');
+      assert.equal((await prefsOf(page)).models, null, 'and the models are still the inherited default');
+      assert.deepEqual((await readPicks(page)).picks, before.picks, 'the picks after the reload are the picks before the marks');
+      await openChooser(page);
+      const reopened = await readChooser(page);
+      assert.deepEqual(reopened.order.slice(0, 2), recordOrder([MULTI.bk, SINGLE.bk]), 'the marked brands lead the reopened chooser');
+      assert.deepEqual(reopened.order.slice(2), brandRows.map((b) => b.bk).filter((k) => k !== MULTI.bk && k !== SINGLE.bk), 'and every other brand follows in the record’s order');
+      assert.deepEqual(reopened.pressed.slice().sort(), [MULTI.bk, SINGLE.bk].sort(), 'both still pressed');
+      await shot(page, 'brands-marked-chooser');
+    } finally { await context.close(); }
+  });
+
+  await step('a brand-only decision keeps the brands, chooses no model, and calls nothing a pick', async () => {
+    const { record } = shoppingRecord([SHOP.key]);
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await openPicks(page, '?view=compare');
+      await openChooser(page);
+      await mark(page, MULTI.label).click();
+      await mark(page, SINGLE.label).click();
+      await page.getByRole('button', { name: 'Clear', exact: true }).click();
+      const cleared = await readChooser(page);
+      assert.match(cleared.status, /^0 models selected/, 'the model draft is empty');
+      assert.equal(cleared.apply, 'Save with no models', 'and the action says exactly that');
+      assert.equal(await page.locator('.shop-picker-bottom .shop-primary').isEnabled(), true, 'zero models is a state the reader can keep');
+      await applyChooser(page);
+      const after = await prefsOf(page);
+      assert.deepEqual(after.interest, recordOrder([MULTI.bk, SINGLE.bk]), 'the brands are kept');
+      assert.deepEqual(after.models, [], 'the cleared set is written as an explicit empty set — the record’s default is not resurrected');
+      const none = await readPicks(page);
+      assert.ok(!/Spicy picks/.test(none.heading), `nothing chosen, so nothing is called a pick: "${none.heading}"`);
+      assert.equal(none.picks.length, 0, 'no card is offered as a recommendation');
+      assert.ok(none.market.length > 0, 'while the market is still there to read');
+      assert.match(await page.locator('#hero-hint').textContent(), /Choose the models/, 'the decision card asks for models rather than inventing them');
+      assert.match(await summaryOf(page), /no models chosen yet$/, 'the summary says the brands have no chosen model');
+      assert.equal(await page.getByRole('button', { name: /^My choices/ }).isDisabled(), true, 'there are no choices to browse');
+      // Ordinary browsing is untouched: the whole market is still on the cards.
+      await page.getByRole('button', { name: 'Explore cars', exact: true }).click();
+      await page.waitForTimeout(600);
+      assert.match(await page.locator('.shop-subtitle').textContent(), new RegExp(`^${everyCar.length} matching cars · ${all.length} models`), 'the market browses as before');
+      assert.ok(await page.locator('.car-place-card').count() > 0, 'with cars on the cards');
+      await shot(page, 'brands-only-workspace');
+      await page.reload({ waitUntil: 'load' });
+      await page.locator('.car-place-card').first().waitFor();
+      await page.waitForTimeout(900);
+      const back = await prefsOf(page);
+      assert.deepEqual(back.interest, recordOrder([MULTI.bk, SINGLE.bk]), 'the brands survive the reload');
+      assert.deepEqual(back.models, [], 'and no model was silently selected on the way back');
+      assert.match(await summaryOf(page), /no models chosen yet$/);
+    } finally { await context.close(); }
+  });
+
+  await step('from the brand groups the reader chooses models, and the comparison opens on them', async () => {
+    const { record } = shoppingRecord([SHOP.key]);
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page);
+      await openChooser(page);
+      await mark(page, MULTI.label).click();
+      await mark(page, SINGLE.label).click();
+      await applyChooser(page);
+      await openChooser(page);
+      assert.deepEqual((await readChooser(page)).order.slice(0, 2), recordOrder([MULTI.bk, SINGLE.bk]), 'the marked brands lead');
+      // Two of the multi-model brand and the one model the single-model brand
+      // tracks, each by its own checkbox: no quota, no representative, no
+      // "best fit" chosen for the reader.
+      const picks = [MULTI.models[0], MULTI.models[1], SINGLE.models[0]];
+      await page.getByRole('button', { name: 'Clear', exact: true }).click();
+      for (const m of picks) await page.getByRole('checkbox', { name: m.label, exact: true }).check();
+      assert.match((await readChooser(page)).status, /^3 models selected · interested in 2 brands$/);
+      await applyChooser(page);
+      const after = await prefsOf(page);
+      assert.deepEqual(after.models, picks.map((m) => m.key), 'the three models are the explicit choice');
+      assert.deepEqual(after.interest, recordOrder([MULTI.bk, SINGLE.bk]), 'and the brands stay marked beside them');
+      assert.equal(await page.getByRole('button', { name: 'My choices · 3', exact: true }).getAttribute('aria-pressed'), 'true', 'the page browses the three');
+      await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
+      await page.waitForTimeout(700);
+      assert.equal(await page.locator('#compare-card').isVisible(), true, 'the model comparison opens');
+      assert.match(await page.locator('#compare-hint').textContent(), /^3 models under the current filters/, 'on the three models');
+      assert.match(await page.locator('#compare-hint').textContent(), /at most one row marks a winner/, 'and no overall winner is declared');
+      await shot(page, 'brands-then-models-compare');
+    } finally { await context.close(); }
+  });
+
+  await step('saved cars, their notes and the comparison membership are untouched by brand interest', async () => {
+    const { context, page } = await session({ prefs: { ...PREFS, interestedBrands: [MULTI.bk] }, once: true });
+    try {
+      await page.goto(base + '/?view=compare', { waitUntil: 'load' });
+      await page.locator('#finalists-table thead th').first().waitFor();
+      await page.waitForTimeout(700);
+      const heads = () => page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll((as) => as.map((a) => a.dataset.fkey.slice(4)));
+      const before = await heads();
+      assert.ok(before.length >= 2, 'the fixture compares at least two saved cars');
+      await page.locator('.fin-drop').first().click();
+      await page.waitForTimeout(400);
+      const dropped = before.find((v) => !(new Set()).has(v));
+      assert.equal((await heads()).length, before.length - 1, 'one car leaves the comparison');
+      await page.reload({ waitUntil: 'load' });
+      await page.locator('.shop-garage').waitFor();
+      await page.waitForTimeout(900);
+      const kept = await prefsOf(page);
+      assert.deepEqual(Object.keys(kept.stars).sort(), Object.keys(SAVED).sort(), 'every saved car is still saved after the reload');
+      assert.equal(kept.out.length, 1, 'the removal is still a comparison membership of its own');
+      assert.deepEqual(kept.interest, [MULTI.bk], 'and the brand interest rode along');
+      assert.equal(Object.keys(await page.evaluate(() => JSON.parse(localStorage.getItem('spicycar.garage') || '{}'))).length, Object.keys(NOTES).length, 'the note is still there');
+      // Removing the brand interest touches none of it.
+      await openChooser(page);
+      await mark(page, MULTI.label).click();
+      assert.equal(await mark(page, MULTI.label).getAttribute('aria-pressed'), 'false');
+      await applyChooser(page);
+      const unmarked = await prefsOf(page);
+      assert.deepEqual(unmarked.interest, [], 'the interest is gone');
+      assert.deepEqual(Object.keys(unmarked.stars).sort(), Object.keys(SAVED).sort(), 'every saved car is still saved');
+      assert.equal(unmarked.out.length, 1, 'the comparison membership is untouched');
+      assert.deepEqual(unmarked.models, PREFS.shoppingModels, 'and so are the model choices');
+      assert.equal(await summaryOf(page), null, 'the summary line is gone with the interest');
+      await page.locator('.shop-garage').click();
+      await page.locator('.studio-dialog[open]').waitFor();
+      assert.equal(await page.locator(`select[aria-label="Status for ${live[0].vin}"]`).count(), 1, 'the garage still reopens its cars');
+      assert.match(await page.locator('.studio-note-preview').first().textContent(), /second key/i, 'with their notes');
+      assert.ok(dropped !== undefined);
+    } finally { await context.close(); }
+  });
+
+  await step('removing interest and narrowing the filters erase no choice, and an empty model is an honest empty', async () => {
+    // The single-model brand's one model is tracked and has no records tonight.
+    const { record } = shoppingRecord([SHOP.key]);
+    const hollow = record.brands[SINGLE.bk].models[SINGLE.models[0].mk];
+    hollow.listings = []; hollow.gone = [];
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await open(page);
+      await openChooser(page);
+      await mark(page, MULTI.label).click();
+      assert.match(await page.locator(`.shop-brand-group[data-brand="${SINGLE.bk}"] .shop-model-info > span`).textContent(), /^0 cars · awaiting listings/, 'the empty model says it is tracked and has no listings');
+      await page.getByRole('button', { name: 'Clear', exact: true }).click();
+      for (const label of [SHOP.m.label, SINGLE.models[0].label]) await page.getByRole('checkbox', { name: label, exact: true }).check();
+      await applyChooser(page);
+      const chosen = [SHOP.key, SINGLE.models[0].key];
+      assert.deepEqual((await prefsOf(page)).models, chosen);
+      const shopCars = new Set((SHOP.m.listings || []).map((x) => x.vin));
+      const onCards = await page.locator('.car-place-card').evaluateAll((cs) => cs.map((c) => c.dataset.carVin));
+      assert.ok(onCards.length > 0 && onCards.every((v) => shopCars.has(v)), 'every card is the model with cars: nothing is substituted for the empty one');
+      assert.match(await page.locator('.shop-subtitle').textContent(), /· 2 models/, 'the page still counts both chosen models');
+      // A filter narrows the cars and touches neither the choice nor the interest;
+      // a budget of $1 empties the page, which is where the reset control lives.
+      if (await page.locator('#filter-toggle').isVisible() && (await page.locator('#filter-toggle').getAttribute('aria-expanded')) !== 'true') { await page.locator('#filter-toggle').click(); await page.waitForTimeout(250); }
+      await page.selectOption('#f-miles', '15000');
+      await page.waitForTimeout(700);
+      const narrowed = await prefsOf(page);
+      assert.deepEqual(narrowed.models, chosen, 'a filter change keeps the model choices');
+      assert.deepEqual(narrowed.interest, [MULTI.bk], 'and the brand interest');
+      await page.fill('#f-budget', '1');
+      await page.locator('#f-budget').press('Tab');
+      await page.waitForTimeout(900);
+      assert.equal(await page.locator('.car-place-card').count(), 0, 'the budget empties the page');
+      await page.getByRole('button', { name: 'Reset search filters', exact: true }).click();
+      await page.waitForTimeout(900);
+      const reset = await prefsOf(page);
+      assert.deepEqual(reset.models, chosen, 'a reset keeps the model choices');
+      assert.deepEqual(reset.interest, [MULTI.bk], 'and the brand interest');
+      assert.equal(await page.evaluate(() => document.querySelector('#f-budget').value), '', 'while the filters themselves were reset');
+      assert.ok(await page.locator('.car-place-card').count() > 0, 'and the cars are back');
+      // Interest removed: the explicit choices stand.
+      await openChooser(page);
+      await mark(page, MULTI.label).click();
+      await applyChooser(page);
+      const unmarked = await prefsOf(page);
+      assert.deepEqual(unmarked.interest, [], 'the interest is removed');
+      assert.deepEqual(unmarked.models, chosen, 'the explicit model choices are not');
+      // Only the empty model: an honest empty result, no relaxation, no substitute.
+      await openChooser(page);
+      await page.getByRole('button', { name: 'Clear', exact: true }).click();
+      await page.getByRole('checkbox', { name: SINGLE.models[0].label, exact: true }).check();
+      await applyChooser(page);
+      assert.equal(await page.locator('.car-place-card').count(), 0, 'no card is shown for a model with no records');
+      assert.match(await page.locator('.shop-subtitle').textContent(), /^0 matching cars · 1 model/, 'and the page says so');
+      assert.equal(await page.evaluate(() => document.querySelector('#f-miles').value), '0', 'no filter was relaxed to fill it');
+      assert.deepEqual((await prefsOf(page)).models, [SINGLE.models[0].key], 'and no other model was chosen for the reader');
+      await shot(page, 'brands-empty-model');
+    } finally { await context.close(); }
+  });
+
+  await step('the chooser is searched, cancelled and worked by keyboard, and a bad profile cannot corrupt it', async () => {
+    const { record } = shoppingRecord([SHOP.key]);
+    // Unknown, non-string and prototype-shaped keys beside one real brand,
+    // written twice: only the real one, once, is a brand.
+    const hostile = { ...LEGACY, interestedBrands: ['__proto__', 'constructor', 'prototype', 'no-such-brand', 42, null, {}, MULTI.bk, MULTI.bk] };
+    let ctx = await session({ record, prefs: hostile, notes: null, seen: null, once: true });
+    try {
+      await open(ctx.page);
+      assert.equal(await summaryOf(ctx.page), `Interested in ${MULTI.label}`, 'only the real brand survived the profile');
+      await openChooser(ctx.page);
+      assert.deepEqual((await readChooser(ctx.page)).pressed, [MULTI.bk], 'one brand pressed, once');
+      assert.equal(await ctx.page.evaluate(() => Object.keys(Object.prototype).length + Object.keys(Object.getPrototypeOf({})).length), 0, 'nothing reached the object prototype');
+      // Search matches the brand label and the model label alike.
+      const search = ctx.page.getByRole('searchbox', { name: 'Search available car models' });
+      await search.fill(SINGLE.label);
+      assert.deepEqual((await readChooser(ctx.page)).order, [SINGLE.bk], 'a brand name finds its group');
+      await search.fill(MULTI.models[0].label);
+      assert.deepEqual((await readChooser(ctx.page)).order, [MULTI.bk], 'a model name finds its brand');
+      assert.equal(await ctx.page.locator('.shop-model-choice').count(), 1, 'with only that model in it');
+      await search.fill('zzzz-no-such-model');
+      assert.equal(await ctx.page.locator('.shop-no-models').isVisible(), true, 'and nothing says so');
+      await search.fill('');
+      // Keyboard: Tab from the search reaches the filter (live, one brand is
+      // marked), Select all, Clear and then the first group's control, which
+      // is the marked brand because marked brands lead.
+      await search.focus();
+      for (let i = 0; i < 4; i++) await ctx.page.keyboard.press('Tab');
+      assert.equal(await ctx.page.evaluate(() => document.activeElement.getAttribute('aria-label')), 'Interested in ' + MULTI.label, 'Tab reaches the leading brand’s control');
+      await ctx.page.keyboard.press('Space');
+      assert.deepEqual((await readChooser(ctx.page)).pressed, [], 'Space unmarks it');
+      await ctx.page.keyboard.press('Escape');
+      await closed(ctx.page);
+      assert.equal(await ctx.page.evaluate(() => document.activeElement.textContent), 'Choose cars', 'Escape returns the focus to the opener');
+      const cancelled = await prefsOf(ctx.page);
+      assert.deepEqual(cancelled.interest, hostile.interestedBrands, 'a cancelled draft wrote nothing at all');
+      await openChooser(ctx.page);
+      assert.deepEqual((await readChooser(ctx.page)).pressed, [MULTI.bk], 'and the saved mark is still the saved mark');
+      await ctx.page.getByRole('button', { name: 'Close', exact: true }).click();
+      await closed(ctx.page);
+      // A shop pushes history; Back returns with the interest still standing.
+      await openChooser(ctx.page);
+      await ctx.page.getByRole('button', { name: 'Clear', exact: true }).click();
+      await ctx.page.getByRole('checkbox', { name: SHOP.m.label, exact: true }).check();
+      await applyChooser(ctx.page);
+      assert.match(await ctx.page.locator('.shop-subtitle').textContent(), /· 1 model ·|· 1 model$/);
+      await ctx.page.goBack({ waitUntil: 'load' });
+      await ctx.page.locator('.car-place-card').first().waitFor();
+      await ctx.page.waitForTimeout(700);
+      assert.equal(await summaryOf(ctx.page), `Interested in ${MULTI.label}`, 'Back keeps the interest');
+    } finally { await ctx.context.close(); }
+    // A string where the list should be, and a profile that is not JSON at all.
+    for (const [name, prefs] of [['a string', { ...LEGACY, interestedBrands: MULTI.bk }], ['not json', '{not json']]) {
+      ctx = await session({ record, prefs, notes: null, seen: null, once: true });
+      try {
+        if (typeof prefs === 'string') await ctx.page.addInitScript((raw) => { try { localStorage.setItem('spicycar.prefs', raw); } catch (e) { /* storage off */ } }, prefs);
+        await open(ctx.page);
+        assert.equal(await summaryOf(ctx.page), null, `${name} marks no brand`);
+        await openChooser(ctx.page);
+        await mark(ctx.page, SINGLE.label).click();
+        await applyChooser(ctx.page);
+        assert.deepEqual((await prefsOf(ctx.page)).interest, [SINGLE.bk], `and the page writes a clean profile over ${name}`);
+      } finally { await ctx.context.close(); }
+    }
+    // Storage switched off: the mark works for this visit and nothing crashes.
+    ctx = await session({ record, storage: false });
+    try {
+      await open(ctx.page);
+      await openChooser(ctx.page);
+      await mark(ctx.page, SINGLE.label).click();
+      await applyChooser(ctx.page);
+      assert.equal(await summaryOf(ctx.page), `Interested in ${SINGLE.label}`, 'the mark holds for the visit');
+      assert.ok(await ctx.page.locator('.car-place-card').count() > 0, 'and the page still browses');
+    } finally { await ctx.context.close(); }
+  });
+
+  await step('curiosity about a brand does not promote its bargain into the picks', async () => {
+    // The market model holds the best value in the record. Its brand is marked
+    // interesting and its model is NOT chosen: it must stay context. An
+    // implementation that shopped a marked brand's models would turn this red.
+    const { record, bargain } = shoppingRecord([SHOP.key]);
+    const { context, page } = await session({ record, prefs: null, notes: null, seen: null });
+    try {
+      await openPicks(page, '?view=compare');
+      await openChooser(page);
+      await mark(page, MARKET_BRAND.label).click();
+      await applyChooser(page);
+      const after = await prefsOf(page);
+      assert.deepEqual(after.interest, [MARKET.bk], 'the market brand is marked');
+      assert.equal(after.models, null, 'and no model was chosen for it');
+      const r = await readPicks(page);
+      assert.match(r.heading, /Spicy picks/, 'the reader’s own default still makes picks');
+      assert.ok(r.picks.length > 0, 'with cars to recommend');
+      for (const c of r.picks) assert.equal(c.model.trim(), SHOP.m.label, `every recommendation is the model that was chosen, not ${c.model}`);
+      assert.ok(!r.picks.some((c) => c.vin.includes(bargain)), 'the marked brand’s bargain is not a pick');
+      assert.ok(r.market.some((c) => c.vin.includes(bargain)), 'it is in market context, where it was');
+      assert.equal(await page.getByRole('button', { name: 'My choices · 1', exact: true }).count(), 1, 'the choices are still the one model');
+      assert.equal(await summaryOf(page), `Interested in ${MARKET_BRAND.label}`);
     } finally { await context.close(); }
   });
 
