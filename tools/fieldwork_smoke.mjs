@@ -137,6 +137,10 @@ const inspect = () => page.evaluate(() => {
 });
 try {
   for (const [width, height] of [[390, 844], [820, 1180], [1280, 1000]]) for (const theme of ['light', 'dark']) {
+    // Measure settled layout and colours, not a frame of the shared reveal
+    // animation when the dossier scrolls into view below the comparison.
+    // Reset for each case: the screenshot block restores normal motion.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width, height });
     const arrival = await open();
     await page.evaluate((value) => document.documentElement.setAttribute('data-theme', value), theme);

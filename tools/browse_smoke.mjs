@@ -446,12 +446,12 @@ try {
     const { context, page } = await session({ width: 390, height: 844 });
     try {
       await page.goto(base + '/?view=compare', { waitUntil: 'load' });
-      await page.locator('.sc-compare-pair__heads').waitFor();
+      await page.locator('#finalists-pairs .sc-compare-pair__heads').waitFor();
       assert.equal(await page.locator('#finalists-card').getAttribute('data-fin-mode'), 'pairs');
       assert.equal(await page.locator('#finalists-table thead th').count(), 0, 'the wide table is not shipped to a phone');
-      const heads = await page.locator('.sc-compare-pair__head').count();
+      const heads = await page.locator('#finalists-pairs .sc-compare-pair__head').count();
       assert.equal(heads, 2, 'two records are named');
-      const boxes = await page.locator('.sc-compare-pair__values').first().evaluateAll((ds) => ds.flatMap((d) => [...d.children]).map((n) => Math.round(n.getBoundingClientRect().width)));
+      const boxes = await page.locator('#finalists-pairs .sc-compare-pair__values').first().evaluateAll((ds) => ds.flatMap((d) => [...d.children]).map((n) => Math.round(n.getBoundingClientRect().width)));
       assert.equal(boxes.length, 2, 'each measure shows both records');
       assert.ok(Math.abs(boxes[0] - boxes[1]) <= 1, 'and gives them equal room');
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'nothing scrolls sideways');
@@ -1570,7 +1570,7 @@ try {
       await mark(page, SINGLE.label).click();
       const marked = await readChooser(page);
       assert.match(marked.status, /interested in 2 brands$/, `the status counts the marks: "${marked.status}"`);
-      assert.equal(marked.apply, 'Shop these models', 'the model draft is untouched, so the action still reads as the models');
+      assert.equal(marked.apply, 'Save brand interest', 'an interest-only action names the preference it saves');
       await applyChooser(page);
       const after = await prefsOf(page);
       assert.deepEqual(after.interest, recordOrder([MULTI.bk, SINGLE.bk]), 'the interest is written, by key, in the record’s order');
@@ -1868,6 +1868,142 @@ try {
       assert.equal(await summaryOf(page), `Interested in ${MARKET_BRAND.label}`);
     } finally { await context.close(); }
   });
+
+  // Decision journey: being in the DOM is not being reachable. The former
+  // chooser passed its width checks while its apply button sat BELOW the
+  // dialog on both phones. Test the reader's visible press target, including
+  // after the last brand is reached and after a search returns nothing.
+  const pressIsVisible = async (locator, name) => {
+    const state = await locator.evaluate((node) => {
+      const r = node.getBoundingClientRect(), dialog = node.closest('dialog')?.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, height: r.height,
+        width: innerWidth, screenBottom: innerHeight, dialogTop: dialog?.top ?? 0,
+        dialogBottom: dialog?.bottom ?? innerHeight, hit: !!hit && (hit === node || node.contains(hit)) };
+    });
+    assert.ok(state.height >= 44 && state.left >= 0 && state.right <= state.width + 1
+      && state.top >= state.dialogTop && state.bottom <= Math.min(state.screenBottom, state.dialogBottom) + 1
+      && state.hit, `${name} can be pressed without scrolling the dialog: ${JSON.stringify(state)}`);
+  };
+  for (const [width, height, theme] of [[1440, 1000, 'light'], [1280, 900, 'dark'], [390, 844, 'light'], [390, 844, 'dark'], [320, 844, 'light'], [320, 844, 'dark']]) {
+    await step(`decision journey: chooser actions stay reachable at ${width}px ${theme}`, async () => {
+      const { context, page } = await session({ width, height, theme, prefs: null, notes: null, seen: null });
+      try {
+        await open(page); await openChooser(page);
+        const apply = page.locator('.shop-picker-bottom .shop-primary');
+        const close = page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true });
+        await pressIsVisible(apply, 'Apply on opening'); await pressIsVisible(close, 'Close on opening');
+        const before = await prefsOf(page);
+        await page.locator('.shop-brand-interest').last().click();
+        await pressIsVisible(apply, 'Apply after the last brand'); await pressIsVisible(close, 'Close after the last brand');
+        assert.equal(await apply.textContent(), 'Save brand interest', 'interest alone has an honest action label');
+        const search = page.getByRole('searchbox', { name: 'Search available car models' });
+        await search.fill('no-such-car-in-this-record');
+        assert.equal(await page.getByText('No models match that search.', { exact: true }).isVisible(), true, 'an empty search explains itself');
+        await pressIsVisible(apply, 'Apply after an empty search');
+        await search.fill('');
+        await shot(page, `decision-chooser-${width}-${theme}`);
+        await page.keyboard.press('Escape');
+        assert.deepEqual(await prefsOf(page), before, 'cancel discards both drafts');
+        assert.equal(await page.getByRole('button', { name: 'Choose cars', exact: true }).evaluate((n) => n === document.activeElement), true, 'focus returns to Choose cars');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'the page fits');
+      } finally { await context.close(); }
+    });
+  }
+
+  for (const [width, theme] of [[1440, 'light'], [1280, 'dark']]) {
+    await step(`decision journey: desktop keeps three models readable at ${width}px ${theme}`, async () => {
+      const { context, page } = await session({ width, height: 1000, theme, prefs: null, notes: null, seen: null });
+      try {
+        await open(page); await openChooser(page);
+        await page.getByRole('button', { name: 'Clear', exact: true }).click();
+        for (const label of [MULTI.models[0].label, MULTI.models[1].label, SINGLE.models[0].label]) {
+          await page.getByRole('checkbox', { name: label, exact: true }).check();
+        }
+        await applyChooser(page);
+        await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
+        assert.equal(await page.locator('#compare-table thead th').count(), 4, 'all three models have a native column');
+        assert.equal(await page.locator('#compare-pairs').isVisible(), false, 'desktop keeps the full comparison');
+        const fits = await page.locator('#compare-table').evaluate((table) => {
+          const region = table.parentElement.getBoundingClientRect();
+          return [...table.querySelectorAll('.cmp-name, .sc-figure')].every((n) => {
+            const b = n.getBoundingClientRect(); return b.width > 0 && b.left >= region.left && b.right <= region.right + 1;
+          });
+        });
+        assert.ok(fits, 'all three identities and every figure fit without a sideways scroll');
+      } finally { await context.close(); }
+    });
+  }
+
+  for (const width of [390, 320]) for (const theme of ['light', 'dark']) {
+    await step(`decision journey: all model evidence is readable at ${width}px ${theme}`, async () => {
+      const { context, page } = await session({ width, height: 844, theme, prefs: null, notes: null, seen: null });
+      try {
+        await open(page); await openChooser(page);
+        await page.getByRole('button', { name: 'Clear', exact: true }).click();
+        for (const label of [MULTI.models[0].label, MULTI.models[1].label, SINGLE.models[0].label]) {
+          await page.getByRole('checkbox', { name: label, exact: true }).check();
+        }
+        await applyChooser(page);
+        await page.getByRole('button', { name: 'Compare & save', exact: true }).click();
+        assert.equal(await page.locator('#compare-pairs').isVisible(), true, 'the phone has a readable two-model view');
+        const order = await page.evaluate(() => ({
+          comparison: document.getElementById('compare-card').getBoundingClientRect().top,
+          empty: document.getElementById('finalists-card').getBoundingClientRect().top,
+          finance: document.getElementById('finance-settings').getBoundingClientRect().top,
+        }));
+        assert.ok(order.comparison < order.empty && order.comparison < order.finance, 'the chosen models precede an empty shortlist and financing setup');
+        const keys = await page.getByRole('combobox', { name: 'Right model', exact: true }).locator('option').evaluateAll((ns) => ns.map((n) => n.value));
+        assert.equal(keys.length, 3, 'every compared model can be brought into view');
+        const before = { prefs: await prefsOf(page), url: page.url(), picks: await readPicks(page) };
+        await page.getByRole('combobox', { name: 'Right model', exact: true }).selectOption(keys[2]);
+        const evidence = await page.evaluate(() => {
+          const table = document.getElementById('compare-table');
+          const heads = [...document.querySelectorAll('#compare-pairs [data-compare-key]')].slice(0, 2).map((n) => n.dataset.compareKey);
+          const keys = [...document.querySelectorAll('#compare-pairs select option')].slice(0, table.tHead.rows[0].cells.length - 1).map((n) => n.value);
+          const rows = [...document.querySelectorAll('#compare-pairs dd')];
+          const text = (n) => n.textContent.replace(/\s+/g, ' ').trim();
+          return { names: heads, rows: rows.length, expectedRows: table.tBodies[0].rows.length,
+            matches: rows.every((row, i) => [...row.children].every((cell, side) => {
+              const original = table.tBodies[0].rows[i].cells[keys.indexOf(heads[side]) + 1];
+              return text(cell) === text(original)
+                && cell.querySelectorAll('.sc-estimate').length === original.querySelectorAll('.sc-estimate').length
+                && cell.classList.contains('is-best') === original.classList.contains('is-best')
+                && cell.getAttribute('data-basis') === original.getAttribute('data-basis');
+            })),
+            figuresFit: [...document.querySelectorAll('#compare-pairs .sc-figure')].every((n) => {
+              const r = n.getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.right <= innerWidth + 1;
+            }) };
+        });
+        assert.deepEqual(evidence.names, [keys[0], keys[2]], 'the third model is visible beside the first');
+        assert.equal(evidence.rows, evidence.expectedRows, 'no measure was removed to fit the phone');
+        assert.ok(evidence.matches && evidence.figuresFit, 'every figure, unknown, estimate and value label matches the full table and fits');
+        assert.deepEqual({ prefs: await prefsOf(page), url: page.url(), picks: await readPicks(page) }, before, 'viewing a pair changes neither shopping nor recommendations');
+        await page.getByRole('combobox', { name: 'Left model', exact: true }).selectOption(keys[2]);
+        assert.equal(await page.getByRole('combobox', { name: 'Right model', exact: true }).inputValue(), keys[0], 'choosing the other visible model swaps the pair');
+        assert.equal(await page.getByRole('combobox', { name: 'Left model', exact: true }).evaluate((n) => n === document.activeElement), true, 'keyboard focus stays on the changed selector');
+        await page.locator('#compare-card').scrollIntoViewIfNeeded();
+        await shot(page, `decision-models-${width}-${theme}`);
+        await page.getByText('How to read the values and estimates', { exact: true }).click();
+        assert.match(await page.locator('.cmp-basis').innerText(), /Payments assume/, 'the full financing explanation remains available');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'comparison and explanation fit the page');
+        await page.getByText('How to read the values and estimates', { exact: true }).click();
+        await page.emulateMedia({ media: 'print' });
+        assert.equal(await page.locator('.cmp-basis p').isVisible(), true, 'print retains the explanation even when its disclosure was closed');
+        assert.equal(await page.locator('#compare-table').isVisible(), true, 'print has the native table');
+        assert.equal(await page.locator('#compare-table thead th').count(), 4, 'print retains all three model columns');
+        assert.equal(await page.locator('#compare-pairs').isVisible(), false, 'print has no duplicate pair');
+        await page.emulateMedia({ media: 'screen' });
+        const opened = await page.locator('#compare-pairs .cmp-pair__identity strong').first().innerText();
+        await page.locator('#compare-pairs .sc-compare-pair__head button').first().click();
+        assert.equal(await page.locator('.shop-title').innerText(), opened, 'Open follows the model currently in view');
+        assert.equal(await page.locator('.shop-title').evaluate((n) => n === document.activeElement && n.getBoundingClientRect().height > 0), true, 'focus lands on the visible model heading');
+        await page.goBack();
+        await page.getByRole('combobox', { name: 'Left model', exact: true }).waitFor();
+        assert.deepEqual(await prefsOf(page), before.prefs, 'opening and returning does not rewrite shopping preferences');
+      } finally { await context.close(); }
+    });
+  }
 
   assert.deepEqual(errors, [], 'page errors: ' + errors.join(' | '));
   if (failures) { console.log(`browse smoke: ${failures} check(s) failed`); process.exitCode = 1; }

@@ -530,8 +530,8 @@
 <link rel="stylesheet" href="car-discovery.css?v=20260908-workspace">
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="car-discovery.js?v=20260908-studio"></script>
-<link rel="stylesheet" href="shopping-workspace.css?v=20260919-brands">
-<script src="shopping-workspace.js?v=20260919-brands"></script>
+<link rel="stylesheet" href="shopping-workspace.css?v=20260919-decision">
+<script src="shopping-workspace.js?v=20260919-decision"></script>
 <link rel="stylesheet" href="shopping-studio.css?v=20260908-studio">
 <script src="shopping-studio.js?v=20260908-studio"></script>
 <link rel="stylesheet" href="collection-health.css?v=20260908-fair">
@@ -728,10 +728,11 @@
       <div>
         <div class="sc-eyebrow sc-eyebrow--muted">the comparison</div>
         <h2 id="compare-title">Side by side</h2>
-        <p class="sc-hint" id="compare-hint"></p>
+        <div class="sc-hint" id="compare-hint"></div>
       </div>
     </div>
     <div class="sc-table-scroll" tabindex="0" role="region" aria-label="Vehicle comparison matrix"><table class="sc-table sc-table--compact sc-signal-matrix sc-signal-matrix--values sc-signal-matrix--fit" id="compare-table"></table></div>
+    <div class="sc-compare-pair cmp-pair" id="compare-pairs" hidden></div>
   </section>
 
   <section class="sc-card" id="finalists-card" hidden>
@@ -6204,6 +6205,72 @@
       sub ? el('span', { class: 'sc-note' }, sub) : null,
       best ? el('span', { class: 'sc-note sc-text-good' }, 'best value here') : null);
   }
+  // A reading position, not a shopping choice. Like the saved-car pair, this
+  // keeps two complete records in view on a phone. The native table is the
+  // source: clone its cells, including unknowns, estimate marks and the one
+  // value label already decided over ALL columns. Never rescore a pair.
+  let compareFocus = [];
+  function renderComparePair(table, cols, byTrim) {
+    const host = $('compare-pairs'), card = $('compare-card');
+    host.replaceChildren(); host.hidden = true; delete card.dataset.pairReady;
+    if (S.workspace !== 'compare') return;
+    const keys = cols.map((c) => c.key);
+    const a = keys.includes(compareFocus[0]) ? compareFocus[0] : keys[0];
+    const b = keys.includes(compareFocus[1]) && compareFocus[1] !== a ? compareFocus[1] : keys.find((k) => k !== a);
+    compareFocus = [a, b];
+    const kind = byTrim ? 'trim' : 'model';
+    const heads = el('div', { class: 'sc-compare-pair__heads' });
+    compareFocus.forEach((key, side) => {
+      const c = cols.find((v) => v.key === key);
+      const head = el('div', { class: 'sc-compare-pair__head cmp-pair__head', 'data-compare-key': key });
+      if (cols.length > 2) {
+        const label = `${side ? 'Right' : 'Left'} ${kind}`;
+        const select = el('select', { class: 'sc-select', 'aria-label': label, 'data-compare-side': String(side) });
+        cols.forEach((v) => select.appendChild(el('option', { value: v.key }, v.label)));
+        select.value = key;
+        select.onchange = () => {
+          // Selecting the other visible model swaps the pair; no duplicate
+          // column and no lost choice. Focus stays on the control just used.
+          const next = select.value;
+          if (next === compareFocus[1 - side]) compareFocus[1 - side] = key;
+          compareFocus[side] = next;
+          renderComparePair(table, cols, byTrim);
+          host.querySelector(`[data-compare-side="${side}"]`).focus({ preventScroll: true });
+        };
+        head.append(el('label', { class: 'sc-eyebrow' }, label, select));
+      }
+      head.append(el('p', { class: 'cmp-pair__identity' }, el('strong', null, c.label),
+        el('span', { class: 'sc-note' }, c.sub)),
+        roleChip(c.shopping),
+        el('button', { type: 'button', class: 'sc-btn sc-btn--secondary sc-btn--sm',
+          'aria-label': `${c.goTxt.replace(' →', '')} ${c.label}`, onclick: () => {
+            c.go();
+            // The action rebuilds (or removes) this pair. Land on the visible
+            // workspace heading, so the next Tab continues in the new scope.
+            const heading = document.querySelector('.shop-title');
+            heading.tabIndex = -1; heading.focus({ preventScroll: true });
+          } }, c.goTxt));
+      heads.appendChild(head);
+    });
+    host.append(el('p', { class: 'cmp-pair__count' }, cols.length > 2
+      ? `View any two ${kind}s. All ${cols.length} stay in this comparison.`
+      : `Both ${kind}s, one measure at a time.`), heads);
+    const list = el('dl', { class: 'sc-compare-pair__rows' });
+    for (const row of table.tBodies[0].rows) {
+      const metric = row.cells[0];
+      list.appendChild(el('dt', { class: 'sc-compare-pair__measure', title: metric.title || null }, metric.textContent));
+      const values = el('dd', { class: 'sc-compare-pair__values' });
+      for (const key of compareFocus) {
+        const cell = row.cells[keys.indexOf(key) + 1];
+        const value = el('div', { class: 'sc-compare-pair__value' + (cell.classList.contains('is-best') ? ' is-best' : ''),
+          'data-compare-key': key, title: cell.title || null, 'data-basis': cell.getAttribute('data-basis') });
+        for (const child of cell.childNodes) value.appendChild(child.cloneNode(true));
+        values.appendChild(value);
+      }
+      list.appendChild(values);
+    }
+    host.appendChild(list); host.hidden = false; card.dataset.pairReady = 'true';
+  }
   function renderCompare() {
     const card = $('compare-card');
     const on = S.brand === 'all' ? comparingModels() : comparingTrims();
@@ -6219,9 +6286,19 @@
     // number that survives the comparison is how far under ITS OWN typical
     // price a car sits — the same rule the picks are chosen by — so that is the
     // only row that names a winner.
-    $('compare-hint').textContent = `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters`
+    const explanation = `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters`
       + `, each column its own market. Prices are not scored against each other — a cheaper car is not a better one — so at most one row marks a winner: “best value vs typical”, and only when every column’s best car had enough siblings of its own trim and year to be judged against them.`
       + financeNote() + costBasisNote();
+    const hint = $('compare-hint');
+    const wasOpen = !!hint.querySelector('details[open]');
+    hint.replaceChildren();
+    if (S.workspace === 'compare') {
+      const details = el('details', { class: 'sc-details sc-disclosure cmp-basis' },
+        el('summary', null, 'How to read the values and estimates'), el('p', null, explanation));
+      details.open = wasOpen;
+      hint.append(el('p', { class: 'cmp-summary' },
+        `${cols.length} ${byTrim ? 'trims' : 'models'} under the current filters. Each has its own market; there is no overall winner.`), details);
+    } else hint.textContent = explanation;
     const stat = cols.map((c) => {
       const priced = c.rows.filter(hasPrice);
       const drive = priced.filter(isLocal);
@@ -6278,7 +6355,7 @@
       head.appendChild(el('th', { class: 'sc-case', scope: 'col',
         'aria-label': `${v.c.label}${v.c.sub ? ', ' + v.c.sub : ''}` },
         keyLine(v.c.tone, v.c.dash, v.c.shopping),
-        el('span', null, v.c.label),
+        el('span', { class: 'cmp-name' }, v.c.label),
         el('span', { class: 'sc-note' }, v.c.sub),
         el('span', { class: 'sc-nowrap' },
           roleChip(v.c.shopping), ' ',
@@ -6385,6 +6462,7 @@
       // column should read as an empty spark rather than borrow a number
       stat.map((v) => el('td', null, spark(v.c.daily.filter((d) => d.min_price != null).map((d) => d.min_price), 90, 26, v.c.shopping, v.c.tone))));
     table.appendChild(body);
+    renderComparePair(table, cols, byTrim);
     markClipped(table.closest('.sc-table-scroll'));
   }
 
@@ -6726,6 +6804,15 @@
     if (S.workspace !== 'report') {
       prev = $('shopping-workspace');
       sequence = ['filters-card', 'notice', 'map-card', 'finalists-card', 'finance-settings', 'compare-card', 'signal-card', 'hero-card', 'kpis', 'shortlist', 'takeaway', 'list-card', 'chart-card', 'scatter-card', 'notes-card', 'gone-card', 'overview-card', 'promo-card', 'next-callout', 'car-heading'];
+      if (S.workspace === 'compare') {
+        // A returning shortlist leads. Before any car is saved, the chosen
+        // models lead instead of an empty garage and a financing form.
+        const hasSaved = finalists().length > 0;
+        sequence = ['filters-card', 'notice', ...(hasSaved ? ['finalists-card'] : []),
+          'compare-card', 'signal-card', 'hero-card', ...(!hasSaved ? ['finalists-card'] : []),
+          'finance-settings', 'kpis', 'shortlist', 'takeaway', 'list-card', 'chart-card',
+          'scatter-card', 'notes-card', 'gone-card', 'overview-card', 'promo-card', 'map-card', 'next-callout', 'car-heading'];
+      }
     } else if ($('car-heading').previousElementSibling !== $('shopping-workspace')) {
       $('shopping-workspace').after($('car-heading'));
     }

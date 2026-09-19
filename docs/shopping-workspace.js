@@ -30,11 +30,12 @@
     }
     host.append(intro, scope, nav);
 
-    const dialog = el('dialog', 'shop-picker'); dialog.setAttribute('aria-labelledby', 'shop-picker-title');
+    const dialog = el('dialog', 'shop-picker'); dialog.setAttribute('aria-labelledby', 'shop-picker-title'); dialog.setAttribute('aria-describedby', 'shop-picker-guide');
     const heading = el('div', 'shop-picker-head'); const words = el('div');
-    const h = el('h2', '', 'What are you shopping for?'); h.id = 'shop-picker-title';
-    words.append(h, el('p', '', 'Choose any mix of models. Your choices shape the cars, recommendations and comparisons. Marking a brand as interesting keeps it in view while you decide; it chooses no model and changes no recommendation.'));
+    const h = el('h2', '', 'Choose cars'); h.id = 'shop-picker-title';
+    words.append(h);
     heading.append(words, button('Close', 'shop-quiet', () => dialog.close()));
+    const guide = el('p', 'shop-picker-guide', 'Interested brands stay in view. Only selected models shape recommendations.'); guide.id = 'shop-picker-guide';
     const controls = el('div', 'shop-picker-controls');
     const search = el('input', 'shop-search'); search.type = 'search'; search.placeholder = 'Search make or model'; search.setAttribute('aria-label', 'Search available car models');
     // Narrows the list to the brands marked interesting — a view of the draft,
@@ -62,7 +63,7 @@
       if (modelsChanged || (!interestChanged && draft.size)) api.shop([...draft]);
       dialog.close();
     });
-    bottom.append(selected, apply); dialog.append(heading, controls, choices, empty, bottom); document.body.append(dialog);
+    bottom.append(selected, apply); dialog.append(heading, guide, controls, choices, bottom); document.body.append(dialog);
     let draft = new Set(), initialModels = new Set(), draftInterest = new Set(), initialInterest = new Set(), order = [], onlyInterested = false;
     search.oninput = drawChoices;
     dialog.addEventListener('click', (e) => { if (e.target === dialog) { const r = dialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close(); } });
@@ -131,14 +132,15 @@
         group.classList.toggle('is-interested', draftInterest.has(key));
         group.append(head, grid); choices.append(group);
       }
-      empty.hidden = shown > 0; selectAll.textContent = 'Select all ' + models.length; countSelection();
+      empty.hidden = shown > 0; choices.append(empty); selectAll.textContent = 'Select all ' + models.length; countSelection();
     }
     function countSelection() {
       const n = draft.size, k = draftInterest.size;
       selected.textContent = n + ' model' + (n === 1 ? '' : 's') + ' selected · ' + (k ? 'interested in ' + k + ' brand' + (k === 1 ? '' : 's') : 'no brands marked');
       // Zero models is a choice the reader can make and keep: the brands stay
       // marked and no model is chosen for them.
-      apply.textContent = n ? 'Shop these models' : 'Save with no models';
+      const interestOnly = !sameSet(draftInterest, initialInterest) && sameSet(draft, initialModels);
+      apply.textContent = interestOnly ? 'Save brand interest' : n ? 'Shop these models' : 'Save with no models';
     }
     function update() {
       const models = api.models(), current = api.scope(), saved = models.filter((m) => m.shopping), view = api.currentView();

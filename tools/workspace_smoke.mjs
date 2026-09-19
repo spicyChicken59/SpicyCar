@@ -103,7 +103,7 @@ try {
   const modelsBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('spicycar.prefs')).shoppingModels);
   const subtitleBefore=await page.locator('.shop-subtitle').textContent();
   await page.getByRole('button',{name:'Interested in '+firstBrand.label,exact:true}).click();
-  await page.getByRole('button',{name:'Shop these models',exact:true}).click();
+  await page.getByRole('button',{name:'Save brand interest',exact:true}).click();
   await page.waitForFunction(()=>!document.querySelector('.shop-picker[open]'));
   const written=await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem('spicycar.prefs'));return {models:p.shoppingModels,interest:p.interestedBrands};});
   assert.deepEqual(written.interest,[firstKey],'the interest is written');
