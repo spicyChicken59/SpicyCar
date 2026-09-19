@@ -1,50 +1,52 @@
-# SpicyCar — 2026-09-18
+# SpicyCar — 2026-09-19
 
 ## Today
 
-- ▼ $5,000 cut · Porsche Taycan · now $100,300 · Hinsdale, IL · drivable `WP0AD2Y14RSA47814`
-- ▼ $2,000 cut · Lucid Air Pure · now $35,995 · Midlothian, IL · drivable `50EA1PGA3RA004314`
-- ▼ $1,599 cut · Volkswagen ID.4 · now $20,400 · Countryside, IL · drivable `1V2BMPE88RC020530`
-- …and 65 more cuts today on models the sections below do not cover
+- ▼ $18,261 cut · BMW i5 xDrive40 · now $58,915 · Indianapolis, IN · drivable `WBY33HG01TCV35364`
+- ▼ $4,050 cut · BMW i5 xDrive40 · now $60,393 · North Canton, OH · drivable `WBY33HG09TCV33104`
+- ▼ $600 cut · BMW i5 xDrive40 · now $52,990 · Indianapolis, IN · drivable `WBY13HG04SCT78578`
+- …and 92 more cuts today, 18 of them listed in the sections below
+- 19 new on the shopped models (2 listed 14+ days before the tracker saw them — reach, not arrival) · best 13% under typical for a 2026 BMW i5 xDrive40 ($57,895, East Windsor, CT · 8,569 mi, from 23 such cars)
+- 16 gone since the last fetch on the shopped models
 
 ## Shopping: BMW i5
 
-_Not fetched today — showing 2026-09-16._
-
-- Lowest asking **$34,989** (Seffner, FL) · + $1,031 shipping · = vs 2026-09-13
+- Lowest asking **$34,989** (Seffner, FL) · + $1,031 shipping · = vs 2026-09-16
 - Lowest drivable **$40,980** (Cincinnati, OH) · no shipping
-- 187 on the market · 31 drivable · 1 with no state · 57 price changes (2 more moved, seen at two prices, not counted) · 36 new · 6 gone
+- 184 on the market · 30 drivable · 70 price changes (1 more moved, seen at two prices, not counted) · 19 new · 16 gone
 
-**New on 2026-09-16 (36)** — first seen on 2026-09-16, 10 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
+**New today (19)** — first seen this run, 2 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
 
-- **$60,797** · 2024 · 3,390 mi · + $704 shipping · Charlottesville, VA · listed 2d ago
-  _7% under typical for a 2024 BMW i5 M60 ($4,553 less, from 42 such cars)_
-  [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK01RCP17199) `WBY43FK01RCP17199`
-- **$58,719** · 2024 · 11,280 mi · + $1,018 shipping · Lubbock, TX · on market 89d, new to the tracker — reach, not arrival
-  _6% under typical for a 2024 BMW i5 M60 ($3,950 less, from 42 such cars)_
-  [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK08RCP14414) `WBY43FK08RCP14414`
-- **$58,110** · 2024 · 19,995 mi · + $704 shipping · Springfield, PA · new to the tracker
-  _4% under typical for a 2024 BMW i5 M60 ($2,258 less, from 42 such cars)_
-  [listing](https://piazzahondaspringfield.com/used/BMW/2024-BMW-i5-springfield-pa-c04957f4ac1809a22d7424232e732294.htm) `WBY43FK06RCR38314`
-- **$59,463** · 2024 · 16,635 mi · + $746 shipping · Decatur, GA · on market 16d, new to the tracker — reach, not arrival
-  _3% under typical for a 2024 BMW i5 M60 ($1,871 less, from 42 such cars)_
-  [listing](https://nalleybmw.com/used/BMW/2024-BMW-i5-in-Atlanta-536653cfac1838d32b575b0e88dde50d.htm) `WBY43FK08RCP34968`
-- **$62,737** · 2024 · 10,117 mi · + $828 shipping · Linden, NJ · listed 3d ago
-  [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK05RCP43384) `WBY43FK05RCP43384`
-- **$54,985** · 2024 · 36,005 mi · + $911 shipping · Dallas, TX · listed 3d ago
-  [listing](https://www.autolist.com/bmw-i5#vin=WBY43FK09RCR42146) `WBY43FK09RCR42146`
-- **$58,497** · 2024 · 23,226 mi · + $1,238 shipping · Mesa, AZ · on market 20d, new to the tracker — reach, not arrival
-  [listing](https://azbeemer.com/used/BMW/2024-BMW-i5-3f915e5fac1827bd9540ac6752b984f9.htm) `WBY43FK00RCP78902`
-- **$57,999** · 2024 · 27,236 mi · + $1,380 shipping · Santa Clara, CA · listed 0d ago
-  [listing](https://stevenscreekbmw.com/certified/BMW/2024-BMW-i5-near-San-Jose-a5f7845aac18279fde168c340a37ca9c.htm) `WBY43FK04RCP74030`
-- …and 28 more on the dashboard
+- **$57,895** · 2026 · 8,569 mi · + $890 shipping · East Windsor, CT · listed 4d ago
+  _13% under typical for a 2026 BMW i5 xDrive40 ($7,941 less, from 23 such cars)_
+  [listing](https://northbayimports.com/used/BMW/2026-BMW-i5-a240974fac183ecbd73d4eae2e40f097.htm) `WBY33HG0XTCW42249`
+- **$60,102** · 2026 · 7,425 mi · + $890 shipping · McKinney, TX · on market 8d, new to the tracker
+  _10% under typical for a 2026 BMW i5 xDrive40 ($6,078 less, from 23 such cars)_
+  [listing](https://hendrickcars.com/used/BMW/2026-BMW-i5-8ba43c92ac1813b262e6ac10aa8c9aa9.htm) `WBY33HG09TCX09794`
+- **$60,102** · 2026 · 11,777 mi · + $725 shipping · Greensboro, NC · on market 8d, new to the tracker
+  _8% under typical for a 2026 BMW i5 xDrive40 ($4,937 less, from 23 such cars)_
+  [listing](https://hendrickcars.com/certified/BMW/2026-BMW-i5-8d5ca2d3ac18112a41dc78ae0b217ec3.htm) `WBY33HG09TCX12744`
+- **$57,076** · 2025 · 4,433 mi · + $746 shipping · Cicero, NY · on market 8d, new to the tracker
+  [listing](https://www.carfax.com/vehicle/WBY13HG00SCS64562) `WBY13HG00SCS64562`
+- **$65,153** · 2026 · 5,023 mi · + $931 shipping · Nashua, NH · on market 25d, new to the tracker — reach, not arrival
+  [listing](https://www.carfax.com/vehicle/WBY33HG05TCX09744) `WBY33HG05TCX09744`
+- **$57,991** · 2025 · 3,093 mi · + $1,058 shipping · Sarasota, FL · listed 1d ago
+  [listing](https://www.carfax.com/vehicle/WBY13HG03SCT23961) `WBY13HG03SCT23961`
+- **$55,482** · 2025 · 14,900 mi · + $1,336 shipping · Escondido, CA · on market 9d, new to the tracker
+  [listing](https://www.carfax.com/vehicle/WBY13HG09SCT07490) `WBY13HG09SCT07490`
+- **$57,839** · 2025 · 7,476 mi · + $1,327 shipping · Bend, OR · listed 4d ago
+  [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG07SCT15216) `WBY13HG07SCT15216`
+- …and 11 more on the dashboard
 
 **Spicy picks** — under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical price for its model — its own trim and model year when there are enough of them — a car sits, allowing $0.30 a mile. A car is under typical only when its value sits below the 95% interval of its cohort's median: 6 cars make a cohort, and nine are the fewest that can put a car outside it
 
 _Drivable (IL/OH/IN/WI):_
 
-- **$53,590** · BMW i5 · 2025 · 11,770 mi · drivable · no shipping · Indianapolis, IN
-  _spicy pick: 8% under typical for a 2025 BMW i5 xDrive40 ($4,559 less, from 28 such cars)_ · _2 owners · no accidents · ex-lease_
+- **$58,915** · BMW i5 · 2026 · 8,134 mi · drivable · no shipping · Indianapolis, IN
+  _spicy pick: 13% under typical for a 2026 BMW i5 xDrive40 ($7,942 less, from 23 such cars)_ · _no accidents_
+  [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG01TCV35364) `WBY33HG01TCV35364`
+- **$52,990** · BMW i5 · 2025 · 11,770 mi · drivable · no shipping · Indianapolis, IN
+  _spicy pick: 8% under typical for a 2025 BMW i5 xDrive40 ($4,163 less, from 26 such cars)_ · _2 owners · no accidents · ex-lease_
   [listing](https://www.carvana.com/vehicle/4612575) `WBY13HG04SCT78578`
 - **$44,486** · BMW i5 · 2024 · 15,707 mi · drivable · no shipping · Madison, WI
   _spicy pick: 7% under typical for a 2024 BMW i5 eDrive40 ($3,162 less, from 23 such cars)_ · _2 owners · no accidents_
@@ -52,27 +54,24 @@ _Drivable (IL/OH/IN/WI):_
 - **$41,990** · BMW i5 · 2024 · 26,983 mi · drivable · no shipping · Indianapolis, IN
   _spicy pick: 5% under typical for a 2024 BMW i5 eDrive40 ($2,275 less, from 23 such cars)_ · _2 owners · no accidents · ex-lease_
   [listing](https://www.carvana.com/vehicle/4620141) `WBY33FK09RCR29277`
-- **$63,189** · BMW i5 · 2024 · 5,983 mi · drivable · no shipping · New Albany, IN
-  _spicy pick: 3% under typical for a 2024 BMW i5 M60 ($2,087 less, from 42 such cars)_ · _1-owner · no accidents_
-  [listing](https://www.carfax.com/vehicle/WBY43FK04RCR40756) `WBY43FK04RCR40756`
 
 _Worth the ship:_
 
 - **$46,995** · BMW i5 · 2024 · 13,399 mi · + $951 shipping · Allston, MA
   _spicy pick: 25% under typical for a 2024 BMW i5 M60 ($15,105 less, from 42 such cars)_ · _1-owner · no accidents_
   [listing](https://bostonforeignmotor.com/used/BMW/2024-BMW-i5-d285e603ac182ab4c93744180d2b5d81.htm) `WBY43FK03RCR45219`
-- **$46,538** · BMW i5 · 2025 · 6,895 mi · + $808 shipping · Haddon Township, NJ
-  _spicy pick: 22% under typical for a 2025 BMW i5 xDrive40 ($12,265 less, from 28 such cars)_ · _1-owner · no accidents_
+- **$45,038** · BMW i5 · 2025 · 6,895 mi · + $808 shipping · Haddon Township, NJ
+  _spicy pick: 23% under typical for a 2025 BMW i5 xDrive40 ($12,770 less, from 26 such cars)_ · _1-owner · no accidents_
   [listing](https://www.carfax.com/vehicle/WBY13HG09SCS84860) `WBY13HG09SCS84860`
-- **$53,397** · BMW i5 · 2026 · 7,100 mi · + $642 shipping · Lincoln, NE
-  _spicy pick: 22% under typical for a 2026 BMW i5 xDrive40 ($13,801 less, from 17 such cars)_ · _1-owner · no accidents · ex-lease_
-  [listing](https://www.carfax.com/vehicle/WBY33HG07TCV19623) `WBY33HG07TCV19623`
 - **$53,970** · BMW i5 · 2026 · 13,015 mi · + $911 shipping · Plano, TX
-  _spicy pick: 17% under typical for a 2026 BMW i5 xDrive40 ($11,185 less, from 17 such cars)_ · _no accidents_
+  _spicy pick: 17% under typical for a 2026 BMW i5 xDrive40 ($10,512 less, from 23 such cars)_ · _no accidents_
   [listing](https://ecarone.com/used/BMW/2026-BMW-i5-near-dallas-tx-c9e1909aac184b0abbcdc639efcdf44c.htm) `WBY33HG0XTCV98446`
+- **$57,895** · BMW i5 · 2026 · 8,569 mi · + $890 shipping · East Windsor, CT
+  _spicy pick: 13% under typical for a 2026 BMW i5 xDrive40 ($7,941 less, from 23 such cars)_ · _1-owner · no accidents_
+  [listing](https://northbayimports.com/used/BMW/2026-BMW-i5-a240974fac183ecbd73d4eae2e40f097.htm) `WBY33HG0XTCW42249`
 
-_187 vehicles across 3 trims · IL 14 · OH 6 · IN 8 · WI 3 · beyond 155 · no state 1_
-_typical car 16d on market (141 of 187 dated) — 15 dealer stock at 46d, 115 used at 17d, 11 with no mileage · 70 of 95 ask less than when first seen, median $1,200 less · 5 cut and put back · 79% of 95 cut while tracked, median $600 of 160 cuts · 3 seen at two prices, not counted_
+_184 vehicles across 3 trims · IL 15 · OH 5 · IN 7 · WI 3 · beyond 154_
+_typical car 16d on market (140 of 184 dated) · 81 of 112 ask less than when first seen, median $1,340 less · 5 cut and put back · 77% of 112 cut while tracked, median $600 of 180 cuts · 2 seen at two prices, not counted · listings ran at least ~32d (18 of 29 dated)_
 
 ### eDrive40 — 57 vehicles · lowest asking $34,989 (Seffner, FL)
 
@@ -152,102 +151,123 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   Capitol Nissan — [listing](https://www.autolist.com/bmw-i5#vin=WBY33FK06RCR58557)
   `WBY33FK06RCR58557`
 
-### xDrive40 — 62 vehicles · lowest asking $46,538 (Haddon Township, NJ)
+### xDrive40 — 59 vehicles tracked of 75 the API lists nationwide · lowest asking $45,038 (Haddon Township, NJ)
 
 **Price changes**
-- $56,931 -> **$61,900** (Auburn, WA) `WBY13HG09SCT67334`
-- $57,069 -> **$58,914** (San Francisco, CA) `WBY13HG03SCS39347`
-- $57,990 -> **$56,990** (Troutdale, OR) `WBY13HG01SCT06284`
-- $56,297 -> **$57,196** (Palmetto Bay, FL) `WBY13HG07SCS61030`
-- $50,239 -> **$49,679** (Rockville, MD) `WBY13HG04SCS35730`
-- $52,250 -> **$51,750** (Miami, FL) `WBY13HG08SCT69740`
-- $54,393 -> **$53,893** (Newton, NJ) `WBY13HG06SCS47605`
-- $53,990 -> **$53,590** (Indianapolis, IN) `WBY13HG04SCT78578`
-- $57,979 -> **$57,894** (Costa Mesa, CA) `WBY13HG09SCT73313`
+- $77,176 -> **$58,915** (Indianapolis, IN) `WBY33HG01TCV35364`
+- $64,443 -> **$60,393** (North Canton, OH) `WBY33HG09TCV33104`
+- $61,534 -> **$57,825** (Houston, TX) `WBY33HG06TCV98749`
+- $70,698 -> **$68,698** (West Palm Beach, FL) `WBY33HG08TCV19629`
+- $46,538 -> **$45,038** (Haddon Township, NJ) `WBY13HG09SCS84860`
+- $54,290 -> **$53,229** (Bridgeport, CT) `WBY13HG08SCS30644`
+- $54,195 -> **$53,195** (Sewell, NJ) `WBY13HG0XSCS85628`
+- $65,007 -> **$64,033** (Spokane, WA) `WBY33HG04TCX11792`
+- $57,196 -> **$56,297** (Palmetto Bay, FL) `WBY13HG07SCS61030`
+- $62,256 -> **$61,561** (Ann Arbor, MI) `WBY33HG08TCW01117`
+- $53,590 -> **$52,990** (Indianapolis, IN) `WBY13HG04SCT78578`
+- $57,590 -> **$56,990** (Chicago, IL) `WBY13HG08SCT75926`
+- $49,679 -> **$49,129** (Rockville, MD) `WBY13HG04SCS35730`
+- $64,472 -> **$63,923** (Raleigh, NC) `WBY33HG04TCV40901`
+- $53,893 -> **$53,393** (Newton, NJ) `WBY13HG06SCS47605`
+- $55,500 -> **$55,000** (Miami, FL) `WBY13HG08SCT19677`
+- $56,990 -> **$56,490** (Troutdale, OR) `WBY13HG01SCT06284`
+- $53,052 -> **$53,465** (Ottawa, IL) `WBY13HG03SCT44406`
+- $63,950 -> **$63,925** (Elmhurst, IL) `WBY33HG0XTCW20767`
+- $53,811 -> **$53,795** (Margate, FL) `WBY13HG05SCT74359`
+- $66,577 -> **$66,576** (Los Angeles, CA) `WBY33HG08TCW28107`
+- $67,777 -> **$67,776** (Los Angeles, CA) `WBY33HG08TCU95414`
 
-**Gone since 2026-09-07**
-- $51,476 · 2025 · Fort Washington, PA · seen 9 of 9 fetches `WBY13HG00SCU51722`
+**Gone since 2026-09-10**
+- $47,500 · 2025 · Marietta, GA · seen 5 of 5 fetches `WBY13HG09SCS35108`
+- $48,643 · 2025 · Mission, KS · seen 10 of 10 fetches `WBY13HG06SCS41187`
+- $51,750 · 2025 · Miami, FL · seen 10 of 10 fetches `WBY13HG08SCT69740`
+- $53,397 · 2026 · Lincoln, NE · seen once `WBY33HG07TCV19623`
+- $73,900 · 2026 · Chicago, IL · seen once `WBY33HG0XTCX21369`
+- $76,365 · 2025 · Fort Wayne, IN · seen 10 of 10 fetches `WBY13HG08SCU89179`
+- $81,849 · 2027 · Saint Louis, MO · seen once `WBY33HG08VCY20081`
+- $82,079 · 2027 · Grand Rapids, MI · seen once `WBY33HG05VCY18336`
+- $82,714 · 2027 · Grand Rapids, MI · seen once `WBY33HG05VCY44130`
+- $84,038 · 2027 · Dublin, OH · seen once `WBY33HG07VCY05961`
+- $84,439 · 2027 · Lake Bluff, IL · seen once `WBY33HG01VCY49602`
 
-**Illinois (7)**
-- **$53,052** · 27,530 mi · no shipping · 2025 · Ottawa, IL · ~75 mi from Chicago
-  _1-owner · no accidents_
+**Illinois (8)**
+- **$53,465** · 27,530 mi · no shipping · 2025 · Ottawa, IL · ~75 mi from Chicago
+  _on market 35d · 1-owner · no accidents_
   Ottawa Honda — [listing](https://www.ottawahonda.net/viewdetails/used/wby13hg03sct44406/2025-bmw-i5-4dr-car?type=finance)
   `WBY13HG03SCT44406`
-- **$63,950** · 9,320 mi · no shipping · 2026 · Elmhurst, IL · ~25 mi from Chicago
-  _1-owner · no accidents_
+- **$56,990** · 23,649 mi · no shipping · 2025 · Chicago, IL · ~25 mi from Chicago
+  _down 1x (-$600) · 2 owners · no accidents · ex-lease_
+  Carvana - Chicago — [listing](https://www.carvana.com/vehicle/4729719)
+  `WBY13HG08SCT75926`
+- **$59,995** · no shipping · 2025 · Lake Bluff, IL · ~25 mi from Chicago
+  _NEW · CPO_
+  knauz bmw — [listing](https://knauzbmw.com/certified/BMW/2025-BMW-i5-chicago-lake-bluff-b10fd765ac185fef39d0f00f3a2295a7.htm)
+  `WBY13HG04SCS25764`
+- **$63,925** · 9,320 mi · no shipping · 2026 · Elmhurst, IL · ~25 mi from Chicago
+  _down 1x (-$25) · 1-owner · no accidents_
   Al Piemonte Buick GMC — [listing](https://www.apchevy.com/used-East+Dundee-2026-BMW-i5-xDrive40-WBY33HG0XTCW20767)
   `WBY33HG0XTCW20767`
 - **$68,499** · 1,140 mi · no shipping · 2027 · Lake Bluff, IL · ~25 mi from Chicago
   _no accidents_
   knauz bmw — [listing](https://knauzbmw.com/exotic-used/BMW/2027-BMW-i5-chicago-lake-bluff-d21f0d79ac180d900968ba8e11f26eb7.htm)
   `WBY33HG09VCY18016`
-- **$69,996** · 7,730 mi · no shipping · 2026 · Downers Grove, IL · ~25 mi from Chicago
+- **$69,996** · 11,697 mi · no shipping · 2026 · Downers Grove, IL · ~25 mi from Chicago
+  _on market 38d_
   zeigler chrysler dodge jeep ram of downers grove — [listing](https://zeiglerchryslerdodge.com/exotic-used/BMW/2026-BMW-i5-873c6b49ac18186e0c580df9a34257ea.htm)
   `WBY33HG05TCV35822`
-- **$73,900** · 1,978 mi · no shipping · 2026 · Chicago, IL · ~25 mi from Chicago
-  _on market 277d_
-  Perillo BMW — [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG0XTCX21369)
-  `WBY33HG0XTCX21369`
-- **$84,439** · 14 mi · no shipping · 2027 · Lake Bluff, IL · ~25 mi from Chicago
-  _on market 56d_
-  Knauz BMW — [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG01VCY49602)
-  `WBY33HG01VCY49602`
+- **$71,995** · 45 mi · no shipping · 2026 · Northfield, IL · ~25 mi from Chicago
+  _NEW · CPO_
+  fields bmw northfield — [listing](https://fieldsbmwnorthfield.com/certified/BMW/2026-BMW-i5-Chicago-a3874e31ac1817c99dfd0f5cc70a3d0c.htm)
+  `WBY33HG04TCX41195`
 - **$85,679** · 5 mi · no shipping · 2027 · Lake Bluff, IL · ~25 mi from Chicago
-  _on market 47d_
+  _on market 56d_
   Knauz BMW — [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG05VCY57248)
   `WBY33HG05VCY57248`
 
-**Ohio (3)**
-- **$64,443** · 8,725 mi · no shipping · 2026 · North Canton, OH · ~325 mi from Chicago
-  _on market 30d · fleet · 1-owner · no accidents_
+**Ohio (2)**
+- **$60,393** · 8,725 mi · no shipping · 2026 · North Canton, OH · ~325 mi from Chicago
+  _down 1x (-$4,050) · on market 39d · rental · 1-owner · no accidents_
   BMW of North Canton — [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG09TCV33104)
   `WBY33HG09TCV33104`
 - **$78,350** · no shipping · 2026 · Toledo, OH · ~200 mi from Chicago
   yark bmw — [listing](https://bmwoftoledo.com/exotic-used/BMW/2026-BMW-i5-0497772fac18323495e8dcd767d29cc9.htm)
   `WBY33HG07TCX30157`
-- **$84,038** · 1 mi · no shipping · 2027 · Dublin, OH · ~275 mi from Chicago
-  _on market 171d_
-  BMW of Dublin — [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG07VCY05961)
-  `WBY33HG07VCY05961`
 
-**Indiana (4)**
-- **$53,590** · 11,770 mi · no shipping · 2025 · Indianapolis, IN · ~175 mi from Chicago
-  _down 3x (-$2,400) · on market 30d · 2 owners · no accidents · ex-lease_
-  Carvana - Indianapolis — [listing](https://www.carvana.com/vehicle/4612575)
+**Indiana (3)**
+- **$52,990** · 11,770 mi · no shipping · 2025 · Indianapolis, IN · ~175 mi from Chicago
+  _down 4x (-$3,000) · on market 39d · 2 owners · no accidents · ex-lease_
+  Carvana — [listing](https://www.carvana.com/vehicle/4612575)
   `WBY13HG04SCT78578`
+- **$58,915** · 8,134 mi · no shipping · 2026 · Indianapolis, IN · ~150 mi from Chicago
+  _down 1x (-$18,261) · no accidents_
+  Dreyer & Reinbold BMW MINI — [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG01TCV35364)
+  `WBY33HG01TCV35364`
 - **$72,899** · 10,474 mi · no shipping · 2026 · Indianapolis, IN · ~150 mi from Chicago
   _fleet · 1-owner · no accidents_
   Dreyer & Reinbold BMW MINI — [listing](https://www.carfax.com/vehicle/WBY33HG0XTCW04391)
   `WBY33HG0XTCW04391`
-- **$76,365** · 1,661 mi · no shipping · 2025 · Fort Wayne, IN · ~125 mi from Chicago
-  _on market 531d_
-  BMW of Fort Wayne — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG08SCU89179)
-  `WBY13HG08SCU89179`
-- **$77,176** · no shipping · 2026 · Indianapolis, IN · ~150 mi from Chicago
-  Dreyer & Reinbold BMW — [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG01TCV35364)
-  `WBY33HG01TCV35364`
 
 **Lowest asking beyond your states (shipping estimated)**
-- **$46,538** · 6,895 mi · + $808 shipping = $47,346 · 2025 · Haddon Township, NJ · ~675 mi from Chicago
-  _1-owner · no accidents_
+- **$45,038** · 6,895 mi · + $808 shipping = $45,846 · 2025 · Haddon Township, NJ · ~675 mi from Chicago
+  _down 1x (-$1,500) · 1-owner · no accidents_
   Royal Auto Group — [listing](https://www.carfax.com/vehicle/WBY13HG09SCS84860)
   `WBY13HG09SCS84860`
-- **$47,500** · 7,363 mi · + $725 shipping = $48,225 · 2025 · Marietta, GA · ~575 mi from Chicago
-  _down 1x (-$898) · 1-owner · 1 accident · ex-lease_
-  Drive A Dream — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG09SCS35108)
-  `WBY13HG09SCS35108`
-- **$48,643** · 30,750 mi · + $601 shipping = $49,244 · 2025 · Mission, KS · ~425 mi from Chicago
-  _down 1x (-$2,545) · 1-owner · no accidents_
-  BMW MINI of Shawnee Mission — [listing](https://www.carfax.com/vehicle/WBY13HG06SCS41187)
-  `WBY13HG06SCS41187`
+- **$49,129** · 33,849 mi · + $725 shipping = $49,854 · 2025 · Rockville, MD · ~575 mi from Chicago
+  _down 3x (-$1,665) · 1-owner · no accidents_
+  bmw of rockville — [listing](https://bmwrockville.com/used/BMW/2025-BMW-i5-3025d47fac18090df99629c93f1b130d.htm)
+  `WBY13HG04SCS35730`
 - **$49,163** · 17,493 mi · + $746 shipping = $49,909 · 2025 · Watertown, NY · ~600 mi from Chicago
-  _seen at $48,988 and $49,163 · on market 184d · 1-owner · no accidents_
+  _seen at $48,988 and $49,163 · on market 193d · 1-owner · no accidents_
   Bob Johnson Chrysler Dodge Jeep Ram — [listing](https://www.autolist.com/bmw-i5#vin=WBY13HG02SCS75188)
   `WBY13HG02SCS75188`
-- **$49,679** · 33,849 mi · + $725 shipping = $50,404 · 2025 · Rockville, MD · ~575 mi from Chicago
-  _down 2x (-$1,115) · 1-owner · no accidents · ex-lease_
-  BMW of Rockville — [listing](https://bmwrockville.com/used/BMW/2025-BMW-i5-3025d47fac18090df99629c93f1b130d.htm)
-  `WBY13HG04SCS35730`
+- **$53,195** · 11,674 mi · + $808 shipping = $54,003 · 2025 · Sewell, NJ · ~675 mi from Chicago
+  _down 4x (-$1,799) · 1-owner · no accidents · ex-lease_
+  Automotive Avenues of Sewell — [listing](https://www.carfax.com/vehicle/WBY13HG0XSCS85628)
+  `WBY13HG0XSCS85628`
+- **$53,229** · 25,551 mi · + $870 shipping = $54,099 · 2025 · Bridgeport, CT · ~750 mi from Chicago
+  _down 3x (-$2,152) · 1-owner · no accidents_
+  BMW of Bridgeport — [listing](https://www.carfax.com/vehicle/WBY13HG08SCS30644)
+  `WBY13HG08SCS30644`
 
 ### M60 — 68 vehicles · lowest asking $46,995 (Allston, MA)
 
@@ -300,15 +320,15 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   Star Auto Works — [listing](https://www.carfax.com/vehicle/WBY43FK07RCR00896)
   `WBY43FK07RCR00896`
 - **$94,024** · 134 mi · no shipping · 2026 · Lake Bluff, IL · ~25 mi from Chicago
-  _NEW · on market 128d_
+  _on market 128d_
   Knauz BMW — [listing](https://www.autolist.com/bmw-i5#vin=WBY43HG04TCX90143)
   `WBY43HG04TCX90143`
 - **$96,012** · 5 mi · no shipping · 2026 · Barrington, IL · ~25 mi from Chicago
-  _NEW · on market 76d_
+  _on market 76d_
   BMW of Barrington — [listing](https://www.autolist.com/bmw-i5#vin=WBY43HG02TCY40909)
   `WBY43HG02TCY40909`
 - **$100,412** · 9 mi · no shipping · 2027 · Chicago, IL · ~25 mi from Chicago
-  _NEW · on market 48d_
+  _on market 48d_
   Perillo BMW — [listing](https://www.autolist.com/bmw-i5#vin=WBY43HG00VCY92638)
   `WBY43HG00VCY92638`
 
@@ -318,7 +338,6 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   The BMW Store — [listing](https://www.carfax.com/vehicle/WBY43FK08SCU82502)
   `WBY43FK08SCU82502`
 - **$94,335** · no shipping · 2026 · Toledo, OH · ~200 mi from Chicago
-  _NEW_
   yark bmw — [listing](https://bmwoftoledo.com/exotic-used/BMW/2026-BMW-i5-449c7a29ac184fc83ca98b6aaaa39846.htm)
   `WBY43HG02TCX93560`
 
@@ -639,12 +658,12 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 
 ### Drivable — IL/OH/IN/WI
 
-- **$53,590** · BMW i5 · 2025 · 11,770 mi · drivable · no shipping · Indianapolis, IN
-  _spicy pick: 8% under typical for a 2025 BMW i5 xDrive40 ($4,559 less, from 28 such cars)_ · _2 owners · no accidents · ex-lease_
+- **$58,915** · BMW i5 · 2026 · 8,134 mi · drivable · no shipping · Indianapolis, IN
+  _spicy pick: 13% under typical for a 2026 BMW i5 xDrive40 ($7,942 less, from 23 such cars)_ · _no accidents_
+  [listing](https://www.autolist.com/bmw-i5#vin=WBY33HG01TCV35364) `WBY33HG01TCV35364`
+- **$52,990** · BMW i5 · 2025 · 11,770 mi · drivable · no shipping · Indianapolis, IN
+  _spicy pick: 8% under typical for a 2025 BMW i5 xDrive40 ($4,163 less, from 26 such cars)_ · _2 owners · no accidents · ex-lease_
   [listing](https://www.carvana.com/vehicle/4612575) `WBY13HG04SCT78578`
-- **$44,486** · BMW i5 · 2024 · 15,707 mi · drivable · no shipping · Madison, WI
-  _spicy pick: 7% under typical for a 2024 BMW i5 eDrive40 ($3,162 less, from 23 such cars)_ · _2 owners · no accidents_
-  [listing](https://rosennissanmadison.com/certified/BMW/2024-BMW-i5-7106ba6eac1824b1018118ba11304b66.htm) `WBY33FK09RCP96469`
 - **$64,729** · BMW i7 · 2024 · 9,354 mi · drivable · no shipping · Greenwood, IN
   _spicy pick: 5% under typical for a 2024 BMW i7 eDrive50 ($2,935 less, from 30 such cars)_ · _no accidents_
   [listing](https://www.carfax.com/vehicle/WBY43EJ0XRCR70324) `WBY43EJ0XRCR70324`
@@ -654,8 +673,8 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 - **$46,995** · BMW i5 · 2024 · 13,399 mi · + $951 shipping · Allston, MA
   _spicy pick: 25% under typical for a 2024 BMW i5 M60 ($15,105 less, from 42 such cars)_ · _1-owner · no accidents_
   [listing](https://bostonforeignmotor.com/used/BMW/2024-BMW-i5-d285e603ac182ab4c93744180d2b5d81.htm) `WBY43FK03RCR45219`
-- **$46,538** · BMW i5 · 2025 · 6,895 mi · + $808 shipping · Haddon Township, NJ
-  _spicy pick: 22% under typical for a 2025 BMW i5 xDrive40 ($12,265 less, from 28 such cars)_ · _1-owner · no accidents_
+- **$45,038** · BMW i5 · 2025 · 6,895 mi · + $808 shipping · Haddon Township, NJ
+  _spicy pick: 23% under typical for a 2025 BMW i5 xDrive40 ($12,770 less, from 26 such cars)_ · _1-owner · no accidents_
   [listing](https://www.carfax.com/vehicle/WBY13HG09SCS84860) `WBY13HG09SCS84860`
 - **$62,000** · BMW i7 · 2024 · 14,531 mi · + $725 shipping · Marietta, GA
   _spicy pick: 15% under typical for a 2024 BMW i7 xDrive60 ($10,757 less, from 24 such cars)_ · _1-owner · no accidents · ex-lease_
@@ -668,25 +687,25 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 
 _By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per TRIM queried — a model with two trims on the watchlist is the union of two such queries, which is why these counts run past 20. Every car is on the dashboard._
 
-- **BMW iX** — 132 cars · 42 drivable · lowest asking $30,788 (Valley Stream, NY) + $849 shipping · drivable from $38,249 (Angola, IN) · median asking $48,941 _(every 3 days)_
-- **BMW i4** — 104 cars · 15 drivable · lowest asking $25,995 (Sherman Oaks, CA) + $1,344 shipping · drivable from $32,367 (Libertyville, IL) · median asking $41,751 _(every 3 days)_
-- **Hyundai Ioniq 9** — 68 cars · 15 drivable · lowest asking $36,950 (Cuyahoga Falls, OH) · drivable from $36,950 (Cuyahoga Falls, OH) · median asking $58,099 _(every 3 days)_
-- **Kia EV9** — 92 cars · 38 drivable · lowest asking $28,499 (Margate, FL) + $1,111 shipping · drivable from $31,402 (Skokie, IL) · median asking $38,687 _(every 3 days · as of 2026-09-16, 2 days ago)_
-- **Audi A6 e-tron** — 31 cars · 3 drivable · lowest asking $39,798 (Owings Mills, MD) + $746 shipping · drivable from $43,709 (Chicago, IL) · median asking $45,908 _(every 3 days · as of 2026-09-17, 1 day ago)_
-- **Lucid Air** — 146 cars · 28 drivable · lowest asking $32,900 (Pleasantville, NJ) + $828 shipping · drivable from $34,893 (Bedford, OH) · median asking $40,923 _(every 3 days)_
-- **Chevrolet Equinox EV** — 66 cars · 23 drivable · lowest asking $21,695 (Lindon, UT) + $1,164 shipping · drivable from $21,855 (Columbus, OH) · median asking $24,101 _(every 3 days · as of 2026-09-17, 1 day ago)_
-- **Ford Mustang Mach-E** — 60 cars · 28 drivable · lowest asking $20,346 (Burnsville, MN) + $496 shipping · drivable from $27,198 (Maumee, OH) · median asking $29,992 _(every 3 days)_
-- **Nissan Ariya** — 58 cars · 37 drivable · lowest asking $17,798 (Jacksonville, FL) + $965 shipping · drivable from $20,873 (Des Plaines, IL) · median asking $24,230 _(every 3 days · as of 2026-09-17, 1 day ago)_
-- **Mercedes-Benz EQB** — 39 cars · 9 drivable · lowest asking $24,000 (Union City, GA) + $746 shipping · drivable from $24,988 (Berwyn, IL) · median asking $31,018 _(every 3 days · as of 2026-09-16, 2 days ago)_
-- **Porsche Taycan** — 76 cars · 16 drivable · lowest asking $48,126 (South Salt Lake City, UT) + $1,164 shipping · drivable from $65,734 (Burbank, IL) · median asking $88,237 _(every 3 days)_
-- **Volkswagen ID.4** — 86 cars · 31 drivable · lowest asking $18,987 (Alpharetta, GA) + $725 shipping · drivable from $20,400 (Countryside, IL) · median asking $22,731 _(every 3 days)_
-- **Cadillac Lyriq** — 68 cars · 31 drivable · lowest asking $23,995 (New Madrid, MO) + $531 shipping · drivable from $28,950 (Cuyahoga Falls, OH) · median asking $34,021 _(every 3 days · as of 2026-09-16, 2 days ago)_
-- **Dodge Charger Daytona** — 51 cars · 3 drivable · lowest asking $28,990 (Quakertown, PA) + $787 shipping · drivable from $30,999 (Springfield, IL) · median asking $36,952 _(every 3 days)_
-- **Rivian R1S** — 74 cars · 15 drivable · lowest asking $50,500 (Longwood, FL) + $1,018 shipping · drivable from $61,900 (Schaumburg, IL) · median asking $63,744 _(every 3 days · as of 2026-09-16, 2 days ago)_
-- **Toyota bZ4X** — 87 cars · 18 drivable · lowest asking $13,799 (Norco, CA) + $1,327 shipping · drivable from $22,998 (Maumee, OH) · median asking $25,993 _(every 3 days · as of 2026-09-17, 1 day ago)_
-- **Honda Prologue** — 84 cars · 29 drivable · lowest asking $19,676 (Fort Wayne, IN) · drivable from $19,676 (Fort Wayne, IN) · median asking $26,348 _(every 3 days · as of 2026-09-17, 1 day ago)_
-- **Acura ZDX** — 68 cars · 15 drivable · lowest asking $26,987 (Merced, CA) + $1,353 shipping · drivable from $29,396 (Marysville, OH) · median asking $31,946 _(every 3 days · as of 2026-09-16, 2 days ago)_
-- **Lexus RZ** — 67 cars · 10 drivable · lowest asking $23,300 (Wake Forest, NC) + $787 shipping · drivable from $32,453 (Lake Villa, IL) · median asking $34,213 _(every 3 days · as of 2026-09-17, 1 day ago)_
+- **BMW iX** — 132 cars · 42 drivable · lowest asking $30,788 (Valley Stream, NY) + $849 shipping · drivable from $38,249 (Angola, IN) · median asking $48,941 _(every 3 days · as of 2026-09-18, 1 day ago)_
+- **BMW i4** — 104 cars · 15 drivable · lowest asking $25,995 (Sherman Oaks, CA) + $1,344 shipping · drivable from $32,367 (Libertyville, IL) · median asking $41,751 _(every 3 days · as of 2026-09-18, 1 day ago)_
+- **Hyundai Ioniq 9** — 68 cars · 15 drivable · lowest asking $36,950 (Cuyahoga Falls, OH) · drivable from $36,950 (Cuyahoga Falls, OH) · median asking $58,099 _(every 3 days · as of 2026-09-18, 1 day ago)_
+- **Kia EV9** — 70 cars · 22 drivable · lowest asking $27,025 (Miami, FL) + $1,124 shipping · drivable from $31,402 (Skokie, IL) · median asking $36,984 _(every 3 days)_
+- **Audi A6 e-tron** — 31 cars · 3 drivable · lowest asking $39,798 (Owings Mills, MD) + $746 shipping · drivable from $43,709 (Chicago, IL) · median asking $45,908 _(every 3 days · as of 2026-09-17, 2 days ago)_
+- **Lucid Air** — 146 cars · 28 drivable · lowest asking $32,900 (Pleasantville, NJ) + $828 shipping · drivable from $34,893 (Bedford, OH) · median asking $40,923 _(every 3 days · as of 2026-09-18, 1 day ago)_
+- **Chevrolet Equinox EV** — 43 cars · 14 drivable · lowest asking $16,065 (Bellflower, CA) + $1,344 shipping · drivable from $21,251 (Akron, OH) · median asking $23,150 _(every 3 days)_
+- **Ford Mustang Mach-E** — 64 cars · 13 drivable · lowest asking $21,999 (Charlotte, NC) + $746 shipping · drivable from $27,198 (Maumee, OH) · median asking $28,141 _(every 3 days)_
+- **Nissan Ariya** — 58 cars · 37 drivable · lowest asking $17,798 (Jacksonville, FL) + $965 shipping · drivable from $20,873 (Des Plaines, IL) · median asking $24,230 _(every 3 days · as of 2026-09-17, 2 days ago)_
+- **Mercedes-Benz EQB** — 53 cars · 9 drivable · lowest asking $24,000 (Union City, GA) + $746 shipping · drivable from $24,988 (Berwyn, IL) · median asking $34,998 _(every 3 days)_
+- **Porsche Taycan** — 76 cars · 16 drivable · lowest asking $48,126 (South Salt Lake City, UT) + $1,164 shipping · drivable from $65,734 (Burbank, IL) · median asking $88,237 _(every 3 days · as of 2026-09-18, 1 day ago)_
+- **Volkswagen ID.4** — 58 cars · 13 drivable · lowest asking $18,987 (Alpharetta, GA) + $725 shipping · drivable from $20,400 (Countryside, IL) · median asking $22,299 _(every 3 days)_
+- **Cadillac Lyriq** — 77 cars · 30 drivable · lowest asking $23,995 (New Madrid, MO) + $531 shipping · drivable from $29,865 (Columbus, OH) · median asking $34,590 _(every 3 days)_
+- **Dodge Charger Daytona** — 51 cars · 3 drivable · lowest asking $28,990 (Quakertown, PA) + $787 shipping · drivable from $30,999 (Springfield, IL) · median asking $36,952 _(every 3 days · as of 2026-09-18, 1 day ago)_
+- **Rivian R1S** — 66 cars · 23 drivable · lowest asking $41,410 (Longwood, FL) + $1,018 shipping · drivable from $61,700 (Schaumburg, IL) · median asking $65,436 _(every 3 days)_
+- **Toyota bZ4X** — 87 cars · 18 drivable · lowest asking $13,799 (Norco, CA) + $1,327 shipping · drivable from $22,998 (Maumee, OH) · median asking $25,993 _(every 3 days · as of 2026-09-17, 2 days ago)_
+- **Honda Prologue** — 84 cars · 29 drivable · lowest asking $19,676 (Fort Wayne, IN) · drivable from $19,676 (Fort Wayne, IN) · median asking $26,348 _(every 3 days · as of 2026-09-17, 2 days ago)_
+- **Acura ZDX** — 58 cars · 18 drivable · lowest asking $25,999 (Merced, CA) + $1,353 shipping · drivable from $29,797 (Marysville, OH) · median asking $32,282 _(every 3 days)_
+- **Lexus RZ** — 67 cars · 10 drivable · lowest asking $23,300 (Wake Forest, NC) + $787 shipping · drivable from $32,453 (Lake Villa, IL) · median asking $34,213 _(every 3 days · as of 2026-09-17, 2 days ago)_
 
 ---
-_4372 vehicle histories across 27 days · 36 API calls today._
+_4591 vehicle histories across 28 days · 36 API calls today._
