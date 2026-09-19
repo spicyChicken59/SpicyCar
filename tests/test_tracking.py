@@ -6606,11 +6606,9 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
     and absent in the next — and the arrivals block is where a reader looks
     first, because it is the only part of the report that is time-sensitive.
 
-    On the day this was written the arrivals headline named a $106,425
-    eleven-mile car as the day's best value. It is a demo or a loaner priced
-    near sticker, not a used i7 anyone is choosing between, and the real
-    candidate — a $55,096 2024 eDrive50 sitting 8% under twenty-six
-    comparable cars — was the second line down and unlabelled."""
+    The headline keeps the recorded mileage and the comparison cohort
+    together. A low odometer reading identifies a group, not ownership,
+    dealer use, legal new/used status, or certification validity."""
 
     def pick(self, **kw):
         p = {"pick_pct": 0.10, "pick_under": 11827, "pick_stand": "under",
@@ -6667,19 +6665,17 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
         sec, _ = T.build_today({"cuts": [], "new": list(events), "gone": []}, T.TODAY)
         return next(l for l in sec if "new on the shopped models" in l)
 
-    def test_the_headline_names_the_cohort_the_mileage_and_the_kind_of_car(self):
+    def test_the_headline_names_the_cohort_and_recorded_odometer_group(self):
         line = self.headline(self.event())
         self.assertIn("best 10% under typical for a 2026 BMW i7 eDrive50 "
-                      "($106,425, Buena Park, CA · 11 mi — delivery-mileage stock, "
+                      "($106,425, Buena Park, CA · 11 mi — under 100 recorded miles, "
                       "from 45 such cars)", line)
 
-    def test_a_used_arrival_gets_its_mileage_and_no_label(self):
-        """Only the positive claim. A car over the line is not called anything
-        — "used" is the complement, and the complement is what the mileage
-        rule cannot support for a car whose mileage is missing."""
+    def test_an_arrival_above_the_floor_gets_its_mileage_and_no_group_label(self):
+        """The odometer does not establish whether a car is legally used."""
         line = self.headline(self.event(x=self.car(miles=30190, price=55096)))
         self.assertIn("· 30,190 mi, from 45 such cars)", line)
-        self.assertNotIn("delivery-mileage", line)
+        self.assertNotIn("under 100 recorded miles", line)
         self.assertNotIn("used", line)
 
     def test_an_arrival_with_no_mileage_is_called_neither(self):
@@ -6687,10 +6683,15 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
         self.assertIn("($106,425, Buena Park, CA, from 45 such cars)", line)
         self.assertNotIn("mi", line.split("under typical")[1])
 
-    def test_a_hundred_miles_is_not_delivery_mileage(self):
-        """The same boundary market_stats splits its two markets on."""
-        self.assertNotIn("delivery-mileage", self.headline(self.event(x=self.car(miles=100))))
-        self.assertIn("delivery-mileage", self.headline(self.event(x=self.car(miles=99))))
+    def test_the_arrival_group_uses_only_the_recorded_odometer_boundary(self):
+        """Zero is recorded mileage; unknown is not assigned to a group."""
+        for miles in (0, 45, 99, 100, None):
+            with self.subTest(miles=miles):
+                line = self.headline(self.event(x=self.car(miles=miles)))
+                self.assertEqual("under 100 recorded miles" in line,
+                                 miles is not None and miles < 100)
+                for inference in ("delivery-mileage", "stock", "demo", "loaner", "used"):
+                    self.assertNotIn(inference, line)
 
     def test_the_reach_clause_keeps_its_place(self):
         """It was shipped first and says something the cohort does not: how

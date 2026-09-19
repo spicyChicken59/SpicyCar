@@ -2307,7 +2307,7 @@ def build_today(events, record_day):
                      + (f" for a {coh}" if coh else "")
                      + f" ({money(bx['price'])}, {place(bx)}"
                      + (f" · {mi:,} mi" if mi is not None else "")
-                     + (" — delivery-mileage stock" if mi is not None and mi < NEW_STOCK_MILES else "")
+                     + (" — under 100 recorded miles" if mi is not None and mi < NEW_STOCK_MILES else "")
                      + from_n(bp) + ")")
         sec.append(line)
         bits.append(f"{len(news)} new")
