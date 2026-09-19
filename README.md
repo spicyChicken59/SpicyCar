@@ -357,7 +357,7 @@ step · [SpicyChicken design system](https://github.com/spicyChicken59/design-sy
   model; on every model, its own picks, a hand-written *know the model* card, a **price-vs-miles
   scatter** (picks ringed, a dashed typical-value line per model year, dots coloured by trim),
   trim/year/mileage
-  filters plus hide-accidents, hide-rentals and hide-delivery-mileage-stock (under 100 miles is dealer stock, a market of its own — the market tile names the split); sort by asking, asking + shipping, or best value
+  filters plus hide-accidents, hide-rentals and hide-under-100-miles (an odometer grouping, not an ownership or certification judgment; unknown mileage stays); sort by asking, asking + shipping, or best value
   vs typical; one row per vehicle with photo, history flags, distance, shipping, days on market
   and a price sparkline — the top thirty shown, one press for all; and the "gone" list, twelve
   most recent first. A VIN field (and `?vin=`) opens one car by its full VIN or its last six
@@ -402,39 +402,38 @@ quietly covering less. A skipped check still counts — it is a check that named
 subject — and while that assertion was made only when nothing skipped, the committed sheet produced
 one skip on every run and the backstop never fired.
 
-**The sheet has a transfer budget, and the watchlist is going to spend it.** The browser suite fails
-the build when `docs/index.html` passes 200 KB gzipped or `docs/data.json` passes 400 KB — the page
-fetches the sheet on load, so its size is a fact about how the site feels, not a housekeeping number.
-`tools/measure_sheet.py` answers what it will weigh, by BUILDING the file rather than multiplying:
-it clones real rows onto every target that has never fetched, at the cap a `depth: light` target
-actually reaches, and runs them through `src`'s own writer, because `indent=1` is most of the raw
-size and a compact estimate is not the file a browser fetches. Two estimates of the sibling ledger
-once disagreed by a factor of two and only building it settled which was right.
+**The sheet has a fixed compressed-payload budget.** The browser suite measures the exact
+committed bytes with Node `gzipSync(..., { level: 9 })`: 204,800 bytes (200 KiB) for
+`docs/index.html` and 409,600 bytes (400 KiB) for `docs/data.json`. This estimates compressed
+payload size, not a captured HTTP transfer with headers, images, or other assets.
 
-What it measures today, on the committed record:
+The automatically updated row below uses **Python gzip level 9**, which can produce different
+bytes from Node. All KiB values mean 1,024 bytes. Run `python tools/measure_sheet.py` for exact
+Python byte counts; the dashboard harness prints exact Node counts and remaining headroom.
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 21 | 1,710 | 414 KB | 103% |
-| every target fetching | 21 | 1,698 | 302 KB | 75% |
-| …three fetches deep on each | 21 | 1,698 | 302 KB | 75% |
-| …seven fetches deep on each | 21 | 1,698 | 302 KB | 75% |
+| as committed | 21 | 1,710 | 381 KiB | 95% |
 
-The three projections have been overtaken, and the table says so by repeating itself: every target on
-this watchlist carries rows now, so "every target fetching" IS the committed record and the deeper
-rows have nothing left to clone onto. They stay because the tool still answers them, and because a
-model added tomorrow makes them mean something again. They read the committed row exactly, which is
-the point of `Tracking.write_sheet()` being the one writer: the measurement and the file it describes
-are the same serialisation, sorted keys and all. Reading them apart — the tool's own `json.dumps`
-against the fair-collection path's sorted one — is what had the documented row 2% under the bytes a
-browser downloads, on every snapshot, for as long as the fair path has been the live one.
+For the September 19 snapshot at base `b500f57669777831078b0ad79376307b0da61e3e`, the lossless
+compact writer changes the sheet from **5,125,772 to 3,255,514 raw bytes**. Node 24 gzip-9
+changes from **422,029 to 389,365 bytes** (412.14 to 380.24 KiB), leaving **20,235 bytes / 4.94%**
+below the unchanged guard. Python 3.12 gzip-9 measures **423,584 before and 390,068 after**
+(413.66 to 380.93 KiB). These dated measurements are not a promise of future capacity.
 
-At thirty-six models the deepest row read **110%** against the old 250 KB line — the build going red
-on its own record, in about a quarter. That is what the trim was for, and it is why the number is
-re-measured on every config change rather than argued: there is no field to cut instead. Measured by deleting each in turn,
-`series` is 13% of the file and `url` 9%, both load-bearing — the series is what the sparkline draws
-and what the cut detector reads, and the url is how a reader opens the listing — and everything else
-is under 3%. The sheet was never carrying fat; it was carrying too many models.
+All **18 active brands, 21 active models, and 29 active targets** remain, with 1,710 live
+listings and 2,594 missing/history records. The configuration also has inactive catalog entries;
+its 34 brands and 42 models are not the active tracked scope. The parsed sheet remains identical
+at the same input and as-of date, including unknowns, history, fetch days, and departure reasons.
+The single sheet writer preserves sorted keys, finite-number validation, a trailing newline,
+and atomic replacement. It does not change other JSON writers.
+
+The stale 302 KiB projection rows are removed. All active targets already have observations,
+so adding rows only to never-fetched targets does not forecast current growth. The measurement
+tool now says when no such projection is needed. Missing evidence is still accumulating within
+the existing 60-day horizon (the record is only 28 days old); missing does not mean sold.
+Compact serialization restores this snapshot's baseline but does not solve retention growth.
+Evidence-preserving delivery or retention design and capacity forecasting remain separate work.
 
 **Sixteen models are stood down for it**, and the reason sits beside each `active` flag in
 `targets.json` rather than in a commit message. Four are priced far outside anything this buyer is

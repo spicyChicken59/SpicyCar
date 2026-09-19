@@ -8,10 +8,8 @@
 # not to answer by multiplying: this repo's notes record two estimates of a
 # sibling file disagreeing by a factor of two, settled only by building the
 # real thing. Every target on the watchlist carries rows now, so the
-# projections have caught up with the record and read it back; they mean
-# something again the day a model is added. `indent=1` is most of the raw size
-# and a compact estimate is not the file a browser fetches, so this drives
-# src's own writer, sorted keys and all.
+# projections mean something again the day a model is added. Measure committed
+# bytes directly and use the sheet's own compact writer for synthetic output.
 #
 # Synthetic rows are cloned from REAL ones, per model, so every field a real
 # listing carries is present at a realistic length — a row of placeholder
@@ -57,6 +55,10 @@ def measure(rows, label):
     # gzipped — a projection measured the other way is not comparable with the
     # committed row beside it in the README.
     blob = T.sheet_text(site).encode()
+    return summarize(site, blob, label)
+
+
+def summarize(site, blob, label):
     raw, gz = len(blob), len(gzip.compress(blob, 9))
     cars = sum(len(m.get("listings") or [])
                for b in site["brands"].values() for m in b["models"].values())
@@ -64,7 +66,8 @@ def measure(rows, label):
                if m.get("listings"))
     cap = 400 * 1024   # Tracking.SHEET_BUDGET
     print(f"  {label:<44} {live:>2} models · {cars:>4} cars · "
-          f"raw {raw/1024:>6.0f}KB · gz {gz/1024:>5.1f}KB · {gz/cap:>5.1%} of budget"
+          f"raw {raw} bytes · Python gzip-9 {gz} bytes ({gz/1024:.2f} KiB) · "
+          f"{gz/cap:>5.1%} of budget · {cap - gz} bytes headroom"
           + ("   OVER" if gz > cap else ""))
     return gz
 
@@ -86,7 +89,13 @@ def main():
     print(f"targets: {len(T.TARGETS)} · carrying rows: {len(T.TARGETS) - len(empty)} · "
           f"never fetched: {len(empty)}\n")
 
-    measure(rows, "today, as committed")
+    from pathlib import Path
+    blob = Path("docs/data.json").read_bytes()
+    summarize(json.loads(blob), blob, "as committed (exact bytes)")
+    if not empty:
+        print("All active targets have observations; no unfetched-target projection is needed.")
+        print("This is not a forecast of retained missing vehicles or future history growth.")
+        return
 
     grown = list(rows)
     for i, t in enumerate(empty):

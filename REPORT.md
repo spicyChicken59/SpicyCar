@@ -151,7 +151,7 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
   Capitol Nissan — [listing](https://www.autolist.com/bmw-i5#vin=WBY33FK06RCR58557)
   `WBY33FK06RCR58557`
 
-### xDrive40 — 59 vehicles tracked of 75 the API lists nationwide · lowest asking $45,038 (Haddon Township, NJ)
+### xDrive40 — 59 vehicles · lowest asking $45,038 (Haddon Township, NJ)
 
 **Price changes**
 - $77,176 -> **$58,915** (Indianapolis, IN) `WBY33HG01TCV35364`
@@ -420,7 +420,7 @@ _Worth the ship:_
   [listing](https://www.autolist.com/bmw-i7#vin=WBY53EJ05RCP19599) `WBY53EJ05RCP19599`
 
 _133 vehicles across 3 trims · IL 12 · OH 5 · IN 6 · WI 1 · beyond 109_
-_typical car 17d on market (96 of 133 dated) — 15 dealer stock at 35d, 80 used at 15d, 1 with no mileage · 36 of 84 ask less than when first seen, median $1,835 less · 5 cut and put back · 49% of 84 cut while tracked, median $799 of 67 cuts · 3 seen at two prices, not counted_
+_typical car 17d on market (96 of 133 dated) — 15 under 100 mi at 35d, 80 at 100+ mi at 15d, 1 with no mileage · 36 of 84 ask less than when first seen, median $1,835 less · 5 cut and put back · 49% of 84 cut while tracked, median $799 of 67 cuts · 3 seen at two prices, not counted_
 
 ### eDrive50 — 52 vehicles · lowest asking $53,888 (Irvine, CA)
 
@@ -708,4 +708,4 @@ _By asking price, with a shipping estimate per car, on a slower cadence: the 20 
 - **Lexus RZ** — 67 cars · 10 drivable · lowest asking $23,300 (Wake Forest, NC) + $787 shipping · drivable from $32,453 (Lake Villa, IL) · median asking $34,213 _(every 3 days · as of 2026-09-17, 2 days ago)_
 
 ---
-_4591 vehicle histories across 28 days · 36 API calls today._
+_4591 vehicle histories across 28 days · outputs rebuilt from the snapshot on disk — no calls made._

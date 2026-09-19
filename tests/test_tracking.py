@@ -570,6 +570,81 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(row["cpo"], "1")
         self.assertEqual(row["miles"], 15922)
 
+    def test_legacy_certified_mileage_boundaries_are_post_fetch_filters(self):
+        for miles, reason in ((0, "under min_miles"), (99, "under min_miles"),
+                              (100, None), (29999, None),
+                              (30000, "at/over max_miles"), (30001, "at/over max_miles")):
+            with self.subTest(miles=miles):
+                self.dropped.clear()
+                row = self.cpo_norm(lambda r: r["retailListing"].update(cpo=True, miles=miles))
+                if reason:
+                    self.assertIsNone(row)
+                    self.assertEqual(self.dropped, Counter({reason: 1}))
+                else:
+                    self.assertEqual((row["miles"], row["cpo"]), (miles, "1"))
+                    self.assertFalse(self.dropped)
+
+    def test_legacy_floor_alone_rejects_unknown_mileage(self):
+        # Exercise the lower gate independently: the cap normally rejects
+        # unknown mileage first, which cannot prove that the floor works.
+        rec = copy.deepcopy(FIXTURES["clean"])
+        rec["vehicle"].update(trim="eDrive40", series="eDrive40")
+        rec["retailListing"].update(cpo=True, miles=None)
+        t = {**target("bmw-i5-cpo"), "max_miles": None}
+        self.assertIsNone(T.normalize(rec, t, self.dropped))
+        self.assertEqual(self.dropped, Counter({"under min_miles": 1}))
+
+    def test_legacy_certified_watch_requires_a_recorded_cpo_flag(self):
+        for flag in (False, None, "absent", True):
+            with self.subTest(flag=flag):
+                self.dropped.clear()
+                def mutate(r):
+                    r["retailListing"].update(miles=100, cpo=flag)
+                    if flag == "absent":
+                        r["retailListing"].pop("cpo")
+                row = self.cpo_norm(mutate)
+                if flag is True:
+                    self.assertEqual(row["cpo"], "1")
+                    self.assertFalse(self.dropped)
+                else:
+                    self.assertIsNone(row)
+                    self.assertEqual(self.dropped, Counter({"not certified": 1}))
+
+    def test_fair_collection_exports_each_low_mileage_certified_claim(self):
+        """Synthetic source claims survive; their count is not a validity rule.
+
+        This covers normalization/export, not manufacturer certification or
+        what a capped provider query would retrieve.
+        """
+        self.assertTrue(T.FAIR["enabled"])
+        self.assertTrue(all(not t.get("cpo_only") and t.get("min_miles") is None
+                            and t.get("derived") != T.CPO_KEY for t in T.TARGETS.values()))
+        rows = []
+        t = T.TARGETS["bmw-i5-xdrive40"]
+        for i, miles in enumerate((45, 8, 99, 0)):
+            rec = copy.deepcopy(FIXTURES["clean"])
+            vin = f"SYNTHETIC{i:08d}"
+            rec["vehicle"].update(vin=vin, trim="xDrive40", series="xDrive40", year=2026)
+            rec["retailListing"].update(cpo=True, miles=miles)
+            rec["history"] = {}
+            row = T.normalize(rec, t, self.dropped)
+            self.assertIsNotNone(row)
+            rows.append(row)
+            # Add another independent observation each time. No rolling CSV
+            # or historical exception ceiling is involved.
+            _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
+            exported = json.loads(T.sheet_text(site))["brands"]["bmw"]["models"]["i5"]["listings"]
+            self.assertEqual({x["vin"] for x in exported}, {x["vin"] for x in rows})
+            for x in exported:
+                source = next(r for r in rows if r["vin"] == x["vin"])
+                self.assertEqual((x["miles"], x["price"], x["url"]),
+                                 (source["miles"], source["price"], source["url"]))
+                self.assertIs(x["cpo"], True)
+                self.assertIsNone(x["owners"])
+                self.assertIsNone(x["accidents"])
+                self.assertEqual(x["series"], [[T.TODAY, source["price"]]])
+        self.assertFalse(self.dropped)
+
 
 # --------------------------------------------------------------------------
 # Spicy picks: eligibility, and the within-model scoring that stops a cheap
@@ -4789,7 +4864,7 @@ class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
         live = sum(1 for b in site["brands"].values() for m in b["models"].values()
                    if m.get("listings"))
         gz = len(gzip.compress(raw, 9))
-        return (f"| as committed | {live} | {cars:,} | {round(gz / 1024)} KB | "
+        return (f"| as committed | {live} | {cars:,} | {round(gz / 1024)} KiB | "
                 f"{round(gz / (400 * 1024) * 100)}% |")
 
     def test_the_committed_row_is_the_sheet_on_disk(self):
@@ -4865,7 +4940,7 @@ class TestTheDocumentedRowMeasuresTheFileThatWasWritten(unittest.TestCase):
                                 round(len(gzip.compress(json.dumps(site, indent=1).encode(), 9)) / 1024),
                                 "the fixture does not discriminate: the file and the "
                                 "object in hand gzip to the same number of KB")
-            self.assertIn(f"| as committed | 1 | 60 | {round(gz / 1024)} KB | "
+            self.assertIn(f"| as committed | 1 | 60 | {round(gz / 1024)} KiB | "
                           f"{round(gz / T.SHEET_BUDGET * 100)}% |", readme.read_text())
             self.assertTrue(readme.read_text().startswith("intro\n"), "the rest of README moved")
 
@@ -4899,6 +4974,48 @@ class TestOneWriterPutsTheSheetOnDisk(unittest.TestCase):
             self.assertEqual(T.sheet_text(site), f.read_text(),
                              "the text anything compares against is not the text "
                              "the writer wrote")
+
+    def test_compaction_preserves_nested_values_unknowns_and_array_order(self):
+        site = {"z": [None, False, True, 0, "", "two  spaces", "café", -1.25],
+                "a": {"series": [["2026-09-18", 71000], ["2026-09-19", 71995]],
+                      "gone": [{"vin": "synthetic", "likely": "not checked"}]}}
+        text = T.sheet_text(site)
+        self.assertEqual(json.loads(text), site)
+        self.assertTrue(text.startswith('{"a":{'))
+        self.assertEqual(text.count("\n"), 1)
+        self.assertTrue(text.endswith("\n"))
+        self.assertLess(len(text), len(json.dumps(site, indent=1, sort_keys=True) + "\n"))
+
+    def test_nonfinite_values_cannot_replace_a_valid_sheet(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "data.json"
+            T.write_sheet({"old": True}, f)
+            before = f.read_bytes()
+            for value in (float("nan"), float("inf"), -float("inf")):
+                with self.subTest(value=value), self.assertRaises(ValueError):
+                    T.write_sheet({"nested": [value]}, f)
+                self.assertEqual(f.read_bytes(), before)
+                self.assertFalse(f.with_suffix(".json.tmp").exists())
+
+    def test_failed_replace_keeps_the_published_sheet_and_cleans_temp(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "data.json"
+            T.write_sheet({"old": True}, f)
+            before = f.read_bytes()
+            with unittest.mock.patch.object(Path, "replace", side_effect=OSError("replace failed")):
+                with self.assertRaises(OSError):
+                    T.write_sheet({"new": True}, f)
+            self.assertEqual(f.read_bytes(), before)
+            self.assertFalse(f.with_suffix(".json.tmp").exists())
+
+    def test_other_atomic_json_files_keep_their_existing_layout(self):
+        from fair_collection import atomic_json
+        value = {"z": [1, None], "a": {"remaining": 10}}
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "requests.json"
+            atomic_json(f, value)
+            self.assertEqual(f.read_text(), json.dumps(value, indent=1, sort_keys=True,
+                                                     allow_nan=False) + "\n")
 
     def test_the_keys_are_sorted_because_the_live_path_sorts_them(self):
         """Not a taste: fair_collection has been committing sorted files for
@@ -6489,11 +6606,9 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
     and absent in the next — and the arrivals block is where a reader looks
     first, because it is the only part of the report that is time-sensitive.
 
-    On the day this was written the arrivals headline named a $106,425
-    eleven-mile car as the day's best value. It is a demo or a loaner priced
-    near sticker, not a used i7 anyone is choosing between, and the real
-    candidate — a $55,096 2024 eDrive50 sitting 8% under twenty-six
-    comparable cars — was the second line down and unlabelled."""
+    The headline keeps the recorded mileage and the comparison cohort
+    together. A low odometer reading identifies a group, not ownership,
+    dealer use, legal new/used status, or certification validity."""
 
     def pick(self, **kw):
         p = {"pick_pct": 0.10, "pick_under": 11827, "pick_stand": "under",
@@ -6550,19 +6665,17 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
         sec, _ = T.build_today({"cuts": [], "new": list(events), "gone": []}, T.TODAY)
         return next(l for l in sec if "new on the shopped models" in l)
 
-    def test_the_headline_names_the_cohort_the_mileage_and_the_kind_of_car(self):
+    def test_the_headline_names_the_cohort_and_recorded_odometer_group(self):
         line = self.headline(self.event())
         self.assertIn("best 10% under typical for a 2026 BMW i7 eDrive50 "
-                      "($106,425, Buena Park, CA · 11 mi — delivery-mileage stock, "
+                      "($106,425, Buena Park, CA · 11 mi — under 100 recorded miles, "
                       "from 45 such cars)", line)
 
-    def test_a_used_arrival_gets_its_mileage_and_no_label(self):
-        """Only the positive claim. A car over the line is not called anything
-        — "used" is the complement, and the complement is what the mileage
-        rule cannot support for a car whose mileage is missing."""
+    def test_an_arrival_above_the_floor_gets_its_mileage_and_no_group_label(self):
+        """The odometer does not establish whether a car is legally used."""
         line = self.headline(self.event(x=self.car(miles=30190, price=55096)))
         self.assertIn("· 30,190 mi, from 45 such cars)", line)
-        self.assertNotIn("delivery-mileage", line)
+        self.assertNotIn("under 100 recorded miles", line)
         self.assertNotIn("used", line)
 
     def test_an_arrival_with_no_mileage_is_called_neither(self):
@@ -6570,10 +6683,15 @@ class TestAnArrivalNamesWhatItWasComparedAgainst(unittest.TestCase):
         self.assertIn("($106,425, Buena Park, CA, from 45 such cars)", line)
         self.assertNotIn("mi", line.split("under typical")[1])
 
-    def test_a_hundred_miles_is_not_delivery_mileage(self):
-        """The same boundary market_stats splits its two markets on."""
-        self.assertNotIn("delivery-mileage", self.headline(self.event(x=self.car(miles=100))))
-        self.assertIn("delivery-mileage", self.headline(self.event(x=self.car(miles=99))))
+    def test_the_arrival_group_uses_only_the_recorded_odometer_boundary(self):
+        """Zero is recorded mileage; unknown is not assigned to a group."""
+        for miles in (0, 45, 99, 100, None):
+            with self.subTest(miles=miles):
+                line = self.headline(self.event(x=self.car(miles=miles)))
+                self.assertEqual("under 100 recorded miles" in line,
+                                 miles is not None and miles < 100)
+                for inference in ("delivery-mileage", "stock", "demo", "loaner", "used"):
+                    self.assertNotIn(inference, line)
 
     def test_the_reach_clause_keeps_its_place(self):
         """It was shipped first and says something the cohort does not: how
@@ -7732,83 +7850,17 @@ class TestConfig(unittest.TestCase):
                              f"should spread over {min(len(watches), cad)} days: "
                              f"{dict(per_day)}")
 
-    def test_a_certified_watch_reaches_a_certified_car_only_above_the_floor(self):
-        """A certified watch sorts by MILEAGE, and delivery stock sits at the
-        bottom of that order — so the window can fill with cars that have not
-        been owned yet and the watch returns nothing.
-
-        Not hypothetical. On 2026-09-08, the first real night this repo
-        recorded, all forty cars inside the i5 watch's window were
-        current-model-year and the fortieth had 5 miles on it; the first
-        certified i5 was 45th and the watch returned 0 rows, on a day it had
-        returned cars on every day before. The i7 had been walled off the same
-        way since its first record — ranks 50-80, every day — and carried a
-        year narrowing for it, which was the right observation and the wrong
-        knob: the cause is delivery stock, not the model year.
-
-        Measured over every day the record holds, for both models and on both
-        rules, which is what says the floor is the one that generalises."""
-        floor = T.to_int(T.CPO_WATCH.get("min_miles"))
-        self.assertTrue(floor, "the recipe carries a mileage floor")
-        for tid in (t for t, v in FIXTURE_TARGETS.items() if v.get("derived") == T.CPO_KEY):
-            self.assertEqual(FIXTURE_TARGETS[tid]["min_miles"], floor,
-                             f"{tid} does not carry it")
-            _, pages = T.sorts_pages(FIXTURE_TARGETS[tid])
-            window = len(T.sorts_pages(FIXTURE_TARGETS[tid])[0]) * pages * T.PER_PAGE
-
-        def first_certified(prefix, min_miles):
-            """Per recorded day: where the lowest-mileage certified car sits
-            among that day's rows for the model, over the floor, deduplicated
-            by VIN because several targets return the same car."""
-            per_day = defaultdict(dict)
-            for r in self._snapshot_rows():
-                if not r["target"].startswith(prefix):
-                    continue
-                if not (r["miles"] or "").strip() or int(r["miles"]) < min_miles:
-                    continue
-                per_day[r["snapshot_date"]][r["vin"]] = r
-            out = {}
-            for day, vins in per_day.items():
-                ordered = sorted(vins.values(), key=lambda r: int(r["miles"]))
-                k = next((i + 1 for i, r in enumerate(ordered) if r["cpo"] == "1"), None)
-                if k is not None:
-                    out[day] = k
-            return out
-        for prefix in ("bmw-i5", "bmw-i7"):
-            without = first_certified(prefix, 0)
-            withit = first_certified(prefix, floor)
-            self.assertTrue(without and withit, prefix)
-            self.assertTrue(all(v <= window for v in withit.values()),
-                            f"{prefix} over the floor: {sorted(withit.values())} "
-                            f"must fit the {window}-record window")
-        # …and the floor is what changed it: without it, at least one model is
-        # walled off on at least one day. Without this the test passes on a
-        # record where the floor does nothing.
-        missed = {p: sorted(v for v in first_certified(p, 0).values() if v > window)
-                  for p in ("bmw-i5", "bmw-i7")}
-        self.assertTrue(any(missed.values()),
-                        f"no day in the record needs the floor: {missed}")
-        # What it costs, measured rather than waved at. Across the whole
-        # record — 147 certified VINs over twelve models — exactly one sits
-        # under the floor: an 8-mile iX, which is a new car wearing the badge
-        # and is the thing the floor is for. Every other model's lowest
-        # certified car is 228 miles or more, and for the two models whose
-        # watches actually run it is 2,305 and 4,101.
-        by_model = defaultdict(set)
-        for r in self._snapshot_rows():
-            if r["cpo"] == "1" and (r["miles"] or "").strip():
-                key = (FIXTURE_TARGETS.get(r["target"]) or {}).get("model_key") \
-                    or r["target"].rsplit("-", 1)[0]
-                by_model[key].add((r["vin"], int(r["miles"])))
-        under = {m: sorted(x for _, x in v if x < floor) for m, v in by_model.items()}
-        self.assertLessEqual(sum(len(v) for v in under.values()), 1,
-                             f"the floor excludes more than the one known "
-                             f"mislabelled car: { {k: v for k, v in under.items() if v} }")
-        for prefix in ("i5", "i7"):
-            hit = [m for m in by_model if m == prefix]
-            self.assertTrue(hit, prefix)
-            self.assertFalse(under[hit[0]],
-                             f"the floor costs the {prefix} watch a certified car")
+    def test_legacy_certified_targets_propagate_the_recipe_filters(self):
+        """These are post-fetch filters, not claims about provider coverage."""
+        watches = [t for t in FIXTURE_TARGETS.values() if t.get("derived") == T.CPO_KEY]
+        self.assertTrue(watches)
+        for t in watches:
+            with self.subTest(target=t["id"]):
+                self.assertEqual(t["min_miles"], T.CPO_WATCH["min_miles"])
+                self.assertEqual(t["max_miles"], T.CPO_WATCH["max_miles"])
+                self.assertEqual(t["cpo_only"], T.CPO_WATCH["cpo_only"])
+        self.assertEqual(T.CPO_WATCH["min_miles"], 100)
+        self.assertEqual(T.CPO_WATCH["max_miles"], 30000)
 
     def _snapshot_rows(self):
         import csv as _csv
@@ -10025,12 +10077,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
     # -- two markets, two medians ------------------------------------------
 
     def test_the_typical_days_figure_splits_the_two_markets(self):
-        """Under a hundred miles a car is dealer stock — a demo, a loaner, a
-        press car — reaching the used-listings API beside the used cars at a
-        different price. The i7's "typical car 29d" is 49 stock cars at a
-        median 78 days blended with 61 used at 21, and 29 is a number no car
-        on either side sits at. The page has printed the split since the days
-        clause was built and the record printed the blend alone."""
+        """Separate the two recorded-odometer groups when both have support."""
         cars = [self._car(f"S{i:016d}", [50000], days_listed=70 + i, miles=50) for i in range(12)]
         cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=30000) for i in range(12)]
         st = T.market_stats(cars)
@@ -10038,7 +10085,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
                          {"stock": {"n": 12, "days": 75}, "used": {"n": 12, "days": 15},
                           "none": 0})
         self.assertIn("typical car 45d on market (24 of 24 dated) — "
-                      "12 dealer stock at 75d, 12 used at 15d", T.market_line(st))
+                      "12 under 100 mi at 75d, 12 at 100+ mi at 15d", T.market_line(st))
 
     def test_one_thin_side_leaves_the_blend_to_stand_alone(self):
         """Twelve each side, the same floor the bare median already answers to.
@@ -10050,13 +10097,10 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         self.assertIsNone(st["days_split"])
         line = T.market_line(st)
         self.assertIn("typical car", line)
-        self.assertNotIn("dealer stock", line)
+        self.assertNotIn("under 100 mi at", line)
 
     def test_a_hundred_miles_is_where_the_two_markets_part(self):
-        """The threshold is the rule, not a detail: 99 miles is a demo or a
-        loaner priced near sticker, 100 is a used car. docs/index.html carries
-        the same number, and a drift between them would have the page and the
-        record splitting the same pool two different ways."""
+        """99 and 100 miles are opposite groups, not ownership conclusions."""
         cars = [self._car(f"S{i:016d}", [50000], days_listed=70 + i, miles=99) for i in range(12)]
         cars += [self._car(f"U{i:016d}", [50000], days_listed=10 + i, miles=100) for i in range(12)]
         st = T.market_stats(cars)
@@ -10077,7 +10121,7 @@ class TestTheRecordSaysWhatThePageSays(unittest.TestCase):
         self.assertEqual(st["dated"], 30, "…while still counting in the blend's own denominator")
         # …and the clause says so, because it names that denominator itself.
         self.assertEqual(st["days_split"]["none"], 6)
-        self.assertIn("(30 of 30 dated) — 12 dealer stock at 75d, 12 used at 15d, "
+        self.assertIn("(30 of 30 dated) — 12 under 100 mi at 75d, 12 at 100+ mi at 15d, "
                       "6 with no mileage", T.market_line(st))
 
     # -- a car with no state is in neither bucket --------------------------

@@ -1724,11 +1724,9 @@ def two_prices(series):
     return distinct
 
 
-# Under a hundred miles a car is dealer stock rather than a used car — a demo,
-# a loaner, a press car — and it reaches this API on the same used-listings
-# endpoint at a different price. docs/index.html carries the same number as
-# NEW_STOCK_MILES; the two must not drift, because the page and the record
-# print the same split from it.
+# Recorded odometer grouping only; this threshold cannot establish ownership,
+# legal new/used status, dealer use, or certification validity. The page uses
+# the same NEW_STOCK_MILES value. Unknown mileage belongs to neither group.
 NEW_STOCK_MILES = 100
 
 
@@ -1789,14 +1787,8 @@ def market_stats(listings):
     counted = len(tracked) - len(two_priced)
     return {
         "median_days_listed": int(median(dl)) if dl else None,
-        # …and each market's own, when both are big enough to have one. Under
-        # a hundred miles a car is dealer stock — demos, loaners, press cars,
-        # priced near sticker — and the used-listings API serves them beside
-        # the used cars. The i7's "typical car 29d" is 49 stock cars at a
-        # median 78 days blended with 61 used at 21, and 29 is a number no car
-        # on either side sits at. The page has printed the split since the days
-        # clause was built; this is the same rule and the same floor, so the
-        # record stops describing a market that is not there.
+        # Each odometer group's own median, only with twelve dated cars
+        # on both sides. Grouping arithmetic does not establish ownership.
         "days_split": ({"stock": {"n": len(d_stock), "days": int(median(d_stock))},
                         "used": {"n": len(d_used), "days": int(median(d_used))},
                         # …and the dated cars in neither market, because the
@@ -2150,8 +2142,8 @@ def market_line(stats):
         sp = stats.get("days_split")
         bits.append(f"typical car {stats['median_days_listed']}d on market"
                     + (f" ({stats['dated']} of {stats['n']} dated)" if stats.get("n") else "")
-                    + (f" — {sp['stock']['n']} dealer stock at {sp['stock']['days']}d, "
-                       f"{sp['used']['n']} used at {sp['used']['days']}d"
+                    + (f" — {sp['stock']['n']} under 100 mi at {sp['stock']['days']}d, "
+                       f"{sp['used']['n']} at 100+ mi at {sp['used']['days']}d"
                        + (f", {sp['none']} with no mileage" if sp.get("none") else "")
                        if sp else ""))
     if stats.get("cut_share") is not None and stats.get("tracked_2d", 0) >= 5:
@@ -2307,19 +2299,15 @@ def build_today(events, record_day):
                      f"{'it' if reach == 1 else 'them'} — reach, not arrival)")
         if best["pct"] and best["pct"] > 0:
             bx, bp = best["x"], best.get("p") or {}
-            # The mileage, and the word for it where the sheet's own rule says
-            # so. Today's best arrival is an eleven-mile car — a demo or a
-            # loaner priced near sticker, not a used i7 anyone is choosing
-            # between — and the headline named it on price and place alone.
-            # Only the positive claim: a car whose mileage is missing is not
-            # called used, because three of this sheet's cars have none.
+            # Name the low-odometer group without inferring ownership or use.
+            # Missing mileage is not assigned to either side of the threshold.
             mi = to_int(bx.get("miles"))
             coh = cohort_of(bp)
             line += (f" · best {pct(best['pct'])} under typical"
                      + (f" for a {coh}" if coh else "")
                      + f" ({money(bx['price'])}, {place(bx)}"
                      + (f" · {mi:,} mi" if mi is not None else "")
-                     + (" — delivery-mileage stock" if mi is not None and mi < NEW_STOCK_MILES else "")
+                     + (" — under 100 recorded miles" if mi is not None and mi < NEW_STOCK_MILES else "")
                      + from_n(bp) + ")")
         sec.append(line)
         bits.append(f"{len(news)} new")
@@ -3343,12 +3331,9 @@ def normalize(rec, t, dropped):
         return None
     miles = to_int(first(rec, ["retailListing.miles", "retailListing.mileage",
                                "vehicle.mileage", "mileage", "miles"], None))
-    # The CPO watch targets: both filters run here, after the fetch, because
-    # they are guaranteed correct here — the API's filter surface for these
-    # fields is unverified, and a silently-ignored query param would fetch
-    # the wrong market while looking healthy. The miles.asc sort those
-    # targets use makes the post-filter efficient: every page is spent on
-    # the low-mileage end where the answer lives.
+    # Legacy CPO recipe: post-fetch filters only. Provider filter support is
+    # unverified; rejecting rows cannot advance a capped provider page past
+    # low-mileage listings or prove coverage or manufacturer certification.
     if t.get("cpo_only") and not dig(rec, "retailListing.cpo"):
         dropped["not certified"] += 1
         return None
@@ -3359,9 +3344,8 @@ def normalize(rec, t, dropped):
         return None
     lo = to_int(t.get("min_miles"))
     if lo is not None and (miles is None or miles < lo):
-        # …and the floor, which is what keeps delivery stock out of a
-        # mileage-sorted window. Unknown mileage is out for the same reason as
-        # above: it cannot prove it is over the floor either.
+        # Keep only retrieved rows at/above the floor; unknown mileage
+        # cannot prove that condition. This does not change the fetched window.
         dropped["under min_miles"] += 1
         return None
     # …and it has to be the fuel the target asks for. The query cannot ask —
@@ -5109,23 +5093,29 @@ def send_email(report, subject=None):
 # Main
 # --------------------------------------------------------------------------
 def write_sheet(site, path=None):
-    """The ONE writer of docs/data.json.
+    """Atomically publish the one compact sheet layout on every output path.
 
-    Three call sites wrote this file and they did not agree how: fair
-    collection's atomic_json sorts the keys and writes a trailing newline,
-    while main() and the offline rebuild used a plain json.dumps. Same content,
-    two byte layouts, 2% apart once gzipped — so which layout was committed
-    depended on the path the day took, the README row measured an ordering
-    nobody had on disk, and the test that rebuilds the record could not match
-    it. Sorted wins because it is what the live path has been committing.
+    Request journals and collection state retain atomic_json's own layout.
+    Validate/serialize before touching the temporary file, then flush and
+    replace as the previous writer did; a failed write keeps the old sheet.
     """
-    from fair_collection import atomic_json    # local: that module imports this one
-    atomic_json(path or (DOCS / "data.json"), site)
+    text = sheet_text(site)
+    path = Path(path) if path is not None else DOCS / "data.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(path.suffix + ".tmp")
+    try:
+        with temp.open("w", encoding="utf-8") as out:
+            out.write(text)
+            out.flush()
+            os.fsync(out.fileno())
+        temp.replace(path)
+    finally:
+        temp.unlink(missing_ok=True)
 
 
 def sheet_text(site):
     """What write_sheet() puts on disk, for anything that needs to compare."""
-    return json.dumps(site, indent=1, sort_keys=True, allow_nan=False) + "\n"
+    return json.dumps(site, separators=(",", ":"), sort_keys=True, allow_nan=False) + "\n"
 
 
 # What the browser is allowed to download. The page fetches the sheet on load,
@@ -5140,15 +5130,9 @@ SHEET_BUDGET = 400 * 1024
 def update_sheet_size(site, path=Path("README.md"), sheet=None):
     """Keep the documented payload measurement in sync with every snapshot.
 
-    Measured on the FILE, never on the object in hand. The two writers of this
-    sheet do not serialise it the same way — fair_collection's atomic_json
-    sorts the keys and Tracking's own write_text does not — so a row computed
-    from `site` described a serialisation nobody had committed. It was 2% low
-    on every snapshot for as long as the fair path has been the live one (295
-    against 302 KB on 13 Sep, 277 against 283 the day before), and the test
-    that holds the row to the sheet beside it had no way to pass. Gzipping the
-    committed bytes is the only reading that is true whichever writer wrote
-    them, and it is also the number the reader actually waits for.
+    Python gzip level 9 over the FILE, never a reserialization of the object
+    in hand. This compressed-payload estimate can differ from the browser
+    guard's Node gzipSync(level: 9); neither captures a full HTTP transfer.
     """
     import gzip, re
     sheet = Path(sheet) if sheet else DOCS / "data.json"
@@ -5158,7 +5142,7 @@ def update_sheet_size(site, path=Path("README.md"), sheet=None):
     cars = sum(len(m.get("listings") or []) for m in models)
     live = sum(bool(m.get("listings")) for m in models)
     size = len(gzip.compress(sheet.read_bytes(), 9))
-    row = (f"| as committed | {live} | {cars:,} | {round(size / 1024)} KB | "
+    row = (f"| as committed | {live} | {cars:,} | {round(size / 1024)} KiB | "
            f"{round(size / SHEET_BUDGET * 100)}% |")
     if path.exists():
         path.write_text(re.sub(r"^\| as committed \|.*$", lambda _: row, path.read_text(), flags=re.M))

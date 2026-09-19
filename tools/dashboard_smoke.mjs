@@ -582,7 +582,7 @@ for (const q of cohorts) {
 // something to refuse on a day when every model carries twelve.
 await step('the compare card counts its dated cars', async () => {
   plan('a column prints a typical days figure only over twelve dated cars, truncated, with its denominator',
-       'and a column of dealer stock beside used cars gives each market its own figure',
+       'and a column of under-100-mile listings beside used cars gives each market its own figure',
        'and a column served with five dated cars prints none');
   const STOCK = 100;
   const daysOf = (m) => {
@@ -598,7 +598,7 @@ await step('the compare card counts its dated cars', async () => {
           none: dl.length - stock.length - used.length } : null;
     const figure = dl.length >= 12 ? `${med(dl)}d` : '—';
     const note = !dl.length ? 'no listing dates' : dl.length < 12 ? `${dl.length} of ${rows.length} dated — too few for a median`
-      : `${dl.length} of ${rows.length} dated` + (split ? ` · ${split.stock.n} dealer stock at ${split.stock.days}d, ${split.used.n} used at ${split.used.days}d`
+      : `${dl.length} of ${rows.length} dated` + (split ? ` · ${split.stock.n} under 100 mi at ${split.stock.days}d, ${split.used.n} at 100+ mi at ${split.used.days}d`
         + (split.none ? `, ${split.none} with no mileage` : '') : '');
     return { figure, note, dated: dl.length, n: rows.length, split };
   };
@@ -624,12 +624,12 @@ await step('the compare card counts its dated cars', async () => {
   ok('a column prints a typical days figure only over twelve dated cars, truncated, with its denominator', !!cells && wrong.length === 0,
      wrong.length ? wrong.map(({ o, c }) => `${o.w.label}: cell ${c ? `"${c.figure}" / "${c.note}"` : 'missing'} · sheet "${o.days.figure}" / "${o.days.note}"`).join(' | ')
                   : pair.map((o) => `${o.w.label}: ${o.days.figure} (${o.days.note})`).join(' · '));
-  if (!split) skip('and a column of dealer stock beside used cars gives each market its own figure', 'no watched model has twelve dated cars on each side of the stock line');
+  if (!split) skip('and a column of under-100-mile listings beside used cars gives each market its own figure', 'no watched model has twelve dated cars on each side of the stock line');
   else {
     const mate = full.find((o) => o !== split) || thin;
     await open(`?models=${[split, mate].filter(Boolean).map((o) => o.w.slug).join(',')}`);
     const c = cellFor(await readRow(), split.w);
-    ok('and a column of dealer stock beside used cars gives each market its own figure', !!c && c.figure === split.days.figure && c.note === split.days.note,
+    ok('and a column of under-100-mile listings beside used cars gives each market its own figure', !!c && c.figure === split.days.figure && c.note === split.days.note,
        c ? `${split.w.label}: "${c.figure}" / "${c.note}"` : `${split.w.label}: no cell`);
   }
   // Served: the fullest column keeps five listing dates and loses the rest.
@@ -2949,7 +2949,7 @@ await step('the market sentence describes the trim in view', async () => {
     const stock = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles < 100).map((x) => x.days_listed);
     const used = rows.filter((x) => x.days_listed != null && x.miles != null && x.miles >= 100).map((x) => x.days_listed);
     if (dl.length >= 12) out.push(`typical car ${Math.trunc(med(dl))}d on market (${dl.length} of ${rows.length} dated)`
-      + (stock.length >= 12 && used.length >= 12 ? ` — ${stock.length} dealer stock at ${Math.trunc(med(stock))}d, ${used.length} used at ${Math.trunc(med(used))}d`
+      + (stock.length >= 12 && used.length >= 12 ? ` — ${stock.length} under 100 mi at ${Math.trunc(med(stock))}d, ${used.length} at 100+ mi at ${Math.trunc(med(used))}d`
         + (dl.length - stock.length - used.length ? `, ${dl.length - stock.length - used.length} with no mileage` : '') : ''));
     if (tracked.length >= 5) {
       const netDown = counted.filter((x) => (x.delta || 0) < 0), restored = counted.filter((x) => x.cuts && (x.delta || 0) >= 0);
@@ -3032,7 +3032,7 @@ await step('the market sentence describes the trim in view', async () => {
   // cars on EACH side. Served: twenty dated cars of which three are dealer
   // stock, so the figure prints and the split must not — compared against
   // the harness's own sentence for the same served rows, which applies the
-  // rule, so a page that prints "3 dealer stock at …" cannot pass.
+  // rule, so a page that prints "3 under 100 mi at …" cannot pass.
   const plant2 = JSON.parse(JSON.stringify(SHEET.brands[subject.bk].models[subject.mk]));
   let stockKept = 0, usedKept = 0;
   for (const x of plant2.listings) {
@@ -3049,7 +3049,7 @@ await step('the market sentence describes the trim in view', async () => {
   try {
     await open(`?brand=${subject.bk}&m=${subject.mk}&trims=${subject.tid}`);
     const said2 = ((await page.textContent('#list-hint')).replace(/\s+/g, ' ').match(/Market: (.*?)\.(?= [A-Z]|$)/) || [])[1] || '';
-    ok('and the typical-days split keeps its own twelve-car floor', said2 === want2 && /typical car/.test(want2) && !/dealer stock/.test(want2),
+    ok('and the typical-days split keeps its own twelve-car floor', said2 === want2 && /typical car/.test(want2) && !/under 100 mi at/.test(want2),
        `${subject.tid} with ${stockKept > 3 ? 3 : stockKept} dated stock cars and ${usedKept > 17 ? 17 : usedKept} dated used: page "${said2}" · rules "${want2}"`);
   } finally {
     await ctx.unroute('**/data.json*');
@@ -3148,19 +3148,12 @@ await step('seen at two prices is not cut', async () => {
   } finally { await ctx.unroute('**/data.json*'); }
 });
 
-// --- dealer stock is a market of its own ------------------------------------
-// The i7 eDrive50 holds two markets under one median: 41 delivery-mileage cars
-// — under 100 miles, never registered, priced near sticker — and 49 used cars
-// at half the price. The pooled median described neither, and nothing on the
-// page said so. Now the market tile names the split with each side's count and
-// median, and one filter takes the stock out of every number on the page. Both
-// halves are checked on a scope that actually holds both kinds, found in the
-// sheet rather than named: a sheet with no dealer stock has nothing to say and
-// must say nothing.
-await step('dealer stock is a market of its own', async () => {
-  plan('a scope holding dealer stock says so beside its median',
+// --- recorded odometer groups retain their own counts and medians ----------
+// These are grouping/filter checks, not claims of ownership or dealer use.
+await step('odometer groups have separate supported medians', async () => {
+  plan('a scope holding under-100-mile listings says so beside its median',
        'hiding the stock takes exactly those cars out of the count',
-       'and the median that remains is the used cars\' own');
+       'and the remaining median includes 100+ miles and unknown mileage');
   const NEW = 100;
   const med = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
   let subject = null;
@@ -3179,16 +3172,16 @@ await step('dealer stock is a market of its own', async () => {
   const tile = () => page.locator('#kpis .sc-tile').nth(2).evaluate((n) =>
     [...n.querySelectorAll('.sc-tile__sub')].map((s) => s.textContent.replace(/\s+/g, ' ').trim()));
   const before = await tile();
-  const split = before.find((t) => /delivery-mileage stock/.test(t)) || '';
+  const split = before.find((t) => /are under 100 mi/.test(t)) || '';
   // …with the optional tail naming the priced cars that publish no mileage,
   // since the sentence opens by naming the total they are inside.
-  const m = split.match(/^(\d+) of (\d+) are delivery-mileage stock — under (\d+) mi, median \$([\d,]+) — and the (\d+) used cars sit at \$([\d,]+)(?:; (\d+) publish no mileage and are in neither)?$/);
-  ok('a scope holding dealer stock says so beside its median',
+  const m = split.match(/^(\d+) of (\d+) are under (\d+) mi, median \$([\d,]+) — and the (\d+) cars at 100\+ mi sit at \$([\d,]+)(?:; (\d+) publish no mileage and are in neither)?$/);
+  ok('a scope holding under-100-mile listings says so beside its median',
      !!m && +m[1] === subject.fresh.length && +m[2] === subject.priced.length && +m[3] === NEW
        && digits(m[4]) === String(Math.trunc(med(subject.fresh.map((x) => x.price)))) && +m[5] === subject.used.length
        && digits(m[6]) === String(Math.trunc(med(subject.used.map((x) => x.price))))
        && (+m[7] || 0) === subject.priced.length - subject.fresh.length - subject.used.length,
-     split ? `${subject.tid}: "${split}" — sheet says ${subject.fresh.length} of ${subject.priced.length} under ${NEW} mi at ${med(subject.fresh.map((x) => x.price))}, ${subject.used.length} used at ${med(subject.used.map((x) => x.price))}`
+     split ? `${subject.tid}: "${split}" — sheet says ${subject.fresh.length} of ${subject.priced.length} under ${NEW} mi at ${med(subject.fresh.map((x) => x.price))}, ${subject.used.length} at 100+ mi at ${med(subject.used.map((x) => x.price))}`
            : `${subject.tid}: no split line on the tile — ${before.join(' | ')}`);
   await page.check('#f-hidenew');
   await settle(400);
@@ -3196,15 +3189,60 @@ await step('dealer stock is a market of its own', async () => {
   const shown = +(count.match(/^showing ([\d,]+) of/) || [])[1]?.replace(/,/g, '');
   const wantShown = subject.rows.filter((x) => !(x.miles != null && x.miles < NEW)).length;
   ok('hiding the stock takes exactly those cars out of the count',
-     shown === wantShown && /no delivery-mileage stock/.test(count),
+     shown === wantShown && /hide under 100 mi/.test(count),
      `${count} — expected ${wantShown} of ${subject.all} (${subject.rows.length} on the trim, ${subject.fresh.length} under ${NEW} mi)`);
   const after = await tile();
   const medLine = after.find((t) => /median \$/.test(t)) || '';
   const wantMed = med(subject.priced.filter((x) => !(x.miles != null && x.miles < NEW)).map((x) => x.price));
-  ok('and the median that remains is the used cars\' own',
-     !after.some((t) => /delivery-mileage stock/.test(t)) && digits((medLine.match(/median \$([\d,]+)/) || [])[1]) === String(Math.trunc(wantMed)),
+  ok('and the remaining median includes 100+ miles and unknown mileage',
+     !after.some((t) => /are under 100 mi/.test(t)) && digits((medLine.match(/median \$([\d,]+)/) || [])[1]) === String(Math.trunc(wantMed)),
      `${after.join(' | ')} — expected median ${wantMed} and no split line`);
   await page.uncheck('#f-hidenew');
+});
+
+// Controlled boundaries: independent of how many low-mileage CPO claims the
+// next snapshot contains. This fixture does not verify a dealer or provider.
+await step('odometer grouping is not ownership or certification', async () => {
+  plan('the mileage explanation states the limits of an odometer grouping',
+       'the optional filter hides only recorded mileage below 100',
+       'CPO claims remain visible and unchanged when the mileage filter is cleared');
+  const record = JSON.parse(JSON.stringify(SHEET));
+  const model = record.brands.bmw.models.i5;
+  const template = model.listings.find((x) => x.trim_id === 'bmw-i5-xdrive40');
+  if (!template) throw new Error('controlled fixture needs the active i5 xDrive40 target');
+  model.listings = [0, 45, 99, 100, null].map((miles, i) => ({ ...template,
+    vin: `SYNTHETIC${String(i).padStart(8, '0')}`, miles, cpo: true, flags: ['CPO'], owners: null, accidents: null }));
+  const ids = model.listings.map((x) => x.vin).sort();
+  await open('?brand=bmw&m=i5');
+  await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+  await ctx.route('**/data.json*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(record) }));
+  const visible = () => page.locator('#list-table [data-fkey^="star:"]').evaluateAll((nodes) =>
+    nodes.map((n) => n.getAttribute('data-fkey').slice(5)).sort());
+  try {
+    await open('?brand=bmw&m=i5');
+    const why = await page.locator('label:has(#f-hidenew)').getAttribute('title');
+    const cpoWhy = await page.locator('label:has(#f-cpo)').getAttribute('title');
+    ok('the mileage explanation states the limits of an odometer grouping',
+       /fewer than 100 recorded miles/.test(why) && /does not establish ownership history, new or used legal status, dealer use, or certification validity/.test(why)
+         && /Unknown mileage stays visible/.test(why) && /verify certification with the dealer/.test(cpoWhy), why);
+    await page.check('#f-cpo'); await settle();
+    const all = await visible();
+    await page.check('#f-hidenew'); await settle();
+    const filtered = await visible();
+    ok('the optional filter hides only recorded mileage below 100',
+       JSON.stringify(all) === JSON.stringify(ids)
+         && JSON.stringify(filtered) === JSON.stringify(ids.slice(3)),
+       `recorded miles 0, 45, 99, 100, unknown: ${all.length} before, ${filtered.length} after; 100 and unknown remain`);
+    await page.uncheck('#f-hidenew'); await settle();
+    const restored = await visible();
+    const rows = await page.locator('#list-table tbody tr').allTextContents();
+    ok('CPO claims remain visible and unchanged when the mileage filter is cleared',
+       JSON.stringify(restored) === JSON.stringify(ids) && rows.length === 5 && rows.every((r) => /cpo/i.test(r)),
+       `${restored.length} synthetic CPO rows restored with the CPO-only filter still on; ${rows.filter((r) => /cpo/i.test(r)).length} show the claim`);
+  } finally {
+    await ctx.unroute('**/data.json*');
+    await page.evaluate(() => localStorage.removeItem('spicycar.prefs'));
+  }
 });
 
 // --- one car, one number ----------------------------------------------------
@@ -6155,7 +6193,7 @@ await step('a certified badge on a departed car names who issued it', async () =
 // ---- a sentence that names a total and then splits it adds up --------------
 // Four surfaces named a total, split it in two, and left something in
 // neither: "49 of 151 are delivery-mileage stock … and the 99 used cars" (3
-// publish no mileage), "113 of 151 dated — 49 dealer stock, 61 used" (3 dated
+// publish no mileage), "113 of 151 dated — 49 under-100-mile listings, 61 used" (3 dated
 // cars publish none either), and the compare table's "134 / 18 drivable · 116
 // beyond" (one car carries no state). Each is arithmetic a reader can do in
 // their head, and each came out wrong by exactly the cars the page had
@@ -6182,8 +6220,8 @@ await step('a split adds up to the total it named', async () => {
   if (!subject) return skipRest(`no model on this sheet both withholds a mileage and has ${STOCK_FLOOR} priced cars either side of ${NEW_MILES} miles`);
   await open(subject.q);
   const subs = await page.locator('#kpis .sc-tile__sub').evaluateAll((ns) => ns.map((n) => n.textContent.trim()));
-  const stock = subs.find((t) => /delivery-mileage stock/.test(t)) || '';
-  const m = stock.match(/(\d+) of (\d+) are delivery-mileage stock.*?the (\d+) used cars/);
+  const stock = subs.find((t) => /are under 100 mi/.test(t)) || '';
+  const m = stock.match(/(\d+) of (\d+) are under 100 mi.*?the (\d+) cars at 100\+ mi/);
   const neither = Number((stock.match(/(\d+) publish no mileage/) || [])[1] || 0);
   ok('the stock sentence accounts for every car it counted',
      !!m && Number(m[1]) + Number(m[3]) + neither === Number(m[2]),
@@ -6191,7 +6229,7 @@ await step('a split adds up to the total it named', async () => {
        + `against the ${m[2]} it named · "${stock.slice(0, 120)}"` : `no stock sentence on ${subject.id}`);
 
   const hint = (await page.textContent('#list-hint')) || '';
-  const d = hint.match(/\((\d+) of \d+ dated\) — (\d+) dealer stock at \d+d, (\d+) used at \d+d/);
+  const d = hint.match(/\((\d+) of \d+ dated\) — (\d+) under 100 mi at \d+d, (\d+) at 100\+ mi at \d+d/);
   if (!d) skip('the typical-days split accounts for every dated car',
                `${subject.id} does not print a typical-days split today`);
   else {
@@ -6245,7 +6283,7 @@ await step('a split adds up to the total it named', async () => {
 // have drifted apart three times: a threshold on one side only, a word fixed
 // in a heading and left in a footnote, a split the page printed and the record
 // did not. The i7's "typical car 29d" is 49 dealer-stock cars at a median 78
-// days blended with 61 used at 21 — a number no car on either side sits at —
+// days blended with 61 at 100+ mi at 21 — a number no car on either side sits at —
 // and the record published the blend alone.
 //
 // This reads the committed REPORT.md and the rendered page and compares the
@@ -7251,12 +7289,12 @@ await step('what it costs to open', async () => {
   }
   if (!rows.length) return skipRest('neither file is beside this harness');
   const over = rows.filter((r) => r.gz > r.budget);
-  const kb = (n) => `${(n / 1024).toFixed(0)}KB`;
+  const kb = (n) => `${n} bytes (${(n / 1024).toFixed(2)} KiB)`;
   ok('the page and its data stay inside their transfer budget', over.length === 0,
-     rows.map((r) => `${r.name} ${kb(r.raw)} raw, ${kb(r.gz)} compressed`
+     rows.map((r) => `${r.name} ${kb(r.raw)} raw, ${kb(r.gz)} Node gzip-9; headroom ${r.budget - r.gz} bytes`
                      + (r.gz > r.budget ? ` — OVER its ${kb(r.budget)} budget` : ''))
          .join(' · ')
-     + ` · together ${kb(rows.reduce((a, r) => a + r.gz, 0))} on the wire`);
+     + ` · together ${kb(rows.reduce((a, r) => a + r.gz, 0))} estimated compressed payload (not captured HTTP transfer)`);
 });
 
 await browser.close();
@@ -7289,7 +7327,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 324;
+const EXPECTED = 327;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);
