@@ -719,7 +719,7 @@
       <label class="sc-check"><input type="checkbox" id="f-clean"> Hide reported accidents</label>
       <label class="sc-check"><input type="checkbox" id="f-rental"> Hide rentals &amp; fleet</label>
       <label class="sc-check" title="Certified pre-owned listings only — verify certification with the dealer"><input type="checkbox" id="f-cpo"> CPO only</label>
-      <label class="sc-check" title="Cars under 100 miles are dealer stock priced near sticker, not the used market. A car whose mileage was not published stays."><input type="checkbox" id="f-hidenew"> Hide delivery-mileage stock</label>
+      <label class="sc-check" title="Hide listings with fewer than 100 recorded miles. This odometer grouping does not establish ownership history, new or used legal status, dealer use, or certification validity. Unknown mileage stays visible."><input type="checkbox" id="f-hidenew"> Hide cars under 100 mi</label>
     </div>
   </section>
 
@@ -1306,28 +1306,16 @@
   // where value is asking + shipping + a mileage allowance. The reader only ever sees asking price.
   const NON_PERSONAL = /rental|fleet|corporate|commercial|taxi|livery|government|multiple/i;
   const isRental = (x) => NON_PERSONAL.test(x.usage || '');
-  // A car under 100 miles has never been anyone's: dealer stock, demos and
-  // press cars, priced at or above sticker. The used-listings API serves them
-  // beside the used cars, and on 2026-09-04 the i7 eDrive50 held 41 of them —
-  // median 5 miles, median $118,320 — beside 49 used cars at $66,213. The
-  // trim's one pooled median, $100,079, described neither market, and the day
-  // the nationwide page first reached the stock the median line jumped $14,000
-  // on a coverage change that looked like a market move.
-  //
-  // Miles, not model year: three 2026 cars carried 1,358 to 6,401 miles and
-  // are used cars by any reading. 100 rather than a bigger number for the same
-  // reason — a loaner with 1,300 miles on it has been driven, and the buyer is
-  // deciding whether to buy a driven car. A car whose mileage was not published
-  // is classed as neither: abstaining is what the page does with a number it
-  // does not have.
+  // Split recorded odometers at 100 miles, with unknowns on neither side.
+  // This is a comparison heuristic, not evidence of ownership, legal status,
+  // dealer use, manufacturer certification, or promotional eligibility.
   const NEW_STOCK_MILES = 100;
   const isNewStock = (x) => x.miles != null && x.miles < NEW_STOCK_MILES;
-  const STOCK_WHY = `Under ${NEW_STOCK_MILES} miles a car is dealer stock — demos, loaners, press cars — priced near sticker. `
-    + 'It is on the used-listings API beside the used cars, and one median across both describes neither. '
-    + 'Miles, not model year: a 2026 with 5,000 miles on it is a used car.';
-  // The two markets inside one scope, counted, with a median for each side
-  // only once both sides have five cars — below that the pooled median is
-  // barely moved, and a "median" of three is a number nothing can stand on.
+  const STOCK_WHY = `Listings grouped by recorded odometer: under ${NEW_STOCK_MILES} miles versus ${NEW_STOCK_MILES}+ miles. `
+    + 'Mileage alone does not establish ownership history, new or used legal status, dealer use, or certification validity. '
+    + 'Unknown mileage belongs to neither group and stays visible when the optional filter is on. '
+    + 'CPO remains a listing claim to verify with the dealer; finance estimates do not confirm rate eligibility.';
+  // Publish each group's median only once both sides have five priced cars.
   function stockCounts(rows) {
     const priced = rows.filter(hasPrice);
     const fresh = priced.filter(isNewStock), used = priced.filter((x) => x.miles != null && !isNewStock(x));
@@ -1342,7 +1330,7 @@
     // and then splits it: 49 and 99 against 151 leaves a reader who subtracts
     // expecting 102 used cars and told 99. stockCounts has counted them since
     // it was written; the sentence never said so.
-    return `${c.nNew} of ${c.n} are delivery-mileage stock — under ${NEW_STOCK_MILES} mi, median ${money(c.medNew)} — and the ${c.nUsed} used cars sit at ${money(c.medUsed)}`
+    return `${c.nNew} of ${c.n} are under ${NEW_STOCK_MILES} mi, median ${money(c.medNew)} — and the ${c.nUsed} cars at ${NEW_STOCK_MILES}+ mi sit at ${money(c.medUsed)}`
       + (c.unknown ? `; ${c.unknown} publish no mileage and are in neither` : '');
   }
   function pickParams() {
@@ -2203,8 +2191,8 @@
       + (inPanel ? ' in view' : ' under the current filters') + '.'
       + (omitted ? ` ${omitted} more ${omitted === 1 ? 'is' : 'are'} in the results with no published mileage and cannot be placed here.` : '')
       // The column of dots at the left edge is a different market, and a
-      // year's line fitted through it is fitted through dealer stock.
-      + (stock.nNew >= 5 ? ` ${stock.nNew} of them sit under ${NEW_STOCK_MILES} miles — dealer stock priced near sticker, the column at the left edge — and the ${stock.nUsed} used cars are the rest.` : '')
+      // year's line fitted through it is fitted through under-100-mile listings.
+      + (stock.nNew >= 5 ? ` ${stock.nNew} of them sit under ${NEW_STOCK_MILES} miles — the column at the left edge — and the other ${stock.nUsed} have ${NEW_STOCK_MILES}+ recorded miles.` : '')
       + lineWords
       + (opts.select
           ? (touchPlot ? ' Tap a dot to choose that car; it is the same car in the cards.'
@@ -2350,9 +2338,9 @@
       if (isNaN(a) || isNaN(b)) continue;
       spans.push(Math.max(0, Math.round((b - a) / 86400000)));
     }
-    // The typical-days figure is a blend whenever dealer stock sits beside the
-    // used cars — on the eDrive50, 41 stock cars at a median 72 days beside 30
-    // used at 17, blended to 39, a number no car sits at. Each side prints
+    // The typical-days figure is a blend whenever under-100-mile listings sits beside the
+    // 100+ mile cars — on the eDrive50, 41 stock cars at a median 72 days beside 30
+    // at 100+ mi at 17, blended to 39, a number no car sits at. Each side prints
     // its own median only with twelve dated cars behind it, the sentence's
     // own floor for a bare median.
     const datedStock = rows.filter((x) => x.days_listed != null && isNewStock(x)).map((x) => x.days_listed);
@@ -5284,7 +5272,7 @@
       el('div', { class: 'sc-tile__sub sc-stat__note' }, `${local} drivable · ${rows.length - local - noLoc} beyond your states`
         + (noLoc ? ` · ${noLoc} with no state` : '')
         + (med != null ? ` · median ${money(med)}` : '')));
-    // The median above pools two markets whenever dealer stock is in the scope,
+    // The median above pools both odometer groups whenever under-100-mile listings is in the scope,
     // so the tile says so on its face, with each side's own count and median.
     const split = stockSplit(priced);
     if (split) tile3.appendChild(el('div', { class: 'sc-tile__sub sc-stat__note', title: STOCK_WHY }, split));
@@ -5433,9 +5421,9 @@
             ? `Only one snapshot day has a car in this scope — ${scope}.`
             : `One snapshot so far — the lines fill in as daily runs accumulate. Shows ${scope}.`)
         + ` ${spanText(daily)}.`
-        // The median line pools dealer stock with the used cars whenever both
+        // The median line pools under-100-mile listings with the used cars whenever both
         // are in view — say so, and name the one control that separates them.
-        + (daily.length && stockSplit(live) ? ` The median line pools ${stockCounts(live).nNew} delivery-mileage cars (under ${NEW_STOCK_MILES} mi) with ${stockCounts(live).nUsed} used ones — tick "Hide delivery-mileage stock" in the filters to see the used market alone.` : '');
+        + (daily.length && stockSplit(live) ? ` The median line pools ${stockCounts(live).nNew} cars under ${NEW_STOCK_MILES} mi with ${stockCounts(live).nUsed} at ${NEW_STOCK_MILES}+ mi — tick "Hide cars under 100 mi" in the filters to exclude that odometer group; unknown mileage remains.` : '');
     const lg = $('legend'); lg.textContent = '';
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-emphasis)' }), 'Lowest asking'));
     lg.appendChild(el('span', null, el('i', { style: 'background:var(--sc-chart-context)' }), 'Median asking'));
@@ -5575,7 +5563,7 @@
     const cover = sc.cover;
     const mk = sc.market, mbits = [];
     if (mk.median_days_listed != null && mk.dated >= 12) mbits.push(`typical car ${mk.median_days_listed}d on market (${mk.dated} of ${mk.n} dated)`
-      + (mk.days_split ? ` — ${mk.days_split.stock.n} dealer stock at ${mk.days_split.stock.days}d, ${mk.days_split.used.n} used at ${mk.days_split.used.days}d`
+      + (mk.days_split ? ` — ${mk.days_split.stock.n} under 100 mi at ${mk.days_split.stock.days}d, ${mk.days_split.used.n} at 100+ mi at ${mk.days_split.used.days}d`
         + (mk.days_split.none ? `, ${mk.days_split.none} with no mileage` : '') : ''));
     if (mk.cut_share != null && (mk.tracked_2d || 0) >= 5) {
       // The cuts that stuck lead, then the share of cars with any downward
@@ -6392,10 +6380,10 @@
     }
     row('Median asking', 'The middle of this column’s own market',
       stat.map((v) => cmpCell(v.med != null ? money(v.med) : '—', `${v.priced.length} priced`)));
-    // Only where some column holds dealer stock: a row of dashes would ask the
+    // Only where some column holds under-100-mile listings: a row of dashes would ask the
     // reader to learn a distinction no car in view makes.
     if (stat.some((v) => stockCounts(v.priced).nNew)) {
-      row('Delivery-mileage stock', STOCK_WHY,
+      row('Under 100 mi', STOCK_WHY,
         stat.map((v) => {
           const c = stockCounts(v.priced);
           return cmpCell(c.nNew ? `${c.nNew} of ${c.n}` : '—',
@@ -6422,7 +6410,7 @@
     // for the i5 above a market line reading "17d" for the same cars (a .5
     // median, rounded here and truncated there), and "9d" for the A6 e-tron
     // from seven dated cars of twenty-two, a number the sentence refuses to
-    // print. Where dealer stock sits beside used cars with twelve dated on
+    // print. Where under-100-mile listings sits beside used cars with twelve dated on
     // each side, each market's own figure, as the sentence gives it.
     row('Typical days on market', 'Half of them have been listed longer than this — over twelve dated cars, or nothing, the list sentence\'s own floor',
       stat.map((v) => {
@@ -6431,7 +6419,7 @@
           !d.dated ? 'no listing dates'
           : d.dated < 12 ? `${d.dated} of ${d.n} dated — too few for a median`
           : `${d.dated} of ${d.n} dated`
-            + (d.days_split ? ` · ${d.days_split.stock.n} dealer stock at ${d.days_split.stock.days}d, ${d.days_split.used.n} used at ${d.days_split.used.days}d`
+            + (d.days_split ? ` · ${d.days_split.stock.n} under 100 mi at ${d.days_split.stock.days}d, ${d.days_split.used.n} at 100+ mi at ${d.days_split.used.days}d`
               + (d.days_split.none ? `, ${d.days_split.none} with no mileage` : '') : ''));
       }));
     // Each column says what its percentage was measured against, because
@@ -7134,7 +7122,7 @@
     if (S.clean) bits.push('no accidents');
     if (S.cpo) bits.push('CPO only');
     if (S.rental) bits.push('no rentals');
-    if (S.hideNew) bits.push('no delivery-mileage stock');
+    if (S.hideNew) bits.push('hide under 100 mi');
     if (S.budget) bits.push(S.budgetKind === 'mo' ? `under ${money(S.budget)}/mo` : `under ${money(S.budget)} all in`);
     if (S.drive !== 'all') bits.push(S.drive === 'unknown' ? 'drivetrain not reported' : S.drive);
     return bits;
