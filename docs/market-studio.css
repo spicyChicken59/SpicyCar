@@ -785,13 +785,7 @@
  * outside the port after a jump, or under identity at the far-right endpoint. */
 @media screen and (max-width: 360px) {
   .market-studio #decision-matrix {
-    min-width: 550px;
-  }
-
-  .market-studio #decision-matrix thead th:first-child,
-  .market-studio #decision-matrix tbody th {
-    width: 124px;
-    min-width: 124px;
+    min-width: 520px;
   }
 
   .market-studio #decision-matrix thead th {

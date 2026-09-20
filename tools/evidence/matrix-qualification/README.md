@@ -21,8 +21,11 @@ line is x=183.19–284.31: 12.31px outside the scrollport. At maximum scroll
 (419), it is x=152.19–253.31: 20.81px under the fixed identity. The TD also has
 overflow:hidden; its DOM presence is not evidence of readable text.
 
-The screen-only correction at ≤360px uses a 550px table and 124px identity,
-allowing one complete wrapping criterion beside identity, including gutters.
+The screen-only correction at ≤360px uses a 520px table and preserves the
+136px identity, allowing one complete wrapping criterion beside identity,
+including gutters. At both jump and maximum scroll (289), the final 90px
+criterion occupies x=174–264, beyond the identity's x=173 painted boundary
+and inside the x=272 scrollport edge. Header labels wrap without smaller type.
 It changes no text, typography size, semantics, candidates or shared assets.
 
 | State | Before | After |
