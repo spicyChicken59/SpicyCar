@@ -413,7 +413,7 @@ Python byte counts; the dashboard harness prints exact Node counts and remaining
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 21 | 1,694 | 397 KiB | 99% |
+| as committed | 21 | 1,701 | 410 KiB | 103% |
 
 For the September 19 snapshot at base `b500f57669777831078b0ad79376307b0da61e3e`, the lossless
 compact writer changes the sheet from **5,125,772 to 3,255,514 raw bytes**. Node 24 gzip-9
