@@ -1,0 +1,234 @@
+{
+  "base": "c6510d077be197139a5ee88e365e1a9632ba4a87",
+  "files": [
+    {
+      "path": ".github/workflows/check.yml",
+      "baseBlob": "52b0e80cca561e6b403abdd16dddea7bbc3cdb92",
+      "currentBlob": "52b0e80cca561e6b403abdd16dddea7bbc3cdb92",
+      "unchanged": true
+    },
+    {
+      "path": ".github/workflows/daily.yml",
+      "baseBlob": "b3b602dd3354a7e10fcd3efb71f404071d44a17b",
+      "currentBlob": "b3b602dd3354a7e10fcd3efb71f404071d44a17b",
+      "unchanged": true
+    },
+    {
+      "path": ".github/workflows/loop.yml",
+      "baseBlob": "be53ac439a5a8892026908a3540fc0684125a600",
+      "currentBlob": "be53ac439a5a8892026908a3540fc0684125a600",
+      "unchanged": true
+    },
+    {
+      "path": "REPORT.md",
+      "baseBlob": "199027ffb75aacc3a72e5eb88c176056a8ba65ad",
+      "currentBlob": "199027ffb75aacc3a72e5eb88c176056a8ba65ad",
+      "unchanged": true
+    },
+    {
+      "path": "data/collection.json",
+      "baseBlob": "c853d980673059ca087dd5f0aeb149cd606c86db",
+      "currentBlob": "c853d980673059ca087dd5f0aeb149cd606c86db",
+      "unchanged": true
+    },
+    {
+      "path": "data/fetch_log.json",
+      "baseBlob": "80db35c41d37e658b653e979c1a1d7b23404ee50",
+      "currentBlob": "80db35c41d37e658b653e979c1a1d7b23404ee50",
+      "unchanged": true
+    },
+    {
+      "path": "data/requests.json",
+      "baseBlob": "c6a078df0a867b33c45bcc8ed32de314eaff1f0d",
+      "currentBlob": "c6a078df0a867b33c45bcc8ed32de314eaff1f0d",
+      "unchanged": true
+    },
+    {
+      "path": "data/sample_record.json",
+      "baseBlob": "12e898a8b22217e8cf7e9c048f9eef1038119efc",
+      "currentBlob": "12e898a8b22217e8cf7e9c048f9eef1038119efc",
+      "unchanged": true
+    },
+    {
+      "path": "data/snapshots.csv",
+      "baseBlob": "29a87a5f0034c9a79075794781d6fe73ebf09461",
+      "currentBlob": "29a87a5f0034c9a79075794781d6fe73ebf09461",
+      "unchanged": true
+    },
+    {
+      "path": "data/source_overlap.json",
+      "baseBlob": "791eda109ebedf4c6a596d55088dcee6be80a9d7",
+      "currentBlob": "791eda109ebedf4c6a596d55088dcee6be80a9d7",
+      "unchanged": true
+    },
+    {
+      "path": "data/spend.json",
+      "baseBlob": "d0a06e5e2da857acd9411f90fab96c729c8c9e2c",
+      "currentBlob": "d0a06e5e2da857acd9411f90fab96c729c8c9e2c",
+      "unchanged": true
+    },
+    {
+      "path": "data/zipcodes.json",
+      "baseBlob": "15bdac34baa47cfea4f5ac8027792e481f18a23f",
+      "currentBlob": "15bdac34baa47cfea4f5ac8027792e481f18a23f",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/apple-touch-icon.png",
+      "baseBlob": "871d5e5720fee702cf2fcd69283c48e9ba712460",
+      "currentBlob": "871d5e5720fee702cf2fcd69283c48e9ba712460",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/favicon-512.png",
+      "baseBlob": "9126b06e668bced7e38b25583bbc6d5d32a7f1db",
+      "currentBlob": "9126b06e668bced7e38b25583bbc6d5d32a7f1db",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/favicon.ico",
+      "baseBlob": "82933920eda3be7cf9de3ba8e95eaf689ef7355f",
+      "currentBlob": "82933920eda3be7cf9de3ba8e95eaf689ef7355f",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-avatar-tile.svg",
+      "baseBlob": "6ebafb054f85b45bcfa6d3d8801fd59094d13d1b",
+      "currentBlob": "6ebafb054f85b45bcfa6d3d8801fd59094d13d1b",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-cream.png",
+      "baseBlob": "1e116f6c04831594af8351ec15909fcba73ad71f",
+      "currentBlob": "1e116f6c04831594af8351ec15909fcba73ad71f",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-cream.svg",
+      "baseBlob": "0592e2675774c14fb1dced3f869f0691011ad253",
+      "currentBlob": "0592e2675774c14fb1dced3f869f0691011ad253",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-ink.png",
+      "baseBlob": "92a1ce0dce6286545d535a7d8a1086bfef76e335",
+      "currentBlob": "92a1ce0dce6286545d535a7d8a1086bfef76e335",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-ink.svg",
+      "baseBlob": "542e8a813c4e395a4575b092f617bdc144b67a3c",
+      "currentBlob": "542e8a813c4e395a4575b092f617bdc144b67a3c",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-color-dark.svg",
+      "baseBlob": "0bf0fc847f75a3b603fbb6e4244c1f10eddee210",
+      "currentBlob": "0bf0fc847f75a3b603fbb6e4244c1f10eddee210",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-color-light.svg",
+      "baseBlob": "501cb839e0feb592c1efd30b8ecbfec6d646cf35",
+      "currentBlob": "501cb839e0feb592c1efd30b8ecbfec6d646cf35",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-mono-cream.svg",
+      "baseBlob": "b713d3e47974a32042491e96e8ee8bd929ce5d40",
+      "currentBlob": "b713d3e47974a32042491e96e8ee8bd929ce5d40",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-mono-ink.svg",
+      "baseBlob": "8cad3e9da837d2b55f37d7e831f246320df07a2c",
+      "currentBlob": "8cad3e9da837d2b55f37d7e831f246320df07a2c",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-pattern-ink.svg",
+      "baseBlob": "044ab483d216732300884e1f549c341241976fce",
+      "currentBlob": "044ab483d216732300884e1f549c341241976fce",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-pattern-paper.svg",
+      "baseBlob": "5fb5e3be3a99f8c09728a22eaa46c49abdff1129",
+      "currentBlob": "5fb5e3be3a99f8c09728a22eaa46c49abdff1129",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/assets/sc-pattern-wine.svg",
+      "baseBlob": "c28568035963a706722e6ad46f01dd8104089f1a",
+      "currentBlob": "c28568035963a706722e6ad46f01dd8104089f1a",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/provenance.json",
+      "baseBlob": "05918536cc8f2425e4074ecbcd7b82ebeafa7d62",
+      "currentBlob": "05918536cc8f2425e4074ecbcd7b82ebeafa7d62",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/sc-charts.js",
+      "baseBlob": "558d5cd10f84184901152a22559c468e5e5f2c16",
+      "currentBlob": "558d5cd10f84184901152a22559c468e5e5f2c16",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/sc-map.js",
+      "baseBlob": "c2664e2dcb2f5051e30d88ea3498641941995a06",
+      "currentBlob": "c2664e2dcb2f5051e30d88ea3498641941995a06",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/sc-matrix-nav.js",
+      "baseBlob": "aac10c3758a0cd3f9bd712d00c109bf79699785f",
+      "currentBlob": "aac10c3758a0cd3f9bd712d00c109bf79699785f",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/sc-motion.js",
+      "baseBlob": "bc1b245356bbff754c09c0631a5c411d780efa84",
+      "currentBlob": "bc1b245356bbff754c09c0631a5c411d780efa84",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/sc-reading.js",
+      "baseBlob": "f6237789bc8de4399d3f72fdddeab76bd8aa467c",
+      "currentBlob": "f6237789bc8de4399d3f72fdddeab76bd8aa467c",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/sc-theme.js",
+      "baseBlob": "b1a3bc75dbe47fda629a296b3f731fab65e5dcba",
+      "currentBlob": "b1a3bc75dbe47fda629a296b3f731fab65e5dcba",
+      "unchanged": true
+    },
+    {
+      "path": "docs/design-system/sc.css",
+      "baseBlob": "551b85ea78b73a5f55b998d9a65567a9246891d6",
+      "currentBlob": "551b85ea78b73a5f55b998d9a65567a9246891d6",
+      "unchanged": true
+    },
+    {
+      "path": "fair_collection.py",
+      "baseBlob": "0b309899431c55e1142e5e9d96163bb6c19d53ac",
+      "currentBlob": "0b309899431c55e1142e5e9d96163bb6c19d53ac",
+      "unchanged": true
+    },
+    {
+      "path": "targets.json",
+      "baseBlob": "1947aac37fa23b644bf3aa0795d447a657957828",
+      "currentBlob": "1947aac37fa23b644bf3aa0795d447a657957828",
+      "unchanged": true
+    },
+    {
+      "path": "tools/matrix_navigation_smoke.mjs",
+      "baseBlob": "ae4140288639c13699713ebbeb198ab59f8367c8",
+      "currentBlob": "ae4140288639c13699713ebbeb198ab59f8367c8",
+      "unchanged": true
+    }
+  ],
+  "allUnchanged": true
+}

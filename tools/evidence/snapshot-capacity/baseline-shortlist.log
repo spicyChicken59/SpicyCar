@@ -1,0 +1,6 @@
+  ok    starring two cars puts exactly those two cars in the shortlist table  — starred ["3GPKHURM2RS537858","JN1CF0BB8RM743007"] · table holds ["3GPKHURM2RS537858","JN1CF0BB8RM743007"]
+  ok    the star cycles through its four states  — ★ shortlisted → ☎ called → ✕ ruled out → ☆ shortlist
+  ok    a car you rule out leaves the comparison but keeps its mark  — in the table at: shortlisted true · called true · ruled out false · cleared false
+  ok    and the shortlist survives a reload  — ["3GPKHURM2RS537858","JN1CF0BB8RM743007"] → ["3GPKHURM2RS537858","JN1CF0BB8RM743007"]
+
+dashboard smoke: 4/4 checks, 0 page errors

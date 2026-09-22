@@ -35,6 +35,8 @@ from pathlib import Path
 os.environ.setdefault("AUTODEV_API_KEY", "test-key-not-used")
 os.environ.pop("BUYER_HOME_ZIP", None)          # keep the import offline
 
+from sheet_transport import parse_sheet
+
 import Tracking as T                            # noqa: E402
 
 _BAD = object()   # a response body that will not parse as JSON
@@ -633,7 +635,7 @@ class TestNormalize(unittest.TestCase):
             # Add another independent observation each time. No rolling CSV
             # or historical exception ceiling is involved.
             _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
-            exported = json.loads(T.sheet_text(site))["brands"]["bmw"]["models"]["i5"]["listings"]
+            exported = parse_sheet(T.sheet_text(site))["brands"]["bmw"]["models"]["i5"]["listings"]
             self.assertEqual({x["vin"] for x in exported}, {x["vin"] for x in rows})
             for x in exported:
                 source = next(r for r in rows if r["vin"] == x["vin"])
@@ -3171,7 +3173,7 @@ class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
         r, report, sheet = self._run(lambda cfg: None)
         self.assertEqual(r.returncode, 0, r.stderr[-800:])
         import json
-        models = [m for b in json.loads(sheet)["brands"].values() for m in b["models"].values()]
+        models = [m for b in parse_sheet(sheet)["brands"].values() for m in b["models"].values()]
         empty = sum(not m.get("listings") for m in models)
         self.assertIn(f"{len(models)-empty} carry listings, {empty} do not", r.stdout)
         self.assertIn("call plan:", r.stdout)
@@ -3196,7 +3198,7 @@ class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
                          "the rebuild wrote both files and then died on a "
                          "hard-coded brand key:\n" + r.stderr[-800:])
         self.assertNotIn("Traceback", r.stderr)
-        self.assertNotIn("bmw", json.loads(sheet)["brands"])
+        self.assertNotIn("bmw", parse_sheet(sheet)["brands"])
         self.assertTrue(report.startswith("# "))
 
 
@@ -3605,7 +3607,7 @@ class TestEveryTargetInTheRecordIsAccountedFor(unittest.TestCase):
                            "them would publish inventory no query can return")
         # …and the guard that keeps the two apart under one id really holds:
         # nothing older than the rule reaches the sheet.
-        sheet = json.loads(Path("docs/data.json").read_text())
+        sheet = parse_sheet(Path("docs/data.json").read_text())
         air = sheet["brands"]["lucid"]["models"]["air"]
         years = {x.get("year") for tr in (air.get("trims") or {}).values()
                  for x in (tr.get("listings") or [])}
@@ -4414,7 +4416,7 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
         self.assertFalse(T.fetch_overdue(9, "every four days"))
 
     def test_the_model_entry_carries_both_so_neither_surface_recomputes(self):
-        site = json.loads(Path("docs/data.json").read_text())
+        site = parse_sheet(Path("docs/data.json").read_text())
         day = site["data_through"]
         checked = 0
         for b in site["brands"].values():
@@ -4481,7 +4483,7 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
         """The artifact comparison the test above used to be, kept for what it
         is: a check that the two files on disk tell one story, not a check of
         the rule that built them."""
-        site = json.loads(Path("docs/data.json").read_text())
+        site = parse_sheet(Path("docs/data.json").read_text())
         report = Path("REPORT.md").read_text()
         aged = [m for b in site["brands"].values() for m in b["models"].values()
                 if m.get("age_days") and m.get("listings")]
@@ -4812,7 +4814,7 @@ class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
 
     def test_the_published_sheet_holds_no_car_its_own_watchlist_excludes(self):
         """The end-to-end statement, over the committed record."""
-        site = json.loads(Path("docs/data.json").read_text())
+        site = parse_sheet(Path("docs/data.json").read_text())
         bad = []
         for bk, b in site["brands"].items():
             for mk, m in b["models"].items():
@@ -4858,12 +4860,12 @@ class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
         """
         import gzip
         raw = Path("docs/data.json").read_bytes()
-        site = json.loads(raw.decode())
+        site = parse_sheet(raw.decode())
         cars = sum(len(m.get("listings") or [])
                    for b in site["brands"].values() for m in b["models"].values())
         live = sum(1 for b in site["brands"].values() for m in b["models"].values()
                    if m.get("listings"))
-        gz = len(gzip.compress(raw, 9))
+        gz = len(gzip.compress(raw, 9)) + len(gzip.compress(Path("docs/sheet-transport.js").read_bytes(), 9))
         return (f"| as committed | {live} | {cars:,} | {round(gz / 1024)} KiB | "
                 f"{round(gz / (400 * 1024) * 100)}% |")
 
@@ -4935,7 +4937,7 @@ class TestTheDocumentedRowMeasuresTheFileThatWasWritten(unittest.TestCase):
             T.write_sheet(self._site(2), sheet)      # the file is not this object
             readme.write_text("intro\n| as committed | 9 | 9 | 9 KB | 9% |\nrest\n")
             T.update_sheet_size(site, readme, sheet)
-            gz = len(gzip.compress(sheet.read_bytes(), 9))
+            gz = len(gzip.compress(sheet.read_bytes(), 9)) + len(gzip.compress(Path("docs/sheet-transport.js").read_bytes(), 9))
             self.assertNotEqual(round(gz / 1024),
                                 round(len(gzip.compress(json.dumps(site, indent=1).encode(), 9)) / 1024),
                                 "the fixture does not discriminate: the file and the "
@@ -4980,11 +4982,13 @@ class TestOneWriterPutsTheSheetOnDisk(unittest.TestCase):
                 "a": {"series": [["2026-09-18", 71000], ["2026-09-19", 71995]],
                       "gone": [{"vin": "synthetic", "likely": "not checked"}]}}
         text = T.sheet_text(site)
-        self.assertEqual(json.loads(text), site)
-        self.assertTrue(text.startswith('{"a":{'))
+        self.assertEqual(parse_sheet(text), site)
+        self.assertEqual(json.loads(text)["format"], "spicycar-sheet")
         self.assertEqual(text.count("\n"), 1)
         self.assertTrue(text.endswith("\n"))
-        self.assertLess(len(text), len(json.dumps(site, indent=1, sort_keys=True) + "\n"))
+        self.assertNotIn(": ", text)
+        self.assertEqual(json.loads(text)["version"], 1)
+        self.assertLess(len(text), len(json.dumps(json.loads(text), indent=1, sort_keys=True) + "\n"))
 
     def test_nonfinite_values_cannot_replace_a_valid_sheet(self):
         with tempfile.TemporaryDirectory() as d:
@@ -7935,7 +7939,7 @@ class TestConfig(unittest.TestCase):
         ]
         self.assertEqual(max(r["snapshot_date"] for r in rows), "2026-08-29")
         import json, pathlib
-        site = json.loads((pathlib.Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        site = parse_sheet((pathlib.Path(__file__).parent.parent / "docs" / "data.json").read_text())
         self.assertIn("data_through", site)
         dates = [d["date"] for b in site["brands"].values()
                  for m in b["models"].values() for d in (m.get("daily") or [])]
@@ -7968,7 +7972,7 @@ class TestDashboardContract(unittest.TestCase):
 
     @staticmethod
     def _models():
-        site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        site = parse_sheet((Path(__file__).parent.parent / "docs" / "data.json").read_text())
         return site, [(bk, mk, m) for bk, b in site["brands"].items()
                       for mk, m in b["models"].items()]
 
@@ -8106,7 +8110,7 @@ class TestShareCard(unittest.TestCase):
     def test_the_card_names_no_car(self):
         """The watchlist is config: brands and models come and go (Chevrolet
         did). A card that names one is a card that has to be retaken."""
-        site = json.loads((self.ROOT / "docs" / "data.json").read_text())
+        site = parse_sheet((self.ROOT / "docs" / "data.json").read_text())
         names = {b["label"] for b in site["brands"].values()}
         names |= {m["label"] for b in site["brands"].values() for m in b["models"].values()}
         # The subject comes from today's data.json, never from a name typed in
@@ -8353,7 +8357,7 @@ class TestFinance(unittest.TestCase):
     def test_the_dashboard_gets_the_table(self):
         """docs/data.json is what the page actually reads; the block has to
         survive the export, not just exist in the config."""
-        site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        site = parse_sheet((Path(__file__).parent.parent / "docs" / "data.json").read_text())
         fin = (site.get("buyer") or {}).get("finance")
         if not fin:
             self.skipTest("no finance block in this snapshot")
@@ -9579,7 +9583,7 @@ class TestExitStats(UsesFixtureTargets):
                              f"{tid} really does open two windows plus a newest probe")
 
     def test_the_published_sheet_carries_no_exit_price_it_cannot_defend(self):
-        sheet = json.loads((Path(__file__).parent.parent / "docs/data.json").read_text())
+        sheet = parse_sheet((Path(__file__).parent.parent / "docs/data.json").read_text())
         bad = []
         for b in (sheet.get("brands") or {}).values():
             for m in (b.get("models") or {}).values():
@@ -9593,7 +9597,7 @@ class TestExitStats(UsesFixtureTargets):
         """Withholding the exit PRICE is not withholding the departures. "This
         stopped being listed" is true whatever pushed it out, and the gone list
         labels each one; only the dollar claim built on top is withheld."""
-        sheet = json.loads((Path(__file__).parent.parent / "docs/data.json").read_text())
+        sheet = parse_sheet((Path(__file__).parent.parent / "docs/data.json").read_text())
         gone = [g for b in (sheet.get("brands") or {}).values()
                 for m in (b.get("models") or {}).values()
                 for g in (m.get("gone") or [])]

@@ -1,10 +1,11 @@
+import Sheet from '../docs/sheet-transport.js';
 // Focused browser regressions for the five shopping upgrades.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium} from 'playwright';
-const root=resolve('docs'),data=JSON.parse(await readFile(resolve(root,'data.json'),'utf8'));
+const root=resolve('docs'),data=Sheet.parse(await readFile(resolve(root,'data.json'),'utf8'));
 const models=Object.values(data.brands).flatMap(b=>Object.values(b.models));
 const all=models.flatMap(m=>m.listings),byVin=new Map(all.map(x=>[x.vin,x]));
 const drops=all.filter(x=>{const p=x.series.map(t=>t[1]),distinct=[...new Set(p)];const alternating=distinct.length===2&&p.length>=4&&distinct.every(v=>p.filter(n=>n===v).length>=2)&&p.some((v,i)=>i&&v>p[i-1])&&p.some((v,i)=>i&&v<p[i-1]);return p.length>1&&p.at(-1)<p.at(-2)&&!alternating;});
