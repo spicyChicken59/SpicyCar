@@ -1,0 +1,70 @@
+{
+  "status": "PASS",
+  "testedHead": "e6a150f8dadd6eb19bc05543cc72b475256de4fa",
+  "snapshot": "2026-09-21",
+  "transport": "spicycar-sheet version 1",
+  "wireSha256": "05b3228df2e43cd46d9b1061e9555a114cf1576fa8d3bd787daf6319b04533bf",
+  "measurements": 40,
+  "rangeFragments": 1122,
+  "failures": 0,
+  "horizontalPositionChanged": 0,
+  "inspected": [
+    {
+      "file": "matrix-shots/matrix-text-snapshot-320-light-0-jump.png",
+      "sha256": "62d6ed65b29932cfd9ca018dd18bddf511e5071415ac2da2cc692ce0e37d12e5"
+    },
+    {
+      "file": "matrix-shots/matrix-text-snapshot-320-light-0-end.png",
+      "sha256": "c57c76c69e1f592b5423e041a656630adac54eed2cd7549ca3c1082ce63f06a6"
+    },
+    {
+      "file": "matrix-shots/matrix-text-snapshot-320-dark-0-jump.png",
+      "sha256": "9deeaa070b26628b3417e8646b140f8d21266451dfb7dbdaf2973bd652463e15"
+    },
+    {
+      "file": "matrix-shots/matrix-text-snapshot-320-dark-0-end.png",
+      "sha256": "2a1a6eca7ad0d8c6d4999d4447193b810dc75969c3ff31964389c06aa43cbab3"
+    },
+    {
+      "file": "matrix-shots/matrix-text-snapshot-390-light-1-jump.png",
+      "sha256": "6baf1c2e3676b3a5e10ff3a02b290d533997b9c26287a807e5bdc589c0b24dfb"
+    },
+    {
+      "file": "matrix-shots/matrix-text-snapshot-390-dark-1-end.png",
+      "sha256": "860409567c851bd549bd022a9c8d92132755ce0ebb383b37f0d92f070530936a"
+    },
+    {
+      "file": "matrix-shots/matrix-text-fixture-320-light.png",
+      "sha256": "8f89e6a246a77254e329f4348ea6f627934a557a185ec0b7155242043ff1131f"
+    },
+    {
+      "file": "matrix-shots/matrix-text-fixture-320-dark.png",
+      "sha256": "53d92e977a105b9b795a7885cd9f6ac1e213b16e490bdfaad98f7b8c373e1093"
+    },
+    {
+      "file": "matrix-shots/matrix-navigation-820-light.png",
+      "sha256": "d1319f5a16e4a2bc37f0f21787699e7b168f5d82484f3bf8c28a4f32b3096b45"
+    },
+    {
+      "file": "matrix-shots/matrix-navigation-820-dark.png",
+      "sha256": "9dffbee964bdce521062c33305649a22d9cab41727567c1fe955bd1edb2532f9"
+    },
+    {
+      "file": "matrix-shots/matrix-navigation-1280-light.png",
+      "sha256": "a57debc79be0a91f66f4ceb9330f6794d9615396bf62b264fc96fad244240a87"
+    },
+    {
+      "file": "matrix-shots/matrix-navigation-1280-dark.png",
+      "sha256": "8a2684ce9eda22c7d545723ae9703e02bfc51565aeb61f12ed06e2a87e518f2f"
+    },
+    {
+      "file": "matrix-shots/matrix-text-snapshot-320-light-2-jump.png",
+      "sha256": "5f223ecff0376a8cf94a948884a54b84f155b7a9208bb17234efe98d380c1bb6"
+    },
+    {
+      "file": "matrix-shots/matrix-text-snapshot-320-dark-2-end.png",
+      "sha256": "bf87a29e86739e08c10513e838f91898c2578a61d2c743cf706bc1a49a244a45"
+    }
+  ],
+  "findings": "320px accident qualifications readable after jump, maximum-right scroll and 320\u2192390\u2192320 keyboard return in both themes. Identity/price fits; focus ring visible. Long qualification explicitly labeled AUDIT FIXTURE wraps fully. 390px selected accident column readable. 820px uses existing horizontal scroll and controls; 1280px presents full matrix without controls. No new visual defect observed."
+}

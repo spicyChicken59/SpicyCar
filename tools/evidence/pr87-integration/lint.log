@@ -1,0 +1,40 @@
+pages use local design-system 2.13.0 at ad5aa0f82af7aa98def5807ae33b01bdb0a1e868
+tools/og_card.html: archived image source retains v2.4.0
+
+  note  OVERRIDE  index.html — 74
+        - #map .sc-map__btns   redefines top, right, flex-direction
+        - #finalists-table .sc-benchmark   redefines min-width
+        - #finalists-table .sc-benchmark__track   redefines height
+        - #finalists-table .sc-benchmark__point   redefines width, height
+        - #compare-table thead th .sc-nowrap, #finalists-table thead th .sc-nowrap   redefines white-space
+        - .picks-head .sc-hint   redefines margin
+        - .sc-check   redefines min-height
+        - footer.sc-foot   redefines padding-right
+        - #car-heading .sc-cover   redefines display
+        - #car-heading .sc-cover__title   redefines max-width
+        - #car-heading .sc-cover__dek   redefines max-width, font-size
+        - #car-heading .sc-cover__art   redefines gap
+        - #main > .sc-card   redefines box-shadow
+        - #main > .sc-card > .sc-card__head   redefines margin-bottom
+        - #hero-cars > .sc-tile   redefines box-shadow, border, border-radius, background, padding
+        - #hero-cars .sc-tile__value   redefines letter-spacing
+        - #hero-cars .sc-tile__sub   redefines font, letter-spacing
+        - #kpis > .sc-tile   redefines border, border-radius, box-shadow, background
+        - #kpis .sc-tile__value--sm   redefines font-size
+        - #kpis .sc-tile__sub   redefines font, letter-spacing
+        … and 54 more
+
+  note  index.html — 12 candidate(s) already decided: 9 not promoted, 3 promote next
+  ok    index.html — no squats, no unknown classes, no raw colour
+
+  note  OVERRIDE  how.html — 2
+        - #method-cover .sc-cover__title   redefines font-size
+        - #method-cover .sc-cover__dek   redefines font-size
+
+  note  how.html — 10 candidate(s) already decided: 10 not promoted
+  ok    how.html — no squats, no unknown classes, no raw colour
+  ok    og_card.html — no squats, no unknown classes, no raw colour
+
+  ok    snapshot version v2.13.0 matches the newest design-system release
+
+consumer-lint policy: clean

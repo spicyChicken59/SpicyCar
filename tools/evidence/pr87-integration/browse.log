@@ -1,0 +1,64 @@
+ok the cards, the map and the plot are one visible set
+ok a car with no mileage is in the results, and reachable from the view that cannot draw it
+ok choosing a car on the plot chooses it in the cards, the map and the address bar
+ok Back returns to the view and the car it left
+ok a car the filters hide is explained, never silently restored
+ok removing a car from the comparison keeps it saved, with its notes
+ok the comparison marks what differs and folds only what does not
+ok the comparison prints the observations behind a price, with their dates
+ok a phone compares two named cars, not a smaller table
+ok an emptied comparison says so and keeps every car saved
+ok the garage says what the record moved under, and dates it
+ok a reload is not a new observation
+ok a first visit claims no change at all
+ok the garage adds and removes a comparison membership without touching the save
+ok an older saved profile, with none of the new keys, still compares everything
+ok a corrupt comparison membership is ignored, not obeyed
+ok a browser with storage switched off still browses, compares and says so
+ok the plot is walked by keyboard, and Enter chooses the car
+ok the garage dialog gives the focus back to what opened it
+ok every phone action is reachable and big enough to press
+ok 320px and the tablet band hold their shape too
+ok the whole journey with nothing pre-saved: choose, look, save, note, compare, reload
+ok a generated date is not an observation date for every car
+ok a car with no mileage and no history says so, and is never given a clean record
+ok asking, shipping, all-in and the financing assumptions stay told apart
+ok the recorded prices are the days the car was observed, with their own dates
+ok a saved car that stops being seen keeps its own dated evidence, and is never called sold
+ok a listing the reader’s own filter excludes is explained, and only the reader brings it back
+ok a car with no coordinates is never placed on the map, and is reachable without one
+ok the journey's controls hold at 1280px in the dark theme
+ok the journey's controls hold at 1280px in the light theme
+ok the journey's controls hold at 390px in the dark theme
+ok the journey's controls hold at 390px in the light theme
+ok the drivetrain filter counts what the record says, and names what it set aside
+ok a car whose drivetrain the feed never reported is unknown, not a negative match
+ok a chosen car the drivetrain filter excludes is explained, and only the reader brings it back
+ok the cards, the map and the plot are one set after a drivetrain filter, and it composes
+ok a drivetrain choice survives a reload it was not re-seeded through
+ok a drivetrain no car in the chosen model has empties the page and says so
+ok a pick is only ever a model you chose, and the best car outside them is context
+ok choosing the market model lets it compete, with no code or config change
+ok with nothing chosen the watchlist is not called your picks, and a choice survives a reload
+ok one chosen model still recommends several of its own cars, and filters emptying it say so
+ok scoping the picks moved no score, and a car saved outside your choices stays saved
+ok marking brands as interesting changes no model choice, no scope and no recommendation
+ok a brand-only decision keeps the brands, chooses no model, and calls nothing a pick
+ok from the brand groups the reader chooses models, and the comparison opens on them
+ok saved cars, their notes and the comparison membership are untouched by brand interest
+ok removing interest and narrowing the filters erase no choice, and an empty model is an honest empty
+ok the chooser is searched, cancelled and worked by keyboard, and a bad profile cannot corrupt it
+ok curiosity about a brand does not promote its bargain into the picks
+ok decision journey: chooser actions stay reachable at 1440px light
+ok decision journey: chooser actions stay reachable at 1280px dark
+ok decision journey: chooser actions stay reachable at 390px light
+ok decision journey: chooser actions stay reachable at 390px dark
+ok decision journey: chooser actions stay reachable at 320px light
+ok decision journey: chooser actions stay reachable at 320px dark
+ok decision journey: desktop keeps three models readable at 1440px light
+ok decision journey: desktop keeps three models readable at 1280px dark
+ok decision journey: all model evidence is readable at 390px light
+ok decision journey: all model evidence is readable at 390px dark
+ok decision journey: all model evidence is readable at 320px light
+ok decision journey: all model evidence is readable at 320px dark
+browse smoke: all checks passed, zero page errors

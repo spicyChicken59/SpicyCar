@@ -779,6 +779,20 @@
 
 }
 
+/* A 320px window with a scrollbar leaves a 239px matrix scrollport. Keep
+ * identity plus one complete criterion inside it, including padding/gutters.
+ * The 650px table and 136px identity above otherwise leave qualification text
+ * outside the port after a jump, or under identity at the far-right endpoint. */
+@media screen and (max-width: 360px) {
+  .market-studio #decision-matrix {
+    min-width: 520px;
+  }
+
+  .market-studio #decision-matrix thead th {
+    overflow-wrap: anywhere;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .market-cover__index a,
   .market-candidate__media .sc-frame__img {

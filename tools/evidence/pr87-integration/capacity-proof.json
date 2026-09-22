@@ -1,0 +1,64 @@
+{
+  "node": "v24.11.1",
+  "gzip": "gzipSync(buffer, { level: 9 })",
+  "javascriptDeepStrictEqual": true,
+  "baseline": {
+    "raw": 3536984,
+    "gzip": 419208
+  },
+  "decoderGzip": 838,
+  "indexGzip": 159970,
+  "pageWithDecoder": 160808,
+  "pageBudget": 204800,
+  "pageHeadroom": 43992,
+  "cases": [
+    {
+      "label": "actual snapshot",
+      "listings": 1701,
+      "gone": 3024,
+      "raw": 2170948,
+      "gzip": 374934,
+      "totalWithDecoder": 375772,
+      "budget": 409600,
+      "headroom": 33828
+    },
+    {
+      "label": "SYNTHETIC +5% records per model (rounded up)",
+      "listings": 1796,
+      "gone": 3187,
+      "raw": 2303748,
+      "gzip": 392837,
+      "totalWithDecoder": 393675,
+      "budget": 409600,
+      "headroom": 15925
+    },
+    {
+      "label": "SYNTHETIC +10% records per model (rounded up)",
+      "listings": 1882,
+      "gone": 3338,
+      "raw": 2424969,
+      "gzip": 407590,
+      "totalWithDecoder": 408428,
+      "budget": 409600,
+      "headroom": 1172
+    },
+    {
+      "label": "SYNTHETIC +20% records per model (rounded up)",
+      "listings": 2049,
+      "gone": 3639,
+      "raw": 2664918,
+      "gzip": 440435,
+      "totalWithDecoder": 441273,
+      "budget": 409600,
+      "headroom": -31673
+    }
+  ],
+  "as_of": "2026-09-21",
+  "data_through": "2026-09-21",
+  "pythonTypeSensitiveEquality": true,
+  "valuesAndContainersCompared": 201736,
+  "plainSha256": "c916ecc7354928265c1a227d62ab31ab4cc6c9ee7e962bb6cb92afe23e7fae2e",
+  "wireSha256": "05b3228df2e43cd46d9b1061e9555a114cf1576fa8d3bd787daf6319b04533bf",
+  "growthLimit": "Synthetic record-count stress only; dates and series lengths fixed. Not a longevity or retention forecast.",
+  "payloadLimit": "gzip estimates, not captured HTTP transfer. Decoder charged against both unchanged budgets; fetched once."
+}

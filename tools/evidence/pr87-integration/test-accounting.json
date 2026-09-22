@@ -1,0 +1,99 @@
+{
+  "Python": {
+    "status": "PASS",
+    "declared": 604,
+    "passed": 603,
+    "failed": 0,
+    "skipped": 1,
+    "skipStatus": "NOT RUN",
+    "skipReasons": [
+      "no national_only target configured"
+    ]
+  },
+  "Matrix navigation": {
+    "status": "PASS",
+    "declared": 74,
+    "passed": 74,
+    "failed": 0,
+    "skipped": 0,
+    "backstop": "26 original + 48 qualification-readability"
+  },
+  "Photo dossier/fieldwork": {
+    "status": "PASS",
+    "declared": 26,
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0
+  },
+  "Browse shopping journey": {
+    "status": "PASS",
+    "declared": 63,
+    "passed": 63,
+    "failed": 0,
+    "skipped": 0
+  },
+  "Dashboard": {
+    "status": "PASS",
+    "declared": 337,
+    "passed": 323,
+    "failed": 0,
+    "skipped": 14,
+    "skipStatus": "NOT RUN",
+    "skipReasons": [
+      "a model no query has reached says it has not been fetched  \u2014 every model on this sheet has been fetched",
+      "and one whose query ran and found nothing says THAT instead  \u2014 every model on this sheet has been fetched",
+      "a note that claims 72 months says which promos are capped shorter  \u2014 this model has fewer than two trims to compare",
+      "and claims no cap when the term already fits inside one  \u2014 this model has fewer than two trims to compare",
+      "and a fallback cohort says it is a fallback  \u2014 every scored car on this page had its own trim and year to be judged against",
+      "and on a sheet that breaches them, the fetch-day rule and the five-car gate hold  \u2014 no fetch day is shared by two shopped trims of one model",
+      "and leaving the model page leaves the car behind  \u2014 no second model of the brand to tab to",
+      "the gone card counts a car still listed apart from the departures  \u2014 no model on the sheet has a car that left a watch while still listed",
+      "and the row says which watch it left and what it asks now  \u2014 no such car",
+      "a mixed cohort is not ranked first by a number the page will not print  \u2014 Porsche Taycan shows 0 mixed and 30 judged cars under the value sort \u2014 nothing to order",
+      "a car above typical says so rather than showing a dash  \u2014 every scored car on this shortlist happens to sit under typical (0 scored)",
+      "and says so when the cadence cannot account for it  \u2014 no model on the sheet is further behind than its own cadence allows",
+      "and a model on its first fetch reports no movement at all  \u2014 every model holding cars has fetched more than once",
+      "the typical-days split accounts for every dated car  \u2014 bmw i5 does not print a typical-days split today"
+    ]
+  },
+  "Studio": {
+    "status": "PASS",
+    "declared": "Harness has no numeric declared-check counter",
+    "failed": 0,
+    "skipped": 0,
+    "evidence": "studio.log"
+  },
+  "Workspace": {
+    "status": "PASS",
+    "declared": "Harness has no numeric declared-check counter",
+    "failed": 0,
+    "skipped": 0,
+    "evidence": "workspace.log"
+  },
+  "Discovery": {
+    "status": "PASS",
+    "declared": "Harness has no numeric declared-check counter",
+    "failed": 0,
+    "skipped": 0,
+    "evidence": "discovery.log"
+  },
+  "JSON validation": {
+    "status": "PASS"
+  },
+  "Call plan": {
+    "status": "PASS"
+  },
+  "Pinned-design consumer lint": {
+    "status": "PASS"
+  },
+  "Capacity preservation": {
+    "status": "PASS"
+  },
+  "Capacity browser acceptance": {
+    "status": "PASS",
+    "contexts": 2,
+    "failed": 0,
+    "skipped": 0,
+    "evidence": "capacity-browser/browser-acceptance.json"
+  }
+}
