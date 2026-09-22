@@ -1,3 +1,4 @@
+import Sheet from '../docs/sheet-transport.js';
 // Interaction regression for the Home-inspired Places & cars view.
 // Offline and read-only: no provider, mail, or tracker requests.
 import assert from 'node:assert/strict';
@@ -14,7 +15,7 @@ const server = createServer(async (req, res) => {
 });
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = 'http://127.0.0.1:' + server.address().port;
-const data = JSON.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
+const data = Sheet.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
 const watched = Object.entries(data.brands).flatMap(([bk, b]) => Object.entries(b.models).map(([mk, m]) => ({ bk, mk, count: (m.listings || []).length }))).sort((a, b) => b.count - a.count)[0];
 const query = '?view=report&brand=' + watched.bk + '&m=' + watched.mk;
 const browser = await chromium.launch();
@@ -116,7 +117,7 @@ try {
   await step('missing coordinates keep every listing accessible', async () => {
     await page.setViewportSize({ width: 1280, height: 1000 });
     await page.evaluate(() => { localStorage.removeItem('spicycar.prefs'); document.documentElement.dataset.theme = 'light'; });
-    const feed = JSON.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
+    const feed = Sheet.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
     for (const b of Object.values(feed.brands)) for (const m of Object.values(b.models)) for (const c of m.listings || []) { c.lat = null; c.lon = null; }
     await page.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(feed) }));
     await open();

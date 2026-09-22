@@ -1,3 +1,4 @@
+import Sheet from '../docs/sheet-transport.js';
 // Regression for the connected shopping journey: three views of ONE candidate
 // set, a comparison whose membership is not the garage, and a garage that says
 // what the record moved under.
@@ -36,7 +37,7 @@ await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const base = 'http://127.0.0.1:' + server.address().port;
 if (SHOTS) await mkdir(SHOTS, { recursive: true });
 
-const data = JSON.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
+const data = Sheet.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
 const all = Object.entries(data.brands).flatMap(([bk, b]) => Object.entries(b.models).map(([mk, m]) => ({ bk, mk, m, key: bk + '/' + mk })));
 const rowsOf = (o) => (o.m.listings || []);
 const located = (x) => Number.isFinite(x.lat) && Number.isFinite(x.lon) && Math.abs(x.lat) <= 90 && Math.abs(x.lon) <= 180 && (x.lat !== 0 || x.lon !== 0);
@@ -375,7 +376,7 @@ try {
       // something for the fold to be wrong about.
       await context.route('**/data.json*', async (route) => {
         const r = await route.fetch();
-        const sheet = JSON.parse(await r.text());
+        const sheet = Sheet.parse(await r.text());
         const want = new Set(Object.keys(SAVED));
         // The fields the reported-history cell actually reads, made equal.
         for (const b of Object.values(sheet.brands)) for (const m of Object.values(b.models)) {

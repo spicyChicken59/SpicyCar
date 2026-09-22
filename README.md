@@ -404,16 +404,50 @@ one skip on every run and the backstop never fired.
 
 **The sheet has a fixed compressed-payload budget.** The browser suite measures the exact
 committed bytes with Node `gzipSync(..., { level: 9 })`: 204,800 bytes (200 KiB) for
-`docs/index.html` and 409,600 bytes (400 KiB) for `docs/data.json`. This estimates compressed
+`docs/index.html` and 409,600 bytes (400 KiB) for `docs/data.json`. The required
+`sheet-transport.js` decoder is charged against **both** allowances; it is downloaded once.
+This estimates compressed
 payload size, not a captured HTTP transfer with headers, images, or other assets.
 
-The automatically updated row below uses **Python gzip level 9**, which can produce different
+The automatically updated row below includes the decoder and uses **Python gzip level 9**, which can produce different
 bytes from Node. All KiB values mean 1,024 bytes. Run `python tools/measure_sheet.py` for exact
 Python byte counts; the dashboard harness prints exact Node counts and remaining headroom.
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 21 | 1,710 | 381 KiB | 95% |
+| as committed | 21 | 1,701 | 369 KiB | 92% |
+
+The September 21 logical snapshot at `c6510d077be197139a5ee88e365e1a9632ba4a87`
+is now delivered as **`spicycar-sheet`, version 1**. It stores each distinct object field
+list once, then references it from tagged value arrays. Every value remains present;
+array order, missing keys, nulls, booleans, numbers, strings, VINs, URLs and history are
+unchanged. Object key lists and the JSON envelope are deterministic and sorted.
+`sheet_transport.py` and `docs/sheet-transport.js` decode the entire tree before it reaches
+application logic. Existing plain snapshots remain readable. Unsupported versions, invalid
+field tables, truncated records and invalid tags throw; the page shows its unavailable
+state, or retains the complete previous snapshot with a visible refresh error.
+
+Measured with **Node v24.11.1 `gzipSync(buffer, { level: 9 })`**, the data changes from
+**3,536,984 raw / 419,208 compressed bytes** to **2,170,948 raw / 374,934 compressed bytes**.
+The decoder adds **838 compressed bytes**, giving **375,772 bytes total** and
+**33,828 bytes (8.26%) headroom**. The page plus decoder is **160,808 / 204,800 bytes**.
+No limit, collection input, retention horizon or saved-state schema changes.
+
+The full preservation proof compares **201,736 values and containers**, including all
+**1,701 live and 3,024 missing/history records**, in Python with type-sensitive recursion
+and JavaScript with `assert.deepStrictEqual`. The same-date source rebuild is also checked.
+Reproduce against an extracted original plain sheet:
+
+```
+python tools/verify_sheet_capacity.py --baseline /path/to/original-data.json --node /path/to/node --out /tmp/capacity-proof
+```
+
+The bounded **synthetic** record-count stress test adds records across every model,
+with distinct VINs and source-link suffixes. Dates and history lengths stay fixed.
+Including the decoder, approximately +5% records uses **393,675 bytes**, +10% uses
+**408,428 bytes**, and +20% uses **441,273 bytes**, exceeding the unchanged limit by
+**31,673 bytes**. These are fixtures, not new observations, fetch-day projections,
+or a claim that a full future retention window will fit.
 
 For the September 19 snapshot at base `b500f57669777831078b0ad79376307b0da61e3e`, the lossless
 compact writer changes the sheet from **5,125,772 to 3,255,514 raw bytes**. Node 24 gzip-9

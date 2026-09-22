@@ -1,3 +1,4 @@
+import Sheet from '../docs/sheet-transport.js';
 // The user-facing search flow, with no provider requests or external writes.
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -5,7 +6,7 @@ import {readFile} from 'node:fs/promises';
 import {resolve, extname} from 'node:path';
 import {chromium} from 'playwright';
 const root = resolve('docs');
-const data = JSON.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
+const data = Sheet.parse(await readFile(resolve(root, 'data.json'), 'utf8'));
 const models = Object.entries(data.brands).flatMap(([bk,b]) => Object.entries(b.models).map(([mk,m]) => ({key:bk+'/'+mk,bk,mk,...m})));
 const selected = models.filter((m) => m.bk !== 'bmw' && m.listings.length > 5).slice(0,2);
 assert.equal(selected.length,2);

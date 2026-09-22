@@ -1,0 +1,16 @@
+test_the_lucid_rows_are_deliberately_left_where_they_are (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_the_lucid_rows_are_deliberately_left_where_they_are)
+Pinned here rather than in a commit message, which is where this ... FAIL
+
+======================================================================
+FAIL: test_the_lucid_rows_are_deliberately_left_where_they_are (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_the_lucid_rows_are_deliberately_left_where_they_are)
+Pinned here rather than in a commit message, which is where this
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/81e033c0a2a6/SpicyCar-baseline/tests/test_tracking.py", line 3602, in test_the_lucid_rows_are_deliberately_left_where_they_are
+    self.assertGreater(len(pre) / len(orphan), 0.5,
+AssertionError: 0.4428904428904429 not greater than 0.5 : most of these cars are outside the 2024+ rule the whole watchlist is built on, which is why mapping them would publish inventory no query can return
+
+----------------------------------------------------------------------
+Ran 1 test in 0.130s
+
+FAILED (failures=1)

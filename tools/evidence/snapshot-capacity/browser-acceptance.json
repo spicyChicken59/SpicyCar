@@ -1,0 +1,110 @@
+[
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "theme": "dark",
+    "actualSnapshot": true,
+    "sourceRequests": 0,
+    "dataThrough": "2026-09-21",
+    "vin": "3GPKHURM2RS537858",
+    "firstSeen": "2026-09-08",
+    "recordThrough": "2026-09-20",
+    "recordedPrices": [
+      [
+        "2026-09-08",
+        "$19,676"
+      ],
+      [
+        "2026-09-11",
+        "$19,676"
+      ],
+      [
+        "2026-09-14",
+        "$19,676"
+      ],
+      [
+        "2026-09-15",
+        "$19,676"
+      ],
+      [
+        "2026-09-17",
+        "$19,676"
+      ],
+      [
+        "2026-09-20",
+        "$19,676"
+      ]
+    ],
+    "sourceLink": "https://www.autolist.com/honda-prologue#vin=3GPKHURM2RS537858",
+    "note": "Capacity acceptance fixture: exact VIN and note persist. No dealer contact.",
+    "comparisonVinsAfterReload": [
+      "3GPKHURM2RS537858"
+    ],
+    "brandInterestControl": "Interested in Volkswagen",
+    "modelChoicesUnchanged": true,
+    "missingVin": "WBY13HG09SCS35108",
+    "missingLastSeen": "2026-09-10",
+    "missingReason": "delisted",
+    "actualUnknownMileageVin": "4W5XHPRL4RZ507282",
+    "actualUnknownMileageValue": null,
+    "actualUnknownFacts": "MileageMileage unreportedDealerDave White AcuraVIN4W5XHPRL4RZ507282Conditionno accidentsFirst tracked2026-09-13Record through2026-09-19",
+    "allDecodedValuesDeepEqual": true,
+    "pageErrors": []
+  },
+  {
+    "viewport": {
+      "width": 320,
+      "height": 844
+    },
+    "theme": "light",
+    "actualSnapshot": true,
+    "sourceRequests": 0,
+    "dataThrough": "2026-09-21",
+    "vin": "3GPKHURM2RS537858",
+    "firstSeen": "2026-09-08",
+    "recordThrough": "2026-09-20",
+    "recordedPrices": [
+      [
+        "2026-09-08",
+        "$19,676"
+      ],
+      [
+        "2026-09-11",
+        "$19,676"
+      ],
+      [
+        "2026-09-14",
+        "$19,676"
+      ],
+      [
+        "2026-09-15",
+        "$19,676"
+      ],
+      [
+        "2026-09-17",
+        "$19,676"
+      ],
+      [
+        "2026-09-20",
+        "$19,676"
+      ]
+    ],
+    "sourceLink": "https://www.autolist.com/honda-prologue#vin=3GPKHURM2RS537858",
+    "note": "Capacity acceptance fixture: exact VIN and note persist. No dealer contact.",
+    "comparisonVinsAfterReload": [
+      "3GPKHURM2RS537858"
+    ],
+    "brandInterestControl": "Interested in Volkswagen",
+    "modelChoicesUnchanged": true,
+    "missingVin": "WBY13HG09SCS35108",
+    "missingLastSeen": "2026-09-10",
+    "missingReason": "delisted",
+    "actualUnknownMileageVin": "4W5XHPRL4RZ507282",
+    "actualUnknownMileageValue": null,
+    "actualUnknownFacts": "MileageMileage unreportedDealerDave White AcuraVIN4W5XHPRL4RZ507282Conditionno accidentsFirst tracked2026-09-13Record through2026-09-19",
+    "allDecodedValuesDeepEqual": true,
+    "pageErrors": []
+  }
+]
