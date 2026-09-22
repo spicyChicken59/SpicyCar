@@ -1,0 +1,11 @@
+ok one dot map, eight cards, and listing order
+ok filter and sort propagation
+ok existing shortlist and called state cycle
+ok card-to-pin, popup-to-card and keyboard focus
+ok tile failure remains explicit after sorting
+ok 320/390/820/1280 layouts in light and dark
+ok narrow popup and pagination focus
+ok missing coordinates keep every listing accessible
+ok missing Leaflet degrades to the complete card list
+ok touch scroll mode, explicit panning, 16px phone fields, and feed refresh
+discovery smoke: all checks passed, zero page errors

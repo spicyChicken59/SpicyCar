@@ -1,0 +1,983 @@
+test_bootstrap_cannot_replace_the_first_regular_run_of_a_day (tests.test_bootstrap.BootstrapTests.test_bootstrap_cannot_replace_the_first_regular_run_of_a_day) ... ok
+test_bootstrap_keeps_other_targets_and_failed_partial_rows (tests.test_bootstrap.BootstrapTests.test_bootstrap_keeps_other_targets_and_failed_partial_rows) ... ok
+test_bootstrap_spend_accumulates (tests.test_bootstrap.BootstrapTests.test_bootstrap_spend_accumulates) ... ok
+test_partial_first_fetch_is_retryable (tests.test_bootstrap.BootstrapTests.test_partial_first_fetch_is_retryable) ... ok
+test_remaining_day_and_month_both_limit_bootstrap (tests.test_bootstrap.BootstrapTests.test_remaining_day_and_month_both_limit_bootstrap) ... ok
+test_retry_cannot_exceed_request_allowance (tests.test_bootstrap.BootstrapTests.test_retry_cannot_exceed_request_allowance) ... ok
+test_successful_empty_market_is_not_fetched_again (tests.test_bootstrap.BootstrapTests.test_successful_empty_market_is_not_fetched_again) ... ok
+test_targeted_log_preserves_daily_observations (tests.test_bootstrap.BootstrapTests.test_targeted_log_preserves_daily_observations) ... ok
+test_failed_deep_pages_keep_successful_baseline_and_stop_at_allowance (tests.test_exploration.LiveLoop.test_failed_deep_pages_keep_successful_baseline_and_stop_at_allowance) ... ok
+test_one_spare_call_reaches_a_deeper_page_without_touching_reserve (tests.test_exploration.LiveLoop.test_one_spare_call_reaches_a_deeper_page_without_touching_reserve) ... ok
+test_two_spare_calls_are_recycled_across_both_sources (tests.test_exploration.LiveLoop.test_two_spare_calls_are_recycled_across_both_sources) ... ok
+test_cursor_continues_after_50_and_failure_recovers (tests.test_exploration.PageRotation.test_cursor_continues_after_50_and_failure_recovers) ... ok
+test_empty_failed_or_already_attempted_scopes_are_not_rebought (tests.test_exploration.PageRotation.test_empty_failed_or_already_attempted_scopes_are_not_rebought) ... ok
+test_progress_resumes_and_query_changes_reset_it (tests.test_exploration.PageRotation.test_progress_resumes_and_query_changes_reset_it) ... ok
+test_short_page_and_shrinking_market_rewind_without_exhaustive_claim (tests.test_exploration.PageRotation.test_short_page_and_shrinking_market_rewind_without_exhaustive_claim) ... ok
+test_transport_uses_opaque_cursor_without_following_response_host (tests.test_exploration.PageRotation.test_transport_uses_opaque_cursor_without_following_response_host) ... ok
+test_bonus_preserves_future_baseline_and_reserve (tests.test_fair_collection.Budget.test_bonus_preserves_future_baseline_and_reserve) ... ok
+test_corrupt_spend_fails_before_requests (tests.test_fair_collection.Budget.test_corrupt_spend_fails_before_requests) ... ok
+test_month_ceiling_and_rollover (tests.test_fair_collection.Budget.test_month_ceiling_and_rollover) ... ok
+test_recycles_exhaustion_but_subtracts_each_bonus (tests.test_fair_collection.Budget.test_recycles_exhaustion_but_subtracts_each_bonus) ... ok
+test_restart_does_not_refund_or_double_count_reserved_requests (tests.test_fair_collection.Budget.test_restart_does_not_refund_or_double_count_reserved_requests) ... ok
+test_every_31_day_window_fits_with_recovery_reserve (tests.test_fair_collection.FairPlan.test_every_31_day_window_fits_with_recovery_reserve) ... ok
+test_model_turns_rotate_every_trim_without_changing_model_share (tests.test_fair_collection.FairPlan.test_model_turns_rotate_every_trim_without_changing_model_share) ... ok
+test_shopping_does_not_change_collection (tests.test_fair_collection.FairPlan.test_shopping_does_not_change_collection) ... ok
+test_counts_are_dated_broad_queries_and_never_summed_trim_totals (tests.test_fair_collection.Learning.test_counts_are_dated_broad_queries_and_never_summed_trim_totals) ... ok
+test_empty_complete_observation_clears_current_rows_but_failure_does_not (tests.test_fair_collection.Learning.test_empty_complete_observation_clears_current_rows_but_failure_does_not) ... ok
+test_page_count_cannot_masquerade_as_market_size (tests.test_fair_collection.Learning.test_page_count_cannot_masquerade_as_market_size) ... ok
+test_unseen_and_overdue_win_against_giant_market (tests.test_fair_collection.Learning.test_unseen_and_overdue_win_against_giant_market) ... ok
+test_weights_stay_fixed_through_week_and_relearn_next_week (tests.test_fair_collection.Learning.test_weights_stay_fixed_through_week_and_relearn_next_week) ... ok
+test_complete_empty_run_accounts_calls_and_same_day_dispatch_is_free (tests.test_fair_collection.Runtime.test_complete_empty_run_accounts_calls_and_same_day_dispatch_is_free)
+Drive real orchestration/transport with mocked HTTP; write only temp data. ... ok
+test_the_arrival_label_keeps_its_cohort_without_a_use_determination (tests.test_help_report_copy.TestHelpReportOdometerCopy.test_the_arrival_label_keeps_its_cohort_without_a_use_determination) ... ok
+test_the_median_split_names_recorded_mileage_groups_and_support (tests.test_help_report_copy.TestHelpReportOdometerCopy.test_the_median_split_names_recorded_mileage_groups_and_support) ... ok
+test_actual_snapshot_all_values_match_same_day_rebuild (tests.test_sheet_transport.SheetTransportTests.test_actual_snapshot_all_values_match_same_day_rebuild) ... ok
+test_bad_tags_references_and_row_widths (tests.test_sheet_transport.SheetTransportTests.test_bad_tags_references_and_row_widths) ... ok
+test_deterministic_round_trip_is_type_sensitive (tests.test_sheet_transport.SheetTransportTests.test_deterministic_round_trip_is_type_sensitive) ... ok
+test_empty_root_and_containers (tests.test_sheet_transport.SheetTransportTests.test_empty_root_and_containers) ... ok
+test_encoder_rejects_invalid_values_at_any_depth (tests.test_sheet_transport.SheetTransportTests.test_encoder_rejects_invalid_values_at_any_depth) ... ok
+test_encoder_rejects_nonobject_root (tests.test_sheet_transport.SheetTransportTests.test_encoder_rejects_nonobject_root) ... ok
+test_failed_fsync_preserves_publication (tests.test_sheet_transport.SheetTransportTests.test_failed_fsync_preserves_publication) ... ok
+test_failed_write_preserves_publication (tests.test_sheet_transport.SheetTransportTests.test_failed_write_preserves_publication) ... ok
+test_incomplete_or_extra_envelope (tests.test_sheet_transport.SheetTransportTests.test_incomplete_or_extra_envelope) ... ok
+test_invalid_input_preserves_publication (tests.test_sheet_transport.SheetTransportTests.test_invalid_input_preserves_publication) ... ok
+test_invalid_schema_table (tests.test_sheet_transport.SheetTransportTests.test_invalid_schema_table) ... ok
+test_javascript_decoder_matches_python_for_fixture_and_whole_snapshot (tests.test_sheet_transport.SheetTransportTests.test_javascript_decoder_matches_python_for_fixture_and_whole_snapshot) ... ok
+test_javascript_rejects_malformed_without_partial_result (tests.test_sheet_transport.SheetTransportTests.test_javascript_rejects_malformed_without_partial_result) ... ok
+test_late_corruption_never_returns_partial_records (tests.test_sheet_transport.SheetTransportTests.test_late_corruption_never_returns_partial_records) ... ok
+test_plain_snapshot_compatibility (tests.test_sheet_transport.SheetTransportTests.test_plain_snapshot_compatibility) ... ok
+test_schema_references_do_not_alias_records (tests.test_sheet_transport.SheetTransportTests.test_schema_references_do_not_alias_records) ... ok
+test_truncated_json_is_not_empty_data (tests.test_sheet_transport.SheetTransportTests.test_truncated_json_is_not_empty_data) ... ok
+test_unsupported_version_and_format (tests.test_sheet_transport.SheetTransportTests.test_unsupported_version_and_format) ... ok
+test_a_bmw_store_gets_the_bare_badge (tests.test_tracking.TestACertificationIsIssuedBySomeone.test_a_bmw_store_gets_the_bare_badge) ... ok
+test_a_seller_with_no_name_is_the_one_to_confirm (tests.test_tracking.TestACertificationIsIssuedBySomeone.test_a_seller_with_no_name_is_the_one_to_confirm)
+Conservative direction: a certification nobody is named for is ... ok
+test_an_uncertified_car_wears_neither (tests.test_tracking.TestACertificationIsIssuedBySomeone.test_an_uncertified_car_wears_neither) ... ok
+test_another_marque_says_so (tests.test_tracking.TestACertificationIsIssuedBySomeone.test_another_marque_says_so) ... ok
+test_the_brand_must_be_a_whole_word (tests.test_tracking.TestACertificationIsIssuedBySomeone.test_the_brand_must_be_a_whole_word)
+The page tests /\bbmw\b/i. A dealership called "bmwofchicago" is ... ok
+test_the_caveat_keeps_the_page_ordering (tests.test_tracking.TestACertificationIsIssuedBySomeone.test_the_caveat_keeps_the_page_ordering)
+Still the first flag, still ahead of the rental word — the slot ... ok
+test_the_record_carries_it_where_a_reader_meets_it (tests.test_tracking.TestACertificationIsIssuedBySomeone.test_the_record_carries_it_where_a_reader_meets_it)
+End to end, on the committed record: no certified row may print a ... ok
+test_a_boolean_window_is_not_a_window_of_one (tests.test_tracking.TestAMalformedFetchLogDoesNotKillTheRun.test_a_boolean_window_is_not_a_window_of_one)
+isinstance(True, int) — the trap this file's sister project hit at a ... ok
+test_a_good_entry_beside_a_bad_one_survives (tests.test_tracking.TestAMalformedFetchLogDoesNotKillTheRun.test_a_good_entry_beside_a_bad_one_survives)
+Dropping the file wholesale would throw away the days that are fine, ... ok
+test_none_of_them_crashes_and_every_one_says_so (tests.test_tracking.TestAMalformedFetchLogDoesNotKillTheRun.test_none_of_them_crashes_and_every_one_says_so) ... ok
+test_the_good_log_is_the_control (tests.test_tracking.TestAMalformedFetchLogDoesNotKillTheRun.test_the_good_log_is_the_control) ... ok
+test_a_ship_bands_that_is_not_a_list_is_named_and_ignored (tests.test_tracking.TestAMistypedBandIsNamedNotFatal.test_a_ship_bands_that_is_not_a_list_is_named_and_ignored) ... ok
+test_an_entry_that_is_not_a_band_is_named_and_dropped (tests.test_tracking.TestAMistypedBandIsNamedNotFatal.test_an_entry_that_is_not_a_band_is_named_and_dropped) ... ok
+test_and_a_config_with_none_of_that_is_unchanged (tests.test_tracking.TestAMistypedBandIsNamedNotFatal.test_and_a_config_with_none_of_that_is_unchanged) ... ok
+test_a_listing_priced_at_infinity_is_dropped_not_fatal (tests.test_tracking.TestANumberThatIsNotOneIsNone.test_a_listing_priced_at_infinity_is_dropped_not_fatal)
+Through the real normalize(), which is where it landed. ... ok
+test_a_non_finite_value_is_no_number_at_all (tests.test_tracking.TestANumberThatIsNotOneIsNone.test_a_non_finite_value_is_no_number_at_all) ... ok
+test_and_the_numbers_it_always_read_still_read (tests.test_tracking.TestANumberThatIsNotOneIsNone.test_and_the_numbers_it_always_read_still_read) ... ok
+test_and_the_old_rule_really_did_disagree (tests.test_tracking.TestAPercentReadsTheSameOnBothSurfaces.test_and_the_old_rule_really_did_disagree)
+Without this the table above could be Python's own answer written ... ok
+test_every_share_the_record_prints_goes_through_it (tests.test_tracking.TestAPercentReadsTheSameOnBothSurfaces.test_every_share_the_record_prints_goes_through_it)
+Not only the picks: the cut share and the staleness share are ... ok
+test_the_record_rounds_the_way_the_page_does (tests.test_tracking.TestAPercentReadsTheSameOnBothSurfaces.test_the_record_rounds_the_way_the_page_does) ... ok
+test_the_stand_floor_no_longer_prints_a_claim_with_no_content (tests.test_tracking.TestAPercentReadsTheSameOnBothSurfaces.test_the_stand_floor_no_longer_prints_a_claim_with_no_content)
+score_picks() admits a stand at a margin of exactly half a percent, ... ok
+test_a_model_no_query_has_reached_still_says_not_fetched_yet (tests.test_tracking.TestAQueryThatRanAndFoundNothingSaysSo.test_a_model_no_query_has_reached_still_says_not_fetched_yet) ... ok
+test_a_model_with_cars_is_untouched_by_either (tests.test_tracking.TestAQueryThatRanAndFoundNothingSaysSo.test_a_model_with_cars_is_untouched_by_either)
+The control: last_asked must not leak into the ordinary line. ... ok
+test_a_query_that_ran_and_found_nothing_says_that_instead (tests.test_tracking.TestAQueryThatRanAndFoundNothingSaysSo.test_a_query_that_ran_and_found_nothing_says_that_instead) ... ok
+test_a_target_that_billed_a_call_for_nothing_is_reported (tests.test_tracking.TestAQueryThatRanAndFoundNothingSaysSo.test_a_target_that_billed_a_call_for_nothing_is_reported)
+`silent_targets` cannot catch it — a call WAS billed, so the target ... ok
+test_the_sheet_carries_the_day_the_targets_were_asked (tests.test_tracking.TestAQueryThatRanAndFoundNothingSaysSo.test_the_sheet_carries_the_day_the_targets_were_asked) ... ok
+test_a_target_the_second_run_never_asked_keeps_no_entry (tests.test_tracking.TestASecondRunOfTheDayLeavesOneAnswer.test_a_target_the_second_run_never_asked_keeps_no_entry)
+Its rows went with the day, so an entry for it is a reach with ... ok
+test_an_exhausted_first_run_does_not_vouch_for_a_narrower_second (tests.test_tracking.TestASecondRunOfTheDayLeavesOneAnswer.test_an_exhausted_first_run_does_not_vouch_for_a_narrower_second)
+The same defect on the other field: "this query saw the whole ... ok
+test_the_reach_is_the_last_runs_and_the_spend_is_the_days (tests.test_tracking.TestASecondRunOfTheDayLeavesOneAnswer.test_the_reach_is_the_last_runs_and_the_spend_is_the_days) ... ok
+test_the_rebuild_publishes_what_the_run_published (tests.test_tracking.TestASecondRunOfTheDayLeavesOneAnswer.test_the_rebuild_publishes_what_the_run_published) ... ok
+test_a_lone_sub_100_cut_is_still_a_cut_everywhere (tests.test_tracking.TestASmallCutIsStillACut.test_a_lone_sub_100_cut_is_still_a_cut_everywhere)
+The real WBY33FK06RCR50278 shape: flat at $41,990, then $41,891 — ... ok
+test_the_median_names_steps_while_the_share_names_cars (tests.test_tracking.TestASmallCutIsStillACut.test_the_median_names_steps_while_the_share_names_cars)
+One car with three cuts makes the two denominators differ, which is ... ok
+test_the_price_change_list_leads_with_the_biggest_move (tests.test_tracking.TestASmallCutIsStillACut.test_the_price_change_list_leads_with_the_biggest_move)
+The $1 line stays — it is what happened — and lands last, so scale ... ok
+test_the_run_log_says_which_fault_it_is (tests.test_tracking.TestATargetThatKeepsNothingIsItsOwnFault.test_the_run_log_says_which_fault_it_is) ... ok
+test_the_run_really_records_what_each_target_kept (tests.test_tracking.TestATargetThatKeepsNothingIsItsOwnFault.test_the_run_really_records_what_each_target_kept)
+The two above set KEPT_N themselves, so deleting the line that ... ok
+test_the_three_faults_are_told_apart (tests.test_tracking.TestATargetThatKeepsNothingIsItsOwnFault.test_the_three_faults_are_told_apart) ... ok
+test_a_departure_from_a_watch_is_printed_under_that_watch (tests.test_tracking.TestATrimSectionIsAboutItsOwnQuery.test_a_departure_from_a_watch_is_printed_under_that_watch)
+The count and the rows behind it are one total split in two. ... ok
+test_and_prints_each_car_at_the_price_its_own_query_returned (tests.test_tracking.TestATrimSectionIsAboutItsOwnQuery.test_and_prints_each_car_at_the_price_its_own_query_returned) ... ok
+test_and_the_certification_follows_the_listing_it_belongs_to (tests.test_tracking.TestATrimSectionIsAboutItsOwnQuery.test_and_the_certification_follows_the_listing_it_belongs_to) ... ok
+test_the_model_line_says_how_many_cars_are_in_two_sections (tests.test_tracking.TestATrimSectionIsAboutItsOwnQuery.test_the_model_line_says_how_many_cars_are_in_two_sections) ... ok
+test_the_row_carries_the_other_query_s_listing_for_the_page (tests.test_tracking.TestATrimSectionIsAboutItsOwnQuery.test_the_row_carries_the_other_query_s_listing_for_the_page)
+The dashboard has one row per vehicle and cannot reach the sibling ... ok
+test_the_table_is_still_one_row_per_vehicle_at_the_cheapest_price (tests.test_tracking.TestATrimSectionIsAboutItsOwnQuery.test_the_table_is_still_one_row_per_vehicle_at_the_cheapest_price) ... ok
+test_the_watch_counts_what_it_returned_not_what_won_a_tie_break (tests.test_tracking.TestATrimSectionIsAboutItsOwnQuery.test_the_watch_counts_what_it_returned_not_what_won_a_tie_break) ... ok
+test_a_cohort_of_unknown_size_drops_only_the_size (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_a_cohort_of_unknown_size_drops_only_the_size) ... ok
+test_a_cohort_that_fell_back_names_only_what_it_used (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_a_cohort_that_fell_back_names_only_what_it_used)
+score_picks stamps pick_trim "" on a year-basis pick and pick_year ... ok
+test_a_pick_with_no_cohort_at_all_says_nothing_about_one (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_a_pick_with_no_cohort_at_all_says_nothing_about_one)
+Rather than "for a " with a hole in it. ... ok
+test_an_arrival_above_the_floor_gets_its_mileage_and_no_group_label (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_an_arrival_above_the_floor_gets_its_mileage_and_no_group_label)
+The odometer does not establish whether a car is legally used. ... ok
+test_an_arrival_with_no_mileage_is_called_neither (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_an_arrival_with_no_mileage_is_called_neither) ... ok
+test_one_comparable_car_is_one_car (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_one_comparable_car_is_one_car) ... ok
+test_the_arrival_group_uses_only_the_recorded_odometer_boundary (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_the_arrival_group_uses_only_the_recorded_odometer_boundary)
+Zero is recorded mileage; unknown is not assigned to a group. ... ok
+test_the_arrival_tag_carries_its_cohort_and_its_size (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_the_arrival_tag_carries_its_cohort_and_its_size) ... ok
+test_the_headline_names_the_cohort_and_recorded_odometer_group (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_the_headline_names_the_cohort_and_recorded_odometer_group) ... ok
+test_the_reach_clause_keeps_its_place (tests.test_tracking.TestAnArrivalNamesWhatItWasComparedAgainst.test_the_reach_clause_keeps_its_place)
+It was shipped first and says something the cohort does not: how ... ok
+test_a_feed_that_says_nothing_is_not_evidence_of_petrol (tests.test_tracking.TestAnEvScreenerChecksThatACarIsAnEv.test_a_feed_that_says_nothing_is_not_evidence_of_petrol)
+None is not False. Refusing on an absent field would empty a whole ... ok
+test_a_petrol_car_on_a_shared_nameplate_is_refused (tests.test_tracking.TestAnEvScreenerChecksThatACarIsAnEv.test_a_petrol_car_on_a_shared_nameplate_is_refused) ... ok
+test_a_plug_in_hybrid_is_refused_though_it_says_electric (tests.test_tracking.TestAnEvScreenerChecksThatACarIsAnEv.test_a_plug_in_hybrid_is_refused_though_it_says_electric)
+"Plug-in Hybrid Electric" contains the word. Hybrid is checked ... ok
+test_it_reads_whichever_of_the_three_fields_the_feed_filled (tests.test_tracking.TestAnEvScreenerChecksThatACarIsAnEv.test_it_reads_whichever_of_the_three_fields_the_feed_filled) ... ok
+test_the_clean_fixture_is_shaped_like_a_real_record (tests.test_tracking.TestAnEvScreenerChecksThatACarIsAnEv.test_the_clean_fixture_is_shaped_like_a_real_record)
+A fixture missing a field the API always sends is a fixture ... ok
+test_the_electric_car_the_sample_record_is_still_gets_through (tests.test_tracking.TestAnEvScreenerChecksThatACarIsAnEv.test_the_electric_car_the_sample_record_is_still_gets_through)
+The control. Without it a guard that refused everything would pass ... ok
+test_distances_measure_from_the_public_anchor (tests.test_tracking.TestAnchor.test_distances_measure_from_the_public_anchor) ... ok
+test_a_body_that_is_not_json_is_a_failure (tests.test_tracking.TestBrokenEnvelope.test_a_body_that_is_not_json_is_a_failure) ... ok
+test_a_body_with_no_data_list_is_a_failure_not_an_empty_market (tests.test_tracking.TestBrokenEnvelope.test_a_body_with_no_data_list_is_a_failure_not_an_empty_market) ... ok
+test_a_broken_envelope_records_the_scope_as_failed (tests.test_tracking.TestBrokenEnvelope.test_a_broken_envelope_records_the_scope_as_failed)
+…so delisted() knows the query never answered, instead of judging ... ok
+test_an_empty_data_list_is_a_real_empty_answer (tests.test_tracking.TestBrokenEnvelope.test_an_empty_data_list_is_a_real_empty_answer) ... ok
+test_each_model_rotates_its_trims_without_skipping_a_turn (tests.test_tracking.TestBudget.test_each_model_rotates_its_trims_without_skipping_a_turn)
+Every model has one baseline observation each three-day turn. ... ok
+test_every_target_is_reachable_on_its_cadence (tests.test_tracking.TestBudget.test_every_target_is_reachable_on_its_cadence)
+A target nobody ever fetches is a silent hole in the watchlist. ... ok
+test_headroom_is_reported_honestly (tests.test_tracking.TestBudget.test_headroom_is_reported_honestly)
+A soft guard: warn in the failure message when we are near the ceiling. ... ok
+test_newest_pages_are_budgeted (tests.test_tracking.TestBudget.test_newest_pages_are_budgeted)
+The newest-first fetch must be counted, or the plan lies. ... ok
+test_no_single_day_exceeds_the_daily_cap (tests.test_tracking.TestBudget.test_no_single_day_exceeds_the_daily_cap) ... ok
+test_projected_month_fits_the_api_plan (tests.test_tracking.TestBudget.test_projected_month_fits_the_api_plan) ... ok
+test_shopping_ids_exist (tests.test_tracking.TestBudget.test_shopping_ids_exist) ... ok
+test_each_page_declares_exactly_one_canonical (tests.test_tracking.TestCanonicalUrl.test_each_page_declares_exactly_one_canonical) ... ok
+test_no_script_rewrites_the_canonical (tests.test_tracking.TestCanonicalUrl.test_no_script_rewrites_the_canonical)
+The decision, not just its result. syncUrl() rewrites the address bar ... ok
+test_the_canonical_agrees_with_og_url (tests.test_tracking.TestCanonicalUrl.test_the_canonical_agrees_with_og_url)
+Two identity claims in one head that disagree are worse than one: ... ok
+test_the_canonical_names_a_bare_page_not_a_view (tests.test_tracking.TestCanonicalUrl.test_the_canonical_names_a_bare_page_not_a_view)
+It has to be the address the whole ?models=/?trims=/?brand= space ... ok
+test_a_fallback_cohort_of_one_trim_still_speaks (tests.test_tracking.TestCohortMustBeComparable.test_a_fallback_cohort_of_one_trim_still_speaks)
+The guard is about comparability, not about the basis. A model that ... ok
+test_a_model_wide_cohort_of_two_trims_says_nothing (tests.test_tracking.TestCohortMustBeComparable.test_a_model_wide_cohort_of_two_trims_says_nothing)
+The shipped iX shape: no trim-and-year cohort reaches six and no ... ok
+test_a_trim_cohort_is_comparable_by_construction (tests.test_tracking.TestCohortMustBeComparable.test_a_trim_cohort_is_comparable_by_construction)
+Six of one trim and year is the cohort the guard was built to keep: ... ok
+test_one_model_year_and_four_trims_is_still_mixed (tests.test_tracking.TestCohortMustBeComparable.test_one_model_year_and_four_trims_is_still_mixed)
+The Kia EV9 shape, and the case a year-median rule cannot see: every ... ok
+test_the_report_prints_no_percentage_for_a_mixed_cohort (tests.test_tracking.TestCohortMustBeComparable.test_the_report_prints_no_percentage_for_a_mixed_cohort)
+Every surface reads the stand, so the report follows without a ... ok
+test_a_cadence_cycle_nobody_can_plan_over_is_refused_out_loud (tests.test_tracking.TestConfig.test_a_cadence_cycle_nobody_can_plan_over_is_refused_out_loud)
+"Cadence needs to be spread out" reads as coprime, and coprime ... ok
+test_a_model_can_stand_its_own_certified_watch_down (tests.test_tracking.TestConfig.test_a_model_can_stand_its_own_certified_watch_down) ... ok
+test_a_model_without_trims_is_one_target (tests.test_tracking.TestConfig.test_a_model_without_trims_is_one_target)
+Read off the config rather than naming one model: most of this ... ok
+test_a_models_cpo_block_overrides_the_recipe (tests.test_tracking.TestConfig.test_a_models_cpo_block_overrides_the_recipe)
+The narrowing is the last layer. Under it, a model could not slow ... ok
+test_a_parameter_resolves_through_all_five_layers (tests.test_tracking.TestConfig.test_a_parameter_resolves_through_all_five_layers)
+shopping_fetch ← trim ← model ← brand ← defaults, one live example ... ok
+test_a_shopping_id_that_matches_no_target_stops_the_run (tests.test_tracking.TestConfig.test_a_shopping_id_that_matches_no_target_stops_the_run)
+Silence here is the worst answer available, because every ... ok
+test_being_shopped_can_only_add_depth (tests.test_tracking.TestConfig.test_being_shopped_can_only_add_depth)
+shopping_fetch is applied AFTER the trim's own layer, so a car the ... ok
+test_being_shopped_never_takes_depth_AWAY (tests.test_tracking.TestConfig.test_being_shopped_never_takes_depth_AWAY)
+The other direction of the same sentence, and the one that was ... ok
+test_cpo_is_a_reserved_trim_key (tests.test_tracking.TestConfig.test_cpo_is_a_reserved_trim_key)
+A hand-written `cpo` trim and the derived watch both claim ... ok
+test_cpo_watches_are_affordable_and_staggered (tests.test_tracking.TestConfig.test_cpo_watches_are_affordable_and_staggered) ... ok
+test_legacy_certified_targets_propagate_the_recipe_filters (tests.test_tracking.TestConfig.test_legacy_certified_targets_propagate_the_recipe_filters)
+These are post-fetch filters, not claims about provider coverage. ... ok
+test_nothing_hand_written_may_claim_a_derived_watchs_id (tests.test_tracking.TestConfig.test_nothing_hand_written_may_claim_a_derived_watchs_id)
+The guard was on the trim KEY, so `i5/cpo` was refused and a MODEL ... ok
+test_one_ev_per_brand_outside_bmw (tests.test_tracking.TestConfig.test_one_ev_per_brand_outside_bmw)
+The rule that replaced the old reduction. ... ok
+test_parsers_survive_dirty_input (tests.test_tracking.TestConfig.test_parsers_survive_dirty_input) ... ok
+test_pointing_the_tool_at_another_car_moves_the_spending (tests.test_tracking.TestConfig.test_pointing_the_tool_at_another_car_moves_the_spending)
+The defect this replaced, kept as a test because it was invisible. ... ok
+test_shopping_another_car_does_not_steal_other_models_baseline (tests.test_tracking.TestConfig.test_shopping_another_car_does_not_steal_other_models_baseline) ... ok
+test_shopping_names_cars_without_creating_extra_paid_watches (tests.test_tracking.TestConfig.test_shopping_names_cars_without_creating_extra_paid_watches) ... ok
+test_site_dates_the_data_not_the_build (tests.test_tracking.TestConfig.test_site_dates_the_data_not_the_build)
+generated is the day the file was BUILT (an offline rebuild stamps ... ok
+test_the_certified_watch_can_be_switched_off_for_every_car (tests.test_tracking.TestConfig.test_the_certified_watch_can_be_switched_off_for_every_car) ... ok
+test_the_fuel_a_row_must_have_is_config_not_a_law (tests.test_tracking.TestConfig.test_the_fuel_a_row_must_have_is_config_not_a_law)
+"Any car is fair game" was false in the plainest way: normalize() ... ok
+test_the_i4_returns_with_its_previous_trims_inside_the_fair_budget (tests.test_tracking.TestConfig.test_the_i4_returns_with_its_previous_trims_inside_the_fair_budget)
+Restoring the i4 must retain its history ids and the recovery reserve. ... ok
+test_the_i5_watch_does_not_spend_its_window_on_m_cars (tests.test_tracking.TestConfig.test_the_i5_watch_does_not_spend_its_window_on_m_cars)
+The i5's narrowing exists to keep the M60 out of the query, not ... ok
+test_the_ix_stepped_back_without_leaving (tests.test_tracking.TestConfig.test_the_ix_stepped_back_without_leaving)
+Toned down, not removed: still tracked for comparison, on the slow ... ok
+test_the_record_accounting_claims_a_watch_the_buyer_stopped_shopping (tests.test_tracking.TestConfig.test_the_record_accounting_claims_a_watch_the_buyer_stopped_shopping)
+A derived brand-model-cpo id exists only while its model is shopped, ... ok
+test_the_rule_tests_do_not_move_with_the_buyers_choice (tests.test_tracking.TestConfig.test_the_rule_tests_do_not_move_with_the_buyers_choice)
+The property that makes choosing another car survivable, asserted ... ok
+test_the_watchs_label_states_the_cap_it_applies (tests.test_tracking.TestConfig.test_the_watchs_label_states_the_cap_it_applies)
+The label is derived so it cannot say one number while the filter ... ok
+test_a_cut_that_was_undone_says_so (tests.test_tracking.TestCutTag.test_a_cut_that_was_undone_says_so) ... ok
+test_a_price_now_above_where_it_started_says_that (tests.test_tracking.TestCutTag.test_a_price_now_above_where_it_started_says_that) ... ok
+test_a_real_cut_still_reads_as_one (tests.test_tracking.TestCutTag.test_a_real_cut_still_reads_as_one) ... ok
+test_the_report_tag_uses_it (tests.test_tracking.TestCutTag.test_the_report_tag_uses_it)
+The two real series from the audited sheet, through the function the ... ok
+test_a_cut_that_bounced_back_is_not_a_car_asking_less (tests.test_tracking.TestCutsThatStuck.test_a_cut_that_bounced_back_is_not_a_car_asking_less) ... ok
+test_the_line_leads_with_the_count_and_its_denominator (tests.test_tracking.TestCutsThatStuck.test_the_line_leads_with_the_count_and_its_denominator) ... ok
+test_a_car_that_really_left_is_not_carried_past_its_trims_next_fetch (tests.test_tracking.TestDailySeries.test_a_car_that_really_left_is_not_carried_past_its_trims_next_fetch)
+Carrying forward must stop at the next fetch of that trim, or a ... ok
+test_a_slow_trim_is_carried_to_its_own_next_fetch (tests.test_tracking.TestDailySeries.test_a_slow_trim_is_carried_to_its_own_next_fetch) ... ok
+test_a_target_contributes_nothing_before_its_first_fetch (tests.test_tracking.TestDailySeries.test_a_target_contributes_nothing_before_its_first_fetch)
+Each trim's own series is reported over the MODEL's day list, so ... ok
+test_departures_all_carry_their_price_history (tests.test_tracking.TestDashboardContract.test_departures_all_carry_their_price_history)
+The scoped and pooled charts rebuild each day from every car's own ... ok
+test_every_row_names_a_trim_the_config_still_has (tests.test_tracking.TestDashboardContract.test_every_row_names_a_trim_the_config_still_has)
+The trim chips are built from m.trims and filter on x.trim_id. A row ... ok
+test_listings_are_one_row_per_vin (tests.test_tracking.TestDashboardContract.test_listings_are_one_row_per_vin)
+pick_display_rows collapses a VIN two targets both matched into one ... ok
+test_the_published_sheet_still_covers_the_watchlist (tests.test_tracking.TestDashboardContract.test_the_published_sheet_still_covers_the_watchlist)
+The anchor every other test in this class needs. ... ok
+test_the_record_can_be_rebuilt_from_the_cars_themselves (tests.test_tracking.TestDashboardContract.test_the_record_can_be_rebuilt_from_the_cars_themselves)
+Every day in m.daily must be a day some car's series covers. This is ... ok
+test_the_trim_rows_cover_the_model_row (tests.test_tracking.TestDashboardContract.test_the_trim_rows_cover_the_model_row)
+The per-trim series are per FETCH TARGET, and targets overlap: the ... ok
+test_a_rebuild_a_week_later_does_not_age_the_listing (tests.test_tracking.TestDaysListedAnchor.test_a_rebuild_a_week_later_does_not_age_the_listing) ... ok
+test_a_row_with_no_snapshot_day_still_answers (tests.test_tracking.TestDaysListedAnchor.test_a_row_with_no_snapshot_day_still_answers) ... ok
+test_an_index_date_still_answers_nothing (tests.test_tracking.TestDaysListedAnchor.test_an_index_date_still_answers_nothing) ... ok
+test_a_car_beyond_the_queried_states_is_not_judged_by_the_states_window (tests.test_tracking.TestDelisted.test_a_car_beyond_the_queried_states_is_not_judged_by_the_states_window)
+A California car never had a States query to come back through. ... ok
+test_a_departure_carries_how_its_label_was_reached (tests.test_tracking.TestDelisted.test_a_departure_carries_how_its_label_was_reached)
+`exact` is the row saying whether a query actually looked. ... ok
+test_a_logged_departure_is_exact_even_on_a_two_window_target (tests.test_tracking.TestDelisted.test_a_logged_departure_is_exact_even_on_a_two_window_target)
+The reason the gate reads the row and not the target's shape: the ... ok
+test_a_query_that_failed_is_not_an_empty_market (tests.test_tracking.TestDelisted.test_a_query_that_failed_is_not_an_empty_market)
+fetch() returning None means unknown; it used to mean gone. ... ok
+test_a_reconstructed_departure_on_a_one_window_target_is_exact (tests.test_tracking.TestDelisted.test_a_reconstructed_departure_on_a_one_window_target_is_exact)
+…and the other side of the same line: a single-window target's ... ok
+test_a_short_day_is_only_exhaustive_if_the_fetch_said_so (tests.test_tracking.TestDelisted.test_a_short_day_is_only_exhaustive_if_the_fetch_said_so)
+Five kept rows is not a short page. ... ok
+test_a_two_sort_target_cannot_reconstruct_its_window (tests.test_tracking.TestDelisted.test_a_two_sort_target_cannot_reconstruct_its_window)
+The 24 departures a rebuild invented. ... ok
+test_an_unanswerable_day_is_never_exact (tests.test_tracking.TestDelisted.test_an_unanswerable_day_is_never_exact)
+"Not checked" is the absence of an answer, and an absence must not ... ok
+test_departure_is_judged_at_its_own_vanish_day_not_today (tests.test_tracking.TestDelisted.test_departure_is_judged_at_its_own_vanish_day_not_today) ... ok
+test_departures_carry_the_history_the_scoped_chart_needs (tests.test_tracking.TestDelisted.test_departures_carry_the_history_the_scoped_chart_needs) ... ok
+test_exhaustive_query_turns_out_of_window_into_delisted (tests.test_tracking.TestDelisted.test_exhaustive_query_turns_out_of_window_into_delisted) ... ok
+test_miles_window_target_judges_departures_in_miles (tests.test_tracking.TestDelisted.test_miles_window_target_judges_departures_in_miles) ... ok
+test_never_fetched_again_is_not_checked (tests.test_tracking.TestDelisted.test_never_fetched_again_is_not_checked) ... ok
+test_rebuild_reconstructs_the_window_from_history (tests.test_tracking.TestDelisted.test_rebuild_reconstructs_the_window_from_history) ... ok
+test_slow_trim_departures_carry_their_own_prev_fetch_day (tests.test_tracking.TestDelisted.test_slow_trim_departures_carry_their_own_prev_fetch_day) ... ok
+test_the_offline_path_never_calls_a_two_window_absence_a_delisting (tests.test_tracking.TestDelisted.test_the_offline_path_never_calls_a_two_window_absence_a_delisting)
+The invariant that makes `exact` False unreachable in that branch. ... ok
+test_what_makes_a_window_reconstructable (tests.test_tracking.TestDelisted.test_what_makes_a_window_reconstructable)
+Both halves of the predicate, including the one no shipped target ... ok
+test_a_departure_a_query_confirmed_is_counted (tests.test_tracking.TestDepartureEvidence.test_a_departure_a_query_confirmed_is_counted) ... ok
+test_a_guessed_departure_is_not_counted (tests.test_tracking.TestDepartureEvidence.test_a_guessed_departure_is_not_counted) ... ok
+test_a_two_window_target_can_still_be_exact (tests.test_tracking.TestDepartureEvidence.test_a_two_window_target_can_still_be_exact)
+The reason this reads the row and not the target. A departure the ... ok
+test_an_older_sheet_falls_back_to_the_targets_shape (tests.test_tracking.TestDepartureEvidence.test_an_older_sheet_falls_back_to_the_targets_shape)
+Rows written before delisted() carried its own provenance. ... ok
+test_an_unknown_target_fails_closed (tests.test_tracking.TestDepartureEvidence.test_an_unknown_target_fails_closed)
+The gate exists to keep a number off the page, and "nothing on ... ok
+test_a_car_with_no_location_falls_back_to_the_state_list (tests.test_tracking.TestDrivable.test_a_car_with_no_location_falls_back_to_the_state_list)
+No coordinates and no stored distance: only the state field decides. ... ok
+test_beyond_the_states_pays_shipping (tests.test_tracking.TestDrivable.test_beyond_the_states_pays_shipping) ... ok
+test_drivable_is_state_membership_and_nothing_else (tests.test_tracking.TestDrivable.test_drivable_is_state_membership_and_nothing_else)
+The drive-hours radius was removed on purpose: the buyer names the ... ok
+test_listing_entries_carry_the_cars_public_coordinates (tests.test_tracking.TestDrivable.test_listing_entries_carry_the_cars_public_coordinates)
+The dashboard map needs each car's own location — public data the ... ok
+test_published_distances_are_coarse (tests.test_tracking.TestDrivable.test_published_distances_are_coarse)
+Distances go into public outputs; exact values could be ... ok
+test_search_states_widen_the_query_without_duplicates (tests.test_tracking.TestDrivable.test_search_states_widen_the_query_without_duplicates) ... ok
+test_the_configured_state_list_is_the_whole_rule (tests.test_tracking.TestDrivable.test_the_configured_state_list_is_the_whole_rule) ... ok
+test_wisconsin_is_a_buyer_state (tests.test_tracking.TestDrivable.test_wisconsin_is_a_buyer_state) ... ok
+test_configuring_both_secrets_turns_it_on (tests.test_tracking.TestEmailDelivery.test_configuring_both_secrets_turns_it_on)
+The off state is the ABSENCE of config, not a hard-coded switch, so ... ok
+test_it_names_where_the_report_went (tests.test_tracking.TestEmailDelivery.test_it_names_where_the_report_went) ... ok
+test_it_says_so_without_raising_an_alarm (tests.test_tracking.TestEmailDelivery.test_it_says_so_without_raising_an_alarm) ... ok
+test_one_missing_secret_sends_nothing (tests.test_tracking.TestEmailDelivery.test_one_missing_secret_sends_nothing)
+Half-configured is off, and off is silent — not a crash, and not a ... ok
+test_a_shortlisted_departure_is_dated_by_its_own_models_fetch (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_a_shortlisted_departure_is_dated_by_its_own_models_fetch)
+The last dated sentence in the record: "missing today" is a claim ... ok
+test_and_a_car_seen_on_both_days_does_not (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_and_a_car_seen_on_both_days_does_not)
+The inverse, on the same record: the tag cannot simply be 'seen'. ... ok
+test_and_it_is_there_on_a_model_the_calendar_says_is_not_due (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_and_it_is_there_on_a_model_the_calendar_says_is_not_due)
+The case that tells the two gates apart. Every i5 trim runs daily, ... ok
+test_and_that_arrival_wears_the_tag_in_the_rows_below (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_and_that_arrival_wears_the_tag_in_the_rows_below) ... ok
+test_the_arrivals_block_is_there_and_names_its_day (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_the_arrivals_block_is_there_and_names_its_day)
+It was gated on the cadence schedule as well as on having a previous ... ok
+test_the_model_line_counts_the_arrivals_of_its_own_last_fetch (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_the_model_line_counts_the_arrivals_of_its_own_last_fetch) ... ok
+test_the_record_is_not_being_read_on_the_day_it_was_written (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_the_record_is_not_being_read_on_the_day_it_was_written)
+The precondition every assertion here rests on. Without it each one ... ok
+test_the_shortlist_dates_its_cut_instead_of_calling_it_todays (tests.test_tracking.TestEveryDatedSentenceNamesItsOwnDay.test_the_shortlist_dates_its_cut_instead_of_calling_it_todays) ... ok
+test_every_target_in_the_record_is_accounted_for (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_every_target_in_the_record_is_accounted_for) ... ok
+test_lucid_contract_rejects_dropped_history (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_lucid_contract_rejects_dropped_history)
+Negative control: the real loader runs, then loses one old row. ... ok
+test_lucid_contract_rejects_incorrect_aggregate_remapping (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_lucid_contract_rejects_incorrect_aggregate_remapping)
+Negative control: remap loaded Lucid rows without changing config. ... ok
+test_lucid_contract_rejects_out_of_scope_current_publication (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_lucid_contract_rejects_out_of_scope_current_publication)
+Negative control: bypass scope rejection on real publication paths. ... ok
+test_lucid_contract_rejects_suppressing_all_lucid_inventory (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_lucid_contract_rejects_suppressing_all_lucid_inventory)
+Negative control: hiding every Lucid cannot satisfy the contract. ... ok
+test_lucid_preservation_and_publication_survive_observation_growth (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_lucid_preservation_and_publication_survive_observation_growth) ... ok
+test_the_chevrolet_rename_carries_its_history_over (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_the_chevrolet_rename_carries_its_history_over) ... ok
+test_the_committed_lucid_sheet_excludes_out_of_scope_years (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_the_committed_lucid_sheet_excludes_out_of_scope_years)
+Run the publication guard even if a separate history test fails. ... ok
+test_the_lucid_rows_are_deliberately_left_where_they_are (tests.test_tracking.TestEveryTargetInTheRecordIsAccountedFor.test_the_lucid_rows_are_deliberately_left_where_they_are)
+The real ledger and a controlled mixed cohort keep the same ids. ... ok
+test_no_page_cites_a_design_system_version_it_does_not_load (tests.test_tracking.TestEveryVersionThePagesCiteIsTheOneTheyLoad.test_no_page_cites_a_design_system_version_it_does_not_load) ... ok
+test_no_page_names_a_release_it_is_waiting_for (tests.test_tracking.TestEveryVersionThePagesCiteIsTheOneTheyLoad.test_no_page_names_a_release_it_is_waiting_for)
+A version that has not shipped cannot be checked against anything, ... ok
+test_the_bridges_the_pages_keep_are_ones_the_pinned_sheet_does_not_carry (tests.test_tracking.TestEveryVersionThePagesCiteIsTheOneTheyLoad.test_the_bridges_the_pages_keep_are_ones_the_pinned_sheet_does_not_carry)
+The substantive half, and the one a version number was standing in ... ok
+test_the_snapshot_names_a_version_and_the_sheet_it_ships_is_that_one (tests.test_tracking.TestEveryVersionThePagesCiteIsTheOneTheyLoad.test_the_snapshot_names_a_version_and_the_sheet_it_ships_is_that_one)
+The anchor everything below reads. A provenance file whose version ... ok
+test_a_multi_trim_model_publishes_no_pooled_exit_median (tests.test_tracking.TestExitReporting.test_a_multi_trim_model_publishes_no_pooled_exit_median) ... ok
+test_a_real_denominator_is_published (tests.test_tracking.TestExitReporting.test_a_real_denominator_is_published) ... ok
+test_a_single_trim_model_does (tests.test_tracking.TestExitReporting.test_a_single_trim_model_does) ... ok
+test_a_thin_cut_denominator_is_withheld (tests.test_tracking.TestExitReporting.test_a_thin_cut_denominator_is_withheld) ... ok
+test_the_denominator_floor_is_pinned_at_its_own_boundary (tests.test_tracking.TestExitReporting.test_the_denominator_floor_is_pinned_at_its_own_boundary)
+7 against 20 is a gap a mutant walks through: any floor between 8 ... ok
+test_the_wording_never_claims_a_sale (tests.test_tracking.TestExitReporting.test_the_wording_never_claims_a_sale) ... ok
+test_a_cut_is_counted_only_where_it_could_be_seen (tests.test_tracking.TestExitStats.test_a_cut_is_counted_only_where_it_could_be_seen)
+Cars seen once cannot show a cut, so they must not sit in the ... ok
+test_a_pooled_cohort_is_not_one_trim (tests.test_tracking.TestExitStats.test_a_pooled_cohort_is_not_one_trim)
+one_trim asks the DATA, not the watchlist. The first version counted ... ok
+test_a_real_cut_is_counted (tests.test_tracking.TestExitStats.test_a_real_cut_is_counted) ... ok
+test_a_thin_cohort_publishes_nothing (tests.test_tracking.TestExitStats.test_a_thin_cohort_publishes_nothing)
+Two departures make a median that swings by thousands on the third. ... ok
+test_a_two_sort_target_publishes_no_exit_price (tests.test_tracking.TestExitStats.test_a_two_sort_target_publishes_no_exit_price)
+The bug this gate exists for was live on the published sheet. ... ok
+test_departures_themselves_are_still_reported (tests.test_tracking.TestExitStats.test_departures_themselves_are_still_reported)
+Withholding the exit PRICE is not withholding the departures. "This ... ok
+test_no_median_cut_is_published (tests.test_tracking.TestExitStats.test_no_median_cut_is_published)
+The specific number that was wrong. If it comes back, this fails. ... ok
+test_out_of_window_departures_are_excluded (tests.test_tracking.TestExitStats.test_out_of_window_departures_are_excluded)
+A car that fell out of the price window did not leave the market. ... ok
+test_stats_are_scoped_to_one_trim (tests.test_tracking.TestExitStats.test_stats_are_scoped_to_one_trim)
+A median mixing an eDrive50 with an M70 describes no car that exists. ... ok
+test_the_interval_is_the_order_statistics_not_a_normal_curve (tests.test_tracking.TestExitStats.test_the_interval_is_the_order_statistics_not_a_normal_curve)
+Exit prices are skewed and small-n. A normal-theory interval on ... ok
+test_the_interval_widens_as_the_sample_thins (tests.test_tracking.TestExitStats.test_the_interval_widens_as_the_sample_thins) ... ok
+test_the_median_carries_its_own_interval (tests.test_tracking.TestExitStats.test_the_median_carries_its_own_interval)
+A reference price with no error bar invites a comparison it cannot ... ok
+test_the_page_and_the_report_use_the_same_floors (tests.test_tracking.TestExitStats.test_the_page_and_the_report_use_the_same_floors)
+Two surfaces, one rule. The report raised its cut-count floor to 12 ... ok
+test_the_published_sheet_carries_no_exit_price_it_cannot_defend (tests.test_tracking.TestExitStats.test_the_published_sheet_carries_no_exit_price_it_cannot_defend) ... ok
+test_the_report_never_calls_a_delisting_a_sale (tests.test_tracking.TestExitStats.test_the_report_never_calls_a_delisting_a_sale)
+EVERY reader-facing surface, not just the one that was fixed. ... ok
+test_which_targets_can_be_told_apart_is_a_fact_about_the_fetch (tests.test_tracking.TestExitStats.test_which_targets_can_be_told_apart_is_a_fact_about_the_fetch)
+`sorts` is the CONFIGURED list; sorts_pages() is what a run asks for. ... ok
+test_every_fee_round_trips_from_the_config (tests.test_tracking.TestFees.test_every_fee_round_trips_from_the_config)
+Type checks let a key collapse to zero or to its neighbour's value ... ok
+test_fees_ship_unverified (tests.test_tracking.TestFees.test_fees_ship_unverified)
+Same discipline as the shipping bands: a tax rate is locally ... ok
+test_shipping_is_not_financed_by_default (tests.test_tracking.TestFees.test_shipping_is_not_financed_by_default) ... ok
+test_the_block_exports_or_is_absent_cleanly (tests.test_tracking.TestFees.test_the_block_exports_or_is_absent_cleanly) ... ok
+test_the_default_is_read_explicitly_not_inferred (tests.test_tracking.TestFees.test_the_default_is_read_explicitly_not_inferred)
+A config that omits finance_shipping must get the documented default, ... ok
+test_the_note_explains_why_tax_lands_on_every_car (tests.test_tracking.TestFees.test_the_note_explains_why_tax_lands_on_every_car)
+Illinois taxes at the buyer's home rate wherever the car was bought. ... ok
+test_the_shipped_rate_charges_something (tests.test_tracking.TestFees.test_the_shipped_rate_charges_something)
+The one fact about the SHIPPED block worth holding without pinning ... ok
+test_envelope_total_probes_the_common_shapes (tests.test_tracking.TestFetch.test_envelope_total_probes_the_common_shapes) ... ok
+test_fetch_records_the_market_total (tests.test_tracking.TestFetch.test_fetch_records_the_market_total) ... ok
+test_persistent_failure_returns_none_after_one_retry (tests.test_tracking.TestFetch.test_persistent_failure_returns_none_after_one_retry) ... ok
+test_a_target_whose_cars_are_filed_elsewhere_still_reports_its_days (tests.test_tracking.TestFetchDaysExport.test_a_target_whose_cars_are_filed_elsewhere_still_reports_its_days)
+The whole reason this is exported rather than inferred. ... ok
+test_a_targets_fetch_days_are_its_own_snapshot_dates (tests.test_tracking.TestFetchDaysExport.test_a_targets_fetch_days_are_its_own_snapshot_dates) ... ok
+test_a_bad_date_does_not_take_the_run_down (tests.test_tracking.TestFinance.test_a_bad_date_does_not_take_the_run_down)
+targets.json is hand-edited. A typo in an expiry must degrade to a ... ok
+test_a_live_promo_is_active_and_an_expired_one_is_not (tests.test_tracking.TestFinance.test_a_live_promo_is_active_and_an_expired_one_is_not)
+The whole point of shipping `active` rather than a date the browser ... ok
+test_a_promo_that_ends_today_still_applies_today (tests.test_tracking.TestFinance.test_a_promo_that_ends_today_still_applies_today)
+The offer runs THROUGH its end date. `active` is the only field ... ok
+test_no_finance_block_means_no_finance_key (tests.test_tracking.TestFinance.test_no_finance_block_means_no_finance_key)
+A buyer who never set a rate gets no payment ranking at all — the ... ok
+test_terms_and_the_cpo_boundary_round_trip (tests.test_tracking.TestFinance.test_terms_and_the_cpo_boundary_round_trip)
+`cpo_only` defaults to True because the safe leak is the promo ... ok
+test_the_dashboard_gets_the_table (tests.test_tracking.TestFinance.test_the_dashboard_gets_the_table)
+docs/data.json is what the page actually reads; the block has to ... ok
+test_the_shipped_config_is_coherent (tests.test_tracking.TestFinance.test_the_shipped_config_is_coherent)
+The real targets.json, held to the shape the dashboard assumes. ... ok
+test_a_fleet_car_says_fleet (tests.test_tracking.TestFlagsNameARental.test_a_fleet_car_says_fleet) ... ok
+test_a_lease_is_not_a_rental (tests.test_tracking.TestFlagsNameARental.test_a_lease_is_not_a_rental) ... ok
+test_a_personal_car_says_none_of_it (tests.test_tracking.TestFlagsNameARental.test_a_personal_car_says_none_of_it) ... ok
+test_a_rental_says_rental (tests.test_tracking.TestFlagsNameARental.test_a_rental_says_rental) ... ok
+test_multiple_use_says_multi_use (tests.test_tracking.TestFlagsNameARental.test_multiple_use_says_multi_use) ... ok
+test_the_word_sits_where_the_page_puts_it (tests.test_tracking.TestFlagsNameARental.test_the_word_sits_where_the_page_puts_it)
+Right after the certified chip, which is the slot flagsCell uses — ... ok
+test_an_accident_is_counted_and_pluralised (tests.test_tracking.TestFlagsSayTheCarsHistory.test_an_accident_is_counted_and_pluralised) ... ok
+test_an_unknown_accident_history_says_nothing_either_way (tests.test_tracking.TestFlagsSayTheCarsHistory.test_an_unknown_accident_history_says_nothing_either_way)
+The complement is what the rule cannot support: a car the sheet ... ok
+test_more_than_one_owner_is_counted (tests.test_tracking.TestFlagsSayTheCarsHistory.test_more_than_one_owner_is_counted) ... ok
+test_no_accidents_means_zero_and_nothing_else (tests.test_tracking.TestFlagsSayTheCarsHistory.test_no_accidents_means_zero_and_nothing_else) ... ok
+test_no_owner_line_at_all_when_the_sheet_does_not_say (tests.test_tracking.TestFlagsSayTheCarsHistory.test_no_owner_line_at_all_when_the_sheet_does_not_say)
+0 is what the API sends for "not reported", and the page reads it ... ok
+test_one_owner_and_only_one (tests.test_tracking.TestFlagsSayTheCarsHistory.test_one_owner_and_only_one) ... ok
+test_the_order_is_the_one_the_page_draws (tests.test_tracking.TestFlagsSayTheCarsHistory.test_the_order_is_the_one_the_page_draws)
+Two surfaces that order the same facts differently read as ... ok
+test_haversine_matches_a_known_distance (tests.test_tracking.TestGeography.test_haversine_matches_a_known_distance) ... ok
+test_null_island_is_5900_miles_from_the_midwest (tests.test_tracking.TestGeography.test_null_island_is_5900_miles_from_the_midwest)
+The exact arithmetic that made the bug invisible: (0,0) looks far, not wrong. ... ok
+test_null_island_is_not_a_location (tests.test_tracking.TestGeography.test_null_island_is_not_a_location) ... ok
+test_scope_reads_the_state_field_not_coordinates (tests.test_tracking.TestGeography.test_scope_reads_the_state_field_not_coordinates)
+A car with unusable coordinates must still land in its own state. ... ok
+test_a_fresh_day_is_not_blocked (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_a_fresh_day_is_not_blocked)
+The guard must not be a wall. A day not yet in the snapshot runs. ... ok
+test_a_night_that_fetched_nothing_says_what_it_wrote (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_a_night_that_fetched_nothing_says_what_it_wrote)
+The exit message is the last line in the Actions log and the whole ... ok
+test_a_row_from_one_sort_records_only_that_sort (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_a_row_from_one_sort_records_only_that_sort)
+Or the column says nothing: if everything reported every query, it ... ok
+test_an_already_fetched_day_spends_nothing (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_an_already_fetched_day_spends_nothing) ... ok
+test_an_empty_hatch_is_not_a_hatch (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_an_empty_hatch_is_not_a_hatch)
+daily.yml passes ALLOW_REFETCH as `inputs.allow_refetch && '1' || ''`, ... ok
+test_an_exhausted_query_skips_the_rest_of_the_target (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_an_exhausted_query_skips_the_rest_of_the_target)
+The saving that pays for the whole watchlist, and nothing ran it. ... ok
+test_it_exits_a_saving_not_a_failure (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_it_exits_a_saving_not_a_failure)
+Exit 3, and daily.yml branches on it to run the free offline rebuild. ... ok
+test_refetch_cannot_spend_an_exhausted_day (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_refetch_cannot_spend_an_exhausted_day) ... ok
+test_refetch_keeps_models_seeded_outside_todays_schedule (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_refetch_keeps_models_seeded_outside_todays_schedule) ... ok
+test_refetch_keeps_prior_rows_for_a_budget_deferred_target (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_refetch_keeps_prior_rows_for_a_budget_deferred_target) ... ok
+test_the_hatch_lets_a_genuine_re_run_through (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_the_hatch_lets_a_genuine_re_run_through) ... ok
+test_the_message_names_the_free_way_out (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_the_message_names_the_free_way_out) ... ok
+test_the_record_is_committed_even_when_the_run_crashes (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_the_record_is_committed_even_when_the_run_crashes)
+data/ is the half that cannot be re-made. ... ok
+test_the_spend_and_the_snapshot_are_written_before_the_outputs (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_the_spend_and_the_snapshot_are_written_before_the_outputs)
+The workflow assertion above is only worth anything if the files are ... ok
+test_via_records_every_query_that_returned_a_row (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_via_records_every_query_that_returned_a_row) ... ok
+test_via_survives_the_cheaper_duplicate_replacing_the_record (tests.test_tracking.TestGuardAndProvenanceBehaviour.test_via_survives_the_cheaper_duplicate_replacing_the_record)
+rows[key] is REPLACED whenever a cheaper duplicate arrives. If via ... ok
+test_a_byte_order_mark_does_not_blank_every_date (tests.test_tracking.TestHistoryRoundTrip.test_a_byte_order_mark_does_not_blank_every_date)
+The incident this encoding exists for: a BOM turns the first header ... ok
+test_a_missing_file_is_an_empty_record_not_a_crash (tests.test_tracking.TestHistoryRoundTrip.test_a_missing_file_is_an_empty_record_not_a_crash) ... ok
+test_a_renamed_target_and_a_lower_case_state_are_normalised (tests.test_tracking.TestHistoryRoundTrip.test_a_renamed_target_and_a_lower_case_state_are_normalised)
+Both read from config rather than duplicated here, so the test ... ok
+test_a_row_survives_the_round_trip_with_its_header_intact (tests.test_tracking.TestHistoryRoundTrip.test_a_row_survives_the_round_trip_with_its_header_intact) ... ok
+test_a_certified_watch_describes_the_query_it_really_runs (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_a_certified_watch_describes_the_query_it_really_runs)
+The meta line typed "nationwide, lowest-mileage first" and a mileage ... ok
+test_an_age_it_cannot_compute_is_none_and_never_zero (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_an_age_it_cannot_compute_is_none_and_never_zero)
+A confident 0 on an unreadable date is the worst answer available: ... ok
+test_overdue_is_exact_at_the_cadence_and_not_a_tolerance (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_overdue_is_exact_at_the_cadence_and_not_a_tolerance)
+A target on cadence N is due every Nth day, so the widest gap the ... ok
+test_the_age_is_measured_against_the_record_not_the_clock (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_age_is_measured_against_the_record_not_the_clock)
+An offline rebuild a week later must not age every model by a week. ... ok
+test_the_committed_report_agrees_with_the_committed_sheet (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_committed_report_agrees_with_the_committed_sheet)
+The artifact comparison the test above used to be, kept for what it ... ok
+test_the_model_entry_carries_both_so_neither_surface_recomputes (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_model_entry_carries_both_so_neither_surface_recomputes) ... ok
+test_the_page_and_the_report_name_the_same_brand_on_a_certified_car (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_page_and_the_report_name_the_same_brand_on_a_certified_car)
+The page's own annotateFinance, executed, against Tracking's flags(). ... ok
+test_the_page_and_the_report_share_one_schedule_phrase (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_page_and_the_report_share_one_schedule_phrase)
+The other half of the formatter pair, executed the same way. ... ok
+test_the_page_spells_an_age_the_same_way_the_report_does (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_page_spells_an_age_the_same_way_the_report_does)
+The page's own formatter, executed, against Python's. Not a ... ok
+test_the_promo_card_names_the_brand_it_actually_checked (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_promo_card_names_the_brand_it_actually_checked)
+The sweep that made annotateFinance read the brand off the car left ... ok
+test_the_report_builds_the_age_into_the_line_it_prints (tests.test_tracking.TestHowOldTheseCarsAreIsSaidRatherThanImplied.test_the_report_builds_the_age_into_the_line_it_prints)
+compact_line() EXECUTED, not a committed artifact read back. ... ok
+test_a_bulk_load_is_recognised_by_its_shape_not_its_date (tests.test_tracking.TestIndexDate.test_a_bulk_load_is_recognised_by_its_shape_not_its_date) ... ok
+test_a_busy_day_that_looks_like_a_market_is_left_alone (tests.test_tracking.TestIndexDate.test_a_busy_day_that_looks_like_a_market_is_left_alone)
+Ten times its neighbours, not merely more than them: a genuinely ... ok
+test_a_car_seen_every_day_votes_once (tests.test_tracking.TestIndexDate.test_a_car_seen_every_day_votes_once)
+Rows are per car per day. Counted raw, one long-lived car becomes a ... ok
+test_a_real_build_withholds_the_loaded_cars_days_on_market (tests.test_tracking.TestIndexDate.test_a_real_build_withholds_the_loaded_cars_days_on_market)
+End to end, through build_outputs: the set is populated from the ... ok
+test_a_span_needs_a_real_listing_date_not_our_own_first_sighting (tests.test_tracking.TestIndexDate.test_a_span_needs_a_real_listing_date_not_our_own_first_sighting)
+first_seen used to stand in for a missing listed_since, which ... ok
+test_days_on_market_is_withheld_for_an_index_date (tests.test_tracking.TestIndexDate.test_days_on_market_is_withheld_for_an_index_date) ... ok
+test_the_median_and_the_percentile_skip_them (tests.test_tracking.TestIndexDate.test_the_median_and_the_percentile_skip_them)
+market_stats must not average a withheld number in as a zero, and ... ok
+test_landed_reads_the_rows_own_shipping (tests.test_tracking.TestLandedAndAdjusted.test_landed_reads_the_rows_own_shipping) ... ok
+test_no_price_is_no_answer (tests.test_tracking.TestLandedAndAdjusted.test_no_price_is_no_answer) ... ok
+test_shipping_is_added (tests.test_tracking.TestLandedAndAdjusted.test_shipping_is_added) ... ok
+test_the_landed_total_is_the_page_s_own_arithmetic (tests.test_tracking.TestLandedAndAdjusted.test_the_landed_total_is_the_page_s_own_arithmetic)
+The page's landed(x) is price plus shipping; this is the record's, ... ok
+test_a_car_that_crossed_the_border_carries_the_change (tests.test_tracking.TestLocalHistoryExport.test_a_car_that_crossed_the_border_carries_the_change) ... ok
+test_a_car_that_never_moved_carries_nothing (tests.test_tracking.TestLocalHistoryExport.test_a_car_that_never_moved_carries_nothing) ... ok
+test_a_move_that_does_not_cross_the_border_says_nothing (tests.test_tracking.TestLocalHistoryExport.test_a_move_that_does_not_cross_the_border_says_nothing)
+IL to OH is a move; both are states this buyer drives to, so the ... ok
+test_the_day_row_counts_the_car_where_it_was (tests.test_tracking.TestLocalHistoryExport.test_the_day_row_counts_the_car_where_it_was)
+The bug this exists for, end to end: daily_stats already got this ... ok
+test_days_to_sale_counts_only_real_delistings (tests.test_tracking.TestMarketStats.test_days_to_sale_counts_only_real_delistings)
+…and only cars with a real listing date to count from. ... ok
+test_empty_and_unknown_inputs_do_not_crash (tests.test_tracking.TestMarketStats.test_empty_and_unknown_inputs_do_not_crash) ... ok
+test_market_line_reads_like_a_sentence (tests.test_tracking.TestMarketStats.test_market_line_reads_like_a_sentence) ... ok
+test_medians_cut_share_and_staleness (tests.test_tracking.TestMarketStats.test_medians_cut_share_and_staleness) ... ok
+test_asking_plus_shipping_is_never_below_asking (tests.test_tracking.TestMoney.test_asking_plus_shipping_is_never_below_asking) ... ok
+test_in_state_cars_never_pay_shipping (tests.test_tracking.TestMoney.test_in_state_cars_never_pay_shipping) ... ok
+test_no_mileage_allowance_can_reach_a_displayed_total (tests.test_tracking.TestMoney.test_no_mileage_allowance_can_reach_a_displayed_total)
+The knob that could reach one is gone, and this is what it cost: ... ok
+test_undrivable_shipping_scales_with_distance_and_has_a_floor (tests.test_tracking.TestMoney.test_undrivable_shipping_scales_with_distance_and_has_a_floor)
+Both cars sit beyond the drive radius, so both pay shipping. ... ok
+test_unlocatable_cars_fall_back_to_the_flat_rate (tests.test_tracking.TestMoney.test_unlocatable_cars_fall_back_to_the_flat_rate) ... ok
+test_and_the_report_becomes_the_market_rather_than_a_car (tests.test_tracking.TestNamingNothingMeansNothingIsBeingShopped.test_and_the_report_becomes_the_market_rather_than_a_car)
+The size is the point, not a detail: the compact section is what a ... ok
+test_nobody_named_means_nobody_shopped (tests.test_tracking.TestNamingNothingMeansNothingIsBeingShopped.test_nobody_named_means_nobody_shopped) ... ok
+test_the_shipped_config_still_leads_with_the_cars_it_names (tests.test_tracking.TestNamingNothingMeansNothingIsBeingShopped.test_the_shipped_config_still_leads_with_the_cars_it_names)
+The control. Without it the assertions above pass on a build that ... ok
+test_a_model_year_the_watchlist_dropped_is_not_a_departure (tests.test_tracking.TestNarrowingTheWatchlistIsNotAMarketEvent.test_a_model_year_the_watchlist_dropped_is_not_a_departure) ... ok
+test_a_row_with_no_year_is_judged_by_the_window_not_by_the_config (tests.test_tracking.TestNarrowingTheWatchlistIsNotAMarketEvent.test_a_row_with_no_year_is_judged_by_the_window_not_by_the_config)
+A blank year cannot be shown to be outside anything. Guessing ... ok
+test_a_watch_naming_no_years_still_judges_every_car (tests.test_tracking.TestNarrowingTheWatchlistIsNotAMarketEvent.test_a_watch_naming_no_years_still_judges_every_car)
+`years: []` means "every year", and an empty list is falsy — so a ... ok
+test_the_narrowness_is_deliberate_price_and_mileage_are_not_this (tests.test_tracking.TestNarrowingTheWatchlistIsNotAMarketEvent.test_the_narrowness_is_deliberate_price_and_mileage_are_not_this)
+min_price, max_miles and cpo_only are NOT watchlist moves. ... ok
+test_the_report_names_the_watchlist_rather_than_the_market (tests.test_tracking.TestNarrowingTheWatchlistIsNotAMarketEvent.test_the_report_names_the_watchlist_rather_than_the_market)
+The shortlist line for such a car must not read "missing". ... ok
+test_the_same_car_inside_the_years_is_still_a_departure (tests.test_tracking.TestNarrowingTheWatchlistIsNotAMarketEvent.test_the_same_car_inside_the_years_is_still_a_departure)
+The half that makes the test above load-bearing. ... ok
+test_the_word_reaches_no_number_the_record_publishes (tests.test_tracking.TestNarrowingTheWatchlistIsNotAMarketEvent.test_the_word_reaches_no_number_the_record_publishes)
+Every consumer of a departure requires the word "delisted", so a ... ok
+test_a_car_carried_forward_from_an_earlier_fetch_is_not (tests.test_tracking.TestNewToday.test_a_car_carried_forward_from_an_earlier_fetch_is_not)
+The exact shape: seen once, days ago, its trim not fetched since. ... ok
+test_a_car_first_seen_on_that_day_is_new (tests.test_tracking.TestNewToday.test_a_car_first_seen_on_that_day_is_new) ... ok
+test_a_car_seen_every_day_since_is_not_new_either (tests.test_tracking.TestNewToday.test_a_car_seen_every_day_since_is_not_new_either) ... ok
+test_a_day_the_record_does_not_have_makes_nothing_new (tests.test_tracking.TestNewToday.test_a_day_the_record_does_not_have_makes_nothing_new)
+A model with no rows at all has no day; nothing is new on it. ... ok
+test_a_row_with_no_first_seen_falls_back (tests.test_tracking.TestNewToday.test_a_row_with_no_first_seen_falls_back)
+An older sheet: better the old test than no answer at all. ... ok
+test_the_day_is_the_one_the_caller_names_not_the_wall_clock (tests.test_tracking.TestNewToday.test_the_day_is_the_one_the_caller_names_not_the_wall_clock)
+The whole change: the same car, two days, two answers — and the day ... ok
+test_the_report_does_not_re_announce_an_old_car (tests.test_tracking.TestNewToday.test_the_report_does_not_re_announce_an_old_car)
+End to end, through the block that prints the headline. ... ok
+test_no_comment_names_a_line_of_another_file (tests.test_tracking.TestNoCommentCitesALineNumber.test_no_comment_names_a_line_of_another_file) ... ok
+test_the_docstrings_carry_prose_this_would_search (tests.test_tracking.TestNoCommentCitesALineNumber.test_the_docstrings_carry_prose_this_would_search)
+The precondition. If the walker stopped finding comments at all — ... ok
+test_a_clean_record_keeps_every_column (tests.test_tracking.TestNormalize.test_a_clean_record_keeps_every_column) ... ok
+test_below_min_price_is_dropped (tests.test_tracking.TestNormalize.test_below_min_price_is_dropped) ... ok
+test_cpo_watch_drops_at_and_over_the_mileage_cap (tests.test_tracking.TestNormalize.test_cpo_watch_drops_at_and_over_the_mileage_cap) ... ok
+test_cpo_watch_drops_the_uncertified (tests.test_tracking.TestNormalize.test_cpo_watch_drops_the_uncertified) ... ok
+test_cpo_watch_drops_unknown_mileage (tests.test_tracking.TestNormalize.test_cpo_watch_drops_unknown_mileage) ... ok
+test_cpo_watch_excludes_the_m_trims (tests.test_tracking.TestNormalize.test_cpo_watch_excludes_the_m_trims) ... ok
+test_cpo_watch_keeps_a_certified_low_mile_car (tests.test_tracking.TestNormalize.test_cpo_watch_keeps_a_certified_low_mile_car) ... ok
+test_dealer_and_url_come_from_the_real_fields (tests.test_tracking.TestNormalize.test_dealer_and_url_come_from_the_real_fields) ... ok
+test_fair_collection_exports_each_low_mileage_certified_claim (tests.test_tracking.TestNormalize.test_fair_collection_exports_each_low_mileage_certified_claim)
+Synthetic source claims survive; their count is not a validity rule. ... ok
+test_legacy_certified_mileage_boundaries_are_post_fetch_filters (tests.test_tracking.TestNormalize.test_legacy_certified_mileage_boundaries_are_post_fetch_filters) ... ok
+test_legacy_certified_watch_requires_a_recorded_cpo_flag (tests.test_tracking.TestNormalize.test_legacy_certified_watch_requires_a_recorded_cpo_flag) ... ok
+test_legacy_floor_alone_rejects_unknown_mileage (tests.test_tracking.TestNormalize.test_legacy_floor_alone_rejects_unknown_mileage) ... ok
+test_null_island_row_is_geocoded_from_its_zip (tests.test_tracking.TestNormalize.test_null_island_row_is_geocoded_from_its_zip) ... ok
+test_numeric_trim_is_text_before_csv_roundtrip (tests.test_tracking.TestNormalize.test_numeric_trim_is_text_before_csv_roundtrip) ... ok
+test_out_of_range_year_is_dropped (tests.test_tracking.TestNormalize.test_out_of_range_year_is_dropped) ... ok
+test_state_is_upper_cased_for_scope_matching (tests.test_tracking.TestNormalize.test_state_is_upper_cased_for_scope_matching) ... ok
+test_trim_exclude_keeps_a_target_off_its_sibling (tests.test_tracking.TestNormalize.test_trim_exclude_keeps_a_target_off_its_sibling)
+bmw-ix-m matches '' — every iX — and relies on excluding 'xdrive'. ... ok
+test_trim_match_ignores_dealer_names_and_urls (tests.test_tracking.TestNormalize.test_trim_match_ignores_dealer_names_and_urls)
+An M60 sold by 'eDrive40 Motors' is not an eDrive40. ... ok
+test_the_history_follows_the_car_not_the_copy_that_won (tests.test_tracking.TestOneCarTwoTargets.test_the_history_follows_the_car_not_the_copy_that_won) ... ok
+test_compaction_preserves_nested_values_unknowns_and_array_order (tests.test_tracking.TestOneWriterPutsTheSheetOnDisk.test_compaction_preserves_nested_values_unknowns_and_array_order) ... ok
+test_every_writer_in_the_repo_goes_through_it (tests.test_tracking.TestOneWriterPutsTheSheetOnDisk.test_every_writer_in_the_repo_goes_through_it)
+The bug was three spellings, not one bad one. A fourth call site ... ok
+test_failed_replace_keeps_the_published_sheet_and_cleans_temp (tests.test_tracking.TestOneWriterPutsTheSheetOnDisk.test_failed_replace_keeps_the_published_sheet_and_cleans_temp) ... ok
+test_nonfinite_values_cannot_replace_a_valid_sheet (tests.test_tracking.TestOneWriterPutsTheSheetOnDisk.test_nonfinite_values_cannot_replace_a_valid_sheet) ... ok
+test_other_atomic_json_files_keep_their_existing_layout (tests.test_tracking.TestOneWriterPutsTheSheetOnDisk.test_other_atomic_json_files_keep_their_existing_layout) ... ok
+test_sheet_text_is_what_write_sheet_puts_on_disk (tests.test_tracking.TestOneWriterPutsTheSheetOnDisk.test_sheet_text_is_what_write_sheet_puts_on_disk) ... ok
+test_the_keys_are_sorted_because_the_live_path_sorts_them (tests.test_tracking.TestOneWriterPutsTheSheetOnDisk.test_the_keys_are_sorted_because_the_live_path_sorts_them)
+Not a taste: fair_collection has been committing sorted files for ... ok
+test_an_exact_half_rounds_up (tests.test_tracking.TestPickUnderRoundsLikeThePage.test_an_exact_half_rounds_up) ... ok
+test_a_car_above_its_interval_stands_over (tests.test_tracking.TestPicks.test_a_car_above_its_interval_stands_over)
+Both directions, because the shortlist row and the decision tile ... ok
+test_a_drivable_pick_is_scored_against_the_whole_market (tests.test_tracking.TestPicks.test_a_drivable_pick_is_scored_against_the_whole_market)
+The drivable list must not get its own median — a merely-average ... ok
+test_a_margin_that_rounds_to_nothing_is_not_a_stand (tests.test_tracking.TestPicks.test_a_margin_that_rounds_to_nothing_is_not_a_stand)
+Eight cars at $47,000 and one at $46,900: the ninth is below the ... ok
+test_a_pick_must_sit_under_typical (tests.test_tracking.TestPicks.test_a_pick_must_sit_under_typical)
+A thin drivable pool must not promote above-median cars to picks — ... ok
+test_a_pick_says_which_cohort_and_how_many (tests.test_tracking.TestPicks.test_a_pick_says_which_cohort_and_how_many)
+"21% under typical" is not a claim until it says what typical, and ... ok
+test_a_thin_pool_produces_no_picks (tests.test_tracking.TestPicks.test_a_thin_pool_produces_no_picks) ... ok
+test_a_thin_trim_falls_back_to_the_year_cohort (tests.test_tracking.TestPicks.test_a_thin_trim_falls_back_to_the_year_cohort) ... ok
+test_a_thin_year_falls_back_to_the_model_median (tests.test_tracking.TestPicks.test_a_thin_year_falls_back_to_the_model_median) ... ok
+test_and_prints_no_cohort_where_there_is_none_to_print (tests.test_tracking.TestPicks.test_and_prints_no_cohort_where_there_is_none_to_print)
+cohort_of() falls back trim -> year -> model and stamps only what it ... ok
+test_and_the_same_floor_holds_on_the_over_side (tests.test_tracking.TestPicks.test_and_the_same_floor_holds_on_the_over_side)
+The mirror, which nothing held: the over half of the same ternary ... ok
+test_eligibility_excludes_high_miles_accidents_and_rentals (tests.test_tracking.TestPicks.test_eligibility_excludes_high_miles_accidents_and_rentals) ... ok
+test_in_state_cars_are_not_charged_shipping_in_the_score (tests.test_tracking.TestPicks.test_in_state_cars_are_not_charged_shipping_in_the_score) ... ok
+test_per_model_cap_spreads_the_picks (tests.test_tracking.TestPicks.test_per_model_cap_spreads_the_picks)
+Model A is given FIFTEEN cars so THREE of them sit under the low ... ok
+test_picks_split_into_drivable_and_worth_the_ship (tests.test_tracking.TestPicks.test_picks_split_into_drivable_and_worth_the_ship)
+Every car is scored against the whole model, then split: drivable ... ok
+test_rental_and_fleet_usage_is_recognised (tests.test_tracking.TestPicks.test_rental_and_fleet_usage_is_recognised) ... ok
+test_scoring_is_within_model_not_across_models (tests.test_tracking.TestPicks.test_scoring_is_within_model_not_across_models)
+A cheap model must not sweep the picks; each car is judged against its own. ... ok
+test_scoring_prefers_the_trim_cohort_when_it_is_big_enough (tests.test_tracking.TestPicks.test_scoring_prefers_the_trim_cohort_when_it_is_big_enough)
+A cheapest-trim car must be judged against its own trim, not a ... ok
+test_scoring_uses_the_model_year_cohort_when_it_is_big_enough (tests.test_tracking.TestPicks.test_scoring_uses_the_model_year_cohort_when_it_is_big_enough)
+A 2023 car must be judged against 2023 prices, not a median that ... ok
+test_six_to_eight_cars_can_call_nothing_under_or_over (tests.test_tracking.TestPicks.test_six_to_eight_cars_can_call_nothing_under_or_over)
+At six, seven and eight cars the 95% interval on the median is the ... ok
+test_the_days_best_new_car_is_measured_against_its_interval (tests.test_tracking.TestPicks.test_the_days_best_new_car_is_measured_against_its_interval)
+End to end: nine eDrive40s, eight seen yesterday and one first seen ... ok
+test_the_mileage_cap_is_the_configured_one (tests.test_tracking.TestPicks.test_the_mileage_cap_is_the_configured_one)
+Read from PICKS, and pinned on both sides of its own boundary. ... ok
+test_the_report_prints_the_cohort_size_beside_the_percentage (tests.test_tracking.TestPicks.test_the_report_prints_the_cohort_size_beside_the_percentage) ... ok
+test_the_report_prints_the_margin_only_where_the_interval_supports_it (tests.test_tracking.TestPicks.test_the_report_prints_the_margin_only_where_the_interval_supports_it)
+The page and the report gate on the same word. A new car 3% under a ... ok
+test_the_shortlist_names_the_cohort_its_margin_was_measured_against (tests.test_tracking.TestPicks.test_the_shortlist_names_the_cohort_its_margin_was_measured_against)
+"25% under typical" is the same claim the picks block prints as ... ok
+test_the_walk_skips_a_typical_car_rather_than_stopping_at_it (tests.test_tracking.TestPicks.test_the_walk_skips_a_typical_car_rather_than_stopping_at_it)
+Picks are walked in margin order. A car sitting ON a wide interval's ... ok
+test_trim_display_drops_model_words (tests.test_tracking.TestPicks.test_trim_display_drops_model_words) ... ok
+test_value_prices_miles_but_display_price_does_not_change (tests.test_tracking.TestPicks.test_value_prices_miles_but_display_price_does_not_change) ... ok
+test_a_normalized_row_always_carries_it (tests.test_tracking.TestProvenance.test_a_normalized_row_always_carries_it) ... ok
+test_history_without_the_column_still_loads (tests.test_tracking.TestProvenance.test_history_without_the_column_still_loads)
+Every row written before today has no provenance and never will — ... ok
+test_the_fetch_loop_accumulates_across_queries (tests.test_tracking.TestProvenance.test_the_fetch_loop_accumulates_across_queries)
+A row is replaced whenever a cheaper duplicate arrives. If ... ok
+test_via_is_a_column (tests.test_tracking.TestProvenance.test_via_is_a_column) ... ok
+test_a_fortnight_on_the_market_before_first_sight_is_reach (tests.test_tracking.TestReachNotArrival.test_a_fortnight_on_the_market_before_first_sight_is_reach)
+Fourteen days, on both sides of the line: a car listed thirteen ... ok
+test_an_undated_car_is_not_called_reach (tests.test_tracking.TestReachNotArrival.test_an_undated_car_is_not_called_reach)
+No listing date, no claim — the same silence days_listed keeps. ... ok
+test_the_new_lines_count_reach_beside_new (tests.test_tracking.TestReachNotArrival.test_the_new_lines_count_reach_beside_new) ... ok
+test_a_rebuild_does_not_overwrite_the_days_cost_with_zero (tests.test_tracking.TestReportFooter.test_a_rebuild_does_not_overwrite_the_days_cost_with_zero)
+CALLS is this PROCESS's counter and an offline rebuild makes none, so ... ok
+test_the_guard_is_before_the_first_call (tests.test_tracking.TestRerunGuard.test_the_guard_is_before_the_first_call)
+Refusing after spending is not refusing. ... ok
+test_the_guard_reads_the_snapshot_not_the_plan (tests.test_tracking.TestRerunGuard.test_the_guard_reads_the_snapshot_not_the_plan) ... ok
+test_a_daily_target_reads_exactly_as_it_always_did (tests.test_tracking.TestSeenLabel.test_a_daily_target_reads_exactly_as_it_always_did) ... ok
+test_and_a_real_gap_is_visible_beside_it (tests.test_tracking.TestSeenLabel.test_and_a_real_gap_is_visible_beside_it)
+The half that makes the one above load-bearing: perfect attendance ... ok
+test_build_outputs_is_what_fills_the_denominator (tests.test_tracking.TestSeenLabel.test_build_outputs_is_what_fills_the_denominator)
+FETCH_DAYS is a global, so a caller that never builds one gets the ... ok
+test_no_fetch_record_says_what_is_known_and_no_more (tests.test_tracking.TestSeenLabel.test_no_fetch_record_says_what_is_known_and_no_more)
+An older sheet, or a caller that never built one. Dividing by the ... ok
+test_one_sighting_is_once_and_no_series_is_just_the_count (tests.test_tracking.TestSeenLabel.test_one_sighting_is_once_and_no_series_is_just_the_count) ... ok
+test_only_the_fetches_inside_the_car_s_own_span_are_counted (tests.test_tracking.TestSeenLabel.test_only_the_fetches_inside_the_car_s_own_span_are_counted)
+The target has been fetched for months; this car was on the market ... ok
+test_the_committed_record_names_fetches_and_not_days (tests.test_tracking.TestSeenLabel.test_the_committed_record_names_fetches_and_not_days)
+The rule reaches the file, not only the function: FETCH_DAYS is a ... ok
+test_the_denominator_is_the_fetches_not_the_days (tests.test_tracking.TestSeenLabel.test_the_denominator_is_the_fetches_not_the_days) ... ok
+test_the_report_row_carries_it (tests.test_tracking.TestSeenLabel.test_the_report_row_carries_it) ... ok
+test_both_pages_describe_the_card (tests.test_tracking.TestShareCard.test_both_pages_describe_the_card)
+og:image with no og:image:alt leaves the unfurl's whole visual ... ok
+test_the_card_carries_no_number (tests.test_tracking.TestShareCard.test_the_card_carries_no_number)
+A count, a price or a date on the card is wrong the day after it is ... ok
+test_the_card_names_no_car (tests.test_tracking.TestShareCard.test_the_card_names_no_car)
+The watchlist is config: brands and models come and go (Chevrolet ... ok
+test_the_shipped_card_is_the_frame_the_renderer_declares (tests.test_tracking.TestShareCard.test_the_shipped_card_is_the_frame_the_renderer_declares)
+A guard, not a regression: it passes on the commit before it, and it ... ok
+test_an_unplaceable_car_falls_back_to_the_flat_cost (tests.test_tracking.TestShipModel.test_an_unplaceable_car_falls_back_to_the_flat_cost) ... ok
+test_calibration_is_absent_until_quotes_exist (tests.test_tracking.TestShipModel.test_calibration_is_absent_until_quotes_exist)
+The model must not claim to be calibrated when nobody has checked ... ok
+test_calibration_measures_against_the_brokers_own_mileage (tests.test_tracking.TestShipModel.test_calibration_measures_against_the_brokers_own_mileage) ... ok
+test_cost_rises_with_distance (tests.test_tracking.TestShipModel.test_cost_rises_with_distance)
+Swept every mile, not sampled. ... ok
+test_drivable_is_still_free (tests.test_tracking.TestShipModel.test_drivable_is_still_free) ... ok
+test_every_band_edge_is_continuous (tests.test_tracking.TestShipModel.test_every_band_edge_is_continuous)
+One mile either side of a configured edge must differ by about one ... ok
+test_no_bands_means_the_old_behaviour_exactly (tests.test_tracking.TestShipModel.test_no_bands_means_the_old_behaviour_exactly)
+A config without ship_bands must be untouched by this change — the ... ok
+test_per_mile_falls_with_distance (tests.test_tracking.TestShipModel.test_per_mile_falls_with_distance)
+The whole reason for bands: fixed costs spread over a longer haul. ... ok
+test_quotes_without_bands_report_unknown_not_zero (tests.test_tracking.TestShipModel.test_quotes_without_bands_report_unknown_not_zero)
+The gap a mutation found. If quotes exist but no bands are ... ok
+test_road_miles_exceed_the_straight_line (tests.test_tracking.TestShipModel.test_road_miles_exceed_the_straight_line)
+A truck does not fly. Whatever the rate, the distance it bills is ... ok
+test_the_effective_rate_still_falls (tests.test_tracking.TestShipModel.test_the_effective_rate_still_falls)
+Monotonicity must not be bought by flattening the curve — the whole ... ok
+test_the_floor_holds (tests.test_tracking.TestShipModel.test_the_floor_holds) ... ok
+test_a_departure_is_missing_at_a_fetch_not_missing_today (tests.test_tracking.TestShortlist.test_a_departure_is_missing_at_a_fetch_not_missing_today)
+"missing today" is a claim about a fetch, and the fetch is the car's ... ok
+test_empty_shortlist_adds_nothing (tests.test_tracking.TestShortlist.test_empty_shortlist_adds_nothing) ... ok
+test_entries_parse_both_shapes (tests.test_tracking.TestShortlist.test_entries_parse_both_shapes) ... ok
+test_section_reports_live_gone_and_unseen (tests.test_tracking.TestShortlist.test_section_reports_live_gone_and_unseen) ... ok
+test_a_corrupt_log_is_replaced_not_fatal (tests.test_tracking.TestSourceOverlap.test_a_corrupt_log_is_replaced_not_fatal)
+A half-written file from a killed run must not take down the next ... ok
+test_a_national_only_target_is_not_audited (tests.test_tracking.TestSourceOverlap.test_a_national_only_target_is_not_audited)
+It has no States query to compare against; reporting it as ... skipped 'no national_only target configured'
+test_an_exhausted_national_query_settles_it (tests.test_tracking.TestSourceOverlap.test_an_exhausted_national_query_settles_it)
+A short page means that query returned its scope's ENTIRE result set. ... ok
+test_states_only_is_what_national_only_would_lose (tests.test_tracking.TestSourceOverlap.test_states_only_is_what_national_only_would_lose)
+The one number the decision rests on: cars no national query returned. ... ok
+test_the_log_is_bounded (tests.test_tracking.TestSourceOverlap.test_the_log_is_bounded)
+It rides in the repo beside a ledger that already grows daily; it ... ok
+test_the_log_keeps_one_entry_per_day (tests.test_tracking.TestSourceOverlap.test_the_log_keeps_one_entry_per_day)
+The run is re-runnable; the audit is about days. A second run on the ... ok
+test_a_month_inside_the_plan_still_reports_headroom (tests.test_tracking.TestSpend.test_a_month_inside_the_plan_still_reports_headroom) ... ok
+test_a_month_on_pace_to_overspend_says_so (tests.test_tracking.TestSpend.test_a_month_on_pace_to_overspend_says_so)
+The headroom line used to print max(0, plan - projected), so a month ... ok
+test_a_target_that_never_ran_is_not_headroom (tests.test_tracking.TestSpend.test_a_target_that_never_ran_is_not_headroom)
+The whole reason this class exists. ... ok
+test_an_exhausted_market_banks_the_calls_it_did_not_spend (tests.test_tracking.TestSpend.test_an_exhausted_market_banks_the_calls_it_did_not_spend) ... ok
+test_retries_are_counted_because_they_are_billed (tests.test_tracking.TestSpend.test_retries_are_counted_because_they_are_billed)
+SPENT increments per REQUEST, not per intended fetch. ... ok
+test_spending_the_whole_plan_banks_nothing (tests.test_tracking.TestSpend.test_spending_the_whole_plan_banks_nothing) ... ok
+test_the_log_survives_a_corrupt_file (tests.test_tracking.TestSpend.test_the_log_survives_a_corrupt_file) ... ok
+test_the_overspend_line_says_how_far_over (tests.test_tracking.TestSpend.test_the_overspend_line_says_how_far_over)
+"Over budget" without a magnitude is a feeling. The gap decides ... ok
+test_a_second_run_adds_to_the_day_rather_than_replacing_it (tests.test_tracking.TestSpendAccumulates.test_a_second_run_adds_to_the_day_rather_than_replacing_it) ... ok
+test_the_days_plan_does_not_double_when_the_day_runs_twice (tests.test_tracking.TestSpendAccumulates.test_the_days_plan_does_not_double_when_the_day_runs_twice)
+`planned` is the DAY's plan, not a per-run cost. ... ok
+test_the_first_run_of_a_day_still_reads_normally (tests.test_tracking.TestSpendAccumulates.test_the_first_run_of_a_day_still_reads_normally) ... ok
+test_a_gone_row_whose_vin_is_live_names_where_it_went (tests.test_tracking.TestStillListedIsNotGone.test_a_gone_row_whose_vin_is_live_names_where_it_went) ... ok
+test_a_real_departure_carries_no_such_key (tests.test_tracking.TestStillListedIsNotGone.test_a_real_departure_carries_no_such_key)
+Emitted only when true: 252 of the record's 254 gone rows are real ... ok
+test_it_leaves_the_exit_price_and_the_departure_counts (tests.test_tracking.TestStillListedIsNotGone.test_it_leaves_the_exit_price_and_the_departure_counts)
+The exit median is "where cars of this trim stopped being ... ok
+test_the_certification_is_the_point_not_a_detail (tests.test_tracking.TestStillListedIsNotGone.test_the_certification_is_the_point_not_a_detail)
+The promo is cpo_only, so a VIN that survives UNCERTIFIED is a car ... ok
+test_the_report_names_the_watch_instead_of_announcing_a_departure (tests.test_tracking.TestStillListedIsNotGone.test_the_report_names_the_watch_instead_of_announcing_a_departure)
+End to end: the trim block must not head a "Gone since" list with ... ok
+test_the_shortlist_does_not_shout_gone_over_a_car_it_shows_live (tests.test_tracking.TestStillListedIsNotGone.test_the_shortlist_does_not_shout_gone_over_a_car_it_shows_live)
+The sharpest form of the bug: one file, two claims. With the VIN on ... ok
+test_the_surviving_record_must_be_from_the_model_s_latest_fetch_day (tests.test_tracking.TestStillListedIsNotGone.test_the_surviving_record_must_be_from_the_model_s_latest_fetch_day)
+Eleven of fourteen targets run a slower cadence than their ... ok
+test_a_car_with_no_history_answers_with_an_empty_series_only (tests.test_tracking.TestSummarize.test_a_car_with_no_history_answers_with_an_empty_series_only)
+The early return, which nothing asserted: callers spread this dict, ... ok
+test_a_flat_series_has_no_cuts_and_no_delta (tests.test_tracking.TestSummarize.test_a_flat_series_has_no_cuts_and_no_delta) ... ok
+test_a_rise_is_a_positive_delta_and_not_a_cut (tests.test_tracking.TestSummarize.test_a_rise_is_a_positive_delta_and_not_a_cut) ... ok
+test_it_counts_only_the_steps_that_went_down (tests.test_tracking.TestSummarize.test_it_counts_only_the_steps_that_went_down) ... ok
+test_a_cheaper_car_to_shop_buys_a_faster_comparison_cadence (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_a_cheaper_car_to_shop_buys_a_faster_comparison_cadence)
+The point of deriving it. The user edits one list; the schedule for ... ok
+test_a_typed_cadence_still_wins (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_a_typed_cadence_still_wins)
+comparison_fetch is the FALLBACK for a car nobody is buying, so it ... ok
+test_a_watchlist_that_fits_daily_is_fetched_daily (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_a_watchlist_that_fits_daily_is_fetched_daily)
+The floor of the derivation. Three targets cannot fill a thousand ... ok
+test_both_budgets_can_be_the_one_that_binds (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_both_budgets_can_be_the_one_that_binds)
+Which cap stops the derivation getting faster is a fact about the ... ok
+test_daily_visits_for_every_model_would_exceed_the_budget (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_daily_visits_for_every_model_would_exceed_the_budget) ... ok
+test_every_model_gets_the_same_baseline_query_recipe (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_every_model_gets_the_same_baseline_query_recipe) ... ok
+test_no_cadence_the_derivation_can_reach_breaks_the_test_module (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_no_cadence_the_derivation_can_reach_breaks_the_test_module)
+The word tables in this file are indexed by numbers the CONFIG ... ok
+test_no_shopping_choice_gets_a_daily_baseline_privilege (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_no_shopping_choice_gets_a_daily_baseline_privilege) ... ok
+test_no_surface_claims_a_cadence_tier_by_brand (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_no_surface_claims_a_cadence_tier_by_brand) ... ok
+test_the_call_figures_both_surfaces_quote (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_call_figures_both_surfaces_quote) ... ok
+test_the_cycle_length_both_surfaces_quote (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_cycle_length_both_surfaces_quote)
+README says how long the plan window is and how.html names it in the ... ok
+test_the_levelling_sweep_earns_its_place (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_levelling_sweep_earns_its_place)
+First-fit-decreasing alone leaves value on the table, and the sweep ... ok
+test_the_model_counts_both_surfaces_quote (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_model_counts_both_surfaces_quote) ... ok
+test_the_plan_is_level_across_the_cycle (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_plan_is_level_across_the_cycle)
+The other half of "spread out". Dealing targets out in turn spreads ... ok
+test_the_prose_describes_model_visits_and_rotating_trims (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_prose_describes_model_visits_and_rotating_trims) ... ok
+test_the_watchlist_types_no_cadence_at_all (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_watchlist_types_no_cadence_at_all)
+The ladder is gone, and this is the test that says so. ... ok
+test_the_window_is_a_whole_number_of_cycles (tests.test_tracking.TestTheCadenceProseMatchesTheConfig.test_the_window_is_a_whole_number_of_cycles)
+The average the plan quotes is taken over the window, so a window ... ok
+test_rebuilding_the_record_on_the_day_it_names_reproduces_it (tests.test_tracking.TestTheCommittedRecordIsThisCodesOwn.test_rebuilding_the_record_on_the_day_it_names_reproduces_it) ... ok
+test_the_counts_it_prints_can_run_past_the_number_it_names (tests.test_tracking.TestTheComparisonPreambleDescribesTheQueriesItRan.test_the_counts_it_prints_can_run_past_the_number_it_names)
+The preamble is checked against the arithmetic of the plan, not ... ok
+test_and_the_readme_says_so (tests.test_tracking.TestTheCutOffProseNamesBothAxes.test_and_the_readme_says_so) ... ok
+test_the_axis_is_not_always_a_price (tests.test_tracking.TestTheCutOffProseNamesBothAxes.test_the_axis_is_not_always_a_price) ... ok
+test_the_label_readme_quotes_is_the_one_the_page_renders (tests.test_tracking.TestTheCutOffProseNamesBothAxes.test_the_label_readme_quotes_is_the_one_the_page_renders) ... ok
+test_a_departure_that_is_not_evidence_is_in_neither (tests.test_tracking.TestTheDaysToSaleClauseNamesItsOwnDenominator.test_a_departure_that_is_not_evidence_is_in_neither)
+The count sits inside the same gate the spans do, so a car that ... ok
+test_a_record_where_every_departure_is_dated_says_so_plainly (tests.test_tracking.TestTheDaysToSaleClauseNamesItsOwnDenominator.test_a_record_where_every_departure_is_dated_says_so_plainly) ... ok
+test_the_count_is_the_spans_over_the_departures (tests.test_tracking.TestTheDaysToSaleClauseNamesItsOwnDenominator.test_the_count_is_the_spans_over_the_departures) ... ok
+test_both_surfaces_quote_the_plan_this_config_produces (tests.test_tracking.TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives.test_both_surfaces_quote_the_plan_this_config_produces) ... ok
+test_the_baseline_reserves_room_in_a_31_day_month (tests.test_tracking.TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives.test_the_baseline_reserves_room_in_a_31_day_month)
+The fair baseline fits the longest month while keeping recovery calls. ... ok
+test_the_daily_baseline_range_matches_both_surfaces (tests.test_tracking.TestTheDecisionParagraphsNumbersAreTheOnesThePlanGives.test_the_daily_baseline_range_matches_both_surfaces) ... ok
+test_a_sheet_that_is_not_on_disk_leaves_the_row_alone (tests.test_tracking.TestTheDocumentedRowMeasuresTheFileThatWasWritten.test_a_sheet_that_is_not_on_disk_leaves_the_row_alone)
+A rebuild pointed at a record that was never written must not ... ok
+test_the_size_is_the_file_and_the_counts_are_the_sheet (tests.test_tracking.TestTheDocumentedRowMeasuresTheFileThatWasWritten.test_the_size_is_the_file_and_the_counts_are_the_sheet) ... ok
+test_and_the_property_they_are_defending_holds (tests.test_tracking.TestTheNonMonotoneIllustrationIsAboutTheseBands.test_and_the_property_they_are_defending_holds)
+The point of the illustration, checked rather than illustrated. ... ok
+test_the_two_numbers_both_places_quote (tests.test_tracking.TestTheNonMonotoneIllustrationIsAboutTheseBands.test_the_two_numbers_both_places_quote) ... ok
+test_a_new_unfetched_model_is_reported_explicitly (tests.test_tracking.TestTheOfflineRebuildSurvivesTheConfigItDescribes.test_a_new_unfetched_model_is_reported_explicitly) ... ok
+test_a_rebuild_with_the_shipped_config_succeeds_and_says_what_is_empty (tests.test_tracking.TestTheOfflineRebuildSurvivesTheConfigItDescribes.test_a_rebuild_with_the_shipped_config_succeeds_and_says_what_is_empty) ... ok
+test_standing_the_only_hard_coded_brand_down_is_not_a_failure (tests.test_tracking.TestTheOfflineRebuildSurvivesTheConfigItDescribes.test_standing_the_only_hard_coded_brand_down_is_not_a_failure) ... ok
+test_a_run_where_both_scopes_finished_is_recorded (tests.test_tracking.TestTheOverlapLogRecordsOnlyQueriesThatFinished.test_a_run_where_both_scopes_finished_is_recorded)
+The precondition: without it every assertion below passes on a ... ok
+test_a_scope_that_died_is_not_a_scope_that_looked (tests.test_tracking.TestTheOverlapLogRecordsOnlyQueriesThatFinished.test_a_scope_that_died_is_not_a_scope_that_looked) ... ok
+test_another_targets_failure_does_not_suppress_this_one (tests.test_tracking.TestTheOverlapLogRecordsOnlyQueriesThatFinished.test_another_targets_failure_does_not_suppress_this_one)
+Keyed on the target AND the scope, so one broken query does not ... ok
+test_a_cadence_the_fortnight_would_miss_widens_it (tests.test_tracking.TestThePlanCoversAWholeCycle.test_a_cadence_the_fortnight_would_miss_widens_it)
+Hypothetical again, and asserted as a rule rather than as this ... ok
+test_and_never_less_than_the_fortnight_the_prose_promises (tests.test_tracking.TestThePlanCoversAWholeCycle.test_and_never_less_than_the_fortnight_the_prose_promises) ... ok
+test_the_horizon_covers_the_cadence_cycle (tests.test_tracking.TestThePlanCoversAWholeCycle.test_the_horizon_covers_the_cadence_cycle) ... ok
+test_the_plan_line_says_an_eighteen_day_cycle (tests.test_tracking.TestThePlanCoversAWholeCycle.test_the_plan_line_says_an_eighteen_day_cycle)
+The horizon stopped being a typed 60 and started being derived, and ... ok
+test_the_worst_day_is_the_worst_of_that_horizon (tests.test_tracking.TestThePlanCoversAWholeCycle.test_the_worst_day_is_the_worst_of_that_horizon)
+Not of an arbitrary fortnight: the number main() refuses to run on. ... ok
+test_a_car_seen_at_two_prices_is_not_a_price_change (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_a_car_seen_at_two_prices_is_not_a_price_change)
+It is out of the cut share, out of the median, and out of the ... ok
+test_a_car_with_no_mileage_is_evidence_about_neither_market (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_a_car_with_no_mileage_is_evidence_about_neither_market)
+The split is a claim about two populations. A car that cannot be ... ok
+test_a_car_with_no_state_is_not_counted_as_drivable_or_beyond (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_a_car_with_no_state_is_not_counted_as_drivable_or_beyond)
+in_scope() asks whether the listing's state is one of the buyer's, ... ok
+test_a_hundred_miles_is_where_the_two_markets_part (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_a_hundred_miles_is_where_the_two_markets_part)
+99 and 100 miles are opposite groups, not ownership conclusions. ... ok
+test_a_pool_the_sheet_can_place_says_nothing_about_it (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_a_pool_the_sheet_can_place_says_nothing_about_it)
+The clause only appears when there is something to say. A count ... ok
+test_an_undated_pool_falls_back_to_the_word_it_can_defend (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_an_undated_pool_falls_back_to_the_word_it_can_defend)
+No dated cars means no stale_pct at all, but an entry carried over ... ok
+test_one_thin_side_leaves_the_blend_to_stand_alone (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_one_thin_side_leaves_the_blend_to_stand_alone)
+Twelve each side, the same floor the bare median already answers to. ... ok
+test_the_ask_less_clause_counts_the_cars_it_kept (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_ask_less_clause_counts_the_cars_it_kept)
+net_down excludes the sawtooth cars, as every cut figure does, and ... ok
+test_the_bullets_and_the_overflow_add_up_to_the_cuts_there_were (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_bullets_and_the_overflow_add_up_to_the_cuts_there_were)
+One total split in two, and only the sentence was pinned. The number ... ok
+test_the_note_is_absent_when_there_is_nothing_to_note (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_note_is_absent_when_there_is_nothing_to_note)
+Saying "0 more seen at two prices" on a clean pool is noise, and a ... ok
+test_the_out_of_state_heading_names_the_price_it_sorted_by (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_out_of_state_heading_names_the_price_it_sorted_by)
+best5 takes the first five by ASKING price and every row prints a ... ok
+test_the_overflow_line_counts_cuts_because_cuts_are_what_it_holds (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_overflow_line_counts_cuts_because_cuts_are_what_it_holds)
+events["cuts"] takes only downward steps. The line under it said ... ok
+test_the_overflow_line_drops_the_clause_when_every_cut_is_shopped (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_overflow_line_drops_the_clause_when_every_cut_is_shopped)
+The common case says the plain thing — a count qualified when it ... ok
+test_the_overflow_line_promises_only_the_sections_that_exist (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_overflow_line_promises_only_the_sections_that_exist)
+"…listed in the sections below" was false for 23 of the 50 it ... ok
+test_the_overflow_line_says_one_cut_for_one (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_overflow_line_says_one_cut_for_one) ... ok
+test_the_overflow_line_says_so_when_no_section_covers_it (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_overflow_line_says_so_when_no_section_covers_it)
+All four biggest are shopped, so the whole overflow is on models the ... ok
+test_the_price_change_block_leaves_the_sawtooth_out_too (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_price_change_block_leaves_the_sawtooth_out_too)
+The brief's count and the section it points at must agree, or the ... ok
+test_the_record_never_calls_a_list_sorted_by_asking_the_cheapest (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_record_never_calls_a_list_sorted_by_asking_the_cheapest)
+Same reason, same pass, other word: "the cheapest 20" is a claim ... ok
+test_the_record_never_claims_a_shipping_figure_was_stated (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_record_never_claims_a_shipping_figure_was_stated)
+Every shipping number on this site comes out of ship_for(), a model ... ok
+test_the_stale_share_carries_the_pool_it_is_a_share_of (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_stale_share_carries_the_pool_it_is_a_share_of)
+"Sits longer than 75% of the model" is a claim about the model. ... ok
+test_the_state_footer_puts_an_unplaced_car_in_neither_column (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_state_footer_puts_an_unplaced_car_in_neither_column)
+The tiles and the brief line stopped counting a car with no state as ... ok
+test_the_typical_days_clause_carries_its_denominator (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_typical_days_clause_carries_its_denominator)
+And at twelve it says twelve of how many — the number that tells ... ok
+test_the_typical_days_clause_waits_for_twelve_dated_cars (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_typical_days_clause_waits_for_twelve_dated_cars)
+The dashboard has withheld this median under twelve dated cars ... ok
+test_the_typical_days_figure_splits_the_two_markets (tests.test_tracking.TestTheRecordSaysWhatThePageSays.test_the_typical_days_figure_splits_the_two_markets)
+Separate the two recorded-odometer groups when both have support. ... ok
+test_every_row_carries_a_boolean_local_and_the_sheet_a_buyer (tests.test_tracking.TestTheSheetCarriesWhatThePageStoppedInventing.test_every_row_carries_a_boolean_local_and_the_sheet_a_buyer)
+docs/index.html's adapt() used to synthesise a buyer block from ... ok
+test_a_conflict_in_the_record_itself_still_aborts_loudly (tests.test_tracking.TestTheSnapshotPushSurvivesAnOwnerRebuild.test_a_conflict_in_the_record_itself_still_aborts_loudly)
+Only the two regenerated outputs are resolved. data/ conflicting ... ok
+test_the_outputs_step_lands_the_snapshot_and_keeps_the_owners_edit (tests.test_tracking.TestTheSnapshotPushSurvivesAnOwnerRebuild.test_the_outputs_step_lands_the_snapshot_and_keeps_the_owners_edit) ... ok
+test_every_frozen_observation_is_one_the_log_really_recorded (tests.test_tracking.TestTheStatesQueryPaidForItself.test_every_frozen_observation_is_one_the_log_really_recorded)
+The fixture is evidence, so it has to BE evidence. ... ok
+test_every_frozen_row_carries_the_depth_it_was_fetched_at (tests.test_tracking.TestTheStatesQueryPaidForItself.test_every_frozen_row_carries_the_depth_it_was_fetched_at)
+`depth` is the analytic variable the whole decision turns on, and ... ok
+test_the_finding_still_holds_on_the_log_as_it_stands_today (tests.test_tracking.TestTheStatesQueryPaidForItself.test_the_finding_still_holds_on_the_log_as_it_stands_today)
+The one that is allowed to fail. Everything above pins a sentence to ... ok
+test_the_percentages_the_readme_quotes_are_the_ones_the_window_yields (tests.test_tracking.TestTheStatesQueryPaidForItself.test_the_percentages_the_readme_quotes_are_the_ones_the_window_yields)
+Each figure inside its own sentence, not loose in the file. ... ok
+test_a_feed_that_says_nothing_leaves_them_blank_not_wrong (tests.test_tracking.TestTheTwoFactsThatNarrowAThirtySixModelMarket.test_a_feed_that_says_nothing_leaves_them_blank_not_wrong) ... ok
+test_both_are_kept_from_the_record_the_api_really_returns (tests.test_tracking.TestTheTwoFactsThatNarrowAThirtySixModelMarket.test_both_are_kept_from_the_record_the_api_really_returns) ... ok
+test_the_columns_are_in_the_file_and_old_rows_read_blank (tests.test_tracking.TestTheTwoFactsThatNarrowAThirtySixModelMarket.test_the_columns_are_in_the_file_and_old_rows_read_blank)
+load_history() normalises every row to FIELDS, so a column added ... ok
+test_the_drivetrain_column_holds_a_vocabulary_not_a_dealer_string (tests.test_tracking.TestTheTwoFactsThatNarrowAThirtySixModelMarket.test_the_drivetrain_column_holds_a_vocabulary_not_a_dealer_string)
+Folded to three words, because that is the question a buyer asks ... ok
+test_the_run_says_how_often_the_feed_filled_them (tests.test_tracking.TestTheTwoFactsThatNarrowAThirtySixModelMarket.test_the_run_says_how_often_the_feed_filled_them)
+The coverage line is the whole justification for keeping a field ... ok
+test_a_row_inside_them_still_is (tests.test_tracking.TestTheWatchlistOnlyPublishesWhatItCanStillFind.test_a_row_inside_them_still_is)
+The precondition. Without it the rule above is satisfied by a ... ok
+test_a_row_outside_its_targets_years_is_not_a_live_listing (tests.test_tracking.TestTheWatchlistOnlyPublishesWhatItCanStillFind.test_a_row_outside_its_targets_years_is_not_a_live_listing) ... ok
+test_a_target_the_config_no_longer_knows_keeps_its_rows (tests.test_tracking.TestTheWatchlistOnlyPublishesWhatItCanStillFind.test_a_target_the_config_no_longer_knows_keeps_its_rows)
+An id with no target cannot be scope-checked against anything, and ... ok
+test_only_the_latest_day_survives_either_way (tests.test_tracking.TestTheWatchlistOnlyPublishesWhatItCanStillFind.test_only_the_latest_day_survives_either_way)
+The function's original job, which the scope rule must not break. ... ok
+test_the_published_sheet_holds_no_car_its_own_watchlist_excludes (tests.test_tracking.TestTheWatchlistOnlyPublishesWhatItCanStillFind.test_the_published_sheet_holds_no_car_its_own_watchlist_excludes)
+The end-to-end statement, over the committed record. ... ok
+test_a_clone_that_fails_takes_the_step_down_with_it (tests.test_tracking.TestTheWeeklyLoopKnowsWhenItDidNotLook.test_a_clone_that_fails_takes_the_step_down_with_it) ... ok
+test_a_linter_that_crashes_takes_the_step_down_too (tests.test_tracking.TestTheWeeklyLoopKnowsWhenItDidNotLook.test_a_linter_that_crashes_takes_the_step_down_too)
+The other half, and the one only `pipefail` catches: the checkout ... ok
+test_a_run_that_checked_and_found_nothing_still_closes (tests.test_tracking.TestTheWeeklyLoopKnowsWhenItDidNotLook.test_a_run_that_checked_and_found_nothing_still_closes)
+The other side: the all-clear is right when it was earned. ... ok
+test_a_run_that_could_not_check_says_so_and_closes_nothing (tests.test_tracking.TestTheWeeklyLoopKnowsWhenItDidNotLook.test_a_run_that_could_not_check_says_so_and_closes_nothing) ... ok
+test_a_snapshot_that_will_not_verify_takes_the_step_down_first (tests.test_tracking.TestTheWeeklyLoopKnowsWhenItDidNotLook.test_a_snapshot_that_will_not_verify_takes_the_step_down_first)
+The third failure mode, and the one the local snapshot introduced. ... ok
+test_a_success_with_nothing_to_show_is_not_a_clean_run_either (tests.test_tracking.TestTheWeeklyLoopKnowsWhenItDidNotLook.test_a_success_with_nothing_to_show_is_not_a_clean_run_either)
+A step can exit 0 and produce no report — a linter that dies after ... ok
+test_and_an_open_candidate_still_opens_the_issue (tests.test_tracking.TestTheWeeklyLoopKnowsWhenItDidNotLook.test_and_an_open_candidate_still_opens_the_issue) ... ok
+test_a_full_target_is_judged_on_all_of_them (tests.test_tracking.TestTheWindowAxisIsTheOneTheRunOpened.test_a_full_target_is_judged_on_all_of_them) ... ok
+test_a_light_target_is_judged_on_the_sort_it_actually_opens (tests.test_tracking.TestTheWindowAxisIsTheOneTheRunOpened.test_a_light_target_is_judged_on_the_sort_it_actually_opens) ... ok
+test_the_shipped_watchlist_is_unchanged_by_the_fix (tests.test_tracking.TestTheWindowAxisIsTheOneTheRunOpened.test_the_shipped_watchlist_is_unchanged_by_the_fix)
+It was right on every target, and by accident: price.asc is written ... ok
+test_every_copy_names_the_tier_the_config_actually_runs (tests.test_tracking.TestTheWorkedExampleFollowsTheCadenceItIsDrawnFrom.test_every_copy_names_the_tier_the_config_actually_runs) ... ok
+test_the_fetch_count_in_the_example_is_the_one_that_cadence_gives (tests.test_tracking.TestTheWorkedExampleFollowsTheCadenceItIsDrawnFrom.test_the_fetch_count_in_the_example_is_the_one_that_cadence_gives)
+A 31-day span holds ceil(31 / cadence) fetch days for a model on that ... ok
+test_new_and_gone_counts_reach_the_subject (tests.test_tracking.TestToday.test_new_and_gone_counts_reach_the_subject) ... ok
+test_quiet_day_has_an_honest_subject_and_no_section (tests.test_tracking.TestToday.test_quiet_day_has_an_honest_subject_and_no_section) ... ok
+test_shortlist_alerts_outrank_everything (tests.test_tracking.TestToday.test_shortlist_alerts_outrank_everything) ... ok
+test_the_biggest_relevant_cut_leads_the_subject (tests.test_tracking.TestToday.test_the_biggest_relevant_cut_leads_the_subject) ... ok
+test_a_cut_on_the_last_fetch_day_is_reported_after_the_fact (tests.test_tracking.TestTodaySectionIsRelativeToTheData.test_a_cut_on_the_last_fetch_day_is_reported_after_the_fact) ... ok
+test_a_live_run_still_says_today (tests.test_tracking.TestTodaySectionIsRelativeToTheData.test_a_live_run_still_says_today)
+The other side of the same rule: when the newest snapshot IS today ... ok
+test_a_model_not_in_the_newest_snapshot_contributes_nothing (tests.test_tracking.TestTodaySectionIsRelativeToTheData.test_a_model_not_in_the_newest_snapshot_contributes_nothing)
+The gate was the cadence SCHEDULE, so a model due today whose every ... ok
+test_a_cut_that_held_is_not (tests.test_tracking.TestTwoPrices.test_a_cut_that_held_is_not)
+Down once and staying down is a cut, however long the record. ... ok
+test_a_sawtooth_is_two_prices (tests.test_tracking.TestTwoPrices.test_a_sawtooth_is_two_prices)
+The shape that started this: 54,999 / 55,849 in turn for days. ... ok
+test_a_single_blip_is_not (tests.test_tracking.TestTwoPrices.test_a_single_blip_is_not)
+One day at the other price is a wobble, and the record already has ... ok
+test_a_two_price_cars_downward_day_is_not_a_cut_event (tests.test_tracking.TestTwoPrices.test_a_two_price_cars_downward_day_is_not_a_cut_event)
+End to end through the builder: a sawtooth car's down day on the ... ok
+test_the_report_names_the_two_prices_instead_of_counting_cuts (tests.test_tracking.TestTwoPrices.test_the_report_names_the_two_prices_instead_of_counting_cuts) ... ok
+test_three_prices_are_a_history_not_a_pair (tests.test_tracking.TestTwoPrices.test_three_prices_are_a_history_not_a_pair) ... ok
+test_two_price_cars_leave_every_cut_figure_and_are_counted_apart (tests.test_tracking.TestTwoPrices.test_two_price_cars_leave_every_cut_figure_and_are_counted_apart)
+market_stats: the sawtooth car is not a cut car, its steps are not ... ok
+test_listing_daily_and_departure_rows_carry_no_adj (tests.test_tracking.TestUnreadValueIsNotExported.test_listing_daily_and_departure_rows_carry_no_adj) ... ok
+test_a_bigger_margin_on_a_cheaper_car_outranks_a_smaller_one (tests.test_tracking.TestWhatTheReadmeSaysAboutRanking.test_a_bigger_margin_on_a_cheaper_car_outranks_a_smaller_one)
+The defect itself, stated as a test rather than as an adjective: a ... ok
+test_a_cohort_never_crosses_a_model (tests.test_tracking.TestWhatTheReadmeSaysAboutRanking.test_a_cohort_never_crosses_a_model)
+score_picks takes ONE model's listings and one label, so a $27,000 ... ok
+test_both_pick_lists_are_scoped_to_the_models_being_shopped (tests.test_tracking.TestWhatTheReadmeSaysAboutRanking.test_both_pick_lists_are_scoped_to_the_models_being_shopped)
+A pick is a recommendation, so it is made only among the models ... ok
+test_the_readme_paragraph_names_the_rule_the_config_carries (tests.test_tracking.TestWhatTheReadmeSaysAboutRanking.test_the_readme_paragraph_names_the_rule_the_config_carries) ... ok
+test_the_budget_the_tool_checks_is_the_one_the_browser_suite_fails_on (tests.test_tracking.TestWhatTheSheetWeighsIsWhatTheReadmeSays.test_the_budget_the_tool_checks_is_the_one_the_browser_suite_fails_on)
+Two files, one threshold. The smoke script fails the build at it and ... ok
+test_the_committed_row_is_the_sheet_on_disk (tests.test_tracking.TestWhatTheSheetWeighsIsWhatTheReadmeSays.test_the_committed_row_is_the_sheet_on_disk) ... ok
+test_the_measuring_tool_derives_its_cap_from_the_page_size (tests.test_tracking.TestWhatTheSheetWeighsIsWhatTheReadmeSays.test_the_measuring_tool_derives_its_cap_from_the_page_size)
+LIGHT_CARS is what a light target actually reaches, and it has to ... ok
+test_a_car_exactly_on_the_cut_off_is_inside_it (tests.test_tracking.TestWindowArithmetic.test_a_car_exactly_on_the_cut_off_is_inside_it)
+A genuinely arguable boundary, pinned deliberately. ... ok
+test_a_car_outside_the_searched_states_is_judged_on_national_alone (tests.test_tracking.TestWindowArithmetic.test_a_car_outside_the_searched_states_is_judged_on_national_alone)
+The States query can only return cars in those states, so it says ... ok
+test_the_wider_of_two_windows_is_the_one_that_applies (tests.test_tracking.TestWindowArithmetic.test_the_wider_of_two_windows_is_the_one_that_applies)
+A car in a searched state comes back through EITHER query, so it is ... ok
+test_transient_failures_are_not_cached_but_misses_are (tests.test_tracking.TestZipCache.test_transient_failures_are_not_cached_but_misses_are) ... ok
+
+----------------------------------------------------------------------
+Ran 604 tests in 20.754s
+
+OK (skipped=1)
+kia-ev9: 3 calls, 60 unique kept, 60 new/changed
+  ! explore:kia-ev9:National National price.asc p2 (try 1): HTTP 503 unavailable
+  ! explore:kia-ev9:National National: deferred at the API budget limit
+  ! explore:kia-ev9:States States price.asc p2 (try 1): HTTP 503 unavailable
+  ! explore:kia-ev9:States States: deferred at the API budget limit
+Fair collection: 1 complete observations, 5 requests, 950/1000 recorded this month.
+kia-ev9: 3 calls, 60 unique kept, 60 new/changed
+Fair collection: 1 complete observations, 4 requests, 950/1000 recorded this month.
+kia-ev9: 3 calls, 60 unique kept, 60 new/changed
+Fair collection: 1 complete observations, 5 requests, 950/1000 recorded this month.
+kia-ev9: 2 calls, 0 unique kept, 0 new/changed
+Fair collection: 1 complete observations, 2 requests, 2/1000 recorded this month.
+Today already has observations. Rebuilding outputs without API calls.
+  ! kia-ev9 States price.asc p1 (try 1): HTTP 500 temporary failure
+  ! kia-ev9 States price.asc p1 (try 2): HTTP 500 temporary failure
+  ! kia-ev9 National price.asc p1 (try 1): HTTP 500 temporary failure
+  ! kia-ev9 National price.asc p1 (try 2): HTTP 500 temporary failure
+kia-ev9: 4 calls, 0 unique kept, 0 new/changed
+Fair collection: 0 complete observations, 4 requests, 6/1000 recorded this month.
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! bmw-i5-m60 National price.asc p1 (try 1): HTTP 200 with no `data` list in the envelope — the body did not parse as JSON
+  ! bmw-i5-m60 National price.asc p1 (try 2): HTTP 200 with no `data` list in the envelope — the body did not parse as JSON
+  ! bmw-i5-m60 National price.asc p1 (try 1): HTTP 200 with no `data` list in the envelope — keys were ['message']
+  ! bmw-i5-m60 National price.asc p1 (try 2): HTTP 200 with no `data` list in the envelope — keys were ['message']
+  ! bmw-i5-m60 National price.asc p1 (try 1): HTTP 200 with no `data` list in the envelope — keys were ['nope']
+  ! bmw-i5-m60 National price.asc p1 (try 2): HTTP 200 with no `data` list in the envelope — keys were ['nope']
+  ! bmw-i5-m60 National price.asc p1 (try 1): HTTP 200 with no `data` list in the envelope — keys were ['nope']
+  ! bmw-i5-m60 National price.asc p1 (try 2): HTTP 200 with no `data` list in the envelope — keys were ['nope']
+Email: HTTP 200
+Email off (no RESEND_API_KEY / EMAIL_TO) — report written to REPORT.md.
+  ! bmw-i5-edrive40 National price.asc p1 (try 1): connection reset
+  ! bmw-i5-edrive40 National price.asc p1 (try 2): connection reset
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-06-01 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! bmw-i5-edrive40 National price.asc p1 (try 1): HTTP 500 upstream is unwell
+  ! bmw-i5-edrive40 National price.asc p1 (try 2): HTTP 500 upstream is unwell
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! listed_since 2026-08-09 looks like an API index load, not a listing date — days on market withheld for those cars
+  ! zip 60601: HTTP 429 — will retry next run

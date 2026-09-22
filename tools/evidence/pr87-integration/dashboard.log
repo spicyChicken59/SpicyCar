@@ -1,0 +1,339 @@
+  ok    the watchlist opens  — The watchlist
+  ok    the footer wears the watermark, not the cover lockup  — mark true at 20px · name "SpicyChicken" · 0 lockup(s)
+  ok    four tiles
+  ok    a row per model
+  ok    the chart draws
+  ok    the map draws
+  ok    three chip groups
+  ok    a model page opens  — Acura ZDX
+  ok    it lists cars
+  ok    it plots price against miles
+  ok    no compare card at rest
+  ok    the trim control is chips  — 3 chips
+  ok    one trim is a scope, not a comparison
+  ok    one trim reaches the title
+  ok    two trims compare
+  ok    the title says vs  — BMW i5 — M60 vs xDrive40
+  ok    a column per trim
+  ok    a line per trim
+  ok    the chart says which question it answered
+  ok    the comparison is in the address bar  — http://127.0.0.1:34613/index.html?view=report&brand=bmw&m=i5&trims=bmw-i5-m60%2Cbmw-i5-xdrive40
+  ok    a shared trim comparison reopens
+  ok    with both chips pressed
+  ok    one model narrows the index
+  ok    two models compare
+  ok    the index narrows to both
+  ok    their cars pool into one table
+  ok    the pooled table names the car
+  ok    every pooled row says which model
+  ok    and it can be sorted
+  ok    the comparison is in the address bar  — http://127.0.0.1:34613/index.html?view=report&models=acura-zdx%2Caudi-a6-etron
+  ok    a shared model comparison reopens
+  ok    a half-dead link still opens
+  ok    and names what went missing
+  ok    and a dead link keeps the notice furniture  — 1 .sc-notice in #notice
+  ok    ?brand=__proto__ lands on the watchlist, not on a car  — The watchlist, 21 rows
+  ok    ?brand=__proto__ says the link missed and stops re-sharing itself  — search="?view=report" notice="that brand is not trackedThe link asked "
+  ok    ?brand=constructor lands on the watchlist, not on a car  — The watchlist, 21 rows
+  ok    ?brand=constructor says the link missed and stops re-sharing itself  — search="?view=report" notice="that brand is not trackedThe link asked "
+  ok    ?model=constructor lands on the watchlist, not on a car  — The watchlist, 21 rows
+  ok    ?model=constructor says the link missed and stops re-sharing itself  — search="?view=report" notice="that car is no longer trackedThe link as"
+  ok    ?m=constructor lands on the watchlist, not on a car  — The watchlist, 21 rows
+  ok    ?m=constructor says the link missed and stops re-sharing itself  — search="?view=report" notice="that car is no longer trackedThe link as"
+  ok    ?brand=acura&m=constructor lands on the watchlist, not on a car  — The watchlist, 21 rows
+  ok    ?brand=acura&m=constructor says the link missed and stops re-sharing itself  — search="?view=report" notice="that car is no longer trackedThe link as"
+  ok    a winner is marked only where every column was judged on its own trim and year  — ?brand=bmw&m=ix&trims=bmw-ix-xdrive,bmw-ix-m → 1 marked, bases trim/trim
+  ok    a winner is marked only where every column was judged on its own trim and year  — ?brand=bmw&m=i5&trims=bmw-i5-edrive40,bmw-i5-m60 → 1 marked, bases trim/trim
+  ok    a winner is marked only where every column was judged on its own trim and year  — ?brand=bmw&m=i7&trims=bmw-i7-edrive50,bmw-i7-xdrive60 → 1 marked, bases trim/trim
+  ok    a winner is marked only where every column was judged on its own trim and year  — ?brand=bmw&m=i7&trims=bmw-i7-edrive50,bmw-i7-m70 → 1 marked, bases trim/trim
+  ok    a winner is marked only where every column was judged on its own trim and year  — ?models=bmw-i5,bmw-i7 → 1 marked, bases trim/trim
+  ok    a column prints a typical days figure only over twelve dated cars, truncated, with its denominator  — Lucid Air: 15d (106 of 144 dated) · BMW i5: 16d (140 of 184 dated)
+  ok    and a column of under-100-mile listings beside used cars gives each market its own figure  — BMW i7: "19d" / "97 of 135 dated · 14 under 100 mi at 36d, 82 at 100+ mi at 16d, 1 with no mileage"
+  ok    and a column served with five dated cars prints none  — BMW i5 with five dates: "—" / "5 of 184 dated — too few for a median"
+  ok    a model with one snapshot day has no "new" cars  — {"BMW i5":{"rows":27,"fresh":2},"Audi A6 e-tron":{"rows":3,"fresh":0}}
+  ok    the count measures against the whole watchlist  — showing 240 of 1,701 cars · BMW i5 + Kia EV9 · sheet holds 1701
+  ok    and it still reads it once the watchlist passes a thousand cars  — "showing 240 of 1,701 cars · BMW i5 + Kia EV9" · parsed 1701
+  ok    a pressed chip's count is still readable  — 7.96:1
+  ok    every chip count is readable on the watchlist, in dark  — 6.25:1, worst of 21
+  ok    every chip count is readable on the watchlist, in light  — 5.83:1, worst of 21
+  ok    every chip count is readable on a model page, in dark  — 6.44:1, worst of 22
+  ok    every chip count is readable on a model page, in light  — 5.83:1, worst of 22
+  ok    no note on the watchlist carries a dated commitment  — 2 notes read
+  ok    a described trim reaches the dek  — bmw/i5/bmw-i5-edrive40 — The rear-drive i5, one half of the decision beside the i7 eDrive50. Asking prices as listed; shipping stated per car.
+  ok    and the chip it sits beside says the same  — 3 chips — eDrive40 — The rear-drive i5, one half of the decision beside the i7 eDrive50. — pick any; two or more compares them; none selected means every trim
+  ok    and neither reads as a deadline  — The rear-drive i5, one half of the decision beside the i7 eDrive50. Asking prices as listed; shipping stated per car.
+  ok    the watchlist dek counts models, not cars  — 21 models, 1701 cars on the sheet — the page says "21 models, priced for one buyer in Chicago — cheapest anywhere, cheapest you can drive to."
+  ok    and the meta row beside it counts the same models  — "Data through Mon, September 21, 2026·2 shopping · 19 comparison" · 2 of 21
+  ok    with no models named the decision card says so instead of vanishing  — hidden=false · "Choose the models you are shopping using Choose cars. Your comparison will appear here."
+  ok    and it lays out no cars, because there are none to lay out  — 0 tiles, gap hidden=true
+  ok    while the reader's own chips emptying it stays silent, as before  — pressing acura/zdx: hidden=true · ""
+  ok    and the meta row never counts the same models twice  — "21 models" · "2 shopping · 19 comparison" · "1 of 21 models" · "1 of 21 models" · "2 of 21 models"
+  skip  a model no query has reached says it has not been fetched  — every model on this sheet has been fetched
+  skip  and one whose query ran and found nothing says THAT instead  — every model on this sheet has been fetched
+  ok    a phone reaches car listings without scrolling  — {"x":20,"y":556.443603515625,"width":350,"height":569.921875}
+  ok    and the row costs a constant, whatever the watchlist holds  — 19 brand tabs stand 39px tall; one row is about 39
+  ok    and every brand is still reachable, pressed one scrolled into view  — "Kia" at 0px in view · "Volkswagen" at 0px in view · "Acura" at 0px in view
+  ok    the lines a reader is not comparing share one context tone  — context rgb(138, 148, 161) · 17 lined series outside the shopped brands · {"acura/zdx":["rgb(138, 148, 161)"],"audi/a6-etron":["rgb(138, 148, 161)"],"bmw/i4":["rgb(39, 102, 177)"],"bmw/i5":["rgb(39, 102, 177)"],"bmw/i7":["rgb(39, 102, 177)"],"bmw/ix":["rgb(39, 102, 177)"],"cadillac/lyriq":["rgb(138, 148, 161)"],"chevrolet/equinox-ev":["rgb(138, 148, 161)"],"dodge/charger-daytona":["rgb(138, 148, 161)"],"ford/mustang-mach-e":["rgb(138, 148, 161)"],"honda/prologue":["rgb(138, 148, 161)"],"hyundai/ioniq9":["rgb(138, 148, 161)"],"kia/ev9":["rgb(138, 148, 161)"],"lexus/rz":["rgb(138, 148, 161)"],"lucid/air":["rgb(138, 148, 161)"],"mercedes/eqb":["rgb(138, 148, 161)"],"nissan/ariya":["rgb(138, 148, 161)"],"porsche/taycan":["rgb(138, 148, 161)"],"rivian/r1s":["rgb(138, 148, 161)"],"toyota/bz4x":["rgb(138, 148, 161)"],"volkswagen/id4":["rgb(138, 148, 161)"]}
+  ok    and the ones they are get a slot each, and their name at the end  — end labels ["$0K","$20K","$40K","$60K","BMW i7 $53,888","BMW i5 $34,989","BMW iX $30,788","BMW i4 $25,995"] · shopped bmw
+  ok    the legend lists what is drawn and nothing else  — 21 chips over 21 drawn series (was 36 chips over 7)
+  ok    and no sentence on the page says colour is the brand  — "Lowest asking price each day among the cars in view, one line per model. Colour and weight are on BMW; every other model is context grey, because five chart colours cannot carry 18 brands. Click a leg"
+  ok    and pressing two models nobody is shopping draws THOSE out  — acura/zdx, audi/a6-etron · end labels ["$25K","$30K","$35K","$40K","Audi A6 e-tron $38,798","Acura ZDX $25,999"] · tones {"acura/zdx":["rgb(39, 102, 177)"],"audi/a6-etron":["rgb(210, 65, 0)"]}
+  ok    the filter count is a status message  — {"role":"status","live":"polite","inA11yTree":true,"regionsInDoc":11}
+  ok    and a re-sort changes what it says  — bmw/i5 → newest: "showing all 184 cars" → "showing all 184 cars · sorted by newest to tracker"
+  ok    narrowing to one column keeps the keyboard somewhere
+  ok    at rest the tiles claim the nation and the chart chip agrees  — {"who":"bmw i4 · eDrive40","tiles":["Lowest asking nationwide","Lowest drivable asking","Vehicles on the market","Since the previous snapshot"],"chip":"whole market — not filtered"}
+  ok    a trim chip makes the price tiles say filtered, like the chart chip  — {"who":"bmw i4 · eDrive40","tiles":["Lowest asking (filtered)","Lowest drivable (filtered)","Vehicles on the market","Since the previous snapshot"],"chip":"filtered — eDrive40"}
+  ok    and leaves the movement tile, which counts every trim, saying so  — bmw i4 · eDrive40 → Since the previous snapshot
+  ok    a zero-car trim says why the page is empty  — bmw-i4-edrive40 → {"hidden":false,"text":"No cars in this trim right now: the watchlist holds 41 BMW i4 cars, but none of them are eDrive40, so the picks, the map and the price chart below have nothing to draw. Show all BMW i4 trims."}
+  ok    and an empty selection is a sentence, not a red box  — 1 .sc-empty, 0 .sc-notice in #notice
+  ok    and its way out drops the trim and brings the sections back  — {"trims":null,"count":"showing all 41 cars","sections":["kpis","filters-card","takeaway","list-card","scatter-card","chart-card","map-card","notes-card","gone-card","next-callout"]} vs control {"count":"showing all 41 cars","sections":["kpis","filters-card","takeaway","list-card","scatter-card","chart-card","map-card","notes-card","gone-card","next-callout"]}
+  ok    a stale link onto an empty trim is not a dead end either  — {"hidden":false,"text":"part of that comparison is goneThe link also asked for “bmw-i4-edrive40-retired”, which is not on the watchlist any more — and the part that is left has no cars right now. Show all BMW i4 trims.","links":1} → {"trims":null,"count":"showing all 41 cars"}
+  ok    the empty-filters notice counts what its own link restores  — bmw-i4-edrive40 + WI → promised 63, restored 63 of 104
+  ok    a legend chip still hides its own line  — legend:acura/zdx: 208 series nodes → 201
+  ok    but it takes no dot off the map  — 1660 dots / "1660 cars on the map" / "showing all 1,701 cars" → 1660 dots / "1660 cars on the map" / "showing all 1,701 cars"
+  ok    and the toggle does not outlive the visit  — 1660 dots / 208 series nodes, prefs null
+  ok    and a hidden set left by an older profile is ignored  — 1660 dots / 208 series nodes / "showing all 1,701 cars"
+  ok    the comparison survives a phone
+  ok    and does not scroll the page sideways  — 0px of overflow
+  ok    and every figure in it is on screen  — 0 off the edge
+  ok    nor does selecting every model  — 21 models, 0px of overflow
+  ok    the footer waits below the fold while the data loads  — footer top y=968 in a 844px viewport, h1 "Loading snapshot…"
+  ok    a phone in landscape still sees the results under the filter bar  — bmw i5: 176px bar, 2281px of 390 left for the page, max-height 175.5px
+  ok    and can still reach every filter in it  — overflow-y:auto, 466px past the cap
+  ok    and the short-viewport cap is the tighter of the two  — 176px of 390 in landscape, 506px of 844 in portrait
+  ok    and the desktop panel is capped without being clipped  — panel 434px under a 600px cap at 1280x1000, 0px clipped
+  ok    the masthead holds its height when the data line lands  — 320x568: masthead 76.19px "Loading…" -> 76.19px "Data through 2026-09-21", 162.519px reserved for a 161.53px "Data through 0000-00-00"
+  ok    a model page does not scroll sideways on the narrowest phone  — bmw i4: 0px past the 320px viewport, worst of 12 departed cards 0px past its own box
+  ok    the side-by-side table names the column its row labels sit in  — models: "Measure" over 12 row labels, 0 of them blank, beside 2 columns · trims: "Measure" over 12 row labels, 0 of them blank, beside 2 columns
+  ok    a promo reaches certified cars and no others  — bmw i5: 6 rows at 2.99%, 24 at the ordinary rate
+  ok    a promo capped at 60 months is not quoted at 72  — term set to 72; the promo car says "BMW FS certified 2.99% — 60 months on $44,311 financed · includes 9.25"
+  ok    every car carries tax, local and shipped alike  — 12 rows, 1 drivable · every total exact
+  ok    the out-the-door total shows its own working  — $25,999 asking + $2,405 tax + $774 title, doc and plates + $1,353 shipping · ESTIMATE, rates not verified
+  ok    the out-the-door sort is withheld without a fee block  — otd hidden=true · landed still offered=true · payment still offered=true
+  ok    and offered again when the sheet has one  — this sheet has fees, otd hidden=false
+  skip  a note that claims 72 months says which promos are capped shorter  — this model has fewer than two trims to compare
+  skip  and claims no cap when the term already fits inside one  — this model has fewer than two trims to compare
+  ok    and the finance note says what was put down  — Payments assume 60 months at 6.
+  ok    a covered car is not quoted a negative balance  — 30 payment notes over 30 rows, 0 negative, 30 say paid outright · "paid outright — the down payment covers all $29,178 · in"
+  ok    a filter that excludes nothing does not move a single day row  — 6 day rows identical, chip now reads "filtered — IL + OH + IN + WI + beyond"
+  ok    shipping is called an estimate on the row itself  — 8 rows priced for shipping, first says "$1,353est. shipping · $27,352 landed"
+  ok    the listings caption says which numbers nobody has checked  — s at 6.9% . Shipping is an estimate: published open-carrier band rates, not quotes anyone obtained. Out-the-door and monthly figures add 9.25% tax and $774 of paperwork — rates not verified.
+  ok    and a calibrated sheet drops the word  — edian $362 of 30 cuts · listings ran at least ~23d (12 of 14 dated). Payments assume 60 months at 6.9% . Shipping from bands calibrated Sep 1. Tax and fees checked Sep 1.
+  ok    sorting by price really orders the rows by price  — 30 rows: 25999 27895 27973 28495 28499 28555
+  ok    sorting by miles really orders the rows by miles  — 30 rows: 30 1995 2614 3129 3274 5217
+  ok    sorting by days_listed really orders the rows by days_listed  — 25 rows: 38 38 29 27 25 23
+  ok    the lowest-asking tile is the cheapest car on the page  — tile "Lowest asking nationwide" says $25,999, cheapest in the sheet is $25,999
+  ok    the lowest-drivable tile is the cheapest car the buyer can drive to  — tile "Lowest drivable asking" says $29,797 — "2024 · 37,811 mi · Marysville, OH · no shipping"; cheapest drivable in the sheet is $29,797 in OH
+  ok    the rate in the heading is the rate the car is financed at  — "BMW FS certified 2.99%" quotes 2.99% — "What 2.99% is worth on the cheapest one you can actually get it on, ov…"
+  ok    and a certified car at a seller not named BMW is kept out of the figure  — 111 of 179 certified cars — foot says "13 of the 34 certified cars are listed by a seller whose name does not say BMW — BMW FS certified 2.99% is wri…"
+  ok    and the strip disappears when no promo is live  — every promo expired
+  ok    every "under typical" note says which cohort and how many cars  — 3 of 3 — first: "12% under typical · 2024 4dr SUV Acura ZDX, n=19"
+  skip  and a fallback cohort says it is a fallback  — every scored car on this page had its own trim and year to be judged against
+  ok    the drivable picks are the same cars in the report and on the page  — report ["WBY13HG04SCT78578","WBY33HG01TCV35364","WBY53EJ00SCV09594","WBY53EJ08RCP15272"] vs page ["WBY13HG04SCT78578","WBY33HG01TCV35364","WBY53EJ00SCV09594","WBY53EJ08RCP15272"]
+  ok    and so are the worth-the-ship picks  — report ["WBY13HG09SCS84860","WBY43FK03RCR45219","WBY53EJ04SCU78916","WBY53EJ05RCP11857"] vs page ["WBY13HG09SCS84860","WBY43FK03RCR45219","WBY53EJ04SCU78916","WBY53EJ05RCP11857"]
+  ok    and the two surfaces state one rule for the list  — "under 50,000 miles, no reported accidents, no rental or fleet history; ranked by how far under the typical pri…"
+  ok    a budget keeps only the cars that fit it, and all of them  — budget 53067 all in on bmw i5 · 47 rows shown, 47 of 184 priced cars fit
+  ok    and the count line names it  — showing 47 of 184 cars · under $53,067 all in
+  ok    a car the sheet cannot price is not let through a budget  — WBY33FK02RCS81412 blanked · 184 cars counted with no budget (184 on this model), 46 under 53067 all in · 47 would fit if it still had its price
+  ok    the decision panel says which setting emptied a model  — 31 would fit your rules — none under $19,765 all in // 44 would fit your rules — none under $19,765 all in
+  ok    and the budget is still there on the next visit  — typed 53067, came back "53067"
+  ok    pressing model chips does not close the filter panel  — 3 chips pressed, open after each: true, true, true
+  ok    and scrolling away from it still does
+  ok    the decision panel names the models the config says you are shopping  — config says ["BMW i5","BMW i7"] · panel shows ["BMW i5","BMW i7"]
+  ok    the car it leads with passes the buyer's own pick rules  — BMW i5 WBY33FK06RCR58557 (37394 mi, 0 acc) · BMW i7 WBY43EJ02RCS67624 (44511 mi, 0 acc)
+  ok    and it is the cheapest such car, all in  — BMW i5 $44,349 · BMW i7 $60,983
+  ok    the gap it states is the difference between the two figures it shows  — panel says 16634 total / 329 a month; tiles differ by 16634 (44349 vs 60983) and 329 a month (849 vs 1178)
+  ok    and it is not on a model page  — visible on the watchlist: true; then opened BMW i5
+  ok    the drivable car on the decision panel carries its own payment  — $818/mo at 2.99% promo · $3,240 less in cash over 60 months, shipping counted · $1,412/mo at 6.9% · $12,704 more in cash over 60 months, shipping counted
+  ok    and the cash gap it states is the one the figures above it make  — $818/mo at 2.99% promo · $3,240 less in cash over 60 months, shipping counted against $849/mo at 6.9% over 60 months + $1380 ship · $1,412/mo at 6.9% · $12,704 more in cash over 60 months, shipping counted against $1,178/mo at 6.9% over 60 months + $1336 ship
+  ok    the market sentence under a trim is that trim's own  — bmw-i4-edrive40: page says "typical car 9d on market (52 of 63 dated) · 17 of 28 ask less than when first seen, median $1,000 less · 1 cut and put back · 64% of 28 cut while tracked, median $463 of 33 cuts" · the trim's own rows say "typical car 9d on market (52 of 63 dated) · 17 of 28 ask less than when first seen, median $1,000 less · 1 cut and put back · 64% of 28 cut while tracked, median $463 of 33 cuts" · the model's block says "typical car 8d on market (87 of 104 dated) · 33 of 67 ask less than when first seen, median $1,000 less · 2 cut and put back · 52% of 67 cut while tracked, median $600 of 56 cuts · listings ran at least ~19d (13 of 18 dated)"
+  ok    and a trim with too few departures to speak for does not borrow its siblings'  — bmw-i4-edrive40 has 6 exact delistings of its own; the page says "typical car 9d on market (52 of 63 dated) · 17 of 28 ask less than when first seen, median $1,000 less · 1 cut and put back · 64% of 28 cut while tracked, median $463 of 33 cuts"
+  ok    and the floors hold on a sheet that would breach them  — bmw-i4-edrive40 with 5 dated cars and 12 unconfirmed departures: the page says "17 of 28 ask less than when first seen, median $1,000 less · 1 cut and put back · 64% of 28 cut while tracked, median $463 of 33 cuts"
+  ok    and the typical-days split keeps its own twelve-car floor  — bmw-i4-edrive40 with 2 dated stock cars and 17 dated used: page "typical car 20d on market (19 of 63 dated) · 17 of 28 ask less than when first seen, median $1,000 less · 1 cut and put back · 64% of 28 cut while tracked, median $463 of 33 cuts" · rules "typical car 20d on market (19 of 63 dated) · 17 of 28 ask less than when first seen, median $1,000 less · 1 cut and put back · 64% of 28 cut while tracked, median $463 of 33 cuts"
+  ok    a car seen at two prices wears those prices, not a cut count  — N97139 (54000/54000/54898/54000/54000/54898): row says "seen at $54,000 and $54,898"
+  ok    and the movement tile does not count its down day as a cut  — tile "34 price cuts23 new (5 listed 14+ days before the tracker saw them)" · sheet: 34 cut (35 with the sawtooth's down days counted)
+  ok    and on the shortlist table it reads the same  — "41dseen at $54,000 and $54,898"
+  ok    and a single blip up and back is still a cut that did not stick  — N97139 with one sighting of $54,898: reads "cut, then back up"
+  ok    and the cut share is read over the cars that were counted  — 20 cars rewritten (23 sawtooths of 99 tracked): page "50% of 76 cut while tracked, median $850 of 52 cuts · 23 seen at two prices, not counted" · sheet "50% of 76 cut while tracked · 23 seen at two prices, not counted" (38% if read over every tracked car)
+  ok    a scope holding under-100-mile listings says so beside its median  — hyundai-ioniq9: "25 of 65 are under 100 mi, median $69,037 — and the 37 cars at 100+ mi sit at $47,998; 3 publish no mileage and are in neither" — sheet says 25 of 65 under 100 mi at 69037, 37 at 100+ mi at 47998
+  ok    hiding the stock takes exactly those cars out of the count  — showing 40 of 65 cars · all trims · hide under 100 mi — expected 40 of 65 (65 on the trim, 25 under 100 mi)
+  ok    and the remaining median includes 100+ miles and unknown mileage  — 6 drivable · 34 beyond your states · median $48,558 — expected median 48558.5 and no split line
+  ok    the mileage explanation states the limits of an odometer grouping  — Hide listings with fewer than 100 recorded miles. This odometer grouping does not establish ownership history, new or used legal status, dealer use, or certification validity. Unknown mileage stays visible.
+  ok    the optional filter hides only recorded mileage below 100  — recorded miles 0, 45, 99, 100, unknown: 5 before, 2 after; 100 and unknown remain
+  ok    CPO claims remain visible and unchanged when the mileage filter is cleared  — 5 synthetic CPO rows restored with the CPO-only filter still on; 5 show the claim
+  ok    a flat delta names the day it is level with  — tile 1 says "= vs Sep 16"
+  ok    the tile median and the chart table's newest median agree  — planted a median of 35999.5: tile says 35999, the newest table row says 35999
+  ok    every year in the select has a car in view  — watched 2019 with no car; select offers ["2024"]; cars carry ["2024"]
+  ok    a car's sightings are counted, not aged  — 30 desktop rows and 28 phone labels agree with their series, e.g. "seen 6 of 6 fetches"
+  ok    the map hint adds up to the count line  — map: 1660 on + 0 beyond + 41 unplaced = 1701; count line: "showing all 1,701 cars"; 41 cars carry no coordinates
+  ok    the marks flip to the light-surface files for print, and back after  — 5 marks: sc-mark-mono-cream.svg+sc-mark-color-dark.svg → sc-mark-mono-ink.svg+sc-mark-color-light.svg → sc-mark-mono-cream.svg+sc-mark-color-dark.svg
+  ok    each shopped tile says how many cars held its floor, and since when  — BMW i5: 4 different cars held this floor in 18 fetch days, this one for 1 · $39,901 all in on Aug 23 · BMW i7: 2 different cars held this floor in 14 fetch days, this one for 1 · $61,475 all in on Aug 25
+  ok    and what stands behind the headline car today  — BMW i5: next car $832 behind · 3 other cars within $1,000 · BMW i7: next car $492 behind · 3 other cars within $1,000
+  ok    the premium over the shared fetch days is the one the ledgers make  — page: "Over the 13 fetch days both were fetched, BMW i7 has cost $15,298–$21,574 more: $21,574 on Aug 25, $16,112 on Sep 8. Of that $5,462 change, $4,481 is BMW i5's floor rising and $981 BMW i7's floor falling." · ledgers: 13 days, 15298–21574, first 21574, last 16112; split "Of that $5,462 change, $4,481 is BMW i5's floor rising and $981 BMW i7's floor falling."
+  ok    and a window in which neither floor moved names no side  — 13 shared days, every gap $21574: page says "Over the 13 fetch days both were fetched, BMW i7 has cost $21,574 more: $21,574 on Aug 25, $21,574 on Sep 8." and names no side
+  ok    the drivable premium over the record is the one the ledgers make  — BMW i5: driving to one has cost $349–$8,495 more over 18 fetch days, on 3–4 drivable cars · $1,196 today · 2 different drivable cars held that floor · BMW i7: driving to one has cost $10,015–$10,996 more over 14 fetch days, on 2–3 drivable cars · $10,507 today · the same drivable car throughout
+  ok    and six fetch days are too few to say it  — BMW i5 with six fetch days: tile says nothing; harness says nothing
+  ok    and one drivable car a day is not a premium  — BMW i5 with one drivable car: tile says nothing; harness says nothing
+  ok    and today's figure is withheld when only one car could be driven to today  — BMW i5 with one drivable car on 2026-09-13: tile "driving to one has cost $349–$8,495 more over 17 fetch days, on 3–4 drivable cars · 2 different drivable cars held that floor" · harness "driving to one has cost $349–$8,495 more over 17 fetch days, on 3–4 drivable cars · 2 different drivable cars held that floor"
+  skip  and on a sheet that breaches them, the fetch-day rule and the five-car gate hold  — no fetch day is shared by two shopped trims of one model
+  ok    the clause states the dearer floor car against the cheaper in the sheet's own columns  — page: "For that, BMW i7 is the same model year with 7,117 more miles; BMW i7 certified, the other not; listed 27 days against 137. " · sheet: "For that, BMW i7 is the same model year with 7,117 more miles; BMW i7 certified, the other not; listed 27 days against 137. "
+  ok    the dearer floor's total is counted out in the cheaper model's own fit cars  — page: "BMW i7's $60,983 buys 25 of the 31 BMW i5s that fit your rules — the newest a 2025 with 10,340 miles, the lowest-mileage a 2024 with 9,360; 4 drivable, 7 certified (5 at a seller named BMW). " · sheet: "BMW i7's $60,983 buys 25 of the 31 BMW i5s that fit your rules — the newest a 2025 with 10,340 miles, the lowest-mileage a 2024 with 9,360; 4 drivable, 7 certified (5 at a seller named BMW). "
+  ok    and the asking price that would match the cheaper payment is the loan run backwards  — page: "would have to ask $38,631 — $15,257 off its $53,888." · harness from $849/mo at 6.9% over 60 months and BMW i7's 6.9% over 60: "would have to ask $38,631 — $15,257 off its $53,888."
+  ok    and a car priced at the dearer total is not bought, a drivable car priced over it is not counted, and two terms print no payment  — P53727 at $54,315 (= BMW i7's $60,983), R89422 at $54,888, terms ["60","36"]: page "BMW i7's $60,983 buys 24 of the 31 BMW i5s that fit your rules — the newest a 2025 with 10,340 miles, the lowest-mileage a 2024 with 9,360; 4 drivable, 6 certified (5 at a seller named BMW). " · sheet "BMW i7's $60,983 buys 24 of the 31 BMW i5s that fit your rules — the newest a 2025 with 10,340 miles, the lowest-mileage a 2024 with 9,360; 4 drivable, 6 certified (5 at a seller named BMW). "
+  ok    and every clause turns with the sheet  — page: "For that, BMW i7 is 1 model year older with 8,000 more miles; 3 owners against 1; BMW i7 certified, the other not; listed 200 days against 10. " · expected: "For that, BMW i7 is 1 model year older with 8,000 more miles; 3 owners against 1; BMW i7 certified, the other not; listed 200 days against 10. "
+  ok    and a field the sheet lacks is silence, not a zero  — page: "For that, BMW i7 is the same model year with 8,000 more miles; neither certified. " · expected: "For that, BMW i7 is the same model year with 8,000 more miles; neither certified. "
+  ok    a note prints only for a car below the 95% interval of its cohort's median  — 23 of 30 rows noted, every one below its cohort's low edge; 0 car(s) 5%+ under a median yet inside its interval, rightly silent
+  ok    and names the interval the order statistics give  — first: "typical value $59,822–$61,989 at 95% — asking plus shipping, miles priced in"
+  ok    a car moved to its cohort's median loses the note and the pick  — R45219 at $62,100 (was $46,995, 24.7% under): harness says typical; row says nothing; pick cards 0
+  ok    and five cars are not a cohort: the survivors stop being judged by their trim  — edrive40|2024 cut from 23 to 5: 0 survivor(s) still judged against the trim; T05049 read "11% under typical · 2024 eDrive40 BMW i5, n=23" with its own trim's 23 whole and now falls to a year cohort of 47 (mixed trims) and says nothing; 2027 cut to four and its line gone, year lines ["2024","2025","2026"]
+  ok    and a floor car in a cohort of eight is about typical on every surface  — R58557 with 23 → 8 in 2024 eDrive40 BMW i5: harness typical, 36% under the median · tile "about typical for a 2024 eDrive40 BMW i5, n=8" (flat true) · pick cards 0 · shortlist row "about typical" ["2024 eDrive40 BMW i5, n=8"] · card no chip
+  ok    and a margin that rounds to nothing is not a stand  — m60|2024 rewritten to one value, R45219 $100 under it: harness typical, 0.10% under, below the edge · shortlist row "about typical"
+  ok    the compare card's winner row prints only a car that stands under  — xDrive40: 23% under · M60: 25% under
+  ok    and the pick walk skips a typical car with a big margin rather than stopping at it  — m60|2024 cut to nine, R45219/P20158 on the edge at 73% (typical/typical); best under S84860 at 23% · pick cards ["V35364","T78578","P96469","R29277","S84860","V98446","W42249","T05049"]
+  ok    the sentence counts what changed since the remembered day, by the sheet's own rules  — "Since you last saw data through Sep 8: 27 new, 37 ask less than then, 5 gone, 105 more stopped being seen. BMW i5 — floor $44,382 → $44,349, 15 new, 22 ask less than then, 2 gone, 57 more stopped being seen. BMW i7 — floor $60,494 → $60,983, 12 new, 15 ask less than then, 3 gone, 48 more stopped being seen."
+  ok    a reload on the same data day repeats it rather than losing it  — remembered {"through":"2026-09-21","since":"2026-09-08"}; reload says the same sentence
+  ok    a first visit says nothing  — slot hidden
+  ok    and a remembered day before the record  — 2000-01-01: slot hidden · departures counted from 2026-09-21 with 2026-09-08 remembered: slot hidden
+  ok    and a slot a dead link already claims  — notice: "that brand is not trackedThe link asked for “no-such-brand”, which is not a bran"
+  ok    a car the watchlist dropped is not the market losing it  — as delisted: "Since you last saw data through Sep 8: 27 new, 37 ask less than then, 5 gone, 105 more stopped being seen. BMW i5 — floor $44,382 → $44,349, 15 new, 2" · as out of scope: "Since you last saw data through Sep 8: 27 new, 37 ask less than then, 4 gone, 105 more stopped being seen. BMW i5 — floor $44,382 → $44,349, 15 new, 22 ask less than then"
+  ok    a full VIN opens its car: the model page, the card, the row, the address bar  — 4W5KHNRL6RZ505855: h1 "Acura ZDX" · card 4W5KHNRL6RZ505855 · landed 4W5KHNRL6RZ505855 · url "?view=report&brand=acura&m=zdx&vin=4W5KHNRL6RZ505855"
+  ok    and six characters of it do the same  — 505855 → card 4W5KHNRL6RZ505855, landed 4W5KHNRL6RZ505855, url "?view=report&brand=acura&m=zdx&vin=4W5KHNRL6RZ505855"
+  ok    a tail that fits two cars says how many and opens nothing  — 502869 fits 2: h1 "The watchlist" · notice "that VIN fits more than one car2 cars on the sheet end in “502869” — add characters and tr" · url "?view=report"
+  ok    a VIN nobody has seen goes through the dead-link notice and is not re-shared  — __proto__: h1 "The watchlist" · notice "no car on the sheet has that VINNo car the tracker has seen ends in “PROTO” — si" · url "?view=report"
+  ok    a departed car's VIN opens the card in its gone form  — 4W5KHMRK4RZ509100: h1 "Acura ZDX" · card 4W5KHMRK4RZ509100 · "the car in hand$29,150last seen Sep 16GONE — the listing endedAcura ZDX · 2024 4dr SUV4W5KHMRK4RZ509"
+  ok    and the VIN field is the same path as the link  — typed "505855": card 4W5KHNRL6RZ505855 · landed 4W5KHNRL6RZ505855 · url "?view=research&brand=acura&m=zdx&vin=4W5KHNRL6RZ505855"
+  ok    five characters are refused even when they would fit one car  — 05855 fits 1: h1 "The watchlist" · notice "no car on the sheet has that VINNo car the tracker has seen ends in “05855” — si"
+  skip  and leaving the model page leaves the car behind  — no second model of the brand to tab to
+  ok    the movement tile says how many of its new cars were listed a fortnight before the tracker saw them  — Volkswagen ID.4: tile "41 new (23 listed 14+ days before the tracker saw them)" · sheet: 41 new, 23 reach
+  ok    and the comparison's movement row says the same  — Volkswagen ID.4 column: "4 cuts41 new (23 reach, not arrival) · 0 gone"
+  ok    and a sheet whose new cars were all listed today gets no clause  — Volkswagen ID.4 with every new car listed 2026-09-21: tile "41 new" · sheet 41 new, 0 reach
+  ok    and thirteen days is not a fortnight  — Volkswagen ID.4 with one new car listed 2026-09-08: tile "41 new" · sheet 41 new, 0 reach
+  ok    each shopped tile keeps its headline, its stand and its link out of a closed fold that holds the evidence  — "the evidence · 7 lines" over 7 evidence nodes, 4 headline lines out · "the evidence · 6 lines" over 6 evidence nodes, 4 headline lines out
+  ok    and the card fits one phone screen  — card 854px on an 844px screen (it ran to 1,754px unfolded)
+  ok    and the fold opens to the evidence  — open: true, card 854px → 1222px
+  ok    and the gap line keeps the decision out and folds the record  — head "BMW i7 costs $16,634 more than BMW i5 on today's cheapest of each, $329 a month at each ca" · fold "over the record, and what the money buys" over 902 characters
+  ok    and a desktop folds nothing  — 0 folds, 19 evidence lines in the open
+  skip  the gone card counts a car still listed apart from the departures  — no model on the sheet has a car that left a watch while still listed
+  skip  and the row says which watch it left and what it asks now  — no such car
+  ok    the movement tile counts only cars that left the market  — tile "4 gone" · sheet 4 (no cars still listed)
+  ok    and a served departure that is still listed leaves that count and changes its words  — 509100 given a forwarding address: count 4 → 3, tile "3 gone", row "0$911Carrollton, TXTXSep 16left the all trims — the same VIN is listed as eDrive40 at $12,345, not certified5d"
+  ok    the gone card counts a car the watchlist dropped as its own thing  — "13 confirmed departures (the listing ended — not necessarily a sale) · 58 probably still for sale, just outside the fetch window · 1 dropped by a watchlist change, not by leaving the market."
+  ok    and the row says the model years moved, not that a fetch is owed  — "2024 4dr SUV4W5KHMRK4RZ509100$29,15017,200$911Carrollton, TXTXSep 16outside the model years now watched5d"
+  ok    and the same row under a word the page does know reads differently  — "rmed departures (the listing ended — not necessarily a sale) · 58 probably still for sale, just outside the fetch window · 1 not checked on the day it vanished." · row "2024 4dr SUV4W5KHMRK4RZ509100$29,15017,200$911Carrollton, TXTXSep 16not checked that day5d"
+  ok    no row, chip or pick claims a percentage against a cohort of mixed trims  — 4 of 93 rows on Porsche Taycan carry a percentage, none on a mixed cohort (28 eligible cars there would be judged by one)
+  ok    and the ones that do say so name their own trim and year  — 2026 BMW i5 xDrive40 with similar mileage  · 2025 BMW i5 xDrive40 with similar mileage  · 2025 BMW i7 xDrive60 with similar mileage  · 2024 BMW i7 xDrive60 with similar mileage  · 2024 BMW i5 M60 with similar mileage · 42  · 2025 BMW i5 xDrive40 with similar mileage  · 2025 BMW i7 xDrive60 with similar mileage  · 2024 BMW i7 xDrive60 with similar mileage  · 2026 Hyundai Ioniq 9 SEL with similar mile · 2026 Hyundai Ioniq 9 SEL with similar mile · 2026 Hyundai Ioniq 9 SEL with similar mile · 2024 Kia EV9 Light with similar mileage · 
+  skip  a mixed cohort is not ranked first by a number the page will not print  — Porsche Taycan shows 0 mixed and 30 judged cars under the value sort — nothing to order
+  ok    and a served pool of one trim still speaks  — Porsche Taycan with every car one trim: 16 of 93 rows carry a percentage (e.g. "20% under typical · 2024 OneTrim Porsche Taycan, n=32")
+  ok    a tile led by a model fetched on an older day says so  — Honda Prologue aged to 2026-09-19 (2d on a 3-day cadence — inside its cadence, so the date alone) under data through 2026-09-21: "Honda Prologue · Fort Wayne, IN · no shipping · as of Sep 19"
+  ok    and one further behind than its cadence allows gives the count  — Honda Prologue aged to 2026-09-15 — 6 days on a 3-day cadence, under data through 2026-09-21: "Honda Prologue · Fort Wayne, IN · no shipping · as of Sep 15, 6 days ago"
+  ok    and a tile led by a model fetched today does not  — Honda Prologue as of 2026-09-21: "Honda Prologue · Fort Wayne, IN · no shipping"
+  ok    the cause on every model page is the one the two floor cars make  — Acura ZDX: ▼ $988 vs Sep 16 — this car was cut $988 · Audi A6 e-tron: ▼ $1,000 vs Sep 17 — this car was cut $1,000 · Ford Mustang Mach-E: ▲ $1,653 vs Sep 18 — the $20,346 car left the market · Rivian R1S: ▼ $9,090 vs Sep 16 — this car was cut $9,090 · Toyota bZ4X: ▲ $3,696 vs Sep 17 — the $13,799 car was raised to $18,174
+  ok    and a confirmed departure of the floor car is named as one  — Acura ZDX with its today's $25,999 floor car, served as the floor of 2026-09-16 too retired as exact true: "▲ $1,896 vs Sep 16 — the $25,999 car left the market" · expected "the $25,999 car left the market"
+  ok    and an unconfirmed one is not  — Acura ZDX with its today's $25,999 floor car, served as the floor of 2026-09-16 too retired as exact false: "▲ $1,896 vs Sep 16 — the $25,999 car stopped being seen — not a confirmed departure" · expected "the $25,999 car stopped being seen — not a confirmed departure"
+  ok    and a day row the histories undercut names no departure  — Acura ZDX with its today's $25,999 floor car, served as the floor of 2026-09-16 too retired as exact and 502588 re-priced to $25,899 on 2026-09-16: "▲ $1,896 vs Sep 16 — (no cause)" over 1 sub-line · expected no cause
+  ok    the decision tile's link lands on its car's row, in view and focused  — BMW i5 row 35: {"found":true,"inView":true,"focused":true,"h1":"BMW i5","moreHidden":true}
+  ok    and the list was opened out when the row sat past the cap  — row 35: show-all hidden true
+  ok    no role chip wears spice  — 33 role chip(s), none in spice
+  ok    and each decision tile carries its model's line key  — 2 keys on 2 tiles: var(--sc-chart-3) 6 4 · var(--sc-chart-3) 2 3
+  ok    small empty frames say "no photo"  — 7 of 7 small frames
+  ok    and large empty frames hold the mark  — 1 of 1 large frames
+  ok    starring two cars puts exactly those two cars in the shortlist table  — starred ["3GPKHURM2RS537858","JN1CF0BB8RM743007"] · table holds ["3GPKHURM2RS537858","JN1CF0BB8RM743007"]
+  ok    the star cycles through its four states  — ★ shortlisted → ☎ called → ✕ ruled out → ☆ shortlist
+  ok    a car you rule out leaves the comparison but keeps its mark  — in the table at: shortlisted true · called true · ruled out false · cleared false
+  ok    and the shortlist survives a reload  — ["3GPKHURM2RS537858","JN1CF0BB8RM743007"] → ["3GPKHURM2RS537858","JN1CF0BB8RM743007"]
+  ok    no row on the shortlist calls a price the best value  — 4 winners marked: lowest asking, cheapest all in, lowest payment, fewest miles
+  skip  a car above typical says so rather than showing a dash  — every scored car on this shortlist happens to sit under typical (0 scored)
+  ok    and a cut that was undone is not printed as a discount  — 4W5KHNRL8RZ514413 (1 cuts, delta 500) reads "1 cut, then back up · $500 over its first price"
+  ok    no surface names a car "all trims"  — acura zdx: 2257 characters of pick cards, none of them says "all trims"
+  ok    and the trim it prints is the one the sheet holds  — 4dr SUV in "2024 · 4dr SUV · 20,178 mi · 1-owner · no accide…" · w/A-Spec Package in "2024 · w/A-Spec Package · 1,995 mi · no accident…" · 4dr SUV in "2024 · 4dr SUV · 14,521 mi · 1-owner · no accide…" · 4dr SUV in "2024 · 4dr SUV · 28,377 mi · 1-owner · no accide…"
+  ok    a model behind the record says how many days behind  — acura zdx is 2d behind · card reads "Data through Sat, September 19, 2026 · 2 days ago · Fetched every 3 days · 6 snapshot days" | audi a6-etron is 1d behind · card reads "Data through Sun, September 20, 2026 · 1 day ago · Fetched every 3 days · 8 snapshot days " | bmw i5 is 2d behind · card reads "Data through Sat, September 19, 2026 · 2 days ago · Fetched every 3 days · 21 snapshot day" | bmw i7 is 1d behind · card reads "Data through Sun, September 20, 2026 · 1 day ago · Fetched every 3 days · 18 snapshot days" | chevrolet equinox-ev is 1d behind · card reads "Data through Sun, September 20, 2026 · 1 day ago · Fetched every 3 days · 9 snapshot days " | ford mustang-mach-e is 2d behind · card reads "Data through Sat, September 19, 2026 · 2 days ago · Fetched every 3 days · 8 snapshot days" | honda prologue is 1d behind · card reads "Data through Sun, September 20, 2026 · 1 day ago · Fetched every 3 days · 6 snapshot days " | kia ev9 is 1d behind · card reads "Data through Sun, September 20, 2026 · 1 day ago · Fetched every 3 days · 13 snapshot days" | lexus rz is 1d behind · card reads "Data through Sun, September 20, 2026 · 1 day ago · Fetched every 3 days · 6 snapshot days " | mercedes eqb is 2d behind · card reads "Data through Sat, September 19, 2026 · 2 days ago · Fetched every 3 days · 5 snapshot days" | rivian r1s is 2d behind · card reads "Data through Sat, September 19, 2026 · 2 days ago · Fetched every 3 days · 5 snapshot days" | toyota bz4x is 1d behind · card reads "Data through Sun, September 20, 2026 · 1 day ago · Fetched every 3 days · 5 snapshot days "
+  skip  and says so when the cadence cannot account for it  — no model on the sheet is further behind than its own cadence allows
+  ok    and a model fetched on the record's newest day claims no age  — bmw i4 · "Data through Mon, September 21, 2026 · Fetched every 3 days · 14 snapshot days ·" | bmw ix · "Data through Mon, September 21, 2026 · Fetched every 3 days · 11 snapshot days ·" | cadillac lyriq · "Data through Mon, September 21, 2026 · Fetched every 3 days · 8 snapshot days · " | dodge charger-daytona · "Data through Mon, September 21, 2026 · Fetched every 3 days · 6 snapshot days · " | hyundai ioniq9 · "Data through Mon, September 21, 2026 · Fetched every 3 days · 6 snapshot days · " | lucid air · "Data through Mon, September 21, 2026 · Fetched every 3 days · 11 snapshot days ·" | nissan ariya · "Data through Mon, September 21, 2026 · Fetched every 3 days · 7 snapshot days · " | porsche taycan · "Data through Mon, September 21, 2026 · Fetched every 3 days · 6 snapshot days · " | volkswagen id4 · "Data through Mon, September 21, 2026 · Fetched every 3 days · 8 snapshot days · "
+  ok    and the model index says the same thing about the same model  — Acura ZDX: 2d · index row "Sep 19 · 2 days ago · every 3 days" | Audi A6 e-tron: 1d · index row "Sep 20 · 1 day ago · every 3 days" | BMW i5: 2d · index row "Sep 19 · 2 days ago · every 3 days" | BMW i7: 1d · index row "Sep 20 · 1 day ago · every 3 days" | Chevrolet Equinox EV: 1d · index row "Sep 20 · 1 day ago · every 3 days" | Ford Mustang Mach-E: 2d · index row "Sep 19 · 2 days ago · every 3 days" | Honda Prologue: 1d · index row "Sep 20 · 1 day ago · every 3 days" | Kia EV9: 1d · index row "Sep 20 · 1 day ago · every 3 days" | Lexus RZ: 1d · index row "Sep 20 · 1 day ago · every 3 days" | Mercedes-Benz EQB: 2d · index row "Sep 19 · 2 days ago · every 3 days" | Rivian R1S: 2d · index row "Sep 19 · 2 days ago · every 3 days" | Toyota bZ4X: 1d · index row "Sep 20 · 1 day ago · every 3 days"
+  ok    a car first seen before its model was last fetched does not wear the new chip  — 51 cars on bmw i5 were seen once, before 2026-09-19 · 0 still wear it
+  ok    and the tile counts what the table shows  — tile says 19 · 19 chips in the table · 19 cars in the sheet first seen 2026-09-19
+  ok    a model behind the newest snapshot still counts its own arrivals  — acura zdx last fetched 2026-09-19 (record runs to 2026-09-21) · 18 arrived at its own last fetch · tile says 18 | audi a6-etron last fetched 2026-09-20 (record runs to 2026-09-21) · 1 arrived at its own last fetch · tile says 1 | bmw i5 last fetched 2026-09-19 (record runs to 2026-09-21) · 19 arrived at its own last fetch · tile says 19 | bmw i7 last fetched 2026-09-20 (record runs to 2026-09-21) · 23 arrived at its own last fetch · tile says 23 | chevrolet equinox-ev last fetched 2026-09-20 (record runs to 2026-09-21) · 35 arrived at its own last fetch · tile says 35 | ford mustang-mach-e last fetched 2026-09-19 (record runs to 2026-09-21) · 27 arrived at its own last fetch · tile says 27 | honda prologue last fetched 2026-09-20 (record runs to 2026-09-21) · 55 arrived at its own last fetch · tile says 55 | kia ev9 last fetched 2026-09-20 (record runs to 2026-09-21) · 1 arrived at its own last fetch · tile says 1 | lexus rz last fetched 2026-09-20 (record runs to 2026-09-21) · 26 arrived at its own last fetch · tile says 26 | mercedes eqb last fetched 2026-09-19 (record runs to 2026-09-21) · 18 arrived at its own last fetch · tile says 18 | rivian r1s last fetched 2026-09-19 (record runs to 2026-09-21) · 22 arrived at its own last fetch · tile says 22 | toyota bz4x last fetched 2026-09-20 (record runs to 2026-09-21) · 22 arrived at its own last fetch · tile says 22
+  skip  and a model on its first fetch reports no movement at all  — every model holding cars has fetched more than once
+  ok    and the watchlist tile is the sum of the models it pools  — the watchlist says 451 new · the model pages sum to 451 (acura zdx 18, audi a6-etron 1, bmw i4 35, bmw i5 19, bmw i7 23, bmw ix 19, cadillac lyriq 0, chevrolet equinox-ev 35, dodge charger-daytona 9, ford mustang-mach-e 27, honda prologue 55, hyundai ioniq9 21, kia ev9 1, lexus rz 26, lucid air 33, mercedes eqb 18, nissan ariya 0, porsche taycan 26, rivian r1s 22, toyota bz4x 22, volkswagen id4 41)
+  ok    a remembered range the record cannot support does not survive the first paint  — chip reads "30d" over 30 day rows (2026-08-23 … 2026-09-21)
+  ok    the map announces the car opened with the keyboard  — "21 cars in this map area, from $21,300"
+  ok    and a mouse moving over the same dots stays silent  — unchanged by the pointer
+  ok    a jump link leaves focus in the card it jumped to  — kpi:new -> list-card · kpi:cuts -> list-card · kpi:gone -> gone-card
+  ok    and nothing it jumps to lands under the sticky filter bar  — the listings heading lands at y=483, the bar ends at y=-5739 (scroll-padding-top 444px) and has stopped there
+  ok    missing design assets say so instead of drawing a blank page  — "Could not load the design systemThe design-system scripts did not load. The data is fine — this page cannot dr"
+  ok    and does not blame data.json for it  — no data.json advice in the notice
+  ok    a model page says what rate its payments assume  — compare card hidden: true · hint says "Payments assume 60 months at 6."
+  ok    and a capped promo names its own term on the row itself  — 34 rows at 2.99% under a 72-month setting · 34 name their own 60 months · 0 still claim a monthly saving · first: "$796/mo at 2.99% over 60 mo · seller is not named as a BMW c"
+  ok    the wide table names the pool the share was taken from  — 11 notes · 11 name their pool · 0 still claim the model · first: "longer than 96% of the model's 47 dated cars"
+  ok    the narrow band does too  — 11 notes · 11 name their pool · 0 still claim the model · first: "longer than 96% of the model's 47 dated cars"
+  ok    and so does the phone card  — 8 notes · 8 name their pool · 0 still claim the model · first: "longer than 96% of the model's 47 dated cars"
+  ok    and a trim view cannot read it against its own denominator  — the view says 47 dated · the rows say the model's 47 · 11 notes, all naming whose pool it is
+  ok    a departed certified car at another marque says so  — row reads "2024 w/A-Spec Package 4W5KHMRK0RZ504153 $30,765 CPO (seller not named Acura) 29,549 $870 Wilmington, NC NC Sep 11 beyond that day's fetch cut-off 2d"
+  ok    the stock sentence accounts for every car it counted  — 10 stock + 164 used + 10 unclassed = 184, against the 184 it named · "10 of 184 are under 100 mi, median $80,614 — and the 164 cars at 100+ mi sit at $56,866; 10 publish no mileage and are i"
+  skip  the typical-days split accounts for every dated car  — bmw i5 does not print a typical-days split today
+  ok    and the compare table puts an unplaced car in neither column  — expected "18 drivable · 38 beyond · 2 with no state" · cell reads "5818 drivable · 38 beyond · 2 with no state"
+  ok    the typical-days clause is the same on both surfaces  — bmw i5: both "typical car 16d on market (140 of 184 dated)" · bmw i7: both "typical car 19d on market (97 of 135 dated) — 14 under 100 mi at 36d, 82 at 100+ mi at 16d, 1 with no mileage"
+  ok    and so is the clause that counts cars asking less than they did  — bmw i5: both "81 of 112 ask less than when first seen" · bmw i7: both "44 of 96 ask less than when first seen"
+  ok    and so does the margin it prints on a car  — 17 cars carry a margin on both, every one the same number (e.g. WBY33HG0XTCW42249 at 13%)
+  ok    and so does the count of cars that arrived  — bmw i5: both 19 new · bmw i7: both 23 new
+  ok    and says nothing of the sort when there is none  — unfiltered the card reads "The cheapest BMW i4 you can drive to today: $36,743"
+  ok    the next card names the filter it was built under  — with 2026 pressed the tile says "Lowest drivable (filtered)$55,9862026 · " and the card says "The cheapest BMW i4 you can drive to today (filtered: 2026): $55,986"
+  ok    the comparison stops saying anywhere when it is not anywhere  — unfiltered the row is labelled "Lowest asking anywhere"; with IL pressed it is "Lowest asking (filtered)"
+  ok    the card does not claim a row the filters have removed  — 4W5KHNRL6RZ505855 is in Merced, CA and the list is filtered to IL; the card says "car →Its row is not in the list below: clear IL to bring it back. The star keeps it either way."
+  ok    and its way out really brings the row back  — after pressing it the count reads "showing all 58 cars" and the card says "car →Its row is in the list below, Acura ZDX's own; the star keeps it."
+  ok    and "Open this car" lands on the car rather than the top of the page  — the row is on screen; the focus is on 505855, in view (page at y=8092)
+  ok    a budget nothing fits empties the page and says so  — the count reads "showing 0 of 58 cars · under $1,000 all in" and the notice "All 58 cars are filtered out, so the picks, the map and the price chart below have nothing"
+  ok    and clearing the filters really clears it  — the count now reads "showing all 58 cars" and the remembered budget is 0
+  ok    the scatter counts what it can plot, and says so  — acura zdx: 58 cars carry a price and 57 carry a price and a mileage; the hint opens "57 cars with a recorded price and a recorded mileage under the current"
+  ok    the promo footnote counts the promo it names  — BMW FS certified 2.99%: the watchlist says 13/34 and its own model page says 13/34
+  ok    every row draws the owner and accident words the sheet gives it  — 58 rows on acura zdx, every one drawing exactly the sheet's owner and accident words
+  ok    every trim section in the record has a chip saying the same number  — eDrive40: both 57 · M60: both 68 · xDrive40: both 59 · eDrive50: both 52 · M70: both 25 · xDrive60: both 58
+  ok    and pressing one shows that many rows  — M70: the chip says 25, the record says 25, the table shows 25
+  ok    and at the price that query returned  — WBY73AW03RFS90309 is $39,590 in its own query and $48,590 in bmw-i4-m50; under that trim the row reads "no photo 2024 eDrive40 · Green WBY73AW03RFS90309 ☆ shortlist Listing ↗Carfax ↗ $48,590 ▼ $2,000 · 4 cuts MSRP "
+  ok    and makes no value claim it measured on the other price  — under its own trim the row says "11% under typical"; under bmw-i4-m50 at $48,590 it reads "no photo 2024 eDrive40 · Green WBY73AW03RFS90309 ☆ shortlist Listing ↗Carfax ↗ $48,590 ▼ $"
+  ok    and comparing two trims leaves it at the table's own price  — pressing bmw-i4-m50 and bmw-i4-edrive40 together, the row reads "no photo 2024 eDrive40 · Green WBY73AW03RFS90309 ☆ shortlist Listing ↗Carfax ↗ $39,590 ▼ $2,000 · 4 cuts 11% u"
+  ok    the decision tile says the state is missing, not that the car is elsewhere  — tile line reads "San Jose · state not given"
+  ok    the scope chip says the same under its dash  — chip titled "State not given — priced as though it ships"
+  ok    the model tile counts it apart from the cars it can place  — tile says "18 drivable · 38 beyond your states · 2 with no state · median $32,282" · 58 cars, 18 drivable, 2 unplaced
+  ok    and so does the watchlist tile  — tile says "404 drivable · 1256 beyond your states · 41 with no state · 21 models" · 1701 cars, 41 unplaced
+  ok    no car seen at two prices carries a cut note  — 1 sawtooth rows on screen · 0 still claim a cut · first: "no photo 2024 M60 · Black Sapphire Metallic WBY43FK01RCP12942 ☆ shortlist Listing ↗Carfax "
+  ok    and a car that really was cut still carries one  — 67 ordinary cut rows on screen · 67 carry the note
+  ok    the button offers the absences, not a count of departures  — button says "Show all 288 vehicles missing from the latest snapshot"
+  ok    and the truncated caption says the same  — hint says "Showing 12 of 288 vehicles missing from the latest snapshot, confirmed departures first — 18 confirmed departures (the l"
+  ok    and so do the heading over it and the link that jumps to it  — heading "Missing from the latest snapshot" · 1 jump link(s) titled ["Jump to the vehicles missing from the latest snapshot"]
+  ok    the signal matrix is visible by default and names exactly the decision candidates  — decision WBY33FK06RCR58557, WBY43EJ02RCS67624 · matrix WBY33FK06RCR58557, WBY43EJ02RCS67624
+  ok    the signal matrix remains a named native table with text alternatives  — {"tag":"TABLE","matrix":true,"caption":"The decision candidates compared by value context, reach, certification and accident record","columns":[["Car","col"],["Value context","col"],["Reach","col"],["Certification","col"],["Accident record","col"]],"rowHeaders":true,"glyphsHidden":true}
+  ok    each signal agrees with the exact listing and existing value evidence  — 2 exact VINs; value/cohort, reach, CPO and accident count agree
+  ok    candidate photography comes from that candidate VIN, never a model substitute  — 2 candidate-specific photos or explicit empty frames
+  ok    the matrix leads the decision and the map precedes the picks and listings  — {"sibling":"hero-card","mapAfterFilters":true,"mapAfterComparisons":true,"mapBeforePicks":true,"mapBeforeList":true}
+  ok    unknown and undersampled facts never receive a positive signal  — [{"vin":"WBY33FK02RCS81412","cells":[{"label":"Not enough evidence","note":"Comparable listings unavailable","title":"","tone":"neutral"},{"label":"State not reported","note":"Seffner","title":"","tone":"neutral"},{"label":"Not marked CPO","note":"As recorded in the listing","title":"","tone":"neutral"},{"label":"Unknown","note":"Accident count not supplied","title":"","tone":"neutral"}]},{"vin":"WBY43EJ02RCS67624","cells":[{"label":"Not enough evidence","note":"Comparable listings unavailable","title":"","tone":"neutral"},{"label":"State not reported","note":"Irvine","title":"","tone":"neutral"},{"label":"Not marked CPO","note":"As recorded in the listing","title":"","tone":"neutral"},{"label":"Unknown","note":"Accident count not supplied","title":"","tone":"neutral"}]}]
+  ok    explicit certification and zero accidents keep their separate positive signals  — 2 explicit source records
+  ok    reported accidents remain caution and malformed certification remains neutral  — 2 records, no inspection or title verdict inferred
+  ok    no matching candidates hides the matrix and its cover link  — an empty candidate set produces no stale matrix
+  ok    the cover index uses keyboard-reachable native anchors to visible sections  — [{"href":"#signal-card","visible":true,"tag":"A"},{"href":"#hero-card","visible":true,"tag":"A"},{"href":"#map-card","visible":true,"tag":"A"}]
+  ok    the signal matrix is a named focusable region that scrolls by keyboard  — {"role":"region","label":"Decision signal matrix","focused":true,"outline":"solid","left":40,"needsScroll":true,"described":"signal-hint signal-scroll"}
+  ok    opening a signal candidate preserves its exact VIN and hides overview-only navigation  — focused listing WBY33FK06RCR58557; ?view=report&brand=bmw&m=i5
+  ok    cover links update when a budget hides sections and recover when it is cleared  — {"empty":[{"href":"#signal-card","hidden":true,"targetHidden":true},{"href":"#hero-card","hidden":false,"targetHidden":false},{"href":"#map-card","hidden":true,"targetHidden":true},{"href":"#list-card","hidden":true,"targetHidden":true}],"restored":[{"href":"#signal-card","hidden":false,"targetHidden":false},{"href":"#hero-card","hidden":false,"targetHidden":false},{"href":"#map-card","hidden":false,"targetHidden":false},{"href":"#list-card","hidden":true,"targetHidden":true}]}
+  ok    the market studio fits 390px in light with readable report signals  — {"studio":true,"width":390,"scrollWidth":390,"firstSignal":{"top":449.5625,"bottom":464.953125,"text":"About typical"},"height":844,"contrast":4.5036784062065855,"labels":8,"photos":2}
+  ok    the market studio fits 390px in dark with readable report signals  — {"studio":true,"width":390,"scrollWidth":390,"firstSignal":{"top":449.5625,"bottom":464.953125,"text":"About typical"},"height":844,"contrast":5.022259116533711,"labels":8,"photos":2}
+  ok    the market studio fits 820px in light with readable report signals  — {"studio":true,"width":820,"scrollWidth":820,"firstSignal":{"top":987.953125,"bottom":1018.734375,"text":"About typical"},"height":1180,"contrast":4.5036784062065855,"labels":8,"photos":2}
+  ok    the market studio fits 820px in dark with readable report signals  — {"studio":true,"width":820,"scrollWidth":820,"firstSignal":{"top":987.953125,"bottom":1018.734375,"text":"About typical"},"height":1180,"contrast":5.022259116533711,"labels":8,"photos":2}
+  ok    the market studio fits 1280px in light with readable report signals  — {"studio":true,"width":1280,"scrollWidth":1280,"firstSignal":{"top":895.3125,"bottom":910.703125,"text":"About typical"},"height":1000,"contrast":4.5036784062065855,"labels":8,"photos":2}
+  ok    the market studio fits 1280px in dark with readable report signals  — {"studio":true,"width":1280,"scrollWidth":1280,"firstSignal":{"top":895.3125,"bottom":910.703125,"text":"About typical"},"height":1000,"contrast":5.022259116533711,"labels":8,"photos":2}
+  ok    reduced motion leaves the market studio complete without running animation  — {"reduced":true,"active":0,"candidates":2,"matrix":true}
+  ok    forced colors retains text labels and distinct matrix cell borders  — 8 labeled bordered cells
+  ok    printing exposes all signal columns without sticky clipping  — {"width":1174,"parent":1182,"overflow":"visible","sticky":false,"labels":true}
+  ok    shortlist value rails use the matrix value variant and fit their own cells  — {"values":true,"figures":[{"width":424.4375,"cell":450.4375,"track":16,"point":10},{"width":433,"cell":459,"track":16,"point":10}]}
+  ok    the browser decoder preserves every actual-snapshot value and type
+  ok    legacy plain snapshots still render the complete record
+  ok    an unsupported transport fails visibly
+  ok    truncated transport JSON fails visibly
+  ok    corruption in the final value fails before rendering any cars
+  ok    a malformed field table fails visibly
+  ok    a missing decoder fails visibly
+  ok    a malformed refresh reports failure
+  ok    a failed refresh retains the complete previous view and saved state
+  ok    a valid refresh recovers after malformed transport
+  ok    the page and its data stay inside their transfer budget  — index.html 494339 bytes (482.75 KiB) raw, 160808 bytes (157.04 KiB) Node gzip-9 including 838-byte decoder; headroom 43992 bytes · data.json 2170948 bytes (2120.07 KiB) raw, 375772 bytes (366.96 KiB) Node gzip-9 including 838-byte decoder; headroom 33828 bytes · together 535742 bytes (523.19 KiB) estimated compressed payload (decoder counted once; not captured HTTP transfer)
+
+dashboard smoke: 323/323 checks, 14 skipped for want of a subject, 0 page errors

@@ -1,0 +1,81 @@
+[
+  {
+    "name": "studio",
+    "status": "PASS",
+    "exitCode": 0,
+    "seconds": 4.76,
+    "command": [
+      "node",
+      "tools/studio_smoke.mjs"
+    ]
+  },
+  {
+    "name": "workspace",
+    "status": "PASS",
+    "exitCode": 0,
+    "seconds": 5.67,
+    "command": [
+      "node",
+      "tools/workspace_smoke.mjs"
+    ]
+  },
+  {
+    "name": "discovery",
+    "status": "PASS",
+    "exitCode": 0,
+    "seconds": 8.45,
+    "command": [
+      "node",
+      "tools/discovery_smoke.mjs"
+    ]
+  },
+  {
+    "name": "browse",
+    "status": "PASS",
+    "exitCode": 0,
+    "seconds": 176.59,
+    "command": [
+      "node",
+      "tools/browse_smoke.mjs",
+      "--shots",
+      "/workspace/scratch/bccb646e9bb1/evidence/browse-shots"
+    ]
+  },
+  {
+    "name": "fieldwork",
+    "status": "PASS",
+    "exitCode": 0,
+    "seconds": 13.03,
+    "command": [
+      "node",
+      "tools/fieldwork_smoke.mjs",
+      "/workspace/scratch/882a02de9e61/readonly-design-reference",
+      "--shots",
+      "/workspace/scratch/bccb646e9bb1/evidence/fieldwork-shots"
+    ]
+  },
+  {
+    "name": "dashboard",
+    "status": "PASS",
+    "exitCode": 0,
+    "seconds": 233.31,
+    "command": [
+      "node",
+      "tools/dashboard_smoke.mjs",
+      "/workspace/scratch/882a02de9e61/readonly-design-reference",
+      "--shots",
+      "/workspace/scratch/bccb646e9bb1/evidence/dashboard-shots"
+    ]
+  },
+  {
+    "name": "capacity-browser",
+    "status": "PASS",
+    "exitCode": 0,
+    "seconds": 8.82,
+    "command": [
+      "node",
+      "tools/capacity_acceptance.mjs",
+      "/workspace/scratch/bccb646e9bb1/evidence/capacity-browser"
+    ]
+  }
+]

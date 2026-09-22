@@ -1,0 +1,613 @@
+{
+  "startingPrHead": "ba0a251e22baec0b4e9a00df3aa6a50e1d8e0e68",
+  "integratedMain": "4c7d375f965fa0edf1c4886b8db5f49213deab0d",
+  "testedHead": "e6a150f8dadd6eb19bc05543cc72b475256de4fa",
+  "testedTree": "66cf93458bdfe5a8655b3cd3957bc97f39f38909",
+  "parents": [
+    "ba0a251e22baec0b4e9a00df3aa6a50e1d8e0e68",
+    "4c7d375f965fa0edf1c4886b8db5f49213deab0d"
+  ],
+  "pr87Pr88ChangedFileIntersection": [],
+  "pr87ImplementationUnchanged": true,
+  "mainFilesOutsidePr87Unchanged": [
+    {
+      "path": ".github/workflows/check.yml",
+      "blob": "52b0e80cca561e6b403abdd16dddea7bbc3cdb92"
+    },
+    {
+      "path": ".github/workflows/daily.yml",
+      "blob": "b3b602dd3354a7e10fcd3efb71f404071d44a17b"
+    },
+    {
+      "path": ".github/workflows/loop.yml",
+      "blob": "be53ac439a5a8892026908a3540fc0684125a600"
+    },
+    {
+      "path": ".gitignore",
+      "blob": "507bfc8bfb439b75389f2330ea918ac0506def33"
+    },
+    {
+      "path": "README.md",
+      "blob": "91c409c448a7062bec129af2b059184db5196c54"
+    },
+    {
+      "path": "REPORT.md",
+      "blob": "199027ffb75aacc3a72e5eb88c176056a8ba65ad"
+    },
+    {
+      "path": "Tracking.py",
+      "blob": "2cdc649725302d46dac6479f9f451bb27467a89c"
+    },
+    {
+      "path": "data/collection.json",
+      "blob": "c853d980673059ca087dd5f0aeb149cd606c86db"
+    },
+    {
+      "path": "data/fetch_log.json",
+      "blob": "80db35c41d37e658b653e979c1a1d7b23404ee50"
+    },
+    {
+      "path": "data/requests.json",
+      "blob": "c6a078df0a867b33c45bcc8ed32de314eaff1f0d"
+    },
+    {
+      "path": "data/sample_record.json",
+      "blob": "12e898a8b22217e8cf7e9c048f9eef1038119efc"
+    },
+    {
+      "path": "data/snapshots.csv",
+      "blob": "29a87a5f0034c9a79075794781d6fe73ebf09461"
+    },
+    {
+      "path": "data/source_overlap.json",
+      "blob": "791eda109ebedf4c6a596d55088dcee6be80a9d7"
+    },
+    {
+      "path": "data/spend.json",
+      "blob": "d0a06e5e2da857acd9411f90fab96c729c8c9e2c"
+    },
+    {
+      "path": "data/zipcodes.json",
+      "blob": "15bdac34baa47cfea4f5ac8027792e481f18a23f"
+    },
+    {
+      "path": "docs/apple-touch-icon.png",
+      "blob": "871d5e5720fee702cf2fcd69283c48e9ba712460"
+    },
+    {
+      "path": "docs/car-discovery.css",
+      "blob": "894b3a3c06dda4a2d526526e57eff845bc4ffb43"
+    },
+    {
+      "path": "docs/car-discovery.js",
+      "blob": "492523c61adcecb1f3538ba11c9f2962f2f975b3"
+    },
+    {
+      "path": "docs/collection-health.css",
+      "blob": "1cb0325ef13d37660a76962ee1ff2aa100f36a45"
+    },
+    {
+      "path": "docs/collection-health.js",
+      "blob": "81f0e5d04cb77988787b1f9301dac4629643a6b4"
+    },
+    {
+      "path": "docs/data.json",
+      "blob": "e2ce583cbe65d91517f680a6f4e38e79423faed0"
+    },
+    {
+      "path": "docs/design-review/README.md",
+      "blob": "89e925216d4090b8eefd0089f8dfc4aa57a78e5e"
+    },
+    {
+      "path": "docs/design-review/after-desktop.jpg",
+      "blob": "d85e43d1800e81d6b4549baade521d847b0eaaf1"
+    },
+    {
+      "path": "docs/design-review/before-desktop.jpg",
+      "blob": "715d08fb32cce7124a1256aef88847896669764b"
+    },
+    {
+      "path": "docs/design-review/brand-interest-brand-only-desktop.png",
+      "blob": "8ae83acb4ccb9d9f8e42d49a04df326544f7a0e1"
+    },
+    {
+      "path": "docs/design-review/brand-interest-chooser-desktop.png",
+      "blob": "7a348eae71685cca28ff2510ab39aba344ebd9d3"
+    },
+    {
+      "path": "docs/design-review/brand-interest-chooser-phone-before.png",
+      "blob": "c4b7f1388e5b16f1f4cded56bc41484796a38227"
+    },
+    {
+      "path": "docs/design-review/brand-interest-chooser-phone.png",
+      "blob": "719c06b9efb500e18b5a0100d99aa796542d0654"
+    },
+    {
+      "path": "docs/design-review/brand-interest.md",
+      "blob": "4443c1a53e6b1573a7c6d76fe34fc9d19be5c621"
+    },
+    {
+      "path": "docs/design-review/browse-after.png",
+      "blob": "d7ef870cce561d7c685d7d00a811d2756cc87826"
+    },
+    {
+      "path": "docs/design-review/browse-before.png",
+      "blob": "32b62e7361888aaec4de4f9ea56489b341255522"
+    },
+    {
+      "path": "docs/design-review/compare-phone-after.png",
+      "blob": "e9f972dd3fdcf8599d5ac89bbcdd842831eb5d57"
+    },
+    {
+      "path": "docs/design-review/compare-phone-before.png",
+      "blob": "eb2d8da2c558a69023fc6385adacfda2bdbd5038"
+    },
+    {
+      "path": "docs/design-review/comparison-acceptance.md",
+      "blob": "88f1128033dbb0e272dc905d189318f382d3c29b"
+    },
+    {
+      "path": "docs/design-review/criteria-history-phone.png",
+      "blob": "355eeff9fd58d3cf933a2569cca4b4d8c1c4362a"
+    },
+    {
+      "path": "docs/design-review/criteria-phone.png",
+      "blob": "f075f2e2db4725e6a8c507d481b3f069e9a80ae5"
+    },
+    {
+      "path": "docs/design-review/dark-desktop.jpg",
+      "blob": "72ee4d10d91668d7759f3410b190544e8e2227f8"
+    },
+    {
+      "path": "docs/design-review/decision-arrival-after-320-dark.png",
+      "blob": "4fb6670d97abec0a1849228f06b08c69a023aa08"
+    },
+    {
+      "path": "docs/design-review/decision-cards.jpg",
+      "blob": "71187b91a95b5d3193d7223f758ddfbe541a8b31"
+    },
+    {
+      "path": "docs/design-review/decision-chooser-after-390.png",
+      "blob": "0058828e14e0e2c64404e0bab81f440645d969b6"
+    },
+    {
+      "path": "docs/design-review/decision-chooser-before-390.png",
+      "blob": "404734be3ff09515c780080cb74ddc1e33f53424"
+    },
+    {
+      "path": "docs/design-review/decision-compare-after-1440-dark.png",
+      "blob": "29eef35a6ca167ba93295d27607479d3cfaf4a91"
+    },
+    {
+      "path": "docs/design-review/decision-compare-after-390.png",
+      "blob": "f5dfc106fc4082a389d082362d6a416b00d10f4f"
+    },
+    {
+      "path": "docs/design-review/decision-compare-before-390.png",
+      "blob": "155d4d4309b2b9413c6ea2781d3a290560492efd"
+    },
+    {
+      "path": "docs/design-review/decision-journey.md",
+      "blob": "da061a3b813bc3e1bb3d8ed32a87dd320adaf8ca"
+    },
+    {
+      "path": "docs/design-review/decision-polish.md",
+      "blob": "38fa8d286b1cf6eee5c5794eae2ace03c837639b"
+    },
+    {
+      "path": "docs/design-review/discover-compare-decide.md",
+      "blob": "cd6f8729816af79539483c23e44fa5ba6549ed0e"
+    },
+    {
+      "path": "docs/design-review/dossier-after.png",
+      "blob": "e5fc5a73f6ce72acc486f37e1337d43340f7206d"
+    },
+    {
+      "path": "docs/design-review/dossier-before.png",
+      "blob": "5af7df254556e342af8c63f06a676850d9934507"
+    },
+    {
+      "path": "docs/design-review/fieldwork-before-live.jpg",
+      "blob": "71187b91a95b5d3193d7223f758ddfbe541a8b31"
+    },
+    {
+      "path": "docs/design-review/fieldwork.md",
+      "blob": "30ccadcabf1eb2dc84e4211dc01deb49798c4bbc"
+    },
+    {
+      "path": "docs/design-review/garage-after.png",
+      "blob": "486d3753ccae6c57f403c287956cc79b1962476d"
+    },
+    {
+      "path": "docs/design-review/garage-before.png",
+      "blob": "94c279e38dd5a87139d31d492868edc619a1c129"
+    },
+    {
+      "path": "docs/design-review/matrix-nav-bundle-history.png",
+      "blob": "5704a4c7e6468502a2d7adf949ec7bafdabd8e2e"
+    },
+    {
+      "path": "docs/design-review/matrix-nav-bundle-phone.png",
+      "blob": "1e7cde96fee4782945f12cf9914d729cc2e12333"
+    },
+    {
+      "path": "docs/design-review/narrowing-by-drivetrain.md",
+      "blob": "677c34dea6df2940769092e364ac09ed0dc7e8c9"
+    },
+    {
+      "path": "docs/design-review/shopping-scope.md",
+      "blob": "637f2a7436c02a001fdbcbc24150e2c49642990d"
+    },
+    {
+      "path": "docs/design-review/shortlist-phone-after.png",
+      "blob": "c854bf57ab2f411e5fc786ef04172079b4ed0da9"
+    },
+    {
+      "path": "docs/design-review/shortlist-phone-before.png",
+      "blob": "7c6e546a091768e1f052639457d1a1eb5d16b369"
+    },
+    {
+      "path": "docs/design-review/unreported-fact.png",
+      "blob": "ccdd270edee1483c83596941fd6576c775e51530"
+    },
+    {
+      "path": "docs/design-system/assets/apple-touch-icon.png",
+      "blob": "871d5e5720fee702cf2fcd69283c48e9ba712460"
+    },
+    {
+      "path": "docs/design-system/assets/favicon-512.png",
+      "blob": "9126b06e668bced7e38b25583bbc6d5d32a7f1db"
+    },
+    {
+      "path": "docs/design-system/assets/favicon.ico",
+      "blob": "82933920eda3be7cf9de3ba8e95eaf689ef7355f"
+    },
+    {
+      "path": "docs/design-system/assets/sc-avatar-tile.svg",
+      "blob": "6ebafb054f85b45bcfa6d3d8801fd59094d13d1b"
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-cream.png",
+      "blob": "1e116f6c04831594af8351ec15909fcba73ad71f"
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-cream.svg",
+      "blob": "0592e2675774c14fb1dced3f869f0691011ad253"
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-ink.png",
+      "blob": "92a1ce0dce6286545d535a7d8a1086bfef76e335"
+    },
+    {
+      "path": "docs/design-system/assets/sc-lockup-ink.svg",
+      "blob": "542e8a813c4e395a4575b092f617bdc144b67a3c"
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-color-dark.svg",
+      "blob": "0bf0fc847f75a3b603fbb6e4244c1f10eddee210"
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-color-light.svg",
+      "blob": "501cb839e0feb592c1efd30b8ecbfec6d646cf35"
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-mono-cream.svg",
+      "blob": "b713d3e47974a32042491e96e8ee8bd929ce5d40"
+    },
+    {
+      "path": "docs/design-system/assets/sc-mark-mono-ink.svg",
+      "blob": "8cad3e9da837d2b55f37d7e831f246320df07a2c"
+    },
+    {
+      "path": "docs/design-system/assets/sc-pattern-ink.svg",
+      "blob": "044ab483d216732300884e1f549c341241976fce"
+    },
+    {
+      "path": "docs/design-system/assets/sc-pattern-paper.svg",
+      "blob": "5fb5e3be3a99f8c09728a22eaa46c49abdff1129"
+    },
+    {
+      "path": "docs/design-system/assets/sc-pattern-wine.svg",
+      "blob": "c28568035963a706722e6ad46f01dd8104089f1a"
+    },
+    {
+      "path": "docs/design-system/provenance.json",
+      "blob": "05918536cc8f2425e4074ecbcd7b82ebeafa7d62"
+    },
+    {
+      "path": "docs/design-system/sc-charts.js",
+      "blob": "558d5cd10f84184901152a22559c468e5e5f2c16"
+    },
+    {
+      "path": "docs/design-system/sc-map.js",
+      "blob": "c2664e2dcb2f5051e30d88ea3498641941995a06"
+    },
+    {
+      "path": "docs/design-system/sc-matrix-nav.js",
+      "blob": "aac10c3758a0cd3f9bd712d00c109bf79699785f"
+    },
+    {
+      "path": "docs/design-system/sc-motion.js",
+      "blob": "bc1b245356bbff754c09c0631a5c411d780efa84"
+    },
+    {
+      "path": "docs/design-system/sc-reading.js",
+      "blob": "f6237789bc8de4399d3f72fdddeab76bd8aa467c"
+    },
+    {
+      "path": "docs/design-system/sc-theme.js",
+      "blob": "b1a3bc75dbe47fda629a296b3f731fab65e5dcba"
+    },
+    {
+      "path": "docs/design-system/sc.css",
+      "blob": "551b85ea78b73a5f55b998d9a65567a9246891d6"
+    },
+    {
+      "path": "docs/favicon.ico",
+      "blob": "82933920eda3be7cf9de3ba8e95eaf689ef7355f"
+    },
+    {
+      "path": "docs/how.html",
+      "blob": "c560e427508d7099435e1af9dac9cf601681aae0"
+    },
+    {
+      "path": "docs/index.html",
+      "blob": "2a39bc523d5b64896e8e83fb6ac6156ec70ee997"
+    },
+    {
+      "path": "docs/og.png",
+      "blob": "86883d8c1def6141a5d42f2eb32382f8751aad03"
+    },
+    {
+      "path": "docs/screenshot.png",
+      "blob": "5ca23c0525267f873dd47cdd98f21e07cfe05ee3"
+    },
+    {
+      "path": "docs/sheet-transport.js",
+      "blob": "72b02f375887089c78aa5e8e43fdedff9533e2a3"
+    },
+    {
+      "path": "docs/shopping-studio.css",
+      "blob": "07e561313ea95558d5aa7a06f290005228f27083"
+    },
+    {
+      "path": "docs/shopping-studio.js",
+      "blob": "bcb9b631eabfafb2442770d13552dd1770ac9aef"
+    },
+    {
+      "path": "docs/shopping-workspace.css",
+      "blob": "fa4593c41aff87851862d0ecd2ffc12d4b4cd8cc"
+    },
+    {
+      "path": "docs/shopping-workspace.js",
+      "blob": "f675db952cac2065f820a09c8a24f2b98f226423"
+    },
+    {
+      "path": "docs/vendor/leaflet/LICENSE",
+      "blob": "bcb3ba1aca095155857556d96e3193a50fe1bd11"
+    },
+    {
+      "path": "docs/vendor/leaflet/README.md",
+      "blob": "c7f1eec200cc3f35f428b983be764e10fe752da2"
+    },
+    {
+      "path": "docs/vendor/leaflet/leaflet.css",
+      "blob": "2961b7618a57617d1015d31d2094c425c3d86ce9"
+    },
+    {
+      "path": "docs/vendor/leaflet/leaflet.js",
+      "blob": "a3bf693d0fcaff885cc5f21b3a699aaa567b3533"
+    },
+    {
+      "path": "fair_collection.py",
+      "blob": "0b309899431c55e1142e5e9d96163bb6c19d53ac"
+    },
+    {
+      "path": "package.json",
+      "blob": "16946cc1f31c988dc99f9657bcdc88b6145baa03"
+    },
+    {
+      "path": "sheet_transport.py",
+      "blob": "3f6c351ed8969ae92051522a5f76388f5ec852e7"
+    },
+    {
+      "path": "targets.json",
+      "blob": "1947aac37fa23b644bf3aa0795d447a657957828"
+    },
+    {
+      "path": "tests/__init__.py",
+      "blob": "c20939d0bc7e1822257d101e07169771fb0a6a0b"
+    },
+    {
+      "path": "tests/fixtures/records.json",
+      "blob": "5c32024ad1306c08b3d0b074fb6b011532cbb353"
+    },
+    {
+      "path": "tests/fixtures/source_overlap_window.json",
+      "blob": "9eb8b92fbcfb367424df82877b5d74ceb75d3a67"
+    },
+    {
+      "path": "tests/test_bootstrap.py",
+      "blob": "e9ab9798b5e11c46e597b0126b94afa200821489"
+    },
+    {
+      "path": "tests/test_exploration.py",
+      "blob": "765f708f13efab74aa0b706c284be0ee7d3ae877"
+    },
+    {
+      "path": "tests/test_fair_collection.py",
+      "blob": "3f8276b691e9af022eaa6bc1e483bf413b4abfdd"
+    },
+    {
+      "path": "tests/test_help_report_copy.py",
+      "blob": "b87832042376d5eaae3e884a903c527ce2521f85"
+    },
+    {
+      "path": "tests/test_sheet_transport.py",
+      "blob": "c1c81402a9e7cb73e9df7488e0d064680ddc8aa3"
+    },
+    {
+      "path": "tests/test_tracking.py",
+      "blob": "935de4bd5b38dd1dba50d9e1a50a3fb3a8eb4522"
+    },
+    {
+      "path": "tools/browse_smoke.mjs",
+      "blob": "abf12f69b9131ebe089164081a794bdef583562f"
+    },
+    {
+      "path": "tools/capacity_acceptance.mjs",
+      "blob": "8166bde49d4dd64b618d8da1e394752070e575f5"
+    },
+    {
+      "path": "tools/consumer_lint_ci.mjs",
+      "blob": "8ae227939e2f1b64007295e624bdf77ea4de6cfb"
+    },
+    {
+      "path": "tools/dashboard_smoke.mjs",
+      "blob": "2091c7b67852bfc4577ebfa69513660bcd237ae2"
+    },
+    {
+      "path": "tools/design-preview.mjs",
+      "blob": "a47dcc81a372e591b9bb94f357d724fdd416c5a2"
+    },
+    {
+      "path": "tools/design_snapshot.mjs",
+      "blob": "07ea36456de4fa3de42bb7e674d47569240f120c"
+    },
+    {
+      "path": "tools/discovery_smoke.mjs",
+      "blob": "8fd707a11df32c202becf5a1263467dd73ed536f"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/1280-dark-comparison-reload.png",
+      "blob": "fb7ed1f9c04bb48f77cbf9b93eab7872a741c0f8"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/1280-dark-detail-note.png",
+      "blob": "1f78589235f74d71d61e84b80accdc2ab247fc8f"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/1280-dark-explore.png",
+      "blob": "bec3cbb53c4c7fb532994340fa6df33278c714d0"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/1280-dark-missing-history.png",
+      "blob": "b3e9ee6d85066168fa547371d6a40c4730f694ae"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/1280-dark-unknown-mileage.png",
+      "blob": "c106b22cab73166ef1e027a238d1fdda6b8dd103"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/320-light-comparison-reload.png",
+      "blob": "8c39fc3af12beb51fe64436b1efe1694e503e25b"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/320-light-detail-note.png",
+      "blob": "5bac0df5a5b97fcc175a3d085658a89cc2f98d5f"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/320-light-explore.png",
+      "blob": "290de37713cf6792c3b9547ca39a633bccf8deaa"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/320-light-missing-history.png",
+      "blob": "7ee7109c75539f8a77d55b30b64b30dcc262cd51"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/320-light-unknown-mileage.png",
+      "blob": "7a071dea1eef7546efc302908d27328dd8cb815c"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/README.md",
+      "blob": "d0fda27a70c972b58a453c18edc96c9f016ce8eb"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/baseline-lucid.log",
+      "blob": "afb525e2c40a771a9f2c6bbb3ef616bb3e2c3271"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/baseline-shortlist.log",
+      "blob": "7ac62dab59ec4580f3cb4b934ef308de0cc08640"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/browser-acceptance.json",
+      "blob": "c447a21cd96a81fe29794677f1ce45d25bc01d47"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/capacity-proof.json",
+      "blob": "cd4fd34f74e25e705713d23d7acf56e73c50371b"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/capacity-shortlist.log",
+      "blob": "7ac62dab59ec4580f3cb4b934ef308de0cc08640"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/dashboard-final.log",
+      "blob": "4cbce43162de65171a7e85a661c859a7b2a2fce9"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/python-final.log",
+      "blob": "f7b6d7d7fd39962af3d9390182b69189b22b9359"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/source-preservation.json",
+      "blob": "fc78a063540dfeaa934e62dde0e49421e72ad0ff"
+    },
+    {
+      "path": "tools/evidence/snapshot-capacity/transport-browser.log",
+      "blob": "5ae8c63da496e9d49091202ef1e74ea7a1cb49cb"
+    },
+    {
+      "path": "tools/fieldwork_smoke.mjs",
+      "blob": "23ea26a4c2a55abaa866fdb4c21dab187673a0b8"
+    },
+    {
+      "path": "tools/measure_sheet.py",
+      "blob": "9b91e3d1f0aa76463d9ba1756a936bf6b19ef8e5"
+    },
+    {
+      "path": "tools/og_card.html",
+      "blob": "54056a511b0b0778d8ea527f35a388c7fce6fe95"
+    },
+    {
+      "path": "tools/promotion-verdicts.json",
+      "blob": "31e0730a20752923719840d46afa1be9dd32ac30"
+    },
+    {
+      "path": "tools/rebuild_outputs.py",
+      "blob": "144b8f29beaaba5ad6f9af5af6885bbd9326aac2"
+    },
+    {
+      "path": "tools/shoot_hero.mjs",
+      "blob": "e1e89c11fa89c65a8386c9967c61e2c8dbe0218d"
+    },
+    {
+      "path": "tools/studio_smoke.mjs",
+      "blob": "f7ace939f1194ccb9b34c04e4056d7017a9e0b1a"
+    },
+    {
+      "path": "tools/verify_sheet_capacity.py",
+      "blob": "2cbc1e28fc7a9a5b6909c15e944b36c5657413d5"
+    },
+    {
+      "path": "tools/workspace_smoke.mjs",
+      "blob": "15caa3a336e325da2ab166daf3af69d4fbb548a7"
+    }
+  ],
+  "snapshotWireSha256": "05b3228df2e43cd46d9b1061e9555a114cf1576fa8d3bd787daf6319b04533bf",
+  "node": "v24.19.0",
+  "python": "Python 3.12.14",
+  "playwright": "1.56.1",
+  "designSystemCommit": "ad5aa0f82af7aa98def5807ae33b01bdb0a1e868",
+  "chromium": "141.0.7390.37",
+  "capacityNode": "v24.11.1",
+  "repositoryInstructions": "No AGENTS.md or CLAUDE.md in checkout/ancestor paths; followed repository README, check.yml and existing capacity evidence reproduction instructions.",
+  "baselineMainCheck": {
+    "runId": 35687555378,
+    "head": "4c7d375f965fa0edf1c4886b8db5f49213deab0d",
+    "status": "PASS",
+    "githubConclusion": "success",
+    "verifiedAllJobsCompleted": true
+  }
+}

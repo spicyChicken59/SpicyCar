@@ -1,0 +1,76 @@
+  ok   390px light: native matrix and full header navigation fit without page overflow — {"pageWidth":375,"width":390,"height":844,"firstBottom":764.359375,"overflow":true,"controls":true,"groups":1,"labels":["Value context","Reach","Certification","Accident record"],"native":true,"targets":[[150.5,44],[150.5,44],[150.5,44],[150.5,44]]}
+  ok   390px light: Explore arrives on the cars and one press opens the whole matrix — {"arrival":{"workspace":"explore","firstCarOnScreen":true,"matrixOffRoute":true,"rowsInDocument":2,"pressReachable":true},"reach":{"workspace":"compare","onScreen":true,"rowsDrawn":2,"rowsShown":2,"vins":["WBY33FK06RCR58557","WBY43EJ02RCS67624"]}}
+  ok   390px dark: native matrix and full header navigation fit without page overflow — {"pageWidth":375,"width":390,"height":844,"firstBottom":764.359375,"overflow":true,"controls":true,"groups":1,"labels":["Value context","Reach","Certification","Accident record"],"native":true,"targets":[[150.5,44],[150.5,44],[150.5,44],[150.5,44]]}
+  ok   390px dark: Explore arrives on the cars and one press opens the whole matrix — {"arrival":{"workspace":"explore","firstCarOnScreen":true,"matrixOffRoute":true,"rowsInDocument":2,"pressReachable":true},"reach":{"workspace":"compare","onScreen":true,"rowsDrawn":2,"rowsShown":2,"vins":["WBY33FK06RCR58557","WBY43EJ02RCS67624"]}}
+  ok   820px light: native matrix and full header navigation fit without page overflow — {"pageWidth":805,"width":820,"height":1180,"firstBottom":708.515625,"overflow":true,"controls":true,"groups":1,"labels":["Value context","Reach","Certification","Accident record"],"native":true,"targets":[[120,44],[63.0625,44],[110.1875,44],[135.140625,44]]}
+  ok   820px light: Explore arrives on the cars and one press opens the whole matrix — {"arrival":{"workspace":"explore","firstCarOnScreen":true,"matrixOffRoute":true,"rowsInDocument":2,"pressReachable":true},"reach":{"workspace":"compare","onScreen":true,"rowsDrawn":2,"rowsShown":2,"vins":["WBY33FK06RCR58557","WBY43EJ02RCS67624"]}}
+  ok   820px dark: native matrix and full header navigation fit without page overflow — {"pageWidth":805,"width":820,"height":1180,"firstBottom":708.515625,"overflow":true,"controls":true,"groups":1,"labels":["Value context","Reach","Certification","Accident record"],"native":true,"targets":[[120,44],[63.0625,44],[110.1875,44],[135.140625,44]]}
+  ok   820px dark: Explore arrives on the cars and one press opens the whole matrix — {"arrival":{"workspace":"explore","firstCarOnScreen":true,"matrixOffRoute":true,"rowsInDocument":2,"pressReachable":true},"reach":{"workspace":"compare","onScreen":true,"rowsDrawn":2,"rowsShown":2,"vins":["WBY33FK06RCR58557","WBY43EJ02RCS67624"]}}
+  ok   1280px light: native matrix and full header navigation fit without page overflow — {"pageWidth":1265,"width":1280,"height":1000,"firstBottom":644.03125,"overflow":false,"controls":false,"groups":1,"labels":["Value context","Reach","Certification","Accident record"],"native":true,"targets":[[0,0],[0,0],[0,0],[0,0]]}
+  ok   1280px light: Explore arrives on the cars and one press opens the whole matrix — {"arrival":{"workspace":"explore","firstCarOnScreen":true,"matrixOffRoute":true,"rowsInDocument":2,"pressReachable":true},"reach":{"workspace":"compare","onScreen":true,"rowsDrawn":2,"rowsShown":2,"vins":["WBY33FK06RCR58557","WBY43EJ02RCS67624"]}}
+  ok   1280px dark: native matrix and full header navigation fit without page overflow — {"pageWidth":1265,"width":1280,"height":1000,"firstBottom":644.03125,"overflow":false,"controls":false,"groups":1,"labels":["Value context","Reach","Certification","Accident record"],"native":true,"targets":[[0,0],[0,0],[0,0],[0,0]]}
+  ok   1280px dark: Explore arrives on the cars and one press opens the whole matrix — {"arrival":{"workspace":"explore","firstCarOnScreen":true,"matrixOffRoute":true,"rowsInDocument":2,"pressReachable":true},"reach":{"workspace":"compare","onScreen":true,"rowsDrawn":2,"rowsShown":2,"vins":["WBY33FK06RCR58557","WBY43EJ02RCS67624"]}}
+  ok   criterion buttons name their native region with ordinary button semantics — {"role":"group","name":"Jump to criterion in Decision signal matrix","buttons":[{"type":"button","controls":"sc-matrix-region-1"},{"type":"button","controls":"sc-matrix-region-1"},{"type":"button","controls":"sc-matrix-region-1"},{"type":"button","controls":"sc-matrix-region-1"}]}
+  ok   criterion controls have visible keyboard focus and sequential tab stops
+  ok   Value context: complete evidence appears beside the sticky candidate without reduced-motion scrolling — {"left":8,"right":342,"cells":[{"identity":173,"left":173,"right":295.5},{"identity":173,"left":173,"right":295.5},{"identity":173,"left":173,"right":295.5}]}
+  ok   Reach: complete evidence appears beside the sticky candidate without reduced-motion scrolling — {"left":135,"right":342,"cells":[{"identity":173,"left":172.5,"right":295},{"identity":173,"left":172.5,"right":295},{"identity":173,"left":172.5,"right":295}]}
+  ok   Certification: complete evidence appears beside the sticky candidate without reduced-motion scrolling — {"left":261,"right":342,"cells":[{"identity":173,"left":173,"right":295.5},{"identity":173,"left":173,"right":295.5},{"identity":173,"left":173,"right":295.5}]}
+  ok   Accident record: complete evidence appears beside the sticky candidate without reduced-motion scrolling — {"left":349,"right":342,"cells":[{"identity":173,"left":211.5,"right":334},{"identity":173,"left":211.5,"right":334},{"identity":173,"left":211.5,"right":334}]}
+  ok   all criterion jumps preserve exact row VINs, prices, evidence and decision cards — 2 exact candidate rows
+  ok   ordinary filter rerenders restore one functional navigation group and original rows
+  ok   wide layout hides unnecessary controls and transfers their keyboard focus to the table
+  ok   phone resize restores one navigation group
+  ok   forced colors retains labeled bordered controls
+  ok   print removes criterion navigation while retaining all matrix facts
+  ok   light 320px visit 0: Value context text is unclipped and unobscured — []
+  ok   light 320px visit 0: Reach text is unclipped and unobscured — []
+  ok   light 320px visit 0: Certification text is unclipped and unobscured — []
+  ok   light 320px visit 0: Accident record text is unclipped and unobscured — []
+  ok   light 320px visit 0: final qualification stays readable at maximum scroll — []
+  ok   light 320px visit 0: jumps and resize preserve exact VINs and evidence
+  ok   light 390px visit 1: Value context text is unclipped and unobscured — []
+  ok   light 390px visit 1: Reach text is unclipped and unobscured — []
+  ok   light 390px visit 1: Certification text is unclipped and unobscured — []
+  ok   light 390px visit 1: Accident record text is unclipped and unobscured — []
+  ok   light 390px visit 1: final qualification stays readable at maximum scroll — []
+  ok   light 390px visit 1: jumps and resize preserve exact VINs and evidence
+  ok   light 320px visit 2: Value context text is unclipped and unobscured — []
+  ok   light 320px visit 2: Reach text is unclipped and unobscured — []
+  ok   light 320px visit 2: Certification text is unclipped and unobscured — []
+  ok   light 320px visit 2: Accident record text is unclipped and unobscured — []
+  ok   light 320px visit 2: final qualification stays readable at maximum scroll — []
+  ok   light 320px visit 2: jumps and resize preserve exact VINs and evidence
+  ok   light 320px: keyboard criterion activation retains visible focus — {"focused":true,"outline":"solid","width":2}
+  ok   light 320px long qualification fixture: Value context wraps without clipping or cover — []
+  ok   light 320px long qualification fixture: Reach wraps without clipping or cover — []
+  ok   light 320px long qualification fixture: Certification wraps without clipping or cover — []
+  ok   light 320px long qualification fixture: Accident record wraps without clipping or cover — []
+  ok   light 320px long qualification fixture: final column remains readable at maximum scroll — []
+  ok   dark 320px visit 0: Value context text is unclipped and unobscured — []
+  ok   dark 320px visit 0: Reach text is unclipped and unobscured — []
+  ok   dark 320px visit 0: Certification text is unclipped and unobscured — []
+  ok   dark 320px visit 0: Accident record text is unclipped and unobscured — []
+  ok   dark 320px visit 0: final qualification stays readable at maximum scroll — []
+  ok   dark 320px visit 0: jumps and resize preserve exact VINs and evidence
+  ok   dark 390px visit 1: Value context text is unclipped and unobscured — []
+  ok   dark 390px visit 1: Reach text is unclipped and unobscured — []
+  ok   dark 390px visit 1: Certification text is unclipped and unobscured — []
+  ok   dark 390px visit 1: Accident record text is unclipped and unobscured — []
+  ok   dark 390px visit 1: final qualification stays readable at maximum scroll — []
+  ok   dark 390px visit 1: jumps and resize preserve exact VINs and evidence
+  ok   dark 320px visit 2: Value context text is unclipped and unobscured — []
+  ok   dark 320px visit 2: Reach text is unclipped and unobscured — []
+  ok   dark 320px visit 2: Certification text is unclipped and unobscured — []
+  ok   dark 320px visit 2: Accident record text is unclipped and unobscured — []
+  ok   dark 320px visit 2: final qualification stays readable at maximum scroll — []
+  ok   dark 320px visit 2: jumps and resize preserve exact VINs and evidence
+  ok   dark 320px: keyboard criterion activation retains visible focus — {"focused":true,"outline":"solid","width":2}
+  ok   dark 320px long qualification fixture: Value context wraps without clipping or cover — []
+  ok   dark 320px long qualification fixture: Reach wraps without clipping or cover — []
+  ok   dark 320px long qualification fixture: Certification wraps without clipping or cover — []
+  ok   dark 320px long qualification fixture: Accident record wraps without clipping or cover — []
+  ok   dark 320px long qualification fixture: final column remains readable at maximum scroll — []
+  ok   without the optional enhancement the unchanged application retains its native keyboard-scrollable matrix — {"enhanced":false,"focus":true,"left":40,"role":"region","name":"Decision signal matrix","native":true}
+  ok   the application emits no page errors
+
+matrix navigation: 74/74 checks
