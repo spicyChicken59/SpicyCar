@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("AUTODEV_API_KEY", "offline-measure")
 import Tracking as T
+from sheet_transport import parse_sheet
 
 # Two sources at one page of PER_PAGE each, minus the overlap a light target
 # actually shows: the frozen window puts states_only at 88% of the States
@@ -59,14 +60,16 @@ def measure(rows, label):
 
 
 def summarize(site, blob, label):
-    raw, gz = len(blob), len(gzip.compress(blob, 9))
+    from pathlib import Path
+    loader = len(gzip.compress(Path("docs/sheet-transport.js").read_bytes(), 9))
+    raw, gz = len(blob), len(gzip.compress(blob, 9)) + loader
     cars = sum(len(m.get("listings") or [])
                for b in site["brands"].values() for m in b["models"].values())
     live = sum(1 for b in site["brands"].values() for m in b["models"].values()
                if m.get("listings"))
     cap = 400 * 1024   # Tracking.SHEET_BUDGET
     print(f"  {label:<44} {live:>2} models · {cars:>4} cars · "
-          f"raw {raw} bytes · Python gzip-9 {gz} bytes ({gz/1024:.2f} KiB) · "
+          f"raw {raw} bytes · Python gzip-9 data + decoder {gz} bytes ({gz/1024:.2f} KiB) · "
           f"{gz/cap:>5.1%} of budget · {cap - gz} bytes headroom"
           + ("   OVER" if gz > cap else ""))
     return gz
@@ -91,7 +94,7 @@ def main():
 
     from pathlib import Path
     blob = Path("docs/data.json").read_bytes()
-    summarize(json.loads(blob), blob, "as committed (exact bytes)")
+    summarize(parse_sheet(blob), blob, "as committed (exact bytes)")
     if not empty:
         print("All active targets have observations; no unfetched-target projection is needed.")
         print("This is not a forecast of retained missing vehicles or future history growth.")

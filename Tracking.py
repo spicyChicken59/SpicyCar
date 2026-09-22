@@ -46,6 +46,7 @@ from pathlib import Path
 from statistics import median
 
 import requests
+from sheet_transport import encode_sheet
 
 API_KEY = os.environ.get("AUTODEV_API_KEY")
 if not API_KEY:
@@ -5093,7 +5094,7 @@ def send_email(report, subject=None):
 # Main
 # --------------------------------------------------------------------------
 def write_sheet(site, path=None):
-    """Atomically publish the one compact sheet layout on every output path.
+    """Atomically publish the complete versioned sheet on every output path.
 
     Request journals and collection state retain atomic_json's own layout.
     Validate/serialize before touching the temporary file, then flush and
@@ -5115,7 +5116,7 @@ def write_sheet(site, path=None):
 
 def sheet_text(site):
     """What write_sheet() puts on disk, for anything that needs to compare."""
-    return json.dumps(site, separators=(",", ":"), sort_keys=True, allow_nan=False) + "\n"
+    return json.dumps(encode_sheet(site), separators=(",", ":"), sort_keys=True, allow_nan=False) + "\n"
 
 
 # What the browser is allowed to download. The page fetches the sheet on load,
@@ -5142,6 +5143,7 @@ def update_sheet_size(site, path=Path("README.md"), sheet=None):
     cars = sum(len(m.get("listings") or []) for m in models)
     live = sum(bool(m.get("listings")) for m in models)
     size = len(gzip.compress(sheet.read_bytes(), 9))
+    size += len(gzip.compress((Path(__file__).parent / "docs/sheet-transport.js").read_bytes(), 9))
     row = (f"| as committed | {live} | {cars:,} | {round(size / 1024)} KiB | "
            f"{round(size / SHEET_BUDGET * 100)}% |")
     if path.exists():

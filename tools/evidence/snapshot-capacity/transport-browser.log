@@ -1,0 +1,12 @@
+  ok    the browser decoder preserves every actual-snapshot value and type
+  ok    legacy plain snapshots still render the complete record
+  ok    an unsupported transport fails visibly
+  ok    truncated transport JSON fails visibly
+  ok    corruption in the final value fails before rendering any cars
+  ok    a malformed field table fails visibly
+  ok    a missing decoder fails visibly
+  ok    a malformed refresh reports failure
+  ok    a failed refresh retains the complete previous view and saved state
+  ok    a valid refresh recovers after malformed transport
+
+dashboard smoke: 10/10 checks, 0 page errors

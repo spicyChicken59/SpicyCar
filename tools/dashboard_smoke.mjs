@@ -1,3 +1,5 @@
+import Sheet from '../docs/sheet-transport.js';
+import { isDeepStrictEqual } from 'node:util';
 // Does the dashboard still work? The one check that opens it.
 //
 //   node tools/dashboard_smoke.mjs <design-system-checkout> [--shots <dir>]
@@ -215,7 +217,7 @@ async function step(label, body) {
 // needs a car finds one here rather than naming one: a check that writes down
 // ?brand=…&m=… asserts today's config beside the page's behaviour and goes red
 // on a night that only changed the watchlist.
-const SHEET = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const SHEET = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 
 // How the page spells an age, taken FROM the page rather than retyped. There
 // are already two implementations of these four lines — Tracking.py's
@@ -477,7 +479,7 @@ await step('prototype-key links', async () => {
 // renders "constructor" as the <h1> and keeps the dead query. The brand comes
 // out of data.json, not out of this file: naming one here would test the
 // watchlist's contents instead of the page.
-const brands = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8')).brands || {};
+const brands = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8')).brands || {};
 const realBrand = Object.keys(brands).find((b) => Object.keys(brands[b].models || {}).length);
 // Only two of Object.prototype's keys survive lc(); the probe needs one of them
 // that the watchlist itself does not use, or the check would be asserting the
@@ -637,7 +639,7 @@ await step('the compare card counts its dated cars', async () => {
   if (!mate) skip('and a column served with five dated cars prints none', 'no second model to compare against');
   else {
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       let kept = 0;
       for (const x of sheet.brands[victim.w.bk].models[victim.w.mk].listings) if (x.days_listed != null) { if (kept < 5) kept++; else x.days_listed = null; }
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -709,7 +711,7 @@ ok('the count measures against the whole watchlist',
 // cloned until the sheet crosses a thousand, with fresh VINs so the page's
 // own de-duplication does not undo it.
 await ctx.route('**/data.json*', async (route) => {
-  const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+  const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
   const m = Object.values(sheet.brands).flatMap((b) => Object.values(b.models))
     .sort((a, b2) => (b2.listings || []).length - (a.listings || []).length)[0];
   const seed = [...(m.listings || [])];
@@ -788,7 +790,7 @@ const worstChipCount = () => page.evaluate(() => {
 // hides "compare with" below two models and the trim field below two trims, so
 // the state exists only where the data still has it — and a check that names a
 // failure; the watchlist half still runs.
-const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const site = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const watched = Object.entries(site.brands || {}).flatMap(([bk, b]) =>
   Object.entries(b.models || {}).map(([mk, m]) => ({ bk, mk, nt: Object.keys(m.trims || {}).length })));
 const subject = watched.length > 1 ? watched.find((m) => m.nt > 1) : null;
@@ -835,7 +837,7 @@ await step('what a note may say', async () => {
 plan('no note on the watchlist carries a dated commitment', 'a described trim reaches the dek',
      'and the chip it sits beside says the same', 'and neither reads as a deadline');
 const DATED = /\b(decide|decision|deadline)\s+by\b|\bby\s+(mid|early|late)[- ]?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
-const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const site = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const noted = [];
 for (const [bId, b] of Object.entries(site.brands || {})) {
   for (const [mId, m] of Object.entries(b.models || {})) {
@@ -877,7 +879,7 @@ if (!subject) {
 await step('the watchlist dek counts what it names', async () => {
 plan('the watchlist dek counts models, not cars',
      'and the meta row beside it counts the same models');
-const sheet = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const sheet = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const models = Object.values(sheet.brands || {}).flatMap((b) => Object.keys(b.models || {})).length;
 const cars = Object.values(sheet.brands || {}).flatMap((b) => Object.values(b.models || {}))
   .reduce((n, m) => n + (m.listings || []).length, 0);
@@ -909,7 +911,7 @@ plan('with no models named the decision card says so instead of vanishing',
      'and the meta row never counts the same models twice');
 const serveUnshopped = async () => {
   await ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     sheet.buyer.shopping = [];
     for (const b of Object.values(sheet.brands || {}))
       for (const m of Object.values(b.models || {})) {
@@ -981,7 +983,7 @@ ok('and the meta row never counts the same models twice', !dup,
 await step('a query that found nothing is not a query that never ran', async () => {
 plan('a model no query has reached says it has not been fetched',
      'and one whose query ran and found nothing says THAT instead');
-const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const site = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const victim = (() => {
   for (const [bk, b] of Object.entries(site.brands || {}))
     for (const [mk, m] of Object.entries(b.models || {}))
@@ -997,7 +999,7 @@ ok('a model no query has reached says it has not been fetched',
 // Served: the same model, with the day its query ASKED. Same empty listings,
 // same null as_of — one field different, and the sentence has to change.
 await ctx.route('**/data.json*', async (route) => {
-  const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+  const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
   sheet.brands[victim.bk].models[victim.mk].last_asked = '2026-09-01';
   return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
 });
@@ -1261,7 +1263,7 @@ plan('at rest the tiles claim the nation and the chart chip agrees',
      'a trim chip makes the price tiles say filtered, like the chart chip',
      'and leaves the movement tile, which counts every trim, saying so');
 const scopeSubject = (() => {
-  const sheet = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const sheet = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   for (const [bk, b] of Object.entries(sheet.brands || {})) {
     for (const [mk, m] of Object.entries(b.models || {})) {
       const ids = Object.keys(m.trims || {});
@@ -1322,7 +1324,7 @@ plan('a zero-car trim says why the page is empty',
      'and its way out drops the trim and brings the sections back',
      'a stale link onto an empty trim is not a dead end either',
      'the empty-filters notice counts what its own link restores');
-const DATA = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const DATA = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 // The page's own membership rule: a car two queries both returned is one row
 // with the cheaper copy's trim_id and the other under `also`, and it is in both
 // trims. Counting only trim_id here would pick a "victim" trim that the page
@@ -1364,7 +1366,7 @@ async function synthesizeEmptyTrim() {
       if (!victim) continue;
       await ctx.route('**/data.json*', async (route) => {
         const r = await route.fetch();
-        const sheet = JSON.parse(await r.text());
+        const sheet = Sheet.parse(await r.text());
         const mm = ((sheet.brands || {})[bk] || {}).models[mk];
         mm.listings = (mm.listings || []).filter((x) => !inTrimOf(x, victim));
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -1661,7 +1663,7 @@ plan('a phone in landscape still sees the results under the filter bar',
      'and the short-viewport cap is the tighter of the two',
      'and the desktop panel is capped without being clipped');
 const subject = (() => {
-  const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const site = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const all = [];
   for (const [bk, b] of Object.entries(site.brands || {}))
     for (const [mk, m] of Object.entries((b || {}).models || {}))
@@ -1820,7 +1822,7 @@ await step('the narrowest phone', async () => {
 plan('a model page does not scroll sideways on the narrowest phone');
 {
   const departed = (() => {
-    const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+    const site = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
     const all = [];
     for (const [bk, b] of Object.entries(site.brands || {}))
       for (const [mk, m] of Object.entries((b || {}).models || {})) {
@@ -1889,7 +1891,7 @@ await step('the side-by-side table header', async () => {
 // at all — that is a skip by name, not a pass and not a failure.
 const NAME = 'the side-by-side table names the column its row labels sit in';
 plan(NAME);
-const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+const site = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
 const all = [];
 for (const [bk, b] of Object.entries(site.brands || {}))
   for (const [mk, m] of Object.entries((b || {}).models || {})) {
@@ -1951,7 +1953,7 @@ if (!cases.length) {
 await step('the monthly payment', async () => {
   plan('a promo reaches certified cars and no others',
        'a promo capped at 60 months is not quoted at 72');
-  const site = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const site = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const fin = (site.buyer || {}).finance;
   const livePromo = ((fin || {}).promos || []).find((p) => p.active && p.apr != null);
   // A model that has both a certified car and a non-certified one, under a live
@@ -2024,7 +2026,7 @@ await step('out the door', async () => {
        'the out-the-door total shows its own working');
   const fees = await page.evaluate(async () => {
     const r = await fetch('data.json');
-    return ((await r.json()).buyer || {}).fees || null;
+    return (SpicyCarSheet.decode(await r.json()).buyer || {}).fees || null;
   });
   if (!fees) {
     skip('every car carries tax, local and shipped alike', 'this sheet has no fees block');
@@ -2083,10 +2085,10 @@ await step('a sort the sheet cannot compute is not offered', async () => {
        'and offered again when the sheet has one');
   // Only buyer.fees is cut. Whether this sheet HAS a finance block decides what
   // the payment option proves below, so it is read before the cut, not assumed.
-  const hasFinance = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).finance);
+  const hasFinance = await page.evaluate(async () => !!(SpicyCarSheet.decode(await (await fetch('data.json')).json()).buyer || {}).finance);
   await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
-    const sheet = JSON.parse(await r.text());
+    const sheet = Sheet.parse(await r.text());
     if (sheet.buyer) delete sheet.buyer.fees;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -2115,7 +2117,7 @@ await step('a sort the sheet cannot compute is not offered', async () => {
   // otd checks cannot notice either.
   await open(carried.q);
   const shownAgain = await page.evaluate(() => !!document.querySelector('#f-sort option[value="otd"]')?.hidden);
-  const sheetHasFees = await page.evaluate(async () => !!((await (await fetch('data.json')).json()).buyer || {}).fees);
+  const sheetHasFees = await page.evaluate(async () => !!(SpicyCarSheet.decode(await (await fetch('data.json')).json()).buyer || {}).fees);
   ok('and offered again when the sheet has one',
      shownAgain === !sheetHasFees,
      sheetHasFees ? `this sheet has fees, otd hidden=${shownAgain}`
@@ -2255,7 +2257,7 @@ await step('an estimate says so where it is read', async () => {
   plan('shipping is called an estimate on the row itself',
        'the listings caption says which numbers nobody has checked',
        'and a calibrated sheet drops the word');
-  const buyer = await page.evaluate(async () => ((await (await fetch('data.json')).json()).buyer || {}));
+  const buyer = await page.evaluate(async () => (SpicyCarSheet.decode(await (await fetch('data.json')).json()).buyer || {}));
   if (!((buyer.ship_bands || []).length)) return skipRest('this sheet prices no shipping through bands');
   if (buyer.ship_calibrated || (buyer.fees || {}).checked)
     return skipRest('this sheet is already calibrated — the uncalibrated wording has no subject');
@@ -2282,7 +2284,7 @@ await step('an estimate says so where it is read', async () => {
   // …and with the two dates filled in, the hedge is gone.
   await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
-    const sheet = JSON.parse(await r.text());
+    const sheet = Sheet.parse(await r.text());
     if (sheet.buyer) {
       sheet.buyer.ship_calibrated = '2026-09-01';
       if (sheet.buyer.fees) sheet.buyer.fees.checked = '2026-09-01';
@@ -2374,7 +2376,7 @@ await step('the headline tiles name the right car', async () => {
   await page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* about:blank */ } });
   await open(subject.q);
   const truth = await page.evaluate(async (mk) => {
-    const sheet = await (await fetch('data.json')).json();
+    const sheet = SpicyCarSheet.decode(await (await fetch('data.json')).json());
     const m = sheet.brands[mk.bk].models[mk.mk];
     const states = (sheet.buyer || {}).states || [];
     const priced = (m.listings || []).filter((x) => x.price != null);
@@ -2433,7 +2435,7 @@ await step('the promo strip prices one real offer', async () => {
   // The feed's `cpo` is a generic certified flag; the captive lender's rate is
   // written at its own franchise. Where the two differ the page must say so.
   const unnamed = await page.evaluate(async () => {
-    const sheet = await (await fetch('data.json')).json();
+    const sheet = SpicyCarSheet.decode(await (await fetch('data.json')).json());
     let flagged = 0, unnamed = 0;
     for (const b of Object.values(sheet.brands || {}))
       for (const m of Object.values(b.models || {}))
@@ -2450,7 +2452,7 @@ await step('the promo strip prices one real offer', async () => {
   // …and it is a promo card, not furniture: with every promo expired it goes.
   await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
-    const sheet = JSON.parse(await r.text());
+    const sheet = Sheet.parse(await r.text());
     for (const q of (((sheet.buyer || {}).finance || {}).promos || [])) { q.active = false; q.days_left = -1; }
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -2641,7 +2643,7 @@ await step('the budget', async () => {
   const guinea = held.find((x) => allIn(x) != null && allIn(x) <= budget);
   if (!guinea) skip('a car the sheet cannot price is not let through a budget', 'no car under the test budget to blank');
   else {
-    const raw = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+    const raw = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
     for (const x of raw.brands[home.bk].models[home.mk].listings) {
       if (x.vin === guinea.vin) { delete x.price; delete x.last_price; }
     }
@@ -3010,7 +3012,7 @@ await step('the market sentence describes the trim in view', async () => {
   // sentence.
   await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
-    const sheet = JSON.parse(await r.text());
+    const sheet = Sheet.parse(await r.text());
     const mm = sheet.brands[subject.bk].models[subject.mk];
     let kept = 0;
     for (const x of mm.listings) if (x.trim_id === subject.tid && x.days_listed != null && ++kept > 5) x.days_listed = null;
@@ -3042,7 +3044,7 @@ await step('the market sentence describes the trim in view', async () => {
   }
   const want2 = bitsOf(plant2.listings.filter((x) => x.trim_id === subject.tid), dedupe((plant2.gone || []).filter((g) => g.trim_id === subject.tid))).out.join(' · ');
   await ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     sheet.brands[subject.bk].models[subject.mk] = plant2;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -3113,7 +3115,7 @@ await step('seen at two prices is not cut', async () => {
   px.series = px.series.map((pt, i) => [pt[0], i === 1 ? pair[1] : pair[0]]);
   px.cuts = 1; px.delta = 0; px.price = pair[0];
   await ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     sheet.brands[found.w.bk].models[found.w.mk] = planted;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -3135,7 +3137,7 @@ await step('seen at two prices is not cut', async () => {
   const wantShare = `${counted2.length ? Math.round(cut2.length / counted2.length * 100) : 0}% of ${counted2.length} cut while tracked`;
   const naive = `${Math.round(cut2.length / tracked2.length * 100)}%`;
   await ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     sheet.brands[found.w.bk].models[found.w.mk] = planted2;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -3276,7 +3278,7 @@ await step('one car, one number', async () => {
     let plantedMedian = null;
     await ctx.route('**/data.json*', async (route) => {
       const r = await route.fetch();
-      const sheet = JSON.parse(await r.text());
+      const sheet = Sheet.parse(await r.text());
       const m = sheet.brands[carried.bk].models[carried.mk];
       const d = m.daily;
       d[d.length - 1].min_price = cheapest; d[d.length - 2].min_price = cheapest;
@@ -3548,7 +3550,7 @@ await step('the decision, day by day', async () => {
            : `flattening this sheet leaves ${flatGaps.length} shared day(s) and ${new Set(flatGaps).size} distinct gap(s)`);
   else {
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       for (const o of flat) sheet.brands[o.bk].models[o.mk] = o.m;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -3599,7 +3601,7 @@ await step('the decision, day by day', async () => {
       const planted = JSON.parse(JSON.stringify(subjectD.m)); edit(planted);
       const wantL = (ledgerOf(planted) && driveLineOf(ledgerOf(planted))) || '';
       await ctx.route('**/data.json*', async (route) => {
-        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
         sheet.brands[subjectD.bk].models[subjectD.mk] = planted;
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
       });
@@ -3659,7 +3661,7 @@ await step('the decision, day by day', async () => {
     if (one) one.series = [[early, one.series[0][1]], ...one.series];
     const wantLedger = ledgerOf(planted);
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -3805,7 +3807,7 @@ await step('what the premium buys', async () => {
       planted.listings.find((c) => c.vin === driven.vin).price = y.price + 1000;
       const want2 = buysLine(planted.listings);
       await ctx.route('**/data.json*', async (route) => {
-        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
         sheet.brands[cheaperModel.bk].models[cheaperModel.mk] = planted;
         const dearer = models.find((o) => o.label === B);
         const fin = sheet.buyer.finance = { ...(sheet.buyer.finance || {}) };
@@ -3828,7 +3830,7 @@ await step('what the premium buys', async () => {
   // untouched, so both stay the floor and the sentence's subjects.
   const dearer = models.find((o) => o.label === B), cheaper = models.find((o) => o.label === A);
   const serve = (edit) => ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     const mx = sheet.brands[cheaper.bk].models[cheaper.mk], my = sheet.brands[dearer.bk].models[dearer.mk];
     edit(mx.listings.find((c) => c.vin === x.vin), my.listings.find((c) => c.vin === y.vin));
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -3967,7 +3969,7 @@ await step('under typical only outside its own interval', async () => {
     planted.listings.find((c) => c.vin === vin).price = price;
     const after = scoreModel(planted).get(vin);
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -4035,7 +4037,7 @@ await step('under typical only outside its own interval', async () => {
     let noteBefore = '';
     if (witness) {
       await ctx.route('**/data.json*', async (route) => {
-        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
         sheet.brands[subject.bk].models[subject.mk] = whole;
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
       });
@@ -4048,7 +4050,7 @@ await step('under typical only outside its own interval', async () => {
     for (const x of planted.listings.filter(eligible)) yearsLeft.set(yearOf(x), (yearsLeft.get(yearOf(x)) || 0) + 1);
     const wantChips = [...yearsLeft.entries()].filter(([, n]) => n >= 6).map(([y]) => y).sort();
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -4106,7 +4108,7 @@ await step('under typical only outside its own interval', async () => {
     const wantDelta = `about typical for a ${short}, n=8`;
     const clearStars = () => page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[heroModel.bk].models[heroModel.mk] = plantedH;
       sheet.buyer = { ...(sheet.buyer || {}), shortlist: [{ vin: hx.vin, note: '' }] };   // the config shortlist, whose front-page card wears the chip
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4152,7 +4154,7 @@ await step('under typical only outside its own interval', async () => {
     const scT = scoreModel(planted).get(targetVin);
     const clearStars2 = () => page.evaluate(() => { try { localStorage.removeItem('spicycar.prefs'); } catch { /* private mode */ } });
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -4216,7 +4218,7 @@ await step('under typical only outside its own interval', async () => {
     const edge = keep9.slice(0, 2).map((x) => sc2.get(x.vin));
     const unders = [...sc2.entries()].filter(([, s]) => s.stand === 'under').sort((a, b) => b[1].pct - a[1].pct);
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[subject.bk].models[subject.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -4362,7 +4364,7 @@ await step('since your visit', async () => {
   const r4 = await read();
   await plant({ through: since, since: null });
   await ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     sheet.departures_from = through;   // departures counted only from today: the remembered day is before that
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -4386,7 +4388,7 @@ await step('since your visit', async () => {
   else {
     const say = async (word) => {
       await ctx.route('**/data.json*', async (route) => {
-        const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+        const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
         const mm = sheet.brands[target.o.bk].models[target.o.mk];
         const row = mm.gone.find((g) => g.vin === target.g.vin);
         row.likely = word; if (word === 'delisted') row.exact = true;
@@ -4470,7 +4472,7 @@ await step('a VIN in hand', async () => {
   // end in this car's six, so the tail fits exactly two.
   const twin = amb ? null : all.find((o) => !o.gone && o.x.vin && String(o.x.vin).toUpperCase() !== vin && (o.bk !== live.bk || o.mk !== live.mk));
   if (!amb && twin) await ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     const row = sheet.brands[twin.bk].models[twin.mk].listings.find((x) => x.vin === twin.x.vin);
     row.vin = row.vin.slice(0, 11) + six;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
@@ -4574,7 +4576,7 @@ await step('arrivals, not reach', async () => {
     const planted = JSON.parse(JSON.stringify(subject.m)); edit(planted);
     const c = counts(planted);
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[subject.w.bk].models[subject.w.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -4732,7 +4734,7 @@ await step('a departure from one query is not a departure from the market', asyn
       planted.gone.find((g) => g.vin === victim.vin).still_listed = { trim_id: 'planted-trim', trim: 'eDrive40', price: 12345, cpo: false };
       const after = goneCount(planted);
       await ctx.route('**/data.json*', async (route) => {
-        const r2 = await route.fetch(); const sheet = JSON.parse(await r2.text());
+        const r2 = await route.fetch(); const sheet = Sheet.parse(await r2.text());
         sheet.brands[anyModel.w.bk].models[anyModel.w.mk] = planted;
         return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
       });
@@ -4781,7 +4783,7 @@ await step('a watchlist edit reads as a watchlist edit, not a departure', async 
     const planted = JSON.parse(JSON.stringify(host.m));
     planted.gone.find((g) => g.vin === victim.vin).likely = word;
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[host.w.bk].models[host.w.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -4897,7 +4899,7 @@ await step('a cohort of mixed trims prices the mix, not the car', async () => {
   for (const x of planted.listings) x.trim = 'OneTrim';
   const wantSpeak = (planted.listings || []).filter(eligible).length >= 9;
   await ctx.route('**/data.json*', async (route) => {
-    const r2 = await route.fetch(); const sheet = JSON.parse(await r2.text());
+    const r2 = await route.fetch(); const sheet = Sheet.parse(await r2.text());
     sheet.brands[subject.w.bk].models[subject.w.mk] = planted;
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -4945,7 +4947,7 @@ await step('a headline figure carries its own date', async () => {
     return m;
   };
   const serve = (day) => ctx.route('**/data.json*', async (route) => {
-    const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+    const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
     ageTo(sheet, day);
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -5138,7 +5140,7 @@ await step('the floor delta names its cause', async () => {
   };
   const serve = async (planted, body) => {
     await ctx.route('**/data.json*', async (route) => {
-      const r = await route.fetch(); const sheet = JSON.parse(await r.text());
+      const r = await route.fetch(); const sheet = Sheet.parse(await r.text());
       sheet.brands[carried.bk].models[carried.mk] = planted;
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
     });
@@ -5841,7 +5843,7 @@ await step('a car is new only on the day it arrives', async () => {
 // have in a month.
 await step('the chart draws the window its chips name', async () => {
   plan('a remembered range the record cannot support does not survive the first paint');
-  const raw = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+  const raw = Sheet.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
   const dt = raw.data_through;
   const old = new Date(Date.parse(dt + 'T00:00:00Z') - 40 * 86400000).toISOString().slice(0, 10);
   let planted = 0;
@@ -6737,7 +6739,7 @@ await step('a trim chip counts what its query returned', async () => {
                          'no model on this sheet has two trims and a priced car');
   await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
-    const sheet = JSON.parse(await r.text());
+    const sheet = Sheet.parse(await r.text());
     const mm = sheet.brands[twin.bk].models[twin.mk];
     const car = (mm.listings || []).find((c) => c.vin === twin.vin);
     car.also = [{ trim_id: twin.other, trim_label: (mm.trims[twin.other] || {}).label || twin.other,
@@ -6805,7 +6807,7 @@ await step('a car the sheet cannot place is not beyond your states', async () =>
   if (!shopped) return skipRest('no model on this sheet is being shopped');
   await ctx.route('**/data.json*', async (route) => {
     const r = await route.fetch();
-    const sheet = JSON.parse(await r.text());
+    const sheet = Sheet.parse(await r.text());
     for (const x of (sheet.brands[shopped.bk].models[shopped.mk].listings || [])) { x.state = ''; x.local = false; }
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify(sheet) });
   });
@@ -7276,25 +7278,90 @@ await step('market studio shortlist benchmark sizing', async () => {
 // Deliberately generous, and deliberately not a target to optimise towards: it
 // is a tripwire for a change that adds a megabyte, not a style rule. Raise it
 // on purpose, in the commit that needs it, the same way EXPECTED is raised.
+await step('the complete versioned snapshot or a visible failure', async () => {
+  plan('the browser decoder preserves every actual-snapshot value and type',
+       'legacy plain snapshots still render the complete record',
+       'an unsupported transport fails visibly',
+       'truncated transport JSON fails visibly',
+       'corruption in the final value fails before rendering any cars',
+       'a malformed field table fails visibly',
+       'a missing decoder fails visibly',
+       'a malformed refresh reports failure',
+       'a failed refresh retains the complete previous view and saved state',
+       'a valid refresh recovers after malformed transport');
+  const transportCtx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+  await transportCtx.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.fulfill({ status: 200, body: '' }));
+  const p = await transportCtx.newPage();
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const arrive = async () => { await p.goto(base); await p.locator('.car-place-card').first().waitFor(); };
+  const serve = (body) => transportCtx.route('**/data.json*', (r) => r.fulfill({ contentType: 'application/json', body }));
+  try {
+    await arrive();
+    const decoded = await p.evaluate(async () => SpicyCarSheet.decode(await window.__data));
+    ok('the browser decoder preserves every actual-snapshot value and type', isDeepStrictEqual(decoded, SHEET));
+    await serve(JSON.stringify(SHEET));
+    await arrive();
+    ok('legacy plain snapshots still render the complete record',
+       // Read before adapt() attaches the page's existing runtime annotations.
+       isDeepStrictEqual(await p.evaluate(async () => SpicyCarSheet.decode(await (await fetch('data.json')).json())), SHEET));
+    await transportCtx.unroute('**/data.json*');
+    const wire = JSON.parse(readFileSync(join(ROOT, 'data.json'), 'utf8'));
+    const late = structuredClone(wire); late.data[late.data.length - 1] = { untagged: 'fixture corruption' };
+    const cases = [
+      ['an unsupported transport fails visibly', JSON.stringify({ ...wire, version: 999 })],
+      ['truncated transport JSON fails visibly', JSON.stringify(wire).slice(0, -10)],
+      ['corruption in the final value fails before rendering any cars', JSON.stringify(late)],
+      ['a malformed field table fails visibly', JSON.stringify({ ...wire, schemas: [['vin', 'vin']] })]
+    ];
+    for (const [name, body] of cases) {
+      await serve(body);
+      await p.goto(base);
+      await p.waitForFunction(() => document.getElementById('h1')?.textContent === 'Snapshot unavailable');
+      ok(name, await p.locator('#notice').isVisible() && await p.locator('.car-place-card, #hero-cars > .market-candidate').count() === 0);
+      await transportCtx.unroute('**/data.json*');
+    }
+    await transportCtx.route('**/sheet-transport.js', (r) => r.fulfill({ contentType: 'text/javascript', body: '' }));
+    await p.goto(base);
+    await p.waitForFunction(() => document.getElementById('h1')?.textContent === 'Snapshot unavailable');
+    ok('a missing decoder fails visibly', await p.locator('#notice').isVisible());
+    await transportCtx.unroute('**/sheet-transport.js');
+    await arrive();
+    const before = await p.evaluate(() => ({ cards: [...document.querySelectorAll('.car-place-card')].map((n) => n.textContent), prefs: localStorage.getItem('spicycar.prefs') }));
+    await serve(JSON.stringify(late));
+    await p.locator('#data-refresh').click();
+    await p.waitForFunction(() => document.getElementById('data-refresh-status')?.textContent.includes('Could not check'));
+    ok('a malformed refresh reports failure', await p.locator('#data-refresh-status').isVisible());
+    const after = await p.evaluate(() => ({ cards: [...document.querySelectorAll('.car-place-card')].map((n) => n.textContent), prefs: localStorage.getItem('spicycar.prefs') }));
+    ok('a failed refresh retains the complete previous view and saved state', isDeepStrictEqual(before, after));
+    await transportCtx.unroute('**/data.json*');
+    await p.locator('#data-refresh').click();
+    await p.waitForFunction(() => document.getElementById('data-refresh-status')?.textContent.includes('latest published listings'));
+    ok('a valid refresh recovers after malformed transport', await p.locator('.car-place-card').count() > 0);
+  } finally { await transportCtx.close(); }
+});
+
 await step('what it costs to open', async () => {
   plan('the page and its data stay inside their transfer budget');
   const { gzipSync } = await import('node:zlib');
   const BUDGET = { 'index.html': 200 * 1024, 'data.json': 400 * 1024 };   // Tracking.SHEET_BUDGET
+  const loader = gzipSync(readFileSync(join(ROOT, 'sheet-transport.js')), { level: 9 }).length;
   const rows = [];
   for (const name of Object.keys(BUDGET)) {
     const file = join(ROOT, name);
     if (!existsSync(file)) continue;
     const raw = readFileSync(file);
-    rows.push({ name, raw: raw.length, gz: gzipSync(raw, { level: 9 }).length, budget: BUDGET[name] });
+    // Charge the required decoder against BOTH unchanged allowances. It is
+    // fetched once; neither splitting code nor splitting data earns headroom.
+    rows.push({ name, raw: raw.length, gz: gzipSync(raw, { level: 9 }).length + loader, budget: BUDGET[name] });
   }
   if (!rows.length) return skipRest('neither file is beside this harness');
   const over = rows.filter((r) => r.gz > r.budget);
   const kb = (n) => `${n} bytes (${(n / 1024).toFixed(2)} KiB)`;
   ok('the page and its data stay inside their transfer budget', over.length === 0,
-     rows.map((r) => `${r.name} ${kb(r.raw)} raw, ${kb(r.gz)} Node gzip-9; headroom ${r.budget - r.gz} bytes`
+     rows.map((r) => `${r.name} ${kb(r.raw)} raw, ${kb(r.gz)} Node gzip-9 including ${loader}-byte decoder; headroom ${r.budget - r.gz} bytes`
                      + (r.gz > r.budget ? ` — OVER its ${kb(r.budget)} budget` : ''))
          .join(' · ')
-     + ` · together ${kb(rows.reduce((a, r) => a + r.gz, 0))} estimated compressed payload (not captured HTTP transfer)`);
+     + ` · together ${kb(rows.reduce((a, r) => a + r.gz, 0) - loader)} estimated compressed payload (decoder counted once; not captured HTTP transfer)`);
 });
 
 await browser.close();
@@ -7327,7 +7394,7 @@ console.log(`\ndashboard smoke: ${ran - failed}/${ran} checks`
 // declared total not to move with the data, which is a property of the branches
 // and not of this line — see GHOST, and the two-theme skip beside it.
 // If you ADD a check, raise this number in the same commit. That is the point.
-const EXPECTED = 327;
+const EXPECTED = 337;
 if (!ONLY && results.length !== EXPECTED) {
   console.log(`\n  !! this suite declares ${EXPECTED} checks and recorded ${results.length}`
     + `${skipped ? ` (${skipped} of them skipped, which still counts)` : ''}.`);

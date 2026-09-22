@@ -35,6 +35,8 @@ from pathlib import Path
 os.environ.setdefault("AUTODEV_API_KEY", "test-key-not-used")
 os.environ.pop("BUYER_HOME_ZIP", None)          # keep the import offline
 
+from sheet_transport import parse_sheet
+
 import Tracking as T                            # noqa: E402
 
 _BAD = object()   # a response body that will not parse as JSON
@@ -633,7 +635,7 @@ class TestNormalize(unittest.TestCase):
             # Add another independent observation each time. No rolling CSV
             # or historical exception ceiling is involved.
             _, site, _ = T.build_outputs(rows, rows, T.build_history(rows))
-            exported = json.loads(T.sheet_text(site))["brands"]["bmw"]["models"]["i5"]["listings"]
+            exported = parse_sheet(T.sheet_text(site))["brands"]["bmw"]["models"]["i5"]["listings"]
             self.assertEqual({x["vin"] for x in exported}, {x["vin"] for x in rows})
             for x in exported:
                 source = next(r for r in rows if r["vin"] == x["vin"])
@@ -3171,7 +3173,7 @@ class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
         r, report, sheet = self._run(lambda cfg: None)
         self.assertEqual(r.returncode, 0, r.stderr[-800:])
         import json
-        models = [m for b in json.loads(sheet)["brands"].values() for m in b["models"].values()]
+        models = [m for b in parse_sheet(sheet)["brands"].values() for m in b["models"].values()]
         empty = sum(not m.get("listings") for m in models)
         self.assertIn(f"{len(models)-empty} carry listings, {empty} do not", r.stdout)
         self.assertIn("call plan:", r.stdout)
@@ -3196,7 +3198,7 @@ class TestTheOfflineRebuildSurvivesTheConfigItDescribes(unittest.TestCase):
                          "the rebuild wrote both files and then died on a "
                          "hard-coded brand key:\n" + r.stderr[-800:])
         self.assertNotIn("Traceback", r.stderr)
-        self.assertNotIn("bmw", json.loads(sheet)["brands"])
+        self.assertNotIn("bmw", parse_sheet(sheet)["brands"])
         self.assertTrue(report.startswith("# "))
 
 
@@ -3544,17 +3546,16 @@ class TestEveryTargetInTheRecordIsAccountedFor(unittest.TestCase):
     from the twenty-eight brands that genuinely have never run. 463 green tests
     said nothing, because nothing was checking.
 
-    The two are NOT the same case, and the difference is measured rather than
-    argued. Chevrolet is mapped: 0 of its 31 live rows are pre-2024, and its
-    old window (cheapest-20 of the model, then filtered to RS) was a SUBSET of
-    the new target's, so a cut-off reconstructed from its kept rows sits BELOW
-    the truth — conservative, and the opposite of the defect that made
-    delisted() manufacture departures. Lucid is not: 53 of its 68 live rows
-    are model year 2022 or 2023, which a 2024+ watchlist can never return
-    again, so remapping would publish 53 cars as current inventory that no
-    query on this sheet could produce. And merging two trim-sliced cheapest-20
-    windows gives max(window A, window B), which is WIDER than either — the
-    manufacturing case exactly.
+    At that decision, Chevrolet's retained rows were within the new years
+    and its old window (cheapest-20 of the model, then filtered to RS) was a
+    subset of the new target's: carrying it over was conservative. Lucid's
+    history included 2022/2023 cars outside the 2024+ watchlist, and pooling
+    two trim-sliced windows would widen the inferred observation window.
+    Those rows therefore kept their original ids instead of being mapped to
+    aggregate `lucid-air`. The trim ids were later reactivated; eligible new
+    observations now share them with the old history. Their population mix
+    can change freely. Retention, identity and safe publication are the
+    contract, not a majority of historical model years.
     """
 
     def test_every_target_in_the_record_is_accounted_for(self):
@@ -3581,37 +3582,182 @@ class TestEveryTargetInTheRecordIsAccountedFor(unittest.TestCase):
                          "…under the new id, not the old one")
 
     def test_the_lucid_rows_are_deliberately_left_where_they_are(self):
-        """Pinned here rather than in a commit message, which is where this
-        decision lived and where nothing could check it."""
-        self.assertIn("lucid-air-touring", T.LEGACY_IDS)
-        self.assertIsNone(T.LEGACY_IDS["lucid-air-touring"])
+        """The real ledger and a controlled mixed cohort keep the same ids."""
+        for tid in self.LUCID_LEGACY_IDS:
+            self.assertIn(tid, T.LEGACY_IDS)
+            self.assertIsNone(T.LEGACY_IDS[tid])
         rows = T.load_history()
         kept = [r for r in rows if r["target"] == "lucid-air"]
         self.assertFalse(kept, "the old rows must not surface under the new id")
         old_ids = {tid for tid, mapped in T.LEGACY_IDS.items() if tid.startswith("lucid-air-") and mapped is None}
         orphan = [r for r in rows if r["target"] in old_ids]
         self.assertTrue(orphan, "…and they must still be in the file, untouched")
-        # The measured reason, so a later session cannot "fix" this by mapping.
-        # Over the newest DAY it no longer holds: the Lucid Air was split back
-        # into pure / touring / grand-touring, so `lucid-air-touring` is a live
-        # id again and its recent rows are the split target's, 2024 and 2025.
-        # The retired target history is what the argument is about: most
-        # of its rows are model year 2022 or 2023, which a 2024+ watchlist
-        # can never return.
-        pre = [r for r in orphan if r["year"] and int(r["year"]) < 2024]
-        self.assertGreater(len(pre) / len(orphan), 0.5,
-                           "most of these cars are outside the 2024+ rule the "
-                           "whole watchlist is built on, which is why mapping "
-                           "them would publish inventory no query can return")
-        # …and the guard that keeps the two apart under one id really holds:
-        # nothing older than the rule reaches the sheet.
-        sheet = json.loads(Path("docs/data.json").read_text())
+        self._assert_synthetic_legacy_contract()
+
+    def test_the_committed_lucid_sheet_excludes_out_of_scope_years(self):
+        """Run the publication guard even if a separate history test fails."""
+        sheet = parse_sheet(Path("docs/data.json").read_text())
         air = sheet["brands"]["lucid"]["models"]["air"]
         years = {x.get("year") for tr in (air.get("trims") or {}).values()
                  for x in (tr.get("listings") or [])}
         years |= {x.get("year") for x in (air.get("listings") or [])}
         self.assertFalse([y for y in years if y and int(y) < 2024],
                          f"a pre-2024 Lucid reached the published sheet: {sorted(years)}")
+
+    LUCID_LEGACY_IDS = ("lucid-air-touring", "lucid-air-grand-touring")
+
+    def _synthetic_legacy_rows(self, grown=False):
+        """Synthetic test inputs, not independent provider evidence.
+
+        Old model years also occur on each target's latest fixture day, so
+        the publication check cannot pass merely by discarding older dates.
+        Growth appends eligible observations without removing any history.
+        """
+        rows = []
+
+        def add(tid, vin, day, year, price, **fields):
+            row = dict.fromkeys(T.FIELDS, "")
+            row.update(target=tid, vin=vin, snapshot_date=day, year=year,
+                       price=price, state=" il ", distance="9999",
+                       url=f"https://synthetic.invalid/{vin}", **fields)
+            rows.append(row)
+
+        for i, tid in enumerate(self.LUCID_LEGACY_IDS):
+            old, unknown, eligible = (f"{prefix}{i:016d}" for prefix in "HUE")
+            add(tid, old, "2026-08-01", "2022", "49001")
+            add(tid, old, "2026-09-21", "2022", "48002")
+            add(tid, unknown, "2026-09-21", "2023", "")
+            details = ({"miles": "12000", "accidents": "0", "owners": "1"}
+                       if i else {})
+            add(tid, eligible, "2026-09-19", "2024", "55001", **details)
+            add(tid, eligible, "2026-09-21", "2024", "54002", **details)
+            if grown:
+                for j in range(3):
+                    add(tid, f"N{i * 3 + j:016d}", "2026-09-21", "2025",
+                        str(61000 + i * 1000 + j * 100) if j < 2 else "")
+        for day, price in (("2026-09-19", "35001"), ("2026-09-21", "34002")):
+            add("chevrolet-equinox-ev-rs", "C0000000000000000", day,
+                "2024", price, trim="RS", miles="0", accidents="0")
+        return rows
+
+    def _assert_synthetic_legacy_contract(self, grown=False):
+        inputs = self._synthetic_legacy_rows(grown)
+        # The loader preserves CSV strings except the explicit rename, state
+        # normalization and distance recomputation. Missing coordinates make
+        # the stale stored distance unknown; blank values must stay blank.
+        expected = [dict(r, target=("chevrolet-equinox-ev"
+                                   if r["target"] == "chevrolet-equinox-ev-rs"
+                                   else r["target"]), state="IL", distance="")
+                    for r in inputs]
+        expected_history = defaultdict(list)
+        for r in expected:
+            if r["price"]:
+                expected_history[(r["target"], r["vin"])].append(
+                    (r["snapshot_date"], int(r["price"])))
+        day = "2026-09-21"
+        with tempfile.TemporaryDirectory() as td, unittest.mock.patch.multiple(
+                T, DATA=Path(td), SNAPSHOTS=Path(td) / "synthetic.csv",
+                FETCH_LOG=Path(td) / "fetch.json", SPEND_LOG=Path(td) / "spend.json",
+                TODAY=day, TODAY_ORD=date.fromisoformat(day).toordinal(),
+                INDEX_DATES=set(), LOCAL_HISTORY={}, FETCH_DAYS={}):
+            T.write_rows(inputs)
+            original_csv = T.SNAPSHOTS.read_bytes()
+            loaded = T.load_history()
+            self.assertEqual(loaded, expected, "legacy retention and identity")
+            hist = T.build_history(loaded)
+            self.assertEqual(hist, dict(expected_history), "dated price history")
+            latest = [r for r in loaded if r["snapshot_date"] == day]
+            _, site, _ = T.build_outputs(latest, loaded, hist)
+            published = Path(td) / "synthetic-sheet.json"
+            T.write_sheet(site, published)
+            sheet = parse_sheet(published.read_text())
+            self.assertEqual(T.SNAPSHOTS.read_bytes(), original_csv,
+                             "publication must leave source history intact")
+
+        self.assertEqual(sheet["data_through"], day)
+        for brand, model in (("lucid", "air"), ("chevrolet", "equinox-ev")):
+            entry = sheet["brands"][brand]["models"][model]
+            eligible = [r for r in expected
+                        if r["target"].startswith(brand + "-")
+                        and r["snapshot_date"] == day
+                        and r["year"] in ("2024", "2025")]
+            self.assertTrue(eligible, "the synthetic positive control is populated")
+            self.assertCountEqual(
+                [(x["trim_id"], x["vin"]) for x in entry["listings"]],
+                [(r["target"], r["vin"]) for r in eligible],
+                "safe current publication, including eligible later observations")
+            by_vin = {x["vin"]: x for x in entry["listings"]}
+            self.assertEqual(entry["as_of"], day)
+            for r in eligible:
+                x = by_vin[r["vin"]]
+                series = expected_history.get((r["target"], r["vin"]), [])
+                self.assertEqual(x["series"], [list(point) for point in series])
+                self.assertEqual(x["first_seen"], series[0][0] if series else None)
+                self.assertEqual(x["days_tracked"], len(series))
+                for key in ("year", "price", "miles", "owners", "accidents"):
+                    value = int(r[key]) if r[key] else None
+                    self.assertEqual(x[key], value, (r["vin"], key))
+                    self.assertIs(type(x[key]), type(value), (r["vin"], key))
+                self.assertEqual(x["url"], r["url"])
+                self.assertEqual(x["state"], "IL")
+                for key in ("lat", "lon", "distance"):
+                    self.assertIsNone(x[key], (r["vin"], key))
+                for key in ("image", "carfax", "drivetrain", "usage", "listed_since"):
+                    self.assertEqual(x[key], "", (r["vin"], key))
+        lucid = [r for r in loaded if r["target"] in self.LUCID_LEGACY_IDS]
+        return sum(int(r["year"]) < 2024 for r in lucid), len(lucid)
+
+    def test_lucid_preservation_and_publication_survive_observation_growth(self):
+        before = self._synthetic_legacy_rows()
+        after = self._synthetic_legacy_rows(grown=True)
+        for row in before:
+            self.assertIn(row, after, "growth removes no original observation")
+        old, total = self._assert_synthetic_legacy_contract()
+        grown_old, grown_total = self._assert_synthetic_legacy_contract(grown=True)
+        self.assertEqual((old, total, grown_old, grown_total), (6, 10, 6, 16))
+        self.assertGreater(old / total, 0.5)  # only a synthetic test precondition
+        self.assertLess(grown_old / grown_total, 0.5)
+
+    def test_lucid_contract_rejects_dropped_history(self):
+        """Negative control: the real loader runs, then loses one old row."""
+        load = T.load_history
+
+        def drop():
+            return load()[1:]
+
+        with unittest.mock.patch.object(T, "load_history", drop):
+            with self.assertRaisesRegex(AssertionError, "legacy retention and identity"):
+                self._assert_synthetic_legacy_contract(grown=True)
+
+    def test_lucid_contract_rejects_incorrect_aggregate_remapping(self):
+        """Negative control: remap loaded Lucid rows without changing config."""
+        load = T.load_history
+
+        def remap():
+            return [dict(r, target="lucid-air")
+                    if r["target"] in self.LUCID_LEGACY_IDS else r for r in load()]
+
+        with unittest.mock.patch.object(T, "load_history", remap):
+            with self.assertRaisesRegex(AssertionError, "legacy retention and identity"):
+                self._assert_synthetic_legacy_contract(grown=True)
+
+    def test_lucid_contract_rejects_out_of_scope_current_publication(self):
+        """Negative control: bypass scope rejection on real publication paths."""
+        with unittest.mock.patch.object(T, "watchlist_moved", return_value=""):
+            with self.assertRaisesRegex(AssertionError, "safe current publication"):
+                self._assert_synthetic_legacy_contract(grown=True)
+
+    def test_lucid_contract_rejects_suppressing_all_lucid_inventory(self):
+        """Negative control: hiding every Lucid cannot satisfy the contract."""
+        current = T.current_rows
+
+        def suppress(rows, tids):
+            return [r for r in current(rows, tids)
+                    if r["target"] not in self.LUCID_LEGACY_IDS]
+
+        with unittest.mock.patch.object(T, "current_rows", suppress):
+            with self.assertRaisesRegex(AssertionError, "safe current publication"):
+                self._assert_synthetic_legacy_contract(grown=True)
 
 
 class TestDailySeries(unittest.TestCase):
@@ -4414,7 +4560,7 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
         self.assertFalse(T.fetch_overdue(9, "every four days"))
 
     def test_the_model_entry_carries_both_so_neither_surface_recomputes(self):
-        site = json.loads(Path("docs/data.json").read_text())
+        site = parse_sheet(Path("docs/data.json").read_text())
         day = site["data_through"]
         checked = 0
         for b in site["brands"].values():
@@ -4481,7 +4627,7 @@ class TestHowOldTheseCarsAreIsSaidRatherThanImplied(unittest.TestCase):
         """The artifact comparison the test above used to be, kept for what it
         is: a check that the two files on disk tell one story, not a check of
         the rule that built them."""
-        site = json.loads(Path("docs/data.json").read_text())
+        site = parse_sheet(Path("docs/data.json").read_text())
         report = Path("REPORT.md").read_text()
         aged = [m for b in site["brands"].values() for m in b["models"].values()
                 if m.get("age_days") and m.get("listings")]
@@ -4812,7 +4958,7 @@ class TestTheWatchlistOnlyPublishesWhatItCanStillFind(unittest.TestCase):
 
     def test_the_published_sheet_holds_no_car_its_own_watchlist_excludes(self):
         """The end-to-end statement, over the committed record."""
-        site = json.loads(Path("docs/data.json").read_text())
+        site = parse_sheet(Path("docs/data.json").read_text())
         bad = []
         for bk, b in site["brands"].items():
             for mk, m in b["models"].items():
@@ -4858,12 +5004,12 @@ class TestWhatTheSheetWeighsIsWhatTheReadmeSays(unittest.TestCase):
         """
         import gzip
         raw = Path("docs/data.json").read_bytes()
-        site = json.loads(raw.decode())
+        site = parse_sheet(raw.decode())
         cars = sum(len(m.get("listings") or [])
                    for b in site["brands"].values() for m in b["models"].values())
         live = sum(1 for b in site["brands"].values() for m in b["models"].values()
                    if m.get("listings"))
-        gz = len(gzip.compress(raw, 9))
+        gz = len(gzip.compress(raw, 9)) + len(gzip.compress(Path("docs/sheet-transport.js").read_bytes(), 9))
         return (f"| as committed | {live} | {cars:,} | {round(gz / 1024)} KiB | "
                 f"{round(gz / (400 * 1024) * 100)}% |")
 
@@ -4935,7 +5081,7 @@ class TestTheDocumentedRowMeasuresTheFileThatWasWritten(unittest.TestCase):
             T.write_sheet(self._site(2), sheet)      # the file is not this object
             readme.write_text("intro\n| as committed | 9 | 9 | 9 KB | 9% |\nrest\n")
             T.update_sheet_size(site, readme, sheet)
-            gz = len(gzip.compress(sheet.read_bytes(), 9))
+            gz = len(gzip.compress(sheet.read_bytes(), 9)) + len(gzip.compress(Path("docs/sheet-transport.js").read_bytes(), 9))
             self.assertNotEqual(round(gz / 1024),
                                 round(len(gzip.compress(json.dumps(site, indent=1).encode(), 9)) / 1024),
                                 "the fixture does not discriminate: the file and the "
@@ -4980,11 +5126,13 @@ class TestOneWriterPutsTheSheetOnDisk(unittest.TestCase):
                 "a": {"series": [["2026-09-18", 71000], ["2026-09-19", 71995]],
                       "gone": [{"vin": "synthetic", "likely": "not checked"}]}}
         text = T.sheet_text(site)
-        self.assertEqual(json.loads(text), site)
-        self.assertTrue(text.startswith('{"a":{'))
+        self.assertEqual(parse_sheet(text), site)
+        self.assertEqual(json.loads(text)["format"], "spicycar-sheet")
         self.assertEqual(text.count("\n"), 1)
         self.assertTrue(text.endswith("\n"))
-        self.assertLess(len(text), len(json.dumps(site, indent=1, sort_keys=True) + "\n"))
+        self.assertNotIn(": ", text)
+        self.assertEqual(json.loads(text)["version"], 1)
+        self.assertLess(len(text), len(json.dumps(json.loads(text), indent=1, sort_keys=True) + "\n"))
 
     def test_nonfinite_values_cannot_replace_a_valid_sheet(self):
         with tempfile.TemporaryDirectory() as d:
@@ -7935,7 +8083,7 @@ class TestConfig(unittest.TestCase):
         ]
         self.assertEqual(max(r["snapshot_date"] for r in rows), "2026-08-29")
         import json, pathlib
-        site = json.loads((pathlib.Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        site = parse_sheet((pathlib.Path(__file__).parent.parent / "docs" / "data.json").read_text())
         self.assertIn("data_through", site)
         dates = [d["date"] for b in site["brands"].values()
                  for m in b["models"].values() for d in (m.get("daily") or [])]
@@ -7968,7 +8116,7 @@ class TestDashboardContract(unittest.TestCase):
 
     @staticmethod
     def _models():
-        site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        site = parse_sheet((Path(__file__).parent.parent / "docs" / "data.json").read_text())
         return site, [(bk, mk, m) for bk, b in site["brands"].items()
                       for mk, m in b["models"].items()]
 
@@ -8106,7 +8254,7 @@ class TestShareCard(unittest.TestCase):
     def test_the_card_names_no_car(self):
         """The watchlist is config: brands and models come and go (Chevrolet
         did). A card that names one is a card that has to be retaken."""
-        site = json.loads((self.ROOT / "docs" / "data.json").read_text())
+        site = parse_sheet((self.ROOT / "docs" / "data.json").read_text())
         names = {b["label"] for b in site["brands"].values()}
         names |= {m["label"] for b in site["brands"].values() for m in b["models"].values()}
         # The subject comes from today's data.json, never from a name typed in
@@ -8353,7 +8501,7 @@ class TestFinance(unittest.TestCase):
     def test_the_dashboard_gets_the_table(self):
         """docs/data.json is what the page actually reads; the block has to
         survive the export, not just exist in the config."""
-        site = json.loads((Path(__file__).parent.parent / "docs" / "data.json").read_text())
+        site = parse_sheet((Path(__file__).parent.parent / "docs" / "data.json").read_text())
         fin = (site.get("buyer") or {}).get("finance")
         if not fin:
             self.skipTest("no finance block in this snapshot")
@@ -9579,7 +9727,7 @@ class TestExitStats(UsesFixtureTargets):
                              f"{tid} really does open two windows plus a newest probe")
 
     def test_the_published_sheet_carries_no_exit_price_it_cannot_defend(self):
-        sheet = json.loads((Path(__file__).parent.parent / "docs/data.json").read_text())
+        sheet = parse_sheet((Path(__file__).parent.parent / "docs/data.json").read_text())
         bad = []
         for b in (sheet.get("brands") or {}).values():
             for m in (b.get("models") or {}).values():
@@ -9593,7 +9741,7 @@ class TestExitStats(UsesFixtureTargets):
         """Withholding the exit PRICE is not withholding the departures. "This
         stopped being listed" is true whatever pushed it out, and the gone list
         labels each one; only the dollar claim built on top is withheld."""
-        sheet = json.loads((Path(__file__).parent.parent / "docs/data.json").read_text())
+        sheet = parse_sheet((Path(__file__).parent.parent / "docs/data.json").read_text())
         gone = [g for b in (sheet.get("brands") or {}).values()
                 for m in (b.get("models") or {}).values()
                 for g in (m.get("gone") or [])]

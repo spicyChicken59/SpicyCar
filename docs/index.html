@@ -43,6 +43,7 @@
      The no-op catch keeps a failing fetch from firing an unhandled rejection
      before the page's own handler below picks the same promise up. -->
 <script>window.__data = fetch('data.json?v=' + Date.now(), { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }); window.__data.catch(function () {});</script>
+<script src="sheet-transport.js"></script>
 <link rel="stylesheet" href="design-system/sc.css">
 <script src="design-system/sc-theme.js"></script>
 <script src="design-system/sc-motion.js" defer></script>
@@ -7527,7 +7528,7 @@
     try {
       const response = await fetch('data.json?v=' + Date.now(), { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
-      const raw = await response.json(), signature = JSON.stringify(raw);
+      const raw = SpicyCarSheet.decode(await response.json()), signature = JSON.stringify(raw);
       if (!raw.brands || !Object.keys(raw.brands).length) throw new Error('Empty listing feed');
       const changed = signature !== feedSignature;
       if (changed) {
@@ -7549,7 +7550,7 @@
       lastFeedCheck = Date.now();
       if (manual) { status.hidden = false; status.textContent = (changed ? 'Loaded the latest published listings. ' : 'You have the latest published listings. ') + 'Data through ' + (dataThrough() || '—') + '. Models follow their own check schedules.'; }
     } catch (error) {
-      if (manual) { status.hidden = false; status.textContent = 'Could not check for updates. Your current listings are still available. Try Refresh again.'; }
+      status.hidden = false; status.textContent = 'Could not check for updates. Your current listings are still available. Try Refresh again.';
     } finally { refreshPending = false; button.disabled = false; button.textContent = 'Refresh'; syncBarHeight(); }
   }
   $('data-refresh').addEventListener('click', () => refreshFeed(true));
@@ -7563,7 +7564,8 @@
   $('shop-cost-controls').onclick = () => { const card = $('filters-card'); card.classList.add('is-open'); $('filter-toggle').setAttribute('aria-expanded','true'); card.scrollIntoView({block:'start'}); $('f-term').focus(); };
   (window.__data || fetch('data.json?v=' + Date.now(), { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }))
-    .then((raw) => {
+    .then((wire) => {
+      const raw = SpicyCarSheet.decode(wire);
       feedSignature = JSON.stringify(raw);
       const site = adapt(raw || {});
       if (!site.brands || !Object.keys(site.brands).length) { fail('The file loaded but contains no brands or targets.'); return; }
