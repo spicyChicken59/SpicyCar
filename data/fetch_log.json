@@ -3092,5 +3092,187 @@
     "window": 27270
    }
   }
+ },
+ "2026-09-23": {
+  "audi-a6-etron": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 36,
+    "window": 46496
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 3,
+    "total": 3,
+    "window": 64602
+   }
+  },
+  "bmw-i7-edrive50": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 123,
+    "window": 63081
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 5,
+    "total": 5,
+    "window": 73689
+   }
+  },
+  "chevrolet-equinox-ev": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 3517,
+    "window": null
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 882,
+    "window": 22850
+   }
+  },
+  "honda-prologue": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 1999,
+    "window": 21868
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 175,
+    "window": 26396
+   }
+  },
+  "kia-ev9": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 2308,
+    "window": 31402
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 235,
+    "window": 39488
+   }
+  },
+  "lexus-rz": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 165,
+    "window": 31840
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 12,
+    "total": 11,
+    "window": 58197
+   }
+  },
+  "nissan-ariya": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 1115,
+    "window": 19720
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 157,
+    "window": 22873
+   }
+  },
+  "rivian-r1s": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 357,
+    "window": 59495
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 30,
+    "window": 67980
+   }
+  },
+  "toyota-bz4x": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 482,
+    "window": 21295
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 43,
+    "window": 27270
+   }
+  }
  }
 }
