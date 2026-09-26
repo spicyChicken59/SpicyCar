@@ -1,0 +1,9 @@
+FAIL omission captions: synthetic map 320px light, keyboard and wrapping — Expected values to be strictly equal:
+FAIL omission captions: synthetic chart 320px light, keyboard and wrapping — omission explanation does not claim every subject lacks mileage
+FAIL omission captions: synthetic map 320px dark, keyboard and wrapping — Expected values to be strictly equal:
+FAIL omission captions: synthetic chart 320px dark, keyboard and wrapping — omission explanation does not claim every subject lacks mileage
+FAIL omission captions: synthetic map 1280px light, keyboard and wrapping — Expected values to be strictly equal:
+FAIL omission captions: synthetic chart 1280px light, keyboard and wrapping — omission explanation does not claim every subject lacks mileage
+FAIL omission captions: synthetic map 1280px dark, keyboard and wrapping — Expected values to be strictly equal:
+FAIL omission captions: synthetic chart 1280px dark, keyboard and wrapping — omission explanation does not claim every subject lacks mileage
+browse smoke: 8 check(s) failed
