@@ -1,0 +1,15 @@
+snapshot subjects: 11 plot omissions; 0 map omissions
+ok omission captions: committed versioned snapshot plot membership and ordering
+ok omission captions: synthetic map 320px light, keyboard and wrapping
+ok omission captions: synthetic chart 320px light, keyboard and wrapping
+ok omission captions: synthetic map 320px dark, keyboard and wrapping
+ok omission captions: synthetic chart 320px dark, keyboard and wrapping
+ok omission captions: synthetic map 1280px light, keyboard and wrapping
+ok omission captions: synthetic chart 1280px light, keyboard and wrapping
+ok omission captions: synthetic map 1280px dark, keyboard and wrapping
+ok omission captions: synthetic chart 1280px dark, keyboard and wrapping
+ok omission captions: replacement, fit, map area and outside-VIN selection
+ok omission captions: real map group membership and geographic reset
+ok omission captions: filtered reset, shopping scope, Back and reload
+ok omission captions: save, note, compare, focus return and reload through real writes
+browse smoke: the checks named "omission captions" passed, zero page errors
