@@ -549,5 +549,24 @@
   "silent_targets": [],
   "targets_due": 8,
   "unrun": 0
+ },
+ "2026-10-08": {
+  "actual": 32,
+  "banked": 1,
+  "empty_targets": [],
+  "exhausted": 5,
+  "failed": 0,
+  "filtered_targets": [],
+  "off_plan": {
+   "bmw-i7-m70": [
+    3,
+    2
+   ]
+  },
+  "planned": 33,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 8,
+  "unrun": 0
  }
 }
