@@ -415,7 +415,7 @@ Python byte counts; the dashboard harness prints exact Node counts and remaining
 
 | the sheet | models | cars | gzipped | of budget |
 |---|---|---|---|---|
-| as committed | 21 | 1,689 | 577 KiB | 144% |
+| as committed | 21 | 1,701 | 589 KiB | 147% |
 
 The September 21 logical snapshot at `c6510d077be197139a5ee88e365e1a9632ba4a87`
 is now delivered as **`spicycar-sheet`, version 1**. It stores each distinct object field
