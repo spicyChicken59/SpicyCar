@@ -16,7 +16,7 @@
   const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function create({ root, openCar, starCar, quickCar, resetFilters, plotCars, onSelect, onView }) {
     let cars = [], map = null, layer = null, selected = null, limit = 8, scope = null, mounted = false, tileFailure = '', activePopup = null, pinKey = '';
-    let areaBounds = null, groupVins = null, display = 'cars', mapSized = false, plotKey = '';
+    let areaBounds = null, groupVins = null, groupReason = null, display = 'cars', mapSized = false, plotKey = '';
     // The one visible-candidate list. The cards, the map, the plot, the counts
     // and every omission sentence read it, so no two of them can be looking at
     // different cars.
@@ -61,11 +61,11 @@
     const panel = node('aside', 'car-place-panel'); panel.setAttribute('aria-label', 'The cars in view, on a map and against their mileage');
     const heading = node('div', 'car-place-heading');
     const panelHeading = node('h3', null, 'Where could you buy?');
-    const fitButton = button('Fit all cars', 'car-text-button', () => { areaBounds = null; groupVins = null; limit = 8; renderCards(); fit(); });
+    const fitButton = button('Fit all cars', 'car-text-button', () => { areaBounds = null; groupVins = null; groupReason = null; limit = 8; renderCards(); fit(); });
     const localButton = button('Drivable area', 'car-text-button', () => {
       const near = cars.filter((c) => c.local && located(c)); if (map && near.length) { map.fitBounds(near.map((c) => [c.lat,c.lng]), {padding:[32,32],maxZoom:9,animate:false}); }
     });
-    const areaButton = button('Search this map area', 'car-area-button', () => { if (!map) return; areaBounds = map.getBounds(); groupVins = null; limit = 8; renderCards(); setDisplay('cars'); count.focus({preventScroll:true}); });
+    const areaButton = button('Search this map area', 'car-area-button', () => { if (!map) return; areaBounds = map.getBounds(); groupVins = null; groupReason = null; limit = 8; renderCards(); setDisplay('cars'); count.focus({preventScroll:true}); });
     const moveButton = button('Move map', 'car-text-button car-move-map', () => { moving = !moving; syncTouch(); });
     moveButton.hidden = !touch;
     heading.append(panelHeading, panelSwitch, moveButton, localButton, fitButton);
@@ -91,6 +91,7 @@
     // omission is never a car quietly missing from the shopping trip.
     const missing = node('p', 'car-place-missing'); missing.setAttribute('role', 'status');
     const missingReach = button('', 'car-text-button car-missing-reach', () => {
+      groupReason = panelView() === 'chart' ? 'plot-omission' : 'map-omission';
       groupVins = new Set(offView().map((c) => c.vin)); areaBounds = null; limit = 8;
       renderCards(); setDisplay('cars'); count.focus({ preventScroll: true });
     });
@@ -100,7 +101,7 @@
     const column = node('div', 'car-place-results');
     const count = node('p', 'car-place-count');
     count.tabIndex = -1;
-    const resetArea = button('Show all matching cars', 'car-text-button car-reset-area', () => { areaBounds = null; groupVins = null; limit = 8; renderCards(); }); resetArea.hidden = true;
+    const resetArea = button('Show all matching cars', 'car-text-button car-reset-area', () => { areaBounds = null; groupVins = null; groupReason = null; limit = 8; renderCards(); }); resetArea.hidden = true;
     const cards = node('div', 'car-place-cards');
     const more = button('Show more cars', 'car-discovery-more', () => {
       const firstNew = limit; limit += 8; renderCards();
@@ -165,7 +166,7 @@
       const names = off.slice(0, 3).map((c) => c.title).join(', ');
       missing.textContent = !n ? (chart ? 'Every car in view has a published price and mileage.' : 'Every car in view has a location on the map.')
         : `${n} ${n === 1 ? 'car is' : 'cars are'} in your results but not on this ${chart ? 'plot' : 'map'}: `
-          + (chart ? `${n === 1 ? 'its mileage was' : 'their mileage was'} never published` : `${n === 1 ? 'its location is' : 'their locations are'} not verified`)
+          + (chart ? 'price or mileage is unavailable' : `${n === 1 ? 'its location is' : 'their locations are'} not verified`)
           + `${names ? ' — ' + names + (n > 3 ? ` and ${n - 3} more` : '') : ''}.`;
       missingReach.hidden = !n;
       missingReach.textContent = n ? `Show ${n === 1 ? 'it' : 'them'} in the cards` : '';
@@ -198,7 +199,7 @@
     function highlight(vin, scroll) {
       const changed = selected !== vin;
       selected = vin;
-      if (!inView().some((c) => c.vin === vin) && cars.some((c) => c.vin === vin)) { areaBounds = null; groupVins = null; }
+      if (!inView().some((c) => c.vin === vin) && cars.some((c) => c.vin === vin)) { areaBounds = null; groupVins = null; groupReason = null; }
       const index = inView().findIndex((c) => c.vin === vin);
       if (index >= limit) limit = Math.ceil((index + 1) / 8) * 8;
       renderCards();
@@ -217,6 +218,7 @@
         node('p', null, 'Approximate locations · asking prices'));
       if (group.length > 1) {
         box.append(button('Browse these ' + group.length + ' cars', 'car-cluster-browse', () => {
+          groupReason = 'map-group';
           groupVins = new Set(group.map((c) => c.vin)); areaBounds = null; limit = 8; renderCards(); setDisplay('cars'); map.closePopup(); count.focus({preventScroll:true});
         }));
         const unique = new Set(group.map((c) => c.lat + ',' + c.lng));
@@ -284,7 +286,11 @@
       const focusStar = prior && cards.contains(prior) && prior.dataset.fkey;
       cards.replaceChildren();
       const visible = inView();
-      count.textContent = visible.length + ' cars' + (groupVins ? ' at this location' : areaBounds ? ' in this map area' : ' matching your search');
+      // Group membership alone does not say why these cars were selected.
+      // Keep that reason through presentation switches; it is never persisted.
+      const groupCaption = groupReason === 'map-omission' ? ' not shown on the map'
+        : groupReason === 'plot-omission' ? ' not shown on the price/mileage plot' : ' in this map group';
+      count.textContent = visible.length + ' cars' + (groupVins ? groupCaption : areaBounds ? ' in this map area' : ' matching your search');
       resetArea.hidden = !areaBounds && !groupVins;
       for (const c of visible.slice(0, limit)) {
         const card = node('article', 'car-place-card' + (selected === c.vin ? ' is-selected' : ''));
@@ -340,7 +346,7 @@
       more.hidden = limit >= visible.length;
       more.textContent = 'Show ' + Math.min(8, visible.length - limit) + ' more cars';
       if (!visible.length) cards.append(node('p', 'car-map-unavailable', areaBounds ? 'No cars in this area. Move the map and search again, or show all matching cars.' : 'No cars match these filters. Change the filters above to bring them back.'));
-      if (!visible.length && resetFilters) cards.append(button('Reset search filters', 'studio-button', () => { areaBounds=null;groupVins=null;limit=8;resetFilters(); }));
+      if (!visible.length && resetFilters) cards.append(button('Reset search filters', 'studio-button', () => { areaBounds=null;groupVins=null;groupReason=null;limit=8;resetFilters(); }));
       if (focusVin && focusAction) {
         const restore = [...cards.querySelectorAll('[data-focus-vin]')].find((b) => b.dataset.focusVin === focusVin && b.dataset.focusAction === focusAction);
         if (restore) restore.focus({ preventScroll: true });
@@ -356,7 +362,7 @@
         // but it does not throw away the car the reader is looking at: the
         // selection survives every scope change that leaves the car in the
         // results, and only a car the filters actually removed is dropped.
-        if (scope !== nextScope) { limit = 8; areaBounds = null; groupVins = null; }
+        if (scope !== nextScope) { limit = 8; areaBounds = null; groupVins = null; groupReason = null; }
         if (selected && !cars.some((c) => c.vin === selected)) selected = null;
         ensureMap(); fitButton.disabled = !map || !cars.some(located); localButton.disabled = !map || !cars.some((c) => c.local && located(c)); areaButton.disabled = !map; renderCards(); locationStatus();
         if (map) { if (scope !== nextScope) { map.closePopup(); fit(); pinKey = ''; } drawPins(); markSelection(); }
