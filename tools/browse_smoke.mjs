@@ -201,9 +201,11 @@ const open = async (page, query = '') => {
 };
 const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: join(SHOTS, name + '.png') }); };
 
-let failures = 0;
+let failures = 0, declared = 0, executed = 0;
 const step = async (name, body) => {
+  declared += 1;
   if (ONLY && !name.includes(ONLY)) return;
+  executed += 1;
   try { await body(); console.log('ok ' + name); }
   catch (e) { failures += 1; console.log('FAIL ' + name + ' — ' + String((e && e.message) || e).split('\n')[0]); }
 };
@@ -238,7 +240,7 @@ try {
       const plotNote = await page.locator('.car-place-plot .car-map-foot').textContent();
       assert.ok(plotNote.includes(String(dots)), `the plot's caption counts its own dots: "${plotNote}"`);
       const plotMissing = await page.locator('.car-place-missing').textContent();
-      if (noMiles) assert.ok(plotMissing.includes(String(noMiles)) && /mileage was never published/i.test(plotMissing),
+      if (noMiles) assert.ok(plotMissing.includes(String(noMiles)) && /price or mileage is unavailable/i.test(plotMissing),
         `the plot names its ${noMiles} unplottable cars: "${plotMissing}"`);
       await shot(page, 'desktop-plot');
     } finally { await context.close(); }
@@ -2006,6 +2008,288 @@ try {
     });
   }
 
+  // Caption regression subjects are synthetic copies, never observations or
+  // writes to the committed versioned snapshot. Each field absence is named.
+  const [NO_MILES, NO_PRICE, NO_BOTH, NO_COORDS, BAD_COORDS] = shapeable.slice(3, 8).map(x => x.vin);
+  const omissionRecord = () => {
+    const d = clone();
+    // Ten explicitly labeled synthetic subjects keep pagination exercised
+    // without walking hundreds of unchanged real cards in every theme case.
+    const subjects = new Set(shapeable.slice(0,10).map(x => x.vin));
+    for (const o of all.filter(o => shopped.includes(o.key)))
+      d.brands[o.bk].models[o.mk].listings = rowsOf(o).filter(x => subjects.has(x.vin)).map(x => ({...x}));
+    shape(d, NO_MILES, c => { c.miles = null; });
+    shape(d, NO_PRICE, c => { c.price = null; });
+    shape(d, NO_BOTH, c => { c.price = null; c.miles = null; c.lat = null; c.lon = null; });
+    shape(d, NO_COORDS, c => { c.lat = null; c.lon = null; });
+    shape(d, BAD_COORDS, c => { c.lat = 91; c.lon = 181; });
+    return d;
+  };
+  const recordPool = d => all.filter(o => shopped.includes(o.key)).flatMap(o => d.brands[o.bk].models[o.mk].listings);
+  const cardVins = page => page.locator('.car-place-card').evaluateAll(cs => cs.map(c => c.dataset.carVin));
+  const allCards = async page => {
+    for (let guard = 0; await page.locator('.car-discovery-more').isVisible(); guard++) {
+      assert.ok(guard < 250, 'pagination terminates');
+      await page.locator('.car-discovery-more').click();
+    }
+    return cardVins(page);
+  };
+  const caption = page => page.locator('.car-place-count').textContent();
+  const present = async (page, mode, width = 1280) => {
+    if (width <= 420) await page.locator('.car-view-button').filter({hasText: mode === 'map' ? /^Map$/ : mode === 'chart' ? /^Price$/ : /^Cars$/}).click();
+    else if (mode !== 'cars') await page.locator('.car-panel-switch .sc-tab').filter({hasText: mode === 'map' ? /^Map$/ : /Price & miles/}).click();
+    await page.waitForTimeout(100);
+  };
+  const reachOmissions = async (page, mode, width = 1280) => {
+    await present(page, mode, width);
+    const reach = page.locator('.car-missing-reach');
+    assert.ok(await reach.isVisible(), `${mode} omission subjects exist`);
+    await reach.focus(); await page.keyboard.press('Enter');
+    assert.equal(await page.locator('.car-place-count').evaluate(n => n === document.activeElement), true, 'keyboard activation focuses the count');
+  };
+  const expectGroup = async (page, mode, expected) => {
+    assert.ok(expected.length, 'the expected group has subjects');
+    assert.equal(await caption(page), `${expected.length} cars ${mode === 'map' ? 'not shown on the map' : 'not shown on the price/mileage plot'}`);
+    const actual = await allCards(page);
+    assert.equal(new Set(actual).size, actual.length, 'pagination has no duplicate VINs');
+    assert.deepEqual([...actual].sort(), [...expected].sort(), 'complete exact VIN membership');
+    return actual;
+  };
+
+  await step('omission captions: committed versioned snapshot plot membership and ordering', async () => {
+    const {context, page} = await session({once:true});
+    try {
+      await open(page);
+      const before = await allCards(page);
+      const omitted = pool.filter(x => !plottable(x)).map(x => x.vin);
+      await reachOmissions(page, 'chart');
+      await page.locator('.car-place-count').evaluate(n => n.scrollIntoView({block:'start'}));
+      await shot(page,'caption-snapshot-chart-1280-dark');
+      const shown = await expectGroup(page, 'chart', omitted);
+      assert.deepEqual(shown, before.filter(v => omitted.includes(v)), 'omission preserves the existing candidate order');
+      await page.locator('.car-reset-area').click();
+      assert.equal(await caption(page), `${pool.length} cars matching your search`);
+      assert.deepEqual(await allCards(page), before, 'show all restores the exact original ordered set');
+      // This snapshot has no coordinate omissions in the chosen models. State
+      // that explicitly; map omission coverage below uses labeled fixtures.
+      console.log(`snapshot subjects: ${omitted.length} plot omissions; ${pool.filter(x => !located(x)).length} map omissions`);
+    } finally {await context.close();}
+  });
+
+  for (const width of [320,1280]) for (const theme of ['light','dark']) for (const mode of ['map','chart']) {
+    await step(`omission captions: synthetic ${mode} ${width}px ${theme}, keyboard and wrapping`, async () => {
+      const record = omissionRecord(), rows = recordPool(record);
+      const expected = rows.filter(x => mode === 'map' ? !located(x) : !plottable(x)).map(x => x.vin);
+      for (const v of mode === 'map' ? [NO_COORDS, BAD_COORDS, NO_BOTH] : [NO_MILES, NO_PRICE, NO_BOTH]) assert.ok(expected.includes(v), `named subject ${v} exists`);
+      const {context,page} = await session({record,width,theme,once:true});
+      try {
+        await open(page);
+        const original = await allCards(page);
+        await present(page,mode,width);
+        if (mode === 'map') {
+          const marked = await page.locator('.car-dot-marker').evaluateAll(ms => ms.reduce((n,m) => n + Number(m.dataset.carCount),0));
+          assert.equal(marked, rows.filter(located).length, 'markers account for exactly the usable-coordinate rows');
+        } else {
+          const dots = await page.locator('#car-plot [data-plot-vin]').evaluateAll(ds => ds.map(d => d.dataset.plotVin));
+          assert.deepEqual(dots.sort(), rows.filter(plottable).map(x => x.vin).sort(), 'no missing-price, missing-mileage or overlapping subject gets a dot');
+          // The evidence sentence is asserted after capturing the caption below.
+
+        }
+        const omissionMessage = await page.locator('.car-place-missing').textContent();
+        await reachOmissions(page,mode,width);
+        const first = await cardVins(page);
+        assert.deepEqual(first, original.filter(v => expected.includes(v)).slice(0,8), 'first page preserves ordering');
+        const count = await caption(page);
+        // Put the count at the top, with the first relevant card in the same
+        // screenshot, rather than photographing an unrelated page heading.
+        await page.locator('.car-place-count').evaluate(n => n.scrollIntoView({block:'start'}));
+        await shot(page,`caption-fixture-${mode}-${width}-${theme}`);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'no horizontal page overflow');
+        assert.equal(await page.locator('.car-place-count').evaluate(n => n.scrollWidth <= n.clientWidth + 1), true, 'caption wraps inside its available width');
+        if (mode === 'chart') assert.match(omissionMessage,/price or mileage.*unavailable/i,'omission explanation does not claim every subject lacks mileage');
+        assert.deepEqual(await expectGroup(page,mode,expected), original.filter(v => expected.includes(v)));
+        if (mode === 'map') assert.equal(await page.locator('[data-focus-action="map"]').count(),0,'omitted cards never gain a show-on-map action');
+        for (const next of ['chart','map','cars']) {
+          await present(page,next,width);
+          assert.equal(await caption(page),count,'presentation never changes the group reason');
+        }
+        await page.locator('.car-reset-area').focus(); await page.keyboard.press('Space');
+        assert.equal(await caption(page),`${rows.length} cars matching your search`);
+        assert.deepEqual(await allCards(page), original,'keyboard reset restores current ordered candidates');
+        await reachOmissions(page,mode,width);
+        await page.getByRole('button',{name:'Compare & save',exact:true}).click();
+        await page.getByRole('button',{name:'Explore cars',exact:true}).click();
+        assert.equal(await caption(page),count,'route switches retain the active transient group and its reason');
+        // Workspace tabs replace history; Deal radar creates a history entry.
+        // Its scope change clears temporary groups, and Back must not revive one.
+        await page.locator('#studio-mission').selectOption('saved');
+        assert.match(await caption(page),/ matching your search$/);
+        await page.goBack();
+        await page.locator('.car-place-count').waitFor({state:'visible'});
+        assert.equal(await caption(page),`${rows.length} cars matching your search`,'Back restores scope without resurrecting a cleared group');
+        await reachOmissions(page,mode,width);
+        await page.reload(); await page.locator('.car-place-card').first().waitFor();
+        assert.equal(await caption(page),`${rows.length} cars matching your search`,'reload clears transient membership and reason together');
+        assert.deepEqual(await allCards(page),original,'reload preserves the full chosen candidate set');
+      } finally {await context.close();}
+    });
+  }
+
+  await step('omission captions: replacement, fit, map area and outside-VIN selection', async () => {
+    const record = omissionRecord(), rows = recordPool(record);
+    const {context,page} = await session({record,once:true});
+    try {
+      await open(page);
+      const original = await allCards(page);
+      await reachOmissions(page,'chart');
+      await reachOmissions(page,'map');
+      await expectGroup(page,'map',rows.filter(x => !located(x) && !plottable(x)).map(x => x.vin));
+      await page.getByRole('button',{name:'Fit all cars',exact:true}).click();
+      assert.equal(await caption(page),`${rows.length} cars matching your search`);
+      assert.deepEqual(await allCards(page),original);
+      await reachOmissions(page,'map');
+      await page.getByRole('button',{name:'Search this map area',exact:true}).click();
+      const locatedVins = rows.filter(located).map(x => x.vin);
+      assert.equal(await caption(page),`${locatedVins.length} cars in this map area`);
+      assert.deepEqual((await allCards(page)).sort(),locatedVins.sort(),'fitted map area has the exact located set, replacing omissions');
+      await page.locator('.car-reset-area').click();
+      await reachOmissions(page,'chart');
+      // Map markers intentionally retain the full filtered set. Choose a real
+      // popup VIN outside the active subset through the existing controls.
+      const marker = page.locator('.car-dot-marker').filter({has:page.locator('.is-group')}).first();
+      assert.ok(await marker.count(),'a map group exists');
+      await marker.click();
+      const entries = page.locator('.car-popup-car');
+      assert.ok(await entries.count(),'the map group has selectable cars');
+      await entries.first().click();
+      const selected = new URL(page.url()).searchParams.get('car');
+      assert.ok(rows.some(x => x.vin === selected && plottable(x)),'the chosen map VIN is outside plot omissions');
+      assert.equal(await caption(page),`${rows.length} cars matching your search`);
+      assert.deepEqual(await allCards(page),original,'selecting outside the subset restores the same candidate set');
+    } finally {await context.close();}
+  });
+
+  await step('omission captions: real map group membership and geographic reset', async () => {
+    const {context,page} = await session({once:true});
+    try {
+      await open(page);
+      const original = await allCards(page);
+      await present(page,'map');
+      const marker = page.locator('.car-dot-marker').filter({has:page.locator('.is-group')}).first();
+      assert.ok(await marker.count(),'real snapshot has a grouped marker');
+      const label = await marker.getAttribute('aria-label');
+      await marker.click();
+      const n = await page.locator('.car-popup-car').count();
+      assert.ok(n > 1,'the popup has multiple actual cars');
+      // Resolve exact VINs by activating every real popup row; no inferred
+      // association from caption counts or city labels.
+      const vins = [];
+      for (let i=0;i<n;i++) {
+        if (i) await page.locator('.car-dot-marker').filter({has:page.locator('.is-group')}).and(page.locator(`[aria-label=${JSON.stringify(label)}]`)).click();
+        await page.locator('.car-popup-car').nth(i).click();
+        vins.push(new URL(page.url()).searchParams.get('car'));
+      }
+      assert.equal(new Set(vins).size,n,'popup rows identify distinct VINs');
+      assert.ok(vins.every(v => pool.some(x => x.vin === v && located(x))));
+      await page.locator('.car-dot-marker').and(page.locator(`[aria-label=${JSON.stringify(label)}]`)).click();
+      await page.locator('.car-cluster-browse').focus(); await page.keyboard.press('Enter');
+      assert.equal(await caption(page),`${n} cars in this map group`);
+      assert.equal(await page.locator('.car-place-count').evaluate(n => document.activeElement===n),true);
+      assert.deepEqual(await allCards(page),original.filter(v => vins.includes(v)),'cluster cards match exact popup VIN membership and ordering');
+      await present(page,'chart');
+      assert.equal(await caption(page),`${n} cars in this map group`,'a plot switch keeps the geographic selection reason');
+      await page.getByRole('button',{name:'Compare & save',exact:true}).click();
+      await page.getByRole('button',{name:'Explore cars',exact:true}).click();
+      assert.equal(await caption(page),`${n} cars in this map group`,'route switches preserve the active map group');
+      await page.locator('.car-reset-area').click();
+      assert.equal(await caption(page),`${pool.length} cars matching your search`);
+      assert.deepEqual(await allCards(page),original);
+      await present(page,'map');
+      await page.getByRole('button',{name:'Fit all cars',exact:true}).click();
+      await page.getByRole('button',{name:'Search this map area',exact:true}).click();
+      assert.equal(await caption(page),`${pool.filter(located).length} cars in this map area`);
+      await page.locator('#studio-mission').selectOption('saved');
+      await page.goBack(); await page.locator('.car-place-count').waitFor({state:'visible'});
+      assert.equal(await caption(page),`${pool.length} cars matching your search`,'Back does not revive a cleared geographic selection');
+      await page.getByRole('button',{name:'Search this map area',exact:true}).click();
+      assert.match(await caption(page),/ in this map area$/);
+      await page.reload(); await page.locator('.car-place-card').first().waitFor();
+      assert.equal(await caption(page),`${pool.length} cars matching your search`,'reload clears geographic narrowing and caption together');
+    } finally {await context.close();}
+  });
+
+  await step('omission captions: filtered reset, shopping scope, Back and reload', async () => {
+    const record = omissionRecord();
+    const {context,page} = await session({record,once:true});
+    try {
+      await open(page);
+      await page.locator('#filter-toggle').click();
+      await page.locator('#f-clean').check();
+      await page.locator('#f-sort').selectOption('price');
+      // Close the filter popover with its own button if it covers the cards.
+      await page.keyboard.press('Escape');
+      const original = await allCards(page);
+      assert.ok(original.includes(NO_MILES),'filtered omission subject remains');
+      const prefsBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('spicycar.prefs')));
+      await reachOmissions(page,'chart');
+      await page.locator('.car-reset-area').click();
+      assert.deepEqual(await allCards(page),original,'show all keeps the global requirements and order');
+      assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('spicycar.prefs'))),prefsBefore,'no hidden preference change');
+      await reachOmissions(page,'chart');
+      await page.getByRole('button',{name:'Choose cars',exact:true}).click();
+      await page.getByRole('button',{name:'Clear',exact:true}).click();
+      await page.getByRole('checkbox',{name:SHOP.m.label,exact:true}).check();
+      await page.getByRole('button',{name:'Shop these models',exact:true}).click();
+      assert.match(await caption(page),/ matching your search$/,'shopping scope clears the temporary reason');
+      const scoped = await allCards(page);
+      assert.ok(scoped.length && scoped.every(v => record.brands[SHOP.bk].models[SHOP.mk].listings.some(x => x.vin===v)),'only explicitly chosen model remains');
+      await page.getByRole('button',{name:'Compare & save',exact:true}).click();
+      await page.goBack();
+      await page.locator('.car-place-count').waitFor({state:'visible'});
+      assert.match(await caption(page),/ matching your search$/,'Back carries no stale omission reason after scope reset');
+      await page.reload(); await page.locator('.car-place-card').first().waitFor();
+      assert.match(await caption(page),/ matching your search$/,'reload starts without a transient group');
+      // Existing semantics: clean/sort are session-only; chosen models persist.
+      // Do not turn a caption correction into new filter persistence.
+      assert.equal(await page.locator('#f-clean').isChecked(),false);
+      assert.equal(await page.locator('#f-sort').inputValue(),'local');
+      assert.deepEqual((await allCards(page)).sort(),record.brands[SHOP.bk].models[SHOP.mk].listings.map(x=>x.vin).sort(),'reload restores exactly the chosen model under existing filter semantics');
+    } finally {await context.close();}
+  });
+
+  await step('omission captions: save, note, compare, focus return and reload through real writes', async () => {
+    const record = omissionRecord(), NOTE = 'Synthetic omission acceptance: ask about the second key. No enquiry sent.';
+    const {context,page} = await session({record,prefs:{...PREFS,stars:{},compareOut:[]},notes:null,seen:null,once:true});
+    try {
+      await open(page);
+      await reachOmissions(page,'chart');
+      await allCards(page);
+      const look = page.locator(`[data-focus-vin="${NO_MILES}"][data-focus-action="look"]`);
+      assert.equal(await look.count(),1,'named omitted VIN is reachable');
+      await look.focus(); await page.keyboard.press('Enter');
+      await page.locator('.studio-dialog[open]').waitFor();
+      await page.locator(`select[aria-label="Status for ${NO_MILES}"]`).selectOption('short');
+      await page.locator('.studio-notes').fill(NOTE);
+      await page.waitForTimeout(300);
+      await page.keyboard.press('Escape');
+      assert.equal(await look.evaluate(n=>document.activeElement===n),true,'dialog returns keyboard focus to the omitted car');
+      assert.match(await caption(page),/not shown on the price\/mileage plot$/,'saving retains the group reason');
+      await page.getByRole('button',{name:'Compare & save',exact:true}).click();
+      const heads = () => page.locator('#finalists-table thead th [data-fkey^="fin:"]').evaluateAll(ns=>ns.map(n=>n.dataset.fkey.slice(4)));
+      assert.deepEqual(await heads(),[NO_MILES],'saving adds exactly this VIN to comparison');
+      await page.reload();
+      await page.locator('#finalists-table thead th').first().waitFor();
+      assert.deepEqual(await heads(),[NO_MILES],'comparison survived reload without reseeding');
+      const stored = await page.evaluate(()=>({prefs:JSON.parse(localStorage.getItem('spicycar.prefs')),notes:JSON.parse(localStorage.getItem('spicycar.garage'))}));
+      assert.equal(stored.prefs.stars[NO_MILES],'short'); assert.equal(stored.notes[NO_MILES],NOTE);
+      assert.ok(!(stored.prefs.compareOut||[]).includes(NO_MILES));
+      await page.getByRole('button',{name:'Explore cars',exact:true}).click();
+      assert.match(await caption(page),/ matching your search$/,'reload never persists an omission group');
+    } finally {await context.close();}
+  });
+
+  assert.equal(declared, 76, 'all 63 existing and 13 caption checks remain declared');
+  console.log(`browse checks: ${declared} declared, ${executed - failures} passed, ${failures} failed, 0 skipped, ${declared - executed} not run`);
   assert.deepEqual(errors, [], 'page errors: ' + errors.join(' | '));
   if (failures) { console.log(`browse smoke: ${failures} check(s) failed`); process.exitCode = 1; }
   else console.log(`browse smoke: ${ONLY ? 'the checks named "' + ONLY + '" passed' : 'all checks passed'}, zero page errors`);
