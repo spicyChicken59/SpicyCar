@@ -1,13 +1,11 @@
-# SpicyCar — 2026-10-11
+# SpicyCar — 2026-10-12
 
 ## Today
 
-- ▼ $6,910 cut · BMW i7 eDrive50 · now $53,990 · location n/a `WBY43EJ02RCR28438`
-- ▼ $2,700 cut · BMW i7 eDrive50 · now $59,377 · Jacksonville, FL `WBY43EJ09RCP07905`
-- ▼ $2,597 cut · BMW i7 eDrive50 · now $56,050 · Plano, TX `WBY43EJ01RCP07011`
-- …and 56 more cuts today, 8 of them listed in the sections below
-- 26 new on the shopped models (8 listed 14+ days before the tracker saw them — reach, not arrival) · best 19% under typical for a 2026 BMW i7 eDrive50 ($92,599, Scottsdale, AZ · 7,307 mi, from 20 such cars)
-- 32 gone since the last fetch on the shopped models
+- ▼ $9,133 cut · Hyundai Ioniq 9 · now $70,234 · Highland Park, IL · drivable `7YAMYFS58TY011932`
+- ▼ $5,000 cut · BMW iX xDrive (45 / 50 / 60) · now $37,345 · Carroll, OH · drivable `WB523CF04RCN15101`
+- ▼ $3,714 cut · Porsche Taycan · now $92,614 · Fort Wayne, IN · drivable `WP0AA2Y11SSA12159`
+- …and 86 more cuts today on models the sections below do not cover
 
 ## Shopping: BMW i5
 
@@ -412,11 +410,13 @@ _The rear-drive i5, one half of the decision beside the i7 eDrive50._
 
 ## Shopping: BMW i7
 
+_Not fetched today — showing 2026-10-11._
+
 - Lowest asking **$51,000** (Marietta, GA) · + $725 shipping · ▼ $1,372 vs 2026-10-08
 - Lowest drivable **$56,377** (Streetsboro, OH) · no shipping
 - 137 on the market · 11 drivable · 1 with no state · 37 price changes · 26 new · 32 gone
 
-**New today (26)** — first seen this run, 8 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
+**New on 2026-10-11 (26)** — first seen on 2026-10-11, 8 of them listed 14+ days before the tracker saw them — reach, not arrival; best value first
 
 - **$75,298** · 2025 · 5,253 mi · + $725 shipping · Rockville, MD · listed 4d ago
   [listing](https://bmwrockville.com/used/BMW/2025-BMW-i7-1284c408ac18551004d3805de92ebdb0.htm) `WBY43EJ04SCT98902`
@@ -471,7 +471,7 @@ _Worth the ship:_
 _137 vehicles across 3 trims · IL 6 · OH 3 · IN 1 · WI 1 · beyond 125 · no state 1_
 _typical car 30d on market (112 of 137 dated) — 36 under 100 mi at 56d, 74 at 100+ mi at 14d, 2 with no mileage · 38 of 75 ask less than when first seen, median $2,307 less · 5 cut and put back · 57% of 75 cut while tracked, median $1,000 of 95 cuts · 1 seen at two prices, not counted · listings ran at least ~30d (48 of 64 dated)_
 
-### eDrive50 — 55 vehicles tracked of 110 the API lists nationwide · lowest asking $51,000 (Marietta, GA)
+### eDrive50 — 55 vehicles · lowest asking $51,000 (Marietta, GA)
 
 _The other half of the decision, beside the i5 eDrive40._
 
@@ -720,25 +720,25 @@ _under 50,000 miles, no reported accidents, no rental or fleet history; ranked b
 
 _By asking price, with a shipping estimate per car, on a slower cadence: the 20 lowest asking in IL/OH/IN/WI/MI/IA/MO/KY and the 20 lowest asking nationwide per TRIM queried — a model with two trims on the watchlist is the union of two such queries, which is why these counts run past 20. Every car is on the dashboard._
 
-- **BMW iX** — 147 cars · 47 drivable · lowest asking $26,995 (Studio City, CA) + $1,344 shipping · drivable from $37,437 (Angola, IN) · median asking $51,954 _(every 3 days · as of 2026-10-09, 2 days ago)_
-- **BMW i4** — 115 cars · 14 drivable · lowest asking $20,750 (Marietta, GA) + $725 shipping · drivable from $34,357 (East Dundee, IL) · median asking $42,995 _(every 3 days · as of 2026-10-09, 2 days ago)_
-- **Hyundai Ioniq 9** — 82 cars · 29 drivable · lowest asking $39,550 (Cuyahoga Falls, OH) · drivable from $39,550 (Cuyahoga Falls, OH) · median asking $57,987 _(every 3 days · as of 2026-10-09, 2 days ago)_
-- **Kia EV9** — 64 cars · 37 drivable · lowest asking $23,995 (Schenectady, NY) + $828 shipping · drivable from $30,524 (Skokie, IL) · median asking $41,545 _(every 3 days · as of 2026-10-10, 1 day ago)_
-- **Audi A6 e-tron** — 31 cars · 2 drivable · lowest asking $37,796 (Owings Mills, MD) + $746 shipping · drivable from $44,981 (Waukegan, IL) · median asking $47,640 _(every 3 days)_
-- **Lucid Air** — 136 cars · 27 drivable · lowest asking $32,335 (San Diego, CA) + $1,336 shipping · drivable from $35,804 (Naperville, IL) · median asking $41,951 _(every 3 days · as of 2026-10-09, 2 days ago)_
-- **Chevrolet Equinox EV** — 60 cars · 22 drivable · lowest asking $8,320 (Novato, CA) + $1,380 shipping · drivable from $20,313 (Chicago, IL) · median asking $23,426 _(every 3 days)_
-- **Ford Mustang Mach-E** — 66 cars · 30 drivable · lowest asking $20,573 (Irving, TX) + $911 shipping · drivable from $23,274 (Palatine, IL) · median asking $29,540 _(every 3 days · as of 2026-10-10, 1 day ago)_
-- **Nissan Ariya** — 85 cars · 35 drivable · lowest asking $17,098 (Jacksonville, FL) + $965 shipping · drivable from $19,176 (Gurnee, IL) · median asking $21,995 _(every 3 days)_
-- **Mercedes-Benz EQB** — 39 cars · 6 drivable · lowest asking $24,000 (Union City, GA) + $746 shipping · drivable from $26,064 (Berwyn, IL) · median asking $29,012 _(every 3 days · as of 2026-10-10, 1 day ago)_
-- **Porsche Taycan** — 56 cars · 19 drivable · lowest asking $56,000 (Indianapolis, IN) · drivable from $56,000 (Indianapolis, IN) · median asking $95,614 _(every 3 days · as of 2026-10-09, 2 days ago)_
-- **Volkswagen ID.4** — 74 cars · 28 drivable · lowest asking $18,495 (Alvin, TX) + $1,004 shipping · drivable from $19,831 (West Chester, OH) · median asking $23,999 _(every 3 days · as of 2026-10-09, 2 days ago)_
-- **Cadillac Lyriq** — 79 cars · 27 drivable · lowest asking $23,995 (New Madrid, MO) + $531 shipping · drivable from $29,550 (Cuyahoga Falls, OH) · median asking $33,293 _(every 3 days)_
-- **Dodge Charger Daytona** — 35 cars · 5 drivable · lowest asking $28,740 (Quakertown, PA) + $787 shipping · drivable from $29,998 (Springfield, IL) · median asking $32,991 _(every 3 days · as of 2026-10-09, 2 days ago)_
-- **Rivian R1S** — 84 cars · 26 drivable · lowest asking $50,794 (Wall, NJ) + $828 shipping · drivable from $59,990 (Indianapolis, IN) · median asking $66,135 _(every 3 days · as of 2026-10-10, 1 day ago)_
-- **Toyota bZ4X** — 55 cars · 11 drivable · lowest asking $17,990 (Norco, CA) + $1,327 shipping · drivable from $21,000 (Schererville, IN) · median asking $26,300 _(every 3 days)_
-- **Honda Prologue** — 73 cars · 26 drivable · lowest asking $19,676 (Fort Wayne, IN) · drivable from $19,676 (Fort Wayne, IN) · median asking $25,196 _(every 3 days)_
-- **Acura ZDX** — 78 cars · 19 drivable · lowest asking $24,999 (Mahwah, NJ) + $828 shipping · drivable from $28,225 (Marysville, OH) · median asking $33,827 _(every 3 days · as of 2026-10-10, 1 day ago)_
-- **Lexus RZ** — 56 cars · 10 drivable · lowest asking $23,300 (Wake Forest, NC) + $787 shipping · drivable from $33,009 (Lake Villa, IL) · median asking $35,180 _(every 3 days)_
+- **BMW iX** — 137 cars · 49 drivable · lowest asking $30,790 (Mountain Lakes, NJ) + $808 shipping · drivable from $37,345 (Carroll, OH) · median asking $51,995 _(every 3 days)_
+- **BMW i4** — 113 cars · 13 drivable · lowest asking $20,750 (Marietta, GA) + $725 shipping · drivable from $34,357 (East Dundee, IL) · median asking $42,945 _(every 3 days)_
+- **Hyundai Ioniq 9** — 49 cars · 20 drivable · lowest asking $39,550 (Akron, OH) · drivable from $39,550 (Akron, OH) · median asking $54,827 _(every 3 days)_
+- **Kia EV9** — 40 cars · 18 drivable · lowest asking $30,523 (Skokie, IL) · drivable from $30,523 (Skokie, IL) · median asking $39,235 _(every 3 days)_
+- **Audi A6 e-tron** — 31 cars · 2 drivable · lowest asking $37,796 (Owings Mills, MD) + $746 shipping · drivable from $44,981 (Waukegan, IL) · median asking $47,640 _(every 3 days · as of 2026-10-11, 1 day ago)_
+- **Lucid Air** — 135 cars · 27 drivable · lowest asking $32,335 (San Diego, CA) + $1,336 shipping · drivable from $35,804 (Naperville, IL) · median asking $41,900 _(every 3 days)_
+- **Chevrolet Equinox EV** — 60 cars · 22 drivable · lowest asking $8,320 (Novato, CA) + $1,380 shipping · drivable from $20,313 (Chicago, IL) · median asking $23,426 _(every 3 days · as of 2026-10-11, 1 day ago)_
+- **Ford Mustang Mach-E** — 66 cars · 30 drivable · lowest asking $20,573 (Irving, TX) + $911 shipping · drivable from $23,274 (Palatine, IL) · median asking $29,540 _(every 3 days · as of 2026-10-10, 2 days ago)_
+- **Nissan Ariya** — 85 cars · 35 drivable · lowest asking $17,098 (Jacksonville, FL) + $965 shipping · drivable from $19,176 (Gurnee, IL) · median asking $21,995 _(every 3 days · as of 2026-10-11, 1 day ago)_
+- **Mercedes-Benz EQB** — 39 cars · 6 drivable · lowest asking $24,000 (Union City, GA) + $746 shipping · drivable from $26,064 (Berwyn, IL) · median asking $29,012 _(every 3 days · as of 2026-10-10, 2 days ago)_
+- **Porsche Taycan** — 74 cars · 18 drivable · lowest asking $59,717 (Naples, FL) + $1,097 shipping · drivable from $65,734 (Burbank, IL) · median asking $100,149 _(every 3 days)_
+- **Volkswagen ID.4** — 71 cars · 19 drivable · lowest asking $18,487 (Henderson, NV) + $1,265 shipping · drivable from $19,831 (West Chester, OH) · median asking $24,800 _(every 3 days)_
+- **Cadillac Lyriq** — 79 cars · 27 drivable · lowest asking $23,995 (New Madrid, MO) + $531 shipping · drivable from $29,550 (Cuyahoga Falls, OH) · median asking $33,293 _(every 3 days · as of 2026-10-11, 1 day ago)_
+- **Dodge Charger Daytona** — 51 cars · 10 drivable · lowest asking $28,740 (Quakertown, PA) + $787 shipping · drivable from $29,950 (Chicago, IL) · median asking $33,590 _(every 3 days)_
+- **Rivian R1S** — 84 cars · 26 drivable · lowest asking $50,794 (Wall, NJ) + $828 shipping · drivable from $59,990 (Indianapolis, IN) · median asking $66,135 _(every 3 days · as of 2026-10-10, 2 days ago)_
+- **Toyota bZ4X** — 52 cars · 11 drivable · lowest asking $17,990 (Norco, CA) + $1,327 shipping · drivable from $20,600 (Schererville, IN) · median asking $26,694 _(every 3 days)_
+- **Honda Prologue** — 73 cars · 26 drivable · lowest asking $19,676 (Fort Wayne, IN) · drivable from $19,676 (Fort Wayne, IN) · median asking $25,196 _(every 3 days · as of 2026-10-11, 1 day ago)_
+- **Acura ZDX** — 78 cars · 19 drivable · lowest asking $24,999 (Mahwah, NJ) + $828 shipping · drivable from $28,225 (Marysville, OH) · median asking $33,827 _(every 3 days · as of 2026-10-10, 2 days ago)_
+- **Lexus RZ** — 56 cars · 10 drivable · lowest asking $23,300 (Wake Forest, NC) + $787 shipping · drivable from $33,009 (Lake Villa, IL) · median asking $35,180 _(every 3 days · as of 2026-10-11, 1 day ago)_
 
 ---
-_8921 vehicle histories across 49 days · 32 API calls today._
+_9060 vehicle histories across 50 days · 32 API calls today._
