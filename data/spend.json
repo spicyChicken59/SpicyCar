@@ -774,5 +774,40 @@
   "silent_targets": [],
   "targets_due": 8,
   "unrun": 0
+ },
+ "2026-10-23": {
+  "actual": 38,
+  "banked": -10,
+  "empty_targets": [],
+  "exhausted": 2,
+  "failed": 1,
+  "filtered_targets": [],
+  "off_plan": {
+   "audi-a6-etron": [
+    3,
+    6
+   ],
+   "chevrolet-equinox-ev": [
+    3,
+    4
+   ],
+   "honda-prologue": [
+    3,
+    5
+   ],
+   "nissan-ariya": [
+    3,
+    4
+   ],
+   "volkswagen-id4": [
+    3,
+    5
+   ]
+  },
+  "planned": 28,
+  "runs": 1,
+  "silent_targets": [],
+  "targets_due": 8,
+  "unrun": 0
  }
 }
