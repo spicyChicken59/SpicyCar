@@ -8557,5 +8557,167 @@
     "window": 25260
    }
   }
+ },
+ "2026-10-27": {
+  "bmw-i4-edrive40": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 377,
+    "window": 33894
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 10,
+    "total": 10,
+    "window": 66999
+   }
+  },
+  "bmw-ix-m": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 87,
+    "window": 58975
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 17,
+    "total": 17,
+    "window": 100365
+   }
+  },
+  "dodge-charger-daytona": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 68,
+    "window": 33995
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 8,
+    "total": 8,
+    "window": 80175
+   }
+  },
+  "hyundai-ioniq9": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 438,
+    "window": 47000
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 48,
+    "window": 61159
+   }
+  },
+  "lucid-air-touring": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 201,
+    "window": 39898
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 19,
+    "total": 19,
+    "window": 53964
+   }
+  },
+  "porsche-taycan": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 662,
+    "window": 69290
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 77,
+    "window": 97827
+   }
+  },
+  "toyota-bz4x": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 5505,
+    "window": null
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 604,
+    "window": 26592
+   }
+  },
+  "volkswagen-id4": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 1224,
+    "window": 18906
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 116,
+    "window": 27549
+   }
+  }
  }
 }
