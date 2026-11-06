@@ -10177,5 +10177,167 @@
     "window": 25987
    }
   }
+ },
+ "2026-11-06": {
+  "acura-zdx": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 250,
+    "window": 29000
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 49,
+    "window": 33327
+   }
+  },
+  "bmw-i5-edrive40": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 435,
+    "window": 39999
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 10,
+    "total": 10,
+    "window": 80714
+   }
+  },
+  "cadillac-lyriq": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 8189,
+    "window": null
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 1450,
+    "window": null
+   }
+  },
+  "ford-mustang-mach-e": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 6554,
+    "window": null
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 1164,
+    "window": 25307
+   }
+  },
+  "honda-prologue": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 2374,
+    "window": 21712
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 295,
+    "window": 23995
+   }
+  },
+  "kia-ev9": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 2682,
+    "window": 31200
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 275,
+    "window": 38043
+   }
+  },
+  "mercedes-eqb": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 150,
+    "window": 28156
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": true,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 9,
+    "total": 9,
+    "window": 46643
+   }
+  },
+  "rivian-r1s": {
+   "National": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 40,
+    "total": 423,
+    "window": 57594
+   },
+   "States": {
+    "dim": "price",
+    "exhausted": false,
+    "failed": false,
+    "observation_complete": true,
+    "raw": 20,
+    "total": 39,
+    "window": 65410
+   }
+  }
  }
 }
