@@ -3802,5 +3802,61 @@
    0,
    20
   ]
+ },
+ "2026-11-17": {
+  "bmw-i4-m50": [
+   11,
+   40,
+   3,
+   8
+  ],
+  "bmw-ix-xdrive": [
+   20,
+   37,
+   2,
+   18
+  ],
+  "dodge-charger-daytona": [
+   8,
+   31,
+   7,
+   1
+  ],
+  "honda-prologue": [
+   20,
+   36,
+   2,
+   18
+  ],
+  "hyundai-ioniq9": [
+   20,
+   37,
+   1,
+   19
+  ],
+  "kia-ev9": [
+   20,
+   36,
+   2,
+   18
+  ],
+  "lucid-air-grand-touring": [
+   0,
+   7,
+   0,
+   0
+  ],
+  "porsche-taycan": [
+   20,
+   38,
+   5,
+   15
+  ],
+  "volkswagen-id4": [
+   20,
+   38,
+   1,
+   19
+  ]
  }
 }
