@@ -4102,5 +4102,55 @@
    0,
    7
   ]
+ },
+ "2026-11-23": {
+  "bmw-i4-m50": [
+   17,
+   39,
+   4,
+   13
+  ],
+  "bmw-ix-xdrive": [
+   20,
+   38,
+   2,
+   18
+  ],
+  "cadillac-lyriq": [
+   0,
+   19,
+   0,
+   0
+  ],
+  "dodge-charger-daytona": [
+   15,
+   32,
+   9,
+   6
+  ],
+  "hyundai-ioniq9": [
+   20,
+   38,
+   2,
+   18
+  ],
+  "lucid-air-touring": [
+   17,
+   37,
+   3,
+   14
+  ],
+  "porsche-taycan": [
+   20,
+   37,
+   4,
+   16
+  ],
+  "volkswagen-id4": [
+   19,
+   19,
+   1,
+   18
+  ]
  }
 }
